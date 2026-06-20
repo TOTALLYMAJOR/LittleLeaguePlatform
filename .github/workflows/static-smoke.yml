@@ -1,0 +1,25 @@
+name: Static smoke
+
+on:
+  pull_request:
+  push:
+    branches:
+      - main
+
+jobs:
+  smoke:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Validate Compose config
+        run: docker compose config --quiet
+      - name: Build and start
+        run: docker compose up -d --build
+      - name: Smoke check
+        run: curl -fsSI http://localhost:8081/ | grep "200 OK"
+      - name: Logs on failure
+        if: failure()
+        run: docker compose logs web
+      - name: Stop
+        if: always()
+        run: docker compose down

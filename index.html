@@ -1,0 +1,527 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="description" content="Private youth sports organization portal prototype for teams, schedules, standings, chat, rosters, and media links." />
+  <title>Little League HQ</title>
+  <link rel="stylesheet" href="./styles.css" />
+</head>
+<body>
+  <div id="loginScreen" class="login-screen">
+    <section class="login-hero">
+      <div class="brand large">
+        <div class="brand-mark">⚾</div>
+        <div>
+          <h1>Little League HQ</h1>
+          <p>Private 3U–6U team portal</p>
+        </div>
+      </div>
+      <h2>One simple home for parents, coaches, schedules, scores, standings, chat, and team links.</h2>
+      <p class="hero-copy">Prototype focused on a single youth organization. Children do not log in. Parent/guardian accounts manage access.</p>
+      <div class="hero-points">
+        <span>🔒 Login-required team spaces</span>
+        <span>📣 Push-ready alerts</span>
+        <span>🏆 Division standings</span>
+        <span>💬 Coach-parent messaging</span>
+      </div>
+    </section>
+
+    <section class="login-card card">
+      <h3>Prototype login</h3>
+      <p class="muted">Choose a role to preview the platform. Production would use secure email/SMS login.</p>
+      <label>
+        Role
+        <select id="loginRoleSelect">
+          <option value="admin">Org Admin</option>
+          <option value="coach">Coach</option>
+          <option value="parent">Parent</option>
+        </select>
+      </label>
+      <label>
+        Email or phone
+        <input id="loginIdentity" value="admin@example.com" />
+      </label>
+      <button id="enterAppButton" class="primary-button full">Enter Private Portal</button>
+      <button id="openRegisterButton" class="secondary-button full">Parent Self-Registration</button>
+      <div class="privacy-note">
+        <strong>Child privacy default:</strong> player display is first name + last initial only.
+      </div>
+    </section>
+  </div>
+
+  <div id="app" class="app hidden">
+    <aside class="sidebar" id="sidebar">
+      <div class="brand">
+        <div class="brand-mark">⚾</div>
+        <div>
+          <h1>Little League HQ</h1>
+          <p>3U–6U team portal</p>
+        </div>
+      </div>
+
+      <nav class="nav">
+        <button class="nav-button active" data-route="dashboard">Dashboard</button>
+        <button class="nav-button" data-route="myteam">My Team</button>
+        <button class="nav-button" data-route="teams">Teams</button>
+        <button class="nav-button" data-route="roster">Rosters</button>
+        <button class="nav-button" data-route="schedule">Schedule</button>
+        <button class="nav-button" data-route="standings">Standings</button>
+        <button class="nav-button" data-route="chat">Chat</button>
+        <button class="nav-button" data-route="media">Media Links</button>
+        <button class="nav-button" data-route="registrations">Registrations</button>
+        <button class="nav-button" data-route="imports">CSV Imports</button>
+        <button class="nav-button" data-route="notifications">Notifications</button>
+        <button class="nav-button" data-route="invites">Invites</button>
+        <button class="nav-button" data-route="permissions">Permissions</button>
+        <button class="nav-button" data-route="roadmap">Roadmap</button>
+        <button class="nav-button" data-route="archive">Archive</button>
+      </nav>
+
+      <div class="account-card">
+        <label for="roleSelect">View as</label>
+        <select id="roleSelect">
+          <option value="admin">Org Admin</option>
+          <option value="coach">Coach</option>
+          <option value="parent">Parent</option>
+        </select>
+        <p id="roleDescription"></p>
+      </div>
+
+      <button id="logoutButton" class="secondary-button full">Log Out</button>
+    </aside>
+
+    <main class="main">
+      <header class="topbar">
+        <button class="menu-button" id="menuButton" aria-label="Toggle menu">☰</button>
+        <div>
+          <h2 id="pageTitle">Dashboard</h2>
+          <p id="pageSubtitle">Private youth sports organization platform prototype.</p>
+        </div>
+        <div class="top-actions">
+          <button id="notificationBell" class="notification-bell" aria-label="Notifications">🔔<span id="notificationCount">0</span></button>
+          <div class="season-pill">Spring 2026 · Active</div>
+        </div>
+      </header>
+
+      <section class="privacy-banner">
+        <strong>Privacy mode:</strong> no child logins, minimal player profiles, private team access, chat deleted after season.
+      </section>
+
+      <section id="view" class="view"></section>
+    </main>
+  </div>
+
+  <template id="dashboardTemplate">
+    <div class="grid stats-grid">
+      <article class="card stat-card">
+        <span class="stat-label">Teams</span>
+        <strong id="statTeams">0</strong>
+        <p>3U, 4U, 5U, 6U divisions</p>
+      </article>
+      <article class="card stat-card">
+        <span class="stat-label">Players</span>
+        <strong id="statPlayers">0</strong>
+        <p>Parent-managed child profiles</p>
+      </article>
+      <article class="card stat-card">
+        <span class="stat-label">Events</span>
+        <strong id="statEvents">0</strong>
+        <p>Master schedule items</p>
+      </article>
+      <article class="card stat-card">
+        <span class="stat-label">Pending</span>
+        <strong id="statPending">0</strong>
+        <p>Registration requests</p>
+      </article>
+    </div>
+
+    <div class="grid two-column">
+      <article class="card">
+        <div class="card-header">
+          <h3>Today’s Queue</h3>
+          <span class="tag">Role-aware</span>
+        </div>
+        <ul class="task-list" id="adminQueue"></ul>
+      </article>
+
+      <article class="card">
+        <div class="card-header">
+          <h3>Recent Activity</h3>
+          <span class="tag">Audit trail</span>
+        </div>
+        <div id="activityFeed" class="activity-feed"></div>
+      </article>
+    </div>
+  </template>
+
+
+  <template id="myteamTemplate">
+    <div class="grid two-column">
+      <article class="card hero-team-card" id="myTeamCard"></article>
+      <article class="card">
+        <div class="card-header">
+          <h3>Onboarding Checklist</h3>
+          <span class="tag">Launch prep</span>
+        </div>
+        <div id="checklist" class="checklist"></div>
+      </article>
+    </div>
+    <div class="grid two-column below-grid">
+      <article class="card">
+        <div class="card-header">
+          <h3>Upcoming Team Schedule</h3>
+          <span class="tag">Cards</span>
+        </div>
+        <div id="teamScheduleCards" class="calendar-cards"></div>
+      </article>
+      <article class="card">
+        <div class="card-header">
+          <h3>Team Links</h3>
+          <span class="tag">Inside app</span>
+        </div>
+        <div id="teamMediaList" class="activity-feed"></div>
+      </article>
+    </div>
+  </template>
+
+  <template id="teamsTemplate">
+    <div class="toolbar">
+      <div class="search-box">
+        <input id="teamSearch" type="search" placeholder="Search teams, coaches, divisions..." />
+      </div>
+      <button class="primary-button" id="addTeamButton">Add Team</button>
+    </div>
+    <div id="teamsGrid" class="grid team-grid"></div>
+  </template>
+
+  <template id="rosterTemplate">
+    <div class="toolbar wrap">
+      <select id="rosterTeamFilter"></select>
+      <button class="primary-button" id="addPlayerButton">Add Player</button>
+      <button class="secondary-button" id="exportRosterButton">Export CSV</button>
+    </div>
+    <div class="card table-card">
+      <table>
+        <thead>
+          <tr>
+            <th>Player</th>
+            <th>Jersey</th>
+            <th>Parent/Guardian</th>
+            <th>Contact</th>
+            <th>Access</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+        <tbody id="rosterTable"></tbody>
+      </table>
+    </div>
+  </template>
+
+  <template id="scheduleTemplate">
+    <div class="toolbar wrap">
+      <select id="scheduleDivisionFilter">
+        <option value="all">All divisions</option>
+        <option value="3U">3U</option>
+        <option value="4U">4U</option>
+        <option value="5U">5U</option>
+        <option value="6U">6U</option>
+      </select>
+      <select id="scheduleTeamFilter"></select>
+      <button class="primary-button" id="addEventButton">Add Event</button>
+      <button class="secondary-button" id="simulateScheduleChangeButton">Simulate Schedule Push</button>
+    </div>
+    <div class="card table-card">
+      <table>
+        <thead>
+          <tr>
+            <th>Date</th>
+            <th>Team</th>
+            <th>Type</th>
+            <th>Opponent</th>
+            <th>Location</th>
+            <th>Score</th>
+            <th>Status</th>
+          </tr>
+        </thead>
+        <tbody id="scheduleTable"></tbody>
+      </table>
+    </div>
+  </template>
+
+  <template id="standingsTemplate">
+    <div class="toolbar wrap">
+      <select id="standingsDivisionFilter">
+        <option value="all">All divisions</option>
+        <option value="3U">3U</option>
+        <option value="4U">4U</option>
+        <option value="5U">5U</option>
+        <option value="6U">6U</option>
+      </select>
+      <button class="secondary-button" id="recalculateStandingsButton">Recalculate Standings</button>
+    </div>
+    <div id="standingsGroups" class="standings-groups"></div>
+  </template>
+
+  <template id="chatTemplate">
+    <div class="chat-shell">
+      <aside class="thread-list" id="threadList"></aside>
+      <section class="chat-panel">
+        <div class="chat-panel-header">
+          <div>
+            <h3 id="activeThreadTitle">Team Chat</h3>
+            <p id="activeThreadMeta">Coaches and parents only</p>
+          </div>
+          <span class="tag">Push enabled</span>
+        </div>
+        <div class="messages" id="messages"></div>
+        <form id="messageForm" class="message-form">
+          <input id="messageInput" autocomplete="off" placeholder="Write a message..." />
+          <button class="primary-button" type="submit">Send</button>
+        </form>
+      </section>
+    </div>
+  </template>
+
+  <template id="mediaTemplate">
+    <div class="toolbar wrap">
+      <select id="mediaTypeFilter">
+        <option value="all">All links</option>
+        <option value="youtube">YouTube</option>
+        <option value="google_photos">Google Photos</option>
+      </select>
+      <select id="mediaVisibilityFilter">
+        <option value="all">All visibility</option>
+        <option value="team_only">Team only</option>
+        <option value="shared_org">Shared org</option>
+      </select>
+      <button class="primary-button" id="addMediaButton">Add Media Link</button>
+    </div>
+    <div id="mediaGrid" class="grid media-grid"></div>
+  </template>
+
+  <template id="registrationsTemplate">
+    <div class="toolbar wrap">
+      <select id="registrationStatusFilter">
+        <option value="all">All requests</option>
+        <option value="pending">Pending</option>
+        <option value="approved">Approved</option>
+        <option value="rejected">Rejected</option>
+      </select>
+      <button class="primary-button" id="newRegistrationButton">Simulate Parent Registration</button>
+    </div>
+    <div class="card table-card">
+      <table>
+        <thead>
+          <tr>
+            <th>Parent</th>
+            <th>Child</th>
+            <th>Requested Team</th>
+            <th>Match</th>
+            <th>Status</th>
+            <th>Review</th>
+          </tr>
+        </thead>
+        <tbody id="registrationTable"></tbody>
+      </table>
+    </div>
+  </template>
+
+  <template id="importsTemplate">
+    <div class="grid two-column">
+      <article class="card">
+        <div class="card-header">
+          <h3>Roster CSV Import</h3>
+          <span class="tag">Admin</span>
+        </div>
+        <p class="muted">Paste CSV rows with: team,division,player_first,last_initial,jersey,parent_name,parent_email,parent_phone</p>
+        <textarea id="rosterCsv" class="csv-box"></textarea>
+        <button class="primary-button" id="importRosterButton">Validate Roster CSV</button>
+        <div id="rosterImportResult" class="import-result"></div>
+      </article>
+
+      <article class="card">
+        <div class="card-header">
+          <h3>Schedule CSV Import</h3>
+          <span class="tag">Admin</span>
+        </div>
+        <p class="muted">Paste CSV rows with: date,time,division,team,type,opponent,location,home_away</p>
+        <textarea id="scheduleCsv" class="csv-box"></textarea>
+        <button class="primary-button" id="importScheduleButton">Validate Schedule CSV</button>
+        <div id="scheduleImportResult" class="import-result"></div>
+      </article>
+    </div>
+  </template>
+
+  <template id="notificationsTemplate">
+    <div class="grid two-column">
+      <article class="card">
+        <div class="card-header">
+          <h3>Notification Preferences</h3>
+          <span class="tag">Push-ready</span>
+        </div>
+        <div id="preferenceList" class="preference-list"></div>
+      </article>
+      <article class="card">
+        <div class="card-header">
+          <h3>Notification Log</h3>
+          <span class="tag">Simulation</span>
+        </div>
+        <div id="notificationLog" class="activity-feed"></div>
+      </article>
+    </div>
+  </template>
+
+
+  <template id="invitesTemplate">
+    <div class="grid two-column">
+      <article class="card">
+        <div class="card-header">
+          <h3>Send Parent Invites</h3>
+          <span class="tag">Email + SMS</span>
+        </div>
+        <div class="form-grid">
+          <label>Team
+            <select id="inviteTeamSelect"></select>
+          </label>
+          <label>Message
+            <textarea id="inviteMessage" class="small-textarea">Welcome to Little League HQ. Use this invite to create your parent account and join your child’s private team space.</textarea>
+          </label>
+          <button class="primary-button" id="sendInvitesButton">Send Invites to Pending Parents</button>
+        </div>
+        <div id="inviteResult" class="import-result"></div>
+      </article>
+      <article class="card">
+        <div class="card-header">
+          <h3>Invite Status</h3>
+          <span class="tag">Simulation</span>
+        </div>
+        <div id="inviteStatusList" class="activity-feed"></div>
+      </article>
+    </div>
+  </template>
+
+  <template id="permissionsTemplate">
+    <div class="grid two-column">
+      <article class="card">
+        <div class="card-header">
+          <h3>Role Permissions</h3>
+          <span class="tag">Access model</span>
+        </div>
+        <div id="permissionMatrix" class="permission-matrix"></div>
+      </article>
+      <article class="card">
+        <div class="card-header">
+          <h3>Privacy Guardrails</h3>
+          <span class="tag danger">Children</span>
+        </div>
+        <ul class="feature-list">
+          <li>No player login accounts.</li>
+          <li>Player names show as first name + last initial.</li>
+          <li>Parent/guardian account controls child access.</li>
+          <li>Team spaces are private and login-required.</li>
+          <li>Archived chat text is deleted after season close.</li>
+          <li>Google Photos links remain controlled by Google album sharing settings.</li>
+        </ul>
+      </article>
+    </div>
+  </template>
+
+  <template id="roadmapTemplate">
+    <div class="grid roadmap-grid">
+      <article class="card">
+        <div class="card-header">
+          <h3>Phase 1 · Static Prototype</h3>
+          <span class="tag status-approved">Done</span>
+        </div>
+        <ul class="feature-list">
+          <li>Clickable product flow</li>
+          <li>Roles, teams, rosters, standings</li>
+          <li>Chat and media link demo</li>
+          <li>CSV validation simulation</li>
+        </ul>
+      </article>
+      <article class="card">
+        <div class="card-header">
+          <h3>Phase 2 · Real Web Backend</h3>
+          <span class="tag">Next</span>
+        </div>
+        <ul class="feature-list">
+          <li>Supabase schema and row-level security</li>
+          <li>Email/SMS auth and invite links</li>
+          <li>Server-side CSV import jobs</li>
+          <li>Realtime chat persistence</li>
+        </ul>
+      </article>
+      <article class="card">
+        <div class="card-header">
+          <h3>Phase 3 · Mobile App</h3>
+          <span class="tag">Expo</span>
+        </div>
+        <ul class="feature-list">
+          <li>iOS and Android shared app</li>
+          <li>Push notification device tokens</li>
+          <li>In-app browser for Google Photos</li>
+          <li>YouTube player screen</li>
+        </ul>
+      </article>
+      <article class="card">
+        <div class="card-header">
+          <h3>Phase 4 · Production Hardening</h3>
+          <span class="tag danger">Required</span>
+        </div>
+        <ul class="feature-list">
+          <li>Privacy policy and consent flows</li>
+          <li>Audit logs and admin exports</li>
+          <li>Backup and retention jobs</li>
+          <li>Monitoring, error reporting, moderation tools</li>
+        </ul>
+      </article>
+    </div>
+  </template>
+
+  <template id="archiveTemplate">
+    <div class="grid two-column">
+      <article class="card">
+        <div class="card-header">
+          <h3>Season Archive Policy</h3>
+          <span class="tag danger">Read-only</span>
+        </div>
+        <ul class="feature-list">
+          <li>Archived seasons preserve teams, rosters, schedules, scores, standings, and media links.</li>
+          <li>Archived seasons are read-only for coaches, parents, and admins.</li>
+          <li>Chat history is deleted after the season closes.</li>
+          <li>Audit logs keep deletion events, but not message text.</li>
+        </ul>
+      </article>
+
+      <article class="card">
+        <div class="card-header">
+          <h3>Archive Spring 2026</h3>
+          <span class="tag">Admin only</span>
+        </div>
+        <p class="muted">This prototype simulates the archive action. Production would use a server-side retention job.</p>
+        <button class="danger-button" id="archiveSeasonButton">Archive Season + Delete Chat</button>
+        <div id="archiveResult" class="import-result"></div>
+      </article>
+    </div>
+  </template>
+
+  <dialog id="modal" class="modal">
+    <form method="dialog" class="modal-card" id="modalForm">
+      <div class="card-header">
+        <h3 id="modalTitle">Modal</h3>
+        <button class="icon-button" value="cancel" aria-label="Close">×</button>
+      </div>
+      <div id="modalBody"></div>
+      <div class="modal-actions">
+        <button class="secondary-button" value="cancel">Cancel</button>
+        <button class="primary-button" id="modalSaveButton" value="default">Save</button>
+      </div>
+    </form>
+  </dialog>
+
+  <div id="toast" class="toast" aria-live="polite"></div>
+  <script src="./app.js"></script>
+</body>
+</html>

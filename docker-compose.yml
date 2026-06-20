@@ -1,0 +1,7 @@
+services:
+  web:
+    build:
+      context: .
+    ports:
+      - "${APP_PORT:-8081}:80"
+    restart: unless-stopped
