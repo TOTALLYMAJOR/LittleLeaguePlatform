@@ -1,6 +1,11 @@
 import { analyzeRosterCsv } from "./csv";
 import { evaluateInviteRecovery } from "./invites";
-import { postTeamChatMessage, type PostTeamChatMessageInput } from "./chat";
+import {
+  postTeamChatMessage,
+  sendCoachAnnouncement,
+  type PostTeamChatMessageInput,
+  type SendCoachAnnouncementInput
+} from "./chat";
 import { setRsvp, type SetRsvpInput } from "./rsvp";
 import { applyScheduleChange, type ScheduleChangeInput } from "./schedule";
 import type { AppState } from "./types";
@@ -10,7 +15,8 @@ export type AppAction =
   | { type: "recoverInvite"; identifier: string; now: string }
   | { type: "setRsvp"; input: SetRsvpInput }
   | { type: "applyScheduleChange"; input: ScheduleChangeInput }
-  | { type: "postTeamChatMessage"; input: PostTeamChatMessageInput };
+  | { type: "postTeamChatMessage"; input: PostTeamChatMessageInput }
+  | { type: "sendCoachAnnouncement"; input: SendCoachAnnouncementInput };
 
 export function appReducer(state: AppState, action: AppAction): AppState {
   if (action.type === "commitRosterImport") {
@@ -89,6 +95,10 @@ export function appReducer(state: AppState, action: AppAction): AppState {
 
   if (action.type === "postTeamChatMessage") {
     return postTeamChatMessage(state, action.input).state;
+  }
+
+  if (action.type === "sendCoachAnnouncement") {
+    return sendCoachAnnouncement(state, action.input).state;
   }
 
   return state;

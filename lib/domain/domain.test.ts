@@ -13,6 +13,7 @@ import {
   postTeamChatMessage,
   sampleRosterCsv,
   seedState,
+  sendCoachAnnouncement,
   setRsvp
 } from "./index";
 
@@ -181,6 +182,38 @@ describe("safe team chat access", () => {
 
     expect(result.ok).toBe(false);
     expect(result.message).toContain("private");
+    expect(result.state.chatMessages).toHaveLength(seedState.chatMessages.length);
+  });
+
+  it("lets assigned coaches send pinned Coach Notes", () => {
+    const result = sendCoachAnnouncement(seedState, {
+      teamId: "team-tigers",
+      authorUserId: "user-coach-taylor",
+      body: "Coach Note: yellow uniforms for Saturday.",
+      topic: "uniforms",
+      pinned: true,
+      now: NOW
+    });
+    const view = getTeamChatView(result.state, "user-parent-jordan", "team-tigers", NOW);
+
+    expect(result.ok).toBe(true);
+    expect(result.createdMessage?.kind).toBe("announcement");
+    expect(result.createdMessage?.topic).toBe("uniforms");
+    expect(view.pinnedMessage?.id).toBe(result.createdMessage?.id);
+  });
+
+  it("prevents parents from sending Coach Notes", () => {
+    const result = sendCoachAnnouncement(seedState, {
+      teamId: "team-tigers",
+      authorUserId: "user-parent-jordan",
+      body: "Pretend coach note",
+      topic: "reminder",
+      pinned: true,
+      now: NOW
+    });
+
+    expect(result.ok).toBe(false);
+    expect(result.message).toContain("Only assigned coaches");
     expect(result.state.chatMessages).toHaveLength(seedState.chatMessages.length);
   });
 });

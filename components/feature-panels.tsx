@@ -14,6 +14,7 @@ import {
   roleLabel,
   sampleRosterCsv,
   setRsvp,
+  type ChatAnnouncementTopic,
   type EventStatus,
   type RsvpResponse
 } from "@/lib/domain";
@@ -499,6 +500,10 @@ export function TeamChatClient() {
   const [teamId, setTeamId] = useState("team-tigers");
   const [draftMessage, setDraftMessage] = useState("");
   const [postNotice, setPostNotice] = useState("");
+  const [announcementBody, setAnnouncementBody] = useState("");
+  const [announcementTopic, setAnnouncementTopic] = useState<ChatAnnouncementTopic>("reminder");
+  const [announcementPinned, setAnnouncementPinned] = useState(true);
+  const [announcementNotice, setAnnouncementNotice] = useState("");
   const viewer = state.users.find((user) => user.id === viewerId);
   const selectedTeam = state.teams.find((team) => team.id === teamId);
 
@@ -598,6 +603,82 @@ export function TeamChatClient() {
                 </ul>
               </article>
             ) : null}
+
+            <form
+              className="clubhouse-coach-note"
+              onSubmit={(event) => {
+                event.preventDefault();
+                if (!view?.access.canAnnounce) {
+                  setAnnouncementNotice("Only assigned coaches and org admins can send Coach Notes.");
+                  return;
+                }
+                if (!announcementBody.trim()) {
+                  setAnnouncementNotice("Write a Coach Note before sending.");
+                  return;
+                }
+                dispatch({
+                  type: "sendCoachAnnouncement",
+                  input: {
+                    teamId: view.team.id,
+                    authorUserId: view.viewer.id,
+                    body: announcementBody,
+                    topic: announcementTopic,
+                    pinned: announcementPinned,
+                    now: new Date().toISOString()
+                  }
+                });
+                setAnnouncementBody("");
+                setAnnouncementNotice(announcementPinned ? "Coach Note posted and pinned." : "Coach Note posted.");
+              }}
+            >
+              <div className="card-header">
+                <div>
+                  <span className="eyebrow">Coach Announcements</span>
+                  <h3>Coach Note</h3>
+                </div>
+                <span className="badge warning">{view.access.canAnnounce ? "Coach/Admin" : "Read only"}</span>
+              </div>
+              <div className="grid two">
+                <label>
+                  Topic
+                  <select
+                    value={announcementTopic}
+                    onChange={(event) => setAnnouncementTopic(event.target.value as ChatAnnouncementTopic)}
+                    disabled={!view.access.canAnnounce}
+                  >
+                    <option value="game_time">Game time</option>
+                    <option value="field_location">Field location</option>
+                    <option value="uniforms">Uniforms</option>
+                    <option value="snacks">Snacks</option>
+                    <option value="weather">Weather</option>
+                    <option value="reminder">Reminder</option>
+                  </select>
+                </label>
+                <label className="clubhouse-checkbox">
+                  <input
+                    type="checkbox"
+                    checked={announcementPinned}
+                    onChange={(event) => setAnnouncementPinned(event.target.checked)}
+                    disabled={!view.access.canAnnounce}
+                  />
+                  Pin as Pinned Reminder
+                </label>
+              </div>
+              <label>
+                Message
+                <textarea
+                  value={announcementBody}
+                  onChange={(event) => setAnnouncementBody(event.target.value)}
+                  placeholder="Share game time, field location, uniforms, snacks, weather, or reminders."
+                  disabled={!view.access.canAnnounce}
+                />
+              </label>
+              <div className="toolbar">
+                <button disabled={!view.access.canAnnounce || !announcementBody.trim()}>Send Coach Note</button>
+                <span className="muted">Announcements appear visually distinct from normal Team Chat messages.</span>
+              </div>
+              {announcementNotice ? <p className="notice">{announcementNotice}</p> : null}
+            </form>
 
             <div className="clubhouse-message-list" aria-label="Team Chat messages">
               {view.messages.length ? view.messages.map((message) => (

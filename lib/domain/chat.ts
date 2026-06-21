@@ -1,5 +1,6 @@
 import type {
   AppState,
+  ChatAnnouncementTopic,
   LeagueEvent,
   Team,
   TeamChatChannel,
@@ -34,6 +35,16 @@ export interface PostTeamChatMessageInput {
   authorUserId: string;
   body: string;
   eventId?: string;
+  now: string;
+}
+
+export interface SendCoachAnnouncementInput {
+  teamId: string;
+  authorUserId: string;
+  body: string;
+  topic: ChatAnnouncementTopic;
+  eventId?: string;
+  pinned?: boolean;
   now: string;
 }
 
@@ -229,6 +240,74 @@ export function postTeamChatMessage(state: AppState, input: PostTeamChatMessageI
           targetType: "team_chat_message",
           targetId: createdMessage.id,
           summary: "Team Chat message posted in an assigned team channel.",
+          createdAt: input.now
+        },
+        ...state.auditEvents
+      ]
+    }
+  };
+}
+
+export function sendCoachAnnouncement(state: AppState, input: SendCoachAnnouncementInput): ChatMutationResult {
+  const author = state.users.find((user) => user.id === input.authorUserId);
+  const channel = state.teamChatChannels.find((item) => item.teamId === input.teamId);
+  const trimmedBody = input.body.trim();
+  const access = getTeamChatAccess(state, input.authorUserId, input.teamId);
+
+  if (!author || !channel) {
+    return { ok: false, message: "Coach Note requires a known author and channel.", state };
+  }
+
+  if (!access.canAnnounce) {
+    return { ok: false, message: "Only assigned coaches and org admins can send Coach Notes.", state };
+  }
+
+  if (!trimmedBody) {
+    return { ok: false, message: "Write a Coach Note before sending.", state };
+  }
+
+  const event = input.eventId ? state.events.find((item) => item.id === input.eventId) : undefined;
+  if (input.eventId && (!event || event.teamId !== input.teamId)) {
+    return { ok: false, message: "Coach Notes can only link to events for this team.", state };
+  }
+
+  const createdMessage: TeamChatMessage = {
+    id: `chat-announcement-${Date.parse(input.now)}-${state.chatMessages.length + 1}`,
+    channelId: channel.id,
+    organizationId: channel.organizationId,
+    teamId: input.teamId,
+    authorUserId: input.authorUserId,
+    authorRole: author.role,
+    kind: "announcement",
+    topic: input.topic,
+    body: trimmedBody,
+    eventId: input.eventId,
+    pinned: Boolean(input.pinned),
+    moderationStatus: "visible",
+    readByUserIds: [input.authorUserId],
+    createdAt: input.now
+  };
+
+  return {
+    ok: true,
+    message: input.pinned ? "Coach Note posted and pinned." : "Coach Note posted.",
+    createdMessage,
+    state: {
+      ...state,
+      teamChatChannels: state.teamChatChannels.map((item) => (
+        item.id === channel.id
+          ? { ...item, pinnedMessageId: input.pinned ? createdMessage.id : item.pinnedMessageId, updatedAt: input.now }
+          : item
+      )),
+      chatMessages: [...state.chatMessages, createdMessage],
+      auditEvents: [
+        {
+          id: `audit-coach-note-${Date.parse(input.now)}-${state.auditEvents.length + 1}`,
+          actorUserId: input.authorUserId,
+          action: "coach_announcement_posted",
+          targetType: "team_chat_message",
+          targetId: createdMessage.id,
+          summary: input.pinned ? "Coach Note posted and pinned in Team Chat." : "Coach Note posted in Team Chat.",
           createdAt: input.now
         },
         ...state.auditEvents

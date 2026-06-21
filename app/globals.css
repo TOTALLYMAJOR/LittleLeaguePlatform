@@ -486,6 +486,36 @@ th {
   min-height: 110px;
 }
 
+.clubhouse-coach-note {
+  background: #fffdf0;
+  border: 1px solid #ead56d;
+  border-radius: 8px;
+  display: grid;
+  gap: 12px;
+  padding: 14px;
+}
+
+.clubhouse-coach-note textarea {
+  min-height: 96px;
+}
+
+.clubhouse-checkbox {
+  align-items: center;
+  align-self: end;
+  background: #fff;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  color: var(--text);
+  display: flex;
+  gap: 10px;
+  min-height: 42px;
+  padding: 10px 12px;
+}
+
+.clubhouse-checkbox input {
+  width: auto;
+}
+
 @media (max-width: 900px) {
   .shell {
     grid-template-columns: 1fr;
