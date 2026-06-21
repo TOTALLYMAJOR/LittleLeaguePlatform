@@ -499,6 +499,7 @@ export function TeamChatClient() {
   const [viewerId, setViewerId] = useState("user-parent-jordan");
   const [teamId, setTeamId] = useState("team-tigers");
   const [draftMessage, setDraftMessage] = useState("");
+  const [linkDraftToGameDay, setLinkDraftToGameDay] = useState(true);
   const [postNotice, setPostNotice] = useState("");
   const [announcementBody, setAnnouncementBody] = useState("");
   const [announcementTopic, setAnnouncementTopic] = useState<ChatAnnouncementTopic>("reminder");
@@ -600,6 +601,7 @@ export function TeamChatClient() {
                   <li>Field: {view.upcomingGame.locationName}</li>
                   <li>Opponent: {view.upcomingGame.opponent ?? "To be announced"}</li>
                   <li><a href={`https://maps.google.com/?q=${encodeURIComponent(view.upcomingGame.locationAddress)}`}>Open map link</a></li>
+                  <li>Questions in thread: {view.gameDayMessages.length}</li>
                 </ul>
               </article>
             ) : null}
@@ -711,6 +713,7 @@ export function TeamChatClient() {
                   teamId: view.team.id,
                   authorUserId: view.viewer.id,
                   body: draftMessage,
+                  eventId: linkDraftToGameDay ? view.upcomingGame?.id : undefined,
                   now: new Date().toISOString()
                 };
                 if (!draftMessage.trim()) {
@@ -731,6 +734,17 @@ export function TeamChatClient() {
                   disabled={!view.access.canPost}
                 />
               </label>
+              {view.upcomingGame ? (
+                <label className="clubhouse-checkbox">
+                  <input
+                    type="checkbox"
+                    checked={linkDraftToGameDay}
+                    onChange={(event) => setLinkDraftToGameDay(event.target.checked)}
+                    disabled={!view.access.canPost}
+                  />
+                  File under Game-Day Questions for {view.upcomingGame.locationName}
+                </label>
+              ) : null}
               <div className="toolbar">
                 <button disabled={!view.access.canPost || !draftMessage.trim()}>Send Team Chat Message</button>
                 <span className="muted">{view.access.canPost ? "Visible to this team only." : "Posting is blocked for this viewer."}</span>

@@ -185,6 +185,34 @@ describe("safe team chat access", () => {
     expect(result.state.chatMessages).toHaveLength(seedState.chatMessages.length);
   });
 
+  it("links parent questions to the upcoming game-day thread", () => {
+    const result = postTeamChatMessage(seedState, {
+      teamId: "team-tigers",
+      authorUserId: "user-parent-jordan",
+      body: "Which field entrance should we use?",
+      eventId: "event-tigers-game",
+      now: NOW
+    });
+    const view = getTeamChatView(result.state, "user-parent-riley", "team-tigers", NOW);
+
+    expect(result.ok).toBe(true);
+    expect(result.createdMessage?.eventId).toBe("event-tigers-game");
+    expect(view.gameDayMessages.some((message) => message.id === result.createdMessage?.id)).toBe(true);
+  });
+
+  it("rejects game-day links for another team's event", () => {
+    const result = postTeamChatMessage(seedState, {
+      teamId: "team-tigers",
+      authorUserId: "user-parent-jordan",
+      body: "Wrong game link",
+      eventId: "event-hawks-game",
+      now: NOW
+    });
+
+    expect(result.ok).toBe(false);
+    expect(result.message).toContain("this team");
+  });
+
   it("lets assigned coaches send pinned Coach Notes", () => {
     const result = sendCoachAnnouncement(seedState, {
       teamId: "team-tigers",
