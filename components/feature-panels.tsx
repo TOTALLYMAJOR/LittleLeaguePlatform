@@ -10,6 +10,8 @@ import {
   evaluateInviteRecovery,
   getCoachRsvpSummaries,
   getParentDashboard,
+  getTeamChatView,
+  roleLabel,
   sampleRosterCsv,
   setRsvp,
   type EventStatus,
@@ -29,6 +31,18 @@ function statusClass(status: string) {
   if (status === "valid" || status === "ok" || status === "eligible" || status === "accepted") return "ok";
   if (status === "error" || status === "danger" || status === "expired" || status === "failed") return "danger";
   return "warning";
+}
+
+function formatArrivalTime(value: string) {
+  return new Date(Date.parse(value) - 20 * 60 * 1000).toLocaleTimeString("en-US", {
+    hour: "numeric",
+    minute: "2-digit"
+  });
+}
+
+function formatTopic(value?: string) {
+  if (!value) return "reminder";
+  return value.replaceAll("_", " ");
 }
 
 export function ImportsClient() {
@@ -475,6 +489,135 @@ export function ScheduleAlertsClient() {
           {!state.notifications.some((notification) => notification.eventId) ? <p className="muted">No schedule notifications queued yet.</p> : null}
         </article>
       </section>
+    </div>
+  );
+}
+
+export function TeamChatClient() {
+  const { state } = useAppState();
+  const [viewerId, setViewerId] = useState("user-parent-jordan");
+  const [teamId, setTeamId] = useState("team-tigers");
+  const viewer = state.users.find((user) => user.id === viewerId);
+  const selectedTeam = state.teams.find((team) => team.id === teamId);
+
+  let view: ReturnType<typeof getTeamChatView> | null = null;
+  let deniedReason = "";
+  try {
+    view = getTeamChatView(state, viewerId, teamId, NOW);
+  } catch (error) {
+    deniedReason = error instanceof Error ? error.message : "Team Chat is unavailable.";
+  }
+
+  return (
+    <div className="page clubhouse-chat-page">
+      <section className="hero clubhouse-chat-hero">
+        <span className="eyebrow">Safe family communication</span>
+        <h1>Team Chat for game-day questions and coach notes.</h1>
+        <p className="lead">
+          A private team space for assigned parents, assigned coaches, and org admins. Children do not have chat accounts or direct messages.
+        </p>
+      </section>
+
+      <section className="clubhouse-toolbar card">
+        <label>
+          Preview as
+          <select value={viewerId} onChange={(event) => setViewerId(event.target.value)}>
+            {state.users.map((user) => (
+              <option key={user.id} value={user.id}>{user.name} · {roleLabel(user.role)}</option>
+            ))}
+          </select>
+        </label>
+        <label>
+          Team Chat
+          <select value={teamId} onChange={(event) => setTeamId(event.target.value)}>
+            {state.teams.map((team) => (
+              <option key={team.id} value={team.id}>{team.name} · {team.division}</option>
+            ))}
+          </select>
+        </label>
+        <div className="clubhouse-toolbar-note">
+          <strong>{viewer?.name ?? "Unknown viewer"}</strong>
+          <span>{selectedTeam?.name ?? "Unknown team"} access is evaluated from team memberships.</span>
+        </div>
+      </section>
+
+      {!view ? (
+        <section className="card stack">
+          <span className="badge danger">Private Team Chat</span>
+          <h2>Access limited to assigned families and staff.</h2>
+          <p>{deniedReason}</p>
+          <p className="muted">Parents can only view chats for teams connected to their rostered child. Coaches can only view assigned teams. Org admins can view all team chats.</p>
+        </section>
+      ) : (
+        <section className="clubhouse-chat-shell">
+          <aside className="card clubhouse-team-card">
+            <div className="clubhouse-team-mark" aria-hidden="true">{view.team.name.slice(0, 1)}</div>
+            <span className="badge ok">Team Chat</span>
+            <h2>{view.team.name}</h2>
+            <p className="muted">{view.team.division} · {roleLabel(view.viewer.role)} view</p>
+            <div className="clubhouse-unread">
+              <strong>{view.unreadCount}</strong>
+              <span>unread for this preview user</span>
+            </div>
+            <p className="notice">{view.safetyNote}</p>
+          </aside>
+
+          <section className="card clubhouse-chat-panel">
+            <div className="card-header">
+              <div>
+                <span className="eyebrow">Private to assigned team members</span>
+                <h2>Team Chat</h2>
+              </div>
+              <span className="badge">{view.access.reason}</span>
+            </div>
+
+            {view.pinnedMessage ? (
+              <article className="clubhouse-pinned">
+                <span className="badge warning">Pinned Reminder</span>
+                <h3>Coach Note</h3>
+                <p>{view.pinnedMessage.body}</p>
+                <small>{formatDate(view.pinnedMessage.createdAt)} · {formatTopic(view.pinnedMessage.topic)}</small>
+              </article>
+            ) : null}
+
+            {view.upcomingGame ? (
+              <article className="clubhouse-game-day">
+                <div>
+                  <span className="badge ok">Game-Day Questions</span>
+                  <h3>{view.upcomingGame.title}</h3>
+                  <p className="muted">
+                    {formatDate(view.upcomingGame.startsAt)} · Arrive by {formatArrivalTime(view.upcomingGame.startsAt)}
+                  </p>
+                </div>
+                <ul className="list compact">
+                  <li>Field: {view.upcomingGame.locationName}</li>
+                  <li>Opponent: {view.upcomingGame.opponent ?? "To be announced"}</li>
+                  <li><a href={`https://maps.google.com/?q=${encodeURIComponent(view.upcomingGame.locationAddress)}`}>Open map link</a></li>
+                </ul>
+              </article>
+            ) : null}
+
+            <div className="clubhouse-message-list" aria-label="Team Chat messages">
+              {view.messages.length ? view.messages.map((message) => (
+                <article className={`clubhouse-message ${message.kind}`} key={message.id}>
+                  <div className="clubhouse-message-meta">
+                    <strong>{roleLabel(message.authorRole)}</strong>
+                    <span>{message.kind === "announcement" ? "Coach Note" : "Team Chat"}</span>
+                    {message.eventId ? <span>Game linked</span> : null}
+                  </div>
+                  <p>{message.body}</p>
+                  <small>{formatDate(message.createdAt)}</small>
+                </article>
+              )) : (
+                <article className="clubhouse-empty">
+                  <h3>Team Chat is ready.</h3>
+                  <p>Use this space for schedule questions, field details, uniforms, snacks, weather updates, and coach reminders.</p>
+                </article>
+              )}
+            </div>
+          </section>
+        </section>
+      )}
     </div>
   );
 }

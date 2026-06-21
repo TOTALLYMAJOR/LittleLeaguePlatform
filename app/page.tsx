@@ -6,7 +6,8 @@ const featureLinks = [
   ["Admin health dashboard", "/admin/health", "See launch readiness problems before families report them."],
   ["Parent dashboard", "/parent", "Show each parent the schedule, coach updates, RSVP needs, and recent media that matter."],
   ["One-tap RSVP", "/parent/rsvp", "Let parents answer going, not going, or maybe for linked children only."],
-  ["Schedule change alerts", "/schedule", "Queue push, email, and urgent SMS notification records without real sends."]
+  ["Schedule change alerts", "/schedule", "Queue push, email, and urgent SMS notification records without real sends."],
+  ["Team Chat", "/team-chat", "Give assigned parents and coaches a safe, private space for coach notes and game-day questions."]
 ] as const;
 
 export default function HomePage() {

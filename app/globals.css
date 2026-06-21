@@ -322,6 +322,159 @@ th {
   padding: 14px;
 }
 
+.clubhouse-chat-page {
+  --club-sky: #dff4ff;
+  --club-grass: #dff8d6;
+  --club-sun: #fff3b8;
+  --club-ink: #123047;
+  --club-line: #b8d8e8;
+}
+
+.clubhouse-chat-hero {
+  background: linear-gradient(135deg, var(--club-sky), var(--club-grass));
+  border: 1px solid var(--club-line);
+  border-radius: 8px;
+  box-shadow: var(--shadow);
+  padding: 20px;
+}
+
+.clubhouse-toolbar {
+  align-items: end;
+  display: grid;
+  gap: 14px;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) minmax(220px, 0.8fr);
+}
+
+.clubhouse-toolbar-note {
+  background: var(--club-sun);
+  border: 1px solid #ebd66d;
+  border-radius: 8px;
+  color: var(--club-ink);
+  display: grid;
+  gap: 4px;
+  min-height: 62px;
+  padding: 12px;
+}
+
+.clubhouse-toolbar-note span {
+  color: #47616f;
+  font-size: 0.9rem;
+}
+
+.clubhouse-chat-shell {
+  display: grid;
+  gap: 16px;
+  grid-template-columns: 300px minmax(0, 1fr);
+}
+
+.clubhouse-team-card {
+  align-content: start;
+  background: linear-gradient(180deg, #ffffff, var(--club-sky));
+  display: grid;
+  gap: 12px;
+}
+
+.clubhouse-team-mark {
+  align-items: center;
+  background: var(--club-grass);
+  border: 2px solid #83d474;
+  border-radius: 8px;
+  color: #1f5f2e;
+  display: flex;
+  font-size: 2rem;
+  font-weight: 800;
+  height: 76px;
+  justify-content: center;
+  width: 76px;
+}
+
+.clubhouse-unread {
+  background: #fff;
+  border: 1px solid var(--club-line);
+  border-radius: 8px;
+  display: grid;
+  gap: 3px;
+  padding: 12px;
+}
+
+.clubhouse-unread strong {
+  color: var(--accent-strong);
+  font-size: 2rem;
+}
+
+.clubhouse-chat-panel {
+  display: grid;
+  gap: 14px;
+}
+
+.clubhouse-pinned,
+.clubhouse-game-day,
+.clubhouse-empty {
+  border: 1px solid #e4ce62;
+  border-radius: 8px;
+  display: grid;
+  gap: 8px;
+  padding: 14px;
+}
+
+.clubhouse-pinned {
+  background: linear-gradient(135deg, var(--club-sun), #fffdf0);
+}
+
+.clubhouse-game-day {
+  background: linear-gradient(135deg, #f7fcff, var(--club-sky));
+  border-color: var(--club-line);
+  grid-template-columns: minmax(0, 1fr) minmax(220px, 0.7fr);
+}
+
+.list.compact {
+  gap: 6px;
+}
+
+.list.compact li {
+  background: #fff;
+  padding: 9px;
+}
+
+.clubhouse-message-list {
+  display: grid;
+  gap: 12px;
+}
+
+.clubhouse-message {
+  background: #fff;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  display: grid;
+  gap: 8px;
+  padding: 14px;
+}
+
+.clubhouse-message.announcement {
+  background: #fffbdf;
+  border-color: #ead56d;
+}
+
+.clubhouse-message-meta {
+  align-items: center;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.clubhouse-message-meta span {
+  background: var(--surface-strong);
+  border-radius: 999px;
+  color: var(--muted);
+  font-size: 0.78rem;
+  padding: 4px 8px;
+}
+
+.clubhouse-message small,
+.clubhouse-pinned small {
+  color: var(--muted);
+}
+
 @media (max-width: 900px) {
   .shell {
     grid-template-columns: 1fr;
@@ -339,5 +492,11 @@ th {
 
   .main {
     padding: 20px;
+  }
+
+  .clubhouse-toolbar,
+  .clubhouse-chat-shell,
+  .clubhouse-game-day {
+    grid-template-columns: 1fr;
   }
 }

@@ -18,6 +18,7 @@ const navItems = [
   ["Parent RSVP", "/parent/rsvp"],
   ["Coach RSVPs", "/coach/rsvps"],
   ["Schedule", "/schedule"],
+  ["Team Chat", "/team-chat"],
   ["Static Prototype", "/prototype/index.html"]
 ] as const;
 
