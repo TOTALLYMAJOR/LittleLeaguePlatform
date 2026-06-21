@@ -10,6 +10,7 @@ import {
   getParentDashboard,
   getTeamChatAccess,
   getTeamChatView,
+  moderateTeamChatMessage,
   postTeamChatMessage,
   sampleRosterCsv,
   seedState,
@@ -243,5 +244,61 @@ describe("safe team chat access", () => {
     expect(result.ok).toBe(false);
     expect(result.message).toContain("Only assigned coaches");
     expect(result.state.chatMessages).toHaveLength(seedState.chatMessages.length);
+  });
+
+  it("lets assigned coaches hide visible messages and records moderation audit", () => {
+    const result = moderateTeamChatMessage(seedState, {
+      messageId: "chat-msg-tigers-parent-question",
+      actorUserId: "user-coach-taylor",
+      action: "message_hidden",
+      reason: "Answered elsewhere.",
+      now: NOW
+    });
+    const view = getTeamChatView(result.state, "user-parent-riley", "team-tigers", NOW);
+
+    expect(result.ok).toBe(true);
+    expect(result.moderatedMessage?.moderationStatus).toBe("hidden");
+    expect(view.messages.some((message) => message.id === "chat-msg-tigers-parent-question")).toBe(false);
+    expect(result.state.chatModerationAuditEvents[0]?.action).toBe("message_hidden");
+  });
+
+  it("prevents coaches from moderating unassigned team messages", () => {
+    const result = moderateTeamChatMessage(seedState, {
+      messageId: "chat-msg-hawks-coach-note",
+      actorUserId: "user-coach-taylor",
+      action: "message_hidden",
+      reason: "Wrong assignment.",
+      now: NOW
+    });
+
+    expect(result.ok).toBe(false);
+    expect(result.message).toContain("Only assigned coaches");
+  });
+
+  it("allows org admins to delete messages in any team chat", () => {
+    const result = moderateTeamChatMessage(seedState, {
+      messageId: "chat-msg-hawks-coach-note",
+      actorUserId: "user-admin",
+      action: "message_deleted",
+      reason: "Admin cleanup.",
+      now: NOW
+    });
+
+    expect(result.ok).toBe(true);
+    expect(result.moderatedMessage?.moderationStatus).toBe("deleted");
+    expect(result.state.chatModerationAuditEvents[0]?.actorRole).toBe("admin");
+  });
+
+  it("prevents parents from moderating messages", () => {
+    const result = moderateTeamChatMessage(seedState, {
+      messageId: "chat-msg-tigers-coach-note",
+      actorUserId: "user-parent-jordan",
+      action: "message_hidden",
+      reason: "Parent moderation attempt.",
+      now: NOW
+    });
+
+    expect(result.ok).toBe(false);
+    expect(result.message).toContain("Only assigned coaches");
   });
 });

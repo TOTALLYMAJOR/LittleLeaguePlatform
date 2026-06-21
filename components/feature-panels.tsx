@@ -505,6 +505,7 @@ export function TeamChatClient() {
   const [announcementTopic, setAnnouncementTopic] = useState<ChatAnnouncementTopic>("reminder");
   const [announcementPinned, setAnnouncementPinned] = useState(true);
   const [announcementNotice, setAnnouncementNotice] = useState("");
+  const [moderationNotice, setModerationNotice] = useState("");
   const viewer = state.users.find((user) => user.id === viewerId);
   const selectedTeam = state.teams.find((team) => team.id === teamId);
 
@@ -515,6 +516,9 @@ export function TeamChatClient() {
   } catch (error) {
     deniedReason = error instanceof Error ? error.message : "Team Chat is unavailable.";
   }
+  const moderationEvents = view
+    ? state.chatModerationAuditEvents.filter((event) => event.teamId === view.team.id)
+    : [];
 
   return (
     <div className="page clubhouse-chat-page">
@@ -568,6 +572,15 @@ export function TeamChatClient() {
               <span>unread for this preview user</span>
             </div>
             <p className="notice">{view.safetyNote}</p>
+            <div className="clubhouse-moderation-log">
+              <h3>Moderation Log</h3>
+              {moderationEvents.length ? moderationEvents.slice(0, 3).map((event) => (
+                <p key={event.id}>
+                  <strong>{event.action.replaceAll("_", " ")}</strong>
+                  <span>{event.reason}</span>
+                </p>
+              )) : <p className="muted">No moderation actions recorded for this team.</p>}
+            </div>
           </aside>
 
           <section className="card clubhouse-chat-panel">
@@ -692,6 +705,48 @@ export function TeamChatClient() {
                   </div>
                   <p>{message.body}</p>
                   <small>{formatDate(message.createdAt)}</small>
+                  {view.access.canModerate ? (
+                    <div className="clubhouse-message-actions">
+                      <button
+                        className="secondary"
+                        type="button"
+                        onClick={() => {
+                          dispatch({
+                            type: "moderateTeamChatMessage",
+                            input: {
+                              messageId: message.id,
+                              actorUserId: view.viewer.id,
+                              action: "message_hidden",
+                              reason: "Coach or admin moderated this Team Chat message.",
+                              now: new Date().toISOString()
+                            }
+                          });
+                          setModerationNotice("Message hidden and moderation audit recorded.");
+                        }}
+                      >
+                        Hide
+                      </button>
+                      <button
+                        className="secondary"
+                        type="button"
+                        onClick={() => {
+                          dispatch({
+                            type: "moderateTeamChatMessage",
+                            input: {
+                              messageId: message.id,
+                              actorUserId: view.viewer.id,
+                              action: "message_deleted",
+                              reason: "Coach or admin deleted this Team Chat message.",
+                              now: new Date().toISOString()
+                            }
+                          });
+                          setModerationNotice("Message deleted and moderation audit recorded.");
+                        }}
+                      >
+                        Delete
+                      </button>
+                    </div>
+                  ) : null}
                 </article>
               )) : (
                 <article className="clubhouse-empty">
@@ -700,6 +755,7 @@ export function TeamChatClient() {
                 </article>
               )}
             </div>
+            {moderationNotice ? <p className="notice">{moderationNotice}</p> : null}
 
             <form
               className="clubhouse-compose"

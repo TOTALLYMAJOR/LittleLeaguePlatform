@@ -1,6 +1,7 @@
 import type {
   AppState,
   ChatAnnouncementTopic,
+  ChatModerationAction,
   LeagueEvent,
   Team,
   TeamChatChannel,
@@ -48,11 +49,20 @@ export interface SendCoachAnnouncementInput {
   now: string;
 }
 
+export interface ModerateTeamChatMessageInput {
+  messageId: string;
+  actorUserId: string;
+  action: ChatModerationAction;
+  reason: string;
+  now: string;
+}
+
 export interface ChatMutationResult {
   ok: boolean;
   message: string;
   state: AppState;
   createdMessage?: TeamChatMessage;
+  moderatedMessage?: TeamChatMessage;
 }
 
 function activeMembershipFor(state: AppState, userId: string, teamId: string, role?: "coach" | "parent") {
@@ -308,6 +318,72 @@ export function sendCoachAnnouncement(state: AppState, input: SendCoachAnnouncem
           targetType: "team_chat_message",
           targetId: createdMessage.id,
           summary: input.pinned ? "Coach Note posted and pinned in Team Chat." : "Coach Note posted in Team Chat.",
+          createdAt: input.now
+        },
+        ...state.auditEvents
+      ]
+    }
+  };
+}
+
+export function moderateTeamChatMessage(state: AppState, input: ModerateTeamChatMessageInput): ChatMutationResult {
+  const actor = state.users.find((user) => user.id === input.actorUserId);
+  const message = state.chatMessages.find((item) => item.id === input.messageId);
+  if (!actor || !message) {
+    return { ok: false, message: "Moderation requires a known actor and message.", state };
+  }
+
+  const access = getTeamChatAccess(state, input.actorUserId, message.teamId);
+  if (!access.canModerate) {
+    return { ok: false, message: "Only assigned coaches and org admins can moderate Team Chat messages.", state };
+  }
+
+  const reason = input.reason.trim();
+  if (!reason) {
+    return { ok: false, message: "A moderation reason is required.", state };
+  }
+
+  const nextStatus = input.action === "message_restored"
+    ? "visible"
+    : input.action === "message_deleted"
+      ? "deleted"
+      : "hidden";
+  const moderatedMessage: TeamChatMessage = {
+    ...message,
+    moderationStatus: nextStatus,
+    deletedAt: nextStatus === "deleted" ? input.now : message.deletedAt,
+    moderatedAt: input.now,
+    moderatedByUserId: input.actorUserId,
+    moderationReason: reason
+  };
+  const auditEvent = {
+    id: `chat-audit-${Date.parse(input.now)}-${state.chatModerationAuditEvents.length + 1}`,
+    messageId: message.id,
+    channelId: message.channelId,
+    teamId: message.teamId,
+    actorUserId: input.actorUserId,
+    actorRole: actor.role,
+    action: input.action,
+    reason,
+    createdAt: input.now
+  };
+
+  return {
+    ok: true,
+    message: "Team Chat moderation recorded.",
+    moderatedMessage,
+    state: {
+      ...state,
+      chatMessages: state.chatMessages.map((item) => item.id === message.id ? moderatedMessage : item),
+      chatModerationAuditEvents: [auditEvent, ...state.chatModerationAuditEvents],
+      auditEvents: [
+        {
+          id: `audit-team-chat-moderation-${Date.parse(input.now)}-${state.auditEvents.length + 1}`,
+          actorUserId: input.actorUserId,
+          action: input.action,
+          targetType: "team_chat_message",
+          targetId: message.id,
+          summary: `Team Chat moderation recorded: ${input.action}.`,
           createdAt: input.now
         },
         ...state.auditEvents
