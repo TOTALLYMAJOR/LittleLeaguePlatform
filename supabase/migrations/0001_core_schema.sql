@@ -151,6 +151,60 @@ create table media_items (
   created_at timestamptz not null default now()
 );
 
+create table team_chat_channels (
+  id uuid primary key default gen_random_uuid(),
+  organization_id uuid not null references organizations(id),
+  season_id uuid not null references seasons(id),
+  team_id uuid not null references teams(id),
+  pinned_message_id uuid,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now(),
+  unique (team_id)
+);
+
+create table team_chat_messages (
+  id uuid primary key default gen_random_uuid(),
+  organization_id uuid not null references organizations(id),
+  season_id uuid not null references seasons(id),
+  team_id uuid not null references teams(id),
+  channel_id uuid not null references team_chat_channels(id),
+  event_id uuid references events(id),
+  author_user_id uuid not null,
+  author_role text not null check (author_role in ('admin', 'coach', 'parent')),
+  message_kind text not null check (message_kind in ('message', 'announcement')),
+  announcement_topic text check (announcement_topic in ('game_time', 'field_location', 'uniforms', 'snacks', 'weather', 'reminder')),
+  body text not null,
+  pinned boolean not null default false,
+  moderation_status text not null default 'visible' check (moderation_status in ('visible', 'hidden', 'deleted')),
+  read_by_user_ids_json jsonb not null default '[]'::jsonb,
+  created_at timestamptz not null default now(),
+  edited_at timestamptz,
+  deleted_at timestamptz,
+  moderated_at timestamptz,
+  moderated_by_user_id uuid,
+  moderation_reason text
+);
+
+alter table team_chat_channels
+  add constraint team_chat_channels_pinned_message_id_fkey
+  foreign key (pinned_message_id) references team_chat_messages(id);
+
+create table chat_moderation_audit_events (
+  id uuid primary key default gen_random_uuid(),
+  message_id uuid not null references team_chat_messages(id),
+  channel_id uuid not null references team_chat_channels(id),
+  team_id uuid not null references teams(id),
+  actor_user_id uuid not null,
+  actor_role text not null check (actor_role in ('admin', 'coach', 'parent')),
+  action text not null check (action in ('message_hidden', 'message_deleted', 'message_restored')),
+  reason text not null,
+  created_at timestamptz not null default now()
+);
+
+create index idx_team_chat_messages_channel_id on team_chat_messages(channel_id);
+create index idx_team_chat_messages_event_id on team_chat_messages(event_id);
+create index idx_chat_moderation_audit_events_message_id on chat_moderation_audit_events(message_id);
+
 create table audit_events (
   id uuid primary key default gen_random_uuid(),
   organization_id uuid references organizations(id),

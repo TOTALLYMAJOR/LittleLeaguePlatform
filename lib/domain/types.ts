@@ -7,6 +7,10 @@ export type RsvpResponse = "going" | "not_going" | "maybe";
 export type NotificationType = "schedule_changed" | "event_cancelled" | "new_event" | "invite_sent" | "invite_recovered";
 export type NotificationChannel = "push" | "email" | "sms";
 export type ImportSeverity = "valid" | "warning" | "error";
+export type ChatMessageKind = "message" | "announcement";
+export type ChatAnnouncementTopic = "game_time" | "field_location" | "uniforms" | "snacks" | "weather" | "reminder";
+export type ChatModerationStatus = "visible" | "hidden" | "deleted";
+export type ChatModerationAction = "message_hidden" | "message_deleted" | "message_restored";
 
 export interface User {
   id: string;
@@ -149,6 +153,50 @@ export interface NotificationRecord {
   readAt?: string;
 }
 
+export interface TeamChatChannel {
+  id: string;
+  organizationId: string;
+  seasonId: string;
+  teamId: string;
+  pinnedMessageId?: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface TeamChatMessage {
+  id: string;
+  channelId: string;
+  organizationId: string;
+  teamId: string;
+  authorUserId: string;
+  authorRole: UserRole;
+  kind: ChatMessageKind;
+  topic?: ChatAnnouncementTopic;
+  body: string;
+  eventId?: string;
+  pinned: boolean;
+  moderationStatus: ChatModerationStatus;
+  readByUserIds: string[];
+  createdAt: string;
+  editedAt?: string;
+  deletedAt?: string;
+  moderatedAt?: string;
+  moderatedByUserId?: string;
+  moderationReason?: string;
+}
+
+export interface ChatModerationAuditEvent {
+  id: string;
+  messageId: string;
+  channelId: string;
+  teamId: string;
+  actorUserId: string;
+  actorRole: UserRole;
+  action: ChatModerationAction;
+  reason: string;
+  createdAt: string;
+}
+
 export interface AuditEvent {
   id: string;
   actorUserId: string;
@@ -209,6 +257,9 @@ export interface AppState {
   announcements: Announcement[];
   mediaItems: MediaItem[];
   notifications: NotificationRecord[];
+  teamChatChannels: TeamChatChannel[];
+  chatMessages: TeamChatMessage[];
+  chatModerationAuditEvents: ChatModerationAuditEvent[];
   auditEvents: AuditEvent[];
   rosterImportReports: RosterImportAnalysis[];
 }

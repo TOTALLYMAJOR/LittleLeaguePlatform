@@ -205,6 +205,84 @@ export const seedState: AppState = {
     { id: "media-cleats", teamId: "team-tigers", title: "How to tie cleats", type: "youtube", url: "https://www.youtube.com/watch?v=dQw4w9WgXcQ", createdAt: "2026-03-29T12:00:00.000Z" }
   ],
   notifications: [],
+  teamChatChannels: [
+    {
+      id: "chat-team-tigers",
+      organizationId: "org-little-league",
+      seasonId: "season-spring-2026",
+      teamId: "team-tigers",
+      pinnedMessageId: "chat-msg-tigers-coach-note",
+      createdAt: "2026-03-25T12:00:00.000Z",
+      updatedAt: "2026-04-01T08:15:00.000Z"
+    },
+    {
+      id: "chat-team-hawks",
+      organizationId: "org-little-league",
+      seasonId: "season-spring-2026",
+      teamId: "team-hawks",
+      pinnedMessageId: "chat-msg-hawks-coach-note",
+      createdAt: "2026-03-25T12:00:00.000Z",
+      updatedAt: "2026-03-31T16:00:00.000Z"
+    },
+    {
+      id: "chat-team-rockets",
+      organizationId: "org-little-league",
+      seasonId: "season-spring-2026",
+      teamId: "team-rockets",
+      createdAt: "2026-03-25T12:00:00.000Z",
+      updatedAt: "2026-03-25T12:00:00.000Z"
+    }
+  ],
+  chatMessages: [
+    {
+      id: "chat-msg-tigers-coach-note",
+      channelId: "chat-team-tigers",
+      organizationId: "org-little-league",
+      teamId: "team-tigers",
+      authorUserId: "user-coach-taylor",
+      authorRole: "coach",
+      kind: "announcement",
+      topic: "reminder",
+      body: "Coach Note: please arrive 20 minutes early Saturday. We will meet by the yellow flag near Field 1.",
+      eventId: "event-tigers-game",
+      pinned: true,
+      moderationStatus: "visible",
+      readByUserIds: ["user-coach-taylor"],
+      createdAt: "2026-04-01T08:15:00.000Z"
+    },
+    {
+      id: "chat-msg-tigers-parent-question",
+      channelId: "chat-team-tigers",
+      organizationId: "org-little-league",
+      teamId: "team-tigers",
+      authorUserId: "user-parent-jordan",
+      authorRole: "parent",
+      kind: "message",
+      body: "Game-Day Questions: should everyone wear the blue jersey?",
+      eventId: "event-tigers-game",
+      pinned: false,
+      moderationStatus: "visible",
+      readByUserIds: ["user-parent-jordan"],
+      createdAt: "2026-04-01T08:25:00.000Z"
+    },
+    {
+      id: "chat-msg-hawks-coach-note",
+      channelId: "chat-team-hawks",
+      organizationId: "org-little-league",
+      teamId: "team-hawks",
+      authorUserId: "user-coach-rivera",
+      authorRole: "coach",
+      kind: "announcement",
+      topic: "field_location",
+      body: "Coach Note: Happy Hawks meet at Field 3 for warmups.",
+      eventId: "event-hawks-game",
+      pinned: true,
+      moderationStatus: "visible",
+      readByUserIds: ["user-coach-rivera"],
+      createdAt: "2026-03-31T16:00:00.000Z"
+    }
+  ],
+  chatModerationAuditEvents: [],
   auditEvents: [
     {
       id: "audit-seed-roster",

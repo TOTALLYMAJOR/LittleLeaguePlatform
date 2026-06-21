@@ -6,4 +6,5 @@ export * from "./health";
 export * from "./parent-dashboard";
 export * from "./rsvp";
 export * from "./schedule";
+export * from "./chat";
 export * from "./reducer";

@@ -5,8 +5,11 @@ import {
   applyScheduleChange,
   computeAdminHealth,
   evaluateInviteRecovery,
+  canModerateTeamChat,
   getCoachRsvpSummaries,
   getParentDashboard,
+  getTeamChatAccess,
+  getTeamChatView,
   sampleRosterCsv,
   seedState,
   setRsvp
@@ -111,5 +114,44 @@ describe("schedule changes and admin health", () => {
 
     expect(missingCoaches?.count).toBe(2);
     expect(failedInvites?.count).toBe(1);
+  });
+});
+
+describe("safe team chat access", () => {
+  it("allows an assigned parent to view and post in their team chat", () => {
+    const access = getTeamChatAccess(seedState, "user-parent-jordan", "team-tigers");
+    const view = getTeamChatView(seedState, "user-parent-jordan", "team-tigers", NOW);
+
+    expect(access.canView).toBe(true);
+    expect(access.canPost).toBe(true);
+    expect(access.canAnnounce).toBe(false);
+    expect(access.canModerate).toBe(false);
+    expect(view.pinnedMessage?.kind).toBe("announcement");
+    expect(view.upcomingGame?.id).toBe("event-tigers-game");
+    expect(view.gameDayMessages).toHaveLength(2);
+    expect(view.safetyNote).toContain("No child accounts");
+  });
+
+  it("prevents a parent from accessing a team they are not assigned to", () => {
+    const access = getTeamChatAccess(seedState, "user-parent-jordan", "team-hawks");
+
+    expect(access.canView).toBe(false);
+    expect(access.reason).toContain("private");
+    expect(() => getTeamChatView(seedState, "user-parent-jordan", "team-hawks", NOW)).toThrow(/private/);
+  });
+
+  it("allows coaches to moderate only their assigned team chats", () => {
+    expect(canModerateTeamChat(seedState, "user-coach-taylor", "team-tigers")).toBe(true);
+    expect(canModerateTeamChat(seedState, "user-coach-taylor", "team-hawks")).toBe(false);
+  });
+
+  it("allows org admins to access and moderate all team chats", () => {
+    const tigers = getTeamChatAccess(seedState, "user-admin", "team-tigers");
+    const hawks = getTeamChatAccess(seedState, "user-admin", "team-hawks");
+
+    expect(tigers.canView).toBe(true);
+    expect(tigers.canModerate).toBe(true);
+    expect(hawks.canView).toBe(true);
+    expect(hawks.canModerate).toBe(true);
   });
 });
