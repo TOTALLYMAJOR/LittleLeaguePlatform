@@ -1,7 +1,11 @@
 .git
 .DS_Store
 node_modules
+.next
+coverage
 npm-debug.log
 yarn-error.log
 dist
 build
+.env
+.env*.local

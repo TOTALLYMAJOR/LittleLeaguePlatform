@@ -3,5 +3,5 @@ services:
     build:
       context: .
     ports:
-      - "${APP_PORT:-8081}:80"
+      - "${APP_PORT:-8081}:3000"
     restart: unless-stopped

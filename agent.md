@@ -2,21 +2,33 @@
 
 ## Current Repo Truth
 
-This repo is a static MVP prototype for Little League HQ. It is not a production app yet.
+This repo is now a root-level Next.js + TypeScript production scaffold for Little League HQ. The original static MVP prototype is preserved under `public/prototype/`.
 
-- `index.html` defines the login shell, navigation, route templates, modals, and static page structure.
-- `app.js` owns all demo data, route rendering, role switching, CSV validation simulation, invite simulation, notification simulation, chat simulation, media-link simulation, and archive simulation.
-- `styles.css` owns all layout and visual styling.
-- `README.md` describes the MVP screens, assumptions, and suggested production stack.
+- `app/` defines the App Router routes.
+- `components/feature-panels.tsx` owns the current interactive route panels.
+- `lib/domain/` owns typed domain models, seed data, pure business rules, reducer logic, and Vitest coverage.
+- `supabase/migrations/0001_core_schema.sql` is the Supabase-ready contract draft.
+- `docs/Features.md` is the status tracker for the six implemented feature slices.
+- `public/prototype/index.html` keeps the old static prototype available at `/prototype/index.html`.
 
-There is no real backend, auth provider, database, mobile app, delivery provider, push service, storage layer, or persisted state in this version.
+There is still no real backend, auth provider, delivery provider, push service, or production persistence. The app uses typed local seed data and browser-session reducer state.
 
 ## Local And Docker Runbook
 
-Open directly:
+Install and run locally:
 
 ```bash
-open index.html
+npm install
+npm run dev
+```
+
+Verify:
+
+```bash
+npm run typecheck
+npm test
+npm run build
+npm audit
 ```
 
 Run with Docker Compose:
@@ -32,7 +44,7 @@ Stop:
 docker compose down
 ```
 
-Preferred command aliases:
+Preferred aliases:
 
 ```bash
 make validate
@@ -43,12 +55,12 @@ make down
 
 ## Agent Operating Rules
 
-1. Preserve the prototype/production boundary. Do not describe a simulated flow as real auth, real messaging, real push notifications, real imports, real payments, or real persistence.
+1. Preserve the prototype/production boundary. Do not describe local reducer state as real persistence, provider delivery, auth, or access grants.
 2. Preserve child privacy defaults. Children do not log in, player display names stay first name plus last initial, and parent/guardian accounts own child access.
 3. Do not add autonomous provider sends without approval gates. Email, SMS, push, and chat actions need delivery logs, opt-in checks, and human approval in production.
 4. Keep role boundaries explicit. Admin, coach, and parent permissions must remain visible in UI, service policy, and tests.
-5. Treat season archive as a retention workflow. Production should preserve season records while deleting chat message text according to policy.
-6. Keep static prototype edits small. For major product work, create a production app scaffold instead of overloading `app.js`.
+5. Keep business rules in `lib/domain/` and route UI in `app/` or `components/`.
+6. Update `docs/Features.md` when implementing or changing a feature slice.
 
 ## Agentic Architecture Direction
 
@@ -58,25 +70,13 @@ Use `docs/agentic-architecture.md` as the source of truth for production agent b
 - Humans approve roster imports, registration matches, invite sends, score corrections, media moderation, and archive close.
 - Services enforce auth, row-level access, provider calls, audit logs, and retention. Agents do not bypass service policy.
 
-## Backlog Discipline
-
-Use `BACKLOG.md` for planned work. Every new task should state:
-
-- Priority.
-- Owning agent or service.
-- Current prototype surface.
-- Production acceptance criteria.
-- Privacy, permission, or provider risk.
-
-Use `WORKSHOP.md` for teaching or facilitation flow. Use `docs/evaluation-plan.md` before marking an agentic workflow done.
-
 ## Definition Of Done
 
 A production slice is not done until it has:
 
-- Schema or contract changes where needed.
-- Role-scoped service policy.
+- Typed domain contracts where needed.
+- Role-scoped service or domain policy.
 - UI state for success, failure, loading, and empty data.
 - Audit logging for admin or provider-sensitive actions.
 - Tests for permission boundaries and critical workflow behavior.
-- Updated backlog/docs when scope changes.
+- Updated tracker/docs when scope changes.

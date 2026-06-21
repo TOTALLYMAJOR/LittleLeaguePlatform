@@ -1,10 +1,20 @@
 # Runbook
 
-## Local Static Browser Run
+## Local Next.js Run
 
-Open `index.html` directly in a browser.
+Install dependencies:
 
-This uses browser-only state. Refreshing the page resets changes.
+```bash
+npm install
+```
+
+Start the dev server:
+
+```bash
+npm run dev
+```
+
+Open `http://localhost:3000/`.
 
 ## Docker Run
 
@@ -30,12 +40,27 @@ docker compose down
 ## Make Targets
 
 ```bash
+make install
+make dev
+make build
+make test
+make validate
 make up
 make down
 make restart
 make logs
 make smoke
-make validate
+```
+
+## Verification
+
+```bash
+npm run typecheck
+npm test
+npm run build
+npm audit
+docker compose up -d --build
+curl -fsSI http://localhost:8081/
 ```
 
 ## Common Issues
@@ -46,7 +71,7 @@ Edit `docker-compose.yml` and change the host side of the port mapping:
 
 ```yaml
 ports:
-  - "8082:80"
+  - "8082:3000"
 ```
 
 Then run:
@@ -55,9 +80,9 @@ Then run:
 docker compose up -d --build
 ```
 
-### Static Changes Do Not Appear
+### Changes Do Not Appear In Docker
 
-The Compose build copies static files into the image. Rebuild after file changes:
+The Compose build copies the Next app into the image. Rebuild after file changes:
 
 ```bash
 docker compose up -d --build
@@ -75,4 +100,4 @@ curl -I http://localhost:8081/
 
 ## Production Readiness Warning
 
-This prototype does not provide production readiness. Before deployment, the app needs real auth, database policy, provider integration, audit logs, tests, monitoring, and retention jobs.
+This scaffold is not production-hosted yet. Before deployment, the app needs real auth, Supabase wiring, row-level security tests, provider integrations, monitoring, and retention jobs.

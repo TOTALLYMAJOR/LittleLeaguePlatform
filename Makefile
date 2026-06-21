@@ -1,4 +1,16 @@
-.PHONY: up down restart logs smoke validate
+.PHONY: install dev build test up down restart logs smoke validate
+
+install:
+	npm install
+
+dev:
+	npm run dev
+
+build:
+	npm run build
+
+test:
+	npm test
 
 up:
 	docker compose up -d --build
@@ -16,3 +28,5 @@ smoke:
 
 validate:
 	docker compose config --quiet
+	npm run typecheck
+	npm test
