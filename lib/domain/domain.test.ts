@@ -10,6 +10,7 @@ import {
   getParentDashboard,
   getTeamChatAccess,
   getTeamChatView,
+  postTeamChatMessage,
   sampleRosterCsv,
   seedState,
   setRsvp
@@ -153,5 +154,33 @@ describe("safe team chat access", () => {
     expect(tigers.canModerate).toBe(true);
     expect(hawks.canView).toBe(true);
     expect(hawks.canModerate).toBe(true);
+  });
+
+  it("lets assigned parents post normal Team Chat messages", () => {
+    const result = postTeamChatMessage(seedState, {
+      teamId: "team-tigers",
+      authorUserId: "user-parent-jordan",
+      body: "Can someone confirm the Field 1 entrance?",
+      now: NOW
+    });
+    const view = getTeamChatView(result.state, "user-parent-riley", "team-tigers", NOW);
+
+    expect(result.ok).toBe(true);
+    expect(result.createdMessage?.kind).toBe("message");
+    expect(result.createdMessage?.authorRole).toBe("parent");
+    expect(view.messages.some((message) => message.body.includes("Field 1 entrance"))).toBe(true);
+  });
+
+  it("blocks parents from posting in unassigned team chats", () => {
+    const result = postTeamChatMessage(seedState, {
+      teamId: "team-hawks",
+      authorUserId: "user-parent-jordan",
+      body: "Wrong team question",
+      now: NOW
+    });
+
+    expect(result.ok).toBe(false);
+    expect(result.message).toContain("private");
+    expect(result.state.chatMessages).toHaveLength(seedState.chatMessages.length);
   });
 });

@@ -475,6 +475,17 @@ th {
   color: var(--muted);
 }
 
+.clubhouse-compose {
+  border-top: 1px solid var(--line);
+  display: grid;
+  gap: 12px;
+  padding-top: 14px;
+}
+
+.clubhouse-compose textarea {
+  min-height: 110px;
+}
+
 @media (max-width: 900px) {
   .shell {
     grid-template-columns: 1fr;

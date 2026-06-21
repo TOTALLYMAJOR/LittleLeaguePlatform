@@ -29,6 +29,21 @@ export interface TeamChatView {
   safetyNote: string;
 }
 
+export interface PostTeamChatMessageInput {
+  teamId: string;
+  authorUserId: string;
+  body: string;
+  eventId?: string;
+  now: string;
+}
+
+export interface ChatMutationResult {
+  ok: boolean;
+  message: string;
+  state: AppState;
+  createdMessage?: TeamChatMessage;
+}
+
 function activeMembershipFor(state: AppState, userId: string, teamId: string, role?: "coach" | "parent") {
   return state.teamMemberships.find((membership) => (
     membership.userId === userId &&
@@ -155,4 +170,69 @@ export function roleLabel(role: UserRole) {
   if (role === "admin") return "Org Admin";
   if (role === "coach") return "Coach";
   return "Parent";
+}
+
+export function postTeamChatMessage(state: AppState, input: PostTeamChatMessageInput): ChatMutationResult {
+  const author = state.users.find((user) => user.id === input.authorUserId);
+  const channel = state.teamChatChannels.find((item) => item.teamId === input.teamId);
+  const trimmedBody = input.body.trim();
+  const access = getTeamChatAccess(state, input.authorUserId, input.teamId);
+
+  if (!author || !channel) {
+    return { ok: false, message: "Team Chat requires a known author and channel.", state };
+  }
+
+  if (!access.canPost) {
+    return { ok: false, message: access.reason, state };
+  }
+
+  if (!trimmedBody) {
+    return { ok: false, message: "Write a message before sending.", state };
+  }
+
+  const event = input.eventId ? state.events.find((item) => item.id === input.eventId) : undefined;
+  if (input.eventId && (!event || event.teamId !== input.teamId)) {
+    return { ok: false, message: "Game-day messages must link to an event for this team.", state };
+  }
+
+  const createdMessage: TeamChatMessage = {
+    id: `chat-msg-${Date.parse(input.now)}-${state.chatMessages.length + 1}`,
+    channelId: channel.id,
+    organizationId: channel.organizationId,
+    teamId: input.teamId,
+    authorUserId: input.authorUserId,
+    authorRole: author.role,
+    kind: "message",
+    body: trimmedBody,
+    eventId: input.eventId,
+    pinned: false,
+    moderationStatus: "visible",
+    readByUserIds: [input.authorUserId],
+    createdAt: input.now
+  };
+
+  return {
+    ok: true,
+    message: "Team Chat message posted.",
+    createdMessage,
+    state: {
+      ...state,
+      teamChatChannels: state.teamChatChannels.map((item) => (
+        item.id === channel.id ? { ...item, updatedAt: input.now } : item
+      )),
+      chatMessages: [...state.chatMessages, createdMessage],
+      auditEvents: [
+        {
+          id: `audit-team-chat-post-${Date.parse(input.now)}-${state.auditEvents.length + 1}`,
+          actorUserId: input.authorUserId,
+          action: "team_chat_message_posted",
+          targetType: "team_chat_message",
+          targetId: createdMessage.id,
+          summary: "Team Chat message posted in an assigned team channel.",
+          createdAt: input.now
+        },
+        ...state.auditEvents
+      ]
+    }
+  };
 }

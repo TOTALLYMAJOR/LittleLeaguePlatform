@@ -494,9 +494,11 @@ export function ScheduleAlertsClient() {
 }
 
 export function TeamChatClient() {
-  const { state } = useAppState();
+  const { state, dispatch } = useAppState();
   const [viewerId, setViewerId] = useState("user-parent-jordan");
   const [teamId, setTeamId] = useState("team-tigers");
+  const [draftMessage, setDraftMessage] = useState("");
+  const [postNotice, setPostNotice] = useState("");
   const viewer = state.users.find((user) => user.id === viewerId);
   const selectedTeam = state.teams.find((team) => team.id === teamId);
 
@@ -615,6 +617,45 @@ export function TeamChatClient() {
                 </article>
               )}
             </div>
+
+            <form
+              className="clubhouse-compose"
+              onSubmit={(event) => {
+                event.preventDefault();
+                if (!view?.access.canPost) {
+                  setPostNotice("Only assigned parents, assigned coaches, and org admins can post in this Team Chat.");
+                  return;
+                }
+                const input = {
+                  teamId: view.team.id,
+                  authorUserId: view.viewer.id,
+                  body: draftMessage,
+                  now: new Date().toISOString()
+                };
+                if (!draftMessage.trim()) {
+                  setPostNotice("Write a message before sending.");
+                  return;
+                }
+                dispatch({ type: "postTeamChatMessage", input });
+                setDraftMessage("");
+                setPostNotice("Team Chat message posted.");
+              }}
+            >
+              <label>
+                Team Chat message
+                <textarea
+                  value={draftMessage}
+                  onChange={(event) => setDraftMessage(event.target.value)}
+                  placeholder="Ask about field location, jerseys, snacks, arrival time, or reminders."
+                  disabled={!view.access.canPost}
+                />
+              </label>
+              <div className="toolbar">
+                <button disabled={!view.access.canPost || !draftMessage.trim()}>Send Team Chat Message</button>
+                <span className="muted">{view.access.canPost ? "Visible to this team only." : "Posting is blocked for this viewer."}</span>
+              </div>
+              {postNotice ? <p className="notice">{postNotice}</p> : null}
+            </form>
           </section>
         </section>
       )}
