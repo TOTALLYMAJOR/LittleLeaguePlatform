@@ -6,6 +6,7 @@ import {
   AdminThemesClient,
   CoachDashboardClient,
   ParentDashboardClient,
+  ParentRsvpClient,
   ParentReplayClient,
   RegistrationClient,
   ScheduleAlertsClient,
@@ -13,6 +14,18 @@ import {
   TeamPortalClient
 } from "./feature-panels";
 import { seedState } from "@/lib/domain";
+import type { ParentCoachDashboardData } from "@/lib/supabase/dashboard-data";
+
+function dashboardAccessState(accessStatus: ParentCoachDashboardData["accessStatus"], message: string): ParentCoachDashboardData {
+  return {
+    state: { ...seedState, users: [], teams: [], teamMemberships: [], players: [], guardianLinks: [], events: [], rsvps: [] },
+    parentUserId: "user-parent-missing",
+    coachUserId: "user-coach-missing",
+    isSupabaseBacked: false,
+    accessStatus,
+    message
+  };
+}
 
 describe("TeamChatClient", () => {
   it("renders the safe team chat read surface", () => {
@@ -51,6 +64,20 @@ describe("CoachDashboardClient", () => {
     expect(html).toContain("Coach weekly update builder");
     expect(html).toContain("Editable weekly message");
   });
+
+  it("blocks private coach actions when no active coach membership exists", () => {
+    const html = renderToStaticMarkup(
+      <AppStateProvider>
+        <CoachDashboardClient dashboardData={dashboardAccessState("missing_coach_membership", "No active coach assignment.")} />
+      </AppStateProvider>
+    );
+
+    expect(html).toContain("No active coach membership is assigned");
+    expect(html).toContain("What stays protected");
+    expect(html).not.toContain("Draft weather alert");
+    expect(html).not.toContain("Claim snack slot");
+    expect(html).not.toContain("Claim volunteer role");
+  });
 });
 
 describe("ParentDashboardClient", () => {
@@ -65,6 +92,21 @@ describe("ParentDashboardClient", () => {
     expect(html).toContain("Urgent-only SMS");
     expect(html).toContain("Digest frequency");
     expect(html).toContain("No provider subscription update");
+  });
+});
+
+describe("ParentRsvpClient", () => {
+  it("blocks RSVP controls for signed-out users", () => {
+    const html = renderToStaticMarkup(
+      <AppStateProvider>
+        <ParentRsvpClient dashboardData={dashboardAccessState("signed_out", "Sign in with a linked parent account.")} />
+      </AppStateProvider>
+    );
+
+    expect(html).toContain("Sign in to see family records");
+    expect(html).toContain("Open sign in");
+    expect(html).not.toContain("Going</button>");
+    expect(html).not.toContain("Not going</button>");
   });
 });
 

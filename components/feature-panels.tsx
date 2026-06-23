@@ -83,6 +83,56 @@ function statusClass(status: string) {
   return "warning";
 }
 
+function privateAccessGate(
+  dashboardData: ParentCoachDashboardData | null | undefined,
+  surface: "parent" | "coach"
+) {
+  if (!dashboardData || dashboardData.accessStatus === "live") return null;
+
+  const copy = {
+    signed_out: {
+      title: surface === "parent" ? "Sign in to see family records." : "Sign in to see assigned team records.",
+      body: dashboardData.message,
+      actionHref: "/auth",
+      actionLabel: "Open sign in"
+    },
+    missing_parent_link: {
+      title: "No approved child link is active for this account.",
+      body: "A league admin needs to approve registration or connect this signed-in adult to a player before private schedules, RSVP forms, media, or coach updates appear.",
+      actionHref: "/registration",
+      actionLabel: "Submit registration request"
+    },
+    missing_coach_membership: {
+      title: "No active coach membership is assigned to this account.",
+      body: "An organization admin needs to grant an active coach team membership before attendance, weather, snack, volunteer, or replay workflows appear.",
+      actionHref: "/account",
+      actionLabel: "Check account access"
+    },
+    unavailable: {
+      title: "Private dashboard data is unavailable.",
+      body: dashboardData.message,
+      actionHref: "/account",
+      actionLabel: "Check account access"
+    }
+  }[dashboardData.accessStatus];
+
+  return (
+    <section className="grid two">
+      <article className="card stack access-state">
+        <span className="eyebrow">Access required</span>
+        <h2>{copy.title}</h2>
+        <p>{copy.body}</p>
+        <a href={copy.actionHref}>{copy.actionLabel}</a>
+      </article>
+      <article className="card stack">
+        <h2>What stays protected</h2>
+        <p>Private child, team, RSVP, media, weather, snack, volunteer, and coach workflow rows stay hidden until the signed-in account has the required approved relationship.</p>
+        <p className="muted">Signup proves identity only; team or guardian records grant access.</p>
+      </article>
+    </section>
+  );
+}
+
 function formatArrivalTime(value: string) {
   return new Date(Date.parse(value) - 20 * 60 * 1000).toLocaleTimeString("en-US", {
     hour: "numeric",
@@ -691,6 +741,7 @@ export function ParentDashboardClient({ dashboardData }: { dashboardData?: Paren
   const parentUserId = dashboardData?.parentUserId ?? "user-parent-jordan";
   const parentUser = sourceState.users.find((user) => user.id === parentUserId);
   const dashboard = getParentDashboard(sourceState, parentUserId, NOW);
+  const accessGate = privateAccessGate(dashboardData, "parent");
   const notificationPreferences = {
     push: true,
     email: true,
@@ -711,7 +762,8 @@ export function ParentDashboardClient({ dashboardData }: { dashboardData?: Paren
       <p className={`notice ${dashboardData?.isSupabaseBacked ? "ok" : "warning"}`}>
         {dashboardData?.message ?? "Showing local seed fallback until Supabase has linked parent and coach records."}
       </p>
-      {dashboardData?.accessStatus === "signed_out" ? <p><a href="/auth">Sign in</a> to load parent dashboard rows.</p> : null}
+      {accessGate ?? (
+        <>
 
       <section className="grid two">
         <article className="card stack">
@@ -779,6 +831,8 @@ export function ParentDashboardClient({ dashboardData }: { dashboardData?: Paren
           <p className="notice">Urgent alerts can still be drafted for review, but production sending must honor quiet hours and fallback settings.</p>
         </article>
       </section>
+        </>
+      )}
     </div>
   );
 }
@@ -793,6 +847,7 @@ export function ParentRsvpClient({ dashboardData }: { dashboardData?: ParentCoac
   const parentUserId = dashboardData?.parentUserId ?? "user-parent-jordan";
   const parentUser = displayState.users.find((user) => user.id === parentUserId);
   const dashboard = getParentDashboard(displayState, parentUserId, NOW);
+  const accessGate = privateAccessGate(dashboardData, "parent");
   const events = dashboard.nextEvents.flatMap((event) => dashboard.children
     .filter(({ player }) => player.teamId === event.teamId)
     .map(({ player }) => ({
@@ -830,8 +885,8 @@ export function ParentRsvpClient({ dashboardData }: { dashboardData?: ParentCoac
       <p className={`notice ${dashboardData?.isSupabaseBacked ? "ok" : "warning"}`}>
         {dashboardData?.accessStatus === "live" ? "RSVP rows and button payloads are loaded from Supabase." : dashboardData?.message ?? "Showing local seed fallback until Supabase has linked parent and coach records."}
       </p>
-      {dashboardData?.accessStatus === "signed_out" ? <p><a href="/auth">Sign in</a> to load parent RSVP rows.</p> : null}
       {message ? <p className="notice">{message}</p> : null}
+      {accessGate ?? (
       <section className="grid two">
         {events.map(({ event, player, rsvp }) => (
           <article className="card stack" key={`${event.id}-${player.id}`}>
@@ -848,6 +903,7 @@ export function ParentRsvpClient({ dashboardData }: { dashboardData?: ParentCoac
           </article>
         ))}
       </section>
+      )}
     </div>
   );
 }
@@ -871,6 +927,7 @@ export function CoachDashboardClient({ dashboardData }: { dashboardData?: Parent
   const volunteerNeeds = sourceState.volunteerSignups.filter((signup) => teamIds.has(signup.teamId) && signup.status === "open");
   const snackNeeds = sourceState.snackScheduleSlots.filter((slot) => teamIds.has(slot.teamId) && slot.status === "open");
   const nextAssignedEvent = assignedEvents[0];
+  const accessGate = privateAccessGate(dashboardData, "coach");
   const weeklyUpdateLines = [
     `This week: ${assignedEvents.slice(0, 2).map((event) => `${event.title} at ${event.locationName}`).join("; ") || "No scheduled events."}`,
     `RSVP gaps: ${summaries.reduce((total, summary) => total + summary.noResponse, 0)} no-response player slot(s).`,
@@ -900,8 +957,9 @@ export function CoachDashboardClient({ dashboardData }: { dashboardData?: Parent
       <p className={`notice ${dashboardData?.isSupabaseBacked ? "ok" : "warning"}`}>
         {dashboardData?.message ?? "Showing local seed fallback until Supabase has linked parent and coach records."}
       </p>
-      {dashboardData?.accessStatus === "signed_out" ? <p><a href="/auth">Sign in</a> to load coach dashboard rows.</p> : null}
       {actionMessage ? <p className="notice">{actionMessage}</p> : null}
+      {accessGate ?? (
+        <>
 
       <section className="grid three">
         <article className="card metric"><span className="muted">Assigned teams</span><strong>{teams.length}</strong></article>
@@ -1005,6 +1063,8 @@ export function CoachDashboardClient({ dashboardData }: { dashboardData?: Parent
           ))}
         </article>
       </section>
+        </>
+      )}
     </div>
   );
 }
