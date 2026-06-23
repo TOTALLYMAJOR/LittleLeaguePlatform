@@ -4,13 +4,19 @@ export type DeliveryStatus = "queued" | "sent" | "failed";
 export type EventStatus = "scheduled" | "cancelled" | "completed";
 export type EventType = "game" | "practice" | "team_event";
 export type RsvpResponse = "going" | "not_going" | "maybe";
-export type NotificationType = "schedule_changed" | "event_cancelled" | "new_event" | "invite_sent" | "invite_recovered";
+export type NotificationType = "schedule_changed" | "event_cancelled" | "new_event" | "invite_sent" | "invite_recovered" | "parent_replay_ready" | "team_broadcast";
 export type NotificationChannel = "push" | "email" | "sms";
 export type ImportSeverity = "valid" | "warning" | "error";
 export type ChatMessageKind = "message" | "announcement";
 export type ChatAnnouncementTopic = "game_time" | "field_location" | "uniforms" | "snacks" | "weather" | "reminder";
 export type ChatModerationStatus = "visible" | "hidden" | "deleted";
 export type ChatModerationAction = "message_hidden" | "message_deleted" | "message_restored";
+export type PracticeFocusArea = "catching" | "throwing" | "teamwork" | "spacing" | "hitting" | "base_running" | "listening" | "sportsmanship";
+export type ParentReplayStatus = "draft" | "queued";
+export type ParentReplayDuration = "30_seconds" | "2_minutes" | "5_minutes";
+export type ProgramThemeKey = "soccer" | "football" | "baseball" | "scouts" | "golf" | "tennis" | "swim" | "generic";
+export type RegistrationStatus = "pending" | "approved" | "rejected";
+export type VolunteerSignupStatus = "open" | "filled";
 
 export interface User {
   id: string;
@@ -42,6 +48,10 @@ export interface Team {
   division: string;
   name: string;
   coachUserId?: string;
+  mascot: string;
+  primaryColor: string;
+  secondaryColor: string;
+  themeKey: ProgramThemeKey;
 }
 
 export interface TeamMembership {
@@ -153,6 +163,109 @@ export interface NotificationRecord {
   readAt?: string;
 }
 
+export interface ParentReplayHomeActivity {
+  duration: ParentReplayDuration;
+  title: string;
+  coachCue?: string;
+  parentGoal?: string;
+  steps: string[];
+}
+
+export interface ParentReplayDraft {
+  teamId: string;
+  coachUserId: string;
+  focusAreas: PracticeFocusArea[];
+  title: string;
+  summary: string;
+  homeActivities: ParentReplayHomeActivity[];
+  parentTranslations: {
+    coachTerm: string;
+    parentInstruction: string;
+  }[];
+  microCoachingStreak: {
+    label: string;
+    completedFamilies: number;
+    totalFamilies: number;
+    completionRate: number;
+  };
+  memoryMoment: {
+    title: string;
+    detail: string;
+  };
+  coachVideo: {
+    title: string;
+    url: string;
+    note: string;
+  };
+  parentTip: string;
+  teamQuest: string;
+  skillCards: string[];
+  parentEducation: string;
+  generatedAt: string;
+}
+
+export interface ParentReplayRecord extends ParentReplayDraft {
+  id: string;
+  organizationId: string;
+  seasonId: string;
+  status: ParentReplayStatus;
+  createdAt: string;
+}
+
+export interface RegistrationRequest {
+  id: string;
+  organizationId: string;
+  seasonId: string;
+  teamId: string;
+  parentName: string;
+  parentEmail: string;
+  playerFirstName: string;
+  playerLastInitial: string;
+  status: RegistrationStatus;
+  createdAt: string;
+  reviewedAt?: string;
+  reviewedByUserId?: string;
+}
+
+export interface SnackScheduleSlot {
+  id: string;
+  teamId: string;
+  eventId: string;
+  assignedParentUserId?: string;
+  item: string;
+  status: "open" | "assigned";
+}
+
+export interface VolunteerSignup {
+  id: string;
+  teamId: string;
+  eventId?: string;
+  role: string;
+  assignedUserId?: string;
+  status: VolunteerSignupStatus;
+}
+
+export interface Sponsor {
+  id: string;
+  organizationId: string;
+  name: string;
+  level: "league" | "team";
+  teamId?: string;
+  url: string;
+  status: "active" | "pending";
+}
+
+export interface WeatherAlert {
+  id: string;
+  teamId: string;
+  eventId: string;
+  headline: string;
+  detail: string;
+  severity: "watch" | "delay" | "cancel_risk";
+  status: "draft" | "queued";
+  createdAt: string;
+}
+
 export interface TeamChatChannel {
   id: string;
   organizationId: string;
@@ -257,6 +370,12 @@ export interface AppState {
   announcements: Announcement[];
   mediaItems: MediaItem[];
   notifications: NotificationRecord[];
+  parentReplays: ParentReplayRecord[];
+  registrationRequests: RegistrationRequest[];
+  snackScheduleSlots: SnackScheduleSlot[];
+  volunteerSignups: VolunteerSignup[];
+  sponsors: Sponsor[];
+  weatherAlerts: WeatherAlert[];
   teamChatChannels: TeamChatChannel[];
   chatMessages: TeamChatMessage[];
   chatModerationAuditEvents: ChatModerationAuditEvent[];

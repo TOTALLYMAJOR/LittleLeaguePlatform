@@ -34,10 +34,10 @@ export const seedState: AppState = {
     { id: "user-parent-riley", role: "parent", name: "Riley Parker", email: "riley@example.com", phone: "555-0102" }
   ],
   teams: [
-    { id: "team-tigers", organizationId: "org-little-league", seasonId: "season-spring-2026", division: "3U", name: "Tiny Tigers", coachUserId: "user-coach-taylor" },
-    { id: "team-rockets", organizationId: "org-little-league", seasonId: "season-spring-2026", division: "3U", name: "Rookie Rockets" },
-    { id: "team-hawks", organizationId: "org-little-league", seasonId: "season-spring-2026", division: "5U", name: "Happy Hawks", coachUserId: "user-coach-rivera" },
-    { id: "team-comets", organizationId: "org-little-league", seasonId: "season-spring-2026", division: "6U", name: "Green Comets" }
+    { id: "team-tigers", organizationId: "org-little-league", seasonId: "season-spring-2026", division: "3U", name: "Tiny Tigers", coachUserId: "user-coach-taylor", mascot: "Tiger Cub", primaryColor: "#f97316", secondaryColor: "#1d4ed8", themeKey: "baseball" },
+    { id: "team-rockets", organizationId: "org-little-league", seasonId: "season-spring-2026", division: "3U", name: "Rookie Rockets", mascot: "Rocket", primaryColor: "#dc2626", secondaryColor: "#facc15", themeKey: "soccer" },
+    { id: "team-hawks", organizationId: "org-little-league", seasonId: "season-spring-2026", division: "5U", name: "Happy Hawks", coachUserId: "user-coach-rivera", mascot: "Hawk", primaryColor: "#0f766e", secondaryColor: "#fde047", themeKey: "scouts" },
+    { id: "team-comets", organizationId: "org-little-league", seasonId: "season-spring-2026", division: "6U", name: "Green Comets", mascot: "Comet", primaryColor: "#16a34a", secondaryColor: "#38bdf8", themeKey: "swim" }
   ],
   teamMemberships: [
     { id: "membership-coach-tigers", teamId: "team-tigers", userId: "user-coach-taylor", role: "coach", status: "active" },
@@ -205,6 +205,46 @@ export const seedState: AppState = {
     { id: "media-cleats", teamId: "team-tigers", title: "How to tie cleats", type: "youtube", url: "https://www.youtube.com/watch?v=dQw4w9WgXcQ", createdAt: "2026-03-29T12:00:00.000Z" }
   ],
   notifications: [],
+  parentReplays: [],
+  registrationRequests: [
+    {
+      id: "registration-new-mia",
+      organizationId: "org-little-league",
+      seasonId: "season-spring-2026",
+      teamId: "team-tigers",
+      parentName: "Casey Morgan",
+      parentEmail: "casey@example.com",
+      playerFirstName: "Mia",
+      playerLastInitial: "M",
+      status: "pending",
+      createdAt: "2026-04-01T10:00:00.000Z"
+    }
+  ],
+  snackScheduleSlots: [
+    { id: "snack-tigers-game", teamId: "team-tigers", eventId: "event-tigers-game", assignedParentUserId: "user-parent-riley", item: "Orange slices and water", status: "assigned" },
+    { id: "snack-tigers-practice", teamId: "team-tigers", eventId: "event-tigers-practice", item: "Practice snack", status: "open" }
+  ],
+  volunteerSignups: [
+    { id: "volunteer-field-setup", teamId: "team-tigers", eventId: "event-tigers-game", role: "Field setup", status: "open" },
+    { id: "volunteer-score-helper", teamId: "team-tigers", eventId: "event-tigers-game", role: "Score helper", assignedUserId: "user-parent-jordan", status: "filled" },
+    { id: "volunteer-photo-helper", teamId: "team-tigers", role: "Photo helper", status: "open" }
+  ],
+  sponsors: [
+    { id: "sponsor-league-clinic", organizationId: "org-little-league", name: "Community Sports Clinic", level: "league", url: "https://example.com/clinic", status: "active" },
+    { id: "sponsor-tigers-pizza", organizationId: "org-little-league", name: "Corner Pizza", level: "team", teamId: "team-tigers", url: "https://example.com/pizza", status: "active" }
+  ],
+  weatherAlerts: [
+    {
+      id: "weather-tigers-watch",
+      teamId: "team-tigers",
+      eventId: "event-tigers-game",
+      headline: "Light rain watch",
+      detail: "Coach will confirm field status 90 minutes before first pitch.",
+      severity: "watch",
+      status: "draft",
+      createdAt: "2026-04-01T12:00:00.000Z"
+    }
+  ],
   teamChatChannels: [
     {
       id: "chat-team-tigers",

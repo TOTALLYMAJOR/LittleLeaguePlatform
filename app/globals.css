@@ -190,6 +190,12 @@ h3 {
   gap: 12px;
 }
 
+.segmented {
+  display: grid;
+  gap: 8px;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
 label {
   display: grid;
   gap: 6px;
@@ -322,20 +328,147 @@ th {
   padding: 14px;
 }
 
+.communication-preview {
+  background: var(--surface-strong);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  padding: 12px;
+}
+
+.communication-preview p {
+  flex-basis: 100%;
+}
+
+.lineup-builder {
+  overflow: hidden;
+}
+
+.lineup-field {
+  aspect-ratio: 3 / 2;
+  background: #d9f7d7;
+  border: 1px solid #9fcd9c;
+  border-radius: 8px;
+  width: 100%;
+}
+
+.lineup-grass {
+  fill: #9ee493;
+}
+
+.lineup-dirt {
+  fill: #eac08d;
+}
+
+.lineup-basepath {
+  fill: none;
+  stroke: #fff7ed;
+  stroke-width: 7;
+}
+
+.lineup-dropzone circle {
+  fill: #fff;
+  stroke: var(--accent-strong);
+  stroke-width: 2;
+}
+
+.lineup-dropzone.assigned circle {
+  fill: #dbeafe;
+}
+
+.lineup-dropzone text {
+  fill: var(--text);
+  font-size: 11px;
+  font-weight: 800;
+  pointer-events: none;
+}
+
+.player-chip-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.player-chip {
+  background: var(--surface-strong);
+  color: var(--text);
+  cursor: grab;
+}
+
+.player-chip.assigned {
+  background: #dcfae6;
+  color: var(--ok);
+}
+
+.season-planning-panel {
+  border-color: #b8d8e8;
+}
+
+.maker-summary,
+.bracket-preview {
+  background: #f8fbff;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  display: grid;
+  gap: 8px;
+  padding: 12px;
+}
+
+.maker-list {
+  display: grid;
+  gap: 8px;
+}
+
+.maker-row {
+  align-items: center;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  display: grid;
+  gap: 8px;
+  grid-template-columns: 0.7fr repeat(3, minmax(0, 1fr));
+  padding: 10px;
+}
+
+.bracket-matchup {
+  background: #fff;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  font-weight: 700;
+  padding: 10px;
+}
+
 .clubhouse-chat-page {
-  --club-sky: #dff4ff;
-  --club-grass: #dff8d6;
+  --club-sky: color-mix(in srgb, var(--team-secondary, #dff4ff) 22%, #ffffff);
+  --club-grass: color-mix(in srgb, var(--team-primary, #83d474) 18%, #ffffff);
   --club-sun: #fff3b8;
   --club-ink: #123047;
-  --club-line: #b8d8e8;
+  --club-line: color-mix(in srgb, var(--team-primary, #1570ef) 35%, #d9e0ea);
 }
 
 .clubhouse-chat-hero {
-  background: linear-gradient(135deg, var(--club-sky), var(--club-grass));
+  background:
+    linear-gradient(135deg, color-mix(in srgb, var(--team-primary, #1570ef) 18%, #ffffff), color-mix(in srgb, var(--team-secondary, #dff4ff) 30%, #ffffff));
   border: 1px solid var(--club-line);
   border-radius: 8px;
   box-shadow: var(--shadow);
   padding: 20px;
+}
+
+.clubhouse-hero-mark {
+  align-items: center;
+  background: var(--team-primary, var(--text));
+  border: 4px solid var(--team-secondary, #fff);
+  border-radius: 8px;
+  color: #fff;
+  display: inline-flex;
+  font-size: 2.2rem;
+  font-weight: 900;
+  height: 76px;
+  justify-content: center;
+  margin-bottom: 6px;
+  width: 76px;
 }
 
 .clubhouse-toolbar {
@@ -369,23 +502,41 @@ th {
 
 .clubhouse-team-card {
   align-content: start;
-  background: linear-gradient(180deg, #ffffff, var(--club-sky));
+  background:
+    linear-gradient(180deg, #ffffff, var(--club-sky));
+  border-color: var(--club-line);
   display: grid;
   gap: 12px;
 }
 
 .clubhouse-team-mark {
   align-items: center;
-  background: var(--club-grass);
-  border: 2px solid #83d474;
+  background: var(--team-primary, var(--club-grass));
+  border: 4px solid var(--team-secondary, #83d474);
   border-radius: 8px;
-  color: #1f5f2e;
+  color: #fff;
   display: flex;
   font-size: 2rem;
-  font-weight: 800;
+  font-weight: 900;
   height: 76px;
   justify-content: center;
   width: 76px;
+}
+
+.clubhouse-chip-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.clubhouse-chip-row span {
+  background: #fff;
+  border: 1px solid var(--club-line);
+  border-radius: 999px;
+  color: var(--club-ink);
+  font-size: 0.8rem;
+  font-weight: 700;
+  padding: 6px 9px;
 }
 
 .clubhouse-unread {
@@ -398,13 +549,14 @@ th {
 }
 
 .clubhouse-unread strong {
-  color: var(--accent-strong);
+  color: var(--team-primary, var(--accent-strong));
   font-size: 2rem;
 }
 
 .clubhouse-chat-panel {
   display: grid;
   gap: 14px;
+  border-color: var(--club-line);
 }
 
 .clubhouse-pinned,
@@ -418,7 +570,7 @@ th {
 }
 
 .clubhouse-pinned {
-  background: linear-gradient(135deg, var(--club-sun), #fffdf0);
+  background: linear-gradient(135deg, var(--club-sun), color-mix(in srgb, var(--team-secondary, #fffdf0) 18%, #ffffff));
 }
 
 .clubhouse-game-day {
@@ -451,8 +603,8 @@ th {
 }
 
 .clubhouse-message.announcement {
-  background: #fffbdf;
-  border-color: #ead56d;
+  background: color-mix(in srgb, var(--team-secondary, #fffbdf) 20%, #ffffff);
+  border-color: var(--team-secondary, #ead56d);
 }
 
 .clubhouse-message-meta {
@@ -506,10 +658,12 @@ th {
 }
 
 .clubhouse-compose {
-  border-top: 1px solid var(--line);
+  background: color-mix(in srgb, var(--team-primary, #1570ef) 6%, #ffffff);
+  border: 1px solid var(--club-line);
+  border-radius: 8px;
   display: grid;
   gap: 12px;
-  padding-top: 14px;
+  padding: 14px;
 }
 
 .clubhouse-compose textarea {
@@ -517,8 +671,8 @@ th {
 }
 
 .clubhouse-coach-note {
-  background: #fffdf0;
-  border: 1px solid #ead56d;
+  background: color-mix(in srgb, var(--team-secondary, #fffdf0) 18%, #ffffff);
+  border: 1px solid var(--team-secondary, #ead56d);
   border-radius: 8px;
   display: grid;
   gap: 12px;
@@ -546,14 +700,262 @@ th {
   width: auto;
 }
 
+.team-portal-page {
+  --portal-soft-primary: color-mix(in srgb, var(--team-primary, #1570ef) 15%, #ffffff);
+  --portal-soft-secondary: color-mix(in srgb, var(--team-secondary, #dff4ff) 24%, #ffffff);
+  --portal-line: color-mix(in srgb, var(--team-primary, #1570ef) 30%, #d9e0ea);
+}
+
+.team-portal-hero {
+  background: linear-gradient(135deg, var(--portal-soft-primary), var(--portal-soft-secondary));
+  border: 1px solid var(--portal-line);
+  border-radius: 8px;
+  box-shadow: var(--shadow);
+  padding: 20px;
+}
+
+.team-portal-mark {
+  align-items: center;
+  background: var(--team-primary, var(--text));
+  border: 4px solid var(--team-secondary, #fff);
+  border-radius: 8px;
+  color: #fff;
+  display: inline-flex;
+  font-size: 2.2rem;
+  font-weight: 900;
+  height: 76px;
+  justify-content: center;
+  margin-bottom: 6px;
+  width: 76px;
+}
+
+.team-color-row {
+  align-items: center;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.team-color-row span {
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  display: inline-flex;
+  height: 28px;
+  width: 28px;
+}
+
+.team-branding-panel {
+  border-color: var(--portal-line);
+}
+
+.team-branding-preview {
+  align-items: center;
+  background: linear-gradient(135deg, var(--team-primary), var(--team-secondary));
+  border-radius: 8px;
+  color: #fff;
+  display: flex;
+  gap: 12px;
+  min-height: 72px;
+  padding: 14px;
+}
+
+.team-branding-preview strong {
+  background: rgba(255, 255, 255, 0.2);
+  border: 1px solid rgba(255, 255, 255, 0.45);
+  border-radius: 8px;
+  padding: 10px 12px;
+}
+
+.parent-replay-page {
+  --replay-field: #dff8d6;
+  --replay-sky: #dff4ff;
+  --replay-clay: #ffe8cc;
+  --replay-line: #bfd9c6;
+}
+
+.parent-replay-hero {
+  background: linear-gradient(135deg, rgba(223, 248, 214, 0.92), rgba(223, 244, 255, 0.92));
+  border: 1px solid var(--replay-line);
+  border-radius: 8px;
+  box-shadow: var(--shadow);
+  padding: 20px;
+}
+
+.replay-checklist {
+  display: grid;
+  gap: 10px;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.parent-replay-preview {
+  background: linear-gradient(180deg, #ffffff, #f7fff4);
+}
+
+.replay-activities {
+  align-items: stretch;
+}
+
+.replay-activity {
+  background: #fff;
+  border: 1px solid var(--replay-line);
+  border-radius: 8px;
+  display: grid;
+  gap: 10px;
+  padding: 12px;
+}
+
+.home-practice-loop {
+  display: grid;
+  gap: 10px;
+}
+
+.home-practice-row {
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  display: grid;
+  gap: 6px;
+  padding: 10px;
+}
+
+.feature-tier-hub {
+  display: grid;
+  gap: 16px;
+}
+
+.feature-tier-list {
+  display: grid;
+  gap: 10px;
+}
+
+.feature-tier-item {
+  background: #fff;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 12px;
+}
+
+.theme-row {
+  align-items: center;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  color: var(--text);
+  display: grid;
+  gap: 10px;
+  grid-template-columns: 18px 18px minmax(0, 1fr) auto auto;
+  justify-items: start;
+  padding: 10px;
+  text-align: left;
+  width: 100%;
+}
+
+.theme-row strong {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.theme-swatch {
+  border: 1px solid rgba(15, 23, 42, 0.18);
+  border-radius: 999px;
+  height: 18px;
+  width: 18px;
+}
+
+.mobile-preview {
+  margin-inline: auto;
+  max-width: 320px;
+  min-height: 150px;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #101828;
+    --surface: #182230;
+    --surface-strong: #243244;
+    --text: #f8fafc;
+    --muted: #b8c4d6;
+    --line: #344054;
+    --accent: #53b1fd;
+    --accent-strong: #84caff;
+    --shadow: 0 16px 40px rgba(0, 0, 0, 0.28);
+  }
+
+  input,
+  select,
+  textarea {
+    background: #111927;
+    color: var(--text);
+  }
+
+  .card,
+  .feature-tier-item,
+  .theme-row,
+  .clubhouse-message,
+  .list.compact li,
+  .clubhouse-unread,
+  .clubhouse-moderation-log,
+  .clubhouse-checkbox,
+  .replay-activity,
+  .home-practice-row,
+  .communication-preview,
+  .maker-summary,
+  .bracket-preview,
+  .bracket-matchup {
+    background: var(--surface);
+  }
+
+  .notice {
+    background: #102a43;
+  }
+}
+
 @media (max-width: 900px) {
   .shell {
     grid-template-columns: 1fr;
   }
 
   .sidebar {
-    position: static;
+    position: sticky;
+    top: 0;
+    z-index: 20;
     height: auto;
+    padding: 12px 14px;
+    box-shadow: 0 8px 24px rgba(23, 32, 51, 0.08);
+  }
+
+  .brand {
+    margin-bottom: 10px;
+  }
+
+  .brand-mark {
+    height: 36px;
+    width: 36px;
+  }
+
+  .brand small {
+    display: none;
+  }
+
+  .nav {
+    display: flex;
+    gap: 8px;
+    margin-inline: -14px;
+    overflow-x: auto;
+    padding: 0 14px 2px;
+    scrollbar-width: none;
+    white-space: nowrap;
+  }
+
+  .nav::-webkit-scrollbar {
+    display: none;
+  }
+
+  .nav a {
+    background: var(--surface-strong);
+    color: var(--text);
+    flex: 0 0 auto;
+    padding: 9px 11px;
   }
 
   .grid.two,
@@ -562,12 +964,32 @@ th {
   }
 
   .main {
-    padding: 20px;
+    padding: 18px 14px 24px;
+  }
+
+  .page {
+    gap: 16px;
+  }
+
+  h1 {
+    font-size: 2rem;
+  }
+
+  .lead {
+    font-size: 1rem;
+  }
+
+  .card {
+    padding: 14px;
   }
 
   .clubhouse-toolbar,
   .clubhouse-chat-shell,
   .clubhouse-game-day {
+    grid-template-columns: 1fr;
+  }
+
+  .replay-checklist {
     grid-template-columns: 1fr;
   }
 }

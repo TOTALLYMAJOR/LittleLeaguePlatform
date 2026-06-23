@@ -2,6 +2,13 @@
 
 This backlog turns the static Little League HQ prototype into a production youth sports platform with human-in-the-loop agents. Priorities are ordered by dependency and risk, not by visual appeal.
 
+For current execution slices, use:
+
+- `docs/capability-matrix.md` for implemented-local versus production-ready capability truth.
+- `docs/tech-stack.md` for the mobile-first stack decision and provider order.
+- `docs/backlog-now.md` for the immediate production-enabling backlog.
+- `docs/backlog-next.md` for the follow-on backlog after persistence, auth, RLS, and provider boundaries are in place.
+
 ## P0 - Production Foundation
 
 ### App Scaffold

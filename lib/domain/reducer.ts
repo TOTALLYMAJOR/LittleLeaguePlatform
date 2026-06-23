@@ -10,6 +10,10 @@ import {
 } from "./chat";
 import { setRsvp, type SetRsvpInput } from "./rsvp";
 import { applyScheduleChange, type ScheduleChangeInput } from "./schedule";
+import { createParentReplay, type ParentReplayInput } from "./parent-replay";
+import { createRegistrationRequest, type CreateRegistrationRequestInput } from "./registration";
+import { updateTeamPortalBranding, type TeamPortalBrandingInput } from "./team-branding";
+import { queueTeamCommunication, type TeamCommunicationInput } from "./communications";
 import type { AppState } from "./types";
 
 export type AppAction =
@@ -19,7 +23,11 @@ export type AppAction =
   | { type: "applyScheduleChange"; input: ScheduleChangeInput }
   | { type: "postTeamChatMessage"; input: PostTeamChatMessageInput }
   | { type: "sendCoachAnnouncement"; input: SendCoachAnnouncementInput }
-  | { type: "moderateTeamChatMessage"; input: ModerateTeamChatMessageInput };
+  | { type: "moderateTeamChatMessage"; input: ModerateTeamChatMessageInput }
+  | { type: "createParentReplay"; input: ParentReplayInput }
+  | { type: "createRegistrationRequest"; input: CreateRegistrationRequestInput }
+  | { type: "updateTeamPortalBranding"; input: TeamPortalBrandingInput }
+  | { type: "queueTeamCommunication"; input: TeamCommunicationInput };
 
 export function appReducer(state: AppState, action: AppAction): AppState {
   if (action.type === "commitRosterImport") {
@@ -106,6 +114,22 @@ export function appReducer(state: AppState, action: AppAction): AppState {
 
   if (action.type === "moderateTeamChatMessage") {
     return moderateTeamChatMessage(state, action.input).state;
+  }
+
+  if (action.type === "createParentReplay") {
+    return createParentReplay(state, action.input).state;
+  }
+
+  if (action.type === "createRegistrationRequest") {
+    return createRegistrationRequest(state, action.input).state;
+  }
+
+  if (action.type === "updateTeamPortalBranding") {
+    return updateTeamPortalBranding(state, action.input).state;
+  }
+
+  if (action.type === "queueTeamCommunication") {
+    return queueTeamCommunication(state, action.input).state;
   }
 
   return state;

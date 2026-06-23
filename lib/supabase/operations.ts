@@ -1,0 +1,265 @@
+import { createSupabaseAdminClient } from "./admin";
+import { withSupabaseTimeout } from "./timeout";
+
+type UnsafeSupabase = {
+  // Tables introduced by staged migrations are intentionally accessed through
+  // a narrow dynamic boundary until the generated Supabase types are refreshed.
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  from(table: string): any;
+};
+
+interface DynamicQueryResult<T = unknown> {
+  data: T | null;
+  error: { message?: string } | null;
+}
+
+function adminDb() {
+  return createSupabaseAdminClient() as unknown as UnsafeSupabase;
+}
+
+function runDynamicQuery<T>(operation: PromiseLike<unknown>, milliseconds = 7000) {
+  return withSupabaseTimeout(operation as PromiseLike<DynamicQueryResult<T>>, milliseconds);
+}
+
+function googleMapsUrl(address: string) {
+  return `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(address)}`;
+}
+
+function googleMapsEmbedUrl(address: string) {
+  const key = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY;
+  if (!key) return null;
+  return `https://www.google.com/maps/embed/v1/place?key=${encodeURIComponent(key)}&q=${encodeURIComponent(address)}`;
+}
+
+export async function upsertFieldLocation(input: {
+  organizationId: string;
+  name: string;
+  address: string;
+  latitude?: number;
+  longitude?: number;
+  googlePlaceId?: string;
+}) {
+  const name = input.name.trim();
+  const address = input.address.trim();
+  if (!input.organizationId || !name || !address) {
+    return { ok: false, message: "Field location requires organization, name, and address." };
+  }
+
+  try {
+    const db = adminDb();
+    const { data, error } = await runDynamicQuery(db
+      .from("field_locations")
+      .upsert({
+        organization_id: input.organizationId,
+        name,
+        address,
+        latitude: input.latitude ?? null,
+        longitude: input.longitude ?? null,
+        google_place_id: input.googlePlaceId ?? null,
+        map_url: googleMapsUrl(address),
+        map_embed_url: googleMapsEmbedUrl(address),
+        status: "active"
+      }, { onConflict: "organization_id,name" })
+      .select("id,name,address,map_url,map_embed_url,status")
+      .single());
+
+    if (error || !data) return { ok: false, message: "Field location could not be saved." };
+    return { ok: true, message: "Field location saved with Google Maps metadata.", fieldLocation: data };
+  } catch {
+    return { ok: false, message: "Field location could not reach Supabase." };
+  }
+}
+
+export async function registerPushSubscription(input: {
+  userId: string;
+  endpoint: string;
+  p256dh: string;
+  authSecret: string;
+  userAgent?: string;
+}) {
+  if (!input.userId || !input.endpoint || !input.p256dh || !input.authSecret) {
+    return { ok: false, message: "Push subscription requires user, endpoint, and browser keys." };
+  }
+
+  try {
+    const db = adminDb();
+    const { data, error } = await runDynamicQuery(db
+      .from("push_subscriptions")
+      .upsert({
+        user_id: input.userId,
+        endpoint: input.endpoint,
+        p256dh: input.p256dh,
+        auth_secret: input.authSecret,
+        user_agent: input.userAgent ?? null,
+        enabled: true
+      }, { onConflict: "user_id,endpoint" })
+      .select("id,user_id,enabled,updated_at")
+      .single());
+
+    if (error || !data) return { ok: false, message: "Push subscription could not be saved." };
+    return { ok: true, message: "Push subscription saved. No push send occurs without opt-in and provider approval.", subscription: data };
+  } catch {
+    return { ok: false, message: "Push subscription could not reach Supabase." };
+  }
+}
+
+export async function updateParentRsvp(input: {
+  eventId: string;
+  playerId: string;
+  parentUserId: string;
+  response: "going" | "not_going" | "maybe";
+  note?: string;
+}) {
+  if (!input.eventId || !input.playerId || !input.parentUserId) {
+    return { ok: false, message: "RSVP requires event, player, and parent." };
+  }
+  try {
+    const db = adminDb();
+    const { data, error } = await runDynamicQuery(db
+      .from("rsvps")
+      .upsert({
+        event_id: input.eventId,
+        player_id: input.playerId,
+        parent_user_id: input.parentUserId,
+        response: input.response,
+        note: input.note ?? null,
+        responded_at: new Date().toISOString()
+      }, { onConflict: "event_id,player_id" })
+      .select("id,event_id,player_id,parent_user_id,response,note,responded_at")
+      .single());
+    if (error || !data) return { ok: false, message: "RSVP could not be saved." };
+    return { ok: true, message: "RSVP saved to Supabase.", rsvp: data };
+  } catch {
+    return { ok: false, message: "RSVP could not reach Supabase." };
+  }
+}
+
+export async function claimSnackSlot(input: {
+  slotId: string;
+  parentUserId: string;
+}) {
+  if (!input.slotId || !input.parentUserId) return { ok: false, message: "Snack signup requires a slot and parent." };
+  try {
+    const db = adminDb();
+    const { data, error } = await runDynamicQuery(db
+      .from("snack_schedule_slots")
+      .update({ assigned_parent_user_id: input.parentUserId, status: "assigned" })
+      .eq("id", input.slotId)
+      .select("id,status,assigned_parent_user_id")
+      .single());
+    if (error || !data) return { ok: false, message: "Snack slot could not be assigned." };
+    return { ok: true, message: "Snack slot saved to Supabase.", slot: data };
+  } catch {
+    return { ok: false, message: "Snack slot could not reach Supabase." };
+  }
+}
+
+export async function claimVolunteerRole(input: {
+  signupId: string;
+  userId: string;
+}) {
+  if (!input.signupId || !input.userId) return { ok: false, message: "Volunteer signup requires a role and user." };
+  try {
+    const db = adminDb();
+    const { data, error } = await runDynamicQuery(db
+      .from("volunteer_signups")
+      .update({ assigned_user_id: input.userId, status: "filled" })
+      .eq("id", input.signupId)
+      .select("id,status,assigned_user_id")
+      .single());
+    if (error || !data) return { ok: false, message: "Volunteer role could not be assigned." };
+    return { ok: true, message: "Volunteer role saved to Supabase.", signup: data };
+  } catch {
+    return { ok: false, message: "Volunteer role could not reach Supabase." };
+  }
+}
+
+export async function moderateMediaItem(input: {
+  mediaItemId: string;
+  reviewerUserId: string;
+  status: "approved" | "rejected" | "removed";
+}) {
+  if (!input.mediaItemId || !input.reviewerUserId) return { ok: false, message: "Media moderation requires an item and reviewer." };
+  try {
+    const db = adminDb();
+    const { data, error } = await runDynamicQuery(db
+      .from("media_items")
+      .update({
+        moderation_status: input.status,
+        reviewed_by_user_id: input.reviewerUserId,
+        reviewed_at: new Date().toISOString()
+      })
+      .eq("id", input.mediaItemId)
+      .select("id,title,moderation_status,reviewed_at")
+      .single());
+    if (error || !data) return { ok: false, message: "Media item could not be moderated. Make sure migration 0005 is applied." };
+    return { ok: true, message: "Media moderation saved to Supabase.", mediaItem: data };
+  } catch {
+    return { ok: false, message: "Media moderation could not reach Supabase." };
+  }
+}
+
+export async function createWeatherAlertDraft(input: {
+  eventId: string;
+  reviewerUserId?: string;
+}) {
+  if (!input.eventId) return { ok: false, message: "Weather lookup requires an event." };
+  const apiKey = process.env.TOMORROW_API_KEY || process.env.WEATHER_PROVIDER_API_KEY;
+  if (!apiKey) return { ok: false, message: "TOMORROW_API_KEY is required before live weather lookup can run." };
+
+  try {
+    const db = adminDb();
+    const { data: event } = await db
+      .from("events")
+      .select("id,organization_id,team_id,title,starts_at,location_name,location_address,latitude,longitude")
+      .eq("id", input.eventId)
+      .single();
+    if (!event) return { ok: false, message: "Weather lookup requires a known event." };
+
+    const location = event.latitude && event.longitude
+      ? `${event.latitude},${event.longitude}`
+      : event.location_address || event.location_name;
+    if (!location) return { ok: false, message: "Weather lookup requires an event location." };
+
+    const url = new URL("https://api.tomorrow.io/v4/weather/forecast");
+    url.searchParams.set("location", location);
+    url.searchParams.set("timesteps", "1h");
+    url.searchParams.set("units", "imperial");
+    url.searchParams.set("apikey", apiKey);
+
+    const response = await fetch(url, { headers: { accept: "application/json" } });
+    if (!response.ok) return { ok: false, message: "Tomorrow.io weather lookup failed." };
+    const payload = await response.json();
+    const hourly = payload?.timelines?.hourly?.[0]?.values ?? {};
+    const precipitation = Number(hourly.precipitationProbability ?? 0);
+    const windSpeed = Number(hourly.windSpeed ?? 0);
+    const temperature = Number(hourly.temperature ?? 0);
+    const severity = precipitation >= 60 || windSpeed >= 25 ? "delay" : precipitation >= 35 || windSpeed >= 18 ? "watch" : "watch";
+    const headline = precipitation >= 35 || windSpeed >= 18
+      ? `Weather watch for ${event.title}`
+      : `Weather checked for ${event.title}`;
+    const detail = `Tomorrow.io forecast: ${Math.round(temperature)}F, ${Math.round(precipitation)}% precipitation chance, ${Math.round(windSpeed)} mph wind.`;
+
+    const { data, error } = await db
+      .from("weather_alerts")
+      .insert({
+        team_id: event.team_id,
+        event_id: event.id,
+        headline,
+        detail,
+        severity,
+        status: "draft",
+        provider: "tomorrow.io",
+        provider_payload: payload,
+        reviewed_by_user_id: input.reviewerUserId ?? null,
+        reviewed_at: input.reviewerUserId ? new Date().toISOString() : null
+      })
+      .select("id,headline,detail,severity,status,provider,created_at")
+      .single();
+
+    if (error || !data) return { ok: false, message: "Weather alert draft could not be saved. Make sure migration 0005 is applied." };
+    return { ok: true, message: "Tomorrow.io weather alert draft saved. No parent notification was sent.", alert: data };
+  } catch {
+    return { ok: false, message: "Weather lookup could not reach Tomorrow.io or Supabase." };
+  }
+}

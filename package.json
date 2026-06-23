@@ -5,12 +5,18 @@
   "scripts": {
     "dev": "next dev",
     "build": "next build",
+    "postbuild": "mkdir -p .next/standalone/public .next/standalone/.next/static && cp -R public/. .next/standalone/public/ && cp -R .next/static/. .next/standalone/.next/static/",
     "start": "next start",
     "lint": "eslint .",
-    "typecheck": "tsc --noEmit",
-    "test": "vitest run"
+    "typecheck": "tsc --noEmit -p tsconfig.typecheck.json",
+    "test": "TMPDIR=/tmp TEMP=/tmp TMP=/tmp vitest run",
+    "supabase:push": "node scripts/supabase-push.mjs",
+    "supabase:qa-users": "node scripts/bootstrap-qa-session-users.mjs",
+    "qa:session-proof": "node scripts/verify-qa-session-paths.mjs"
   },
   "dependencies": {
+    "@supabase/ssr": "^0.12.0",
+    "@supabase/supabase-js": "^2.108.2",
     "next": "^16.2.9",
     "react": "^19.2.7",
     "react-dom": "^19.2.7"
@@ -20,6 +26,7 @@
     "postcss": "^8.5.10"
   },
   "devDependencies": {
+    "@playwright/test": "^1.61.0",
     "@types/node": "^24.10.1",
     "@types/react": "^19.2.7",
     "@types/react-dom": "^19.2.3",
@@ -27,5 +34,8 @@
     "eslint-config-next": "^16.2.9",
     "typescript": "^5.9.3",
     "vitest": "^3.2.6"
+  },
+  "allowScripts": {
+    "esbuild@0.27.2": true
   }
 }

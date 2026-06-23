@@ -20,6 +20,59 @@ function channelsForChange(status?: EventStatus): NotificationChannel[] {
   return status === "cancelled" ? ["push", "email", "sms"] : ["push", "email"];
 }
 
+export function previewScheduleChangeImpact(state: AppState, input: ScheduleChangeInput) {
+  const event = state.events.find((item) => item.id === input.eventId);
+  if (!event) {
+    return {
+      ok: false,
+      message: "Event not found.",
+      affectedFamilies: 0,
+      rsvpdPlayers: 0,
+      noResponsePlayers: 0,
+      channels: [] as NotificationChannel[],
+      notificationCount: 0,
+      rsvps: []
+    };
+  }
+
+  if (!actorCanEditEvent(state, input.actorUserId, input.actorRole, event.teamId)) {
+    return {
+      ok: false,
+      message: "Only org admins or assigned coaches can change this event.",
+      affectedFamilies: 0,
+      rsvpdPlayers: 0,
+      noResponsePlayers: 0,
+      channels: [] as NotificationChannel[],
+      notificationCount: 0,
+      rsvps: []
+    };
+  }
+
+  const teamPlayers = state.players.filter((player) => player.teamId === event.teamId);
+  const activeParentIds = Array.from(new Set(
+    state.guardianLinks
+      .filter((link) => link.status === "active" && link.parentUserId && teamPlayers.some((player) => player.id === link.playerId))
+      .map((link) => link.parentUserId!)
+  ));
+  const rsvps = state.rsvps.filter((rsvp) => rsvp.eventId === event.id);
+  const channels = channelsForChange(input.status ?? event.status);
+
+  return {
+    ok: true,
+    message: `${activeParentIds.length} family account(s), ${rsvps.length} RSVP response(s), and ${activeParentIds.length * channels.length} alert record(s) would be affected.`,
+    affectedFamilies: activeParentIds.length,
+    rsvpdPlayers: rsvps.length,
+    noResponsePlayers: Math.max(teamPlayers.length - rsvps.length, 0),
+    channels,
+    notificationCount: activeParentIds.length * channels.length,
+    rsvps: rsvps.map((rsvp) => ({
+      ...rsvp,
+      player: state.players.find((player) => player.id === rsvp.playerId),
+      parentUser: state.users.find((user) => user.id === rsvp.parentUserId)
+    }))
+  };
+}
+
 export function applyScheduleChange(state: AppState, input: ScheduleChangeInput) {
   const event = state.events.find((item) => item.id === input.eventId);
   if (!event) return { ok: false, message: "Event not found.", state };

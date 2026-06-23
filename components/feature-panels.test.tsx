@@ -1,7 +1,18 @@
 import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it } from "vitest";
 import { AppStateProvider } from "@/app/providers";
-import { TeamChatClient } from "./feature-panels";
+import {
+  AdminDashboardClient,
+  AdminThemesClient,
+  CoachDashboardClient,
+  ParentDashboardClient,
+  ParentReplayClient,
+  RegistrationClient,
+  ScheduleAlertsClient,
+  TeamChatClient,
+  TeamPortalClient
+} from "./feature-panels";
+import { seedState } from "@/lib/domain";
 
 describe("TeamChatClient", () => {
   it("renders the safe team chat read surface", () => {
@@ -12,9 +23,163 @@ describe("TeamChatClient", () => {
     );
 
     expect(html).toContain("Team Chat");
+    expect(html).toContain("Tiny Tigers Chat");
+    expect(html).toContain("Tiger Cub clubhouse");
     expect(html).toContain("Pinned Reminder");
     expect(html).toContain("Coach Note");
     expect(html).toContain("Game-Day Questions");
     expect(html).toContain("No child accounts");
+  });
+});
+
+describe("CoachDashboardClient", () => {
+  it("renders coach operations, weather, snacks, and volunteers", () => {
+    const html = renderToStaticMarkup(
+      <AppStateProvider>
+        <CoachDashboardClient />
+      </AppStateProvider>
+    );
+
+    expect(html).toContain("Coach dashboard");
+    expect(html).toContain("Weather and alerts");
+    expect(html).toContain("Snacks");
+    expect(html).toContain("Volunteers");
+    expect(html).toContain("Draft weather alert");
+    expect(html).toContain("Claim snack slot");
+    expect(html).toContain("Claim volunteer role");
+    expect(html).toContain("RSVP reliability tracker");
+    expect(html).toContain("Coach weekly update builder");
+    expect(html).toContain("Editable weekly message");
+  });
+});
+
+describe("ParentDashboardClient", () => {
+  it("renders notification preferences without sending provider updates", () => {
+    const html = renderToStaticMarkup(
+      <AppStateProvider>
+        <ParentDashboardClient />
+      </AppStateProvider>
+    );
+
+    expect(html).toContain("Notification preference center");
+    expect(html).toContain("Urgent-only SMS");
+    expect(html).toContain("Digest frequency");
+    expect(html).toContain("No provider subscription update");
+  });
+});
+
+describe("ScheduleAlertsClient", () => {
+  it("renders schedule change impact preview before queueing alerts", () => {
+    const html = renderToStaticMarkup(
+      <AppStateProvider>
+        <ScheduleAlertsClient />
+      </AppStateProvider>
+    );
+
+    expect(html).toContain("Impact preview");
+    expect(html).toContain("Affected families");
+    expect(html).toContain("Already RSVP");
+    expect(html).toContain("Preview only");
+  });
+});
+
+describe("AdminDashboardClient", () => {
+  it("renders admin operations, registrations, sponsors, and notifications", () => {
+    const html = renderToStaticMarkup(
+      <AppStateProvider>
+        <AdminDashboardClient />
+      </AppStateProvider>
+    );
+
+    expect(html).toContain("Admin dashboard");
+    expect(html).toContain("Registration queue");
+    expect(html).toContain("Sponsor management");
+    expect(html).toContain("Communication console");
+    expect(html).toContain("Mass SMS");
+    expect(html).toContain("Drag and drop SVG lineup");
+    expect(html).toContain("Roster maker readiness");
+    expect(html).toContain("Bracket maker");
+    expect(html).toContain("Queued communication records");
+  });
+});
+
+describe("AdminThemesClient", () => {
+  it("renders the first-class admin theme console with contrast and audit context", () => {
+    const html = renderToStaticMarkup(
+      <AppStateProvider>
+        <AdminThemesClient
+          initialData={{
+            teams: seedState.teams,
+            users: seedState.users,
+            teamMemberships: seedState.teamMemberships,
+            audits: []
+          }}
+        />
+      </AppStateProvider>
+    );
+
+    expect(html).toContain("Admin theme console");
+    expect(html).toContain("First-class team branding control");
+    expect(html).toContain("Theme editor");
+    expect(html).toContain("All team themes");
+    expect(html).toContain("Theme audit");
+  });
+});
+
+describe("RegistrationClient", () => {
+  it("renders self-registration with admin review boundary", () => {
+    const html = renderToStaticMarkup(
+      <AppStateProvider>
+        <RegistrationClient />
+      </AppStateProvider>
+    );
+
+    expect(html).toContain("Registration system");
+    expect(html).toContain("Submit for review");
+    expect(html).toContain("does not create a login");
+  });
+});
+
+describe("ParentReplayClient", () => {
+  it("renders the coach recap builder and generated parent replay preview", () => {
+    const html = renderToStaticMarkup(
+      <AppStateProvider>
+        <ParentReplayClient />
+      </AppStateProvider>
+    );
+
+    expect(html).toContain("Parent Replay");
+    expect(html).toContain("Today we worked on");
+    expect(html).toContain("Two-minute home activity");
+    expect(html).toContain("Coach video");
+    expect(html).toContain("Parent tip");
+    expect(html).toContain("Team quest");
+    expect(html).toContain("Translation engine");
+    expect(html).toContain("Healthy streak");
+    expect(html).toContain("Memory timeline");
+  });
+});
+
+describe("TeamPortalClient", () => {
+  it("renders the requested tier features in a team-scoped portal", () => {
+    const html = renderToStaticMarkup(
+      <AppStateProvider>
+        <TeamPortalClient />
+      </AppStateProvider>
+    );
+
+    expect(html).toContain("Team-specific portal");
+    expect(html).toContain("Portal colors and mascot");
+    expect(html).toContain("Tiger Cub colors");
+    expect(html).toContain("Weekly digest");
+    expect(html).toContain("Game Day Mode");
+    expect(html).toContain("Calm Mode keeps only essentials visible");
+    expect(html).toContain("RSVP:");
+    expect(html).toContain("Coach video library");
+    expect(html).toContain("Parent education center");
+    expect(html).toContain("Skill trees");
+    expect(html).toContain("Season storybook");
+    expect(html).toContain("Volunteer center");
+    expect(html).toContain("AI learning plans");
   });
 });

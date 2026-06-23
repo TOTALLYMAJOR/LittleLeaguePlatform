@@ -5,18 +5,34 @@ import { AppStateProvider } from "./providers";
 
 export const metadata: Metadata = {
   title: "Little League HQ",
-  description: "Production scaffold for a private youth sports operations platform."
+  description: "Production scaffold for a private youth sports operations platform.",
+  manifest: "/manifest.webmanifest",
+  appleWebApp: {
+    capable: true,
+    title: "Little League HQ",
+    statusBarStyle: "default"
+  }
 };
 
 const navItems = [
   ["Home", "/"],
+  ["Auth", "/auth"],
+  ["Account", "/account"],
+  ["Team Portal", "/team-portal"],
+  ["Admin Dashboard", "/admin"],
+  ["Theme Console", "/admin/themes"],
+  ["Registration Review", "/admin/registrations"],
+  ["Memberships", "/admin/memberships"],
   ["Admin Health", "/admin/health"],
   ["CSV Imports", "/admin/imports"],
   ["Invites", "/admin/invites"],
   ["Recover Invite", "/invite/recover"],
   ["Parent Home", "/parent"],
   ["Parent RSVP", "/parent/rsvp"],
+  ["Coach Home", "/coach"],
   ["Coach RSVPs", "/coach/rsvps"],
+  ["Registration", "/registration"],
+  ["Parent Replay", "/coach/parent-replay"],
   ["Schedule", "/schedule"],
   ["Team Chat", "/team-chat"],
   ["Static Prototype", "/prototype/index.html"]

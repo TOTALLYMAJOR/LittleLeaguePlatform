@@ -4,7 +4,13 @@ import {
   analyzeRosterCsv,
   applyScheduleChange,
   computeAdminHealth,
+  computeSeasonPlanningMetrics,
+  createRegistrationRequest,
+  createParentReplay,
+  defaultTeamCommunicationCopy,
   evaluateInviteRecovery,
+  generateParentReplayDraft,
+  getCoachRsvpReliability,
   canModerateTeamChat,
   getCoachRsvpSummaries,
   getParentDashboard,
@@ -12,10 +18,14 @@ import {
   getTeamChatView,
   moderateTeamChatMessage,
   postTeamChatMessage,
+  previewTeamCommunication,
+  previewScheduleChangeImpact,
+  queueTeamCommunication,
   sampleRosterCsv,
   seedState,
   sendCoachAnnouncement,
-  setRsvp
+  setRsvp,
+  updateTeamPortalBranding
 } from "./index";
 
 describe("CSV duplicate detection", () => {
@@ -94,6 +104,17 @@ describe("parent dashboard and RSVP", () => {
     expect(summaries[0]?.going).toBe(1);
     expect(summaries[0]?.noResponse).toBe(0);
   });
+
+  it("tracks family RSVP reliability without public parent ranking", () => {
+    const reliability = getCoachRsvpReliability(seedState, "user-coach-taylor", NOW);
+    const jordan = reliability.find((row) => row.parentUser?.id === "user-parent-jordan");
+    const riley = reliability.find((row) => row.parentUser?.id === "user-parent-riley");
+
+    expect(jordan?.noResponse).toBe(2);
+    expect(jordan?.responseRate).toBe(0);
+    expect(jordan?.reminderMode).toBe("Needs reminder");
+    expect(riley?.responded).toBe(1);
+  });
 });
 
 describe("schedule changes and admin health", () => {
@@ -110,6 +131,23 @@ describe("schedule changes and admin health", () => {
     expect(result.state.notifications.filter((notification) => notification.eventId === "event-tigers-game")).toHaveLength(4);
   });
 
+  it("previews schedule change impact before queueing alert records", () => {
+    const preview = previewScheduleChangeImpact(seedState, {
+      eventId: "event-tigers-game",
+      actorUserId: "user-admin",
+      actorRole: "admin",
+      status: "cancelled",
+      now: NOW
+    });
+
+    expect(preview.ok).toBe(true);
+    expect(preview.affectedFamilies).toBe(2);
+    expect(preview.rsvpdPlayers).toBe(1);
+    expect(preview.noResponsePlayers).toBe(1);
+    expect(preview.channels).toEqual(["push", "email", "sms"]);
+    expect(preview.notificationCount).toBe(6);
+  });
+
   it("computes launch readiness card counts", () => {
     const cards = computeAdminHealth(seedState, NOW);
     const missingCoaches = cards.find((card) => card.id === "missing-coaches");
@@ -117,6 +155,73 @@ describe("schedule changes and admin health", () => {
 
     expect(missingCoaches?.count).toBe(2);
     expect(failedInvites?.count).toBe(1);
+  });
+});
+
+describe("team communication automation", () => {
+  it("previews email automation recipients without provider sends", () => {
+    const copy = defaultTeamCommunicationCopy(seedState, "team-tigers", "weekly_digest");
+    const preview = previewTeamCommunication(seedState, {
+      teamId: "team-tigers",
+      actorUserId: "user-admin",
+      channel: "email",
+      template: "weekly_digest",
+      subject: copy.subject,
+      body: copy.body,
+      sendAt: NOW,
+      now: NOW
+    });
+
+    expect(preview.ok).toBe(true);
+    expect(preview.recipients).toHaveLength(2);
+    expect(preview.message).toContain("no provider send");
+  });
+
+  it("queues mass SMS records for active team families only", () => {
+    const result = queueTeamCommunication(seedState, {
+      teamId: "team-tigers",
+      actorUserId: "user-admin",
+      channel: "sms",
+      template: "game_day_reminder",
+      subject: "Tiny Tigers game-day essentials",
+      body: "Arrive early, wear orange, and check weather before leaving.",
+      sendAt: NOW,
+      now: NOW
+    });
+
+    expect(result.ok).toBe(true);
+    expect(result.state.notifications.filter((notification) => notification.notificationType === "team_broadcast")).toHaveLength(2);
+    expect(result.message).toContain("no provider send");
+  });
+
+  it("blocks unassigned coaches from queueing another team's communication", () => {
+    const result = queueTeamCommunication(seedState, {
+      teamId: "team-hawks",
+      actorUserId: "user-coach-taylor",
+      channel: "email",
+      template: "custom",
+      subject: "Wrong team",
+      body: "This should not queue.",
+      sendAt: NOW,
+      now: NOW
+    });
+
+    expect(result.ok).toBe(false);
+    expect(result.message).toContain("Only org admins or assigned coaches");
+  });
+});
+
+describe("start-of-season planning", () => {
+  it("computes metrics that drive roster maker and bracket maker previews", () => {
+    const metrics = computeSeasonPlanningMetrics(seedState, 10);
+    const threeU = metrics.divisions.find((division) => division.division === "3U");
+    const threeUBracket = metrics.bracketRounds.find((round) => round.division === "3U");
+
+    expect(metrics.totalTeams).toBe(4);
+    expect(metrics.rosterOpenings).toBeGreaterThan(0);
+    expect(threeU?.teamCount).toBe(2);
+    expect(threeU?.rosterMakerNote).toContain("Roster maker");
+    expect(threeUBracket?.matchups[0]).toContain("vs");
   });
 });
 
@@ -300,5 +405,152 @@ describe("safe team chat access", () => {
 
     expect(result.ok).toBe(false);
     expect(result.message).toContain("Only assigned coaches");
+  });
+});
+
+describe("Parent Replay", () => {
+  it("generates home activities, parent translations, aggregate streaks, memory, and a team quest from practice focus areas", () => {
+    const draft = generateParentReplayDraft(seedState, {
+      teamId: "team-tigers",
+      coachUserId: "user-coach-taylor",
+      focusAreas: ["catching", "spacing", "teamwork"],
+      now: NOW
+    });
+
+    expect(draft.summary).toContain("catching, spacing, teamwork");
+    expect(draft.homeActivities.map((activity) => activity.duration)).toEqual(["30_seconds", "2_minutes", "5_minutes"]);
+    expect(draft.homeActivities[0]?.coachCue).toBe("catching");
+    expect(draft.homeActivities[0]?.parentGoal).toContain("One confident rep");
+    expect(draft.homeActivities[1]?.parentGoal).toContain("without equipment");
+    expect(draft.homeActivities[2]?.parentGoal).toContain("pressure low");
+    expect(draft.coachVideo.title).toContain("catching");
+    expect(draft.parentTip).toContain("soft tosses");
+    expect(draft.teamQuest).toContain("two-minute");
+    expect(draft.parentTranslations.find((translation) => translation.coachTerm === "spacing")?.parentInstruction).toContain("open grass");
+    expect(draft.microCoachingStreak.totalFamilies).toBe(2);
+    expect(draft.memoryMoment.detail).toContain("season timeline");
+    expect(draft.skillCards).toHaveLength(3);
+  });
+
+  it("allows assigned coaches to queue replay records without provider sends", () => {
+    const result = createParentReplay(seedState, {
+      teamId: "team-tigers",
+      coachUserId: "user-coach-taylor",
+      focusAreas: ["catching", "throwing", "teamwork"],
+      now: NOW
+    });
+
+    expect(result.ok).toBe(true);
+    expect(result.state.parentReplays).toHaveLength(1);
+    expect(result.state.notifications.filter((notification) => notification.notificationType === "parent_replay_ready")).toHaveLength(2);
+    expect(result.message).toContain("no provider sends");
+  });
+
+  it("prevents parents from creating replay records for a team", () => {
+    const result = createParentReplay(seedState, {
+      teamId: "team-tigers",
+      coachUserId: "user-parent-jordan",
+      focusAreas: ["catching"],
+      now: NOW
+    });
+
+    expect(result.ok).toBe(false);
+    expect(result.message).toContain("Only org admins or assigned coaches");
+    expect(result.state.parentReplays).toHaveLength(0);
+  });
+
+  it("requires 2-3 focus areas before queueing a replay", () => {
+    const result = createParentReplay(seedState, {
+      teamId: "team-tigers",
+      coachUserId: "user-coach-taylor",
+      focusAreas: ["catching"],
+      now: NOW
+    });
+
+    expect(result.ok).toBe(false);
+    expect(result.message).toContain("2-3 practice focus areas");
+  });
+});
+
+describe("team portal branding", () => {
+  it("allows an assigned coach to update their team's colors and mascot", () => {
+    const result = updateTeamPortalBranding(seedState, {
+      teamId: "team-tigers",
+      actorUserId: "user-coach-taylor",
+      mascot: "Orange Tiger",
+      primaryColor: "#ea580c",
+      secondaryColor: "#2563eb",
+      themeKey: "baseball",
+      now: NOW
+    });
+    const updatedTeam = result.state.teams.find((team) => team.id === "team-tigers");
+
+    expect(result.ok).toBe(true);
+    expect(updatedTeam?.mascot).toBe("Orange Tiger");
+    expect(updatedTeam?.primaryColor).toBe("#ea580c");
+    expect(result.state.auditEvents[0]?.action).toBe("team_portal_branding_updated");
+  });
+
+  it("prevents an unassigned coach from updating another team's portal", () => {
+    const result = updateTeamPortalBranding(seedState, {
+      teamId: "team-hawks",
+      actorUserId: "user-coach-taylor",
+      mascot: "Wrong Hawk",
+      primaryColor: "#111111",
+      secondaryColor: "#eeeeee",
+      themeKey: "football",
+      now: NOW
+    });
+
+    expect(result.ok).toBe(false);
+    expect(result.message).toContain("assigned coach");
+    expect(result.state.teams.find((team) => team.id === "team-hawks")?.mascot).toBe("Hawk");
+  });
+
+  it("rejects invalid color values", () => {
+    const result = updateTeamPortalBranding(seedState, {
+      teamId: "team-tigers",
+      actorUserId: "user-coach-taylor",
+      mascot: "Tiger",
+      primaryColor: "orange",
+      secondaryColor: "#2563eb",
+      themeKey: "baseball",
+      now: NOW
+    });
+
+    expect(result.ok).toBe(false);
+    expect(result.message).toContain("#RRGGBB");
+  });
+});
+
+describe("registration system", () => {
+  it("queues parent registration requests for admin review without granting access", () => {
+    const result = createRegistrationRequest(seedState, {
+      teamId: "team-tigers",
+      parentName: "Taylor Parent",
+      parentEmail: "taylor@example.com",
+      playerFirstName: "Parker",
+      playerLastInitial: "P",
+      now: NOW
+    });
+
+    expect(result.ok).toBe(true);
+    expect(result.request?.status).toBe("pending");
+    expect(result.state.registrationRequests).toHaveLength(seedState.registrationRequests.length + 1);
+    expect(result.message).toContain("No account access was granted");
+  });
+
+  it("rejects invalid registration emails", () => {
+    const result = createRegistrationRequest(seedState, {
+      teamId: "team-tigers",
+      parentName: "Taylor Parent",
+      parentEmail: "not-an-email",
+      playerFirstName: "Parker",
+      playerLastInitial: "P",
+      now: NOW
+    });
+
+    expect(result.ok).toBe(false);
+    expect(result.message).toContain("valid parent email");
   });
 });
