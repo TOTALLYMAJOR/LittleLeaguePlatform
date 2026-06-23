@@ -77,13 +77,13 @@ npm run supabase:push
   - `output/playwright/parent-qa-session-live.png`
   - `output/playwright/parent-rsvp-qa-session-live.png`
   - `output/playwright/coach-qa-session-live.png`
+- Added route-level live action tests for signed-in parent RSVP plus snack, volunteer, and weather draft actions. The tests assert client-submitted actor IDs are ignored and the verified Supabase session user is used.
 
 ### Remaining Gap
 
-- Signed-out users now correctly receive `401` responses from private mutation APIs. Production UX still needs polished signed-out and missing-membership states on every private form.
+- Signed-out users now correctly receive `401` responses from private mutation APIs, and parent/coach private surfaces show explicit signed-out or missing-membership states instead of empty private forms.
 - Production launch still needs full RLS policy enforcement tests for parent/coach/admin boundaries using real auth sessions, not only service-role adapters and route auth guards.
 
 ### Next
 
-- Add live-data E2E coverage for a signed-in parent RSVP and signed-in coach snack/volunteer/weather action.
 - Add route-level browser tests that run `npm run qa:session-proof` in CI against a disposable Supabase QA project or seeded preview database.
