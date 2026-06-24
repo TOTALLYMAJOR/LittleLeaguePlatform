@@ -3,6 +3,7 @@ import { POST as postRsvp } from "./api/rsvps/route";
 import { POST as postAdminExport } from "./api/admin/exports/route";
 import { POST as postNotificationPreference } from "./api/notification-preferences/route";
 import { POST as postMobileUsageEvent } from "./api/mobile-usage-events/route";
+import { POST as postProviderDeliveryReview } from "./api/provider-delivery/review/route";
 import { POST as postParentReplay } from "./api/coach/parent-replay/route";
 import { POST as postWeeklyUpdate } from "./api/coach/weekly-update/route";
 import { POST as postSponsorSave } from "./api/admin/sponsors/route";
@@ -15,6 +16,7 @@ import { POST as postWeatherDraft } from "./api/weather-alerts/draft/route";
 import type { ParentReplayDraft } from "@/lib/domain";
 import { updateTenantThemeDefaults } from "@/lib/supabase/team-branding";
 import { createAdminExport } from "@/lib/supabase/reporting";
+import { reviewNotificationDelivery } from "@/lib/supabase/provider-delivery";
 import {
   claimSnackSlot,
   claimVolunteerRole,
@@ -56,6 +58,10 @@ vi.mock("@/lib/supabase/reporting", () => ({
   createAdminExport: vi.fn()
 }));
 
+vi.mock("@/lib/supabase/provider-delivery", () => ({
+  reviewNotificationDelivery: vi.fn()
+}));
+
 const authMock = vi.mocked(requireAuthenticatedRouteUser);
 const updateParentRsvpMock = vi.mocked(updateParentRsvp);
 const claimSnackSlotMock = vi.mocked(claimSnackSlot);
@@ -70,6 +76,7 @@ const saveParentReplayMock = vi.mocked(saveParentReplay);
 const updateNotificationPreferenceMock = vi.mocked(updateNotificationPreference);
 const updateTenantThemeDefaultsMock = vi.mocked(updateTenantThemeDefaults);
 const createAdminExportMock = vi.mocked(createAdminExport);
+const reviewNotificationDeliveryMock = vi.mocked(reviewNotificationDelivery);
 
 function jsonRequest(body: unknown) {
   return new Request("http://localhost/api/test", {
@@ -191,6 +198,30 @@ describe("live action API routes", () => {
       organizationId: "org-1",
       actorUserId: "user-live-session",
       kind: "roster"
+    });
+  });
+
+  it("uses the authenticated coach or admin session for provider delivery review", async () => {
+    reviewNotificationDeliveryMock.mockResolvedValue({
+      ok: true,
+      message: "Provider delivery approved.",
+      notification: { id: "notification-1", provider_approval_status: "approved", approved_at: "2026-06-23T12:00:00.000Z" },
+      attempt: { id: "attempt-1", provider: "email", channel: "email", status: "queued", attempted_at: "2026-06-23T12:00:00.000Z" }
+    });
+
+    const response = await postProviderDeliveryReview(jsonRequest({
+      notificationId: "notification-1",
+      actorUserId: "client-spoof",
+      decision: "approved",
+      provider: "email"
+    }));
+
+    expect(response.status).toBe(200);
+    expect(reviewNotificationDeliveryMock).toHaveBeenCalledWith({
+      notificationId: "notification-1",
+      actorUserId: "user-live-session",
+      decision: "approved",
+      provider: "email"
     });
   });
 

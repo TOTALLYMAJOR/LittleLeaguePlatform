@@ -15,6 +15,7 @@ describe("Supabase RLS policy coverage", () => {
   const mediaGovernance = migration("0008_media_governance.sql");
   const tenantThemeDefaults = migration("0009_tenant_theme_defaults.sql");
   const mobileDecisionMetrics = migration("0010_mobile_decision_metrics.sql");
+  const providerDeliveryApproval = migration("0011_provider_delivery_approval.sql");
   const packageJson = readFileSync(join(process.cwd(), "package.json"), "utf8");
   const rlsProof = readFileSync(join(process.cwd(), "scripts", "verify-rls-boundaries.mjs"), "utf8");
 
@@ -69,6 +70,13 @@ describe("Supabase RLS policy coverage", () => {
     expect(mobileDecisionMetrics).toContain("'install_prompt_shown'");
     expect(mobileDecisionMetrics).toContain("'push_permission_requested'");
     expect(mobileDecisionMetrics).toContain("organization admins read mobile usage events");
+  });
+
+  it("keeps provider delivery approval gated before external sends", () => {
+    expect(providerDeliveryApproval).toContain("provider_approval_status");
+    expect(providerDeliveryApproval).toContain("'approved'");
+    expect(providerDeliveryApproval).toContain("'rejected'");
+    expect(providerDeliveryApproval).toContain("approved_by_user_id");
   });
 
   it("keeps the real-session RLS QA proof wired", () => {
