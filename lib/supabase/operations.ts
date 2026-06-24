@@ -103,6 +103,62 @@ export async function registerPushSubscription(input: {
   }
 }
 
+export async function updateNotificationPreference(input: {
+  userId: string;
+  organizationId?: string;
+  teamId?: string;
+  channel: "push" | "email" | "sms";
+  notificationType: "schedule_changed" | "event_cancelled" | "new_event" | "invite_sent" | "invite_recovered" | "parent_replay_ready" | "team_broadcast" | "weather_alert" | "chat_announcement" | "volunteer_reminder" | "snack_reminder";
+  enabled: boolean;
+  quietHoursStart?: string;
+  quietHoursEnd?: string;
+  timezone?: string;
+}) {
+  if (!input.userId || !input.channel || !input.notificationType || (!input.organizationId && !input.teamId)) {
+    return { ok: false, message: "Notification preference requires user, scope, channel, and type." };
+  }
+
+  try {
+    const db = adminDb();
+    let deleteQuery = db
+      .from("notification_preferences")
+      .delete()
+      .eq("user_id", input.userId)
+      .eq("channel", input.channel)
+      .eq("notification_type", input.notificationType);
+
+    deleteQuery = input.organizationId ? deleteQuery.eq("organization_id", input.organizationId) : deleteQuery.is("organization_id", null);
+    deleteQuery = input.teamId ? deleteQuery.eq("team_id", input.teamId) : deleteQuery.is("team_id", null);
+
+    const deleteResult = await runDynamicQuery(deleteQuery);
+    if (deleteResult.error) return { ok: false, message: "Existing notification preference could not be replaced." };
+
+    const now = new Date().toISOString();
+    const { data, error } = await runDynamicQuery(db
+      .from("notification_preferences")
+      .insert({
+        user_id: input.userId,
+        organization_id: input.organizationId ?? null,
+        team_id: input.teamId ?? null,
+        channel: input.channel,
+        notification_type: input.notificationType,
+        enabled: input.enabled,
+        quiet_hours_start: input.quietHoursStart ?? null,
+        quiet_hours_end: input.quietHoursEnd ?? null,
+        timezone: input.timezone ?? "America/Chicago",
+        opted_in_at: input.enabled ? now : null,
+        opted_out_at: input.enabled ? null : now
+      })
+      .select("id,user_id,team_id,channel,notification_type,enabled,quiet_hours_start,quiet_hours_end,timezone,opted_in_at,opted_out_at")
+      .single());
+
+    if (error || !data) return { ok: false, message: "Notification preference could not be saved." };
+    return { ok: true, message: "Notification preference saved to Supabase.", preference: data };
+  } catch {
+    return { ok: false, message: "Notification preference could not reach Supabase." };
+  }
+}
+
 export async function updateParentRsvp(input: {
   eventId: string;
   playerId: string;

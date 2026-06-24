@@ -6,6 +6,7 @@ export type EventType = "game" | "practice" | "team_event";
 export type RsvpResponse = "going" | "not_going" | "maybe";
 export type NotificationType = "schedule_changed" | "event_cancelled" | "new_event" | "invite_sent" | "invite_recovered" | "parent_replay_ready" | "team_broadcast";
 export type NotificationChannel = "push" | "email" | "sms";
+export type NotificationPreferenceType = NotificationType | "weather_alert" | "chat_announcement" | "volunteer_reminder" | "snack_reminder";
 export type ImportSeverity = "valid" | "warning" | "error";
 export type ChatMessageKind = "message" | "announcement";
 export type ChatAnnouncementTopic = "game_time" | "field_location" | "uniforms" | "snacks" | "weather" | "reminder";
@@ -161,6 +162,21 @@ export interface NotificationRecord {
   createdAt: string;
   sentAt?: string;
   readAt?: string;
+}
+
+export interface NotificationPreference {
+  id: string;
+  userId: string;
+  organizationId?: string;
+  teamId?: string;
+  channel: NotificationChannel;
+  notificationType: NotificationPreferenceType;
+  enabled: boolean;
+  quietHoursStart?: string;
+  quietHoursEnd?: string;
+  timezone: string;
+  optedInAt?: string;
+  optedOutAt?: string;
 }
 
 export interface ParentReplayHomeActivity {
@@ -370,6 +386,7 @@ export interface AppState {
   announcements: Announcement[];
   mediaItems: MediaItem[];
   notifications: NotificationRecord[];
+  notificationPreferences: NotificationPreference[];
   parentReplays: ParentReplayRecord[];
   registrationRequests: RegistrationRequest[];
   snackScheduleSlots: SnackScheduleSlot[];

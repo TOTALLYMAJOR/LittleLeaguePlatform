@@ -1,5 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { POST as postRsvp } from "./api/rsvps/route";
+import { POST as postNotificationPreference } from "./api/notification-preferences/route";
 import { POST as postSnackClaim } from "./api/snack-slots/claim/route";
 import { POST as postVolunteerClaim } from "./api/volunteer-signups/claim/route";
 import { POST as postWeatherDraft } from "./api/weather-alerts/draft/route";
@@ -7,6 +8,7 @@ import {
   claimSnackSlot,
   claimVolunteerRole,
   createWeatherAlertDraft,
+  updateNotificationPreference,
   updateParentRsvp
 } from "@/lib/supabase/operations";
 import { requireAuthenticatedRouteUser } from "@/lib/supabase/route-auth";
@@ -19,6 +21,7 @@ vi.mock("@/lib/supabase/operations", () => ({
   claimSnackSlot: vi.fn(),
   claimVolunteerRole: vi.fn(),
   createWeatherAlertDraft: vi.fn(),
+  updateNotificationPreference: vi.fn(),
   updateParentRsvp: vi.fn()
 }));
 
@@ -27,6 +30,7 @@ const updateParentRsvpMock = vi.mocked(updateParentRsvp);
 const claimSnackSlotMock = vi.mocked(claimSnackSlot);
 const claimVolunteerRoleMock = vi.mocked(claimVolunteerRole);
 const createWeatherAlertDraftMock = vi.mocked(createWeatherAlertDraft);
+const updateNotificationPreferenceMock = vi.mocked(updateNotificationPreference);
 
 function jsonRequest(body: unknown) {
   return new Request("http://localhost/api/test", {
@@ -100,6 +104,31 @@ describe("live action API routes", () => {
     expect(createWeatherAlertDraftMock).toHaveBeenCalledWith({
       eventId: "event-1",
       reviewerUserId: "user-live-session"
+    });
+  });
+
+  it("uses the authenticated parent session for notification preferences", async () => {
+    updateNotificationPreferenceMock.mockResolvedValue({ ok: true, message: "Preference saved.", preference: { id: "pref-1" } });
+
+    const response = await postNotificationPreference(jsonRequest({
+      teamId: "team-1",
+      channel: "push",
+      notificationType: "schedule_changed",
+      enabled: false,
+      userId: "client-spoof"
+    }));
+
+    expect(response.status).toBe(200);
+    expect(updateNotificationPreferenceMock).toHaveBeenCalledWith({
+      userId: "user-live-session",
+      organizationId: undefined,
+      teamId: "team-1",
+      channel: "push",
+      notificationType: "schedule_changed",
+      enabled: false,
+      quietHoursStart: undefined,
+      quietHoursEnd: undefined,
+      timezone: undefined
     });
   });
 });

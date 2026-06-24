@@ -28,6 +28,7 @@ describe("parent and coach dashboard Supabase reads", () => {
       "player_guardians",
       "events",
       "rsvps",
+      "notification_preferences",
       "snack_schedule_slots",
       "volunteer_signups",
       "weather_alerts"

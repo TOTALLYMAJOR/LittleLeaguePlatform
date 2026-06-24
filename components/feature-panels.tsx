@@ -745,17 +745,25 @@ export function ParentDashboardClient({ dashboardData }: { dashboardData?: Paren
   const dashboard = getParentDashboard(sourceState, parentUserId, NOW);
   const accessGate = privateAccessGate(dashboardData, "parent");
   const parentTeamIds = new Set(dashboard.children.map(({ team }) => team.id));
+  const primaryTeamId = dashboard.children[0]?.team.id;
   const openSnackSlots = sourceState.snackScheduleSlots.filter((slot) => parentTeamIds.has(slot.teamId) && slot.status === "open");
   const openVolunteerSignups = sourceState.volunteerSignups.filter((signup) => parentTeamIds.has(signup.teamId) && signup.status === "open");
   const eventById = new Map(sourceState.events.map((event) => [event.id, event]));
-  const notificationPreferences = {
-    push: true,
-    email: true,
-    smsFallback: true,
-    urgentOnlySms: true,
-    quietHours: "8:30 PM-7:00 AM",
-    digestFrequency: "Weekly digest"
-  };
+  const schedulePreferences = (["push", "email", "sms"] as const).map((channel) => {
+    const preference = sourceState.notificationPreferences.find((item) => (
+      item.userId === parentUserId &&
+      item.channel === channel &&
+      item.notificationType === "schedule_changed" &&
+      (!item.teamId || parentTeamIds.has(item.teamId))
+    ));
+    return {
+      channel,
+      enabled: preference?.enabled ?? channel !== "sms",
+      quietHours: preference?.quietHoursStart && preference.quietHoursEnd
+        ? `${preference.quietHoursStart}-${preference.quietHoursEnd}`
+        : "8:30 PM-7:00 AM"
+    };
+  });
 
   function claimFamilyHelp(url: string, payload: unknown) {
     if (!dashboardData?.isSupabaseBacked) {
@@ -767,6 +775,27 @@ export function ParentDashboardClient({ dashboardData }: { dashboardData?: Paren
       const response = await authenticatedJsonFetch(url, payload);
       const result = await response.json().catch(() => null) as { ok?: boolean; message?: string } | null;
       setHelpMessage(result?.message ?? (response.ok ? "Claim saved." : "Claim could not be saved."));
+    });
+  }
+
+  function saveSchedulePreference(channel: "push" | "email" | "sms", enabled: boolean) {
+    if (!dashboardData?.isSupabaseBacked || !primaryTeamId) {
+      setHelpMessage("Sign in with an approved parent link before saving notification preferences.");
+      return;
+    }
+
+    startHelpTransition(async () => {
+      const response = await authenticatedJsonFetch("/api/notification-preferences", {
+        teamId: primaryTeamId,
+        channel,
+        notificationType: "schedule_changed",
+        enabled,
+        quietHoursStart: "20:30",
+        quietHoursEnd: "07:00",
+        timezone: "America/Chicago"
+      });
+      const result = await response.json().catch(() => null) as { ok?: boolean; message?: string } | null;
+      setHelpMessage(result?.message ?? (response.ok ? "Preference saved." : "Preference could not be saved."));
     });
   }
 
@@ -890,13 +919,30 @@ export function ParentDashboardClient({ dashboardData }: { dashboardData?: Paren
               <span className="eyebrow">Notification preference center</span>
               <h2>Family alert rules</h2>
             </div>
-            <span className="badge warning">Local preview</span>
+            <span className={`badge ${dashboardData?.isSupabaseBacked ? "ok" : "warning"}`}>{dashboardData?.isSupabaseBacked ? "Persisted" : "Local preview"}</span>
           </div>
-          <p>Push {notificationPreferences.push ? "on" : "off"} · email {notificationPreferences.email ? "on" : "off"} · SMS fallback {notificationPreferences.smsFallback ? "on" : "off"}</p>
-          <p>Urgent-only SMS: {notificationPreferences.urgentOnlySms ? "enabled" : "disabled"}</p>
-          <p>Quiet hours: {notificationPreferences.quietHours}</p>
-          <p>Digest frequency: {notificationPreferences.digestFrequency}</p>
-          <p className="muted">Preferences are displayed as the production messaging contract. No provider subscription update is sent from this scaffold.</p>
+          {schedulePreferences.map((preference) => (
+            <div className="stack compact" key={preference.channel}>
+              <p><strong>{preference.channel.toUpperCase()}</strong> schedule alerts {preference.enabled ? "on" : "off"}<br /><span className="muted">Quiet hours {preference.quietHours}</span></p>
+              <div className="toolbar">
+                <button
+                  className={preference.enabled ? undefined : "secondary"}
+                  disabled={isHelpPending}
+                  onClick={() => saveSchedulePreference(preference.channel, true)}
+                >
+                  On
+                </button>
+                <button
+                  className={preference.enabled ? "secondary" : undefined}
+                  disabled={isHelpPending}
+                  onClick={() => saveSchedulePreference(preference.channel, false)}
+                >
+                  Off
+                </button>
+              </div>
+            </div>
+          ))}
+          <p className="muted">Saving preferences updates Supabase only. Provider sends still require opt-in, policy checks, and approved delivery adapters.</p>
         </article>
         <article className="card stack">
           <h2>Respectful messaging boundary</h2>

@@ -205,6 +205,7 @@ export const seedState: AppState = {
     { id: "media-cleats", teamId: "team-tigers", title: "How to tie cleats", type: "youtube", url: "https://www.youtube.com/watch?v=dQw4w9WgXcQ", createdAt: "2026-03-29T12:00:00.000Z" }
   ],
   notifications: [],
+  notificationPreferences: [],
   parentReplays: [],
   registrationRequests: [
     {

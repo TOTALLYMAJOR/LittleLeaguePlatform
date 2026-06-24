@@ -89,9 +89,10 @@ describe("ParentDashboardClient", () => {
     );
 
     expect(html).toContain("Notification preference center");
-    expect(html).toContain("Urgent-only SMS");
-    expect(html).toContain("Digest frequency");
-    expect(html).toContain("No provider subscription update");
+    expect(html).toContain("PUSH");
+    expect(html).toContain("EMAIL");
+    expect(html).toContain("SMS");
+    expect(html).toContain("Provider sends still require opt-in");
     expect(html).toContain("Snack openings");
     expect(html).toContain("Volunteer openings");
     expect(html).toContain("Claim snack slot");

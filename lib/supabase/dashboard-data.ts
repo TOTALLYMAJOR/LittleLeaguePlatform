@@ -1,4 +1,4 @@
-import { seedState, type Announcement, type AppState, type GuardianLink, type LeagueEvent, type MediaItem, type ParentInvite, type Player, type Rsvp, type SnackScheduleSlot, type Team, type TeamMembership, type User, type VolunteerSignup, type WeatherAlert } from "@/lib/domain";
+import { seedState, type Announcement, type AppState, type GuardianLink, type LeagueEvent, type MediaItem, type NotificationPreference, type ParentInvite, type Player, type Rsvp, type SnackScheduleSlot, type Team, type TeamMembership, type User, type VolunteerSignup, type WeatherAlert } from "@/lib/domain";
 import { createSupabaseAdminClient } from "./admin";
 import { withSupabaseTimeout } from "./timeout";
 
@@ -40,6 +40,7 @@ function emptyDashboardState(): AppState {
     announcements: [],
     mediaItems: [],
     notifications: [],
+    notificationPreferences: [],
     parentReplays: [],
     registrationRequests: [],
     snackScheduleSlots: [],
@@ -100,6 +101,10 @@ function scopeParentState(state: AppState, parentUserId: string): AppState {
     rsvps: state.rsvps.filter((rsvp) => playerIds.has(rsvp.playerId) && eventIds.has(rsvp.eventId)),
     announcements: state.announcements.filter((announcement) => teamIds.has(announcement.teamId)),
     mediaItems: state.mediaItems.filter((item) => teamIds.has(item.teamId)),
+    notificationPreferences: state.notificationPreferences.filter((preference) => (
+      preference.userId === parentUserId &&
+      (!preference.teamId || teamIds.has(preference.teamId))
+    )),
     snackScheduleSlots: state.snackScheduleSlots.filter((slot) => teamIds.has(slot.teamId)),
     volunteerSignups: state.volunteerSignups.filter((signup) => teamIds.has(signup.teamId))
   };
@@ -194,6 +199,7 @@ export async function listParentCoachDashboardData(options: ParentCoachDashboard
       rsvpsResult,
       announcementsResult,
       mediaResult,
+      preferencesResult,
       snacksResult,
       volunteersResult,
       weatherResult
@@ -210,6 +216,7 @@ export async function listParentCoachDashboardData(options: ParentCoachDashboard
       db.from("rsvps").select("id,event_id,player_id,parent_user_id,response,note,responded_at,created_at,updated_at").order("responded_at", { ascending: false }),
       db.from("announcements").select("id,team_id,author_user_id,title,body,created_at").order("created_at", { ascending: false }),
       db.from("media_items").select("id,team_id,title,media_type,url,created_at").order("created_at", { ascending: false }),
+      db.from("notification_preferences").select("id,user_id,organization_id,team_id,channel,notification_type,enabled,quiet_hours_start,quiet_hours_end,timezone,opted_in_at,opted_out_at").order("updated_at", { ascending: false }),
       db.from("snack_schedule_slots").select("id,team_id,event_id,assigned_parent_user_id,item,status").order("created_at", { ascending: true }),
       db.from("volunteer_signups").select("id,team_id,event_id,role,assigned_user_id,status").order("created_at", { ascending: true }),
       db.from("weather_alerts").select("id,team_id,event_id,headline,detail,severity,status,created_at").order("created_at", { ascending: false })
@@ -228,6 +235,7 @@ export async function listParentCoachDashboardData(options: ParentCoachDashboard
       rsvpsResult,
       announcementsResult,
       mediaResult,
+      preferencesResult,
       snacksResult,
       volunteersResult,
       weatherResult
@@ -414,6 +422,33 @@ export async function listParentCoachDashboardData(options: ParentCoachDashboard
       url: item.url,
       createdAt: item.created_at
     }));
+    const notificationPreferences: NotificationPreference[] = (preferencesResult.data ?? []).map((preference: {
+      id: string;
+      user_id: string;
+      organization_id: string | null;
+      team_id: string | null;
+      channel: NotificationPreference["channel"];
+      notification_type: NotificationPreference["notificationType"];
+      enabled: boolean;
+      quiet_hours_start: string | null;
+      quiet_hours_end: string | null;
+      timezone: string;
+      opted_in_at: string | null;
+      opted_out_at: string | null;
+    }) => ({
+      id: preference.id,
+      userId: preference.user_id,
+      organizationId: preference.organization_id ?? undefined,
+      teamId: preference.team_id ?? undefined,
+      channel: preference.channel,
+      notificationType: preference.notification_type,
+      enabled: preference.enabled,
+      quietHoursStart: preference.quiet_hours_start ?? undefined,
+      quietHoursEnd: preference.quiet_hours_end ?? undefined,
+      timezone: preference.timezone,
+      optedInAt: preference.opted_in_at ?? undefined,
+      optedOutAt: preference.opted_out_at ?? undefined
+    }));
     const snackScheduleSlots: SnackScheduleSlot[] = (snacksResult.data ?? []).map((slot: {
       id: string;
       team_id: string;
@@ -486,6 +521,7 @@ export async function listParentCoachDashboardData(options: ParentCoachDashboard
       rsvps,
       announcements,
       mediaItems,
+      notificationPreferences,
       snackScheduleSlots,
       volunteerSignups,
       weatherAlerts

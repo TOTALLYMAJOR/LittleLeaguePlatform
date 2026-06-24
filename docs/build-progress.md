@@ -81,6 +81,7 @@ npm run supabase:push
 - Added `npm run qa:rls-proof`, which signs in QA parent and coach users through the Supabase anon client and verifies parent, coach, and anonymous RLS boundaries against the seeded QA rows.
 - Added PWA install prompt UX, `/offline`, and service-worker fallback coverage so offline states do not imply stale team data is current.
 - Added parent-facing snack and volunteer claim controls backed by the existing authenticated Supabase claim routes.
+- Added parent schedule notification preference reads and an authenticated preference save route that derives the user from the Supabase session.
 
 ### Remaining Gap
 
