@@ -86,8 +86,9 @@ npm run supabase:push
 ### Remaining Gap
 
 - Signed-out users now correctly receive `401` responses from private mutation APIs, and parent/coach private surfaces show explicit signed-out or missing-membership states instead of empty private forms.
-- Production launch still needs CI wiring for `qa:rls-proof` and `qa:session-proof` against a disposable Supabase QA project or seeded preview database.
+- Local `.env.local` must use a real Supabase anon key for `NEXT_PUBLIC_SUPABASE_ANON_KEY`; the current local value is a service-role JWT and `qa:rls-proof` correctly refuses to run.
+- The manual GitHub `supabase-qa-proof.yml` workflow needs QA Supabase secrets before it can prove `qa:rls-proof` and `qa:session-proof` in CI.
 
 ### Next
 
-- Add route-level browser tests that run `npm run qa:session-proof` in CI against a disposable Supabase QA project or seeded preview database.
+- Correct local and GitHub QA secrets, then run `npm run supabase:qa-users`, `npm run qa:rls-proof`, and the manual Supabase QA proof workflow.
