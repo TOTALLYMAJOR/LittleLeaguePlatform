@@ -268,7 +268,9 @@ export interface Sponsor {
   level: "league" | "team";
   teamId?: string;
   url: string;
-  status: "active" | "pending";
+  status: "active" | "pending" | "expired";
+  placementKey?: "team_portal" | "weekly_digest" | "storybook" | "registration" | "field_map";
+  logoUrl?: string;
 }
 
 export interface WeatherAlert {

@@ -2,6 +2,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import { POST as postRsvp } from "./api/rsvps/route";
 import { POST as postNotificationPreference } from "./api/notification-preferences/route";
 import { POST as postWeeklyUpdate } from "./api/coach/weekly-update/route";
+import { POST as postSponsorSave } from "./api/admin/sponsors/route";
 import { POST as postMediaReport } from "./api/media/report/route";
 import { POST as postSnackClaim } from "./api/snack-slots/claim/route";
 import { POST as postVolunteerClaim } from "./api/volunteer-signups/claim/route";
@@ -11,6 +12,7 @@ import {
   claimVolunteerRole,
   createWeatherAlertDraft,
   saveCoachWeeklyUpdate,
+  saveSponsor,
   reportMediaItem,
   updateNotificationPreference,
   updateParentRsvp
@@ -26,6 +28,7 @@ vi.mock("@/lib/supabase/operations", () => ({
   claimVolunteerRole: vi.fn(),
   createWeatherAlertDraft: vi.fn(),
   saveCoachWeeklyUpdate: vi.fn(),
+  saveSponsor: vi.fn(),
   reportMediaItem: vi.fn(),
   updateNotificationPreference: vi.fn(),
   updateParentRsvp: vi.fn()
@@ -37,6 +40,7 @@ const claimSnackSlotMock = vi.mocked(claimSnackSlot);
 const claimVolunteerRoleMock = vi.mocked(claimVolunteerRole);
 const createWeatherAlertDraftMock = vi.mocked(createWeatherAlertDraft);
 const saveCoachWeeklyUpdateMock = vi.mocked(saveCoachWeeklyUpdate);
+const saveSponsorMock = vi.mocked(saveSponsor);
 const reportMediaItemMock = vi.mocked(reportMediaItem);
 const updateNotificationPreferenceMock = vi.mocked(updateNotificationPreference);
 
@@ -173,6 +177,50 @@ describe("live action API routes", () => {
       mediaItemId: "media-1",
       reporterUserId: "user-live-session",
       reason: "Review this link"
+    });
+  });
+
+  it("uses the authenticated admin session for sponsor saves", async () => {
+    saveSponsorMock.mockResolvedValue({
+      ok: true,
+      message: "Sponsor saved.",
+      sponsor: {
+        id: "sponsor-1",
+        organizationId: "org-1",
+        name: "Local Pizza",
+        level: "league",
+        teamId: undefined,
+        url: "https://sponsor.example",
+        status: "active",
+        placementKey: "team_portal",
+        logoUrl: "https://sponsor.example/logo.png"
+      }
+    });
+
+    const response = await postSponsorSave(jsonRequest({
+      organizationId: "org-1",
+      actorUserId: "client-spoof",
+      sponsorId: "sponsor-1",
+      name: "Local Pizza",
+      level: "league",
+      url: "https://sponsor.example",
+      status: "active",
+      placementKey: "team_portal",
+      logoUrl: "https://sponsor.example/logo.png"
+    }));
+
+    expect(response.status).toBe(200);
+    expect(saveSponsorMock).toHaveBeenCalledWith({
+      organizationId: "org-1",
+      actorUserId: "user-live-session",
+      sponsorId: "sponsor-1",
+      name: "Local Pizza",
+      level: "league",
+      teamId: undefined,
+      url: "https://sponsor.example",
+      status: "active",
+      placementKey: "team_portal",
+      logoUrl: "https://sponsor.example/logo.png"
     });
   });
 });

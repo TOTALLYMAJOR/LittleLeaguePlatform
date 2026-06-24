@@ -11,6 +11,7 @@ describe("Supabase RLS policy coverage", () => {
   const hardening = migration("0002_platform_hardening.sql");
   const provider = migration("0005_provider_and_mobile_hardening.sql");
   const teamBroadcast = migration("0006_team_broadcast_notifications.sql");
+  const sponsorStatus = migration("0007_sponsor_v2_status.sql");
   const packageJson = readFileSync(join(process.cwd(), "package.json"), "utf8");
   const rlsProof = readFileSync(join(process.cwd(), "scripts", "verify-rls-boundaries.mjs"), "utf8");
 
@@ -38,6 +39,13 @@ describe("Supabase RLS policy coverage", () => {
   it("keeps team broadcast notification drafts compatible with Supabase", () => {
     expect(teamBroadcast).toContain("drop constraint if exists notifications_notification_type_check");
     expect(teamBroadcast).toContain("'team_broadcast'");
+  });
+
+  it("keeps sponsor status workflow compatible with pending, active, and expired states", () => {
+    expect(sponsorStatus).toContain("drop constraint if exists sponsors_status_check");
+    expect(sponsorStatus).toContain("'pending'");
+    expect(sponsorStatus).toContain("'active'");
+    expect(sponsorStatus).toContain("'expired'");
   });
 
   it("keeps the real-session RLS QA proof wired", () => {

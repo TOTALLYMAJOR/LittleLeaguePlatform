@@ -145,6 +145,9 @@ describe("AdminDashboardClient", () => {
     expect(html).toContain("Admin dashboard");
     expect(html).toContain("Registration queue");
     expect(html).toContain("Sponsor management");
+    expect(html).toContain("Sponsor placement");
+    expect(html).toContain("Save sponsor");
+    expect(html).toContain("Stripe/payment billing is not connected");
     expect(html).toContain("Communication console");
     expect(html).toContain("Mass SMS");
     expect(html).toContain("Drag and drop SVG lineup");

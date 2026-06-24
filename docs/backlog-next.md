@@ -28,10 +28,11 @@ Acceptance:
 
 ## 3. Sponsor Management V2
 
-- Add sponsor CRUD and placement settings.
-- Add sponsor logo/image asset handling.
-- Add sponsor status workflow: pending, active, expired.
-- Evaluate Stripe only if sponsors pay through the platform.
+- Status: implemented 2026-06-23.
+- Sponsor CRUD and placement settings are available in `/admin`.
+- Sponsor logo/image assets are captured as Supabase sponsor asset rows.
+- Sponsor status workflow supports pending, active, and expired.
+- Stripe remains intentionally disconnected unless sponsors pay through the platform.
 
 Acceptance:
 - Sponsor display never overrides team safety/parent workflow clarity.

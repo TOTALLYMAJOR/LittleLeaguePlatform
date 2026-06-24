@@ -416,6 +416,136 @@ export async function reportMediaItem(input: {
   }
 }
 
+export async function saveSponsor(input: {
+  organizationId: string;
+  actorUserId: string;
+  sponsorId?: string;
+  name: string;
+  level: "league" | "team";
+  teamId?: string;
+  url: string;
+  status: "pending" | "active" | "expired";
+  placementKey?: "team_portal" | "weekly_digest" | "storybook" | "registration" | "field_map";
+  logoUrl?: string;
+}) {
+  const name = input.name.trim();
+  const url = input.url.trim();
+  const logoUrl = input.logoUrl?.trim();
+  if (!input.organizationId || !input.actorUserId || !name || !url) {
+    return { ok: false, message: "Sponsor requires organization, actor, name, and URL." };
+  }
+  if (input.level === "team" && !input.teamId) {
+    return { ok: false, message: "Team sponsors require a team." };
+  }
+
+  try {
+    const parsedUrl = new URL(url);
+    if (parsedUrl.protocol !== "https:") return { ok: false, message: "Sponsor URL must use HTTPS." };
+    if (logoUrl) {
+      const parsedLogoUrl = new URL(logoUrl);
+      if (parsedLogoUrl.protocol !== "https:") return { ok: false, message: "Sponsor logo URL must use HTTPS." };
+    }
+  } catch {
+    return { ok: false, message: "Sponsor URL fields must be valid URLs." };
+  }
+
+  try {
+    const db = adminDb();
+    const { data: adminRows } = await runDynamicQuery<Array<{ id: string }>>(db
+      .from("organization_memberships")
+      .select("id")
+      .eq("organization_id", input.organizationId)
+      .eq("user_id", input.actorUserId)
+      .eq("role", "admin")
+      .eq("status", "active"));
+
+    if (!adminRows?.length) return { ok: false, message: "Only active organization admins can manage sponsors." };
+
+    const sponsorPayload = {
+      organization_id: input.organizationId,
+      name,
+      level: input.level,
+      team_id: input.level === "team" ? input.teamId : null,
+      url,
+      status: input.status,
+      ...(input.sponsorId ? { id: input.sponsorId } : {})
+    };
+
+    const { data: sponsor, error } = await runDynamicQuery<{
+      id: string;
+      organization_id: string;
+      name: string;
+      level: "league" | "team";
+      team_id: string | null;
+      url: string;
+      status: "pending" | "active" | "expired";
+    }>(db
+      .from("sponsors")
+      .upsert(sponsorPayload)
+      .select("id,organization_id,name,level,team_id,url,status")
+      .single());
+
+    if (error || !sponsor) return { ok: false, message: "Sponsor could not be saved." };
+
+    if (input.placementKey) {
+      await runDynamicQuery(db
+        .from("sponsor_placements")
+        .delete()
+        .eq("sponsor_id", sponsor.id)
+        .eq("placement_key", input.placementKey));
+      await runDynamicQuery(db
+        .from("sponsor_placements")
+        .insert({
+          sponsor_id: sponsor.id,
+          organization_id: input.organizationId,
+          team_id: input.level === "team" ? input.teamId : null,
+          placement_key: input.placementKey,
+          status: input.status === "expired" ? "expired" : "active"
+        }));
+    }
+
+    if (logoUrl) {
+      await runDynamicQuery(db
+        .from("sponsor_assets")
+        .insert({
+          sponsor_id: sponsor.id,
+          asset_type: "logo",
+          url: logoUrl,
+          status: "pending"
+        }));
+    }
+
+    await runDynamicQuery(db
+      .from("audit_events")
+      .insert({
+        organization_id: input.organizationId,
+        actor_user_id: input.actorUserId,
+        action: "sponsor_saved",
+        target_type: "sponsor",
+        target_id: sponsor.id,
+        summary: `Sponsor ${name} saved with ${input.status} status and ${input.placementKey ?? "no"} placement.`
+      }));
+
+    return {
+      ok: true,
+      message: "Sponsor saved with admin audit event. Sponsor billing is still disconnected.",
+      sponsor: {
+        id: sponsor.id,
+        organizationId: sponsor.organization_id,
+        name: sponsor.name,
+        level: sponsor.level,
+        teamId: sponsor.team_id ?? undefined,
+        url: sponsor.url,
+        status: sponsor.status,
+        placementKey: input.placementKey,
+        logoUrl
+      }
+    };
+  } catch {
+    return { ok: false, message: "Sponsor could not reach Supabase." };
+  }
+}
+
 export async function createWeatherAlertDraft(input: {
   eventId: string;
   reviewerUserId?: string;

@@ -84,6 +84,7 @@ npm run supabase:push
 - Added parent schedule notification preference reads and an authenticated preference save route that derives the user from the Supabase session.
 - Added persisted coach weekly update drafts that save an announcement and pending `team_broadcast` notification rows without provider sends.
 - Added media URL validation plus a family media report route that increments `report_count` and moves reported media to pending moderation.
+- Added Sponsor Management V2 with authenticated admin sponsor saves, Supabase placement/logo metadata, pending/active/expired status support, and sponsor audit events. Sponsor billing remains disconnected unless Stripe is intentionally added later.
 
 ### Remaining Gap
 

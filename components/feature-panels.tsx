@@ -38,11 +38,13 @@ import {
   type ProgramThemeKey,
   type RegistrationRequest,
   type RsvpResponse,
+  type Sponsor,
   type Team,
   type UserRole
 } from "@/lib/domain";
 import { createSupabaseBrowserClient } from "@/lib/supabase/browser";
 import type { RegistrationReviewData } from "@/lib/supabase/registration-approvals";
+import type { SponsorAdminData } from "@/lib/supabase/sponsors";
 import type { TeamPortalData } from "@/lib/supabase/team-portal";
 import type { AdminThemeData, TeamThemeAudit } from "@/lib/supabase/team-branding";
 import type { TeamChatData } from "@/lib/supabase/team-chat";
@@ -1220,20 +1222,34 @@ export function CoachDashboardClient({ dashboardData }: { dashboardData?: Parent
 
 interface AdminDashboardClientProps {
   registrationRequests?: RegistrationRequest[];
+  sponsorData?: SponsorAdminData;
 }
 
-export function AdminDashboardClient({ registrationRequests }: AdminDashboardClientProps = {}) {
+export function AdminDashboardClient({ registrationRequests, sponsorData }: AdminDashboardClientProps = {}) {
   const { state, dispatch } = useAppState();
   const healthCards = computeAdminHealth(state, NOW);
   const visibleRegistrations = registrationRequests ?? state.registrationRequests;
   const pendingRegistrations = visibleRegistrations.filter((request) => request.status === "pending");
-  const activeSponsors = state.sponsors.filter((sponsor) => sponsor.status === "active");
+  const sponsorTeams = sponsorData?.teams.length ? sponsorData.teams : state.teams;
+  const initialSponsors = sponsorData?.sponsors.length ? sponsorData.sponsors : state.sponsors;
+  const [sponsors, setSponsors] = useState<Sponsor[]>(initialSponsors);
+  const activeSponsors = sponsors.filter((sponsor) => sponsor.status === "active");
   const [communicationTeamId, setCommunicationTeamId] = useState("team-tigers");
   const [communicationChannel, setCommunicationChannel] = useState<AdminCommunicationChannel>("email");
   const [communicationTemplate, setCommunicationTemplate] = useState<CommunicationTemplate>("weekly_digest");
   const [communicationSubject, setCommunicationSubject] = useState("This week with Tiny Tigers");
   const [communicationBody, setCommunicationBody] = useState("Practice, game-day details, RSVP needs, snacks, volunteer openings, and the latest Parent Replay are ready for Tiny Tigers families.");
   const [communicationMessage, setCommunicationMessage] = useState("");
+  const [sponsorId, setSponsorId] = useState(initialSponsors[0]?.id ?? "new");
+  const [sponsorName, setSponsorName] = useState(initialSponsors[0]?.name ?? "");
+  const [sponsorLevel, setSponsorLevel] = useState<Sponsor["level"]>(initialSponsors[0]?.level ?? "league");
+  const [sponsorTeamId, setSponsorTeamId] = useState(initialSponsors[0]?.teamId ?? sponsorTeams[0]?.id ?? "");
+  const [sponsorUrl, setSponsorUrl] = useState(initialSponsors[0]?.url ?? "https://example.com");
+  const [sponsorStatus, setSponsorStatus] = useState<Sponsor["status"]>(initialSponsors[0]?.status ?? "pending");
+  const [sponsorPlacementKey, setSponsorPlacementKey] = useState<Sponsor["placementKey"] | "none">(initialSponsors[0]?.placementKey ?? "team_portal");
+  const [sponsorLogoUrl, setSponsorLogoUrl] = useState(initialSponsors[0]?.logoUrl ?? "");
+  const [sponsorMessage, setSponsorMessage] = useState(sponsorData?.message ?? "Showing local sponsor records until Supabase sponsor rows are available.");
+  const [isSponsorPending, startSponsorTransition] = useTransition();
   const [lineupTeamId, setLineupTeamId] = useState("team-tigers");
   const [draggedPlayerId, setDraggedPlayerId] = useState("");
   const [targetRosterSize, setTargetRosterSize] = useState(10);
@@ -1265,6 +1281,69 @@ export function AdminDashboardClient({ registrationRequests }: AdminDashboardCli
     setCommunicationSubject(copy.subject);
     setCommunicationBody(copy.body);
   }, [communicationTeamId, communicationTemplate, state]);
+
+  useEffect(() => {
+    if (!sponsorData) return;
+    const nextSponsors = sponsorData.sponsors.length ? sponsorData.sponsors : state.sponsors;
+    setSponsors(nextSponsors);
+    setSponsorMessage(sponsorData.message);
+  }, [sponsorData, state.sponsors]);
+
+  function selectSponsor(nextSponsorId: string) {
+    setSponsorId(nextSponsorId);
+    const sponsor = sponsors.find((item) => item.id === nextSponsorId);
+    if (!sponsor) {
+      setSponsorName("");
+      setSponsorLevel("league");
+      setSponsorTeamId(sponsorTeams[0]?.id ?? "");
+      setSponsorUrl("https://example.com");
+      setSponsorStatus("pending");
+      setSponsorPlacementKey("team_portal");
+      setSponsorLogoUrl("");
+      return;
+    }
+    setSponsorName(sponsor.name);
+    setSponsorLevel(sponsor.level);
+    setSponsorTeamId(sponsor.teamId ?? sponsorTeams[0]?.id ?? "");
+    setSponsorUrl(sponsor.url);
+    setSponsorStatus(sponsor.status);
+    setSponsorPlacementKey(sponsor.placementKey ?? "none");
+    setSponsorLogoUrl(sponsor.logoUrl ?? "");
+  }
+
+  function saveSponsorDraft() {
+    setSponsorMessage("");
+    startSponsorTransition(async () => {
+      const response = await authenticatedJsonFetch("/api/admin/sponsors", {
+        organizationId: sponsorData?.organizationId ?? state.organization.id,
+        sponsorId: sponsorId === "new" ? undefined : sponsorId,
+        name: sponsorName,
+        level: sponsorLevel,
+        teamId: sponsorLevel === "team" ? sponsorTeamId : undefined,
+        url: sponsorUrl,
+        status: sponsorStatus,
+        placementKey: sponsorPlacementKey === "none" ? undefined : sponsorPlacementKey,
+        logoUrl: sponsorLogoUrl || undefined
+      });
+      const result = await response.json().catch(() => null) as {
+        ok?: boolean;
+        message?: string;
+        sponsor?: Sponsor;
+      } | null;
+
+      if (result?.ok && result.sponsor) {
+        setSponsors((current) => {
+          const exists = current.some((item) => item.id === result.sponsor!.id);
+          return exists
+            ? current.map((item) => item.id === result.sponsor!.id ? result.sponsor! : item)
+            : [result.sponsor!, ...current];
+        });
+        setSponsorId(result.sponsor.id);
+      }
+
+      setSponsorMessage(result?.message ?? "Sponsor could not be saved.");
+    });
+  }
 
   function queueCommunication() {
     if (!communicationPreview.ok) {
@@ -1513,10 +1592,77 @@ export function AdminDashboardClient({ registrationRequests }: AdminDashboardCli
           {visibleRegistrations.length === 0 ? <p className="muted">No registration requests yet.</p> : null}
         </article>
         <article className="card stack">
-          <h2>Sponsor management</h2>
-          {state.sponsors.map((sponsor) => (
-            <p key={sponsor.id}>{sponsor.name} - {sponsor.level} - {sponsor.status}</p>
-          ))}
+          <div className="card-header">
+            <div>
+              <span className="eyebrow">Sponsor CRUD</span>
+              <h2>Sponsor management</h2>
+            </div>
+            <span className="badge warning">Admin only</span>
+          </div>
+          <p className="notice">{sponsorMessage}</p>
+          <div className="grid two">
+            <label>
+              Sponsor record
+              <select value={sponsorId} onChange={(event) => selectSponsor(event.target.value)}>
+                <option value="new">New sponsor</option>
+                {sponsors.map((sponsor) => <option key={sponsor.id} value={sponsor.id}>{sponsor.name}</option>)}
+              </select>
+            </label>
+            <label>
+              Status workflow
+              <select value={sponsorStatus} onChange={(event) => setSponsorStatus(event.target.value as Sponsor["status"])}>
+                <option value="pending">Pending</option>
+                <option value="active">Active</option>
+                <option value="expired">Expired</option>
+              </select>
+            </label>
+            <label>
+              Sponsor name
+              <input value={sponsorName} onChange={(event) => setSponsorName(event.target.value)} />
+            </label>
+            <label>
+              Sponsor URL
+              <input value={sponsorUrl} onChange={(event) => setSponsorUrl(event.target.value)} />
+            </label>
+            <label>
+              Level
+              <select value={sponsorLevel} onChange={(event) => setSponsorLevel(event.target.value as Sponsor["level"])}>
+                <option value="league">League sponsor</option>
+                <option value="team">Team sponsor</option>
+              </select>
+            </label>
+            <label>
+              Team
+              <select disabled={sponsorLevel !== "team"} value={sponsorTeamId} onChange={(event) => setSponsorTeamId(event.target.value)}>
+                {sponsorTeams.map((team) => <option key={team.id} value={team.id}>{team.name}</option>)}
+              </select>
+            </label>
+            <label>
+              Sponsor placement
+              <select value={sponsorPlacementKey} onChange={(event) => setSponsorPlacementKey(event.target.value as Sponsor["placementKey"] | "none")}>
+                <option value="none">No public placement</option>
+                <option value="team_portal">Team portal</option>
+                <option value="weekly_digest">Weekly digest</option>
+                <option value="storybook">Storybook</option>
+                <option value="registration">Registration</option>
+                <option value="field_map">Field map</option>
+              </select>
+            </label>
+            <label>
+              Sponsor logo URL
+              <input value={sponsorLogoUrl} onChange={(event) => setSponsorLogoUrl(event.target.value)} placeholder="https://..." />
+            </label>
+          </div>
+          <button disabled={isSponsorPending} onClick={saveSponsorDraft}>Save sponsor</button>
+          <p className="muted">Stripe/payment billing is not connected. Sponsor display never overrides registration, RSVP, schedule, safety, or parent workflow clarity.</p>
+          <div className="stack compact">
+            {sponsors.map((sponsor) => (
+              <p key={sponsor.id}>
+                <strong>{sponsor.name}</strong><br />
+                <span className="muted">{sponsor.level} - {sponsor.status} - {sponsor.placementKey ?? "no placement"}{sponsor.logoUrl ? " - logo queued" : ""}</span>
+              </p>
+            ))}
+          </div>
         </article>
         <article className="card stack">
           <h2>Readiness</h2>
