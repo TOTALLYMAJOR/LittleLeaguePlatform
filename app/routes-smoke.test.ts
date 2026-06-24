@@ -1,4 +1,4 @@
-import { existsSync } from "node:fs";
+import { existsSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 
@@ -8,6 +8,7 @@ const appRoutes = [
   "/admin/themes",
   "/admin/registrations",
   "/coach",
+  "/offline",
   "/parent",
   "/registration",
   "/team-portal",
@@ -24,5 +25,12 @@ describe("route smoke coverage", () => {
     for (const route of appRoutes) {
       expect(existsSync(pagePath(route)), `${route} should have a page.tsx`).toBe(true);
     }
+  });
+
+  it("keeps the PWA offline fallback route wired into the service worker", () => {
+    const serviceWorker = readFileSync(join(process.cwd(), "public", "sw.js"), "utf8");
+
+    expect(serviceWorker).toContain("\"/offline\"");
+    expect(serviceWorker).toContain("caches.match(\"/offline\")");
   });
 });
