@@ -2,6 +2,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import { POST as postRsvp } from "./api/rsvps/route";
 import { POST as postNotificationPreference } from "./api/notification-preferences/route";
 import { POST as postWeeklyUpdate } from "./api/coach/weekly-update/route";
+import { POST as postMediaReport } from "./api/media/report/route";
 import { POST as postSnackClaim } from "./api/snack-slots/claim/route";
 import { POST as postVolunteerClaim } from "./api/volunteer-signups/claim/route";
 import { POST as postWeatherDraft } from "./api/weather-alerts/draft/route";
@@ -10,6 +11,7 @@ import {
   claimVolunteerRole,
   createWeatherAlertDraft,
   saveCoachWeeklyUpdate,
+  reportMediaItem,
   updateNotificationPreference,
   updateParentRsvp
 } from "@/lib/supabase/operations";
@@ -24,6 +26,7 @@ vi.mock("@/lib/supabase/operations", () => ({
   claimVolunteerRole: vi.fn(),
   createWeatherAlertDraft: vi.fn(),
   saveCoachWeeklyUpdate: vi.fn(),
+  reportMediaItem: vi.fn(),
   updateNotificationPreference: vi.fn(),
   updateParentRsvp: vi.fn()
 }));
@@ -34,6 +37,7 @@ const claimSnackSlotMock = vi.mocked(claimSnackSlot);
 const claimVolunteerRoleMock = vi.mocked(claimVolunteerRole);
 const createWeatherAlertDraftMock = vi.mocked(createWeatherAlertDraft);
 const saveCoachWeeklyUpdateMock = vi.mocked(saveCoachWeeklyUpdate);
+const reportMediaItemMock = vi.mocked(reportMediaItem);
 const updateNotificationPreferenceMock = vi.mocked(updateNotificationPreference);
 
 function jsonRequest(body: unknown) {
@@ -152,6 +156,23 @@ describe("live action API routes", () => {
       coachUserId: "user-live-session",
       title: "Weekly update",
       body: "Please review RSVP and snack openings."
+    });
+  });
+
+  it("uses the authenticated team member session for media reports", async () => {
+    reportMediaItemMock.mockResolvedValue({ ok: true, message: "Media reported.", mediaItem: { id: "media-1" } });
+
+    const response = await postMediaReport(jsonRequest({
+      mediaItemId: "media-1",
+      reporterUserId: "client-spoof",
+      reason: "Review this link"
+    }));
+
+    expect(response.status).toBe(200);
+    expect(reportMediaItemMock).toHaveBeenCalledWith({
+      mediaItemId: "media-1",
+      reporterUserId: "user-live-session",
+      reason: "Review this link"
     });
   });
 });

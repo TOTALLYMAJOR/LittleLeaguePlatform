@@ -352,6 +352,70 @@ export async function moderateMediaItem(input: {
   }
 }
 
+export async function reportMediaItem(input: {
+  mediaItemId: string;
+  reporterUserId: string;
+  reason?: string;
+}) {
+  if (!input.mediaItemId || !input.reporterUserId) return { ok: false, message: "Media report requires an item and reporter." };
+
+  try {
+    const db = adminDb();
+    const { data: mediaItem, error: mediaError } = await runDynamicQuery<{
+      id: string;
+      team_id: string;
+      report_count: number;
+    }>(db
+      .from("media_items")
+      .select("id,team_id,report_count")
+      .eq("id", input.mediaItemId)
+      .single());
+
+    if (mediaError || !mediaItem) return { ok: false, message: "Media item could not be found." };
+
+    const { data: team } = await runDynamicQuery<{ organization_id: string }>(db
+      .from("teams")
+      .select("organization_id")
+      .eq("id", mediaItem.team_id)
+      .single());
+
+    const [{ data: teamMemberships }, { data: adminMemberships }] = await Promise.all([
+      runDynamicQuery<Array<{ id: string }>>(db
+        .from("team_memberships")
+        .select("id")
+        .eq("team_id", mediaItem.team_id)
+        .eq("user_id", input.reporterUserId)
+        .eq("status", "active")),
+      runDynamicQuery<Array<{ id: string }>>(db
+        .from("organization_memberships")
+        .select("id")
+        .eq("organization_id", team?.organization_id ?? "")
+        .eq("user_id", input.reporterUserId)
+        .eq("role", "admin")
+        .eq("status", "active"))
+    ]);
+
+    if (!teamMemberships?.length && !adminMemberships?.length) {
+      return { ok: false, message: "Only assigned team members can report team media." };
+    }
+
+    const { data, error } = await runDynamicQuery(db
+      .from("media_items")
+      .update({
+        report_count: (mediaItem.report_count ?? 0) + 1,
+        moderation_status: "pending"
+      })
+      .eq("id", input.mediaItemId)
+      .select("id,title,moderation_status,report_count")
+      .single());
+
+    if (error || !data) return { ok: false, message: "Media report could not be saved." };
+    return { ok: true, message: "Media reported for review. It is now pending moderation.", mediaItem: data };
+  } catch {
+    return { ok: false, message: "Media report could not reach Supabase." };
+  }
+}
+
 export async function createWeatherAlertDraft(input: {
   eventId: string;
   reviewerUserId?: string;

@@ -99,6 +99,8 @@ describe("ParentDashboardClient", () => {
     expect(html).toContain("Volunteer openings");
     expect(html).toContain("Claim snack slot");
     expect(html).toContain("Claim volunteer role");
+    expect(html).toContain("Report media");
+    expect(html).toContain("Google Photos link looks valid");
   });
 });
 

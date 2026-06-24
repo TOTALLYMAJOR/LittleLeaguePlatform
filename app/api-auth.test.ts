@@ -10,6 +10,7 @@ const privateMutationRoutes = [
   "app/api/coach/weekly-update/route.ts",
   "app/api/field-locations/route.ts",
   "app/api/media/moderation/route.ts",
+  "app/api/media/report/route.ts",
   "app/api/notification-preferences/route.ts",
   "app/api/push-subscriptions/route.ts",
   "app/api/rsvps/route.ts",

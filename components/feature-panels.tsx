@@ -28,6 +28,7 @@ import {
   sampleRosterCsv,
   setRsvp,
   updateTeamPortalBranding,
+  validateMediaUrl,
   type ChatAnnouncementTopic,
   type CommunicationTemplate,
   type EventStatus,
@@ -853,9 +854,22 @@ export function ParentDashboardClient({ dashboardData }: { dashboardData?: Paren
         </article>
         <article className="card stack">
           <h2>Recent Media</h2>
-          {dashboard.recentMedia.map((item) => (
-            <p key={item.id}><strong>{item.title}</strong><br /><span className="muted">{item.type.replace("_", " ")}</span></p>
-          ))}
+          {dashboard.recentMedia.map((item) => {
+            const validation = validateMediaUrl(item.type, item.url);
+            return (
+              <div className="stack compact" key={item.id}>
+                <p><strong>{item.title}</strong><br /><span className="muted">{item.type.replace("_", " ")} · {validation.message}</span></p>
+                <button
+                  className="secondary"
+                  disabled={isHelpPending}
+                  onClick={() => claimFamilyHelp("/api/media/report", { mediaItemId: item.id, reason: "Family reported this media link for review." })}
+                >
+                  Report media
+                </button>
+              </div>
+            );
+          })}
+          {!dashboard.recentMedia.length ? <p className="muted">No media links yet.</p> : null}
         </article>
       </section>
 

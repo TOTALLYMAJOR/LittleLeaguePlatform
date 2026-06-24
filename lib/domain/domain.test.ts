@@ -25,7 +25,8 @@ import {
   seedState,
   sendCoachAnnouncement,
   setRsvp,
-  updateTeamPortalBranding
+  updateTeamPortalBranding,
+  validateMediaUrl
 } from "./index";
 
 describe("CSV duplicate detection", () => {
@@ -47,6 +48,17 @@ describe("CSV duplicate detection", () => {
 
     expect(analysis.errorRows).toBe(1);
     expect(analysis.rows[0]?.issues.map((issue) => issue.code)).toContain("invalid_required_parent_contact");
+  });
+});
+
+describe("media URL validation", () => {
+  it("allows only HTTPS Google Photos and YouTube links", () => {
+    expect(validateMediaUrl("google_photos", "https://photos.google.com/share/demo").ok).toBe(true);
+    expect(validateMediaUrl("google_photos", "https://photos.app.goo.gl/demo").ok).toBe(true);
+    expect(validateMediaUrl("youtube", "https://www.youtube.com/watch?v=demo").ok).toBe(true);
+    expect(validateMediaUrl("youtube", "https://youtu.be/demo").ok).toBe(true);
+    expect(validateMediaUrl("youtube", "http://youtu.be/demo").ok).toBe(false);
+    expect(validateMediaUrl("google_photos", "https://example.com/album").ok).toBe(false);
   });
 });
 

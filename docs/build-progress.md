@@ -83,6 +83,7 @@ npm run supabase:push
 - Added parent-facing snack and volunteer claim controls backed by the existing authenticated Supabase claim routes.
 - Added parent schedule notification preference reads and an authenticated preference save route that derives the user from the Supabase session.
 - Added persisted coach weekly update drafts that save an announcement and pending `team_broadcast` notification rows without provider sends.
+- Added media URL validation plus a family media report route that increments `report_count` and moves reported media to pending moderation.
 
 ### Remaining Gap
 
