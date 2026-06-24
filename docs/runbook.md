@@ -63,6 +63,18 @@ docker compose up -d --build
 curl -fsSI http://localhost:8081/
 ```
 
+## Supabase QA Proof
+
+Use these checks after migrations are applied to a Supabase QA or preview project:
+
+```bash
+npm run supabase:qa-users
+npm run qa:rls-proof
+npm run qa:session-proof
+```
+
+`supabase:qa-users` creates or updates the QA parent and coach credentials in `.env.local`. `qa:rls-proof` signs in through the anon key and verifies parent, coach, and anonymous Row Level Security boundaries. `qa:session-proof` verifies the signed-in browser routes and captures screenshots under `output/playwright/`.
+
 ## Common Issues
 
 ### Port 8081 Is Already In Use

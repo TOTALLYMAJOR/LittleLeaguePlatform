@@ -1,4 +1,5 @@
 import { createBrowserClient } from "@supabase/ssr";
+import { assertSupabaseAnonKey } from "./env";
 import type { Database } from "./database.types";
 
 export function createSupabaseBrowserClient() {
@@ -7,5 +8,6 @@ export function createSupabaseBrowserClient() {
   if (!url || !anonKey) {
     throw new Error("NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_ANON_KEY are required before browser Supabase integration can run.");
   }
+  assertSupabaseAnonKey("NEXT_PUBLIC_SUPABASE_ANON_KEY", anonKey);
   return createBrowserClient<Database>(url, anonKey);
 }

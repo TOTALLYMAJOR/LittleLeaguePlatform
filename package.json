@@ -12,7 +12,8 @@
     "test": "TMPDIR=/tmp TEMP=/tmp TMP=/tmp vitest run",
     "supabase:push": "node scripts/supabase-push.mjs",
     "supabase:qa-users": "node scripts/bootstrap-qa-session-users.mjs",
-    "qa:session-proof": "node scripts/verify-qa-session-paths.mjs"
+    "qa:session-proof": "node scripts/verify-qa-session-paths.mjs",
+    "qa:rls-proof": "node scripts/verify-rls-boundaries.mjs"
   },
   "dependencies": {
     "@supabase/ssr": "^0.12.0",
