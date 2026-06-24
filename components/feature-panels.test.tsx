@@ -54,6 +54,7 @@ describe("CoachDashboardClient", () => {
     );
 
     expect(html).toContain("Coach dashboard");
+    expect(html).toContain("Coach assistant");
     expect(html).toContain("Weather and alerts");
     expect(html).toContain("Snacks");
     expect(html).toContain("Volunteers");
@@ -91,6 +92,7 @@ describe("ParentDashboardClient", () => {
     );
 
     expect(html).toContain("Notification preference center");
+    expect(html).toContain("Parent help assistant");
     expect(html).toContain("PUSH");
     expect(html).toContain("EMAIL");
     expect(html).toContain("SMS");
@@ -143,6 +145,7 @@ describe("AdminDashboardClient", () => {
     );
 
     expect(html).toContain("Admin dashboard");
+    expect(html).toContain("Admin copilot");
     expect(html).toContain("Registration queue");
     expect(html).toContain("Media governance");
     expect(html).toContain("Team/org visibility");

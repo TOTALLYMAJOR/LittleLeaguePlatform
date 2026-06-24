@@ -6,6 +6,9 @@ import {
   NOW,
   analyzeRosterCsv,
   applyScheduleChange,
+  buildAdminAssistiveSuggestions,
+  buildCoachAssistiveSuggestions,
+  buildParentAssistiveSuggestions,
   canUpdateTeamPortalBranding,
   communicationTemplates,
   computeAdminHealth,
@@ -749,6 +752,7 @@ export function ParentDashboardClient({ dashboardData }: { dashboardData?: Paren
   const parentUserId = dashboardData?.parentUserId ?? "user-parent-jordan";
   const parentUser = sourceState.users.find((user) => user.id === parentUserId);
   const dashboard = getParentDashboard(sourceState, parentUserId, NOW);
+  const parentSuggestions = buildParentAssistiveSuggestions(sourceState, parentUserId, NOW);
   const accessGate = privateAccessGate(dashboardData, "parent");
   const parentTeamIds = new Set(dashboard.children.map(({ team }) => team.id));
   const primaryTeamId = dashboard.children[0]?.team.id;
@@ -819,6 +823,20 @@ export function ParentDashboardClient({ dashboardData }: { dashboardData?: Paren
       {helpMessage ? <p className="notice">{helpMessage}</p> : null}
       {accessGate ?? (
         <>
+
+      <section className="grid one">
+        <article className="card stack">
+          <span className="eyebrow">Parent help assistant</span>
+          <h2>{parentSuggestions[0]?.title ?? "Scoped help"}</h2>
+          {parentSuggestions.map((suggestion) => (
+            <div className="stack compact" key={suggestion.id}>
+              <p><strong>{suggestion.body}</strong></p>
+              <p>{suggestion.recommendation}</p>
+              <p className="muted">{suggestion.boundary}</p>
+            </div>
+          ))}
+        </article>
+      </section>
 
       <section className="grid two">
         <article className="card stack">
@@ -1058,6 +1076,7 @@ export function CoachDashboardClient({ dashboardData }: { dashboardData?: Parent
   )).map((membership) => membership.teamId));
   const teams = sourceState.teams.filter((team) => assignedTeamIds.has(team.id));
   const summaries = getCoachRsvpSummaries(sourceState, coachId, NOW);
+  const coachSuggestions = buildCoachAssistiveSuggestions(sourceState, coachId, NOW);
   const reliabilityRows = getCoachRsvpReliability(sourceState, coachId, NOW);
   const teamIds = new Set(teams.map((team) => team.id));
   const assignedEvents = sourceState.events.filter((event) => teamIds.has(event.teamId) && event.status === "scheduled");
@@ -1118,6 +1137,18 @@ export function CoachDashboardClient({ dashboardData }: { dashboardData?: Parent
         <article className="card metric"><span className="muted">Assigned teams</span><strong>{teams.length}</strong></article>
         <article className="card metric"><span className="muted">Open volunteer roles</span><strong>{volunteerNeeds.length}</strong></article>
         <article className="card metric"><span className="muted">Open snack slots</span><strong>{snackNeeds.length}</strong></article>
+      </section>
+
+      <section className="grid two">
+        {coachSuggestions.map((suggestion) => (
+          <article className="card stack" key={suggestion.id}>
+            <span className="eyebrow">Coach assistant</span>
+            <h2>{suggestion.title}</h2>
+            <p><strong>{suggestion.body}</strong></p>
+            <p>{suggestion.recommendation}</p>
+            <p className="muted">{suggestion.boundary}</p>
+          </article>
+        ))}
       </section>
 
       <section className="grid two">
@@ -1232,6 +1263,7 @@ interface AdminDashboardClientProps {
 export function AdminDashboardClient({ registrationRequests, sponsorData, mediaData }: AdminDashboardClientProps = {}) {
   const { state, dispatch } = useAppState();
   const healthCards = computeAdminHealth(state, NOW);
+  const adminSuggestions = buildAdminAssistiveSuggestions(state, NOW);
   const visibleRegistrations = registrationRequests ?? state.registrationRequests;
   const pendingRegistrations = visibleRegistrations.filter((request) => request.status === "pending");
   const sponsorTeams = sponsorData?.teams.length ? sponsorData.teams : state.teams;
@@ -1439,6 +1471,18 @@ export function AdminDashboardClient({ registrationRequests, sponsorData, mediaD
         <article className="card metric"><span className="muted">Teams</span><strong>{state.teams.length}</strong></article>
         <article className="card metric"><span className="muted">Pending registrations</span><strong>{pendingRegistrations.length}</strong></article>
         <article className="card metric"><span className="muted">Active sponsors</span><strong>{activeSponsors.length}</strong></article>
+      </section>
+
+      <section className="grid two">
+        {adminSuggestions.map((suggestion) => (
+          <article className="card stack" key={suggestion.id}>
+            <span className="eyebrow">Admin copilot</span>
+            <h2>{suggestion.title}</h2>
+            <p><strong>{suggestion.body}</strong></p>
+            <p>{suggestion.recommendation}</p>
+            <p className="muted">{suggestion.boundary}</p>
+          </article>
+        ))}
       </section>
 
       <section className="grid two">

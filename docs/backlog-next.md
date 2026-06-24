@@ -78,9 +78,10 @@ Acceptance:
 
 ## 7. Agentic Assistance
 
-- Admin copilot for registration review, import diagnostics, and readiness summaries.
-- Coach assistant for weekly updates and Parent Replay drafts.
-- Parent help assistant scoped to approved child/team records.
+- Status: implemented 2026-06-23.
+- Admin copilot summarizes registration review and readiness gaps from existing records.
+- Coach assistant drafts weekly-update and Parent Replay recommendations without saving or sending.
+- Parent help assistant is scoped to approved child/team records and recommends the next parent action.
 
 Acceptance:
 - Agents recommend, draft, and summarize only.

@@ -14,4 +14,5 @@ export * from "./parent-replay";
 export * from "./program-themes";
 export * from "./registration";
 export * from "./team-branding";
+export * from "./assistive-suggestions";
 export * from "./reducer";

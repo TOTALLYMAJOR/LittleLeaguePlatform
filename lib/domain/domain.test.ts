@@ -3,6 +3,9 @@ import {
   NOW,
   analyzeRosterCsv,
   applyScheduleChange,
+  buildAdminAssistiveSuggestions,
+  buildCoachAssistiveSuggestions,
+  buildParentAssistiveSuggestions,
   computeAdminHealth,
   computeSeasonPlanningMetrics,
   createRegistrationRequest,
@@ -481,6 +484,19 @@ describe("Parent Replay", () => {
 
     expect(result.ok).toBe(false);
     expect(result.message).toContain("2-3 practice focus areas");
+  });
+});
+
+describe("assistive suggestions", () => {
+  it("keeps admin, coach, and parent assistance recommendation-only and scoped", () => {
+    const adminSuggestions = buildAdminAssistiveSuggestions(seedState, NOW);
+    const coachSuggestions = buildCoachAssistiveSuggestions(seedState, "user-coach-taylor", NOW);
+    const parentSuggestions = buildParentAssistiveSuggestions(seedState, "user-parent-jordan", NOW);
+
+    expect(adminSuggestions[0]?.boundary).toContain("cannot approve");
+    expect(coachSuggestions[0]?.boundary).toContain("coach must edit and save");
+    expect(parentSuggestions[0]?.boundary).toContain("approved child/team records");
+    expect(parentSuggestions[0]?.boundary).toContain("cannot RSVP");
   });
 });
 
