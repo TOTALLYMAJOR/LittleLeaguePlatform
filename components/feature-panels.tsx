@@ -35,6 +35,7 @@ import {
   type MediaItem,
   type NotificationChannel,
   type ParentReplayDraft,
+  type ParentReplayRecord,
   type PracticeFocusArea,
   type ProgramThemeKey,
   type RegistrationRequest,
@@ -2303,6 +2304,8 @@ export function ParentReplayClient() {
   const [coachUserId, setCoachUserId] = useState("user-coach-taylor");
   const [focusAreas, setFocusAreas] = useState<PracticeFocusArea[]>(["catching", "throwing", "teamwork"]);
   const [message, setMessage] = useState("");
+  const [savedReplays, setSavedReplays] = useState<ParentReplayRecord[]>([]);
+  const [isReplayPending, startReplayTransition] = useTransition();
   const selectedTeam = state.teams.find((team) => team.id === teamId);
   const draft = useMemo(() => {
     const previewFocusAreas: PracticeFocusArea[] = focusAreas.length ? focusAreas : ["teamwork"];
@@ -2313,7 +2316,7 @@ export function ParentReplayClient() {
       now: NOW
     });
   }, [coachUserId, focusAreas, state, teamId]);
-  const teamReplays = state.parentReplays.filter((replay) => replay.teamId === teamId);
+  const teamReplays = [...savedReplays, ...state.parentReplays].filter((replay) => replay.teamId === teamId);
   const selectedFocus = new Set(focusAreas);
   const canQueueReplay = focusAreas.length >= 2 && focusAreas.length <= 3;
 
@@ -2323,6 +2326,36 @@ export function ParentReplayClient() {
         ? current.filter((item) => item !== area)
         : [...current, area]
     ));
+  }
+
+  function queueParentReplay() {
+    setMessage("");
+    startReplayTransition(async () => {
+      const response = await authenticatedJsonFetch("/api/coach/parent-replay", {
+        teamId,
+        coachUserId,
+        focusAreas,
+        draft
+      });
+      const result = await response.json().catch(() => null) as {
+        ok?: boolean;
+        message?: string;
+        parentReplay?: ParentReplayRecord;
+      } | null;
+
+      if (result?.ok && result.parentReplay) {
+        setSavedReplays((current) => [result.parentReplay!, ...current]);
+      } else if (response.status === 401) {
+        const input = { teamId, coachUserId, focusAreas, now: new Date().toISOString() };
+        dispatch({ type: "createParentReplay", input });
+      }
+
+      setMessage(result?.message ?? (
+        response.status === 401
+          ? `Parent Replay queued locally for ${selectedTeam?.name ?? "team"}. Sign in as an assigned coach to publish it to families.`
+          : "Parent Replay could not be queued."
+      ));
+    });
   }
 
   return (
@@ -2382,12 +2415,8 @@ export function ParentReplayClient() {
           <p className="muted">Choose 2-3 focus areas so the parent replay stays tiny enough for home.</p>
 
           <button
-            disabled={!canQueueReplay}
-            onClick={() => {
-              const input = { teamId, coachUserId, focusAreas, now: new Date().toISOString() };
-              dispatch({ type: "createParentReplay", input });
-              setMessage(`Parent Replay queued for ${selectedTeam?.name ?? "team"}. Local notification records only; no email, SMS, push, AI, or video provider send occurred.`);
-            }}
+            disabled={!canQueueReplay || isReplayPending}
+            onClick={queueParentReplay}
           >
             Queue Parent Replay
           </button>

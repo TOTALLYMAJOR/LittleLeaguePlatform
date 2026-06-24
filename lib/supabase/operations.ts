@@ -1,3 +1,4 @@
+import type { ParentReplayDraft, ParentReplayRecord, PracticeFocusArea } from "@/lib/domain";
 import { createSupabaseAdminClient } from "./admin";
 import { withSupabaseTimeout } from "./timeout";
 
@@ -253,6 +254,176 @@ export async function saveCoachWeeklyUpdate(input: {
     };
   } catch {
     return { ok: false, message: "Weekly update could not reach Supabase." };
+  }
+}
+
+export async function saveParentReplay(input: {
+  teamId: string;
+  actorUserId: string;
+  focusAreas: PracticeFocusArea[];
+  draft: ParentReplayDraft;
+}) {
+  if (!input.teamId || !input.actorUserId || input.focusAreas.length < 2 || input.focusAreas.length > 3) {
+    return { ok: false, message: "Parent Replay requires a team, coach approval, and 2-3 focus areas." };
+  }
+
+  try {
+    const db = adminDb();
+    const { data: team, error: teamError } = await runDynamicQuery<{
+      id: string;
+      organization_id: string;
+      season_id: string;
+      name: string;
+    }>(db
+      .from("teams")
+      .select("id,organization_id,season_id,name")
+      .eq("id", input.teamId)
+      .single());
+
+    if (teamError || !team) return { ok: false, message: "Parent Replay requires a known team." };
+
+    const [{ data: coachMemberships }, { data: adminMemberships }] = await Promise.all([
+      runDynamicQuery<Array<{ id: string }>>(db
+        .from("team_memberships")
+        .select("id")
+        .eq("team_id", input.teamId)
+        .eq("user_id", input.actorUserId)
+        .eq("role", "coach")
+        .eq("status", "active")),
+      runDynamicQuery<Array<{ id: string }>>(db
+        .from("organization_memberships")
+        .select("id")
+        .eq("organization_id", team.organization_id)
+        .eq("user_id", input.actorUserId)
+        .eq("role", "admin")
+        .eq("status", "active"))
+    ]);
+
+    if (!coachMemberships?.length && !adminMemberships?.length) {
+      return { ok: false, message: "Only assigned coaches or org admins can publish Parent Replay." };
+    }
+
+    const now = new Date().toISOString();
+    const { data: replay, error: replayError } = await runDynamicQuery<{
+      id: string;
+      organization_id: string;
+      season_id: string;
+      team_id: string;
+      coach_user_id: string;
+      focus_areas: PracticeFocusArea[];
+      title: string;
+      summary: string;
+      home_activities: ParentReplayDraft["homeActivities"];
+      coach_video: ParentReplayDraft["coachVideo"];
+      parent_tip: string;
+      team_quest: string;
+      skill_cards: string[];
+      parent_education: string;
+      status: ParentReplayRecord["status"];
+      generated_at: string;
+      created_at: string;
+    }>(db
+      .from("parent_replays")
+      .insert({
+        organization_id: team.organization_id,
+        season_id: team.season_id,
+        team_id: input.teamId,
+        coach_user_id: input.actorUserId,
+        focus_areas: input.focusAreas,
+        title: input.draft.title,
+        summary: input.draft.summary,
+        home_activities: input.draft.homeActivities,
+        coach_video: input.draft.coachVideo,
+        parent_tip: input.draft.parentTip,
+        team_quest: input.draft.teamQuest,
+        skill_cards: input.draft.skillCards,
+        parent_education: input.draft.parentEducation,
+        status: "queued",
+        generation_source: "deterministic",
+        reviewed_by_user_id: input.actorUserId,
+        reviewed_at: now,
+        published_at: now,
+        generated_at: input.draft.generatedAt
+      })
+      .select("id,organization_id,season_id,team_id,coach_user_id,focus_areas,title,summary,home_activities,coach_video,parent_tip,team_quest,skill_cards,parent_education,status,generated_at,created_at")
+      .single());
+
+    if (replayError || !replay) return { ok: false, message: "Parent Replay could not be saved." };
+
+    const { data: guardianRows } = await runDynamicQuery<Array<{ parent_user_id: string | null }>>(db
+      .from("player_guardians")
+      .select("parent_user_id,players!inner(team_id)")
+      .eq("status", "active")
+      .eq("players.team_id", input.teamId)
+      .not("parent_user_id", "is", null));
+
+    const recipientIds = Array.from(new Set((guardianRows ?? []).map((row) => row.parent_user_id).filter(Boolean))) as string[];
+    const notificationRows = recipientIds.map((recipientUserId) => ({
+      organization_id: team.organization_id,
+      recipient_user_id: recipientUserId,
+      team_id: input.teamId,
+      notification_type: "parent_replay_ready",
+      title: "Parent Replay is ready",
+      body: `${team.name} has a coach-approved Parent Replay ready for families.`,
+      channel: "email",
+      status: "pending"
+    }));
+
+    const notificationsResult = notificationRows.length
+      ? await runDynamicQuery(db.from("notifications").insert(notificationRows).select("id"))
+      : { data: [], error: null };
+
+    await runDynamicQuery(db
+      .from("audit_events")
+      .insert({
+        organization_id: team.organization_id,
+        actor_user_id: input.actorUserId,
+        action: "parent_replay_published",
+        target_type: "parent_replay",
+        target_id: replay.id,
+        summary: `Parent Replay published for ${team.name} with ${input.focusAreas.length} focus areas.`
+      }));
+
+    const parentReplay: ParentReplayRecord = {
+      id: replay.id,
+      organizationId: replay.organization_id,
+      seasonId: replay.season_id,
+      teamId: replay.team_id,
+      coachUserId: replay.coach_user_id,
+      focusAreas: replay.focus_areas,
+      title: replay.title,
+      summary: replay.summary,
+      homeActivities: replay.home_activities,
+      parentTranslations: input.draft.parentTranslations,
+      microCoachingStreak: input.draft.microCoachingStreak,
+      memoryMoment: input.draft.memoryMoment,
+      coachVideo: replay.coach_video,
+      parentTip: replay.parent_tip,
+      teamQuest: replay.team_quest,
+      skillCards: replay.skill_cards,
+      parentEducation: replay.parent_education,
+      generatedAt: replay.generated_at,
+      status: replay.status,
+      createdAt: replay.created_at
+    };
+
+    if (notificationsResult.error) {
+      return {
+        ok: true,
+        message: "Parent Replay saved, but notification drafts could not be queued.",
+        parentReplay,
+        notificationCount: 0
+      };
+    }
+
+    return {
+      ok: true,
+      message: `Parent Replay saved with ${notificationRows.length} pending parent notification draft(s). No provider send occurred.`,
+      parentReplay,
+      notificationCount: notificationRows.length
+    };
+  } catch {
+    return { ok: false, message: "Parent Replay could not reach Supabase." };
   }
 }
 

@@ -41,10 +41,11 @@ Acceptance:
 
 ## 4. Parent Replay V2
 
-- Add replay history per team and parent-visible delivery.
-- Add templates by age, sport, and practice focus.
-- Add coach approval before publishing generated content.
-- Evaluate AI-generated learning plans only after prompts, filters, and review workflow exist.
+- Status: implemented 2026-06-23.
+- Replay history persists per team through Supabase `parent_replays` and appears in Team Portal reads.
+- Template infrastructure exists in `parent_replay_templates` by sport/theme and focus area; the current builder remains deterministic.
+- Coach approval is required before publishing generated content through `/api/coach/parent-replay`.
+- AI-generated learning plans remain intentionally disconnected until prompts, filters, and review workflow exist.
 
 Acceptance:
 - Parent Replay remains coach-approved.

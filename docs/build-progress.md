@@ -86,6 +86,7 @@ npm run supabase:push
 - Added media URL validation plus a family media report route that increments `report_count` and moves reported media to pending moderation.
 - Added Sponsor Management V2 with authenticated admin sponsor saves, Supabase placement/logo metadata, pending/active/expired status support, and sponsor audit events. Sponsor billing remains disconnected unless Stripe is intentionally added later.
 - Added Media Governance V2 with approved-only parent/team reads, admin hide/restore/remove controls, team/org visibility metadata, reviewer permission checks, and audit events for reports and moderation actions.
+- Added Parent Replay V2 persistence with authenticated coach/admin publishing, reviewed/published Supabase replay rows, pending parent notification drafts, and audit events. AI generation remains disconnected and provider sends do not occur.
 
 ### Remaining Gap
 

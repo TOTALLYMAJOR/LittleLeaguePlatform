@@ -1,6 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { POST as postRsvp } from "./api/rsvps/route";
 import { POST as postNotificationPreference } from "./api/notification-preferences/route";
+import { POST as postParentReplay } from "./api/coach/parent-replay/route";
 import { POST as postWeeklyUpdate } from "./api/coach/weekly-update/route";
 import { POST as postSponsorSave } from "./api/admin/sponsors/route";
 import { POST as postMediaReport } from "./api/media/report/route";
@@ -8,6 +9,7 @@ import { POST as postMediaModeration } from "./api/media/moderation/route";
 import { POST as postSnackClaim } from "./api/snack-slots/claim/route";
 import { POST as postVolunteerClaim } from "./api/volunteer-signups/claim/route";
 import { POST as postWeatherDraft } from "./api/weather-alerts/draft/route";
+import type { ParentReplayDraft } from "@/lib/domain";
 import {
   claimSnackSlot,
   claimVolunteerRole,
@@ -16,6 +18,7 @@ import {
   saveSponsor,
   moderateMediaItem,
   reportMediaItem,
+  saveParentReplay,
   updateNotificationPreference,
   updateParentRsvp
 } from "@/lib/supabase/operations";
@@ -33,6 +36,7 @@ vi.mock("@/lib/supabase/operations", () => ({
   saveSponsor: vi.fn(),
   moderateMediaItem: vi.fn(),
   reportMediaItem: vi.fn(),
+  saveParentReplay: vi.fn(),
   updateNotificationPreference: vi.fn(),
   updateParentRsvp: vi.fn()
 }));
@@ -46,6 +50,7 @@ const saveCoachWeeklyUpdateMock = vi.mocked(saveCoachWeeklyUpdate);
 const saveSponsorMock = vi.mocked(saveSponsor);
 const moderateMediaItemMock = vi.mocked(moderateMediaItem);
 const reportMediaItemMock = vi.mocked(reportMediaItem);
+const saveParentReplayMock = vi.mocked(saveParentReplay);
 const updateNotificationPreferenceMock = vi.mocked(updateNotificationPreference);
 
 function jsonRequest(body: unknown) {
@@ -164,6 +169,42 @@ describe("live action API routes", () => {
       coachUserId: "user-live-session",
       title: "Weekly update",
       body: "Please review RSVP and snack openings."
+    });
+  });
+
+  it("uses the authenticated coach session for Parent Replay publishing", async () => {
+    const draft: ParentReplayDraft = {
+      title: "Tiny Tigers Parent Replay",
+      summary: "Coach-approved practice recap.",
+      homeActivities: [],
+      parentTranslations: [],
+      microCoachingStreak: { label: "Team loop", completedFamilies: 0, totalFamilies: 0, completionRate: 0 },
+      memoryMoment: { title: "Practice memory", detail: "Teamwork" },
+      coachVideo: { title: "Video", url: "https://youtube.com/watch?v=test", note: "Watch together" },
+      parentTip: "Keep it short.",
+      teamQuest: "Two throws.",
+      skillCards: [],
+      parentEducation: "Short practice wins.",
+      generatedAt: "2026-06-23T12:00:00.000Z",
+      teamId: "team-1",
+      coachUserId: "client-spoof",
+      focusAreas: ["catching", "throwing"]
+    };
+    saveParentReplayMock.mockResolvedValue({ ok: true, message: "Parent Replay saved.", parentReplay: { id: "replay-1", ...draft, organizationId: "org-1", seasonId: "season-1", coachUserId: "user-live-session", status: "queued", createdAt: "2026-06-23T12:00:00.000Z" }, notificationCount: 1 });
+
+    const response = await postParentReplay(jsonRequest({
+      teamId: "team-1",
+      coachUserId: "client-spoof",
+      focusAreas: ["catching", "throwing"],
+      draft
+    }));
+
+    expect(response.status).toBe(201);
+    expect(saveParentReplayMock).toHaveBeenCalledWith({
+      teamId: "team-1",
+      actorUserId: "user-live-session",
+      focusAreas: ["catching", "throwing"],
+      draft
     });
   });
 
