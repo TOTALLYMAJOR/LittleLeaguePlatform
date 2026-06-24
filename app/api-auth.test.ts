@@ -7,6 +7,7 @@ const privateMutationRoutes = [
   "app/api/admin/registration-requests/[requestId]/reject/route.ts",
   "app/api/admin/team-branding/route.ts",
   "app/api/admin/team-memberships/route.ts",
+  "app/api/coach/weekly-update/route.ts",
   "app/api/field-locations/route.ts",
   "app/api/media/moderation/route.ts",
   "app/api/notification-preferences/route.ts",

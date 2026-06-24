@@ -1,6 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { POST as postRsvp } from "./api/rsvps/route";
 import { POST as postNotificationPreference } from "./api/notification-preferences/route";
+import { POST as postWeeklyUpdate } from "./api/coach/weekly-update/route";
 import { POST as postSnackClaim } from "./api/snack-slots/claim/route";
 import { POST as postVolunteerClaim } from "./api/volunteer-signups/claim/route";
 import { POST as postWeatherDraft } from "./api/weather-alerts/draft/route";
@@ -8,6 +9,7 @@ import {
   claimSnackSlot,
   claimVolunteerRole,
   createWeatherAlertDraft,
+  saveCoachWeeklyUpdate,
   updateNotificationPreference,
   updateParentRsvp
 } from "@/lib/supabase/operations";
@@ -21,6 +23,7 @@ vi.mock("@/lib/supabase/operations", () => ({
   claimSnackSlot: vi.fn(),
   claimVolunteerRole: vi.fn(),
   createWeatherAlertDraft: vi.fn(),
+  saveCoachWeeklyUpdate: vi.fn(),
   updateNotificationPreference: vi.fn(),
   updateParentRsvp: vi.fn()
 }));
@@ -30,6 +33,7 @@ const updateParentRsvpMock = vi.mocked(updateParentRsvp);
 const claimSnackSlotMock = vi.mocked(claimSnackSlot);
 const claimVolunteerRoleMock = vi.mocked(claimVolunteerRole);
 const createWeatherAlertDraftMock = vi.mocked(createWeatherAlertDraft);
+const saveCoachWeeklyUpdateMock = vi.mocked(saveCoachWeeklyUpdate);
 const updateNotificationPreferenceMock = vi.mocked(updateNotificationPreference);
 
 function jsonRequest(body: unknown) {
@@ -129,6 +133,25 @@ describe("live action API routes", () => {
       quietHoursStart: undefined,
       quietHoursEnd: undefined,
       timezone: undefined
+    });
+  });
+
+  it("uses the authenticated coach session for weekly updates", async () => {
+    saveCoachWeeklyUpdateMock.mockResolvedValue({ ok: true, message: "Weekly update saved.", announcement: { id: "announcement-1" }, notificationCount: 1 });
+
+    const response = await postWeeklyUpdate(jsonRequest({
+      teamId: "team-1",
+      coachUserId: "client-spoof",
+      title: "Weekly update",
+      body: "Please review RSVP and snack openings."
+    }));
+
+    expect(response.status).toBe(201);
+    expect(saveCoachWeeklyUpdateMock).toHaveBeenCalledWith({
+      teamId: "team-1",
+      coachUserId: "user-live-session",
+      title: "Weekly update",
+      body: "Please review RSVP and snack openings."
     });
   });
 });

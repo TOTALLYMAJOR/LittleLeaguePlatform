@@ -1047,7 +1047,7 @@ export function CoachDashboardClient({ dashboardData }: { dashboardData?: Parent
   const snackNeeds = sourceState.snackScheduleSlots.filter((slot) => teamIds.has(slot.teamId) && slot.status === "open");
   const nextAssignedEvent = assignedEvents[0];
   const accessGate = privateAccessGate(dashboardData, "coach");
-  const weeklyUpdateLines = [
+  const weeklyUpdateDraft = [
     `This week: ${assignedEvents.slice(0, 2).map((event) => `${event.title} at ${event.locationName}`).join("; ") || "No scheduled events."}`,
     `RSVP gaps: ${summaries.reduce((total, summary) => total + summary.noResponse, 0)} no-response player slot(s).`,
     `Weather: ${weatherAlerts[0] ? `${weatherAlerts[0].headline} - ${weatherAlerts[0].detail}` : "No weather alert drafted."}`,
@@ -1055,6 +1055,7 @@ export function CoachDashboardClient({ dashboardData }: { dashboardData?: Parent
     `Volunteers: ${volunteerNeeds.length ? `${volunteerNeeds.length} open volunteer role(s).` : "Volunteer coverage looks set."}`,
     "Announcement: Please review RSVP and game-day details before the next event."
   ];
+  const [weeklyUpdateBody, setWeeklyUpdateBody] = useState(weeklyUpdateDraft.join("\n"));
 
   function runCoachAction(url: string, payload: unknown) {
     setActionMessage("");
@@ -1062,6 +1063,20 @@ export function CoachDashboardClient({ dashboardData }: { dashboardData?: Parent
       const response = await authenticatedJsonFetch(url, payload);
       const result = await response.json().catch(() => null) as { ok?: boolean; message?: string } | null;
       setActionMessage(result?.message ?? (response.ok ? "Action saved." : "Action could not be saved."));
+    });
+  }
+
+  function saveWeeklyUpdate() {
+    const teamId = teams[0]?.id;
+    if (!teamId) {
+      setActionMessage("An assigned team is required before saving a weekly update.");
+      return;
+    }
+
+    runCoachAction("/api/coach/weekly-update", {
+      teamId,
+      title: `Weekly update for ${teams[0]?.name ?? "team"}`,
+      body: weeklyUpdateBody
     });
   }
 
@@ -1136,8 +1151,9 @@ export function CoachDashboardClient({ dashboardData }: { dashboardData?: Parent
             </div>
             <span className="badge ok">Draft</span>
           </div>
-          <textarea value={weeklyUpdateLines.join("\n")} readOnly rows={8} />
-          <p className="muted">Combines schedule, RSVP gaps, weather drafts, snack slots, volunteer roles, and announcement copy. Sending remains a separate approval-gated provider step.</p>
+          <textarea value={weeklyUpdateBody} onChange={(event) => setWeeklyUpdateBody(event.target.value)} rows={8} />
+          <button disabled={isActionPending || !weeklyUpdateBody.trim()} onClick={saveWeeklyUpdate}>Save weekly update draft</button>
+          <p className="muted">Combines schedule, RSVP gaps, weather drafts, snack slots, volunteer roles, and announcement copy. Saving creates an announcement and pending notification drafts only; provider sending remains approval-gated.</p>
         </article>
       </section>
 

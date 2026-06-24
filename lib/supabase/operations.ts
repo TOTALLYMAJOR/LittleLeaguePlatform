@@ -159,6 +159,103 @@ export async function updateNotificationPreference(input: {
   }
 }
 
+export async function saveCoachWeeklyUpdate(input: {
+  teamId: string;
+  coachUserId: string;
+  title: string;
+  body: string;
+}) {
+  const title = input.title.trim();
+  const body = input.body.trim();
+  if (!input.teamId || !input.coachUserId || !title || !body) {
+    return { ok: false, message: "Weekly update requires team, coach, title, and body." };
+  }
+
+  try {
+    const db = adminDb();
+    const { data: team, error: teamError } = await runDynamicQuery<{
+      id: string;
+      organization_id: string;
+    }>(db
+      .from("teams")
+      .select("id,organization_id")
+      .eq("id", input.teamId)
+      .single());
+
+    if (teamError || !team) return { ok: false, message: "Weekly update requires a known team." };
+
+    const [{ data: coachMemberships }, { data: adminMemberships }] = await Promise.all([
+      runDynamicQuery<Array<{ id: string }>>(db
+        .from("team_memberships")
+        .select("id")
+        .eq("team_id", input.teamId)
+        .eq("user_id", input.coachUserId)
+        .eq("role", "coach")
+        .eq("status", "active")),
+      runDynamicQuery<Array<{ id: string }>>(db
+        .from("organization_memberships")
+        .select("id")
+        .eq("organization_id", team.organization_id)
+        .eq("user_id", input.coachUserId)
+        .eq("role", "admin")
+        .eq("status", "active"))
+    ]);
+
+    if (!coachMemberships?.length && !adminMemberships?.length) {
+      return { ok: false, message: "Only assigned coaches or org admins can save weekly updates." };
+    }
+
+    const { data: announcement, error: announcementError } = await runDynamicQuery(db
+      .from("announcements")
+      .insert({
+        team_id: input.teamId,
+        author_user_id: input.coachUserId,
+        title,
+        body
+      })
+      .select("id,team_id,title,body,created_at")
+      .single());
+
+    if (announcementError || !announcement) return { ok: false, message: "Weekly update announcement could not be saved." };
+
+    const { data: guardianRows } = await runDynamicQuery<Array<{ parent_user_id: string | null }>>(db
+      .from("player_guardians")
+      .select("parent_user_id,players!inner(team_id)")
+      .eq("status", "active")
+      .eq("players.team_id", input.teamId)
+      .not("parent_user_id", "is", null));
+
+    const recipientIds = Array.from(new Set((guardianRows ?? []).map((row) => row.parent_user_id).filter(Boolean))) as string[];
+    const notificationRows = recipientIds.map((recipientUserId) => ({
+      organization_id: team.organization_id,
+      recipient_user_id: recipientUserId,
+      team_id: input.teamId,
+      notification_type: "team_broadcast",
+      title,
+      body,
+      channel: "email",
+      status: "pending"
+    }));
+
+    const notificationsResult = notificationRows.length
+      ? await runDynamicQuery(db.from("notifications").insert(notificationRows).select("id"))
+      : { data: [], error: null };
+
+    if (notificationsResult.error) {
+      return { ok: false, message: "Weekly update saved, but notification drafts could not be queued.", announcement };
+    }
+
+    return {
+      ok: true,
+      message: `Weekly update saved with ${notificationRows.length} pending email draft(s). No provider send occurred.`,
+      announcement,
+      notificationCount: notificationRows.length
+    };
+  } catch {
+    return { ok: false, message: "Weekly update could not reach Supabase." };
+  }
+}
+
 export async function updateParentRsvp(input: {
   eventId: string;
   playerId: string;

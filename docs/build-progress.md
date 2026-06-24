@@ -82,6 +82,7 @@ npm run supabase:push
 - Added PWA install prompt UX, `/offline`, and service-worker fallback coverage so offline states do not imply stale team data is current.
 - Added parent-facing snack and volunteer claim controls backed by the existing authenticated Supabase claim routes.
 - Added parent schedule notification preference reads and an authenticated preference save route that derives the user from the Supabase session.
+- Added persisted coach weekly update drafts that save an announcement and pending `team_broadcast` notification rows without provider sends.
 
 ### Remaining Gap
 

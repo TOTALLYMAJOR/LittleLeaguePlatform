@@ -63,6 +63,8 @@ describe("CoachDashboardClient", () => {
     expect(html).toContain("RSVP reliability tracker");
     expect(html).toContain("Coach weekly update builder");
     expect(html).toContain("Editable weekly message");
+    expect(html).toContain("Save weekly update draft");
+    expect(html).toContain("pending notification drafts");
   });
 
   it("blocks private coach actions when no active coach membership exists", () => {
