@@ -99,7 +99,9 @@ function scopeParentState(state: AppState, parentUserId: string): AppState {
     events: state.events.filter((event) => teamIds.has(event.teamId)),
     rsvps: state.rsvps.filter((rsvp) => playerIds.has(rsvp.playerId) && eventIds.has(rsvp.eventId)),
     announcements: state.announcements.filter((announcement) => teamIds.has(announcement.teamId)),
-    mediaItems: state.mediaItems.filter((item) => teamIds.has(item.teamId))
+    mediaItems: state.mediaItems.filter((item) => teamIds.has(item.teamId)),
+    snackScheduleSlots: state.snackScheduleSlots.filter((slot) => teamIds.has(slot.teamId)),
+    volunteerSignups: state.volunteerSignups.filter((signup) => teamIds.has(signup.teamId))
   };
 }
 

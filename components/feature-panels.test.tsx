@@ -92,6 +92,10 @@ describe("ParentDashboardClient", () => {
     expect(html).toContain("Urgent-only SMS");
     expect(html).toContain("Digest frequency");
     expect(html).toContain("No provider subscription update");
+    expect(html).toContain("Snack openings");
+    expect(html).toContain("Volunteer openings");
+    expect(html).toContain("Claim snack slot");
+    expect(html).toContain("Claim volunteer role");
   });
 });
 

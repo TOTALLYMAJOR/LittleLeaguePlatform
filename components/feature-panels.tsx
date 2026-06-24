@@ -737,11 +737,17 @@ export function AdminHealthClient() {
 
 export function ParentDashboardClient({ dashboardData }: { dashboardData?: ParentCoachDashboardData | null } = {}) {
   const { state } = useAppState();
+  const [helpMessage, setHelpMessage] = useState("");
+  const [isHelpPending, startHelpTransition] = useTransition();
   const sourceState = dashboardData?.state ?? state;
   const parentUserId = dashboardData?.parentUserId ?? "user-parent-jordan";
   const parentUser = sourceState.users.find((user) => user.id === parentUserId);
   const dashboard = getParentDashboard(sourceState, parentUserId, NOW);
   const accessGate = privateAccessGate(dashboardData, "parent");
+  const parentTeamIds = new Set(dashboard.children.map(({ team }) => team.id));
+  const openSnackSlots = sourceState.snackScheduleSlots.filter((slot) => parentTeamIds.has(slot.teamId) && slot.status === "open");
+  const openVolunteerSignups = sourceState.volunteerSignups.filter((signup) => parentTeamIds.has(signup.teamId) && signup.status === "open");
+  const eventById = new Map(sourceState.events.map((event) => [event.id, event]));
   const notificationPreferences = {
     push: true,
     email: true,
@@ -750,6 +756,19 @@ export function ParentDashboardClient({ dashboardData }: { dashboardData?: Paren
     quietHours: "8:30 PM-7:00 AM",
     digestFrequency: "Weekly digest"
   };
+
+  function claimFamilyHelp(url: string, payload: unknown) {
+    if (!dashboardData?.isSupabaseBacked) {
+      setHelpMessage("Sign in with an approved parent link before claiming snacks or volunteer roles.");
+      return;
+    }
+
+    startHelpTransition(async () => {
+      const response = await authenticatedJsonFetch(url, payload);
+      const result = await response.json().catch(() => null) as { ok?: boolean; message?: string } | null;
+      setHelpMessage(result?.message ?? (response.ok ? "Claim saved." : "Claim could not be saved."));
+    });
+  }
 
   return (
     <div className="page">
@@ -762,6 +781,7 @@ export function ParentDashboardClient({ dashboardData }: { dashboardData?: Paren
       <p className={`notice ${dashboardData?.isSupabaseBacked ? "ok" : "warning"}`}>
         {dashboardData?.message ?? "Showing local seed fallback until Supabase has linked parent and coach records."}
       </p>
+      {helpMessage ? <p className="notice">{helpMessage}</p> : null}
       {accessGate ?? (
         <>
 
@@ -807,6 +827,59 @@ export function ParentDashboardClient({ dashboardData }: { dashboardData?: Paren
           {dashboard.recentMedia.map((item) => (
             <p key={item.id}><strong>{item.title}</strong><br /><span className="muted">{item.type.replace("_", " ")}</span></p>
           ))}
+        </article>
+      </section>
+
+      <section className="grid two">
+        <article className="card stack">
+          <div className="card-header">
+            <div>
+              <span className="eyebrow">Family help</span>
+              <h2>Snack openings</h2>
+            </div>
+            <span className="badge">{openSnackSlots.length} open</span>
+          </div>
+          {openSnackSlots.map((slot) => {
+            const event = eventById.get(slot.eventId);
+            return (
+              <div className="stack compact" key={slot.id}>
+                <p><strong>{slot.item}</strong><br /><span className="muted">{event?.title ?? "Team event"} · {event ? formatDate(event.startsAt) : "Date pending"}</span></p>
+                <button
+                  className="secondary"
+                  disabled={isHelpPending}
+                  onClick={() => claimFamilyHelp("/api/snack-slots/claim", { slotId: slot.id })}
+                >
+                  Claim snack slot
+                </button>
+              </div>
+            );
+          })}
+          {!openSnackSlots.length ? <p className="muted">No open snack slots for linked teams.</p> : null}
+        </article>
+        <article className="card stack">
+          <div className="card-header">
+            <div>
+              <span className="eyebrow">Family help</span>
+              <h2>Volunteer openings</h2>
+            </div>
+            <span className="badge">{openVolunteerSignups.length} open</span>
+          </div>
+          {openVolunteerSignups.map((signup) => {
+            const event = signup.eventId ? eventById.get(signup.eventId) : undefined;
+            return (
+              <div className="stack compact" key={signup.id}>
+                <p><strong>{signup.role}</strong><br /><span className="muted">{event?.title ?? "Team need"}{event ? ` · ${formatDate(event.startsAt)}` : ""}</span></p>
+                <button
+                  className="secondary"
+                  disabled={isHelpPending}
+                  onClick={() => claimFamilyHelp("/api/volunteer-signups/claim", { signupId: signup.id })}
+                >
+                  Claim volunteer role
+                </button>
+              </div>
+            );
+          })}
+          {!openVolunteerSignups.length ? <p className="muted">No open volunteer roles for linked teams.</p> : null}
         </article>
       </section>
 
