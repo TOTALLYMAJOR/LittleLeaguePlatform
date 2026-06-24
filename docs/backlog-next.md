@@ -16,10 +16,11 @@ Acceptance:
 
 ## 2. Media Governance
 
-- Validate Google Photos and YouTube URLs.
-- Add team/org visibility settings.
-- Add report, hide, restore, and remove workflows.
-- Add moderation audit events.
+- Status: implemented 2026-06-23.
+- Google Photos and YouTube URL validation runs in parent-visible media cards.
+- Team/org visibility settings are available in `/admin`.
+- Report, hide, restore, and remove workflows are routed through authenticated Supabase APIs.
+- Media report and moderation actions write audit events.
 
 Acceptance:
 - Parents cannot remove other users' media links.

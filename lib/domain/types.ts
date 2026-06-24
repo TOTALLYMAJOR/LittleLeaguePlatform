@@ -145,6 +145,9 @@ export interface MediaItem {
   title: string;
   type: "google_photos" | "youtube";
   url: string;
+  moderationStatus?: "pending" | "approved" | "hidden" | "rejected" | "removed";
+  visibility?: "team" | "organization";
+  reportCount?: number;
   createdAt: string;
 }
 

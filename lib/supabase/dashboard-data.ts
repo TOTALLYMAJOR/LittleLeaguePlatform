@@ -215,7 +215,7 @@ export async function listParentCoachDashboardData(options: ParentCoachDashboard
       db.from("events").select("id,organization_id,team_id,season_id,title,event_type,starts_at,ends_at,location_name,location_address,status,opponent,created_at,updated_at").order("starts_at", { ascending: true }),
       db.from("rsvps").select("id,event_id,player_id,parent_user_id,response,note,responded_at,created_at,updated_at").order("responded_at", { ascending: false }),
       db.from("announcements").select("id,team_id,author_user_id,title,body,created_at").order("created_at", { ascending: false }),
-      db.from("media_items").select("id,team_id,title,media_type,url,created_at").order("created_at", { ascending: false }),
+      db.from("media_items").select("id,team_id,title,media_type,url,created_at,moderation_status,report_count").eq("moderation_status", "approved").order("created_at", { ascending: false }),
       db.from("notification_preferences").select("id,user_id,organization_id,team_id,channel,notification_type,enabled,quiet_hours_start,quiet_hours_end,timezone,opted_in_at,opted_out_at").order("updated_at", { ascending: false }),
       db.from("snack_schedule_slots").select("id,team_id,event_id,assigned_parent_user_id,item,status").order("created_at", { ascending: true }),
       db.from("volunteer_signups").select("id,team_id,event_id,role,assigned_user_id,status").order("created_at", { ascending: true }),
@@ -413,6 +413,8 @@ export async function listParentCoachDashboardData(options: ParentCoachDashboard
       title: string;
       media_type: MediaItem["type"];
       url: string;
+      moderation_status: MediaItem["moderationStatus"];
+      report_count: number;
       created_at: string;
     }) => ({
       id: item.id,
@@ -420,6 +422,8 @@ export async function listParentCoachDashboardData(options: ParentCoachDashboard
       title: item.title,
       type: item.media_type,
       url: item.url,
+      moderationStatus: item.moderation_status,
+      reportCount: item.report_count ?? 0,
       createdAt: item.created_at
     }));
     const notificationPreferences: NotificationPreference[] = (preferencesResult.data ?? []).map((preference: {

@@ -32,6 +32,7 @@ import {
   type ChatAnnouncementTopic,
   type CommunicationTemplate,
   type EventStatus,
+  type MediaItem,
   type NotificationChannel,
   type ParentReplayDraft,
   type PracticeFocusArea,
@@ -43,6 +44,7 @@ import {
   type UserRole
 } from "@/lib/domain";
 import { createSupabaseBrowserClient } from "@/lib/supabase/browser";
+import type { MediaGovernanceData } from "@/lib/supabase/media-governance";
 import type { RegistrationReviewData } from "@/lib/supabase/registration-approvals";
 import type { SponsorAdminData } from "@/lib/supabase/sponsors";
 import type { TeamPortalData } from "@/lib/supabase/team-portal";
@@ -1223,16 +1225,20 @@ export function CoachDashboardClient({ dashboardData }: { dashboardData?: Parent
 interface AdminDashboardClientProps {
   registrationRequests?: RegistrationRequest[];
   sponsorData?: SponsorAdminData;
+  mediaData?: MediaGovernanceData;
 }
 
-export function AdminDashboardClient({ registrationRequests, sponsorData }: AdminDashboardClientProps = {}) {
+export function AdminDashboardClient({ registrationRequests, sponsorData, mediaData }: AdminDashboardClientProps = {}) {
   const { state, dispatch } = useAppState();
   const healthCards = computeAdminHealth(state, NOW);
   const visibleRegistrations = registrationRequests ?? state.registrationRequests;
   const pendingRegistrations = visibleRegistrations.filter((request) => request.status === "pending");
   const sponsorTeams = sponsorData?.teams.length ? sponsorData.teams : state.teams;
+  const mediaTeams = mediaData?.teams.length ? mediaData.teams : state.teams;
   const initialSponsors = sponsorData?.sponsors.length ? sponsorData.sponsors : state.sponsors;
+  const initialMediaItems = mediaData?.mediaItems.length ? mediaData.mediaItems : state.mediaItems;
   const [sponsors, setSponsors] = useState<Sponsor[]>(initialSponsors);
+  const [mediaItems, setMediaItems] = useState<MediaItem[]>(initialMediaItems);
   const activeSponsors = sponsors.filter((sponsor) => sponsor.status === "active");
   const [communicationTeamId, setCommunicationTeamId] = useState("team-tigers");
   const [communicationChannel, setCommunicationChannel] = useState<AdminCommunicationChannel>("email");
@@ -1250,6 +1256,11 @@ export function AdminDashboardClient({ registrationRequests, sponsorData }: Admi
   const [sponsorLogoUrl, setSponsorLogoUrl] = useState(initialSponsors[0]?.logoUrl ?? "");
   const [sponsorMessage, setSponsorMessage] = useState(sponsorData?.message ?? "Showing local sponsor records until Supabase sponsor rows are available.");
   const [isSponsorPending, startSponsorTransition] = useTransition();
+  const [mediaMessage, setMediaMessage] = useState(mediaData?.message ?? "Showing local media records until Supabase media rows are available.");
+  const [mediaVisibilityDrafts, setMediaVisibilityDrafts] = useState<Record<string, "team" | "organization">>(() => Object.fromEntries(
+    initialMediaItems.map((item) => [item.id, item.visibility ?? "team"])
+  ));
+  const [isMediaPending, startMediaTransition] = useTransition();
   const [lineupTeamId, setLineupTeamId] = useState("team-tigers");
   const [draggedPlayerId, setDraggedPlayerId] = useState("");
   const [targetRosterSize, setTargetRosterSize] = useState(10);
@@ -1288,6 +1299,14 @@ export function AdminDashboardClient({ registrationRequests, sponsorData }: Admi
     setSponsors(nextSponsors);
     setSponsorMessage(sponsorData.message);
   }, [sponsorData, state.sponsors]);
+
+  useEffect(() => {
+    if (!mediaData) return;
+    const nextMediaItems = mediaData.mediaItems.length ? mediaData.mediaItems : state.mediaItems;
+    setMediaItems(nextMediaItems);
+    setMediaVisibilityDrafts(Object.fromEntries(nextMediaItems.map((item) => [item.id, item.visibility ?? "team"])));
+    setMediaMessage(mediaData.message);
+  }, [mediaData, state.mediaItems]);
 
   function selectSponsor(nextSponsorId: string) {
     setSponsorId(nextSponsorId);
@@ -1342,6 +1361,34 @@ export function AdminDashboardClient({ registrationRequests, sponsorData }: Admi
       }
 
       setSponsorMessage(result?.message ?? "Sponsor could not be saved.");
+    });
+  }
+
+  function runMediaModeration(mediaItem: MediaItem, status: "approved" | "hidden" | "rejected" | "removed", reason: string) {
+    setMediaMessage("");
+    startMediaTransition(async () => {
+      const visibility = mediaVisibilityDrafts[mediaItem.id] ?? mediaItem.visibility ?? "team";
+      const response = await authenticatedJsonFetch("/api/media/moderation", {
+        mediaItemId: mediaItem.id,
+        status,
+        visibility,
+        reason
+      });
+      const result = await response.json().catch(() => null) as {
+        ok?: boolean;
+        message?: string;
+        mediaItem?: { moderation_status?: MediaItem["moderationStatus"]; visibility?: MediaItem["visibility"] };
+      } | null;
+
+      if (result?.ok) {
+        setMediaItems((current) => current.map((item) => item.id === mediaItem.id ? {
+          ...item,
+          moderationStatus: result.mediaItem?.moderation_status ?? status,
+          visibility: result.mediaItem?.visibility ?? visibility
+        } : item));
+      }
+
+      setMediaMessage(result?.message ?? "Media moderation could not be saved.");
     });
   }
 
@@ -1590,6 +1637,48 @@ export function AdminDashboardClient({ registrationRequests, sponsorData }: Admi
             <p key={request.id}><strong>{request.playerFirstName} {request.playerLastInitial}.</strong><br /><span className="muted">{request.parentName} - {request.status}</span></p>
           ))}
           {visibleRegistrations.length === 0 ? <p className="muted">No registration requests yet.</p> : null}
+        </article>
+        <article className="card stack">
+          <div className="card-header">
+            <div>
+              <span className="eyebrow">Visibility and moderation</span>
+              <h2>Media governance</h2>
+            </div>
+            <span className="badge warning">Coach/Admin</span>
+          </div>
+          <p className="notice">{mediaMessage}</p>
+          {mediaItems.map((item) => {
+            const team = mediaTeams.find((candidate) => candidate.id === item.teamId);
+            const status = item.moderationStatus ?? "approved";
+            return (
+              <div className="stack compact" key={item.id}>
+                <p>
+                  <strong>{item.title}</strong><br />
+                  <span className="muted">{team?.name ?? "Unknown team"} - {item.type.replace("_", " ")} - {status} - {item.reportCount ?? 0} report(s)</span>
+                </p>
+                <label>
+                  Team/org visibility
+                  <select
+                    value={mediaVisibilityDrafts[item.id] ?? item.visibility ?? "team"}
+                    onChange={(event) => setMediaVisibilityDrafts((current) => ({
+                      ...current,
+                      [item.id]: event.target.value as "team" | "organization"
+                    }))}
+                  >
+                    <option value="team">Team only</option>
+                    <option value="organization">Organization</option>
+                  </select>
+                </label>
+                <div className="button-row">
+                  <button className="secondary" disabled={isMediaPending} onClick={() => runMediaModeration(item, "hidden", "Hidden pending coach/admin review.")}>Hide media</button>
+                  <button className="secondary" disabled={isMediaPending} onClick={() => runMediaModeration(item, "approved", "Restored after review.")}>Restore media</button>
+                  <button className="secondary" disabled={isMediaPending} onClick={() => runMediaModeration(item, "removed", "Removed by coach/admin moderation.")}>Remove media</button>
+                </div>
+              </div>
+            );
+          })}
+          {mediaItems.length === 0 ? <p className="muted">No media links yet.</p> : null}
+          <p className="muted">Reported or hidden media is excluded from parent-visible dashboards until it is restored by an assigned coach or organization admin.</p>
         </article>
         <article className="card stack">
           <div className="card-header">

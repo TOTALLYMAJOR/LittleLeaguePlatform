@@ -15,6 +15,12 @@ import type { Json } from "./database.types";
 import { createSupabaseAdminClient } from "./admin";
 import { withSupabaseTimeout } from "./timeout";
 
+type UnsafeSupabase = {
+  // Team Portal reads staged media moderation columns until generated types are refreshed.
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  from(table: string): any;
+};
+
 export interface TeamPortalData {
   teams: Team[];
   players: Player[];
@@ -98,6 +104,7 @@ function normalizeCoachVideo(value: Json): ParentReplayRecord["coachVideo"] {
 export async function listTeamPortalData(): Promise<TeamPortalData | null> {
   try {
     const supabase = createSupabaseAdminClient();
+    const unsafeSupabase = supabase as unknown as UnsafeSupabase;
     const [
       teamsResult,
       playersResult,
@@ -138,9 +145,10 @@ export async function listTeamPortalData(): Promise<TeamPortalData | null> {
         .from("events")
         .select("id,organization_id,team_id,season_id,title,event_type,starts_at,ends_at,location_name,location_address,status,opponent,created_at,updated_at")
         .order("starts_at", { ascending: true }),
-      supabase
+      unsafeSupabase
         .from("media_items")
-        .select("id,team_id,title,media_type,url,created_at")
+        .select("id,team_id,title,media_type,url,created_at,moderation_status,report_count")
+        .eq("moderation_status", "approved")
         .order("created_at", { ascending: false }),
       supabase
         .from("parent_replays")
@@ -240,12 +248,23 @@ export async function listTeamPortalData(): Promise<TeamPortalData | null> {
         createdAt: event.created_at,
         updatedAt: event.updated_at
       })),
-      mediaItems: (mediaItemsResult.data ?? []).map((item) => ({
+      mediaItems: (mediaItemsResult.data ?? []).map((item: {
+        id: string;
+        team_id: string;
+        title: string;
+        media_type: MediaItem["type"];
+        url: string;
+        moderation_status: MediaItem["moderationStatus"];
+        report_count: number;
+        created_at: string;
+      }) => ({
         id: item.id,
         teamId: item.team_id,
         title: item.title,
         type: item.media_type,
         url: item.url,
+        moderationStatus: item.moderation_status,
+        reportCount: item.report_count ?? 0,
         createdAt: item.created_at
       })),
       parentReplays: (parentReplaysResult.data ?? []).map((replay) => ({

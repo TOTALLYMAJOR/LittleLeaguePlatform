@@ -59,7 +59,7 @@ export function getParentDashboard(state: AppState, parentUserId: string, now = 
   }).filter((item) => !item.currentRsvp);
 
   const recentMedia = state.mediaItems
-    .filter((item) => teamIds.has(item.teamId))
+    .filter((item) => teamIds.has(item.teamId) && (item.moderationStatus ?? "approved") === "approved")
     .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
     .slice(0, 4);
 

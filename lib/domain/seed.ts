@@ -201,8 +201,8 @@ export const seedState: AppState = {
     }
   ],
   mediaItems: [
-    { id: "media-opening", teamId: "team-tigers", title: "Opening Day Album", type: "google_photos", url: "https://photos.google.com/share/demo-opening-day", createdAt: "2026-03-30T12:00:00.000Z" },
-    { id: "media-cleats", teamId: "team-tigers", title: "How to tie cleats", type: "youtube", url: "https://www.youtube.com/watch?v=dQw4w9WgXcQ", createdAt: "2026-03-29T12:00:00.000Z" }
+    { id: "media-opening", teamId: "team-tigers", title: "Opening Day Album", type: "google_photos", url: "https://photos.google.com/share/demo-opening-day", moderationStatus: "approved", visibility: "team", reportCount: 0, createdAt: "2026-03-30T12:00:00.000Z" },
+    { id: "media-cleats", teamId: "team-tigers", title: "How to tie cleats", type: "youtube", url: "https://www.youtube.com/watch?v=dQw4w9WgXcQ", moderationStatus: "approved", visibility: "team", reportCount: 0, createdAt: "2026-03-29T12:00:00.000Z" }
   ],
   notifications: [],
   notificationPreferences: [],

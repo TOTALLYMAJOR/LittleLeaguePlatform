@@ -144,6 +144,10 @@ describe("AdminDashboardClient", () => {
 
     expect(html).toContain("Admin dashboard");
     expect(html).toContain("Registration queue");
+    expect(html).toContain("Media governance");
+    expect(html).toContain("Team/org visibility");
+    expect(html).toContain("Hide media");
+    expect(html).toContain("Restore media");
     expect(html).toContain("Sponsor management");
     expect(html).toContain("Sponsor placement");
     expect(html).toContain("Save sponsor");

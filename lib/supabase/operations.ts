@@ -330,22 +330,80 @@ export async function claimVolunteerRole(input: {
 export async function moderateMediaItem(input: {
   mediaItemId: string;
   reviewerUserId: string;
-  status: "approved" | "rejected" | "removed";
+  status: "approved" | "hidden" | "rejected" | "removed";
+  visibility?: "team" | "organization";
+  reason?: string;
 }) {
   if (!input.mediaItemId || !input.reviewerUserId) return { ok: false, message: "Media moderation requires an item and reviewer." };
+  const reason = input.reason?.trim();
   try {
     const db = adminDb();
+    const { data: mediaItem, error: mediaError } = await runDynamicQuery<{
+      id: string;
+      organization_id: string;
+      team_id: string;
+      title: string;
+    }>(db
+      .from("media_items")
+      .select("id,organization_id,team_id,title")
+      .eq("id", input.mediaItemId)
+      .single());
+
+    if (mediaError || !mediaItem) return { ok: false, message: "Media item could not be found." };
+
+    const [{ data: teamMemberships }, { data: adminMemberships }] = await Promise.all([
+      runDynamicQuery<Array<{ id: string }>>(db
+        .from("team_memberships")
+        .select("id")
+        .eq("team_id", mediaItem.team_id)
+        .eq("user_id", input.reviewerUserId)
+        .in("role", ["coach", "admin"])
+        .eq("status", "active")),
+      runDynamicQuery<Array<{ id: string }>>(db
+        .from("organization_memberships")
+        .select("id")
+        .eq("organization_id", mediaItem.organization_id)
+        .eq("user_id", input.reviewerUserId)
+        .eq("role", "admin")
+        .eq("status", "active"))
+    ]);
+
+    if (!teamMemberships?.length && !adminMemberships?.length) {
+      return { ok: false, message: "Only assigned coaches or org admins can moderate media." };
+    }
+
+    const now = new Date().toISOString();
+    const updatePayload = {
+      moderation_status: input.status,
+      reviewed_by_user_id: input.reviewerUserId,
+      reviewed_at: now,
+      ...(input.visibility ? { visibility: input.visibility } : {}),
+      ...(input.status === "hidden" ? { hidden_at: now, removed_at: null } : {}),
+      ...(input.status === "removed" ? { removed_at: now } : {}),
+      ...(input.status === "approved" ? { hidden_at: null, removed_at: null } : {})
+    };
+
     const { data, error } = await runDynamicQuery(db
       .from("media_items")
-      .update({
-        moderation_status: input.status,
-        reviewed_by_user_id: input.reviewerUserId,
-        reviewed_at: new Date().toISOString()
-      })
+      .update(updatePayload)
       .eq("id", input.mediaItemId)
-      .select("id,title,moderation_status,reviewed_at")
+      .select("id,title,moderation_status,visibility,reviewed_at")
       .single());
     if (error || !data) return { ok: false, message: "Media item could not be moderated. Make sure migration 0005 is applied." };
+
+    await runDynamicQuery(db
+      .from("audit_events")
+      .insert({
+        organization_id: mediaItem.organization_id,
+        actor_user_id: input.reviewerUserId,
+        action: `media_${input.status}`,
+        target_type: "media_item",
+        target_id: mediaItem.id,
+        summary: reason
+          ? `${mediaItem.title} set to ${input.status}: ${reason}`
+          : `${mediaItem.title} set to ${input.status}.`
+      }));
+
     return { ok: true, message: "Media moderation saved to Supabase.", mediaItem: data };
   } catch {
     return { ok: false, message: "Media moderation could not reach Supabase." };
@@ -363,11 +421,12 @@ export async function reportMediaItem(input: {
     const db = adminDb();
     const { data: mediaItem, error: mediaError } = await runDynamicQuery<{
       id: string;
+      organization_id: string;
       team_id: string;
       report_count: number;
     }>(db
       .from("media_items")
-      .select("id,team_id,report_count")
+      .select("id,organization_id,team_id,report_count")
       .eq("id", input.mediaItemId)
       .single());
 
@@ -410,6 +469,18 @@ export async function reportMediaItem(input: {
       .single());
 
     if (error || !data) return { ok: false, message: "Media report could not be saved." };
+
+    await runDynamicQuery(db
+      .from("audit_events")
+      .insert({
+        organization_id: mediaItem.organization_id,
+        actor_user_id: input.reporterUserId,
+        action: "media_reported",
+        target_type: "media_item",
+        target_id: mediaItem.id,
+        summary: input.reason?.trim() || "Media reported for review."
+      }));
+
     return { ok: true, message: "Media reported for review. It is now pending moderation.", mediaItem: data };
   } catch {
     return { ok: false, message: "Media report could not reach Supabase." };

@@ -4,6 +4,7 @@ import { POST as postNotificationPreference } from "./api/notification-preferenc
 import { POST as postWeeklyUpdate } from "./api/coach/weekly-update/route";
 import { POST as postSponsorSave } from "./api/admin/sponsors/route";
 import { POST as postMediaReport } from "./api/media/report/route";
+import { POST as postMediaModeration } from "./api/media/moderation/route";
 import { POST as postSnackClaim } from "./api/snack-slots/claim/route";
 import { POST as postVolunteerClaim } from "./api/volunteer-signups/claim/route";
 import { POST as postWeatherDraft } from "./api/weather-alerts/draft/route";
@@ -13,6 +14,7 @@ import {
   createWeatherAlertDraft,
   saveCoachWeeklyUpdate,
   saveSponsor,
+  moderateMediaItem,
   reportMediaItem,
   updateNotificationPreference,
   updateParentRsvp
@@ -29,6 +31,7 @@ vi.mock("@/lib/supabase/operations", () => ({
   createWeatherAlertDraft: vi.fn(),
   saveCoachWeeklyUpdate: vi.fn(),
   saveSponsor: vi.fn(),
+  moderateMediaItem: vi.fn(),
   reportMediaItem: vi.fn(),
   updateNotificationPreference: vi.fn(),
   updateParentRsvp: vi.fn()
@@ -41,6 +44,7 @@ const claimVolunteerRoleMock = vi.mocked(claimVolunteerRole);
 const createWeatherAlertDraftMock = vi.mocked(createWeatherAlertDraft);
 const saveCoachWeeklyUpdateMock = vi.mocked(saveCoachWeeklyUpdate);
 const saveSponsorMock = vi.mocked(saveSponsor);
+const moderateMediaItemMock = vi.mocked(moderateMediaItem);
 const reportMediaItemMock = vi.mocked(reportMediaItem);
 const updateNotificationPreferenceMock = vi.mocked(updateNotificationPreference);
 
@@ -177,6 +181,27 @@ describe("live action API routes", () => {
       mediaItemId: "media-1",
       reporterUserId: "user-live-session",
       reason: "Review this link"
+    });
+  });
+
+  it("uses the authenticated coach or admin session for media moderation", async () => {
+    moderateMediaItemMock.mockResolvedValue({ ok: true, message: "Media moderation saved.", mediaItem: { id: "media-1" } });
+
+    const response = await postMediaModeration(jsonRequest({
+      mediaItemId: "media-1",
+      reviewerUserId: "client-spoof",
+      status: "hidden",
+      visibility: "organization",
+      reason: "Needs review"
+    }));
+
+    expect(response.status).toBe(200);
+    expect(moderateMediaItemMock).toHaveBeenCalledWith({
+      mediaItemId: "media-1",
+      reviewerUserId: "user-live-session",
+      status: "hidden",
+      visibility: "organization",
+      reason: "Needs review"
     });
   });
 
