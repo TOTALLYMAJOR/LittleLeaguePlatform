@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-label="Little League HQ Parent Replay favicon">
+  <rect width="64" height="64" rx="14" fill="#0f172a"/>
+  <circle cx="32" cy="32" r="22" fill="#ecfeff"/>
+  <path d="M42.5 23.8a14.2 14.2 0 0 0-22.8 5.8" fill="none" stroke="#0891b2" stroke-width="5" stroke-linecap="round"/>
+  <path d="m18.5 21.7 1.1 8.5 8.3-2.2" fill="none" stroke="#0891b2" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="M21.5 40.2a14.2 14.2 0 0 0 22.8-5.8" fill="none" stroke="#19a974" stroke-width="5" stroke-linecap="round"/>
+  <path d="m45.5 42.3-1.1-8.5-8.3 2.2" fill="none" stroke="#19a974" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="M29 24.5v15l12-7.5-12-7.5Z" fill="#f59e0b"/>
+</svg>

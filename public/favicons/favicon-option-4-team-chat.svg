@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-label="Little League HQ team chat favicon">
+  <rect width="64" height="64" rx="14" fill="#1d4ed8"/>
+  <path d="M15 15h34c4.4 0 8 3.6 8 8v17c0 4.4-3.6 8-8 8H32l-12.5 8v-8H15c-4.4 0-8-3.6-8-8V23c0-4.4 3.6-8 8-8Z" fill="#ffffff"/>
+  <path d="M19 27h26M19 36h18" stroke="#123047" stroke-width="4" stroke-linecap="round"/>
+  <circle cx="48" cy="18" r="8" fill="#facc15"/>
+  <path d="M46 18.5h4M48 16.5v4" stroke="#123047" stroke-width="2.6" stroke-linecap="round"/>
+  <path d="M24 47.5 19.5 51v-5.9" fill="#ffffff"/>
+</svg>

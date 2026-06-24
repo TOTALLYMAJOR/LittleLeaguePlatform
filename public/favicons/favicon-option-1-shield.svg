@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-label="Little League HQ shield favicon">
+  <rect width="64" height="64" rx="14" fill="#123047"/>
+  <path d="M32 9 50 16v15c0 11.5-7.3 19.7-18 24-10.7-4.3-18-12.5-18-24V16l18-7Z" fill="#ffffff"/>
+  <path d="M32 13.5 45.5 19v11.7c0 8.4-5 15-13.5 18.9-8.5-3.9-13.5-10.5-13.5-18.9V19L32 13.5Z" fill="#19a974"/>
+  <path d="M20 34c5.2-6.2 11.4-9.3 18.5-9.3 3.1 0 5.8.5 8.1 1.6v10.8H20Z" fill="#d9f99d" opacity=".92"/>
+  <text x="32" y="35.5" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="16" font-weight="900" fill="#123047">LL</text>
+</svg>

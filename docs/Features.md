@@ -82,35 +82,7 @@ Parents want one simple place to answer:
 
 MVP Behavior
 
-After login, parents see:
-
-Child/team name
-Next upcoming game or practice
-Latest coach announcement
-RSVP status
-Recent photos/videos
-Invite or registration completion status
-Dashboard Data
-teams
-players
-team_members
-events
-announcements
-rsvps
-media_items
-Example Parent Dashboard Logic
-Load parent user
-Find linked active players
-Find active teams for those players
-Find next 3 events
-Find latest announcement
-Find RSVP status for upcoming events
-Find recent team media
-Render dashboard
-MVP Screen Sections
-My Child
-Upcoming Schedule
-Coach Updates
+                                                                                                                                                         
 RSVP Needed
 Recent Media
 3. One-Tap RSVP
@@ -307,11 +279,11 @@ Recommended Queries
 -- Teams missing coaches
 SELECT teams.id, teams.name
 FROM teams
-LEFT JOIN team_members 
-  ON team_members.team_id = teams.id 
-  AND team_members.role = 'coach'
-  AND team_members.status = 'active'
-WHERE team_members.id IS NULL;
+LEFT JOIN team_memberships 
+  ON team_memberships.team_id = teams.id 
+  AND team_memberships.role = 'coach'
+  AND team_memberships.status = 'active'
+WHERE team_memberships.id IS NULL;
 
 -- Pending invites
 SELECT COUNT(*)

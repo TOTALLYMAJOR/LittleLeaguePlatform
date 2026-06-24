@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-label="Little League HQ field pin favicon">
+  <rect width="64" height="64" rx="14" fill="#f8fafc"/>
+  <rect x="6" y="6" width="52" height="52" rx="12" fill="#1570ef"/>
+  <path d="M13 46c7.2-10.6 16-15.9 26.5-15.9 4.9 0 8.8.9 11.5 2.6V52H13Z" fill="#16a34a"/>
+  <path d="M32 11c-7.2 0-13 5.8-13 13 0 9.6 13 22 13 22s13-12.4 13-22c0-7.2-5.8-13-13-13Z" fill="#ffffff"/>
+  <circle cx="32" cy="24" r="5.5" fill="#facc15"/>
+  <path d="M25.5 48.5h13l-6.5-6.2-6.5 6.2Z" fill="#dcfce7"/>
+</svg>
