@@ -9,6 +9,14 @@ type UnsafeSupabase = {
   from(table: string): any;
 };
 
+type MobileUsageEventType =
+  | "install_prompt_shown"
+  | "install_prompt_accepted"
+  | "install_prompt_dismissed"
+  | "standalone_launch"
+  | "push_permission_requested"
+  | "native_app_interest";
+
 interface DynamicQueryResult<T = unknown> {
   data: T | null;
   error: { message?: string } | null;
@@ -101,6 +109,34 @@ export async function registerPushSubscription(input: {
     return { ok: true, message: "Push subscription saved. No push send occurs without opt-in and provider approval.", subscription: data };
   } catch {
     return { ok: false, message: "Push subscription could not reach Supabase." };
+  }
+}
+
+export async function recordMobileUsageEvent(input: {
+  eventType: MobileUsageEventType;
+  routePath?: string;
+  userAgent?: string;
+  metadata?: Record<string, string | number | boolean | null>;
+}) {
+  if (!input.eventType) return { ok: false, message: "Mobile usage event type is required." };
+
+  try {
+    const db = adminDb();
+    const { data, error } = await runDynamicQuery(db
+      .from("mobile_usage_events")
+      .insert({
+        event_type: input.eventType,
+        route_path: input.routePath ?? null,
+        user_agent: input.userAgent ?? null,
+        metadata: input.metadata ?? {}
+      })
+      .select("id,event_type,created_at")
+      .single());
+
+    if (error || !data) return { ok: false, message: "Mobile usage event could not be recorded. Make sure migration 0010 is applied." };
+    return { ok: true, message: "Mobile usage event recorded.", event: data };
+  } catch {
+    return { ok: false, message: "Mobile usage event could not reach Supabase." };
   }
 }
 

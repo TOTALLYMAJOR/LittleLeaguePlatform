@@ -67,9 +67,10 @@ Acceptance:
 
 ## 6. Mobile App Decision
 
-- Measure PWA usage and push-notification needs.
-- If native is justified, start Expo app using shared domain contracts and notification architecture.
-- Keep parent-first workflows: schedule, RSVP, Team Chat, Parent Replay, snacks, volunteers.
+- Status: implemented 2026-06-23.
+- PWA install, standalone launch, push-permission, and native-interest usage events can be measured in Supabase.
+- Expo remains gated until the PWA metrics prove native app-store, stronger native push, camera/media, or OS integration needs.
+- Parent-first workflows remain in the shared web domain model: schedule, RSVP, Team Chat, Parent Replay, snacks, and volunteers.
 
 Acceptance:
 - Native app reuses web domain models and policy rules.

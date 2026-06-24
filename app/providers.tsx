@@ -15,6 +15,25 @@ interface BeforeInstallPromptEvent extends Event {
   userChoice: Promise<{ outcome: "accepted" | "dismissed"; platform: string }>;
 }
 
+function recordMobileUsageEvent(eventType: string, metadata: Record<string, string | boolean> = {}) {
+  const payload = JSON.stringify({
+    eventType,
+    routePath: window.location.pathname,
+    metadata
+  });
+  const url = "/api/mobile-usage-events";
+  if ("sendBeacon" in navigator) {
+    navigator.sendBeacon(url, new Blob([payload], { type: "application/json" }));
+    return;
+  }
+  void fetch(url, {
+    method: "POST",
+    headers: { "content-type": "application/json" },
+    body: payload,
+    keepalive: true
+  }).catch(() => undefined);
+}
+
 export function AppStateProvider({ children }: { children: React.ReactNode }) {
   const [state, dispatch] = useReducer(appReducer, seedState);
   const [installPrompt, setInstallPrompt] = useState<BeforeInstallPromptEvent | null>(null);
@@ -29,15 +48,18 @@ export function AppStateProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     const standalone = window.matchMedia("(display-mode: standalone)").matches || (navigator as Navigator & { standalone?: boolean }).standalone === true;
     setIsInstalled(standalone);
+    if (standalone) recordMobileUsageEvent("standalone_launch");
 
     function onBeforeInstallPrompt(event: Event) {
       event.preventDefault();
       setInstallPrompt(event as BeforeInstallPromptEvent);
+      recordMobileUsageEvent("install_prompt_shown");
     }
 
     function onAppInstalled() {
       setInstallPrompt(null);
       setIsInstalled(true);
+      recordMobileUsageEvent("install_prompt_accepted", { source: "appinstalled" });
     }
 
     window.addEventListener("beforeinstallprompt", onBeforeInstallPrompt);
@@ -52,6 +74,7 @@ export function AppStateProvider({ children }: { children: React.ReactNode }) {
     if (!installPrompt) return;
     await installPrompt.prompt();
     const choice = await installPrompt.userChoice.catch(() => null);
+    if (choice?.outcome) recordMobileUsageEvent(choice.outcome === "accepted" ? "install_prompt_accepted" : "install_prompt_dismissed", { platform: choice.platform });
     if (choice?.outcome !== "dismissed") setInstallPrompt(null);
   }
 
@@ -62,7 +85,10 @@ export function AppStateProvider({ children }: { children: React.ReactNode }) {
         <aside className="install-prompt" aria-label="Install Little League HQ">
           <span>Install Little League HQ for faster parent and coach access.</span>
           <button type="button" onClick={installApp}>Install</button>
-          <button type="button" className="secondary" onClick={() => setInstallPrompt(null)}>Dismiss</button>
+          <button type="button" className="secondary" onClick={() => {
+            recordMobileUsageEvent("install_prompt_dismissed", { source: "inline_prompt" });
+            setInstallPrompt(null);
+          }}>Dismiss</button>
         </aside>
       ) : null}
     </AppStateContext.Provider>

@@ -45,4 +45,11 @@ describe("API mutation auth boundaries", () => {
     expect(file).not.toContain("requireAuthenticatedRouteUser");
     expect(file).toContain("createPendingRegistration");
   });
+
+  it("keeps anonymous mobile usage measurement open for PWA decision data", () => {
+    const file = source("app/api/mobile-usage-events/route.ts");
+
+    expect(file).not.toContain("requireAuthenticatedRouteUser");
+    expect(file).toContain("recordMobileUsageEvent");
+  });
 });

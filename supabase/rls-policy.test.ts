@@ -14,6 +14,7 @@ describe("Supabase RLS policy coverage", () => {
   const sponsorStatus = migration("0007_sponsor_v2_status.sql");
   const mediaGovernance = migration("0008_media_governance.sql");
   const tenantThemeDefaults = migration("0009_tenant_theme_defaults.sql");
+  const mobileDecisionMetrics = migration("0010_mobile_decision_metrics.sql");
   const packageJson = readFileSync(join(process.cwd(), "package.json"), "utf8");
   const rlsProof = readFileSync(join(process.cwd(), "scripts", "verify-rls-boundaries.mjs"), "utf8");
 
@@ -61,6 +62,13 @@ describe("Supabase RLS policy coverage", () => {
     expect(tenantThemeDefaults).toContain("default_theme_key");
     expect(tenantThemeDefaults).toContain("default_primary_color");
     expect(tenantThemeDefaults).toContain("logo_status");
+  });
+
+  it("keeps mobile decision metrics auditable for PWA and native app decisions", () => {
+    expect(mobileDecisionMetrics).toContain("create table if not exists public.mobile_usage_events");
+    expect(mobileDecisionMetrics).toContain("'install_prompt_shown'");
+    expect(mobileDecisionMetrics).toContain("'push_permission_requested'");
+    expect(mobileDecisionMetrics).toContain("organization admins read mobile usage events");
   });
 
   it("keeps the real-session RLS QA proof wired", () => {

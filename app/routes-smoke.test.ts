@@ -33,4 +33,12 @@ describe("route smoke coverage", () => {
     expect(serviceWorker).toContain("\"/offline\"");
     expect(serviceWorker).toContain("caches.match(\"/offline\")");
   });
+
+  it("keeps PWA install and standalone usage measurement wired", () => {
+    const provider = readFileSync(join(process.cwd(), "app", "providers.tsx"), "utf8");
+
+    expect(provider).toContain("/api/mobile-usage-events");
+    expect(provider).toContain("install_prompt_shown");
+    expect(provider).toContain("standalone_launch");
+  });
 });

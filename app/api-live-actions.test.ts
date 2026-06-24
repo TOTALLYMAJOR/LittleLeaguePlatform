@@ -1,6 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { POST as postRsvp } from "./api/rsvps/route";
 import { POST as postNotificationPreference } from "./api/notification-preferences/route";
+import { POST as postMobileUsageEvent } from "./api/mobile-usage-events/route";
 import { POST as postParentReplay } from "./api/coach/parent-replay/route";
 import { POST as postWeeklyUpdate } from "./api/coach/weekly-update/route";
 import { POST as postSponsorSave } from "./api/admin/sponsors/route";
@@ -20,6 +21,7 @@ import {
   saveSponsor,
   moderateMediaItem,
   reportMediaItem,
+  recordMobileUsageEvent,
   saveParentReplay,
   updateNotificationPreference,
   updateParentRsvp
@@ -38,6 +40,7 @@ vi.mock("@/lib/supabase/operations", () => ({
   saveSponsor: vi.fn(),
   moderateMediaItem: vi.fn(),
   reportMediaItem: vi.fn(),
+  recordMobileUsageEvent: vi.fn(),
   saveParentReplay: vi.fn(),
   updateNotificationPreference: vi.fn(),
   updateParentRsvp: vi.fn()
@@ -56,6 +59,7 @@ const saveCoachWeeklyUpdateMock = vi.mocked(saveCoachWeeklyUpdate);
 const saveSponsorMock = vi.mocked(saveSponsor);
 const moderateMediaItemMock = vi.mocked(moderateMediaItem);
 const reportMediaItemMock = vi.mocked(reportMediaItem);
+const recordMobileUsageEventMock = vi.mocked(recordMobileUsageEvent);
 const saveParentReplayMock = vi.mocked(saveParentReplay);
 const updateNotificationPreferenceMock = vi.mocked(updateNotificationPreference);
 const updateTenantThemeDefaultsMock = vi.mocked(updateTenantThemeDefaults);
@@ -157,6 +161,31 @@ describe("live action API routes", () => {
       quietHoursStart: undefined,
       quietHoursEnd: undefined,
       timezone: undefined
+    });
+  });
+
+  it("records public mobile usage events for PWA/native decisions", async () => {
+    recordMobileUsageEventMock.mockResolvedValue({ ok: true, message: "Mobile usage event recorded.", event: { id: "mobile-event-1" } });
+
+    const response = await postMobileUsageEvent(new Request("http://localhost/api/mobile-usage-events", {
+      method: "POST",
+      headers: {
+        "content-type": "application/json",
+        "user-agent": "Mobile Safari"
+      },
+      body: JSON.stringify({
+        eventType: "install_prompt_shown",
+        routePath: "/parent",
+        metadata: { displayMode: "browser" }
+      })
+    }));
+
+    expect(response.status).toBe(201);
+    expect(recordMobileUsageEventMock).toHaveBeenCalledWith({
+      eventType: "install_prompt_shown",
+      routePath: "/parent",
+      userAgent: "Mobile Safari",
+      metadata: { displayMode: "browser" }
     });
   });
 

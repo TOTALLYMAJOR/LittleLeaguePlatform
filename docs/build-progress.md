@@ -88,6 +88,7 @@ npm run supabase:push
 - Added Media Governance V2 with approved-only parent/team reads, admin hide/restore/remove controls, team/org visibility metadata, reviewer permission checks, and audit events for reports and moderation actions.
 - Added Parent Replay V2 persistence with authenticated coach/admin publishing, reviewed/published Supabase replay rows, pending parent notification drafts, and audit events. AI generation remains disconnected and provider sends do not occur.
 - Added Admin Theme Studio defaults with organization-level theme/color/mascot/logo-status defaults, an authenticated admin defaults route, all-team logo/default/audit status, and tenant default save controls.
+- Added Mobile App Decision metrics with Supabase `mobile_usage_events`, install/standalone client measurement, and a public usage-event route so Expo remains gated on actual PWA and push-demand evidence.
 
 ### Remaining Gap
 
