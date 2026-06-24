@@ -14,6 +14,12 @@ const themeKeys = new Set<ProgramThemeKey>([
   "generic"
 ]);
 
+type UnsafeSupabase = {
+  // Tenant default branding columns are staged until generated types are refreshed.
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  from(table: string): any;
+};
+
 export interface TeamThemeAudit {
   id: string;
   actorUserId?: string;
@@ -22,7 +28,17 @@ export interface TeamThemeAudit {
   createdAt: string;
 }
 
+export interface TenantThemeDefaults {
+  organizationId: string;
+  themeKey: ProgramThemeKey;
+  mascot: string;
+  primaryColor: string;
+  secondaryColor: string;
+  logoStatus: "not_configured" | "queued" | "approved";
+}
+
 export interface AdminThemeData {
+  tenantDefaults: TenantThemeDefaults;
   teams: Team[];
   users: User[];
   teamMemberships: TeamMembership[];
@@ -73,6 +89,14 @@ function mapTeam(row: {
 
 function fallbackThemeData(): AdminThemeData {
   return {
+    tenantDefaults: {
+      organizationId: seedState.organization.id,
+      themeKey: "baseball",
+      mascot: "Team",
+      primaryColor: "#174ea6",
+      secondaryColor: "#fbbc04",
+      logoStatus: "not_configured"
+    },
     teams: seedState.teams,
     users: seedState.users,
     teamMemberships: seedState.teamMemberships,
@@ -102,7 +126,13 @@ function validateInput(input: UpdateTeamBrandingInput) {
 export async function listAdminThemeData(): Promise<AdminThemeData> {
   try {
     const supabase = createSupabaseAdminClient();
-    const [teamsResult, profilesResult, membershipsResult, auditsResult] = await withSupabaseTimeout(Promise.all([
+    const unsafeSupabase = supabase as unknown as UnsafeSupabase;
+    const [organizationsResult, teamsResult, profilesResult, membershipsResult, auditsResult] = await withSupabaseTimeout(Promise.all([
+      unsafeSupabase
+        .from("organizations")
+        .select("id,default_theme_key,default_mascot,default_primary_color,default_secondary_color,logo_status")
+        .order("created_at", { ascending: true })
+        .limit(1),
       supabase
         .from("teams")
         .select("id,organization_id,season_id,division,name,coach_user_id,mascot,primary_color,secondary_color,theme_key")
@@ -128,8 +158,17 @@ export async function listAdminThemeData(): Promise<AdminThemeData> {
     if (teamsResult.error || profilesResult.error || membershipsResult.error || auditsResult.error || !teamsResult.data?.length) {
       return fallbackThemeData();
     }
+    const organization = organizationsResult.data?.[0];
 
     return {
+      tenantDefaults: organization ? {
+        organizationId: organization.id,
+        themeKey: organization.default_theme_key,
+        mascot: organization.default_mascot,
+        primaryColor: organization.default_primary_color,
+        secondaryColor: organization.default_secondary_color,
+        logoStatus: organization.logo_status
+      } : fallbackThemeData().tenantDefaults,
       teams: teamsResult.data.map(mapTeam),
       users: (profilesResult.data ?? []).map((profile) => ({
         id: profile.id,
@@ -155,6 +194,98 @@ export async function listAdminThemeData(): Promise<AdminThemeData> {
     };
   } catch {
     return fallbackThemeData();
+  }
+}
+
+export async function updateTenantThemeDefaults(input: {
+  organizationId: string;
+  actorUserId: string;
+  themeKey: ProgramThemeKey;
+  mascot: string;
+  primaryColor: string;
+  secondaryColor: string;
+}) {
+  const mascot = input.mascot.trim();
+  if (!input.organizationId || !input.actorUserId) return { ok: false, message: "Organization and acting admin are required." };
+  if (mascot.length < 2 || mascot.length > 40) return { ok: false, message: "Default mascot must be 2-40 characters." };
+  if (!hexColorPattern.test(input.primaryColor) || !hexColorPattern.test(input.secondaryColor)) {
+    return { ok: false, message: "Default colors must use #RRGGBB hex values." };
+  }
+  if (!themeKeys.has(input.themeKey)) return { ok: false, message: "Default theme is not supported." };
+
+  try {
+    const supabase = createSupabaseAdminClient();
+    const unsafeSupabase = supabase as unknown as UnsafeSupabase;
+    const { data: adminMemberships } = await withSupabaseTimeout(supabase
+      .from("organization_memberships")
+      .select("id")
+      .eq("organization_id", input.organizationId)
+      .eq("user_id", input.actorUserId)
+      .eq("role", "admin")
+      .eq("status", "active"), 7000);
+
+    if (!adminMemberships?.length) return { ok: false, message: "Only active organization admins can update tenant theme defaults." };
+
+    const organizationResult = await withSupabaseTimeout(unsafeSupabase
+      .from("organizations")
+      .update({
+        default_theme_key: input.themeKey,
+        default_mascot: mascot,
+        default_primary_color: input.primaryColor,
+        default_secondary_color: input.secondaryColor
+      })
+      .eq("id", input.organizationId)
+      .select("id,default_theme_key,default_mascot,default_primary_color,default_secondary_color,logo_status")
+      .single(), 7000) as {
+        data: {
+          id: string;
+          default_theme_key: ProgramThemeKey;
+          default_mascot: string;
+          default_primary_color: string;
+          default_secondary_color: string;
+          logo_status: TenantThemeDefaults["logoStatus"];
+        } | null;
+        error: { message?: string } | null;
+      };
+    const { data: organization, error } = organizationResult;
+
+    if (error || !organization) return { ok: false, message: "Tenant theme defaults could not be saved. Make sure migration 0009 is applied." };
+
+    const summary = `Tenant theme defaults updated to ${input.themeKey} with ${mascot} mascot.`;
+    const { data: audit } = await supabase
+      .from("audit_events")
+      .insert({
+        organization_id: input.organizationId,
+        actor_user_id: input.actorUserId,
+        action: "tenant_theme_defaults_updated",
+        target_type: "organization",
+        target_id: input.organizationId,
+        summary
+      })
+      .select("id,actor_user_id,target_id,summary,created_at")
+      .single();
+
+    return {
+      ok: true,
+      message: "Tenant theme defaults saved for future teams.",
+      tenantDefaults: {
+        organizationId: organization.id,
+        themeKey: organization.default_theme_key,
+        mascot: organization.default_mascot,
+        primaryColor: organization.default_primary_color,
+        secondaryColor: organization.default_secondary_color,
+        logoStatus: organization.logo_status
+      } satisfies TenantThemeDefaults,
+      audit: audit ? {
+        id: audit.id,
+        actorUserId: audit.actor_user_id ?? undefined,
+        teamId: input.organizationId,
+        summary: audit.summary,
+        createdAt: audit.created_at
+      } : undefined
+    };
+  } catch {
+    return { ok: false, message: "Tenant theme defaults could not reach Supabase." };
   }
 }
 

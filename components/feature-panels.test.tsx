@@ -170,6 +170,14 @@ describe("AdminThemesClient", () => {
             teams: seedState.teams,
             users: seedState.users,
             teamMemberships: seedState.teamMemberships,
+            tenantDefaults: {
+              organizationId: seedState.organization.id,
+              themeKey: "baseball",
+              mascot: "Tigers",
+              primaryColor: "#174ea6",
+              secondaryColor: "#fbbc04",
+              logoStatus: "not_configured"
+            },
             audits: []
           }}
         />
@@ -181,6 +189,9 @@ describe("AdminThemesClient", () => {
     expect(html).toContain("Theme editor");
     expect(html).toContain("All team themes");
     expect(html).toContain("Theme audit");
+    expect(html).toContain("Save as tenant defaults");
+    expect(html).toContain("Tenant defaults");
+    expect(html).toContain("Logo:");
   });
 });
 

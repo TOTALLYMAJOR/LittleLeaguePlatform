@@ -6,6 +6,7 @@ const privateMutationRoutes = [
   "app/api/admin/registration-requests/[requestId]/approve/route.ts",
   "app/api/admin/registration-requests/[requestId]/reject/route.ts",
   "app/api/admin/sponsors/route.ts",
+  "app/api/admin/theme-defaults/route.ts",
   "app/api/admin/team-branding/route.ts",
   "app/api/admin/team-memberships/route.ts",
   "app/api/coach/parent-replay/route.ts",

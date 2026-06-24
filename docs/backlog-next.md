@@ -54,10 +54,11 @@ Acceptance:
 
 ## 5. Admin Theme Studio
 
-- Build `/admin/themes` as a first-class admin console.
-- Show all teams in a table with theme preset, mascot, colors, logo status, contrast status, and last updated audit event.
-- Add mobile/dark preview cards.
-- Add tenant-level defaults for new teams.
+- Status: implemented 2026-06-23.
+- `/admin/themes` is a first-class admin console.
+- The all-team table shows theme preset, mascot, colors, logo/default status, contrast status, and last updated audit evidence.
+- Mobile/dark preview cards and contrast checks are visible in the editor.
+- Tenant-level theme defaults can be saved for future teams.
 
 Acceptance:
 - Admin can update every team theme from one place.

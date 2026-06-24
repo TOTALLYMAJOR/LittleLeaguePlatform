@@ -13,6 +13,7 @@ describe("Supabase RLS policy coverage", () => {
   const teamBroadcast = migration("0006_team_broadcast_notifications.sql");
   const sponsorStatus = migration("0007_sponsor_v2_status.sql");
   const mediaGovernance = migration("0008_media_governance.sql");
+  const tenantThemeDefaults = migration("0009_tenant_theme_defaults.sql");
   const packageJson = readFileSync(join(process.cwd(), "package.json"), "utf8");
   const rlsProof = readFileSync(join(process.cwd(), "scripts", "verify-rls-boundaries.mjs"), "utf8");
 
@@ -54,6 +55,12 @@ describe("Supabase RLS policy coverage", () => {
     expect(mediaGovernance).toContain("'hidden'");
     expect(mediaGovernance).toContain("'removed'");
     expect(mediaGovernance).toContain("visibility in ('team', 'organization')");
+  });
+
+  it("keeps tenant theme defaults available for future teams", () => {
+    expect(tenantThemeDefaults).toContain("default_theme_key");
+    expect(tenantThemeDefaults).toContain("default_primary_color");
+    expect(tenantThemeDefaults).toContain("logo_status");
   });
 
   it("keeps the real-session RLS QA proof wired", () => {

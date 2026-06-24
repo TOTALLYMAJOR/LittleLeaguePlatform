@@ -4,12 +4,14 @@ import { POST as postNotificationPreference } from "./api/notification-preferenc
 import { POST as postParentReplay } from "./api/coach/parent-replay/route";
 import { POST as postWeeklyUpdate } from "./api/coach/weekly-update/route";
 import { POST as postSponsorSave } from "./api/admin/sponsors/route";
+import { POST as postThemeDefaults } from "./api/admin/theme-defaults/route";
 import { POST as postMediaReport } from "./api/media/report/route";
 import { POST as postMediaModeration } from "./api/media/moderation/route";
 import { POST as postSnackClaim } from "./api/snack-slots/claim/route";
 import { POST as postVolunteerClaim } from "./api/volunteer-signups/claim/route";
 import { POST as postWeatherDraft } from "./api/weather-alerts/draft/route";
 import type { ParentReplayDraft } from "@/lib/domain";
+import { updateTenantThemeDefaults } from "@/lib/supabase/team-branding";
 import {
   claimSnackSlot,
   claimVolunteerRole,
@@ -41,6 +43,10 @@ vi.mock("@/lib/supabase/operations", () => ({
   updateParentRsvp: vi.fn()
 }));
 
+vi.mock("@/lib/supabase/team-branding", () => ({
+  updateTenantThemeDefaults: vi.fn()
+}));
+
 const authMock = vi.mocked(requireAuthenticatedRouteUser);
 const updateParentRsvpMock = vi.mocked(updateParentRsvp);
 const claimSnackSlotMock = vi.mocked(claimSnackSlot);
@@ -52,6 +58,7 @@ const moderateMediaItemMock = vi.mocked(moderateMediaItem);
 const reportMediaItemMock = vi.mocked(reportMediaItem);
 const saveParentReplayMock = vi.mocked(saveParentReplay);
 const updateNotificationPreferenceMock = vi.mocked(updateNotificationPreference);
+const updateTenantThemeDefaultsMock = vi.mocked(updateTenantThemeDefaults);
 
 function jsonRequest(body: unknown) {
   return new Request("http://localhost/api/test", {
@@ -287,6 +294,41 @@ describe("live action API routes", () => {
       status: "active",
       placementKey: "team_portal",
       logoUrl: "https://sponsor.example/logo.png"
+    });
+  });
+
+  it("uses the authenticated admin session for tenant theme defaults", async () => {
+    updateTenantThemeDefaultsMock.mockResolvedValue({
+      ok: true,
+      message: "Tenant theme defaults saved.",
+      tenantDefaults: {
+        organizationId: "org-1",
+        themeKey: "baseball",
+        mascot: "Tigers",
+        primaryColor: "#174ea6",
+        secondaryColor: "#fbbc04",
+        logoStatus: "not_configured"
+      },
+      audit: undefined
+    });
+
+    const response = await postThemeDefaults(jsonRequest({
+      organizationId: "org-1",
+      actorUserId: "client-spoof",
+      themeKey: "baseball",
+      mascot: "Tigers",
+      primaryColor: "#174ea6",
+      secondaryColor: "#fbbc04"
+    }));
+
+    expect(response.status).toBe(200);
+    expect(updateTenantThemeDefaultsMock).toHaveBeenCalledWith({
+      organizationId: "org-1",
+      actorUserId: "user-live-session",
+      themeKey: "baseball",
+      mascot: "Tigers",
+      primaryColor: "#174ea6",
+      secondaryColor: "#fbbc04"
     });
   });
 });

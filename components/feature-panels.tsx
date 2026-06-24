@@ -49,7 +49,7 @@ import type { MediaGovernanceData } from "@/lib/supabase/media-governance";
 import type { RegistrationReviewData } from "@/lib/supabase/registration-approvals";
 import type { SponsorAdminData } from "@/lib/supabase/sponsors";
 import type { TeamPortalData } from "@/lib/supabase/team-portal";
-import type { AdminThemeData, TeamThemeAudit } from "@/lib/supabase/team-branding";
+import type { AdminThemeData, TeamThemeAudit, TenantThemeDefaults } from "@/lib/supabase/team-branding";
 import type { TeamChatData } from "@/lib/supabase/team-chat";
 import type { ParentCoachDashboardData } from "@/lib/supabase/dashboard-data";
 
@@ -1768,6 +1768,7 @@ export function AdminDashboardClient({ registrationRequests, sponsorData, mediaD
 export function AdminThemesClient({ initialData }: { initialData: AdminThemeData }) {
   const [teams, setTeams] = useState(initialData.teams);
   const [audits, setAudits] = useState<TeamThemeAudit[]>(initialData.audits);
+  const [tenantDefaults, setTenantDefaults] = useState<TenantThemeDefaults>(initialData.tenantDefaults);
   const [teamId, setTeamId] = useState(initialData.teams[0]?.id ?? "");
   const [actorUserId, setActorUserId] = useState(initialData.users.find((user) => user.role === "admin")?.id ?? initialData.users[0]?.id ?? "");
   const [drafts, setDrafts] = useState<Record<string, Pick<Team, "mascot" | "primaryColor" | "secondaryColor" | "themeKey">>>({});
@@ -1842,6 +1843,30 @@ export function AdminThemesClient({ initialData }: { initialData: AdminThemeData
     });
   }
 
+  function saveTenantDefaults() {
+    if (!draft) return;
+    setMessage("");
+    startTransition(async () => {
+      const response = await authenticatedJsonFetch("/api/admin/theme-defaults", {
+        organizationId: tenantDefaults.organizationId,
+        themeKey: draft.themeKey,
+        mascot: draft.mascot,
+        primaryColor: draft.primaryColor,
+        secondaryColor: draft.secondaryColor
+      });
+      const result = await response.json().catch(() => null) as {
+        ok?: boolean;
+        message?: string;
+        tenantDefaults?: TenantThemeDefaults;
+        audit?: TeamThemeAudit;
+      } | null;
+
+      if (result?.ok && result.tenantDefaults) setTenantDefaults(result.tenantDefaults);
+      if (result?.audit) setAudits((current) => [result.audit!, ...current].slice(0, 25));
+      setMessage(result?.message ?? "Tenant theme defaults could not be saved.");
+    });
+  }
+
   return (
     <div className="page admin-themes-page">
       <section className="hero">
@@ -1902,6 +1927,7 @@ export function AdminThemesClient({ initialData }: { initialData: AdminThemeData
             </div>
           ) : <p className="muted">No team records are available.</p>}
           <button onClick={saveTheme} disabled={isPending || !team || !draft}>{isPending ? "Saving..." : "Save team theme"}</button>
+          <button className="secondary" onClick={saveTenantDefaults} disabled={isPending || !draft}>Save as tenant defaults</button>
         </article>
 
         {team && draft ? (
@@ -1916,6 +1942,9 @@ export function AdminThemesClient({ initialData }: { initialData: AdminThemeData
               <span>{team.name} mobile</span>
             </div>
             <p className="muted">Contrast ratio: {selectedContrast?.ratio.toFixed(2)}. Use Pass for text-heavy portal headers.</p>
+            <div className="notice">
+              <strong>Tenant defaults:</strong> {getProgramThemePreset(tenantDefaults.themeKey).label} - {tenantDefaults.mascot} - logo {tenantDefaults.logoStatus.replace("_", " ")}
+            </div>
           </article>
         ) : null}
       </section>
@@ -1925,12 +1954,20 @@ export function AdminThemesClient({ initialData }: { initialData: AdminThemeData
           <h2>All team themes</h2>
           {teams.map((item) => {
             const status = contrastStatus(item.primaryColor, item.secondaryColor);
+            const lastAudit = audits.find((audit) => audit.teamId === item.id);
+            const usesTenantDefaults = item.themeKey === tenantDefaults.themeKey &&
+              item.mascot === tenantDefaults.mascot &&
+              item.primaryColor.toLowerCase() === tenantDefaults.primaryColor.toLowerCase() &&
+              item.secondaryColor.toLowerCase() === tenantDefaults.secondaryColor.toLowerCase();
             return (
               <button className="theme-row" key={item.id} onClick={() => setTeamId(item.id)}>
                 <span className="theme-swatch" style={{ background: item.primaryColor }} />
                 <span className="theme-swatch" style={{ background: item.secondaryColor }} />
                 <strong>{item.name}</strong>
-                <span>{getProgramThemePreset(item.themeKey).label}</span>
+                <span>{getProgramThemePreset(item.themeKey).label} - {item.mascot}</span>
+                <span>Logo: {tenantDefaults.logoStatus.replace("_", " ")}</span>
+                <span>{lastAudit ? formatDate(lastAudit.createdAt) : "No audit yet"}</span>
+                {usesTenantDefaults ? <span className="badge ok">Default</span> : null}
                 <span className={`badge ${status.className}`}>{status.label}</span>
               </button>
             );
