@@ -1,0 +1,50 @@
+name: Supabase QA proof
+
+on:
+  workflow_dispatch:
+
+jobs:
+  qa-proof:
+    runs-on: ubuntu-latest
+    env:
+      NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
+      NEXT_PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.NEXT_PUBLIC_SUPABASE_ANON_KEY }}
+      SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+      QA_PARENT_EMAIL: ${{ secrets.QA_PARENT_EMAIL }}
+      QA_PARENT_PASSWORD: ${{ secrets.QA_PARENT_PASSWORD }}
+      QA_COACH_EMAIL: ${{ secrets.QA_COACH_EMAIL }}
+      QA_COACH_PASSWORD: ${{ secrets.QA_COACH_PASSWORD }}
+      QA_PROOF_BASE_URL: http://127.0.0.1:3020
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - name: Install
+        run: npm ci
+      - name: Build
+        run: npm run build
+      - name: Seed QA users and rows
+        run: npm run supabase:qa-users
+      - name: Prove real-session RLS
+        run: npm run qa:rls-proof
+      - name: Prove signed-in browser paths
+        run: |
+          npm run start -- --hostname 127.0.0.1 --port 3020 &
+          server_pid=$!
+          trap 'kill $server_pid' EXIT
+          for _ in {1..60}; do
+            if curl -fsS "$QA_PROOF_BASE_URL" >/dev/null; then
+              npm run qa:session-proof
+              exit 0
+            fi
+            sleep 1
+          done
+          exit 1
+      - name: Upload proof screenshots
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: supabase-qa-proof-screenshots
+          path: output/playwright/*.png

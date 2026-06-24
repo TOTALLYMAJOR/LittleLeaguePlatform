@@ -75,6 +75,8 @@ npm run qa:session-proof
 
 `supabase:qa-users` creates or updates the QA parent and coach credentials in `.env.local`. `qa:rls-proof` signs in through the anon key and verifies parent, coach, and anonymous Row Level Security boundaries. `qa:session-proof` verifies the signed-in browser routes and captures screenshots under `output/playwright/`.
 
+CI runs source validation in `.github/workflows/static-smoke.yml`. Live Supabase QA proof is manual through `.github/workflows/supabase-qa-proof.yml` because it requires project secrets and mutates seeded QA rows.
+
 ## Common Issues
 
 ### Port 8081 Is Already In Use
