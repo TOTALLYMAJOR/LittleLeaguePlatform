@@ -90,6 +90,7 @@ npm run supabase:push
 - Added Admin Theme Studio defaults with organization-level theme/color/mascot/logo-status defaults, an authenticated admin defaults route, all-team logo/default/audit status, and tenant default save controls.
 - Added Mobile App Decision metrics with Supabase `mobile_usage_events`, install/standalone client measurement, and a public usage-event route so Expo remains gated on actual PWA and push-demand evidence.
 - Added deterministic assistive suggestions across admin, coach, and parent dashboards. Suggestions summarize existing scoped records only and cannot approve, publish, RSVP, or send provider messages.
+- Added Reporting and Archive exports with authenticated admin CSV generation, audit logging, and an archive readiness checklist covering non-chat preservation and chat deletion proof.
 
 ### Remaining Gap
 

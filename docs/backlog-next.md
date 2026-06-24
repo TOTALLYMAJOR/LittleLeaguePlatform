@@ -90,9 +90,10 @@ Acceptance:
 
 ## 8. Reporting And Archive
 
-- Add exports for roster, contacts, schedules, RSVP, snack/volunteer assignments, sponsor roster, and notification logs.
-- Add season archive readiness checklist.
-- Implement read-only archived seasons and chat retention deletion proof.
+- Status: implemented 2026-06-23.
+- Admin exports exist for roster, contacts, schedules, RSVP, snack/volunteer assignments, sponsor roster, and notification logs.
+- Season archive readiness checklist is documented in `docs/archive-readiness-checklist.md`.
+- Archive proof requires preserving non-chat season data and proving deleted chat text cannot be reconstructed from app-readable data.
 
 Acceptance:
 - Exports are permission-checked and audit-logged.

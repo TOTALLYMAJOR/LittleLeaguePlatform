@@ -1,5 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { POST as postRsvp } from "./api/rsvps/route";
+import { POST as postAdminExport } from "./api/admin/exports/route";
 import { POST as postNotificationPreference } from "./api/notification-preferences/route";
 import { POST as postMobileUsageEvent } from "./api/mobile-usage-events/route";
 import { POST as postParentReplay } from "./api/coach/parent-replay/route";
@@ -13,6 +14,7 @@ import { POST as postVolunteerClaim } from "./api/volunteer-signups/claim/route"
 import { POST as postWeatherDraft } from "./api/weather-alerts/draft/route";
 import type { ParentReplayDraft } from "@/lib/domain";
 import { updateTenantThemeDefaults } from "@/lib/supabase/team-branding";
+import { createAdminExport } from "@/lib/supabase/reporting";
 import {
   claimSnackSlot,
   claimVolunteerRole,
@@ -50,6 +52,10 @@ vi.mock("@/lib/supabase/team-branding", () => ({
   updateTenantThemeDefaults: vi.fn()
 }));
 
+vi.mock("@/lib/supabase/reporting", () => ({
+  createAdminExport: vi.fn()
+}));
+
 const authMock = vi.mocked(requireAuthenticatedRouteUser);
 const updateParentRsvpMock = vi.mocked(updateParentRsvp);
 const claimSnackSlotMock = vi.mocked(claimSnackSlot);
@@ -63,6 +69,7 @@ const recordMobileUsageEventMock = vi.mocked(recordMobileUsageEvent);
 const saveParentReplayMock = vi.mocked(saveParentReplay);
 const updateNotificationPreferenceMock = vi.mocked(updateNotificationPreference);
 const updateTenantThemeDefaultsMock = vi.mocked(updateTenantThemeDefaults);
+const createAdminExportMock = vi.mocked(createAdminExport);
 
 function jsonRequest(body: unknown) {
   return new Request("http://localhost/api/test", {
@@ -161,6 +168,29 @@ describe("live action API routes", () => {
       quietHoursStart: undefined,
       quietHoursEnd: undefined,
       timezone: undefined
+    });
+  });
+
+  it("uses the authenticated admin session for reporting exports", async () => {
+    createAdminExportMock.mockResolvedValue({
+      ok: true,
+      message: "roster export generated with 1 row(s).",
+      filename: "roster-export.csv",
+      contentType: "text/csv",
+      csv: "team,player\nTiny Tigers,Mason M."
+    });
+
+    const response = await postAdminExport(jsonRequest({
+      organizationId: "org-1",
+      actorUserId: "client-spoof",
+      kind: "roster"
+    }));
+
+    expect(response.status).toBe(200);
+    expect(createAdminExportMock).toHaveBeenCalledWith({
+      organizationId: "org-1",
+      actorUserId: "user-live-session",
+      kind: "roster"
     });
   });
 

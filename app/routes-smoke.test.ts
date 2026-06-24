@@ -41,4 +41,12 @@ describe("route smoke coverage", () => {
     expect(provider).toContain("install_prompt_shown");
     expect(provider).toContain("standalone_launch");
   });
+
+  it("keeps season archive readiness proof documented", () => {
+    const checklist = readFileSync(join(process.cwd(), "docs", "archive-readiness-checklist.md"), "utf8");
+
+    expect(checklist).toContain("/api/admin/exports");
+    expect(checklist).toContain("deleted chat message text");
+    expect(checklist).toContain("read-only archived-season smoke check");
+  });
 });
