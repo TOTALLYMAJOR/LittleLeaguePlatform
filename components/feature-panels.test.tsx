@@ -257,6 +257,8 @@ describe("AdminDashboardClient", () => {
     expect(html).toContain("Reject media");
     expect(html).toContain("Role-based media visibility");
     expect(html).toContain("Media retention policy");
+    expect(html).toContain("Photo visibility flags");
+    expect(html).toContain("Takedown request");
     expect(html).toContain("Team/org visibility");
     expect(html).toContain("Hide media");
     expect(html).toContain("Restore media");
@@ -372,6 +374,8 @@ describe("TeamPortalClient", () => {
     expect(html).toContain("Map fallback UX");
     expect(html).toContain("Location change highlighting");
     expect(html).toContain("Facility notes");
+    expect(html).toContain("Per-player media consent");
+    expect(html).toContain("Private team album");
     expect(html).toContain("Coach video library");
     expect(html).toContain("Parent education center");
     expect(html).toContain("Skill trees");

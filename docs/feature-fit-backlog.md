@@ -423,10 +423,10 @@ This backlog translates the pasted feature inventory into repo-fit work. It is n
   - `Covered`: Media Retention Policy.
   - `Covered`: Role-Based Media Visibility.
   - `Covered`: Media Consent Controls.
-  - `Build`: Per-Player Media Consent.
-  - `Build`: Photo Visibility Flags.
-  - `Build`: Private Team Album.
-  - `Build`: Takedown Request Flow.
+  - `Covered`: Per-Player Media Consent.
+  - `Covered`: Photo Visibility Flags.
+  - `Covered`: Private Team Album.
+  - `Covered`: Takedown Request Flow.
   - `Covered`: Team Memory Timeline.
   - `Covered`: Season Storybook.
   - `Covered`: End-of-Season Highlights.

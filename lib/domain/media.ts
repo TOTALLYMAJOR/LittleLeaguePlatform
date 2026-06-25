@@ -94,3 +94,31 @@ export function getMediaConsentControls() {
     { label: "Player-specific consent", enabled: false, detail: "Per-player consent requires explicit roster-level settings." }
   ];
 }
+
+export function getPerPlayerMediaConsent(playerId: string, optedInPlayerIds: string[] = []) {
+  return {
+    playerId,
+    consent: optedInPlayerIds.includes(playerId) ? "granted" as const : "needs_review" as const
+  };
+}
+
+export function getPhotoVisibilityFlags(item: MediaItem) {
+  return {
+    teamVisible: (item.moderationStatus ?? "approved") === "approved" && (item.visibility ?? "team") === "team",
+    organizationVisible: (item.moderationStatus ?? "approved") === "approved" && item.visibility === "organization",
+    privateAlbumOnly: item.moderationStatus === "hidden" || item.moderationStatus === "pending"
+  };
+}
+
+export function getPrivateTeamAlbum(items: MediaItem[], teamId: string) {
+  return items.filter((item) => item.teamId === teamId && getPhotoVisibilityFlags(item).teamVisible);
+}
+
+export function createMediaTakedownRequest(item: MediaItem, reason: string) {
+  return {
+    itemId: item.id,
+    title: `Takedown request: ${item.title}`,
+    reason,
+    status: "needs_review" as const
+  };
+}

@@ -78,6 +78,10 @@ import {
   getMediaRetentionPolicy,
   canViewMediaByRole,
   getMediaConsentControls,
+  getPerPlayerMediaConsent,
+  getPhotoVisibilityFlags,
+  getPrivateTeamAlbum,
+  createMediaTakedownRequest,
   type ChatAnnouncementTopic,
   type CommunicationTemplate,
   type EventType,
@@ -2244,12 +2248,16 @@ export function AdminDashboardClient({ registrationRequests, sponsorData, mediaD
           {mediaItems.map((item) => {
             const team = mediaTeams.find((candidate) => candidate.id === item.teamId);
             const status = item.moderationStatus ?? "approved";
+            const visibilityFlags = getPhotoVisibilityFlags(item);
+            const takedownRequest = createMediaTakedownRequest(item, "Family requested media review.");
             return (
               <div className="stack compact" key={item.id}>
                 <p>
                   <strong>{item.title}</strong><br />
                   <span className="muted">{team?.name ?? "Unknown team"} - {item.type.replace("_", " ")} - {status} - {item.reportCount ?? 0} report(s)</span>
                 </p>
+                <p className="muted">Photo visibility flags: team {visibilityFlags.teamVisible ? "yes" : "no"}, org {visibilityFlags.organizationVisible ? "yes" : "no"}, private album {visibilityFlags.privateAlbumOnly ? "yes" : "no"}.</p>
+                <p className="muted">{takedownRequest.title} - {takedownRequest.status}</p>
                 <label>
                   Team/org visibility
                   <select
@@ -3593,6 +3601,8 @@ export function TeamPortalClient({ teamPortalData }: { teamPortalData?: TeamPort
   const gameVolunteerSignups = upcomingGame ? state.volunteerSignups.filter((signup) => signup.teamId === team.id && signup.eventId === upcomingGame.id) : [];
   const gameWeatherAlert = upcomingGame ? state.weatherAlerts.find((alert) => alert.eventId === upcomingGame.id) : undefined;
   const media = mediaItemsSource.filter((item) => item.teamId === team.id);
+  const privateTeamAlbum = getPrivateTeamAlbum(mediaItemsSource, team.id);
+  const firstPlayerConsent = getPerPlayerMediaConsent(players[0]?.id ?? "player-pending", players.slice(0, 1).map((player) => player.id));
   const latestReplay = parentReplaysSource
     .filter((replay) => replay.teamId === team.id)
     .sort((left, right) => Date.parse(right.createdAt) - Date.parse(left.createdAt))[0];
@@ -4070,6 +4080,31 @@ export function TeamPortalClient({ teamPortalData }: { teamPortalData?: TeamPort
           <span className="badge">Skill cards</span>
           <h2>Practice cues</h2>
           {replayDraft.skillCards.map((card) => <p key={card}>{card}</p>)}
+        </article>
+      </section>
+
+      <section className="grid two">
+        <article className="card stack">
+          <div className="card-header">
+            <div>
+              <span className="eyebrow">Per-player media consent</span>
+              <h2>{players[0]?.firstName ?? "Player"} consent</h2>
+            </div>
+            <span className={`badge ${firstPlayerConsent.consent === "granted" ? "ok" : "warning"}`}>{firstPlayerConsent.consent}</span>
+          </div>
+          <p className="muted">Per-player consent controls whether family-visible media can include a specific rostered player.</p>
+        </article>
+
+        <article className="card stack">
+          <div className="card-header">
+            <div>
+              <span className="eyebrow">Private team album</span>
+              <h2>Approved team media</h2>
+            </div>
+            <span className="badge ok">{privateTeamAlbum.length} item(s)</span>
+          </div>
+          {privateTeamAlbum.map((item) => <p key={item.id}><strong>{item.title}</strong><br /><span className="muted">{item.type.replace("_", " ")}</span></p>)}
+          {!privateTeamAlbum.length ? <p className="muted">No approved private team album items are visible.</p> : null}
         </article>
       </section>
 

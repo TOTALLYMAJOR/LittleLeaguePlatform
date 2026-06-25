@@ -76,7 +76,11 @@ import {
   getFamilyFacingModerationQueue,
   getMediaRetentionPolicy,
   canViewMediaByRole,
-  getMediaConsentControls
+  getMediaConsentControls,
+  getPerPlayerMediaConsent,
+  getPhotoVisibilityFlags,
+  getPrivateTeamAlbum,
+  createMediaTakedownRequest
 } from "./index";
 
 describe("CSV duplicate detection", () => {
@@ -136,6 +140,15 @@ describe("media URL validation", () => {
     expect(canViewMediaByRole(reported, "parent")).toBe(false);
     expect(canViewMediaByRole(reported, "admin")).toBe(true);
     expect(controls[0]?.label).toBe("Team media consent");
+  });
+
+  it("tracks per-player consent, photo flags, private albums, and takedown requests", () => {
+    const item = seedState.mediaItems[0]!;
+
+    expect(getPerPlayerMediaConsent("player-mason", ["player-mason"]).consent).toBe("granted");
+    expect(getPhotoVisibilityFlags(item).teamVisible).toBe(true);
+    expect(getPrivateTeamAlbum(seedState.mediaItems, "team-tigers")).toHaveLength(2);
+    expect(createMediaTakedownRequest(item, "Parent requested removal.").status).toBe("needs_review");
   });
 });
 

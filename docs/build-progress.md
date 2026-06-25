@@ -121,6 +121,7 @@ npm run supabase:push
 - Added facility notes plus Team Chat reporting UI, retention job, and media/message policy summaries.
 - Added media approve/reject helpers, upload storage provider status, and admin media reporting summary.
 - Added family-facing media moderation queue, retention policy, role visibility, and consent-control summaries.
+- Added per-player media consent, photo visibility flags, private team album, and takedown request summaries.
 
 ### Remaining Gap
 
