@@ -131,6 +131,7 @@ npm run supabase:push
 - Added cache invalidation policy, manual dark toggle state, contrast checks, and Parent Replay prompt/eval harness.
 - Added privacy filters plus invite acceptance, invite-to-account time, and failed-invite metrics.
 - Added parent-link completion, RSVP response, schedule-alert open, and weekly-active-parent metrics.
+- Added support-request, CSV import error, coach weekly update send, and Game Day Calm Mode usage metrics.
 
 ### Remaining Gap
 

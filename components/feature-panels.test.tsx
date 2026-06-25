@@ -290,6 +290,10 @@ describe("AdminDashboardClient", () => {
     expect(html).toContain("RSVP response rate");
     expect(html).toContain("Schedule alert open rate");
     expect(html).toContain("Weekly active parents");
+    expect(html).toContain("Support requests per team");
+    expect(html).toContain("CSV import error rate");
+    expect(html).toContain("Coach weekly update send rate");
+    expect(html).toContain("Game Day Calm Mode usage");
   });
 });
 

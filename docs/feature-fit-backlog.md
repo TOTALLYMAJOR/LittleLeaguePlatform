@@ -558,10 +558,10 @@ This backlog translates the pasted feature inventory into repo-fit work. It is n
   - `Covered`: RSVP Response Rate.
   - `Covered`: Schedule Alert Open Rate.
   - `Covered`: Weekly Active Parents.
-  - `Build`: Support Requests Per Team.
-  - `Build`: CSV Import Error Rate.
-  - `Build`: Coach Weekly Update Send Rate.
-  - `Build`: Game Day Calm Mode Usage.
+  - `Covered`: Support Requests Per Team.
+  - `Covered`: CSV Import Error Rate.
+  - `Covered`: Coach Weekly Update Send Rate.
+  - `Covered`: Game Day Calm Mode Usage.
   - `Build`: Parent Replay Completion Rate.
   - `Build`: Micro-Coaching Streak Rate.
   - `Build`: Media Engagement Rate.

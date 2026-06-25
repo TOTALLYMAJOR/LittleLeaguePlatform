@@ -49,3 +49,24 @@ export function getWeeklyActiveParents(state: AppState) {
     ...state.chatMessages.filter((message) => message.authorRole === "parent").map((message) => message.authorUserId)
   ]).size;
 }
+
+export function getSupportRequestsPerTeam(state: AppState) {
+  return state.teams.map((team) => ({ teamId: team.id, count: 0 }));
+}
+
+export function getCsvImportErrorRate(state: AppState) {
+  const latest = state.rosterImportReports[0];
+  if (!latest) return 0;
+  const total = latest.validRows + latest.warningRows + latest.errorRows;
+  return total ? Math.round((latest.errorRows / total) * 100) : 0;
+}
+
+export function getCoachWeeklyUpdateSendRate(state: AppState) {
+  const drafts = state.notifications.filter((notification) => notification.notificationType === "team_broadcast");
+  const sent = drafts.filter((notification) => notification.status === "sent" || notification.status === "read").length;
+  return drafts.length ? Math.round((sent / drafts.length) * 100) : 0;
+}
+
+export function getGameDayCalmModeUsage(state: AppState) {
+  return state.events.filter((event) => event.eventType === "game").length;
+}

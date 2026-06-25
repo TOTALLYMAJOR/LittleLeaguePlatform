@@ -118,6 +118,10 @@ import {
   getRsvpResponseRate,
   getScheduleAlertOpenRate,
   getWeeklyActiveParents,
+  getSupportRequestsPerTeam,
+  getCsvImportErrorRate,
+  getCoachWeeklyUpdateSendRate,
+  getGameDayCalmModeUsage,
   type ChatAnnouncementTopic,
   type CommunicationTemplate,
   type EventType,
@@ -1872,6 +1876,10 @@ export function AdminDashboardClient({ registrationRequests, sponsorData, mediaD
   const rsvpResponseRate = getRsvpResponseRate(state);
   const scheduleAlertOpenRate = getScheduleAlertOpenRate(state);
   const weeklyActiveParents = getWeeklyActiveParents(state);
+  const supportRequestsPerTeam = getSupportRequestsPerTeam(state);
+  const csvImportErrorRate = getCsvImportErrorRate(state);
+  const coachWeeklyUpdateSendRate = getCoachWeeklyUpdateSendRate(state);
+  const gameDayCalmModeUsage = getGameDayCalmModeUsage(state);
   const [communicationTeamId, setCommunicationTeamId] = useState("team-tigers");
   const [communicationChannel, setCommunicationChannel] = useState<AdminCommunicationChannel>("email");
   const [communicationTemplate, setCommunicationTemplate] = useState<CommunicationTemplate>("weekly_digest");
@@ -2439,6 +2447,10 @@ export function AdminDashboardClient({ registrationRequests, sponsorData, mediaD
           <p><strong>RSVP response rate:</strong> {rsvpResponseRate}%</p>
           <p><strong>Schedule alert open rate:</strong> {scheduleAlertOpenRate}%</p>
           <p><strong>Weekly active parents:</strong> {weeklyActiveParents}</p>
+          <p><strong>Support requests per team:</strong> {supportRequestsPerTeam.length} team(s) tracked</p>
+          <p><strong>CSV import error rate:</strong> {csvImportErrorRate}%</p>
+          <p><strong>Coach weekly update send rate:</strong> {coachWeeklyUpdateSendRate}%</p>
+          <p><strong>Game Day Calm Mode usage:</strong> {gameDayCalmModeUsage} game(s)</p>
         </article>
       </section>
     </div>
