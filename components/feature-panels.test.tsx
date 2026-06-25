@@ -199,6 +199,11 @@ describe("ScheduleAlertsClient", () => {
     expect(html).toContain("ICS feed preview");
     expect(html).toContain("RSVP sync");
     expect(html).toContain("Schedule attendance counts");
+    expect(html).toContain("Schedule notification workflow");
+    expect(html).toContain("Review before delivery");
+    expect(html).toContain("Event status tracking");
+    expect(html).toContain("Push notification channel");
+    expect(html).toContain("Email notification channel");
     expect(html).toContain("Affected families");
     expect(html).toContain("Already RSVP");
     expect(html).toContain("Preview only");

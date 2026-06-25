@@ -19,7 +19,10 @@ import {
   getCoachRsvpReliability,
   canModerateTeamChat,
   getCoachRsvpSummaries,
+  getEventStatusTracking,
+  getNotificationChannelReadiness,
   getParentDashboard,
+  getScheduleNotificationWorkflow,
   getScheduleRsvpSyncRows,
   getTeamChatAccess,
   getTeamChatView,
@@ -215,6 +218,25 @@ describe("schedule changes and admin health", () => {
     expect(calendar).toContain("BEGIN:VCALENDAR");
     expect(calendar).toContain("Tiny Tigers Practice");
     expect(syncRows.find((row) => row.event.id === "event-tigers-game")?.going).toBe(1);
+  });
+
+  it("summarizes schedule notification workflow and channel readiness", () => {
+    const changed = applyScheduleChange(seedState, {
+      eventId: "event-tigers-game",
+      actorUserId: "user-admin",
+      actorRole: "admin",
+      status: "cancelled",
+      now: NOW
+    }).state;
+    const workflow = getScheduleNotificationWorkflow(changed);
+    const status = getEventStatusTracking(changed);
+    const channels = getNotificationChannelReadiness(changed);
+
+    expect(workflow.total).toBe(6);
+    expect(workflow.statusCounts.pending).toBe(6);
+    expect(status.cancelled).toBe(1);
+    expect(channels.find((channel) => channel.channel === "push")?.label).toBe("Push notification channel");
+    expect(channels.find((channel) => channel.channel === "email")?.status).toBe("ok");
   });
 
   it("computes launch readiness card counts", () => {

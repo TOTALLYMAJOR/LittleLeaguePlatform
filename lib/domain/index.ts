@@ -10,6 +10,7 @@ export * from "./schedule";
 export * from "./season-planning";
 export * from "./chat";
 export * from "./communications";
+export * from "./notifications";
 export * from "./parent-replay";
 export * from "./program-themes";
 export * from "./registration";

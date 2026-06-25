@@ -25,7 +25,10 @@ import {
   exportTeamCalendarIcs,
   getProgramThemePreset,
   getScheduleRsvpSyncRows,
+  getEventStatusTracking,
   defaultPracticeFocusAreas,
+  getNotificationChannelReadiness,
+  getScheduleNotificationWorkflow,
   getVenueRecords,
   platformFeatureTiers,
   previewTeamCommunication,
@@ -2575,6 +2578,9 @@ export function ScheduleAlertsClient() {
   const recurringPreview = event ? previewRecurringEvents(state, { sourceEventId: event.id, count: 3, intervalDays: 7 }) : [];
   const calendarExport = eventTeam ? exportTeamCalendarIcs(state, eventTeam.id) : "";
   const rsvpSyncRows = getScheduleRsvpSyncRows(state).filter((row) => !eventTeam || row.event.teamId === eventTeam.id);
+  const scheduleWorkflow = getScheduleNotificationWorkflow(state);
+  const eventStatusTracking = getEventStatusTracking(state);
+  const channelReadiness = getNotificationChannelReadiness(state);
   const eventWindowMs = event ? new Date(event.endsAt).getTime() - new Date(event.startsAt).getTime() : 60 * 60 * 1000;
   const conflictEndsAt = event ? new Date(new Date(startsAt).getTime() + eventWindowMs).toISOString() : "";
   const scheduleConflicts = event ? detectScheduleConflicts(state, {
@@ -2793,6 +2799,44 @@ export function ScheduleAlertsClient() {
           ))}
           {!state.notifications.some((notification) => notification.eventId) ? <p className="muted">No schedule notifications queued yet.</p> : null}
         </article>
+      </section>
+
+      <section className="grid two">
+        <article className="card stack">
+          <div className="card-header">
+            <div>
+              <span className="eyebrow">Schedule notification workflow</span>
+              <h2>Review before delivery</h2>
+            </div>
+            <span className="badge warning">{scheduleWorkflow.total} draft(s)</span>
+          </div>
+          <p>{scheduleWorkflow.boundary}</p>
+          <p className="muted">Pending {scheduleWorkflow.statusCounts.pending}, sent {scheduleWorkflow.statusCounts.sent}, failed {scheduleWorkflow.statusCounts.failed}, read {scheduleWorkflow.statusCounts.read}</p>
+        </article>
+
+        <article className="card stack">
+          <div className="card-header">
+            <div>
+              <span className="eyebrow">Event status tracking</span>
+              <h2>Schedule state</h2>
+            </div>
+            <span className="badge ok">{eventStatusTracking.scheduled} scheduled</span>
+          </div>
+          <p>Scheduled {eventStatusTracking.scheduled}, cancelled {eventStatusTracking.cancelled}, completed {eventStatusTracking.completed}</p>
+          <p className="muted">Status changes feed the impact preview before any parent-facing notification records are queued.</p>
+        </article>
+      </section>
+
+      <section className="grid three">
+        {channelReadiness.map((channel) => (
+          <article className="card stack" key={channel.channel}>
+            <div className="card-header">
+              <h2>{channel.label}</h2>
+              <span className={`badge ${channel.status}`}>{channel.status}</span>
+            </div>
+            <p className="muted">{channel.detail}</p>
+          </article>
+        ))}
       </section>
 
       <section className="grid one">

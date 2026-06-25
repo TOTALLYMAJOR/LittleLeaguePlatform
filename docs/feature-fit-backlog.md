@@ -282,11 +282,11 @@ This backlog translates the pasted feature inventory into repo-fit work. It is n
   - `Covered`: Recurring Events.
   - `Covered`: Calendar Export.
   - `Covered`: RSVP Sync.
-  - `Harden`: Schedule Notification Workflow.
+  - `Covered`: Schedule Notification Workflow.
   - `Covered`: Schedule Change Impact Preview.
   - `Covered`: Event Affected-Family Preview.
   - `Covered`: Alert Recipient Preview.
-  - `Harden`: Event Status Tracking.
+  - `Covered`: Event Status Tracking.
 
 ### Notifications
 
@@ -295,8 +295,8 @@ This backlog translates the pasted feature inventory into repo-fit work. It is n
 - Current seams: `app/api/push-subscriptions/route.ts`, `app/api/notification-preferences/route.ts`, `app/api/mobile-usage-events/route.ts`, `app/api/provider-delivery/review/route.ts`, `public/sw.js`, `public/manifest.webmanifest`, `lib/supabase/provider-delivery.ts`.
 - Backlog list:
   - `Covered`: Notification Records.
-  - `Harden`: Push Notification Channel.
-  - `Harden`: Email Notification Channel.
+  - `Covered`: Push Notification Channel.
+  - `Covered`: Email Notification Channel.
   - `Harden`: SMS Notification Channel.
   - `Covered`: Notification Status Tracking.
   - `Covered`: Pending Notification Status.
