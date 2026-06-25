@@ -36,6 +36,10 @@ import {
   recipientAllowsNotification,
   getAlertOpenRateTracking,
   smsUrgencyAllowed,
+  getSportWeatherThresholds,
+  getWeatherAlertHistory,
+  getWeatherApprovalQueue,
+  getWeatherProviderRetryLogs,
   getVenueRecords,
   platformFeatureTiers,
   previewTeamCommunication,
@@ -1333,6 +1337,10 @@ export function CoachDashboardClient({ dashboardData }: { dashboardData?: Parent
   const teamIds = new Set(teams.map((team) => team.id));
   const assignedEvents = sourceState.events.filter((event) => teamIds.has(event.teamId) && event.status === "scheduled");
   const weatherAlerts = sourceState.weatherAlerts.filter((alert) => teamIds.has(alert.teamId));
+  const weatherApprovalQueue = getWeatherApprovalQueue(sourceState).filter((item) => teamIds.has(item.alert.teamId));
+  const weatherRetryLogs = getWeatherProviderRetryLogs(sourceState).filter((item) => teamIds.has(item.alert.teamId));
+  const weatherAlertHistory = getWeatherAlertHistory(sourceState).filter((item) => teamIds.has(item.alert.teamId));
+  const sportWeatherThresholds = getSportWeatherThresholds("baseball");
   const volunteerNeeds = sourceState.volunteerSignups.filter((signup) => teamIds.has(signup.teamId) && signup.status === "open");
   const snackNeeds = sourceState.snackScheduleSlots.filter((slot) => teamIds.has(slot.teamId) && slot.status === "open");
   const nextAssignedEvent = assignedEvents[0];
@@ -1451,6 +1459,63 @@ export function CoachDashboardClient({ dashboardData }: { dashboardData?: Parent
             <p className="notice" key={alert.id}><strong>{alert.headline}</strong><br />{alert.detail}</p>
           ))}
           {!weatherAlerts.length ? <p className="muted">No weather alerts drafted for assigned teams.</p> : null}
+        </article>
+      </section>
+
+      <section className="grid two">
+        <article className="card stack">
+          <div className="card-header">
+            <div>
+              <span className="eyebrow">Weather approval queue</span>
+              <h2>Draft alerts needing review</h2>
+            </div>
+            <span className="badge warning">{weatherApprovalQueue.length} draft(s)</span>
+          </div>
+          {weatherApprovalQueue.map((item) => (
+            <p key={item.alert.id}><strong>{item.alert.headline}</strong><br /><span className="muted">{item.team?.name ?? "Team"} · {item.event?.title ?? "Event"} · {item.approvalStatus}</span></p>
+          ))}
+          {!weatherApprovalQueue.length ? <p className="muted">No weather drafts need approval.</p> : null}
+        </article>
+
+        <article className="card stack">
+          <div className="card-header">
+            <div>
+              <span className="eyebrow">Weather provider retry logs</span>
+              <h2>Provider refresh review</h2>
+            </div>
+            <span className="badge">{weatherRetryLogs.length} retry log(s)</span>
+          </div>
+          {weatherRetryLogs.map((item) => (
+            <p key={item.alert.id}><strong>{item.provider}</strong><br /><span className="muted">{item.alert.headline} · retry {formatDate(item.nextRetryAt)} · {item.reason}</span></p>
+          ))}
+          {!weatherRetryLogs.length ? <p className="muted">No high-risk weather provider retries are pending.</p> : null}
+        </article>
+      </section>
+
+      <section className="grid two">
+        <article className="card stack">
+          <div className="card-header">
+            <div>
+              <span className="eyebrow">Weather alert history</span>
+              <h2>Recent weather decisions</h2>
+            </div>
+            <span className="badge">{weatherAlertHistory.length} alert(s)</span>
+          </div>
+          {weatherAlertHistory.map((item) => (
+            <p key={item.alert.id}><strong>{item.alert.headline}</strong><br /><span className="muted">{item.eventTitle} · {item.alert.severity} · {item.alert.status} · {formatDate(item.alert.createdAt)}</span></p>
+          ))}
+        </article>
+
+        <article className="card stack">
+          <div className="card-header">
+            <div>
+              <span className="eyebrow">Sport-specific weather thresholds</span>
+              <h2>Baseball safety policy</h2>
+            </div>
+            <span className="badge warning">Policy</span>
+          </div>
+          <p>{sportWeatherThresholds.detail}</p>
+          <p className="muted">Thresholds create coach/admin review prompts only; parent weather delivery remains deferred.</p>
         </article>
       </section>
 

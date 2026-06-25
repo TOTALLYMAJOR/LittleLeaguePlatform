@@ -29,6 +29,10 @@ import {
   getScheduleNotificationWorkflow,
   getScheduleRsvpSyncRows,
   getVapidSendAdapterStatus,
+  getSportWeatherThresholds,
+  getWeatherAlertHistory,
+  getWeatherApprovalQueue,
+  getWeatherProviderRetryLogs,
   getTeamChatAccess,
   getTeamChatView,
   getVenueRecords,
@@ -277,7 +281,7 @@ describe("schedule changes and admin health", () => {
           body: "Updated time.",
           channel: "sms",
           status: "failed",
-          createdAt: NOW
+          createdAt: "2026-04-01T12:30:00.000Z"
         },
         {
           id: "notification-read",
@@ -391,6 +395,32 @@ describe("schedule changes and admin health", () => {
 
     expect(missingCoaches?.count).toBe(2);
     expect(failedInvites?.count).toBe(1);
+  });
+});
+
+describe("weather policy", () => {
+  it("builds approval queue, retry logs, history, and sport thresholds", () => {
+    const highRiskState = {
+      ...seedState,
+      weatherAlerts: [
+        ...seedState.weatherAlerts,
+        {
+          id: "weather-cancel-risk",
+          teamId: "team-tigers",
+          eventId: "event-tigers-game",
+          headline: "Lightning risk",
+          detail: "Storm cell is approaching the field.",
+          severity: "cancel_risk" as const,
+          status: "draft" as const,
+          createdAt: "2026-04-01T12:30:00.000Z"
+        }
+      ]
+    };
+
+    expect(getWeatherApprovalQueue(seedState)).toHaveLength(1);
+    expect(getWeatherProviderRetryLogs(highRiskState)).toHaveLength(1);
+    expect(getWeatherAlertHistory(highRiskState)[0]?.alert.headline).toBe("Lightning risk");
+    expect(getSportWeatherThresholds("baseball").thresholds.lightningMiles).toBe(10);
   });
 });
 

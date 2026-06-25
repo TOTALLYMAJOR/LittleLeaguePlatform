@@ -58,6 +58,10 @@ describe("CoachDashboardClient", () => {
     expect(html).toContain("Coach onboarding");
     expect(html).toContain("Assigned-team setup checklist");
     expect(html).toContain("Weather and alerts");
+    expect(html).toContain("Weather approval queue");
+    expect(html).toContain("Weather provider retry logs");
+    expect(html).toContain("Weather alert history");
+    expect(html).toContain("Sport-specific weather thresholds");
     expect(html).toContain("Snacks");
     expect(html).toContain("Volunteers");
     expect(html).toContain("Draft weather alert");

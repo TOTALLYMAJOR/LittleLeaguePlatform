@@ -327,10 +327,10 @@ This backlog translates the pasted feature inventory into repo-fit work. It is n
   - `Covered`: Event Location Weather Lookup.
   - `Covered`: Scoped Coach Weather Rows.
   - `Covered`: Authenticated Weather Draft Trigger.
-  - `Harden`: Weather Approval Queue.
-  - `Build`: Weather Provider Retry Logs.
-  - `Build`: Weather Alert History.
-  - `Build`: Sport-Specific Weather Thresholds.
+  - `Covered`: Weather Approval Queue.
+  - `Covered`: Weather Provider Retry Logs.
+  - `Covered`: Weather Alert History.
+  - `Covered`: Sport-Specific Weather Thresholds.
   - `Build`: League-Specific Weather Thresholds.
   - `Build`: Heat Thresholds.
   - `Build`: Lightning Thresholds.

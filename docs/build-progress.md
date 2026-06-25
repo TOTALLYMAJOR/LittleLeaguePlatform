@@ -112,6 +112,7 @@ npm run supabase:push
 - Hardened SMS channel readiness and sent/failed/read notification status coverage.
 - Added VAPID adapter status, unsubscribe preference updates, retry-log derivation, and recipient preference enforcement checks.
 - Added push device summary, email fallback eligibility, urgent-only SMS rules, and notification open-rate tracking.
+- Added weather approval queue, provider retry log, alert history, and sport-specific threshold policy helpers.
 
 ### Remaining Gap
 
