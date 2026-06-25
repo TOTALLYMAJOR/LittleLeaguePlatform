@@ -19,4 +19,5 @@ export * from "./assistive-suggestions";
 export * from "./weather";
 export * from "./venues";
 export * from "./community";
+export * from "./sponsors";
 export * from "./reducer";

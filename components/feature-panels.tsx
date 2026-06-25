@@ -98,6 +98,10 @@ import {
   getFamilyOptOuts,
   getSiblingAwareDutyAssignments,
   getMissedSlotTracking,
+  getSponsorPublicDisplayPolicy,
+  getTeamPortalSponsorPlacement,
+  getScheduleSponsorPlacement,
+  getMediaGallerySponsorPlacement,
   type ChatAnnouncementTopic,
   type CommunicationTemplate,
   type EventType,
@@ -1834,6 +1838,9 @@ export function AdminDashboardClient({ registrationRequests, sponsorData, mediaD
   const mediaRetentionPolicy = getMediaRetentionPolicy();
   const parentVisibleMediaCount = mediaItems.filter((item) => canViewMediaByRole(item, "parent")).length;
   const activeSponsors = sponsors.filter((sponsor) => sponsor.status === "active");
+  const sponsorDisplayPolicy = getSponsorPublicDisplayPolicy();
+  const scheduleSponsorPlacement = getScheduleSponsorPlacement(sponsors);
+  const mediaGallerySponsorPlacement = getMediaGallerySponsorPlacement(sponsors);
   const [communicationTeamId, setCommunicationTeamId] = useState("team-tigers");
   const [communicationChannel, setCommunicationChannel] = useState<AdminCommunicationChannel>("email");
   const [communicationTemplate, setCommunicationTemplate] = useState<CommunicationTemplate>("weekly_digest");
@@ -2317,6 +2324,8 @@ export function AdminDashboardClient({ registrationRequests, sponsorData, mediaD
             <span className="badge warning">Admin only</span>
           </div>
           <p className="notice">{sponsorMessage}</p>
+          <p><strong>Public display policy:</strong> {sponsorDisplayPolicy.status} - {sponsorDisplayPolicy.detail}</p>
+          <p className="muted">Schedule sponsor placement: {scheduleSponsorPlacement.length}; media gallery sponsor placement: {mediaGallerySponsorPlacement.length}.</p>
           <div className="grid two">
             <label>
               Sponsor record
@@ -3618,6 +3627,7 @@ export function TeamPortalClient({ teamPortalData }: { teamPortalData?: TeamPort
   const gameWeatherAlert = upcomingGame ? state.weatherAlerts.find((alert) => alert.eventId === upcomingGame.id) : undefined;
   const media = mediaItemsSource.filter((item) => item.teamId === team.id);
   const privateTeamAlbum = getPrivateTeamAlbum(mediaItemsSource, team.id);
+  const teamPortalSponsors = getTeamPortalSponsorPlacement(state.sponsors, team.id);
   const firstPlayerConsent = getPerPlayerMediaConsent(players[0]?.id ?? "player-pending", players.slice(0, 1).map((player) => player.id));
   const parentSubmittedMoments = getParentSubmittedMoments(state, team.id);
   const volunteerMoments = getVolunteerMoments(state, team.id);
@@ -4140,6 +4150,20 @@ export function TeamPortalClient({ teamPortalData }: { teamPortalData?: TeamPort
           </div>
           {missedSlots.map((slot) => <p key={slot.id}>{slot.detail}</p>)}
           {!missedSlots.length ? <p className="muted">No missed snack or volunteer slots are detected.</p> : null}
+        </article>
+      </section>
+
+      <section className="grid one">
+        <article className="card stack">
+          <div className="card-header">
+            <div>
+              <span className="eyebrow">Team Portal sponsor placement</span>
+              <h2>Team sponsor slots</h2>
+            </div>
+            <span className="badge">{teamPortalSponsors.length} sponsor(s)</span>
+          </div>
+          {teamPortalSponsors.map((sponsor) => <p key={sponsor.id}><strong>{sponsor.name}</strong><br /><span className="muted">{sponsor.url}</span></p>)}
+          {!teamPortalSponsors.length ? <p className="muted">No active team portal sponsors are placed for this team.</p> : null}
         </article>
       </section>
 

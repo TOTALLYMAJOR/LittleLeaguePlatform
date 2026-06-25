@@ -126,6 +126,7 @@ npm run supabase:push
 - Added snack conflict handling, snack audit trail, snack cancellation preview, and volunteer role caps.
 - Added volunteer reminders, cancellation preview, approval policies, and snack/volunteer fairness balance.
 - Added duty rotation, family opt-out, sibling-aware assignment, and missed-slot tracking summaries.
+- Added sponsor public display policy plus team portal, schedule, and media gallery placement summaries.
 
 ### Remaining Gap
 

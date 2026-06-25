@@ -264,6 +264,9 @@ describe("AdminDashboardClient", () => {
     expect(html).toContain("Restore media");
     expect(html).toContain("Sponsor management");
     expect(html).toContain("Sponsor placement");
+    expect(html).toContain("Public display policy");
+    expect(html).toContain("Schedule sponsor placement");
+    expect(html).toContain("media gallery sponsor placement");
     expect(html).toContain("Save sponsor");
     expect(html).toContain("Stripe/payment billing is not connected");
     expect(html).toContain("Communication console");
@@ -393,6 +396,7 @@ describe("TeamPortalClient", () => {
     expect(html).toContain("Sibling-aware duty assignment");
     expect(html).toContain("Missed-slot tracking");
     expect(html).toContain("Coach video library");
+    expect(html).toContain("Team Portal sponsor placement");
     expect(html).toContain("Parent education center");
     expect(html).toContain("Skill trees");
     expect(html).toContain("Season storybook");

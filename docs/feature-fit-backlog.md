@@ -476,10 +476,10 @@ This backlog translates the pasted feature inventory into repo-fit work. It is n
   - `Covered`: Sponsor Logo Assets.
   - `Covered`: Sponsor Placement Rules.
   - `Defer`: Sponsor Billing/Invoicing.
-  - `Harden`: Public Display Policy.
-  - `Build`: Team Portal Sponsor Placement.
-  - `Build`: Schedule Sponsor Placement.
-  - `Build`: Media Gallery Sponsor Placement.
+  - `Covered`: Public Display Policy.
+  - `Covered`: Team Portal Sponsor Placement.
+  - `Covered`: Schedule Sponsor Placement.
+  - `Covered`: Media Gallery Sponsor Placement.
   - `Build`: Email Sponsor Placement.
   - `Build`: Banner Sponsor Placement.
 

@@ -96,7 +96,11 @@ import {
   getDutyRotation,
   getFamilyOptOuts,
   getSiblingAwareDutyAssignments,
-  getMissedSlotTracking
+  getMissedSlotTracking,
+  getSponsorPublicDisplayPolicy,
+  getTeamPortalSponsorPlacement,
+  getScheduleSponsorPlacement,
+  getMediaGallerySponsorPlacement
 } from "./index";
 
 describe("CSV duplicate detection", () => {
@@ -620,6 +624,17 @@ describe("team communication automation", () => {
 
     expect(result.ok).toBe(false);
     expect(result.message).toContain("Only org admins or assigned coaches");
+  });
+});
+
+describe("sponsor placement", () => {
+  it("summarizes public display policy and sponsor placements", () => {
+    const placedSponsors = [{ ...seedState.sponsors[1]!, placementKey: "team_portal" as const }];
+
+    expect(getSponsorPublicDisplayPolicy().status).toBe("review_required");
+    expect(getTeamPortalSponsorPlacement(placedSponsors, "team-tigers").map((sponsor) => sponsor.name)).toContain("Corner Pizza");
+    expect(getScheduleSponsorPlacement(seedState.sponsors)).toHaveLength(0);
+    expect(getMediaGallerySponsorPlacement(seedState.sponsors)).toHaveLength(0);
   });
 });
 
