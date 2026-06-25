@@ -108,7 +108,7 @@ This backlog translates the pasted feature inventory into repo-fit work. It is n
   - `Covered`: Audit Logs.
   - `Covered`: Provider Inventory.
   - `Covered`: Approval Queues.
-  - `Harden`: Organization-Scoped Admin Auth.
+  - `Covered`: Organization-Scoped Admin Auth.
 
 ## P1 - Team, Season, And Brand Management
 
@@ -124,9 +124,9 @@ This backlog translates the pasted feature inventory into repo-fit work. It is n
   - `Covered`: Team Branding.
   - `Covered`: Team Feature Hub.
   - `Covered`: Team Portal.
-  - `Build`: Team CRUD.
-  - `Build`: Division Setup.
-  - `Build`: Season Setup.
+  - `Covered`: Team CRUD.
+  - `Covered`: Division Setup.
+  - `Covered`: Season Setup.
   - `Build`: Coach Assignment.
   - `Build`: Roster Lifecycle.
   - `Build`: Team Archiving.

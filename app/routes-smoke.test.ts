@@ -7,6 +7,7 @@ const appRoutes = [
   "/admin",
   "/admin/operations",
   "/admin/security",
+  "/admin/teams",
   "/admin/themes",
   "/admin/registrations",
   "/coach",
@@ -70,5 +71,15 @@ describe("route smoke coverage", () => {
     expect(data).toContain("providerInventory");
     expect(data).toContain("approvalQueues");
     expect(data).toContain("auditLogs");
+  });
+
+  it("keeps admin team setup tied to seasons and divisions", () => {
+    const page = readFileSync(join(process.cwd(), "app", "admin", "teams", "page.tsx"), "utf8");
+    const data = readFileSync(join(process.cwd(), "lib", "supabase", "team-management.ts"), "utf8");
+
+    expect(page).toContain("listAdminTeamManagementData");
+    expect(data).toContain("requireActiveOrganizationAdmin");
+    expect(data).toContain("division");
+    expect(data).toContain("season_id");
   });
 });

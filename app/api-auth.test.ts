@@ -8,6 +8,7 @@ const privateMutationRoutes = [
   "app/api/admin/exports/route.ts",
   "app/api/admin/roster-imports/audit/route.ts",
   "app/api/admin/sponsors/route.ts",
+  "app/api/admin/teams/route.ts",
   "app/api/admin/theme-defaults/route.ts",
   "app/api/admin/team-branding/route.ts",
   "app/api/admin/team-memberships/route.ts",

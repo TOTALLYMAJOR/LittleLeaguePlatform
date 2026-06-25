@@ -7,6 +7,7 @@ import { POST as postProviderDeliveryReview } from "./api/provider-delivery/revi
 import { POST as postParentReplay } from "./api/coach/parent-replay/route";
 import { POST as postWeeklyUpdate } from "./api/coach/weekly-update/route";
 import { POST as postSponsorSave } from "./api/admin/sponsors/route";
+import { POST as postAdminTeam } from "./api/admin/teams/route";
 import { POST as postRosterImportAudit } from "./api/admin/roster-imports/audit/route";
 import { POST as postThemeDefaults } from "./api/admin/theme-defaults/route";
 import { POST as postMediaReport } from "./api/media/report/route";
@@ -19,6 +20,7 @@ import type { ParentReplayDraft } from "@/lib/domain";
 import { updateTenantThemeDefaults } from "@/lib/supabase/team-branding";
 import { createTeamMembership } from "@/lib/supabase/memberships";
 import { recordRosterImportAudit } from "@/lib/supabase/roster-imports";
+import { saveAdminTeam } from "@/lib/supabase/team-management";
 import { createAdminExport } from "@/lib/supabase/reporting";
 import { reviewNotificationDelivery } from "@/lib/supabase/provider-delivery";
 import {
@@ -66,6 +68,10 @@ vi.mock("@/lib/supabase/roster-imports", () => ({
   recordRosterImportAudit: vi.fn()
 }));
 
+vi.mock("@/lib/supabase/team-management", () => ({
+  saveAdminTeam: vi.fn()
+}));
+
 vi.mock("@/lib/supabase/reporting", () => ({
   createAdminExport: vi.fn()
 }));
@@ -89,6 +95,7 @@ const updateNotificationPreferenceMock = vi.mocked(updateNotificationPreference)
 const updateTenantThemeDefaultsMock = vi.mocked(updateTenantThemeDefaults);
 const createTeamMembershipMock = vi.mocked(createTeamMembership);
 const recordRosterImportAuditMock = vi.mocked(recordRosterImportAudit);
+const saveAdminTeamMock = vi.mocked(saveAdminTeam);
 const createAdminExportMock = vi.mocked(createAdminExport);
 const reviewNotificationDeliveryMock = vi.mocked(reviewNotificationDelivery);
 
@@ -523,6 +530,47 @@ describe("live action API routes", () => {
       actorUserId: "user-live-session",
       filename: "roster.csv",
       analysis
+    });
+  });
+
+  it("uses the authenticated admin session for organization-scoped team setup", async () => {
+    saveAdminTeamMock.mockResolvedValue({
+      ok: true,
+      message: "Team saved.",
+      team: {
+        id: "team-1",
+        name: "Tiny Tigers",
+        division: "3U",
+        season_id: "season-1",
+        mascot: "Tigers",
+        theme_key: "baseball"
+      }
+    });
+
+    const response = await postAdminTeam(jsonRequest({
+      organizationId: "org-1",
+      actorUserId: "client-spoof",
+      seasonId: "season-1",
+      name: "Tiny Tigers",
+      division: "3U",
+      mascot: "Tigers",
+      themeKey: "baseball",
+      primaryColor: "#1d4ed8",
+      secondaryColor: "#f97316"
+    }));
+
+    expect(response.status).toBe(201);
+    expect(saveAdminTeamMock).toHaveBeenCalledWith({
+      organizationId: "org-1",
+      actorUserId: "user-live-session",
+      teamId: undefined,
+      seasonId: "season-1",
+      name: "Tiny Tigers",
+      division: "3U",
+      mascot: "Tigers",
+      themeKey: "baseball",
+      primaryColor: "#1d4ed8",
+      secondaryColor: "#f97316"
     });
   });
 });
