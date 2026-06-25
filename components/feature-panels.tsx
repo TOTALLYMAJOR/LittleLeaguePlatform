@@ -45,6 +45,10 @@ import {
   createFieldClosureDraft,
   getWeatherEscalationRules,
   getWeatherSafetyNotes,
+  getEmbeddedMapUi,
+  getFieldLayoutMetadata,
+  getMapQuotaStatus,
+  getVenueMarkers,
   getVenueRecords,
   platformFeatureTiers,
   previewTeamCommunication,
@@ -3505,6 +3509,10 @@ export function TeamPortalClient({ teamPortalData }: { teamPortalData?: TeamPort
     .sort((left, right) => Date.parse(left.startsAt) - Date.parse(right.startsAt));
   const upcomingGame = teamEvents.find((event) => event.eventType === "game");
   const nextPractice = teamEvents.find((event) => event.eventType === "practice");
+  const embeddedMap = getEmbeddedMapUi(upcomingGame ?? nextPractice);
+  const venueMarkers = getVenueMarkers(teamEvents);
+  const mapQuotaStatus = getMapQuotaStatus({ requestsToday: 42, dailyLimit: 100 });
+  const fieldLayout = getFieldLayoutMetadata(upcomingGame ?? nextPractice);
   const gameRsvps = upcomingGame ? state.rsvps.filter((rsvp) => rsvp.eventId === upcomingGame.id) : [];
   const gameSnackSlots = upcomingGame ? state.snackScheduleSlots.filter((slot) => slot.teamId === team.id && slot.eventId === upcomingGame.id) : [];
   const gameVolunteerSignups = upcomingGame ? state.volunteerSignups.filter((signup) => signup.teamId === team.id && signup.eventId === upcomingGame.id) : [];
@@ -3752,6 +3760,61 @@ export function TeamPortalClient({ teamPortalData }: { teamPortalData?: TeamPort
             </p>
           ))}
           {!players.length ? <p className="muted">No approved players are rostered to this team yet.</p> : null}
+        </article>
+      </section>
+
+      <section className="grid two">
+        <article className="card stack">
+          <div className="card-header">
+            <div>
+              <span className="eyebrow">Embedded map UI</span>
+              <h2>{embeddedMap.title}</h2>
+            </div>
+            <span className={`badge ${embeddedMap.status === "ready" ? "ok" : "warning"}`}>{embeddedMap.status}</span>
+          </div>
+          {embeddedMap.embedUrl ? <iframe title={embeddedMap.title} src={embeddedMap.embedUrl} loading="lazy" /> : <p className="muted">No event location is ready for map embed.</p>}
+          {embeddedMap.directionsUrl ? <a href={embeddedMap.directionsUrl}>Open directions</a> : null}
+        </article>
+
+        <article className="card stack">
+          <div className="card-header">
+            <div>
+              <span className="eyebrow">Venue marker management</span>
+              <h2>Map markers</h2>
+            </div>
+            <span className="badge">{venueMarkers.length} marker(s)</span>
+          </div>
+          {venueMarkers.map((marker) => (
+            <p key={marker.id}><strong>{marker.label}. {marker.title}</strong><br /><span className="muted">{marker.eventTitle} · {marker.address}</span></p>
+          ))}
+          {!venueMarkers.length ? <p className="muted">No venue markers available.</p> : null}
+        </article>
+      </section>
+
+      <section className="grid two">
+        <article className="card stack">
+          <div className="card-header">
+            <div>
+              <span className="eyebrow">Quota handling</span>
+              <h2>Map usage guard</h2>
+            </div>
+            <span className={`badge ${mapQuotaStatus.status}`}>{mapQuotaStatus.remaining} left</span>
+          </div>
+          <p className="muted">{mapQuotaStatus.detail}</p>
+        </article>
+
+        <article className="card stack">
+          <div className="card-header">
+            <div>
+              <span className="eyebrow">Field layout metadata</span>
+              <h2>{fieldLayout.fieldName}</h2>
+            </div>
+            <span className="badge ok">Game day</span>
+          </div>
+          <p><strong>Entrance:</strong> {fieldLayout.entrance}</p>
+          <p><strong>Home bench:</strong> {fieldLayout.homeBench}</p>
+          <p><strong>Away bench:</strong> {fieldLayout.awayBench}</p>
+          <p className="muted">Warmup: {fieldLayout.warmupArea}</p>
         </article>
       </section>
 

@@ -35,6 +35,10 @@ import {
   createFieldClosureDraft,
   getWeatherEscalationRules,
   getWeatherSafetyNotes,
+  getEmbeddedMapUi,
+  getFieldLayoutMetadata,
+  getMapQuotaStatus,
+  getVenueMarkers,
   getWeatherAlertHistory,
   getWeatherApprovalQueue,
   getWeatherProviderRetryLogs,
@@ -437,6 +441,21 @@ describe("weather policy", () => {
     expect(createFieldClosureDraft({ eventTitle: "Tiny Tigers Practice", reason: "heavy rain" }).title).toContain("Field closure draft");
     expect(getWeatherEscalationRules(thresholdReview).level).toBe("escalate");
     expect(getWeatherSafetyNotes()).toHaveLength(3);
+  });
+});
+
+describe("venue intelligence", () => {
+  it("builds embedded map, markers, quota status, and field layout metadata", () => {
+    const event = seedState.events.find((item) => item.id === "event-tigers-game")!;
+    const map = getEmbeddedMapUi(event);
+    const markers = getVenueMarkers(seedState.events.filter((item) => item.teamId === "team-tigers"));
+    const quota = getMapQuotaStatus({ requestsToday: 90, dailyLimit: 100 });
+    const layout = getFieldLayoutMetadata(event);
+
+    expect(map.embedUrl).toContain("output=embed");
+    expect(markers).toHaveLength(2);
+    expect(quota.status).toBe("warning");
+    expect(layout.entrance).toContain("Main gate");
   });
 });
 

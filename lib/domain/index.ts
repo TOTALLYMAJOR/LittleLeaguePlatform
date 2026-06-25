@@ -17,4 +17,5 @@ export * from "./registration";
 export * from "./team-branding";
 export * from "./assistive-suggestions";
 export * from "./weather";
+export * from "./venues";
 export * from "./reducer";

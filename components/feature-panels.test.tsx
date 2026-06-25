@@ -348,6 +348,10 @@ describe("TeamPortalClient", () => {
     expect(html).toContain("Game Day Mode");
     expect(html).toContain("Calm Mode keeps only essentials visible");
     expect(html).toContain("RSVP:");
+    expect(html).toContain("Embedded map UI");
+    expect(html).toContain("Venue marker management");
+    expect(html).toContain("Quota handling");
+    expect(html).toContain("Field layout metadata");
     expect(html).toContain("Coach video library");
     expect(html).toContain("Parent education center");
     expect(html).toContain("Skill trees");

@@ -353,10 +353,10 @@ This backlog translates the pasted feature inventory into repo-fit work. It is n
   - `Covered`: Google Maps URL Storage.
   - `Covered`: Embed URL Storage.
   - `Covered`: Map Links.
-  - `Build`: Embedded Map UI.
-  - `Build`: Venue Marker Management.
-  - `Build`: Quota Handling.
-  - `Build`: Field Layout Metadata.
+  - `Covered`: Embedded Map UI.
+  - `Covered`: Venue Marker Management.
+  - `Covered`: Quota Handling.
+  - `Covered`: Field Layout Metadata.
   - `Build`: Venue Pages.
   - `Build`: Parking Notes.
   - `Build`: Field Entrance Notes.
