@@ -34,6 +34,7 @@ import {
   validateMediaUrl,
   type ChatAnnouncementTopic,
   type CommunicationTemplate,
+  type EventType,
   type EventStatus,
   type MediaItem,
   type NotificationChannel,
@@ -781,6 +782,8 @@ export function AdminHealthClient() {
 export function ParentDashboardClient({ dashboardData }: { dashboardData?: ParentCoachDashboardData | null } = {}) {
   const { state } = useAppState();
   const [helpMessage, setHelpMessage] = useState("");
+  const [scheduleTypeFilter, setScheduleTypeFilter] = useState<"all" | EventType>("all");
+  const [mediaTypeFilter, setMediaTypeFilter] = useState<"all" | MediaItem["type"]>("all");
   const [isHelpPending, startHelpTransition] = useTransition();
   const sourceState = dashboardData?.state ?? state;
   const parentUserId = dashboardData?.parentUserId ?? "user-parent-jordan";
@@ -790,6 +793,14 @@ export function ParentDashboardClient({ dashboardData }: { dashboardData?: Paren
   const accessGate = privateAccessGate(dashboardData, "parent");
   const parentTeamIds = new Set(dashboard.children.map(({ team }) => team.id));
   const primaryTeamId = dashboard.children[0]?.team.id;
+  const allParentEvents = sourceState.events
+    .filter((event) => parentTeamIds.has(event.teamId) && event.status === "scheduled" && new Date(event.startsAt).getTime() >= new Date(NOW).getTime())
+    .sort((left, right) => new Date(left.startsAt).getTime() - new Date(right.startsAt).getTime());
+  const filteredParentEvents = allParentEvents.filter((event) => scheduleTypeFilter === "all" || event.eventType === scheduleTypeFilter);
+  const mediaFeed = sourceState.mediaItems
+    .filter((item) => parentTeamIds.has(item.teamId) && (item.moderationStatus ?? "approved") === "approved")
+    .sort((left, right) => new Date(right.createdAt).getTime() - new Date(left.createdAt).getTime());
+  const filteredMediaFeed = mediaFeed.filter((item) => mediaTypeFilter === "all" || item.type === mediaTypeFilter);
   const onboardingSteps = [
     { label: "Confirm guardian link", done: dashboard.children.length > 0 },
     { label: "Review upcoming schedule", done: dashboard.nextEvents.length > 0 },
@@ -799,6 +810,33 @@ export function ParentDashboardClient({ dashboardData }: { dashboardData?: Paren
   const openSnackSlots = sourceState.snackScheduleSlots.filter((slot) => parentTeamIds.has(slot.teamId) && slot.status === "open");
   const openVolunteerSignups = sourceState.volunteerSignups.filter((signup) => parentTeamIds.has(signup.teamId) && signup.status === "open");
   const eventById = new Map(sourceState.events.map((event) => [event.id, event]));
+  const actionChecklist = [
+    {
+      label: "Check the family calendar",
+      done: allParentEvents.length > 0,
+      detail: allParentEvents[0] ? `${allParentEvents[0].title} at ${formatDate(allParentEvents[0].startsAt)}` : "No linked team events are scheduled."
+    },
+    {
+      label: "Answer open RSVPs",
+      done: dashboard.rsvpNeeded.length === 0,
+      detail: dashboard.rsvpNeeded.length ? `${dashboard.rsvpNeeded.length} RSVP still need a response.` : "All visible RSVP requests are answered."
+    },
+    {
+      label: "Review snack and volunteer openings",
+      done: openSnackSlots.length + openVolunteerSignups.length === 0,
+      detail: `${openSnackSlots.length} snack slot(s), ${openVolunteerSignups.length} volunteer role(s) open.`
+    },
+    {
+      label: "Review the media feed",
+      done: mediaFeed.length > 0,
+      detail: mediaFeed.length ? `${mediaFeed.length} approved media item(s) available.` : "No approved team media is visible yet."
+    },
+    {
+      label: "Set schedule notification rules",
+      done: sourceState.notificationPreferences.some((item) => item.userId === parentUserId && item.notificationType === "schedule_changed"),
+      detail: "Provider sends still require opted-in channels and adapter checks."
+    }
+  ];
   const schedulePreferences = (["push", "email", "sms"] as const).map((channel) => {
     const preference = sourceState.notificationPreferences.find((item) => (
       item.userId === parentUserId &&
@@ -888,6 +926,23 @@ export function ParentDashboardClient({ dashboardData }: { dashboardData?: Paren
         ))}
       </section>
 
+      <section className="card stack">
+        <div className="card-header">
+          <div>
+            <span className="eyebrow">Parent action checklist</span>
+            <h2>Next family actions</h2>
+          </div>
+          <span className="badge">{actionChecklist.filter((item) => !item.done).length} open</span>
+        </div>
+        {actionChecklist.map((item) => (
+          <p key={item.label}>
+            <span className={`badge ${item.done ? "ok" : "warning"}`}>{item.done ? "Done" : "Action"}</span>{" "}
+            <strong>{item.label}</strong><br />
+            <span className="muted">{item.detail}</span>
+          </p>
+        ))}
+      </section>
+
       <section className="grid two">
         <article className="card stack">
           <h2>My Child</h2>
@@ -943,6 +998,74 @@ export function ParentDashboardClient({ dashboardData }: { dashboardData?: Paren
             );
           })}
           {!dashboard.recentMedia.length ? <p className="muted">No media links yet.</p> : null}
+        </article>
+      </section>
+
+      <section className="grid two">
+        <article className="card stack">
+          <div className="card-header">
+            <div>
+              <span className="eyebrow">Parent calendar view</span>
+              <h2>Family calendar</h2>
+            </div>
+            <span className="badge">{filteredParentEvents.length} event(s)</span>
+          </div>
+          <div className="toolbar">
+            {(["all", "game", "practice", "team_event"] as const).map((filter) => (
+              <button
+                className={scheduleTypeFilter === filter ? undefined : "secondary"}
+                key={filter}
+                onClick={() => setScheduleTypeFilter(filter)}
+              >
+                {filter === "all" ? "All" : filter.replace("_", " ")}
+              </button>
+            ))}
+          </div>
+          {filteredParentEvents.map((event) => (
+            <p key={event.id}>
+              <span className="badge">{event.eventType.replace("_", " ")}</span>{" "}
+              <strong>{event.title}</strong><br />
+              <span className="muted">{formatDate(event.startsAt)} · Arrive {formatArrivalTime(event.startsAt)} · {event.locationName}</span>
+            </p>
+          ))}
+          {!filteredParentEvents.length ? <p className="muted">No family events match this filter.</p> : null}
+        </article>
+
+        <article className="card stack">
+          <div className="card-header">
+            <div>
+              <span className="eyebrow">Parent media feed</span>
+              <h2>Team media</h2>
+            </div>
+            <span className="badge">{filteredMediaFeed.length} item(s)</span>
+          </div>
+          <div className="toolbar">
+            {(["all", "google_photos", "youtube"] as const).map((filter) => (
+              <button
+                className={mediaTypeFilter === filter ? undefined : "secondary"}
+                key={filter}
+                onClick={() => setMediaTypeFilter(filter)}
+              >
+                {filter === "all" ? "All" : filter.replace("_", " ")}
+              </button>
+            ))}
+          </div>
+          {filteredMediaFeed.map((item) => {
+            const validation = validateMediaUrl(item.type, item.url);
+            return (
+              <div className="stack compact" key={item.id}>
+                <p><strong>{item.title}</strong><br /><span className="muted">{item.type.replace("_", " ")} · {formatDate(item.createdAt)} · {validation.message}</span></p>
+                <button
+                  className="secondary"
+                  disabled={isHelpPending}
+                  onClick={() => claimFamilyHelp("/api/media/report", { mediaItemId: item.id, reason: "Family reported this media link for review." })}
+                >
+                  Report media
+                </button>
+              </div>
+            );
+          })}
+          {!filteredMediaFeed.length ? <p className="muted">No media links match this filter.</p> : null}
         </article>
       </section>
 

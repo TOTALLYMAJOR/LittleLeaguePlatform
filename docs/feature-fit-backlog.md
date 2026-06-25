@@ -198,11 +198,11 @@ This backlog translates the pasted feature inventory into repo-fit work. It is n
   - `Covered`: Push/Email/SMS Preferences.
   - `Covered`: Urgent-Only SMS Preference.
   - `Covered`: Digest Frequency Preference.
-  - `Build`: Parent Calendar View.
-  - `Build`: Parent Schedule Filters.
-  - `Build`: Parent Media Feed.
+  - `Covered`: Parent Calendar View.
+  - `Covered`: Parent Schedule Filters.
+  - `Covered`: Parent Media Feed.
   - `Covered`: Parent Team Home.
-  - `Build`: Parent Action Checklist.
+  - `Covered`: Parent Action Checklist.
   - `Build`: Parent Support Request Flow.
 
 ### RSVP And Attendance

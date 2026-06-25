@@ -94,6 +94,16 @@ describe("ParentDashboardClient", () => {
     expect(html).toContain("Notification preference center");
     expect(html).toContain("Parent help assistant");
     expect(html).toContain("Parent onboarding");
+    expect(html).toContain("Parent action checklist");
+    expect(html).toContain("Parent calendar view");
+    expect(html).toContain("Family calendar");
+    expect(html).toContain("Parent media feed");
+    expect(html).toContain("Team media");
+    expect(html).toContain("game");
+    expect(html).toContain("practice");
+    expect(html).toContain("Arrive");
+    expect(html).toContain("Opening Day Album");
+    expect(html).toContain("How to tie cleats");
     expect(html).toContain("Confirm guardian link");
     expect(html).toContain("PUSH");
     expect(html).toContain("EMAIL");
