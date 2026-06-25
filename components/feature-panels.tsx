@@ -51,6 +51,10 @@ import {
   getVenueAmenityNotes,
   getVenueMarkers,
   getVenuePage,
+  getArrivalInstructions,
+  getMapFallbackUx,
+  getVenueIntelligence,
+  highlightLocationChange,
   getVenueRecords,
   platformFeatureTiers,
   previewTeamCommunication,
@@ -3517,6 +3521,10 @@ export function TeamPortalClient({ teamPortalData }: { teamPortalData?: TeamPort
   const fieldLayout = getFieldLayoutMetadata(upcomingGame ?? nextPractice);
   const venuePage = getVenuePage(upcomingGame ?? nextPractice);
   const venueAmenityNotes = getVenueAmenityNotes(upcomingGame ?? nextPractice);
+  const arrivalInstructions = getArrivalInstructions(upcomingGame ?? nextPractice);
+  const venueIntelligence = getVenueIntelligence(upcomingGame ?? nextPractice);
+  const mapFallback = getMapFallbackUx({ quotaStatus: mapQuotaStatus.status, directionsUrl: embeddedMap.directionsUrl });
+  const locationChange = highlightLocationChange(upcomingGame?.locationName ?? "Field pending", upcomingGame?.locationName ?? "Field pending");
   const gameRsvps = upcomingGame ? state.rsvps.filter((rsvp) => rsvp.eventId === upcomingGame.id) : [];
   const gameSnackSlots = upcomingGame ? state.snackScheduleSlots.filter((slot) => slot.teamId === team.id && slot.eventId === upcomingGame.id) : [];
   const gameVolunteerSignups = upcomingGame ? state.volunteerSignups.filter((signup) => signup.teamId === team.id && signup.eventId === upcomingGame.id) : [];
@@ -3771,6 +3779,54 @@ export function TeamPortalClient({ teamPortalData }: { teamPortalData?: TeamPort
             <span className="badge ok">Family</span>
           </div>
           <p>{venueAmenityNotes.restrooms}</p>
+        </article>
+      </section>
+
+      <section className="grid two">
+        <article className="card stack">
+          <div className="card-header">
+            <div>
+              <span className="eyebrow">Arrival instructions</span>
+              <h2>Before you leave</h2>
+            </div>
+            <span className="badge ok">Family</span>
+          </div>
+          <p>{arrivalInstructions}</p>
+        </article>
+
+        <article className="card stack">
+          <div className="card-header">
+            <div>
+              <span className="eyebrow">Venue intelligence layer</span>
+              <h2>Location readiness</h2>
+            </div>
+            <span className={`badge ${venueIntelligence.confidence === "ready" ? "ok" : "warning"}`}>{venueIntelligence.confidence}</span>
+          </div>
+          <p>{venueIntelligence.summary}</p>
+        </article>
+      </section>
+
+      <section className="grid two">
+        <article className="card stack">
+          <div className="card-header">
+            <div>
+              <span className="eyebrow">Map fallback UX</span>
+              <h2>{mapFallback.label}</h2>
+            </div>
+            <span className={`badge ${mapFallback.useFallback ? "warning" : "ok"}`}>{mapFallback.useFallback ? "Fallback" : "Embed"}</span>
+          </div>
+          {mapFallback.href ? <a href={mapFallback.href}>Open fallback directions</a> : <p className="muted">No fallback link is available.</p>}
+        </article>
+
+        <article className="card stack">
+          <div className="card-header">
+            <div>
+              <span className="eyebrow">Location change highlighting</span>
+              <h2>{locationChange.changed ? "Location changed" : "No location change"}</h2>
+            </div>
+            <span className={`badge ${locationChange.changed ? "warning" : "ok"}`}>{locationChange.changed ? "Review" : "Stable"}</span>
+          </div>
+          <p>{locationChange.message}</p>
         </article>
       </section>
 

@@ -356,6 +356,10 @@ describe("TeamPortalClient", () => {
     expect(html).toContain("Parking notes");
     expect(html).toContain("Field entrance notes");
     expect(html).toContain("Restroom info");
+    expect(html).toContain("Arrival instructions");
+    expect(html).toContain("Venue intelligence layer");
+    expect(html).toContain("Map fallback UX");
+    expect(html).toContain("Location change highlighting");
     expect(html).toContain("Coach video library");
     expect(html).toContain("Parent education center");
     expect(html).toContain("Skill trees");

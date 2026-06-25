@@ -56,3 +56,35 @@ export function getVenueAmenityNotes(event?: LeagueEvent) {
     restrooms: "Restrooms are beside concessions; portable restrooms are fallback if the building is closed."
   };
 }
+
+export function getArrivalInstructions(event?: LeagueEvent) {
+  return event
+    ? `Arrive 20 minutes before ${event.title}, park near ${event.locationName}, and meet by the main entrance.`
+    : "Arrival instructions will appear after an event location is selected.";
+}
+
+export function getVenueIntelligence(event?: LeagueEvent) {
+  return {
+    confidence: event ? "ready" as const : "missing" as const,
+    summary: event
+      ? `${event.locationName} has map, arrival, layout, parking, entrance, and restroom context.`
+      : "Venue intelligence needs an event location."
+  };
+}
+
+export function getMapFallbackUx(input: { quotaStatus: "ok" | "warning" | "danger"; directionsUrl: string }) {
+  return {
+    useFallback: input.quotaStatus === "danger",
+    label: input.quotaStatus === "danger" ? "Use directions link fallback" : "Embedded map available",
+    href: input.directionsUrl
+  };
+}
+
+export function highlightLocationChange(previousLocation: string, nextLocation: string) {
+  return {
+    changed: previousLocation.trim().toLowerCase() !== nextLocation.trim().toLowerCase(),
+    message: previousLocation.trim().toLowerCase() !== nextLocation.trim().toLowerCase()
+      ? `Location changed from ${previousLocation} to ${nextLocation}.`
+      : "Location unchanged."
+  };
+}

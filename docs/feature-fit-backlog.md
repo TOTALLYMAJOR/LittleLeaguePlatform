@@ -361,12 +361,12 @@ This backlog translates the pasted feature inventory into repo-fit work. It is n
   - `Covered`: Parking Notes.
   - `Covered`: Field Entrance Notes.
   - `Covered`: Restroom Info.
-  - `Build`: Arrival Instructions.
-  - `Build`: Venue Intelligence Layer.
-  - `Build`: Map Fallback UX.
+  - `Covered`: Arrival Instructions.
+  - `Covered`: Venue Intelligence Layer.
+  - `Covered`: Map Fallback UX.
   - `Covered`: Field Map Links.
   - `Covered`: Game Day Directions.
-  - `Harden`: Location Change Highlighting.
+  - `Covered`: Location Change Highlighting.
   - `Build`: Facility Notes.
 
 ## P4 - Team Chat, Media, Community, And Sponsors

@@ -41,6 +41,10 @@ import {
   getVenueAmenityNotes,
   getVenueMarkers,
   getVenuePage,
+  getArrivalInstructions,
+  getMapFallbackUx,
+  getVenueIntelligence,
+  highlightLocationChange,
   getWeatherAlertHistory,
   getWeatherApprovalQueue,
   getWeatherProviderRetryLogs,
@@ -460,6 +464,10 @@ describe("venue intelligence", () => {
     expect(layout.entrance).toContain("Main gate");
     expect(getVenuePage(event).path).toBe("/venues/field-1");
     expect(getVenueAmenityNotes(event).restrooms).toContain("Restrooms");
+    expect(getArrivalInstructions(event)).toContain("Arrive 20 minutes");
+    expect(getVenueIntelligence(event).confidence).toBe("ready");
+    expect(getMapFallbackUx({ quotaStatus: "danger", directionsUrl: "https://maps.example" }).useFallback).toBe(true);
+    expect(highlightLocationChange("Field 1", "Field 3").changed).toBe(true);
   });
 });
 
