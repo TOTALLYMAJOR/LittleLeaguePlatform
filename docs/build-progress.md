@@ -136,6 +136,7 @@ These 2026-06-22 next items were completed in the 2026-06-23 hardening pass:
 - Added support-request, CSV import error, coach weekly update send, and Game Day Calm Mode usage metrics.
 - Added Parent Replay completion, micro-coaching streak, media engagement, and notification opt-out metrics.
 - Reconciled the feature-fit backlog section statuses after all item-level Build/Harden rows were completed; explicit Defer rows remain provider/product decisions.
+- Added the review-only AI Coach Workspace first slice: New Parent Brief, Weekly Digest, Practice Replay, and Announcement Cleaner drafts with source evidence and Preview -> Edit -> Approve -> Publish boundaries.
 
 ### Remaining Gap
 

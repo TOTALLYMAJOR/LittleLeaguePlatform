@@ -124,7 +124,8 @@ import {
   getParentReplayCompletionRate,
   getMicroCoachingStreakRate,
   getMediaEngagementRate,
-  getNotificationOptOutRate
+  getNotificationOptOutRate,
+  buildAiCoachWorkspaceDrafts
 } from "./index";
 
 describe("CSV duplicate detection", () => {
@@ -967,6 +968,29 @@ describe("Parent Replay", () => {
 
     expect(result.ok).toBe(false);
     expect(result.message).toContain("2-3 practice focus areas");
+  });
+
+  it("builds coach-reviewed parent brief, digest, replay, and cleaner drafts", () => {
+    const drafts = buildAiCoachWorkspaceDrafts(seedState, {
+      teamId: "team-tigers",
+      coachUserId: "user-coach-taylor",
+      focusAreas: ["throwing", "catching", "teamwork"],
+      now: NOW,
+      roughAnnouncement: "hey guys tomorrow weather maybe changing bring water glove and hat"
+    });
+
+    expect(drafts.map((draft) => draft.id)).toEqual([
+      "new_parent_brief",
+      "weekly_digest",
+      "practice_replay",
+      "announcement_cleaner"
+    ]);
+    expect(drafts[0]?.body).toContain("Welcome to Tiny Tigers");
+    expect(drafts[1]?.body).toContain("This Week");
+    expect(drafts[2]?.body).toContain("At home:");
+    expect(drafts[3]?.body).toContain("Bring:");
+    expect(drafts.every((draft) => draft.workflow.join(" -> ") === "Preview -> Edit -> Approve -> Publish")).toBe(true);
+    expect(drafts.every((draft) => draft.boundary.toLowerCase().includes("coach") || draft.boundary.toLowerCase().includes("provider"))).toBe(true);
   });
 });
 

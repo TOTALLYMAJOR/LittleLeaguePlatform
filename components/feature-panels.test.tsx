@@ -370,6 +370,12 @@ describe("ParentReplayClient", () => {
     expect(html).toContain("Translation engine");
     expect(html).toContain("Healthy streak");
     expect(html).toContain("Memory timeline");
+    expect(html).toContain("AI Coach Workspace");
+    expect(html).toContain("Generate Parent Brief");
+    expect(html).toContain("Create Weekly Digest");
+    expect(html).toContain("Practice Replay");
+    expect(html).toContain("Draft Announcement");
+    expect(html).toContain("Preview - Edit - Approve - Publish");
   });
 });
 

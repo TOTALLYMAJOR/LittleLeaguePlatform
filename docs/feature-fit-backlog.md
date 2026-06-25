@@ -258,6 +258,11 @@ This backlog translates the pasted feature inventory into repo-fit work. It is n
   - `Covered`: Coach Parent Tip Generator.
   - `Covered`: Coach Skill Card Generator.
   - `Covered`: Coach Team Quest Generator.
+  - `Covered`: AI Coach Workspace.
+  - `Covered`: New Parent Brief Draft.
+  - `Covered`: Weekly Digest Draft.
+  - `Covered`: Practice Replay Draft.
+  - `Covered`: Announcement Cleaner Draft.
 
 ## P3 - Schedule, Alerts, Weather, And Venues
 

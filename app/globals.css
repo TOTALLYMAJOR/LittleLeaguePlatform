@@ -367,6 +367,21 @@ th {
   flex-basis: 100%;
 }
 
+.draft-preview {
+  background: var(--surface-strong);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  color: var(--text);
+  font: inherit;
+  line-height: 1.5;
+  margin: 0;
+  max-height: 280px;
+  overflow: auto;
+  padding: 12px;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
 .lineup-builder {
   overflow: hidden;
 }

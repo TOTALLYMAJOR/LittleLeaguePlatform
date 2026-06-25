@@ -22,4 +22,5 @@ export * from "./community";
 export * from "./sponsors";
 export * from "./ux";
 export * from "./metrics";
+export * from "./ai-coach-workspace";
 export * from "./reducer";

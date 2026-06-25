@@ -126,6 +126,7 @@ import {
   getMicroCoachingStreakRate,
   getMediaEngagementRate,
   getNotificationOptOutRate,
+  buildAiCoachWorkspaceDrafts,
   type ChatAnnouncementTopic,
   type CommunicationTemplate,
   type EventType,
@@ -3346,6 +3347,12 @@ export function ParentReplayClient() {
     });
   }, [coachUserId, focusAreas, state, teamId]);
   const promptEvalHarness = getPromptEvalHarness();
+  const coachWorkspaceDrafts = useMemo(() => buildAiCoachWorkspaceDrafts(state, {
+    teamId,
+    coachUserId,
+    focusAreas,
+    now: NOW
+  }), [coachUserId, focusAreas, state, teamId]);
   const teamReplays = [...savedReplays, ...state.parentReplays].filter((replay) => replay.teamId === teamId);
   const selectedFocus = new Set(focusAreas);
   const canQueueReplay = focusAreas.length >= 2 && focusAreas.length <= 3;
@@ -3520,6 +3527,31 @@ export function ParentReplayClient() {
           <span className="badge">Team quest</span>
           <h2>Quest before next practice</h2>
           <p>{draft.teamQuest}</p>
+        </article>
+      </section>
+
+      <section className="grid one">
+        <article className="card stack">
+          <div className="card-header">
+            <div>
+              <span className="eyebrow">AI Coach Workspace</span>
+              <h2>Coach-reviewed family drafts</h2>
+            </div>
+            <span className="badge warning">Preview - Edit - Approve - Publish</span>
+          </div>
+          <p className="muted">These drafts are deterministic workspace previews. They do not publish or send until a coach reviews the copy and uses the existing save/queue workflow.</p>
+          <div className="grid two">
+            {coachWorkspaceDrafts.map((workspaceDraft) => (
+              <div className="stack compact" key={workspaceDraft.id}>
+                <span className="badge">{workspaceDraft.label}</span>
+                <h3>{workspaceDraft.title}</h3>
+                <pre className="draft-preview">{workspaceDraft.body}</pre>
+                <p className="muted"><strong>Sources:</strong> {workspaceDraft.sourceEvidence.join(", ") || "coach draft"}</p>
+                <p className="muted"><strong>Workflow:</strong> {workspaceDraft.workflow.join(" -> ")}</p>
+                <p className="notice">{workspaceDraft.boundary}</p>
+              </div>
+            ))}
+          </div>
         </article>
       </section>
 
