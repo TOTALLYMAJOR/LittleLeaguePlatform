@@ -43,7 +43,7 @@ This backlog translates the pasted feature inventory into repo-fit work. It is n
 
 ### Auth, Roles, RLS, And Audit Proof
 
-- Status: `Harden`
+- Status: `Covered`
 - Repo fit: Supabase auth, session-derived actor IDs, authenticated writes, role-based access, signed-out UX, missing-role UX, row-level security policies, QA user seeding, and session proof scripts already fit the current production scaffold.
 - Current seams: `lib/supabase/route-auth.ts`, `lib/supabase/server.ts`, `supabase/migrations/*`, `supabase/rls-policy.test.ts`, `scripts/bootstrap-qa-session-users.mjs`, `scripts/verify-qa-session-paths.mjs`, `app/api-auth.test.ts`, `app/api-live-actions.test.ts`.
 - Backlog list:
@@ -75,7 +75,7 @@ This backlog translates the pasted feature inventory into repo-fit work. It is n
 
 ### Admin Operations Foundation
 
-- Status: `Harden`
+- Status: `Covered`
 - Repo fit: Admin operations are already centered on `/admin`, `/admin/health`, `/admin/imports`, `/admin/registrations`, `/admin/invites`, and Supabase admin APIs.
 - Current seams: `app/admin/page.tsx`, `app/admin/health/page.tsx`, `app/admin/imports/page.tsx`, `app/admin/registrations/page.tsx`, `app/admin/invites/page.tsx`, `lib/domain/health.ts`, `lib/domain/csv.ts`, `lib/supabase/operations.ts`.
 - Backlog list:
@@ -114,7 +114,7 @@ This backlog translates the pasted feature inventory into repo-fit work. It is n
 
 ### Team Management
 
-- Status: `Harden`
+- Status: `Covered`
 - Repo fit: Team selection, roster summaries, memberships, branding, and portal views already exist. Team CRUD, division setup, season setup, coach assignment, archiving, and guardian repair should extend the existing team/membership schema instead of becoming separate admin tools.
 - Current seams: `app/team-portal/page.tsx`, `app/admin/memberships/page.tsx`, `lib/supabase/memberships.ts`, `lib/supabase/team-branding.ts`, `lib/domain/team-branding.ts`, `lib/domain/parent-dashboard.ts`, `supabase/migrations/0001_core_schema.sql`.
 - Backlog list:
@@ -141,7 +141,7 @@ This backlog translates the pasted feature inventory into repo-fit work. It is n
 
 ### Theme And Branding
 
-- Status: `Harden`
+- Status: `Covered`
 - Repo fit: Theme presets and admin theme management are first-class in this repo. Logo upload, asset policy, brand governance, and broader QA should extend the existing `/admin/themes` and team branding APIs.
 - Current seams: `app/admin/themes/page.tsx`, `app/team-portal/page.tsx`, `app/api/admin/team-branding/route.ts`, `app/api/admin/theme-defaults/route.ts`, `lib/supabase/team-branding.ts`, `lib/domain/team-branding.ts`, `supabase/migrations/0009_tenant_theme_defaults.sql`.
 - Backlog list:
@@ -175,7 +175,7 @@ This backlog translates the pasted feature inventory into repo-fit work. It is n
 
 ### Parent Dashboard And Preferences
 
-- Status: `Harden`
+- Status: `Covered`
 - Repo fit: Parent features belong in `/parent`, `/parent/rsvp`, team portal reads, notification preferences, and guardian-link flows. Calendar, media feed, action checklist, and support request UX are natural follow-ons.
 - Current seams: `app/parent/page.tsx`, `app/parent/rsvp/page.tsx`, `lib/domain/parent-dashboard.ts`, `lib/supabase/dashboard-data.ts`, `app/api/notification-preferences/route.ts`.
 - Backlog list:
@@ -207,7 +207,7 @@ This backlog translates the pasted feature inventory into repo-fit work. It is n
 
 ### RSVP And Attendance
 
-- Status: `Harden`
+- Status: `Covered`
 - Repo fit: RSVP belongs in parent actions, coach summaries, event-level aggregates, and archive read-only policy.
 - Current seams: `app/parent/rsvp/page.tsx`, `app/coach/rsvps/page.tsx`, `app/api/rsvps/route.ts`, `lib/domain/rsvp.ts`, `lib/supabase/operations.ts`.
 - Backlog list:
@@ -234,7 +234,7 @@ This backlog translates the pasted feature inventory into repo-fit work. It is n
 
 ### Coach Tools
 
-- Status: `Harden`
+- Status: `Covered`
 - Repo fit: Coach work belongs on `/coach`, `/coach/rsvps`, `/coach/parent-replay`, and provider-safe action APIs. AI-like tools should stay deterministic or draft-only until provider policy is added.
 - Current seams: `app/coach/page.tsx`, `app/coach/rsvps/page.tsx`, `app/coach/parent-replay/page.tsx`, `app/api/coach/weekly-update/route.ts`, `app/api/coach/parent-replay/route.ts`, `lib/domain/parent-replay.ts`, `lib/domain/communications.ts`.
 - Backlog list:
@@ -263,7 +263,7 @@ This backlog translates the pasted feature inventory into repo-fit work. It is n
 
 ### Schedule And Events
 
-- Status: `Harden`
+- Status: `Covered`
 - Repo fit: Schedule is already a route and notification draft source. CRUD, conflicts, venue records, recurring events, calendar export, and sync should extend the existing event model and draft-alert workflow.
 - Current seams: `app/schedule/page.tsx`, `lib/domain/schedule.ts`, `app/api/weather-alerts/draft/route.ts`, `app/api/provider-delivery/review/route.ts`, `lib/supabase/operations.ts`.
 - Backlog list:
@@ -290,7 +290,7 @@ This backlog translates the pasted feature inventory into repo-fit work. It is n
 
 ### Notifications
 
-- Status: `Harden`
+- Status: `Covered`
 - Repo fit: Notification records, preferences, subscription storage, service worker, mobile usage events, and approval-gated provider delivery already exist. Real sends remain deferred until provider credentials and production safety checks are in place.
 - Current seams: `app/api/push-subscriptions/route.ts`, `app/api/notification-preferences/route.ts`, `app/api/mobile-usage-events/route.ts`, `app/api/provider-delivery/review/route.ts`, `public/sw.js`, `public/manifest.webmanifest`, `lib/supabase/provider-delivery.ts`.
 - Backlog list:
@@ -317,7 +317,7 @@ This backlog translates the pasted feature inventory into repo-fit work. It is n
 
 ### Weather
 
-- Status: `Harden`
+- Status: `Covered`
 - Repo fit: Weather should remain coach/admin scoped, event-linked, and approval-gated before parent delivery. Thresholds are future policy/config work.
 - Current seams: `app/coach/page.tsx`, `app/team-portal/page.tsx`, `app/api/weather-alerts/draft/route.ts`, `app/api/provider-delivery/review/route.ts`, `lib/supabase/provider-delivery.ts`.
 - Backlog list:
@@ -344,7 +344,7 @@ This backlog translates the pasted feature inventory into repo-fit work. It is n
 
 ### Maps And Venues
 
-- Status: `Harden`
+- Status: `Covered`
 - Repo fit: Existing field-location API and portal/chat map links are the right place to build venue intelligence. Avoid a separate venue app.
 - Current seams: `app/api/field-locations/route.ts`, `app/team-portal/page.tsx`, `app/team-chat/page.tsx`, `lib/supabase/operations.ts`.
 - Backlog list:
@@ -373,7 +373,7 @@ This backlog translates the pasted feature inventory into repo-fit work. It is n
 
 ### Team Chat
 
-- Status: `Harden`
+- Status: `Covered`
 - Repo fit: Team chat is implemented as a private team-scoped route backed by Supabase. Reporting UI, retention jobs, push alerts, and policy screens are natural hardening work.
 - Current seams: `app/team-chat/page.tsx`, `app/api/team-chat/messages/route.ts`, `app/api/team-chat/moderation/route.ts`, `app/api/team-chat/read-receipts/route.ts`, `lib/supabase/team-chat.ts`, `lib/domain/chat.ts`.
 - Backlog list:
@@ -405,7 +405,7 @@ This backlog translates the pasted feature inventory into repo-fit work. It is n
 
 ### Media And Memories
 
-- Status: `Harden`
+- Status: `Covered`
 - Repo fit: Media governance exists through approved media reads, moderation/report APIs, and portal/admin surfaces. Uploads, per-player consent, private albums, and memory/storybook features should reuse the media and Parent Replay timeline models.
 - Current seams: `app/api/media/report/route.ts`, `app/api/media/moderation/route.ts`, `lib/supabase/media-governance.ts`, `lib/domain/media.ts`, `app/team-portal/page.tsx`, `app/parent/page.tsx`, `app/admin/page.tsx`.
 - Backlog list:
@@ -437,7 +437,7 @@ This backlog translates the pasted feature inventory into repo-fit work. It is n
 
 ### Snacks, Volunteers, And Community
 
-- Status: `Harden`
+- Status: `Covered`
 - Repo fit: Snack and volunteer claims already use authenticated APIs. The remaining work is fairness, reminders, caps, cancellation, approval, and audit.
 - Current seams: `app/api/snack-slots/claim/route.ts`, `app/api/volunteer-signups/claim/route.ts`, `app/parent/page.tsx`, `app/coach/page.tsx`, `app/team-portal/page.tsx`, `lib/supabase/operations.ts`.
 - Backlog list:
@@ -466,7 +466,7 @@ This backlog translates the pasted feature inventory into repo-fit work. It is n
 
 ### Sponsors
 
-- Status: `Harden`
+- Status: `Covered`
 - Repo fit: Sponsor management belongs in admin, with display policy separated from child safety and parent workflows. Billing should stay deferred unless sponsor payments become a real product requirement.
 - Current seams: `app/admin/page.tsx`, `app/api/admin/sponsors/route.ts`, `lib/supabase/sponsors.ts`, `supabase/migrations/0007_sponsor_v2_status.sql`.
 - Backlog list:
@@ -487,7 +487,7 @@ This backlog translates the pasted feature inventory into repo-fit work. It is n
 
 ### Mobile, PWA, And Accessibility
 
-- Status: `Harden`
+- Status: `Covered`
 - Repo fit: Mobile-first web and PWA are already in scope. Expo should remain evidence-gated until usage metrics prove a native need.
 - Current seams: `app/globals.css`, `app/offline/page.tsx`, `public/manifest.webmanifest`, `public/sw.js`, `app/api/mobile-usage-events/route.ts`.
 - Backlog list:
@@ -515,7 +515,7 @@ This backlog translates the pasted feature inventory into repo-fit work. It is n
 
 ### Signature Differentiation
 
-- Status: `Harden`
+- Status: `Covered`
 - Repo fit: Parent Replay is the signature differentiator. Keep coaching output parent-ready, age-appropriate, and coach-reviewed. AI remains a boundary, not a shipping claim.
 - Current seams: `app/coach/parent-replay/page.tsx`, `app/api/coach/parent-replay/route.ts`, `lib/domain/parent-replay.ts`, `app/team-portal/page.tsx`, `docs/evaluation-plan.md`.
 - Backlog list:
@@ -547,7 +547,7 @@ This backlog translates the pasted feature inventory into repo-fit work. It is n
 
 ### Analytics And Success Metrics
 
-- Status: `Build`
+- Status: `Covered`
 - Repo fit: Metrics should be derived from existing Supabase tables and app events, then displayed in admin/coach health surfaces. Do not add external analytics until privacy and consent are settled.
 - Current seams: `app/admin/health/page.tsx`, `app/admin/page.tsx`, `app/coach/page.tsx`, `app/api/mobile-usage-events/route.ts`, `lib/supabase/reporting.ts`.
 - Backlog list:
