@@ -121,6 +121,19 @@ describe("ParentRsvpClient", () => {
     expect(html).not.toContain("Going</button>");
     expect(html).not.toContain("Not going</button>");
   });
+
+  it("renders RSVP history, edit buttons, and cancellation controls for linked parents", () => {
+    const html = renderToStaticMarkup(
+      <AppStateProvider>
+        <ParentRsvpClient />
+      </AppStateProvider>
+    );
+
+    expect(html).toContain("RSVP history");
+    expect(html).toContain("Going");
+    expect(html).toContain("Maybe");
+    expect(html).toContain("Cancel RSVP");
+  });
 });
 
 describe("ScheduleAlertsClient", () => {

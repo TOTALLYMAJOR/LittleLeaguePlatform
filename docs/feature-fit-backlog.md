@@ -189,10 +189,10 @@ This backlog translates the pasted feature inventory into repo-fit work. It is n
   - `Covered`: Signed-Out Empty State.
   - `Covered`: Parent-Scoped Data Loading.
   - `Covered`: Parent Onboarding Flow.
-  - `Harden`: Missing-Link Parent UX.
-  - `Build`: RSVP History.
-  - `Build`: RSVP Edits.
-  - `Build`: RSVP Cancellations.
+  - `Covered`: Missing-Link Parent UX.
+  - `Covered`: RSVP History.
+  - `Covered`: RSVP Edits.
+  - `Covered`: RSVP Cancellations.
   - `Covered`: Notification Preferences.
   - `Covered`: Quiet Hours.
   - `Covered`: Push/Email/SMS Preferences.

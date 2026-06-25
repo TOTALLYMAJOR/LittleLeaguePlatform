@@ -54,7 +54,7 @@ export function setRsvp(state: AppState, input: SetRsvpInput): SetRsvpResult {
 
   return {
     ok: true,
-    message: `RSVP saved as ${input.response.replace("_", " ")}.`,
+    message: input.response === "cancelled" ? "RSVP cancelled." : `RSVP saved as ${input.response.replace("_", " ")}.`,
     state: { ...state, rsvps }
   };
 }

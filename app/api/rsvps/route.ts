@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { updateParentRsvp } from "@/lib/supabase/operations";
 import { requireAuthenticatedRouteUser } from "@/lib/supabase/route-auth";
 
-const responses = new Set(["going", "not_going", "maybe"]);
+const responses = new Set(["going", "not_going", "maybe", "cancelled"]);
 
 export async function POST(request: Request) {
   const auth = await requireAuthenticatedRouteUser(request);
@@ -23,7 +23,7 @@ export async function POST(request: Request) {
     eventId: String(body.eventId ?? ""),
     playerId: String(body.playerId ?? ""),
     parentUserId: auth.user.id,
-    response: response as "going" | "not_going" | "maybe",
+    response: response as "going" | "not_going" | "maybe" | "cancelled",
     note: body.note ? String(body.note) : undefined
   });
 

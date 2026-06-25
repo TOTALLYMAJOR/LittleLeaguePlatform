@@ -425,7 +425,7 @@ export async function updateParentRsvp(input: {
   eventId: string;
   playerId: string;
   parentUserId: string;
-  response: "going" | "not_going" | "maybe";
+  response: "going" | "not_going" | "maybe" | "cancelled";
   note?: string;
 }) {
   if (!input.eventId || !input.playerId || !input.parentUserId) {

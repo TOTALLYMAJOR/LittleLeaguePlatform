@@ -1054,6 +1054,10 @@ export function ParentRsvpClient({ dashboardData }: { dashboardData?: ParentCoac
   const parentUser = displayState.users.find((user) => user.id === parentUserId);
   const dashboard = getParentDashboard(displayState, parentUserId, NOW);
   const accessGate = privateAccessGate(dashboardData, "parent");
+  const rsvpHistory = displayState.rsvps
+    .filter((rsvp) => rsvp.parentUserId === parentUserId)
+    .sort((left, right) => new Date(right.updatedAt).getTime() - new Date(left.updatedAt).getTime())
+    .slice(0, 6);
   const events = dashboard.nextEvents.flatMap((event) => dashboard.children
     .filter(({ player }) => player.teamId === event.teamId)
     .map(({ player }) => ({
@@ -1105,9 +1109,24 @@ export function ParentRsvpClient({ dashboardData }: { dashboardData?: ParentCoac
               <button disabled={isPending} onClick={() => save(event.id, player.id, "going")}>Going</button>
               <button disabled={isPending} className="secondary" onClick={() => save(event.id, player.id, "maybe")}>Maybe</button>
               <button disabled={isPending} className="secondary" onClick={() => save(event.id, player.id, "not_going")}>Not going</button>
+              <button disabled={isPending} className="secondary" onClick={() => save(event.id, player.id, "cancelled")}>Cancel RSVP</button>
             </div>
           </article>
         ))}
+        <article className="card stack">
+          <h2>RSVP history</h2>
+          {rsvpHistory.map((rsvp) => {
+            const event = displayState.events.find((item) => item.id === rsvp.eventId);
+            const player = displayState.players.find((item) => item.id === rsvp.playerId);
+            return (
+              <p key={rsvp.id}>
+                <strong>{event?.title ?? "Event"}</strong><br />
+                <span className="muted">{player ? `${player.firstName} ${player.lastInitial}.` : "Player"} - {rsvp.response.replace("_", " ")} - {formatDate(rsvp.updatedAt)}</span>
+              </p>
+            );
+          })}
+          {!rsvpHistory.length ? <p className="muted">No RSVP history yet.</p> : null}
+        </article>
       </section>
       )}
     </div>

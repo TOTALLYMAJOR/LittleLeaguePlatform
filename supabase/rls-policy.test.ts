@@ -20,6 +20,7 @@ describe("Supabase RLS policy coverage", () => {
   const archivedSeasonReadOnly = migration("0013_archived_season_read_only.sql");
   const teamLifecycleStatus = migration("0014_team_lifecycle_status.sql");
   const teamLogoAssets = migration("0015_team_logo_assets.sql");
+  const rsvpCancellations = migration("0016_rsvp_cancellations.sql");
   const packageJson = readFileSync(join(process.cwd(), "package.json"), "utf8");
   const rlsProof = readFileSync(join(process.cwd(), "scripts", "verify-rls-boundaries.mjs"), "utf8");
 
@@ -112,5 +113,10 @@ describe("Supabase RLS policy coverage", () => {
     expect(teamLogoAssets).toContain("create table if not exists public.team_logo_assets");
     expect(teamLogoAssets).toContain("organization admins manage team logo assets");
     expect(teamLogoAssets).toContain("team members read approved team logo assets");
+  });
+
+  it("keeps RSVP cancellation as retained history", () => {
+    expect(rsvpCancellations).toContain("'cancelled'");
+    expect(rsvpCancellations).toContain("rsvps_response_check");
   });
 });
