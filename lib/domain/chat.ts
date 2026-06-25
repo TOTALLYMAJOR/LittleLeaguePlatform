@@ -391,3 +391,33 @@ export function moderateTeamChatMessage(state: AppState, input: ModerateTeamChat
     }
   };
 }
+
+export function getTeamChatReportingSummary(state: AppState, teamId: string) {
+  const messages = state.chatMessages.filter((message) => message.teamId === teamId);
+  return {
+    totalMessages: messages.length,
+    hiddenMessages: messages.filter((message) => message.moderationStatus === "hidden").length,
+    deletedMessages: messages.filter((message) => message.moderationStatus === "deleted").length,
+    reportableMessages: messages.filter((message) => message.moderationStatus === "visible").length
+  };
+}
+
+export function getTeamChatRetentionJobs(state: AppState, teamId: string) {
+  const channel = state.teamChatChannels.find((item) => item.teamId === teamId);
+  return [{
+    id: `retention-${teamId}`,
+    title: "Chat retention cleanup",
+    status: channel ? "ready" as const : "blocked" as const,
+    detail: channel
+      ? "Delete or redact chat bodies only after archive exports and admin approval are complete."
+      : "Create a team chat channel before retention cleanup can be scheduled."
+  }];
+}
+
+export function getMediaMessagePolicyScreens() {
+  return [
+    { title: "No child accounts", detail: "Only assigned adults can post or moderate team messages." },
+    { title: "Private team context", detail: "Messages, media, and reports stay scoped to the assigned team." },
+    { title: "Human moderation", detail: "Coach/admin moderation records an audit event before hiding or deleting content." }
+  ];
+}

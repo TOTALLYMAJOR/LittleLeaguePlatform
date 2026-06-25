@@ -49,7 +49,10 @@ import {
   getWeatherApprovalQueue,
   getWeatherProviderRetryLogs,
   getTeamChatAccess,
+  getTeamChatReportingSummary,
+  getTeamChatRetentionJobs,
   getTeamChatView,
+  getMediaMessagePolicyScreens,
   getVenueRecords,
   moderateTeamChatMessage,
   postTeamChatMessage,
@@ -539,6 +542,16 @@ describe("start-of-season planning", () => {
 });
 
 describe("safe team chat access", () => {
+  it("summarizes reporting, retention, and media/message policy screens", () => {
+    const reporting = getTeamChatReportingSummary(seedState, "team-tigers");
+    const retention = getTeamChatRetentionJobs(seedState, "team-tigers");
+    const policies = getMediaMessagePolicyScreens();
+
+    expect(reporting.totalMessages).toBeGreaterThan(0);
+    expect(retention[0]?.status).toBe("ready");
+    expect(policies.map((policy) => policy.title)).toContain("No child accounts");
+  });
+
   it("allows an assigned parent to view and post in their team chat", () => {
     const access = getTeamChatAccess(seedState, "user-parent-jordan", "team-tigers");
     const view = getTeamChatView(seedState, "user-parent-jordan", "team-tigers", NOW);

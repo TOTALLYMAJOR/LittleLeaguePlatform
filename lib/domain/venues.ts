@@ -88,3 +88,14 @@ export function highlightLocationChange(previousLocation: string, nextLocation: 
       : "Location unchanged."
   };
 }
+
+export function getFacilityNotes(event?: LeagueEvent) {
+  return {
+    title: event ? `${event.locationName} facility notes` : "Facility notes pending",
+    notes: [
+      "Keep walkways clear for younger players and strollers.",
+      "Report locked gates, lighting issues, or unsafe surfaces to league staff.",
+      "Use team chat for arrival questions, not emergency instructions."
+    ]
+  };
+}

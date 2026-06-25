@@ -41,6 +41,9 @@ describe("TeamChatClient", () => {
     expect(html).toContain("Pinned Reminder");
     expect(html).toContain("Coach Note");
     expect(html).toContain("Game-Day Questions");
+    expect(html).toContain("Reporting UI");
+    expect(html).toContain("Retention jobs");
+    expect(html).toContain("Media/message policy screens");
     expect(html).toContain("No child accounts");
   });
 });
@@ -360,6 +363,7 @@ describe("TeamPortalClient", () => {
     expect(html).toContain("Venue intelligence layer");
     expect(html).toContain("Map fallback UX");
     expect(html).toContain("Location change highlighting");
+    expect(html).toContain("Facility notes");
     expect(html).toContain("Coach video library");
     expect(html).toContain("Parent education center");
     expect(html).toContain("Skill trees");

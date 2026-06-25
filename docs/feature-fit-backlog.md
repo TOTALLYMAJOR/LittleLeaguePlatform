@@ -367,7 +367,7 @@ This backlog translates the pasted feature inventory into repo-fit work. It is n
   - `Covered`: Field Map Links.
   - `Covered`: Game Day Directions.
   - `Covered`: Location Change Highlighting.
-  - `Build`: Facility Notes.
+  - `Covered`: Facility Notes.
 
 ## P4 - Team Chat, Media, Community, And Sponsors
 
@@ -398,10 +398,10 @@ This backlog translates the pasted feature inventory into repo-fit work. It is n
   - `Covered`: Quick Topic Chips.
   - `Covered`: Game-Day Questions.
   - `Covered`: Chat Moderation Controls.
-  - `Build`: Reporting UI.
-  - `Build`: Retention Jobs.
+  - `Covered`: Reporting UI.
+  - `Covered`: Retention Jobs.
   - `Defer`: Push Chat Alerts.
-  - `Build`: Media/Message Policy Screens.
+  - `Covered`: Media/Message Policy Screens.
 
 ### Media And Memories
 

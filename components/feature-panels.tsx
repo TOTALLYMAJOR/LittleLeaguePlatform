@@ -55,6 +55,10 @@ import {
   getMapFallbackUx,
   getVenueIntelligence,
   highlightLocationChange,
+  getFacilityNotes,
+  getTeamChatReportingSummary,
+  getTeamChatRetentionJobs,
+  getMediaMessagePolicyScreens,
   getVenueRecords,
   platformFeatureTiers,
   previewTeamCommunication,
@@ -3525,6 +3529,7 @@ export function TeamPortalClient({ teamPortalData }: { teamPortalData?: TeamPort
   const venueIntelligence = getVenueIntelligence(upcomingGame ?? nextPractice);
   const mapFallback = getMapFallbackUx({ quotaStatus: mapQuotaStatus.status, directionsUrl: embeddedMap.directionsUrl });
   const locationChange = highlightLocationChange(upcomingGame?.locationName ?? "Field pending", upcomingGame?.locationName ?? "Field pending");
+  const facilityNotes = getFacilityNotes(upcomingGame ?? nextPractice);
   const gameRsvps = upcomingGame ? state.rsvps.filter((rsvp) => rsvp.eventId === upcomingGame.id) : [];
   const gameSnackSlots = upcomingGame ? state.snackScheduleSlots.filter((slot) => slot.teamId === team.id && slot.eventId === upcomingGame.id) : [];
   const gameVolunteerSignups = upcomingGame ? state.volunteerSignups.filter((signup) => signup.teamId === team.id && signup.eventId === upcomingGame.id) : [];
@@ -3830,6 +3835,19 @@ export function TeamPortalClient({ teamPortalData }: { teamPortalData?: TeamPort
         </article>
       </section>
 
+      <section className="grid one">
+        <article className="card stack">
+          <div className="card-header">
+            <div>
+              <span className="eyebrow">Facility notes</span>
+              <h2>{facilityNotes.title}</h2>
+            </div>
+            <span className="badge">Venue</span>
+          </div>
+          {facilityNotes.notes.map((note) => <p className="muted" key={note}>{note}</p>)}
+        </article>
+      </section>
+
       <section className="grid three">
         <article className="card stack">
           <span className="badge ok">Weekly digest</span>
@@ -4091,6 +4109,9 @@ export function TeamChatClient({ teamChatData }: { teamChatData?: TeamChatData |
   const moderationEvents = view
     ? chatState.chatModerationAuditEvents.filter((event) => event.teamId === view.team.id)
     : [];
+  const reportingSummary = selectedTeam ? getTeamChatReportingSummary(chatState, selectedTeam.id) : null;
+  const retentionJobs = selectedTeam ? getTeamChatRetentionJobs(chatState, selectedTeam.id) : [];
+  const policyScreens = getMediaMessagePolicyScreens();
 
   useEffect(() => {
     if (!isSupabaseBacked) return undefined;
@@ -4214,6 +4235,29 @@ export function TeamChatClient({ teamChatData }: { teamChatData?: TeamChatData |
           <strong>{viewer?.name ?? "Unknown viewer"}</strong>
           <span>{selectedTeam?.name ?? "Unknown team"} access is evaluated from team memberships.</span>
         </div>
+      </section>
+
+      <section className="grid three">
+        <article className="card stack">
+          <span className="eyebrow">Reporting UI</span>
+          <h2>Chat report summary</h2>
+          <p><strong>{reportingSummary?.reportableMessages ?? 0}</strong> visible message(s) can be reported.</p>
+          <p className="muted">{reportingSummary?.hiddenMessages ?? 0} hidden, {reportingSummary?.deletedMessages ?? 0} deleted.</p>
+        </article>
+        <article className="card stack">
+          <span className="eyebrow">Retention jobs</span>
+          <h2>Archive cleanup</h2>
+          {retentionJobs.map((job) => (
+            <p key={job.id}><strong>{job.title}</strong><br /><span className="muted">{job.status} · {job.detail}</span></p>
+          ))}
+        </article>
+        <article className="card stack">
+          <span className="eyebrow">Media/message policy screens</span>
+          <h2>Policy checks</h2>
+          {policyScreens.map((policy) => (
+            <p key={policy.title}><strong>{policy.title}</strong><br /><span className="muted">{policy.detail}</span></p>
+          ))}
+        </article>
       </section>
 
       {!view ? (

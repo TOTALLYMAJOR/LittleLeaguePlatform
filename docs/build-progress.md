@@ -118,6 +118,7 @@ npm run supabase:push
 - Added team-portal embedded map metadata, venue markers, map quota handling, and field layout metadata.
 - Added venue page metadata plus parking, field entrance, and restroom notes to the team portal.
 - Added arrival instructions, venue intelligence summary, map fallback UX, and location-change highlighting.
+- Added facility notes plus Team Chat reporting UI, retention job, and media/message policy summaries.
 
 ### Remaining Gap
 
