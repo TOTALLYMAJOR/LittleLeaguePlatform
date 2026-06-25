@@ -8,7 +8,7 @@ The app is not ready for real-family production launch yet. The core scaffold, r
 
 ## Validation Run
 
-- `npm test` passed: 10 files, 128 tests.
+- `npm test` passed: 10 files, 131 tests.
 - `npm run build` passed and generated 41 app routes.
 - `npm run typecheck` initially failed against stale `.next/types` route definitions, then passed after `npm run build` regenerated the route types.
 - `docker compose config --quiet` passed.
@@ -63,31 +63,36 @@ The app is not ready for real-family production launch yet. The core scaffold, r
    - Action: run admin-path proof with a real org admin user and verify no cross-org rows appear.
    - Done when: admin proof screenshots and RLS checks cover every admin route.
 
-10. Add rate limits and abuse controls to public intake endpoints.
+10. Prove brand profiles across the 20 launch surfaces.
+    - Current truth: `/admin/themes` now renders a 20-surface brand launch checklist, test-brand previews, metrics, monitoring events, alerts, coach feedback questions, and acceptance criteria. `team_brand_profiles`, validation runs, asset uploads, and brand monitoring events are modeled in Supabase with coach/admin RLS.
+    - Action: create several hosted test brands with distinct logo URLs, banner URLs, primary/secondary/accent/button colors, display names, short names, fallback avatars, and hero copy, then browser-test parent team switching, invite pages, email templates, and push identity.
+    - Done when: all 20 surfaces pass hosted QA, non-coaches cannot edit branding, fallback email branding works, and brand monitoring alerts are wired to production telemetry.
+
+11. Add rate limits and abuse controls to public intake endpoints.
     - Current public endpoints: `/api/registration-requests` and `/api/mobile-usage-events`.
     - Action: add server-side rate limiting or provider firewall rules for registration intake and anonymous usage events.
     - Done when: burst requests are rejected or throttled and the behavior is documented.
 
 ## P2 Product Decisions Before Wider Launch
 
-11. Decide whether media uploads are in scope.
+12. Decide whether media uploads are in scope.
     - Current truth: media intake is link-based with Google Photos/YouTube validation, reporting, and moderation; upload storage provider is not configured.
     - Action if needed: add Supabase Storage or another private asset provider, upload review policy, file limits, scanning, and deletion/takedown workflow.
 
-12. Sponsor billing proof foundation is now in scope.
+13. Sponsor billing proof foundation is now in scope.
     - Current truth: sponsor records, placements, logo metadata, audits, Stripe Product/Price lookup keys, invoice references, and payment-proof statuses are represented as admin-only readiness records.
     - Remaining action if live collection is required: connect server-side Stripe Product/Price/Invoice or Checkout flows with environment-managed restricted keys, webhook signature verification, and sandbox payment proof.
     - Boundary: sponsor billing proof remains separate from child-facing sponsor display and does not expose payment status to families.
 
-13. Keep native Expo deferred unless PWA metrics prove need.
+14. Keep native Expo deferred unless PWA metrics prove need.
     - Current truth: PWA install and usage metrics exist; Expo readiness remains deferred.
     - Action: launch PWA first and use `mobile_usage_events` to decide whether app-store distribution, stronger native push, camera/media, or OS integration is justified.
 
-14. Keep AI provider disconnected unless evaluated.
+15. Keep AI provider disconnected unless evaluated.
     - Current truth: AI Coach Workspace and Parent Replay are deterministic, review-only draft tools.
     - Action if adding an AI provider: add prompt/eval harness, hallucination tests, privacy filters, source citations, provider usage controls, and review gates before any generated content is publishable.
 
-15. Automatic team building foundation is now in scope.
+16. Automatic team building foundation is now in scope.
     - Current truth: roster maker readiness now includes balanced team-builder previews, sibling/guardian grouping, friend-request consideration, skill-balance scores, target roster warnings, Preview -> Edit -> Approve -> Publish workflow, and admin-only team-build plan tables.
     - Remaining action before real roster publication: wire persisted Supabase team-build plan saves, add birthdate/age-band and explicit player evaluation fields, and run browser-level admin publish proof.
 

@@ -343,6 +343,24 @@ describe("AdminThemesClient", () => {
     expect(html).toContain("Theme QA");
     expect(html).toContain("Dark:");
     expect(html).toContain("Mobile:");
+    expect(html).toContain("Launch validation");
+    expect(html).toContain("20 target brand surfaces");
+    expect(html).toContain("100% covered");
+    expect(html).toContain("Team logo");
+    expect(html).toContain("Team banner / hero image");
+    expect(html).toContain("RSVP buttons and status badges");
+    expect(html).toContain("Invite emails");
+    expect(html).toContain("Push notification team identity");
+    expect(html).toContain("Test brands and metrics");
+    expect(html).toContain("Branding appears on all 20 target features");
+    expect(html).toContain("Production monitoring");
+    expect(html).toContain("brand_profile_published");
+    expect(html).toContain("brand_asset_rejected");
+    expect(html).toContain("brand_render_failed");
+    expect(html).toContain("Published brand missing required tokens");
+    expect(html).toContain("Coach feedback and acceptance");
+    expect(html).toContain("Did the preview match what parents actually saw?");
+    expect(html).toContain("A coach can configure one team brand profile.");
   });
 });
 

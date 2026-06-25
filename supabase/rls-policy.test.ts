@@ -22,6 +22,7 @@ describe("Supabase RLS policy coverage", () => {
   const teamLogoAssets = migration("0015_team_logo_assets.sql");
   const rsvpCancellations = migration("0016_rsvp_cancellations.sql");
   const sponsorBillingAndTeamBuilder = migration("0017_sponsor_billing_and_team_builder.sql");
+  const teamBrandProfilesMonitoring = migration("0018_team_brand_profiles_monitoring.sql");
   const packageJson = readFileSync(join(process.cwd(), "package.json"), "utf8");
   const rlsProof = readFileSync(join(process.cwd(), "scripts", "verify-rls-boundaries.mjs"), "utf8");
 
@@ -129,5 +130,21 @@ describe("Supabase RLS policy coverage", () => {
     expect(sponsorBillingAndTeamBuilder).toContain("create table if not exists public.team_build_plans");
     expect(sponsorBillingAndTeamBuilder).toContain("assignments jsonb");
     expect(sponsorBillingAndTeamBuilder).toContain("organization admins manage team build plans");
+  });
+
+  it("keeps team brand profiles coach/admin managed with monitoring proof", () => {
+    expect(teamBrandProfilesMonitoring).toContain("create table if not exists public.team_brand_profiles");
+    expect(teamBrandProfilesMonitoring).toContain("logo_url text");
+    expect(teamBrandProfilesMonitoring).toContain("banner_image_url text");
+    expect(teamBrandProfilesMonitoring).toContain("accent_color text not null");
+    expect(teamBrandProfilesMonitoring).toContain("hero_copy text not null");
+    expect(teamBrandProfilesMonitoring).toContain("create table if not exists public.team_brand_surface_validation_runs");
+    expect(teamBrandProfilesMonitoring).toContain("coverage_percent integer not null check (coverage_percent between 0 and 100)");
+    expect(teamBrandProfilesMonitoring).toContain("create table if not exists public.brand_monitoring_events");
+    expect(teamBrandProfilesMonitoring).toContain("'brand_profile_published'");
+    expect(teamBrandProfilesMonitoring).toContain("'brand_render_failed'");
+    expect(teamBrandProfilesMonitoring).toContain("coaches and admins manage team brand profiles");
+    expect(teamBrandProfilesMonitoring).toContain("team members read published brand profiles");
+    expect(teamBrandProfilesMonitoring).toContain("public.current_user_can_manage_team(team_id)");
   });
 });

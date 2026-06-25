@@ -146,8 +146,8 @@ This backlog translates the pasted feature inventory into repo-fit work. It is n
 ### Theme And Branding
 
 - Status: `Covered`
-- Repo fit: Theme presets and admin theme management are first-class in this repo. Logo upload, asset policy, brand governance, and broader QA should extend the existing `/admin/themes` and team branding APIs.
-- Current seams: `app/admin/themes/page.tsx`, `app/team-portal/page.tsx`, `app/api/admin/team-branding/route.ts`, `app/api/admin/theme-defaults/route.ts`, `lib/supabase/team-branding.ts`, `lib/domain/team-branding.ts`, `supabase/migrations/0009_tenant_theme_defaults.sql`.
+- Repo fit: Theme presets, admin theme management, logo policy, and brand launch validation are first-class in this repo. Hosted browser QA and provider-backed email/push rendering should extend the existing `/admin/themes` and team branding APIs.
+- Current seams: `app/admin/themes/page.tsx`, `app/team-portal/page.tsx`, `app/api/admin/team-branding/route.ts`, `app/api/admin/theme-defaults/route.ts`, `lib/supabase/team-branding.ts`, `lib/domain/team-branding.ts`, `lib/domain/brand-validation.ts`, `supabase/migrations/0009_tenant_theme_defaults.sql`, `supabase/migrations/0018_team_brand_profiles_monitoring.sql`.
 - Backlog list:
   - `Covered`: Multi-Theme System.
   - `Covered`: Theme Presets.
@@ -171,9 +171,18 @@ This backlog translates the pasted feature inventory into repo-fit work. It is n
   - `Covered`: Logo Asset Policy.
   - `Covered`: Tenant Brand Defaults.
   - `Covered`: Brand Governance.
+  - `Covered`: Brand Profile Launch Validation.
+  - `Covered`: 20-Surface Brand Coverage Checklist.
+  - `Covered`: Brand Success Metrics.
+  - `Covered`: Brand Monitoring Events.
+  - `Covered`: Brand Alert Rules.
+  - `Covered`: Coach Brand Feedback Questions.
+  - `Covered`: Brand Profile Persistence Tables.
   - `Covered`: Dark Mode Theme QA.
   - `Covered`: Mobile Theme QA.
   - `Covered`: Per-Team Brand Contrast Checks.
+  - `Defer`: Hosted Brand Surface Browser QA.
+  - `Defer`: Provider-Backed Email/Push Brand Rendering.
 
 ## P2 - Parent, RSVP, And Coach Operations
 

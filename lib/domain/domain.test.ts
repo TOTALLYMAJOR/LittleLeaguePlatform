@@ -106,6 +106,9 @@ import {
   getEmailSponsorPlacement,
   getBannerSponsorPlacement,
   buildSponsorBillingProofs,
+  buildBrandLaunchValidation,
+  buildTeamBrandProfile,
+  validateBrandProfile,
   getTouchTargetQa,
   getOfflineStateSummary,
   getCacheInvalidationPolicy,
@@ -1104,6 +1107,29 @@ describe("team portal branding", () => {
 
     expect(result.ok).toBe(false);
     expect(result.message).toContain("#RRGGBB");
+  });
+
+  it("defines brand profiles, launch surfaces, metrics, and monitoring events", () => {
+    const profile = buildTeamBrandProfile(seedState.teams[0]!, {
+      logoUrl: "https://assets.example.com/tigers/logo.png",
+      bannerImageUrl: "https://assets.example.com/tigers/banner.jpg",
+      accentColor: "#22c55e",
+      buttonColor: "#22c55e",
+      heroCopy: "Tiny Tigers families see one published brand everywhere."
+    });
+    const surfaceChecks = validateBrandProfile(profile);
+    const validation = buildBrandLaunchValidation(seedState.teams);
+
+    expect(surfaceChecks).toHaveLength(20);
+    expect(surfaceChecks.every((check) => check.status === "covered")).toBe(true);
+    expect(validation.coveragePercent).toBe(100);
+    expect(validation.metrics.map((metric) => metric.label)).toContain("Branding appears on all 20 target features");
+    expect(validation.monitoringEvents).toContain("brand_profile_published");
+    expect(validation.monitoringEvents).toContain("brand_render_failed");
+    expect(validation.alerts).toContain("Published brand missing required tokens");
+    expect(validation.feedbackQuestions).toContain("Did the preview match what parents actually saw?");
+    expect(validation.acceptanceCriteria).toContain("The same brand-token model can support future iOS development.");
+    expect(validation.providerBoundary).toContain("provider-gated");
   });
 });
 

@@ -129,6 +129,7 @@ import {
   getMediaEngagementRate,
   getNotificationOptOutRate,
   buildAiCoachWorkspaceDrafts,
+  buildBrandLaunchValidation,
   type ChatAnnouncementTopic,
   type CommunicationTemplate,
   type EventType,
@@ -2532,6 +2533,7 @@ export function AdminThemesClient({ initialData }: { initialData: AdminThemeData
   const actors = initialData.users.filter((user) => user.role !== "parent");
   const selectedActorId = actors.some((user) => user.id === actorUserId) ? actorUserId : actors[0]?.id ?? actorUserId;
   const selectedContrast = draft ? contrastStatus(draft.primaryColor, draft.secondaryColor) : null;
+  const brandLaunchValidation = useMemo(() => buildBrandLaunchValidation(teams), [teams]);
 
   function updateDraft(field: "mascot" | "primaryColor" | "secondaryColor" | "themeKey", value: string) {
     if (!team || !draft) return;
@@ -2738,6 +2740,72 @@ export function AdminThemesClient({ initialData }: { initialData: AdminThemeData
             );
           })}
           {!audits.length ? <p className="muted">No theme audit events recorded yet.</p> : null}
+        </article>
+      </section>
+
+      <section className="grid two">
+        <article className="card stack">
+          <div className="card-header">
+            <div>
+              <span className="eyebrow">Launch validation</span>
+              <h2>20 target brand surfaces</h2>
+            </div>
+            <span className={`badge ${brandLaunchValidation.coveragePercent === 100 ? "ok" : "warning"}`}>
+              {brandLaunchValidation.coveragePercent}% covered
+            </span>
+          </div>
+          <p className="muted">{brandLaunchValidation.providerBoundary}</p>
+          <div className="compact-list">
+            {brandLaunchValidation.surfaceChecks.map((check, index) => (
+              <p key={check.id}>
+                <strong>{index + 1}. {check.label}</strong>
+                <br />
+                <span className="muted">{check.status === "covered" ? "Covered" : "Blocked"} - {check.detail}</span>
+              </p>
+            ))}
+          </div>
+        </article>
+        <article className="card stack">
+          <h2>Test brands and metrics</h2>
+          {brandLaunchValidation.testProfiles.map((profile) => (
+            <div className="team-branding-preview" key={profile.teamId} style={teamBrandStyle(profile.primaryColor, profile.accentColor)}>
+              <strong>{profile.shortName}</strong>
+              <span>{profile.displayName} - published test brand</span>
+            </div>
+          ))}
+          {brandLaunchValidation.metrics.map((metric) => (
+            <p key={metric.label}>
+              <strong>{metric.label}</strong>
+              <br />
+              <span className="muted">Target: {metric.target}. Current: {metric.current}.</span>
+            </p>
+          ))}
+        </article>
+      </section>
+
+      <section className="grid two">
+        <article className="card stack">
+          <h2>Production monitoring</h2>
+          <div className="pill-row">
+            {brandLaunchValidation.monitoringEvents.map((eventName) => (
+              <span className="badge" key={eventName}>{eventName}</span>
+            ))}
+          </div>
+          {brandLaunchValidation.alerts.map((alert) => (
+            <p key={alert}>{alert}</p>
+          ))}
+        </article>
+        <article className="card stack">
+          <h2>Coach feedback and acceptance</h2>
+          {brandLaunchValidation.feedbackQuestions.map((question) => (
+            <p key={question}>{question}</p>
+          ))}
+          <div className="notice">
+            {brandLaunchValidation.acceptanceCriteria.slice(0, 3).map((criterion) => (
+              <p key={criterion}><strong>{criterion}</strong></p>
+            ))}
+            <p>{brandLaunchValidation.acceptanceCriteria.slice(3).join(" ")}</p>
+          </div>
         </article>
       </section>
     </div>

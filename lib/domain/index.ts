@@ -15,6 +15,7 @@ export * from "./parent-replay";
 export * from "./program-themes";
 export * from "./registration";
 export * from "./team-branding";
+export * from "./brand-validation";
 export * from "./assistive-suggestions";
 export * from "./weather";
 export * from "./venues";

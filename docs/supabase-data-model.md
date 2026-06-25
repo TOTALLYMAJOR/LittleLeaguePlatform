@@ -41,7 +41,7 @@ npm run supabase:push
 | League structure | `seasons`, `teams`, `players`, `player_guardians`, `parent_invites` |
 | Guardian safety | `guardian_authorizations`, `emergency_contacts`, `player_health_notes` |
 | Scheduling | `events`, `event_series`, `event_change_logs`, `field_locations`, `field_reservations`, `rsvps`, `snack_schedule_slots`, `volunteer_signups`, `weather_alerts` |
-| Team portal | `announcements`, `media_items`, `sponsors`, `sponsor_packages`, `sponsor_placements`, `sponsor_assets`, `sponsor_billing_records` |
+| Team portal | `announcements`, `media_items`, `sponsors`, `sponsor_packages`, `sponsor_placements`, `sponsor_assets`, `sponsor_billing_records`, `team_brand_profiles`, `team_brand_surface_validation_runs`, `brand_asset_uploads`, `brand_monitoring_events` |
 | Parent Replay | `parent_replays`, `parent_replay_templates`, `ai_generation_runs`, `learning_plans` |
 | Team chat | `team_chat_channels`, `team_chat_messages`, `team_chat_threads`, `team_chat_message_reads`, `team_chat_reactions`, `team_chat_attachments`, `team_chat_reports`, `chat_moderation_audit_events` |
 | Notifications | `notifications`, `notification_preferences`, `notification_delivery_attempts`, `push_subscriptions` |
@@ -60,6 +60,7 @@ npm run supabase:push
 - Parent Replay has reusable templates, deterministic/AI/coach-written source tracking, review timestamps, generated-run evidence, and approved learning plans.
 - Sponsor management supports packages, placements, assets, contacts, dates, review status, and billing proof records separated from child-facing display.
 - Automatic team-builder plans store preview/edit/approve/publish status, constraints, assignments, warnings, and admin approval evidence.
+- Team brand profiles store published logo/banner URLs, display and short names, fallback avatar labels, primary/secondary/accent/button colors, hero copy, 20-surface validation runs, reviewed asset uploads, and monitoring events.
 - Registration approval actions record the exact steps taken after a request: match existing player, create player, create guardian, create membership, or queue invite.
 
 ## Security Shape
@@ -90,4 +91,4 @@ lib/supabase/
 
 ## Next Implementation Step
 
-Move one route at a time from local reducer state to Supabase-backed reads/writes. Registration requests, registration approval, and Team Portal reads now have live Supabase paths. The next hardened workflow should add Supabase write adapters for team branding/theme updates, then move Team Chat channels/messages/moderation audit to Supabase Realtime.
+Move one route at a time from local reducer state to Supabase-backed reads/writes. Registration requests, registration approval, Team Portal reads, team branding/theme writes, and Team Chat persistence now have live Supabase paths. The next hardened workflow should run hosted browser QA against several published brand profiles and connect provider-backed email/push rendering only after monitoring and fallback proof are in place.

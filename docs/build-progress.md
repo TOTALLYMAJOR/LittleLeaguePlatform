@@ -141,6 +141,7 @@ These 2026-06-22 next items were completed in the 2026-06-23 hardening pass:
 - Added Coach Knowledge Base, Action Item Extraction, Safety Monitor, and End-of-Season Storybook drafts to complete the AI Coach Workspace feature packet while keeping all outputs coach/admin reviewed.
 - Added sponsor billing proof foundations with Stripe Product/Price lookup keys, invoice references, payment-proof status, admin-only migration tables, and child-facing display separation.
 - Added automatic team-builder foundations with balanced assignment previews, sibling/guardian grouping, friend-request consideration, skill-balance scores, approval workflow, publish audit, and admin-only migration tables.
+- Added brand-profile launch validation foundations with 20 surface checks, test brands, success metrics, monitoring events, alert rules, coach feedback prompts, acceptance criteria, and Supabase tables for brand profiles, validation runs, asset uploads, and monitoring events.
 
 ### Remaining Gap
 
