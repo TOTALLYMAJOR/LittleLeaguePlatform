@@ -100,7 +100,11 @@ import {
   getSponsorPublicDisplayPolicy,
   getTeamPortalSponsorPlacement,
   getScheduleSponsorPlacement,
-  getMediaGallerySponsorPlacement
+  getMediaGallerySponsorPlacement,
+  getEmailSponsorPlacement,
+  getBannerSponsorPlacement,
+  getTouchTargetQa,
+  getOfflineStateSummary
 } from "./index";
 
 describe("CSV duplicate detection", () => {
@@ -635,6 +639,10 @@ describe("sponsor placement", () => {
     expect(getTeamPortalSponsorPlacement(placedSponsors, "team-tigers").map((sponsor) => sponsor.name)).toContain("Corner Pizza");
     expect(getScheduleSponsorPlacement(seedState.sponsors)).toHaveLength(0);
     expect(getMediaGallerySponsorPlacement(seedState.sponsors)).toHaveLength(0);
+    expect(getEmailSponsorPlacement(seedState.sponsors)).toHaveLength(0);
+    expect(getBannerSponsorPlacement(seedState.sponsors)).toHaveLength(0);
+    expect(getTouchTargetQa().minimumPixels).toBe(44);
+    expect(getOfflineStateSummary().detail).toContain("read-only");
   });
 });
 

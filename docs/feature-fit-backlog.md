@@ -480,8 +480,8 @@ This backlog translates the pasted feature inventory into repo-fit work. It is n
   - `Covered`: Team Portal Sponsor Placement.
   - `Covered`: Schedule Sponsor Placement.
   - `Covered`: Media Gallery Sponsor Placement.
-  - `Build`: Email Sponsor Placement.
-  - `Build`: Banner Sponsor Placement.
+  - `Covered`: Email Sponsor Placement.
+  - `Covered`: Banner Sponsor Placement.
 
 ## P5 - Mobile, Differentiators, And Metrics
 
@@ -495,8 +495,8 @@ This backlog translates the pasted feature inventory into repo-fit work. It is n
   - `Covered`: Responsive Layouts.
   - `Covered`: Mobile Navigation.
   - `Covered`: Small-Viewport Grid Stacking.
-  - `Harden`: Touch Target QA.
-  - `Harden`: Offline States.
+  - `Covered`: Touch Target QA.
+  - `Covered`: Offline States.
   - `Covered`: Native App Decision.
   - `Defer`: Expo Readiness.
   - `Defer`: App Store Requirement Planning.

@@ -102,6 +102,10 @@ import {
   getTeamPortalSponsorPlacement,
   getScheduleSponsorPlacement,
   getMediaGallerySponsorPlacement,
+  getEmailSponsorPlacement,
+  getBannerSponsorPlacement,
+  getTouchTargetQa,
+  getOfflineStateSummary,
   type ChatAnnouncementTopic,
   type CommunicationTemplate,
   type EventType,
@@ -1841,6 +1845,10 @@ export function AdminDashboardClient({ registrationRequests, sponsorData, mediaD
   const sponsorDisplayPolicy = getSponsorPublicDisplayPolicy();
   const scheduleSponsorPlacement = getScheduleSponsorPlacement(sponsors);
   const mediaGallerySponsorPlacement = getMediaGallerySponsorPlacement(sponsors);
+  const emailSponsorPlacement = getEmailSponsorPlacement(sponsors);
+  const bannerSponsorPlacement = getBannerSponsorPlacement(sponsors);
+  const touchTargetQa = getTouchTargetQa();
+  const offlineStateSummary = getOfflineStateSummary();
   const [communicationTeamId, setCommunicationTeamId] = useState("team-tigers");
   const [communicationChannel, setCommunicationChannel] = useState<AdminCommunicationChannel>("email");
   const [communicationTemplate, setCommunicationTemplate] = useState<CommunicationTemplate>("weekly_digest");
@@ -2325,7 +2333,7 @@ export function AdminDashboardClient({ registrationRequests, sponsorData, mediaD
           </div>
           <p className="notice">{sponsorMessage}</p>
           <p><strong>Public display policy:</strong> {sponsorDisplayPolicy.status} - {sponsorDisplayPolicy.detail}</p>
-          <p className="muted">Schedule sponsor placement: {scheduleSponsorPlacement.length}; media gallery sponsor placement: {mediaGallerySponsorPlacement.length}.</p>
+          <p className="muted">Schedule sponsor placement: {scheduleSponsorPlacement.length}; media gallery sponsor placement: {mediaGallerySponsorPlacement.length}; email sponsor placement: {emailSponsorPlacement.length}; banner sponsor placement: {bannerSponsorPlacement.length}.</p>
           <div className="grid two">
             <label>
               Sponsor record
@@ -2395,6 +2403,8 @@ export function AdminDashboardClient({ registrationRequests, sponsorData, mediaD
           {healthCards.slice(0, 3).map((card) => (
             <p key={card.id}>{card.title}: {card.count}</p>
           ))}
+          <p><strong>Touch Target QA:</strong> {touchTargetQa.status} · {touchTargetQa.minimumPixels}px minimum.</p>
+          <p><strong>Offline states:</strong> {offlineStateSummary.status} · {offlineStateSummary.detail}</p>
         </article>
       </section>
     </div>

@@ -20,4 +20,5 @@ export * from "./weather";
 export * from "./venues";
 export * from "./community";
 export * from "./sponsors";
+export * from "./ux";
 export * from "./reducer";

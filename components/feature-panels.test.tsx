@@ -267,6 +267,8 @@ describe("AdminDashboardClient", () => {
     expect(html).toContain("Public display policy");
     expect(html).toContain("Schedule sponsor placement");
     expect(html).toContain("media gallery sponsor placement");
+    expect(html).toContain("email sponsor placement");
+    expect(html).toContain("banner sponsor placement");
     expect(html).toContain("Save sponsor");
     expect(html).toContain("Stripe/payment billing is not connected");
     expect(html).toContain("Communication console");
@@ -275,6 +277,8 @@ describe("AdminDashboardClient", () => {
     expect(html).toContain("Roster maker readiness");
     expect(html).toContain("Bracket maker");
     expect(html).toContain("Queued communication records");
+    expect(html).toContain("Touch Target QA");
+    expect(html).toContain("Offline states");
   });
 });
 

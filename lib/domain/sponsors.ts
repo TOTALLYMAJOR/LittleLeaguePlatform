@@ -22,3 +22,11 @@ export function getScheduleSponsorPlacement(sponsors: Sponsor[]) {
 export function getMediaGallerySponsorPlacement(sponsors: Sponsor[]) {
   return getSponsorPlacement(sponsors, "field_map");
 }
+
+export function getEmailSponsorPlacement(sponsors: Sponsor[]) {
+  return getSponsorPlacement(sponsors, "weekly_digest");
+}
+
+export function getBannerSponsorPlacement(sponsors: Sponsor[]) {
+  return getSponsorPlacement(sponsors, "registration");
+}
