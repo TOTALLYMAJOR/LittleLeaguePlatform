@@ -8,9 +8,11 @@ import {
   buildParentAssistiveSuggestions,
   computeAdminHealth,
   computeSeasonPlanningMetrics,
+  createScheduleEvent,
   createRegistrationRequest,
   createParentReplay,
   defaultTeamCommunicationCopy,
+  detectScheduleConflicts,
   evaluateInviteRecovery,
   generateParentReplayDraft,
   getCoachRsvpReliability,
@@ -161,6 +163,40 @@ describe("schedule changes and admin health", () => {
     expect(preview.noResponsePlayers).toBe(1);
     expect(preview.channels).toEqual(["push", "email", "sms"]);
     expect(preview.notificationCount).toBe(6);
+  });
+
+  it("detects team and venue conflicts before schedule creation", () => {
+    const conflicts = detectScheduleConflicts(seedState, {
+      teamId: "team-tigers",
+      startsAt: "2026-04-04T09:15:00.000Z",
+      endsAt: "2026-04-04T09:45:00.000Z",
+      locationName: "Field 1"
+    });
+
+    expect(conflicts).toHaveLength(1);
+    expect(conflicts[0]?.reasons).toEqual(["team overlap", "venue overlap"]);
+  });
+
+  it("creates schedule events through the actor-checked CRUD service", () => {
+    const result = createScheduleEvent(seedState, {
+      actorUserId: "user-admin",
+      actorRole: "admin",
+      organizationId: seedState.organization.id,
+      seasonId: seedState.activeSeason.id,
+      teamId: "team-tigers",
+      title: "Tiny Tigers Picture Day",
+      eventType: "team_event",
+      startsAt: "2026-04-12T15:00:00.000Z",
+      endsAt: "2026-04-12T16:00:00.000Z",
+      locationName: "Community Room",
+      locationAddress: "100 League Way",
+      now: NOW
+    });
+
+    expect(result.ok).toBe(true);
+    expect(result.event?.title).toBe("Tiny Tigers Picture Day");
+    expect(result.state.events).toHaveLength(seedState.events.length + 1);
+    expect(result.state.auditEvents[0]?.action).toBe("schedule_event_created");
   });
 
   it("computes launch readiness card counts", () => {

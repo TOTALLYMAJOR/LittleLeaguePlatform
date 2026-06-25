@@ -15,6 +15,7 @@ import {
   computeSeasonPlanningMetrics,
   createRegistrationRequest,
   defaultTeamCommunicationCopy,
+  detectScheduleConflicts,
   evaluateInviteRecovery,
   getCoachRsvpReliability,
   getCoachRsvpSummaries,
@@ -1322,6 +1323,12 @@ export function CoachDashboardClient({ dashboardData }: { dashboardData?: Parent
   const snackNeeds = sourceState.snackScheduleSlots.filter((slot) => teamIds.has(slot.teamId) && slot.status === "open");
   const nextAssignedEvent = assignedEvents[0];
   const accessGate = privateAccessGate(dashboardData, "coach");
+  const coachOnboardingSteps = [
+    { label: "Active coach membership", done: teams.length > 0, detail: teams.map((team) => team.name).join(", ") || "No assigned teams." },
+    { label: "Review attendance snapshot", done: summaries.length > 0, detail: `${summaries.length} upcoming assigned event(s).` },
+    { label: "Check weather and family help", done: weatherAlerts.length + snackNeeds.length + volunteerNeeds.length > 0, detail: `${weatherAlerts.length} weather alert(s), ${snackNeeds.length} snack slot(s), ${volunteerNeeds.length} volunteer role(s).` },
+    { label: "Prepare parent update", done: true, detail: "Weekly update draft is ready for review." }
+  ];
   const weeklyUpdateDraft = [
     `This week: ${assignedEvents.slice(0, 2).map((event) => `${event.title} at ${event.locationName}`).join("; ") || "No scheduled events."}`,
     `RSVP gaps: ${summaries.reduce((total, summary) => total + summary.noResponse, 0)} no-response player slot(s).`,
@@ -1378,6 +1385,23 @@ export function CoachDashboardClient({ dashboardData }: { dashboardData?: Parent
         <article className="card metric"><span className="muted">Assigned teams</span><strong>{teams.length}</strong></article>
         <article className="card metric"><span className="muted">Open volunteer roles</span><strong>{volunteerNeeds.length}</strong></article>
         <article className="card metric"><span className="muted">Open snack slots</span><strong>{snackNeeds.length}</strong></article>
+      </section>
+
+      <section className="card stack">
+        <div className="card-header">
+          <div>
+            <span className="eyebrow">Coach onboarding</span>
+            <h2>Assigned-team setup checklist</h2>
+          </div>
+          <span className="badge">{coachOnboardingSteps.filter((step) => !step.done).length} open</span>
+        </div>
+        {coachOnboardingSteps.map((step) => (
+          <p key={step.label}>
+            <span className={`badge ${step.done ? "ok" : "warning"}`}>{step.done ? "Done" : "Next"}</span>{" "}
+            <strong>{step.label}</strong><br />
+            <span className="muted">{step.detail}</span>
+          </p>
+        ))}
       </section>
 
       <section className="grid two">
@@ -2542,6 +2566,16 @@ export function ScheduleAlertsClient() {
   const [locationName, setLocationName] = useState(event?.locationName ?? "");
   const [status, setStatus] = useState<EventStatus>(event?.status ?? "scheduled");
   const [message, setMessage] = useState("");
+  const eventTeam = event ? state.teams.find((team) => team.id === event.teamId) : undefined;
+  const eventWindowMs = event ? new Date(event.endsAt).getTime() - new Date(event.startsAt).getTime() : 60 * 60 * 1000;
+  const conflictEndsAt = event ? new Date(new Date(startsAt).getTime() + eventWindowMs).toISOString() : "";
+  const scheduleConflicts = event ? detectScheduleConflicts(state, {
+    eventId,
+    teamId: event.teamId,
+    startsAt,
+    endsAt: conflictEndsAt,
+    locationName
+  }) : [];
   const impactPreview = previewScheduleChangeImpact(state, {
     eventId,
     actorUserId: "user-admin",
@@ -2615,6 +2649,57 @@ export function ScheduleAlertsClient() {
         </article>
 
         <article className="card stack">
+          <div className="card-header">
+            <div>
+              <span className="eyebrow">Event detail</span>
+              <h2>{event?.title ?? "No event selected"}</h2>
+            </div>
+            <span className={`badge ${status === "cancelled" ? "danger" : status === "completed" ? "ok" : "warning"}`}>{status}</span>
+          </div>
+          {event ? (
+            <>
+              <p><strong>{eventTeam?.name ?? "Team"}</strong> · {event.eventType.replace("_", " ")}</p>
+              <p className="muted">{formatDate(startsAt)} to {formatDate(conflictEndsAt)} · {locationName}</p>
+              <p className="muted">{event.locationAddress}</p>
+              <p>Created {formatDate(event.createdAt)} · Updated {formatDate(event.updatedAt)}</p>
+            </>
+          ) : <p className="muted">No event is available.</p>}
+        </article>
+      </section>
+
+      <section className="grid two">
+        <article className="card stack">
+          <div className="card-header">
+            <div>
+              <span className="eyebrow">Schedule CRUD service</span>
+              <h2>Create, update, cancel</h2>
+            </div>
+            <span className="badge ok">Domain-backed</span>
+          </div>
+          <p>The schedule domain now exposes create and update paths with actor checks, audit records, and provider-safe notification drafts.</p>
+          <p className="muted">This screen exercises update/cancel. New event creation uses the same conflict and permission service before adding an event.</p>
+        </article>
+
+        <article className="card stack">
+          <div className="card-header">
+            <div>
+              <span className="eyebrow">Conflict detection</span>
+              <h2>Schedule conflicts</h2>
+            </div>
+            <span className={`badge ${scheduleConflicts.length ? "danger" : "ok"}`}>{scheduleConflicts.length} conflict(s)</span>
+          </div>
+          {scheduleConflicts.map((conflict) => (
+            <p key={conflict.event.id}>
+              <strong>{conflict.event.title}</strong><br />
+              <span className="muted">{conflict.reasons.join(", ")} · {formatDate(conflict.event.startsAt)} · {conflict.event.locationName}</span>
+            </p>
+          ))}
+          {!scheduleConflicts.length ? <p className="muted">No team or venue overlap found for the selected event window.</p> : null}
+        </article>
+      </section>
+
+      <section className="grid two">
+        <article className="card stack">
           <h2>Impact preview</h2>
           <p>{impactPreview.message}</p>
           <p><strong>Affected families:</strong> {impactPreview.affectedFamilies}</p>
@@ -2626,9 +2711,7 @@ export function ScheduleAlertsClient() {
           ))}
           <p className="notice">Preview only. Saving queues local notification records; provider blast messages are not sent.</p>
         </article>
-      </section>
 
-      <section className="grid two">
         <article className="card stack">
           <h2>Queued notifications</h2>
           {state.notifications.filter((notification) => notification.eventId).slice(0, 8).map((notification) => (
@@ -2640,6 +2723,9 @@ export function ScheduleAlertsClient() {
           ))}
           {!state.notifications.some((notification) => notification.eventId) ? <p className="muted">No schedule notifications queued yet.</p> : null}
         </article>
+      </section>
+
+      <section className="grid one">
         <article className="card stack">
           <h2>Coach confidence checklist</h2>
           <p>Review impacted families, RSVP state, alert channels, and no-response count before queueing changes.</p>

@@ -246,7 +246,7 @@ This backlog translates the pasted feature inventory into repo-fit work. It is n
   - `Covered`: Volunteer Role View.
   - `Covered`: Parent Replay Entry Point.
   - `Covered`: Coach Role Auth UX.
-  - `Build`: Coach Onboarding.
+  - `Covered`: Coach Onboarding.
   - `Covered`: Weekly Update Drafts.
   - `Covered`: Coach Weekly Update Builder.
   - `Covered`: Coach Announcement Composer.
@@ -269,15 +269,15 @@ This backlog translates the pasted feature inventory into repo-fit work. It is n
 - Backlog list:
   - `Covered`: Schedule Management.
   - `Covered`: Event List.
-  - `Harden`: Event Detail.
+  - `Covered`: Event Detail.
   - `Covered`: Event Edit Simulation.
   - `Covered`: Schedule Change Alerts.
   - `Covered`: New Event Alerts.
   - `Covered`: Event Cancelled Alerts.
   - `Covered`: Time Change Alerts.
   - `Covered`: Location Change Alerts.
-  - `Build`: Schedule CRUD Service.
-  - `Build`: Conflict Detection.
+  - `Covered`: Schedule CRUD Service.
+  - `Covered`: Conflict Detection.
   - `Build`: Venue Records.
   - `Build`: Recurring Events.
   - `Build`: Calendar Export.

@@ -1,4 +1,4 @@
-import type { AppState, EventStatus, NotificationChannel, NotificationRecord, UserRole } from "./types";
+import type { AppState, EventStatus, EventType, LeagueEvent, NotificationChannel, NotificationRecord, UserRole } from "./types";
 
 export interface ScheduleChangeInput {
   eventId: string;
@@ -10,6 +10,30 @@ export interface ScheduleChangeInput {
   now: string;
 }
 
+export interface CreateScheduleEventInput {
+  actorUserId: string;
+  actorRole: UserRole;
+  organizationId: string;
+  seasonId: string;
+  teamId: string;
+  title: string;
+  eventType: EventType;
+  startsAt: string;
+  endsAt: string;
+  locationName: string;
+  locationAddress: string;
+  opponent?: string;
+  now: string;
+}
+
+export interface ScheduleConflictInput {
+  eventId?: string;
+  teamId: string;
+  startsAt: string;
+  endsAt: string;
+  locationName: string;
+}
+
 function actorCanEditEvent(state: AppState, actorUserId: string, actorRole: UserRole, teamId: string) {
   if (actorRole === "admin") return true;
   if (actorRole !== "coach") return false;
@@ -18,6 +42,74 @@ function actorCanEditEvent(state: AppState, actorUserId: string, actorRole: User
 
 function channelsForChange(status?: EventStatus): NotificationChannel[] {
   return status === "cancelled" ? ["push", "email", "sms"] : ["push", "email"];
+}
+
+function rangesOverlap(leftStart: string, leftEnd: string, rightStart: string, rightEnd: string) {
+  return new Date(leftStart).getTime() < new Date(rightEnd).getTime() &&
+    new Date(leftEnd).getTime() > new Date(rightStart).getTime();
+}
+
+export function detectScheduleConflicts(state: AppState, input: ScheduleConflictInput) {
+  return state.events
+    .filter((event) => event.id !== input.eventId && event.status === "scheduled")
+    .filter((event) => rangesOverlap(input.startsAt, input.endsAt, event.startsAt, event.endsAt))
+    .flatMap((event) => {
+      const reasons = [
+        event.teamId === input.teamId ? "team overlap" : "",
+        event.locationName.toLowerCase() === input.locationName.toLowerCase() ? "venue overlap" : ""
+      ].filter(Boolean);
+      return reasons.length ? [{ event, reasons }] : [];
+    });
+}
+
+export function createScheduleEvent(state: AppState, input: CreateScheduleEventInput): { ok: boolean; message: string; state: AppState; event?: LeagueEvent } {
+  if (!actorCanEditEvent(state, input.actorUserId, input.actorRole, input.teamId)) {
+    return { ok: false, message: "Only org admins or assigned coaches can create events for this team.", state };
+  }
+
+  const conflicts = detectScheduleConflicts(state, input);
+  if (conflicts.length) {
+    return { ok: false, message: `${conflicts.length} schedule conflict(s) must be resolved before creating this event.`, state };
+  }
+
+  const event: LeagueEvent = {
+    id: `event-${input.teamId}-${Date.parse(input.now)}`,
+    organizationId: input.organizationId,
+    teamId: input.teamId,
+    seasonId: input.seasonId,
+    title: input.title,
+    eventType: input.eventType,
+    startsAt: input.startsAt,
+    endsAt: input.endsAt,
+    locationName: input.locationName,
+    locationAddress: input.locationAddress,
+    status: "scheduled",
+    opponent: input.opponent,
+    createdAt: input.now,
+    updatedAt: input.now
+  };
+
+  return {
+    ok: true,
+    message: `Created ${event.title}; schedule notifications still require review before provider delivery.`,
+    state: {
+      ...state,
+      events: [...state.events, event],
+      auditEvents: [
+        {
+          id: `audit-schedule-create-${Date.parse(input.now)}`,
+          actorUserId: input.actorUserId,
+          action: "schedule_event_created",
+          targetType: "event",
+          targetId: event.id,
+          summary: `Created ${event.title} for schedule review.`,
+          createdAt: input.now
+        },
+        ...state.auditEvents
+      ]
+    },
+    event
+  };
 }
 
 export function previewScheduleChangeImpact(state: AppState, input: ScheduleChangeInput) {

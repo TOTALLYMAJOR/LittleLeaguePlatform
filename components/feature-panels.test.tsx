@@ -55,6 +55,8 @@ describe("CoachDashboardClient", () => {
 
     expect(html).toContain("Coach dashboard");
     expect(html).toContain("Coach assistant");
+    expect(html).toContain("Coach onboarding");
+    expect(html).toContain("Assigned-team setup checklist");
     expect(html).toContain("Weather and alerts");
     expect(html).toContain("Snacks");
     expect(html).toContain("Volunteers");
@@ -184,6 +186,11 @@ describe("ScheduleAlertsClient", () => {
     );
 
     expect(html).toContain("Impact preview");
+    expect(html).toContain("Event detail");
+    expect(html).toContain("Schedule CRUD service");
+    expect(html).toContain("Create, update, cancel");
+    expect(html).toContain("Conflict detection");
+    expect(html).toContain("Schedule conflicts");
     expect(html).toContain("Affected families");
     expect(html).toContain("Already RSVP");
     expect(html).toContain("Preview only");
