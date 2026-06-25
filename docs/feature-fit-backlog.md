@@ -305,11 +305,11 @@ This backlog translates the pasted feature inventory into repo-fit work. It is n
   - `Covered`: Read Notification Status.
   - `Covered`: Web Push Subscription Storage.
   - `Covered`: PWA Service Worker.
-  - `Build`: VAPID Send Adapter.
+  - `Covered`: VAPID Send Adapter.
   - `Covered`: Permission Prompt UX.
-  - `Build`: Unsubscribe Flow.
-  - `Build`: Retry Logs.
-  - `Harden`: Recipient Preference Enforcement.
+  - `Covered`: Unsubscribe Flow.
+  - `Covered`: Retry Logs.
+  - `Covered`: Recipient Preference Enforcement.
   - `Build`: Device Management.
   - `Build`: Email Fallback.
   - `Harden`: SMS Urgency Rules.

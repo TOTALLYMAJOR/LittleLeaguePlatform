@@ -1,4 +1,15 @@
-import type { AppState, NotificationChannel } from "./types";
+import type { AppState, NotificationChannel, NotificationPreferenceType } from "./types";
+
+export function getVapidSendAdapterStatus(config: { publicKey?: string; privateKey?: string; subject?: string } = {}) {
+  const configured = Boolean(config.publicKey && config.privateKey && config.subject);
+  return {
+    configured,
+    status: configured ? "configured" : "not_configured",
+    detail: configured
+      ? "VAPID keys are present; delivery still requires approval-gated provider execution."
+      : "VAPID send adapter is intentionally not configured for this scaffold."
+  };
+}
 
 export function getNotificationStatusCounts(state: AppState) {
   return {
@@ -56,4 +67,64 @@ export function getScheduleNotificationWorkflow(state: AppState) {
     statusCounts,
     boundary: "Schedule notifications are records for review; provider delivery remains approval-gated."
   };
+}
+
+export function applyNotificationUnsubscribe(state: AppState, input: {
+  userId: string;
+  channel: NotificationChannel;
+  notificationType: NotificationPreferenceType;
+  now: string;
+}) {
+  const existing = state.notificationPreferences.find((preference) => (
+    preference.userId === input.userId &&
+    preference.channel === input.channel &&
+    preference.notificationType === input.notificationType
+  ));
+  const preference = {
+    id: existing?.id ?? `pref-unsub-${input.userId}-${input.channel}-${input.notificationType}`,
+    userId: input.userId,
+    channel: input.channel,
+    notificationType: input.notificationType,
+    enabled: false,
+    timezone: existing?.timezone ?? "America/Chicago",
+    optedInAt: existing?.optedInAt,
+    optedOutAt: input.now
+  };
+
+  return {
+    ok: true,
+    message: `${input.channel.toUpperCase()} ${input.notificationType} notifications unsubscribed for this user.`,
+    state: {
+      ...state,
+      notificationPreferences: existing
+        ? state.notificationPreferences.map((item) => item.id === existing.id ? preference : item)
+        : [preference, ...state.notificationPreferences]
+    }
+  };
+}
+
+export function getNotificationRetryLogs(state: AppState) {
+  return state.notifications
+    .filter((notification) => notification.status === "failed")
+    .map((notification) => ({
+      notification,
+      nextRetryAt: new Date(new Date(notification.createdAt).getTime() + 15 * 60 * 1000).toISOString(),
+      reason: "Provider attempt failed or was suppressed; retry requires approval review."
+    }));
+}
+
+export function recipientAllowsNotification(state: AppState, input: {
+  userId: string;
+  teamId?: string;
+  channel: NotificationChannel;
+  notificationType: NotificationPreferenceType;
+}) {
+  const preference = state.notificationPreferences.find((item) => (
+    item.userId === input.userId &&
+    item.channel === input.channel &&
+    item.notificationType === input.notificationType &&
+    (!item.teamId || !input.teamId || item.teamId === input.teamId)
+  ));
+
+  return preference?.enabled ?? input.channel !== "sms";
 }

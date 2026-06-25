@@ -21,9 +21,11 @@ import {
   getCoachRsvpSummaries,
   getEventStatusTracking,
   getNotificationChannelReadiness,
+  getNotificationRetryLogs,
   getParentDashboard,
   getScheduleNotificationWorkflow,
   getScheduleRsvpSyncRows,
+  getVapidSendAdapterStatus,
   getTeamChatAccess,
   getTeamChatView,
   getVenueRecords,
@@ -33,6 +35,8 @@ import {
   previewScheduleChangeImpact,
   previewRecurringEvents,
   queueTeamCommunication,
+  applyNotificationUnsubscribe,
+  recipientAllowsNotification,
   sampleRosterCsv,
   seedState,
   sendCoachAnnouncement,
@@ -291,6 +295,41 @@ describe("schedule changes and admin health", () => {
     expect(workflow.statusCounts.sent).toBe(1);
     expect(workflow.statusCounts.failed).toBe(1);
     expect(workflow.statusCounts.read).toBe(1);
+  });
+
+  it("keeps VAPID, unsubscribe, retry, and preference gates explicit", () => {
+    const unsubscribed = applyNotificationUnsubscribe(seedState, {
+      userId: "user-parent-jordan",
+      channel: "push",
+      notificationType: "schedule_changed",
+      now: NOW
+    });
+    const failedState = {
+      ...seedState,
+      notifications: [{
+        id: "notification-failed-retry",
+        organizationId: seedState.organization.id,
+        recipientUserId: "user-parent-jordan",
+        teamId: "team-tigers",
+        eventId: "event-tigers-game",
+        notificationType: "schedule_changed" as const,
+        title: "Schedule changed",
+        body: "Updated time.",
+        channel: "push" as const,
+        status: "failed" as const,
+        createdAt: NOW
+      }]
+    };
+
+    expect(getVapidSendAdapterStatus().configured).toBe(false);
+    expect(unsubscribed.state.notificationPreferences[0]?.enabled).toBe(false);
+    expect(recipientAllowsNotification(unsubscribed.state, {
+      userId: "user-parent-jordan",
+      teamId: "team-tigers",
+      channel: "push",
+      notificationType: "schedule_changed"
+    })).toBe(false);
+    expect(getNotificationRetryLogs(failedState)).toHaveLength(1);
   });
 
   it("computes launch readiness card counts", () => {

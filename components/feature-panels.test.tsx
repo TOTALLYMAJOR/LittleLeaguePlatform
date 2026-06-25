@@ -208,6 +208,10 @@ describe("ScheduleAlertsClient", () => {
     expect(html).toContain("sent");
     expect(html).toContain("failed");
     expect(html).toContain("read");
+    expect(html).toContain("VAPID send adapter");
+    expect(html).toContain("Unsubscribe flow");
+    expect(html).toContain("Retry logs");
+    expect(html).toContain("Recipient preference enforcement");
     expect(html).toContain("Affected families");
     expect(html).toContain("Already RSVP");
     expect(html).toContain("Preview only");

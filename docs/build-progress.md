@@ -110,6 +110,7 @@ npm run supabase:push
 - Added schedule venue records, recurring-event previews, local ICS calendar export, and RSVP sync counts.
 - Added schedule notification workflow/status summaries plus push and email channel readiness gates.
 - Hardened SMS channel readiness and sent/failed/read notification status coverage.
+- Added VAPID adapter status, unsubscribe preference updates, retry-log derivation, and recipient preference enforcement checks.
 
 ### Remaining Gap
 

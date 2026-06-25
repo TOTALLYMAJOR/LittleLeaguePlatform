@@ -26,9 +26,12 @@ import {
   getProgramThemePreset,
   getScheduleRsvpSyncRows,
   getEventStatusTracking,
+  getNotificationRetryLogs,
   defaultPracticeFocusAreas,
   getNotificationChannelReadiness,
   getScheduleNotificationWorkflow,
+  getVapidSendAdapterStatus,
+  recipientAllowsNotification,
   getVenueRecords,
   platformFeatureTiers,
   previewTeamCommunication,
@@ -2581,6 +2584,14 @@ export function ScheduleAlertsClient() {
   const scheduleWorkflow = getScheduleNotificationWorkflow(state);
   const eventStatusTracking = getEventStatusTracking(state);
   const channelReadiness = getNotificationChannelReadiness(state);
+  const vapidStatus = getVapidSendAdapterStatus();
+  const retryLogs = getNotificationRetryLogs(state);
+  const preferenceAllowed = event ? recipientAllowsNotification(state, {
+    userId: "user-parent-jordan",
+    teamId: event.teamId,
+    channel: "push",
+    notificationType: status === "cancelled" ? "event_cancelled" : "schedule_changed"
+  }) : false;
   const eventWindowMs = event ? new Date(event.endsAt).getTime() - new Date(event.startsAt).getTime() : 60 * 60 * 1000;
   const conflictEndsAt = event ? new Date(new Date(startsAt).getTime() + eventWindowMs).toISOString() : "";
   const scheduleConflicts = event ? detectScheduleConflicts(state, {
@@ -2837,6 +2848,61 @@ export function ScheduleAlertsClient() {
             <p className="muted">{channel.detail}</p>
           </article>
         ))}
+      </section>
+
+      <section className="grid two">
+        <article className="card stack">
+          <div className="card-header">
+            <div>
+              <span className="eyebrow">VAPID send adapter</span>
+              <h2>Web push delivery gate</h2>
+            </div>
+            <span className={`badge ${vapidStatus.configured ? "ok" : "warning"}`}>{vapidStatus.status}</span>
+          </div>
+          <p className="muted">{vapidStatus.detail}</p>
+        </article>
+
+        <article className="card stack">
+          <div className="card-header">
+            <div>
+              <span className="eyebrow">Recipient preference enforcement</span>
+              <h2>Preference gate</h2>
+            </div>
+            <span className={`badge ${preferenceAllowed ? "ok" : "warning"}`}>{preferenceAllowed ? "Allowed" : "Suppressed"}</span>
+          </div>
+          <p className="muted">Schedule notifications must pass channel, type, team, quiet-hours, and unsubscribe preferences before delivery review.</p>
+        </article>
+      </section>
+
+      <section className="grid two">
+        <article className="card stack">
+          <div className="card-header">
+            <div>
+              <span className="eyebrow">Unsubscribe flow</span>
+              <h2>Opt-out path</h2>
+            </div>
+            <span className="badge warning">Preference record</span>
+          </div>
+          <p>Unsubscribes create or update disabled notification preference records for the exact user, channel, and notification type.</p>
+          <p className="muted">No global account deletion or provider call is implied by an unsubscribe.</p>
+        </article>
+
+        <article className="card stack">
+          <div className="card-header">
+            <div>
+              <span className="eyebrow">Retry logs</span>
+              <h2>Failed delivery review</h2>
+            </div>
+            <span className="badge">{retryLogs.length} retry log(s)</span>
+          </div>
+          {retryLogs.map((log) => (
+            <p key={log.notification.id}>
+              <strong>{log.notification.title}</strong><br />
+              <span className="muted">{log.notification.channel} · next review {formatDate(log.nextRetryAt)} · {log.reason}</span>
+            </p>
+          ))}
+          {!retryLogs.length ? <p className="muted">No failed notification records need retry review.</p> : null}
+        </article>
       </section>
 
       <section className="grid one">
