@@ -454,11 +454,11 @@ This backlog translates the pasted feature inventory into repo-fit work. It is n
   - `Covered`: Coach Volunteer Role View.
   - `Covered`: Parent-Facing Volunteer Claim UI.
   - `Covered`: Volunteer Role Caps.
-  - `Build`: Volunteer Reminders.
-  - `Build`: Volunteer Cancellation Flow.
-  - `Build`: Volunteer Approval Policies.
+  - `Covered`: Volunteer Reminders.
+  - `Covered`: Volunteer Cancellation Flow.
+  - `Covered`: Volunteer Approval Policies.
   - `Covered`: Volunteer Center.
-  - `Build`: Snack and Volunteer Fairness Engine.
+  - `Covered`: Snack and Volunteer Fairness Engine.
   - `Build`: Duty Rotation.
   - `Build`: Family Opt-Outs.
   - `Build`: Sibling-Aware Duty Assignment.

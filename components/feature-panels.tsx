@@ -90,6 +90,10 @@ import {
   getSnackAuditTrail,
   cancelSnackSlot,
   getVolunteerRoleCaps,
+  getVolunteerReminders,
+  cancelVolunteerSignup,
+  getVolunteerApprovalPolicies,
+  getSnackVolunteerFairness,
   type ChatAnnouncementTopic,
   type CommunicationTemplate,
   type EventType,
@@ -3619,6 +3623,10 @@ export function TeamPortalClient({ teamPortalData }: { teamPortalData?: TeamPort
   const snackAuditTrail = getSnackAuditTrail(state, team.id);
   const snackCancellation = cancelSnackSlot(state, state.snackScheduleSlots.find((slot) => slot.teamId === team.id)?.id ?? "slot-pending", "Family schedule changed.");
   const volunteerRoleCaps = getVolunteerRoleCaps(state, team.id);
+  const volunteerReminders = getVolunteerReminders(state, team.id);
+  const volunteerCancellation = cancelVolunteerSignup(state, state.volunteerSignups.find((signup) => signup.teamId === team.id)?.id ?? "volunteer-pending", "Family schedule changed.");
+  const volunteerApprovalPolicies = getVolunteerApprovalPolicies();
+  const snackVolunteerFairness = getSnackVolunteerFairness(state, team.id);
   const latestReplay = parentReplaysSource
     .filter((replay) => replay.teamId === team.id)
     .sort((left, right) => Date.parse(right.createdAt) - Date.parse(left.createdAt))[0];
@@ -4027,6 +4035,54 @@ export function TeamPortalClient({ teamPortalData }: { teamPortalData?: TeamPort
             <span className="badge">{volunteerRoleCaps.length} role(s)</span>
           </div>
           {volunteerRoleCaps.map((cap) => <p key={cap.role}><strong>{cap.role}</strong><br /><span className="muted">{cap.filled} filled of {cap.cap}</span></p>)}
+        </article>
+      </section>
+
+      <section className="grid two">
+        <article className="card stack">
+          <div className="card-header">
+            <div>
+              <span className="eyebrow">Volunteer reminders</span>
+              <h2>Volunteer prompts</h2>
+            </div>
+            <span className="badge warning">{volunteerReminders.length} reminder(s)</span>
+          </div>
+          {volunteerReminders.map((reminder) => <p key={reminder.id}><strong>{reminder.title}</strong><br /><span className="muted">{reminder.detail}</span></p>)}
+        </article>
+
+        <article className="card stack">
+          <div className="card-header">
+            <div>
+              <span className="eyebrow">Volunteer cancellation flow</span>
+              <h2>Cancellation preview</h2>
+            </div>
+            <span className="badge warning">Preview</span>
+          </div>
+          <p>{volunteerCancellation.message}</p>
+        </article>
+      </section>
+
+      <section className="grid two">
+        <article className="card stack">
+          <div className="card-header">
+            <div>
+              <span className="eyebrow">Volunteer approval policies</span>
+              <h2>Role approval rules</h2>
+            </div>
+            <span className="badge">Policy</span>
+          </div>
+          {volunteerApprovalPolicies.map((policy) => <p className="muted" key={policy}>{policy}</p>)}
+        </article>
+
+        <article className="card stack">
+          <div className="card-header">
+            <div>
+              <span className="eyebrow">Snack and volunteer fairness engine</span>
+              <h2>Fairness balance</h2>
+            </div>
+            <span className="badge">{snackVolunteerFairness.balanceScore} gap</span>
+          </div>
+          <p>Snack assignments {snackVolunteerFairness.snackAssignments}, volunteer assignments {snackVolunteerFairness.volunteerAssignments}.</p>
         </article>
       </section>
 

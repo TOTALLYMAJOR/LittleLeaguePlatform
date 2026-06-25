@@ -88,7 +88,11 @@ import {
   getSnackConflicts,
   getSnackAuditTrail,
   cancelSnackSlot,
-  getVolunteerRoleCaps
+  getVolunteerRoleCaps,
+  getVolunteerReminders,
+  cancelVolunteerSignup,
+  getVolunteerApprovalPolicies,
+  getSnackVolunteerFairness
 } from "./index";
 
 describe("CSV duplicate detection", () => {
@@ -173,6 +177,15 @@ describe("media URL validation", () => {
     expect(getSnackAuditTrail(seedState, "team-tigers")).toHaveLength(2);
     expect(cancelled.state.snackScheduleSlots.find((slot) => slot.id === "snack-tigers-game")?.status).toBe("open");
     expect(getVolunteerRoleCaps(seedState, "team-tigers").map((cap) => cap.role)).toContain("Score helper");
+  });
+
+  it("tracks volunteer reminders, cancellations, approval policies, and fairness", () => {
+    const cancelled = cancelVolunteerSignup(seedState, "volunteer-score-helper", "Family schedule changed.");
+
+    expect(getVolunteerReminders(seedState, "team-tigers")).toHaveLength(3);
+    expect(cancelled.state.volunteerSignups.find((signup) => signup.id === "volunteer-score-helper")?.status).toBe("open");
+    expect(getVolunteerApprovalPolicies()).toHaveLength(3);
+    expect(getSnackVolunteerFairness(seedState, "team-tigers").balanceScore).toBe(0);
   });
 });
 
