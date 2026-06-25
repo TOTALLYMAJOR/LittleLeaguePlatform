@@ -37,6 +37,8 @@ import {
   getAlertOpenRateTracking,
   smsUrgencyAllowed,
   getSportWeatherThresholds,
+  evaluateWeatherThresholds,
+  getLeagueWeatherThresholds,
   getWeatherAlertHistory,
   getWeatherApprovalQueue,
   getWeatherProviderRetryLogs,
@@ -1341,6 +1343,17 @@ export function CoachDashboardClient({ dashboardData }: { dashboardData?: Parent
   const weatherRetryLogs = getWeatherProviderRetryLogs(sourceState).filter((item) => teamIds.has(item.alert.teamId));
   const weatherAlertHistory = getWeatherAlertHistory(sourceState).filter((item) => teamIds.has(item.alert.teamId));
   const sportWeatherThresholds = getSportWeatherThresholds("baseball");
+  const leagueWeatherThresholds = getLeagueWeatherThresholds(teams[0]?.division ?? "3U");
+  const weatherThresholdReview = evaluateWeatherThresholds({
+    heatIndex: 91,
+    lightningMiles: 8,
+    airQualityIndex: 105,
+    thresholds: {
+      heatIndex: leagueWeatherThresholds.heatIndex,
+      lightningMiles: leagueWeatherThresholds.lightningMiles,
+      airQualityIndex: leagueWeatherThresholds.airQualityIndex
+    }
+  });
   const volunteerNeeds = sourceState.volunteerSignups.filter((signup) => teamIds.has(signup.teamId) && signup.status === "open");
   const snackNeeds = sourceState.snackScheduleSlots.filter((slot) => teamIds.has(slot.teamId) && slot.status === "open");
   const nextAssignedEvent = assignedEvents[0];
@@ -1459,6 +1472,55 @@ export function CoachDashboardClient({ dashboardData }: { dashboardData?: Parent
             <p className="notice" key={alert.id}><strong>{alert.headline}</strong><br />{alert.detail}</p>
           ))}
           {!weatherAlerts.length ? <p className="muted">No weather alerts drafted for assigned teams.</p> : null}
+        </article>
+      </section>
+
+      <section className="grid two">
+        <article className="card stack">
+          <div className="card-header">
+            <div>
+              <span className="eyebrow">League-specific weather thresholds</span>
+              <h2>{leagueWeatherThresholds.division} policy</h2>
+            </div>
+            <span className="badge warning">League</span>
+          </div>
+          <p>{leagueWeatherThresholds.detail}</p>
+          <p className="muted">Heat {leagueWeatherThresholds.heatIndex}, lightning {leagueWeatherThresholds.lightningMiles} miles, AQI {leagueWeatherThresholds.airQualityIndex}.</p>
+        </article>
+
+        <article className="card stack">
+          <div className="card-header">
+            <div>
+              <span className="eyebrow">Heat thresholds</span>
+              <h2>Heat index review</h2>
+            </div>
+            <span className={`badge ${weatherThresholdReview.heat === "review" ? "warning" : "ok"}`}>{weatherThresholdReview.heat}</span>
+          </div>
+          <p className="muted">Heat index inputs create review prompts before practice or game changes are queued.</p>
+        </article>
+      </section>
+
+      <section className="grid two">
+        <article className="card stack">
+          <div className="card-header">
+            <div>
+              <span className="eyebrow">Lightning thresholds</span>
+              <h2>Strike distance review</h2>
+            </div>
+            <span className={`badge ${weatherThresholdReview.lightning === "review" ? "warning" : "ok"}`}>{weatherThresholdReview.lightning}</span>
+          </div>
+          <p className="muted">Lightning within the configured mile radius requires coach/admin review before field activity continues.</p>
+        </article>
+
+        <article className="card stack">
+          <div className="card-header">
+            <div>
+              <span className="eyebrow">Air quality thresholds</span>
+              <h2>AQI review</h2>
+            </div>
+            <span className={`badge ${weatherThresholdReview.airQuality === "review" ? "warning" : "ok"}`}>{weatherThresholdReview.airQuality}</span>
+          </div>
+          <p className="muted">Air-quality thresholds stay policy prompts; they do not auto-cancel events or send parent alerts.</p>
         </article>
       </section>
 

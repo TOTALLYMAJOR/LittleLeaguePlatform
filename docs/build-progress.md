@@ -113,6 +113,7 @@ npm run supabase:push
 - Added VAPID adapter status, unsubscribe preference updates, retry-log derivation, and recipient preference enforcement checks.
 - Added push device summary, email fallback eligibility, urgent-only SMS rules, and notification open-rate tracking.
 - Added weather approval queue, provider retry log, alert history, and sport-specific threshold policy helpers.
+- Added league-specific, heat, lightning, and air-quality weather threshold review helpers.
 
 ### Remaining Gap
 

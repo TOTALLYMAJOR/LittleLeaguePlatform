@@ -30,6 +30,8 @@ import {
   getScheduleRsvpSyncRows,
   getVapidSendAdapterStatus,
   getSportWeatherThresholds,
+  evaluateWeatherThresholds,
+  getLeagueWeatherThresholds,
   getWeatherAlertHistory,
   getWeatherApprovalQueue,
   getWeatherProviderRetryLogs,
@@ -421,6 +423,12 @@ describe("weather policy", () => {
     expect(getWeatherProviderRetryLogs(highRiskState)).toHaveLength(1);
     expect(getWeatherAlertHistory(highRiskState)[0]?.alert.headline).toBe("Lightning risk");
     expect(getSportWeatherThresholds("baseball").thresholds.lightningMiles).toBe(10);
+    expect(getLeagueWeatherThresholds("3U").heatIndex).toBe(90);
+    expect(evaluateWeatherThresholds({ heatIndex: 91, lightningMiles: 8, airQualityIndex: 105, thresholds: { heatIndex: 90, lightningMiles: 10, airQualityIndex: 100 } })).toEqual({
+      heat: "review",
+      lightning: "review",
+      airQuality: "review"
+    });
   });
 });
 

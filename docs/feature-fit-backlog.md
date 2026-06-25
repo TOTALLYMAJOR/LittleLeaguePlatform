@@ -331,10 +331,10 @@ This backlog translates the pasted feature inventory into repo-fit work. It is n
   - `Covered`: Weather Provider Retry Logs.
   - `Covered`: Weather Alert History.
   - `Covered`: Sport-Specific Weather Thresholds.
-  - `Build`: League-Specific Weather Thresholds.
-  - `Build`: Heat Thresholds.
-  - `Build`: Lightning Thresholds.
-  - `Build`: Air Quality Thresholds.
+  - `Covered`: League-Specific Weather Thresholds.
+  - `Covered`: Heat Thresholds.
+  - `Covered`: Lightning Thresholds.
+  - `Covered`: Air Quality Thresholds.
   - `Build`: Rain Thresholds.
   - `Build`: Field Closure Drafts.
   - `Build`: Weather Escalation Rules.

@@ -45,3 +45,28 @@ export function getSportWeatherThresholds(sport: "baseball" | "soccer" | "footba
     detail: `${sport} threshold policy: heat ${thresholds.heatIndex}, lightning ${thresholds.lightningMiles} miles, rain ${thresholds.rainInchesPerHour}/hr, AQI ${thresholds.airQualityIndex}.`
   };
 }
+
+export function getLeagueWeatherThresholds(division: string) {
+  const youngDivision = ["3U", "4U", "5U", "6U"].includes(division);
+  return {
+    division,
+    heatIndex: youngDivision ? 90 : 95,
+    lightningMiles: 10,
+    airQualityIndex: youngDivision ? 100 : 125,
+    detail: `${division} league policy uses ${youngDivision ? "younger-player" : "standard"} weather thresholds.`
+  };
+}
+
+export function evaluateWeatherThresholds(input: {
+  heatIndex: number;
+  lightningMiles: number;
+  airQualityIndex: number;
+  thresholds?: { heatIndex: number; lightningMiles: number; airQualityIndex: number };
+}) {
+  const thresholds = input.thresholds ?? getSportWeatherThresholds("baseball").thresholds;
+  return {
+    heat: input.heatIndex >= thresholds.heatIndex ? "review" : "ok",
+    lightning: input.lightningMiles <= thresholds.lightningMiles ? "review" : "ok",
+    airQuality: input.airQualityIndex >= thresholds.airQualityIndex ? "review" : "ok"
+  };
+}
