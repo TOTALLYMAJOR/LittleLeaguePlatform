@@ -1,4 +1,5 @@
 import { seedState } from "@/lib/domain";
+import { requireActiveTeamOrganizationAdmin } from "./access-control";
 import { createSupabaseAdminClient } from "./admin";
 import { withSupabaseTimeout } from "./timeout";
 
@@ -32,6 +33,7 @@ export interface AdminMembershipData {
 export interface CreateTeamMembershipInput {
   teamId: string;
   userId: string;
+  actorUserId: string;
   role: "coach" | "parent";
 }
 
@@ -96,10 +98,18 @@ export async function listAdminMembershipData(): Promise<AdminMembershipData> {
 export async function createTeamMembership(input: CreateTeamMembershipInput): Promise<CreateTeamMembershipResult> {
   const teamId = input.teamId.trim();
   const userId = input.userId.trim();
-  if (!teamId || !userId) return { ok: false, message: "Team and user are required." };
+  if (!teamId || !userId || !input.actorUserId) return { ok: false, message: "Team, user, and acting admin are required." };
 
   try {
     const supabase = createSupabaseAdminClient();
+    const access = await requireActiveTeamOrganizationAdmin({
+      db: supabase,
+      teamId,
+      userId: input.actorUserId,
+      action: "manage team memberships"
+    });
+    if (!access.ok) return { ok: false, message: access.message };
+
     const { data, error } = await withSupabaseTimeout(supabase
       .from("team_memberships")
       .upsert({
@@ -121,9 +131,18 @@ export async function createTeamMembership(input: CreateTeamMembershipInput): Pr
       await supabase.from("teams").update({ coach_user_id: userId }).eq("id", teamId);
     }
 
+    await supabase.from("audit_events").insert({
+      organization_id: access.organizationId,
+      actor_user_id: input.actorUserId,
+      action: "team_membership_saved",
+      target_type: "team_membership",
+      target_id: data.id,
+      summary: `${input.role} membership saved for team ${teamId}.`
+    });
+
     return {
       ok: true,
-      message: "Team membership saved. Access is now controlled by Supabase RLS.",
+      message: "Team membership saved by an active organization admin. Access is now controlled by Supabase RLS.",
       membership: {
         id: data.id,
         teamId: data.team_id,

@@ -5,6 +5,8 @@ const envFile = ".env.local";
 
 const ids = {
   playerMason: "44444444-4444-4444-8444-444444444441",
+  playerAvery: "44444444-4444-4444-8444-444444444442",
+  game: "55555555-5555-4555-8555-555555555551",
   weather: "cccccccc-cccc-4ccc-8ccc-ccccccccccc1"
 };
 
@@ -76,6 +78,11 @@ function assertRows(data, count, label) {
   }
 }
 
+function assertDenied(result, label) {
+  if (result.error) return;
+  assertRows(result.data, 0, label);
+}
+
 async function main() {
   loadLocalEnv();
 
@@ -103,6 +110,19 @@ async function main() {
     .select("id,status");
   assertNoError(parentWeatherUpdate.error, "parent weather update denial");
   assertRows(parentWeatherUpdate.data, 0, "parent cannot update weather alerts");
+
+  const parentUserResult = await parent.auth.getUser();
+  if (!parentUserResult.data.user) throw new Error("parent session user is required for RSVP denial proof.");
+  const parentUnlinkedRsvp = await parent
+    .from("rsvps")
+    .upsert({
+      event_id: ids.game,
+      player_id: ids.playerAvery,
+      parent_user_id: parentUserResult.data.user.id,
+      response: "going"
+    }, { onConflict: "event_id,player_id" })
+    .select("id");
+  assertDenied(parentUnlinkedRsvp, "parent cannot RSVP for unlinked player");
 
   const coachWeatherUpdate = await coach
     .from("weather_alerts")

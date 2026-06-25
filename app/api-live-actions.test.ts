@@ -13,8 +13,10 @@ import { POST as postMediaModeration } from "./api/media/moderation/route";
 import { POST as postSnackClaim } from "./api/snack-slots/claim/route";
 import { POST as postVolunteerClaim } from "./api/volunteer-signups/claim/route";
 import { POST as postWeatherDraft } from "./api/weather-alerts/draft/route";
+import { POST as postTeamMembership } from "./api/admin/team-memberships/route";
 import type { ParentReplayDraft } from "@/lib/domain";
 import { updateTenantThemeDefaults } from "@/lib/supabase/team-branding";
+import { createTeamMembership } from "@/lib/supabase/memberships";
 import { createAdminExport } from "@/lib/supabase/reporting";
 import { reviewNotificationDelivery } from "@/lib/supabase/provider-delivery";
 import {
@@ -54,6 +56,10 @@ vi.mock("@/lib/supabase/team-branding", () => ({
   updateTenantThemeDefaults: vi.fn()
 }));
 
+vi.mock("@/lib/supabase/memberships", () => ({
+  createTeamMembership: vi.fn()
+}));
+
 vi.mock("@/lib/supabase/reporting", () => ({
   createAdminExport: vi.fn()
 }));
@@ -75,6 +81,7 @@ const recordMobileUsageEventMock = vi.mocked(recordMobileUsageEvent);
 const saveParentReplayMock = vi.mocked(saveParentReplay);
 const updateNotificationPreferenceMock = vi.mocked(updateNotificationPreference);
 const updateTenantThemeDefaultsMock = vi.mocked(updateTenantThemeDefaults);
+const createTeamMembershipMock = vi.mocked(createTeamMembership);
 const createAdminExportMock = vi.mocked(createAdminExport);
 const reviewNotificationDeliveryMock = vi.mocked(reviewNotificationDelivery);
 
@@ -419,6 +426,35 @@ describe("live action API routes", () => {
       mascot: "Tigers",
       primaryColor: "#174ea6",
       secondaryColor: "#fbbc04"
+    });
+  });
+
+  it("uses the authenticated admin session for team membership changes", async () => {
+    createTeamMembershipMock.mockResolvedValue({
+      ok: true,
+      message: "Membership saved.",
+      membership: {
+        id: "membership-1",
+        teamId: "team-1",
+        userId: "coach-1",
+        role: "coach",
+        status: "active"
+      }
+    });
+
+    const response = await postTeamMembership(jsonRequest({
+      teamId: "team-1",
+      userId: "coach-1",
+      actorUserId: "client-spoof",
+      role: "coach"
+    }));
+
+    expect(response.status).toBe(201);
+    expect(createTeamMembershipMock).toHaveBeenCalledWith({
+      teamId: "team-1",
+      userId: "coach-1",
+      actorUserId: "user-live-session",
+      role: "coach"
     });
   });
 });

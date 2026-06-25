@@ -16,12 +16,16 @@ describe("Supabase RLS policy coverage", () => {
   const tenantThemeDefaults = migration("0009_tenant_theme_defaults.sql");
   const mobileDecisionMetrics = migration("0010_mobile_decision_metrics.sql");
   const providerDeliveryApproval = migration("0011_provider_delivery_approval.sql");
+  const rsvpGuardianScope = migration("0012_rsvp_guardian_scope.sql");
   const packageJson = readFileSync(join(process.cwd(), "package.json"), "utf8");
   const rlsProof = readFileSync(join(process.cwd(), "scripts", "verify-rls-boundaries.mjs"), "utf8");
 
   it("keeps parent, coach, and admin team boundaries explicit", () => {
     expect(core).toContain("create policy \"team members can read players\"");
-    expect(core).toContain("create policy \"parents can upsert own rsvps\"");
+    expect(core).toContain("alter table public.rsvps enable row level security");
+    expect(rsvpGuardianScope).toContain("create policy \"parents can upsert linked child rsvps\"");
+    expect(rsvpGuardianScope).toContain("guardian.status = 'active'");
+    expect(rsvpGuardianScope).toContain("player.team_id = event.team_id");
     expect(core).toContain("create policy \"coaches and admins update team branding\"");
     expect(core).toContain("create policy \"team members can create chat messages\"");
     expect(core).toContain("create policy \"coaches and admins can moderate chat messages\"");
@@ -83,6 +87,7 @@ describe("Supabase RLS policy coverage", () => {
     expect(packageJson).toContain("\"qa:rls-proof\": \"node scripts/verify-rls-boundaries.mjs\"");
     expect(rlsProof).toContain("signInWithPassword");
     expect(rlsProof).toContain("parent cannot update weather alerts");
+    expect(rlsProof).toContain("parent cannot RSVP for unlinked player");
     expect(rlsProof).toContain("anonymous cannot read private teams");
   });
 });

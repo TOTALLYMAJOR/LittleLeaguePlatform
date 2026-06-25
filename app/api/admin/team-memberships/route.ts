@@ -16,6 +16,7 @@ export async function POST(request: Request) {
   const result = await createTeamMembership({
     teamId: String(body.teamId ?? ""),
     userId: String(body.userId ?? ""),
+    actorUserId: auth.user.id,
     role
   });
 

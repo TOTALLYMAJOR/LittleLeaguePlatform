@@ -21,6 +21,10 @@ export interface TeamAccessDecision extends AccessDecision {
   };
 }
 
+export interface OrganizationAccessDecision extends AccessDecision {
+  organizationId?: string;
+}
+
 export function evaluateTeamStaffAccess(input: {
   hasCoachMembership: boolean;
   hasAdminMembership: boolean;
@@ -96,6 +100,55 @@ export async function requireActiveTeamCoachOrOrgAdmin(input: {
   });
 
   return decision.ok ? { ...decision, team } : decision;
+}
+
+export async function requireActiveOrganizationAdmin(input: {
+  db: SupabaseAccessClient;
+  organizationId: string;
+  userId: string;
+  action: string;
+}): Promise<OrganizationAccessDecision> {
+  const { data: adminMemberships } = await withSupabaseTimeout(input.db
+    .from("organization_memberships")
+    .select("id")
+    .eq("organization_id", input.organizationId)
+    .eq("user_id", input.userId)
+    .eq("role", "admin")
+    .eq("status", "active"), 7000) as { data: Array<{ id: string }> | null };
+
+  if (adminMemberships?.length) {
+    return { ok: true, message: "Access allowed.", organizationId: input.organizationId };
+  }
+
+  return {
+    ok: false,
+    message: `Only active organization admins can ${input.action}.`
+  };
+}
+
+export async function requireActiveTeamOrganizationAdmin(input: {
+  db: SupabaseAccessClient;
+  teamId: string;
+  userId: string;
+  action: string;
+}): Promise<OrganizationAccessDecision> {
+  const { data: team, error: teamError } = await withSupabaseTimeout(input.db
+    .from("teams")
+    .select("id,organization_id")
+    .eq("id", input.teamId)
+    .single(), 7000) as {
+      data: { id: string; organization_id: string } | null;
+      error: { message?: string } | null;
+    };
+
+  if (teamError || !team) return { ok: false, message: `${input.action} requires a known team.` };
+
+  return requireActiveOrganizationAdmin({
+    db: input.db,
+    organizationId: team.organization_id,
+    userId: input.userId,
+    action: input.action
+  });
 }
 
 export async function requireActiveParentForPlayerEvent(input: {

@@ -53,12 +53,12 @@ This backlog translates the pasted feature inventory into repo-fit work. It is n
   - `Covered`: Role-Based Access Control.
   - `Covered`: Parent Role Access.
   - `Covered`: Coach Role Access.
-  - `Harden`: Admin Role Access.
+  - `Covered`: Admin Role Access.
   - `Covered`: Signed-Out UX.
   - `Covered`: Missing-Role UX.
-  - `Harden`: Row-Level Security Policies.
-  - `Build`: Live-Data RLS Tests.
-  - `Harden`: Production RLS Coverage.
+  - `Covered`: Row-Level Security Policies.
+  - `Covered`: Live-Data RLS Tests.
+  - `Covered`: Production RLS Coverage.
   - `Build`: Cross-Team Access Tests.
   - `Build`: Archived-Season Access Tests.
   - `Build`: RLS Production Proof Dashboard.
