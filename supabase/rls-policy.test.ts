@@ -19,6 +19,7 @@ describe("Supabase RLS policy coverage", () => {
   const rsvpGuardianScope = migration("0012_rsvp_guardian_scope.sql");
   const archivedSeasonReadOnly = migration("0013_archived_season_read_only.sql");
   const teamLifecycleStatus = migration("0014_team_lifecycle_status.sql");
+  const teamLogoAssets = migration("0015_team_logo_assets.sql");
   const packageJson = readFileSync(join(process.cwd(), "package.json"), "utf8");
   const rlsProof = readFileSync(join(process.cwd(), "scripts", "verify-rls-boundaries.mjs"), "utf8");
 
@@ -105,5 +106,11 @@ describe("Supabase RLS policy coverage", () => {
     expect(teamLifecycleStatus).toContain("add column if not exists status");
     expect(teamLifecycleStatus).toContain("'archived'");
     expect(teamLifecycleStatus).toContain("current_team_is_active");
+  });
+
+  it("keeps team logo assets admin-reviewed", () => {
+    expect(teamLogoAssets).toContain("create table if not exists public.team_logo_assets");
+    expect(teamLogoAssets).toContain("organization admins manage team logo assets");
+    expect(teamLogoAssets).toContain("team members read approved team logo assets");
   });
 });

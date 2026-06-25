@@ -5,6 +5,7 @@ import { describe, expect, it } from "vitest";
 const appRoutes = [
   "/",
   "/admin",
+  "/admin/archive",
   "/admin/guardian-links",
   "/admin/operations",
   "/admin/security",
@@ -93,5 +94,15 @@ describe("route smoke coverage", () => {
     expect(page).toContain("listGuardianLinkRepairData");
     expect(data).toContain("guardian_link_repaired");
     expect(data).toContain("team_memberships");
+  });
+
+  it("keeps archive vault and brand governance evidence present", () => {
+    const archivePage = readFileSync(join(process.cwd(), "app", "admin", "archive", "page.tsx"), "utf8");
+    const logoPolicy = readFileSync(join(process.cwd(), "docs", "brand-governance.md"), "utf8");
+    const logoService = readFileSync(join(process.cwd(), "lib", "supabase", "team-logos.ts"), "utf8");
+
+    expect(archivePage).toContain("listArchiveVaultData");
+    expect(logoPolicy).toContain("Logos must use HTTPS URLs");
+    expect(logoService).toContain("team_logo_asset_submitted");
   });
 });

@@ -137,7 +137,7 @@ This backlog translates the pasted feature inventory into repo-fit work. It is n
   - `Covered`: Guardian Link Repair Flow.
   - `Covered`: Missing-Link UX.
   - `Covered`: Archived Season Read-Only Mode.
-  - `Build`: Season Archive Vault.
+  - `Covered`: Season Archive Vault.
 
 ### Theme And Branding
 
@@ -163,10 +163,10 @@ This backlog translates the pasted feature inventory into repo-fit work. It is n
   - `Covered`: Theme Preview.
   - `Covered`: Contrast Checks.
   - `Covered`: Theme Audit Events.
-  - `Build`: Logo Upload.
-  - `Build`: Logo Asset Policy.
+  - `Covered`: Logo Upload.
+  - `Covered`: Logo Asset Policy.
   - `Covered`: Tenant Brand Defaults.
-  - `Harden`: Brand Governance.
+  - `Covered`: Brand Governance.
   - `Harden`: Dark Mode Theme QA.
   - `Harden`: Mobile Theme QA.
   - `Harden`: Per-Team Brand Contrast Checks.
