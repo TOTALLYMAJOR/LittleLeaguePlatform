@@ -52,11 +52,13 @@ For future migrations:
 npm run supabase:push
 ```
 
-### Next
+### Superseded Next Items
 
-- Add Supabase write adapters for Team Portal branding updates and route the coach/admin theme designer through the database.
-- Wire parent/coach UI forms to the persisted RSVP, snack, volunteer, weather, push, field-location, and media moderation APIs where the current screens still show local state.
-- Add authenticated browser-session enforcement in API routes before production launch; current scaffold validates actor IDs against Supabase rows but still runs through server service adapters.
+These 2026-06-22 next items were completed in the 2026-06-23 hardening pass:
+
+- Team Portal branding and the admin theme designer now save through authenticated Supabase write adapters at `/api/admin/team-branding` and `/api/admin/theme-defaults`.
+- Parent and coach UI actions now call persisted RSVP, snack, volunteer, weather, notification preference, field-location, and media moderation/report APIs where those actions exist.
+- Private mutation API routes now require a verified browser Supabase bearer session and derive actor, reviewer, parent, or user IDs from that session instead of trusting client-submitted IDs.
 
 ## 2026-06-23
 
