@@ -74,6 +74,10 @@ import {
   rejectMediaItem,
   getMediaReportingSummary,
   getUploadStorageProviderStatus,
+  getFamilyFacingModerationQueue,
+  getMediaRetentionPolicy,
+  canViewMediaByRole,
+  getMediaConsentControls,
   type ChatAnnouncementTopic,
   type CommunicationTemplate,
   type EventType,
@@ -845,6 +849,8 @@ export function ParentDashboardClient({ dashboardData }: { dashboardData?: Paren
     .filter((item) => parentTeamIds.has(item.teamId) && (item.moderationStatus ?? "approved") === "approved")
     .sort((left, right) => new Date(right.createdAt).getTime() - new Date(left.createdAt).getTime());
   const filteredMediaFeed = mediaFeed.filter((item) => mediaTypeFilter === "all" || item.type === mediaTypeFilter);
+  const familyModerationQueue = getFamilyFacingModerationQueue(sourceState.mediaItems.filter((item) => parentTeamIds.has(item.teamId)));
+  const mediaConsentControls = getMediaConsentControls();
   const onboardingSteps = [
     { label: "Confirm guardian link", done: dashboard.children.length > 0 },
     { label: "Review upcoming schedule", done: dashboard.nextEvents.length > 0 },
@@ -1048,6 +1054,32 @@ export function ParentDashboardClient({ dashboardData }: { dashboardData?: Paren
             );
           })}
           {!dashboard.recentMedia.length ? <p className="muted">No media links yet.</p> : null}
+        </article>
+      </section>
+
+      <section className="grid two">
+        <article className="card stack">
+          <div className="card-header">
+            <div>
+              <span className="eyebrow">Family-facing moderation queue</span>
+              <h2>Media under review</h2>
+            </div>
+            <span className="badge warning">{familyModerationQueue.length} item(s)</span>
+          </div>
+          {familyModerationQueue.map((entry) => <p key={entry.item.id}><strong>{entry.item.title}</strong><br /><span className="muted">{entry.message}</span></p>)}
+          {!familyModerationQueue.length ? <p className="muted">No reported media is waiting for family-facing review.</p> : null}
+        </article>
+        <article className="card stack">
+          <div className="card-header">
+            <div>
+              <span className="eyebrow">Media consent controls</span>
+              <h2>Family consent</h2>
+            </div>
+            <span className="badge">Policy</span>
+          </div>
+          {mediaConsentControls.map((control) => (
+            <p key={control.label}><strong>{control.label}</strong><br /><span className="muted">{control.enabled ? "Enabled" : "Planned"} · {control.detail}</span></p>
+          ))}
         </article>
       </section>
 
@@ -1779,6 +1811,8 @@ export function AdminDashboardClient({ registrationRequests, sponsorData, mediaD
   const [mediaItems, setMediaItems] = useState<MediaItem[]>(initialMediaItems);
   const mediaReportingSummary = getMediaReportingSummary(mediaItems);
   const uploadStorageProvider = getUploadStorageProviderStatus(false);
+  const mediaRetentionPolicy = getMediaRetentionPolicy();
+  const parentVisibleMediaCount = mediaItems.filter((item) => canViewMediaByRole(item, "parent")).length;
   const activeSponsors = sponsors.filter((sponsor) => sponsor.status === "active");
   const [communicationTeamId, setCommunicationTeamId] = useState("team-tigers");
   const [communicationChannel, setCommunicationChannel] = useState<AdminCommunicationChannel>("email");
@@ -2205,6 +2239,8 @@ export function AdminDashboardClient({ registrationRequests, sponsorData, mediaD
             <div className="metric"><span className="muted">Upload storage</span><strong>{uploadStorageProvider.provider}</strong></div>
           </div>
           <p className="muted">{uploadStorageProvider.detail}</p>
+          <p><strong>Role-based media visibility:</strong> {parentVisibleMediaCount} item(s) currently visible to parents.</p>
+          <p className="muted">Media retention policy: {mediaRetentionPolicy.seasonMedia}</p>
           {mediaItems.map((item) => {
             const team = mediaTeams.find((candidate) => candidate.id === item.teamId);
             const status = item.moderationStatus ?? "approved";

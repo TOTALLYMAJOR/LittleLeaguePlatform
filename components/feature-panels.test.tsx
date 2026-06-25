@@ -120,6 +120,8 @@ describe("ParentDashboardClient", () => {
     expect(html).toContain("Family calendar");
     expect(html).toContain("Parent media feed");
     expect(html).toContain("Team media");
+    expect(html).toContain("Family-facing moderation queue");
+    expect(html).toContain("Media consent controls");
     expect(html).toContain("game");
     expect(html).toContain("practice");
     expect(html).toContain("Arrive");
@@ -253,6 +255,8 @@ describe("AdminDashboardClient", () => {
     expect(html).toContain("Upload storage");
     expect(html).toContain("Approve media");
     expect(html).toContain("Reject media");
+    expect(html).toContain("Role-based media visibility");
+    expect(html).toContain("Media retention policy");
     expect(html).toContain("Team/org visibility");
     expect(html).toContain("Hide media");
     expect(html).toContain("Restore media");

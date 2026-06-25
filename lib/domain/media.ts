@@ -1,4 +1,4 @@
-import type { MediaItem } from "./types";
+import type { MediaItem, UserRole } from "./types";
 
 export interface MediaUrlValidation {
   ok: boolean;
@@ -61,4 +61,36 @@ export function getMediaReportingSummary(items: MediaItem[]) {
     pendingReview: items.filter((item) => (item.reportCount ?? 0) > 0 || item.moderationStatus === "pending").length,
     hiddenOrRejected: items.filter((item) => item.moderationStatus === "hidden" || item.moderationStatus === "rejected").length
   };
+}
+
+export function getFamilyFacingModerationQueue(items: MediaItem[]) {
+  return items
+    .filter((item) => (item.reportCount ?? 0) > 0 || item.moderationStatus === "pending")
+    .map((item) => ({
+      item,
+      familyStatus: "under_review" as const,
+      message: `${item.title} is under review by coach/admin staff.`
+    }));
+}
+
+export function getMediaRetentionPolicy() {
+  return {
+    seasonMedia: "Retain approved team media through the active season and archive export window.",
+    rejectedMedia: "Remove rejected or takedown media from family-facing views immediately.",
+    chatLinkedMedia: "Preserve only audit metadata after chat retention cleanup."
+  };
+}
+
+export function canViewMediaByRole(item: MediaItem, role: UserRole) {
+  const status = item.moderationStatus ?? "approved";
+  if (role === "admin") return true;
+  if (role === "coach") return status !== "removed";
+  return status === "approved" && (item.visibility ?? "team") === "team";
+}
+
+export function getMediaConsentControls() {
+  return [
+    { label: "Team media consent", enabled: true, detail: "Parents can ask staff to hide or review team media." },
+    { label: "Player-specific consent", enabled: false, detail: "Per-player consent requires explicit roster-level settings." }
+  ];
 }

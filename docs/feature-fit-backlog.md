@@ -419,10 +419,10 @@ This backlog translates the pasted feature inventory into repo-fit work. It is n
   - `Covered`: Upload Storage Provider.
   - `Covered`: Reporting UI.
   - `Covered`: Link Validation.
-  - `Build`: Family-Facing Moderation Queue.
-  - `Build`: Media Retention Policy.
-  - `Harden`: Role-Based Media Visibility.
-  - `Build`: Media Consent Controls.
+  - `Covered`: Family-Facing Moderation Queue.
+  - `Covered`: Media Retention Policy.
+  - `Covered`: Role-Based Media Visibility.
+  - `Covered`: Media Consent Controls.
   - `Build`: Per-Player Media Consent.
   - `Build`: Photo Visibility Flags.
   - `Build`: Private Team Album.

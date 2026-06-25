@@ -72,7 +72,11 @@ import {
   approveMediaItem,
   rejectMediaItem,
   getMediaReportingSummary,
-  getUploadStorageProviderStatus
+  getUploadStorageProviderStatus,
+  getFamilyFacingModerationQueue,
+  getMediaRetentionPolicy,
+  canViewMediaByRole,
+  getMediaConsentControls
 } from "./index";
 
 describe("CSV duplicate detection", () => {
@@ -119,6 +123,19 @@ describe("media URL validation", () => {
     expect(reporting.totalReports).toBe(2);
     expect(reporting.pendingReview).toBe(1);
     expect(storage.provider).toBe("not_configured");
+  });
+
+  it("tracks family moderation, retention, role visibility, and consent controls", () => {
+    const reported = { ...seedState.mediaItems[0]!, reportCount: 1, moderationStatus: "pending" as const };
+    const queue = getFamilyFacingModerationQueue([reported]);
+    const retention = getMediaRetentionPolicy();
+    const controls = getMediaConsentControls();
+
+    expect(queue).toHaveLength(1);
+    expect(retention.seasonMedia).toContain("active season");
+    expect(canViewMediaByRole(reported, "parent")).toBe(false);
+    expect(canViewMediaByRole(reported, "admin")).toBe(true);
+    expect(controls[0]?.label).toBe("Team media consent");
   });
 });
 
