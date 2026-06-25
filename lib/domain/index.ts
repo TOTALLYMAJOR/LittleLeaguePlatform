@@ -21,4 +21,5 @@ export * from "./venues";
 export * from "./community";
 export * from "./sponsors";
 export * from "./ux";
+export * from "./metrics";
 export * from "./reducer";

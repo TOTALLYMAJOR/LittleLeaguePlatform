@@ -535,7 +535,7 @@ This backlog translates the pasted feature inventory into repo-fit work. It is n
   - `Covered`: Deterministic Local Guidance.
   - `Defer`: Human-Reviewed AI Drafts.
   - `Covered`: Prompt/Eval Harness.
-  - `Build`: Privacy Filters.
+  - `Covered`: Privacy Filters.
   - `Defer`: Provider Usage Controls.
   - `Covered`: Family Micro-Coaching Streaks.
   - `Covered`: Aggregate Team Engagement View.
@@ -551,9 +551,9 @@ This backlog translates the pasted feature inventory into repo-fit work. It is n
 - Repo fit: Metrics should be derived from existing Supabase tables and app events, then displayed in admin/coach health surfaces. Do not add external analytics until privacy and consent are settled.
 - Current seams: `app/admin/health/page.tsx`, `app/admin/page.tsx`, `app/coach/page.tsx`, `app/api/mobile-usage-events/route.ts`, `lib/supabase/reporting.ts`.
 - Backlog list:
-  - `Build`: Invite Acceptance Rate.
-  - `Build`: Average Invite-to-Account Time.
-  - `Build`: Failed Invite Count.
+  - `Covered`: Invite Acceptance Rate.
+  - `Covered`: Average Invite-to-Account Time.
+  - `Covered`: Failed Invite Count.
   - `Build`: Parent Link Completion Rate.
   - `Build`: RSVP Response Rate.
   - `Build`: Schedule Alert Open Rate.

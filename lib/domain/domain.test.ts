@@ -108,7 +108,11 @@ import {
   getCacheInvalidationPolicy,
   getManualDarkToggleState,
   getAccessibilityContrastChecks,
-  getPromptEvalHarness
+  getPromptEvalHarness,
+  getPrivacyFilters,
+  getInviteAcceptanceRate,
+  getAverageInviteToAccountTimeHours,
+  getFailedInviteCount
 } from "./index";
 
 describe("CSV duplicate detection", () => {
@@ -659,6 +663,15 @@ describe("parent replay evaluation", () => {
 
     expect(harness.status).toBe("local");
     expect(harness.checks.join(" ")).toContain("Coach review");
+  });
+});
+
+describe("analytics metrics", () => {
+  it("tracks privacy filters and invite metrics", () => {
+    expect(getPrivacyFilters()).toHaveLength(3);
+    expect(getInviteAcceptanceRate(seedState)).toBe(25);
+    expect(getAverageInviteToAccountTimeHours(seedState)).toBeGreaterThan(0);
+    expect(getFailedInviteCount(seedState)).toBe(1);
   });
 });
 

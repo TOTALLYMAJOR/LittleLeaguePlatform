@@ -282,6 +282,10 @@ describe("AdminDashboardClient", () => {
     expect(html).toContain("Cache invalidation policy");
     expect(html).toContain("Manual dark toggle");
     expect(html).toContain("Accessibility contrast checks");
+    expect(html).toContain("Privacy filters");
+    expect(html).toContain("Invite acceptance rate");
+    expect(html).toContain("Average invite-to-account time");
+    expect(html).toContain("Failed invite count");
   });
 });
 

@@ -110,6 +110,10 @@ import {
   getManualDarkToggleState,
   getAccessibilityContrastChecks,
   getPromptEvalHarness,
+  getPrivacyFilters,
+  getInviteAcceptanceRate,
+  getAverageInviteToAccountTimeHours,
+  getFailedInviteCount,
   type ChatAnnouncementTopic,
   type CommunicationTemplate,
   type EventType,
@@ -1856,6 +1860,10 @@ export function AdminDashboardClient({ registrationRequests, sponsorData, mediaD
   const cacheInvalidationPolicy = getCacheInvalidationPolicy();
   const manualDarkToggle = getManualDarkToggleState(false);
   const contrastChecks = getAccessibilityContrastChecks();
+  const privacyFilters = getPrivacyFilters();
+  const inviteAcceptanceRate = getInviteAcceptanceRate(state);
+  const averageInviteToAccountTime = getAverageInviteToAccountTimeHours(state);
+  const failedInviteCount = getFailedInviteCount(state);
   const [communicationTeamId, setCommunicationTeamId] = useState("team-tigers");
   const [communicationChannel, setCommunicationChannel] = useState<AdminCommunicationChannel>("email");
   const [communicationTemplate, setCommunicationTemplate] = useState<CommunicationTemplate>("weekly_digest");
@@ -2415,6 +2423,10 @@ export function AdminDashboardClient({ registrationRequests, sponsorData, mediaD
           <p><strong>Cache invalidation policy:</strong> {cacheInvalidationPolicy.strategy} · {cacheInvalidationPolicy.detail}</p>
           <p><strong>Manual dark toggle:</strong> {manualDarkToggle.label}</p>
           <p><strong>Accessibility contrast checks:</strong> {contrastChecks.length} reviewed surface(s).</p>
+          <p><strong>Privacy filters:</strong> {privacyFilters.length} active filter(s).</p>
+          <p><strong>Invite acceptance rate:</strong> {inviteAcceptanceRate}%</p>
+          <p><strong>Average invite-to-account time:</strong> {averageInviteToAccountTime} hour(s)</p>
+          <p><strong>Failed invite count:</strong> {failedInviteCount}</p>
         </article>
       </section>
     </div>
