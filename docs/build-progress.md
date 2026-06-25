@@ -98,6 +98,7 @@ npm run supabase:push
 - Added provider-boundary tests, expanded live-action route tests, added a Supabase-backed roster import audit endpoint, and pointed archived-season health status at the security proof route.
 - Added `/admin/operations` with organization settings, provider inventory, approval queue counts, and recent audit logs sourced from Supabase with local fallback.
 - Added `/admin/teams` and `/api/admin/teams` for organization-scoped team CRUD by active admin, with season/division setup evidence and team audit events.
+- Added team lifecycle status, coach assignment fields, roster counts, team archive audit actions, and tenant-isolated admin guards to the team setup path.
 
 ### Remaining Gap
 

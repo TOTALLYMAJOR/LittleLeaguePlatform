@@ -542,8 +542,11 @@ describe("live action API routes", () => {
         name: "Tiny Tigers",
         division: "3U",
         season_id: "season-1",
+        coach_user_id: "coach-1",
         mascot: "Tigers",
-        theme_key: "baseball"
+        theme_key: "baseball",
+        status: "active",
+        archived_at: null
       }
     });
 
@@ -556,7 +559,9 @@ describe("live action API routes", () => {
       mascot: "Tigers",
       themeKey: "baseball",
       primaryColor: "#1d4ed8",
-      secondaryColor: "#f97316"
+      secondaryColor: "#f97316",
+      coachUserId: "coach-1",
+      status: "active"
     }));
 
     expect(response.status).toBe(201);
@@ -570,7 +575,9 @@ describe("live action API routes", () => {
       mascot: "Tigers",
       themeKey: "baseball",
       primaryColor: "#1d4ed8",
-      secondaryColor: "#f97316"
+      secondaryColor: "#f97316",
+      coachUserId: "coach-1",
+      status: "active"
     });
   });
 });

@@ -19,6 +19,9 @@ export interface AdminTeamManagementData {
     seasonId: string;
     seasonName: string;
     seasonStatus: "active" | "archived";
+    status: "active" | "archived";
+    coachUserId?: string;
+    rosterCount: number;
     mascot: string;
     themeKey: ProgramThemeKey;
   }>;
@@ -42,6 +45,8 @@ export interface SaveAdminTeamInput {
   themeKey: ProgramThemeKey;
   primaryColor: string;
   secondaryColor: string;
+  coachUserId?: string;
+  status?: "active" | "archived";
 }
 
 function fallbackTeamManagementData(): AdminTeamManagementData {
@@ -55,6 +60,9 @@ function fallbackTeamManagementData(): AdminTeamManagementData {
       seasonId: team.seasonId,
       seasonName: seasonById.get(team.seasonId)?.name ?? seedState.activeSeason.name,
       seasonStatus: seasonById.get(team.seasonId)?.status ?? seedState.activeSeason.status,
+      status: "active",
+      coachUserId: team.coachUserId,
+      rosterCount: seedState.players.filter((player) => player.teamId === team.id).length,
       mascot: team.mascot,
       themeKey: team.themeKey
     })),
@@ -74,20 +82,27 @@ export async function listAdminTeamManagementData(): Promise<AdminTeamManagement
     const [
       { data: organizations },
       { data: seasons },
-      { data: teams }
+      { data: teams },
+      { data: players }
     ] = await withSupabaseTimeout(Promise.all([
       db.from("organizations").select("id,name").limit(1),
       db.from("seasons").select("id,name,status").order("starts_at", { ascending: false }),
-      db.from("teams").select("id,name,division,season_id,mascot,theme_key").order("division", { ascending: true }).order("name", { ascending: true })
+      db.from("teams").select("id,name,division,season_id,coach_user_id,mascot,theme_key,status").order("division", { ascending: true }).order("name", { ascending: true }),
+      db.from("players").select("id,team_id")
     ]), 7000) as [
       { data: Array<{ id: string; name: string }> | null },
       { data: Array<{ id: string; name: string; status: "active" | "archived" }> | null },
-      { data: Array<{ id: string; name: string; division: string; season_id: string; mascot: string; theme_key: ProgramThemeKey }> | null }
+      { data: Array<{ id: string; name: string; division: string; season_id: string; coach_user_id: string | null; mascot: string; theme_key: ProgramThemeKey; status?: "active" | "archived" }> | null },
+      { data: Array<{ id: string; team_id: string }> | null }
     ];
 
     const organization = organizations?.[0];
     if (!organization || !seasons?.length || !teams) return fallbackTeamManagementData();
     const seasonById = new Map(seasons.map((season) => [season.id, season]));
+    const rosterCountByTeamId = new Map<string, number>();
+    for (const player of players ?? []) {
+      rosterCountByTeamId.set(player.team_id, (rosterCountByTeamId.get(player.team_id) ?? 0) + 1);
+    }
 
     return {
       organizationId: organization.id,
@@ -98,6 +113,9 @@ export async function listAdminTeamManagementData(): Promise<AdminTeamManagement
         seasonId: team.season_id,
         seasonName: seasonById.get(team.season_id)?.name ?? "Unknown season",
         seasonStatus: seasonById.get(team.season_id)?.status ?? "active",
+        status: team.status ?? "active",
+        coachUserId: team.coach_user_id ?? undefined,
+        rosterCount: rosterCountByTeamId.get(team.id) ?? 0,
         mascot: team.mascot,
         themeKey: team.theme_key
       })),
@@ -137,15 +155,18 @@ export async function saveAdminTeam(input: SaveAdminTeamInput) {
       mascot,
       theme_key: input.themeKey,
       primary_color: input.primaryColor,
-      secondary_color: input.secondaryColor
+      secondary_color: input.secondaryColor,
+      coach_user_id: input.coachUserId || null,
+      status: input.status ?? "active",
+      archived_at: input.status === "archived" ? new Date().toISOString() : null
     };
 
     const { data: team, error } = await withSupabaseTimeout(db
       .from("teams")
       .upsert(payload)
-      .select("id,name,division,season_id,mascot,theme_key")
+      .select("id,name,division,season_id,coach_user_id,mascot,theme_key,status,archived_at")
       .single(), 7000) as {
-        data: { id: string; name: string; division: string; season_id: string; mascot: string; theme_key: ProgramThemeKey } | null;
+        data: { id: string; name: string; division: string; season_id: string; coach_user_id: string | null; mascot: string; theme_key: ProgramThemeKey; status: "active" | "archived"; archived_at: string | null } | null;
         error: { message?: string } | null;
       };
 
@@ -154,10 +175,10 @@ export async function saveAdminTeam(input: SaveAdminTeamInput) {
     await withSupabaseTimeout(db.from("audit_events").insert({
       organization_id: input.organizationId,
       actor_user_id: input.actorUserId,
-      action: input.teamId ? "team_updated" : "team_created",
+      action: input.status === "archived" ? "team_archived" : input.teamId ? "team_updated" : "team_created",
       target_type: "team",
       target_id: team.id,
-      summary: `${team.name} saved in ${division} for season ${input.seasonId}.`
+      summary: `${team.name} saved in ${division} for season ${input.seasonId} with ${team.status} lifecycle status.`
     }), 7000);
 
     return {

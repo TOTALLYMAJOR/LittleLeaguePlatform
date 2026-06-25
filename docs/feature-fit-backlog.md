@@ -127,10 +127,10 @@ This backlog translates the pasted feature inventory into repo-fit work. It is n
   - `Covered`: Team CRUD.
   - `Covered`: Division Setup.
   - `Covered`: Season Setup.
-  - `Build`: Coach Assignment.
-  - `Build`: Roster Lifecycle.
-  - `Build`: Team Archiving.
-  - `Harden`: Tenant Isolation.
+  - `Covered`: Coach Assignment.
+  - `Covered`: Roster Lifecycle.
+  - `Covered`: Team Archiving.
+  - `Covered`: Tenant Isolation.
   - `Covered`: Team Memberships.
   - `Harden`: Role-Based Team Access.
   - `Covered`: Player-Guardian Linking.

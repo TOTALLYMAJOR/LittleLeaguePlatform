@@ -38,6 +38,9 @@ export default async function AdminTeamsPage() {
             <span className="eyebrow">{team.division}</span>
             <h2>{team.name}</h2>
             <p>{team.mascot} - {team.themeKey}</p>
+            <p><span className={`badge ${team.status === "active" ? "ok" : "warning"}`}>{team.status}</span></p>
+            <p>Roster: {team.rosterCount} player(s)</p>
+            <p className="muted">Coach: {team.coachUserId ?? "Unassigned"}</p>
             <p className="muted">{team.seasonName} ({team.seasonStatus})</p>
           </article>
         ))}

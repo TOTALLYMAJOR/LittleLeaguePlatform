@@ -18,6 +18,7 @@ describe("Supabase RLS policy coverage", () => {
   const providerDeliveryApproval = migration("0011_provider_delivery_approval.sql");
   const rsvpGuardianScope = migration("0012_rsvp_guardian_scope.sql");
   const archivedSeasonReadOnly = migration("0013_archived_season_read_only.sql");
+  const teamLifecycleStatus = migration("0014_team_lifecycle_status.sql");
   const packageJson = readFileSync(join(process.cwd(), "package.json"), "utf8");
   const rlsProof = readFileSync(join(process.cwd(), "scripts", "verify-rls-boundaries.mjs"), "utf8");
 
@@ -98,5 +99,11 @@ describe("Supabase RLS policy coverage", () => {
     expect(archivedSeasonReadOnly).toContain("current_team_season_is_active");
     expect(archivedSeasonReadOnly).toContain("coaches and admins manage active season events");
     expect(archivedSeasonReadOnly).toContain("parents can upsert active linked child rsvps");
+  });
+
+  it("keeps team lifecycle status available for archiving", () => {
+    expect(teamLifecycleStatus).toContain("add column if not exists status");
+    expect(teamLifecycleStatus).toContain("'archived'");
+    expect(teamLifecycleStatus).toContain("current_team_is_active");
   });
 });

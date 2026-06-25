@@ -31,7 +31,9 @@ export async function POST(request: Request) {
     mascot: String((body as { mascot?: unknown }).mascot ?? ""),
     themeKey: themeKey as ProgramThemeKey,
     primaryColor: String((body as { primaryColor?: unknown }).primaryColor ?? "#1d4ed8"),
-    secondaryColor: String((body as { secondaryColor?: unknown }).secondaryColor ?? "#f97316")
+    secondaryColor: String((body as { secondaryColor?: unknown }).secondaryColor ?? "#f97316"),
+    coachUserId: (body as { coachUserId?: unknown }).coachUserId ? String((body as { coachUserId?: unknown }).coachUserId) : undefined,
+    status: (body as { status?: unknown }).status === "archived" ? "archived" : "active"
   });
 
   return NextResponse.json(result, { status: result.ok ? 201 : 400 });

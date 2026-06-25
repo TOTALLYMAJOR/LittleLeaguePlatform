@@ -81,5 +81,7 @@ describe("route smoke coverage", () => {
     expect(data).toContain("requireActiveOrganizationAdmin");
     expect(data).toContain("division");
     expect(data).toContain("season_id");
+    expect(data).toContain("rosterCount");
+    expect(data).toContain("team_archived");
   });
 });
