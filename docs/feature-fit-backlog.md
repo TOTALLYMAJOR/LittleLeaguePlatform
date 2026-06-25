@@ -335,12 +335,12 @@ This backlog translates the pasted feature inventory into repo-fit work. It is n
   - `Covered`: Heat Thresholds.
   - `Covered`: Lightning Thresholds.
   - `Covered`: Air Quality Thresholds.
-  - `Build`: Rain Thresholds.
-  - `Build`: Field Closure Drafts.
-  - `Build`: Weather Escalation Rules.
+  - `Covered`: Rain Thresholds.
+  - `Covered`: Field Closure Drafts.
+  - `Covered`: Weather Escalation Rules.
   - `Defer`: Parent Weather Delivery.
   - `Defer`: Urgent Weather Alerts.
-  - `Build`: Weather Safety Notes.
+  - `Covered`: Weather Safety Notes.
 
 ### Maps And Venues
 

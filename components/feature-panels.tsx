@@ -42,6 +42,9 @@ import {
   getWeatherAlertHistory,
   getWeatherApprovalQueue,
   getWeatherProviderRetryLogs,
+  createFieldClosureDraft,
+  getWeatherEscalationRules,
+  getWeatherSafetyNotes,
   getVenueRecords,
   platformFeatureTiers,
   previewTeamCommunication,
@@ -1338,6 +1341,7 @@ export function CoachDashboardClient({ dashboardData }: { dashboardData?: Parent
   const rsvpReminderQueue = reliabilityRows.filter((row) => row.noResponse > 0);
   const teamIds = new Set(teams.map((team) => team.id));
   const assignedEvents = sourceState.events.filter((event) => teamIds.has(event.teamId) && event.status === "scheduled");
+  const nextAssignedEvent = assignedEvents[0];
   const weatherAlerts = sourceState.weatherAlerts.filter((alert) => teamIds.has(alert.teamId));
   const weatherApprovalQueue = getWeatherApprovalQueue(sourceState).filter((item) => teamIds.has(item.alert.teamId));
   const weatherRetryLogs = getWeatherProviderRetryLogs(sourceState).filter((item) => teamIds.has(item.alert.teamId));
@@ -1348,15 +1352,18 @@ export function CoachDashboardClient({ dashboardData }: { dashboardData?: Parent
     heatIndex: 91,
     lightningMiles: 8,
     airQualityIndex: 105,
+    rainInchesPerHour: 0.3,
     thresholds: {
       heatIndex: leagueWeatherThresholds.heatIndex,
       lightningMiles: leagueWeatherThresholds.lightningMiles,
       airQualityIndex: leagueWeatherThresholds.airQualityIndex
     }
   });
+  const fieldClosureDraft = createFieldClosureDraft({ eventTitle: nextAssignedEvent?.title ?? "Selected event", reason: "rain or field safety thresholds need review" });
+  const weatherEscalation = getWeatherEscalationRules(weatherThresholdReview);
+  const weatherSafetyNotes = getWeatherSafetyNotes();
   const volunteerNeeds = sourceState.volunteerSignups.filter((signup) => teamIds.has(signup.teamId) && signup.status === "open");
   const snackNeeds = sourceState.snackScheduleSlots.filter((slot) => teamIds.has(slot.teamId) && slot.status === "open");
-  const nextAssignedEvent = assignedEvents[0];
   const accessGate = privateAccessGate(dashboardData, "coach");
   const coachOnboardingSteps = [
     { label: "Active coach membership", done: teams.length > 0, detail: teams.map((team) => team.name).join(", ") || "No assigned teams." },
@@ -1472,6 +1479,54 @@ export function CoachDashboardClient({ dashboardData }: { dashboardData?: Parent
             <p className="notice" key={alert.id}><strong>{alert.headline}</strong><br />{alert.detail}</p>
           ))}
           {!weatherAlerts.length ? <p className="muted">No weather alerts drafted for assigned teams.</p> : null}
+        </article>
+      </section>
+
+      <section className="grid two">
+        <article className="card stack">
+          <div className="card-header">
+            <div>
+              <span className="eyebrow">Rain thresholds</span>
+              <h2>Rain-rate review</h2>
+            </div>
+            <span className={`badge ${weatherThresholdReview.rain === "review" ? "warning" : "ok"}`}>{weatherThresholdReview.rain}</span>
+          </div>
+          <p className="muted">Rain-rate thresholds create field review prompts before schedule changes or weather alerts are queued.</p>
+        </article>
+
+        <article className="card stack">
+          <div className="card-header">
+            <div>
+              <span className="eyebrow">Field closure drafts</span>
+              <h2>{fieldClosureDraft.title}</h2>
+            </div>
+            <span className="badge warning">Draft</span>
+          </div>
+          <p>{fieldClosureDraft.body}</p>
+        </article>
+      </section>
+
+      <section className="grid two">
+        <article className="card stack">
+          <div className="card-header">
+            <div>
+              <span className="eyebrow">Weather escalation rules</span>
+              <h2>Escalation level</h2>
+            </div>
+            <span className={`badge ${weatherEscalation.level === "escalate" ? "danger" : "warning"}`}>{weatherEscalation.level}</span>
+          </div>
+          <p>{weatherEscalation.detail}</p>
+        </article>
+
+        <article className="card stack">
+          <div className="card-header">
+            <div>
+              <span className="eyebrow">Weather safety notes</span>
+              <h2>Coach guidance</h2>
+            </div>
+            <span className="badge ok">{weatherSafetyNotes.length} note(s)</span>
+          </div>
+          {weatherSafetyNotes.map((note) => <p className="muted" key={note}>{note}</p>)}
         </article>
       </section>
 

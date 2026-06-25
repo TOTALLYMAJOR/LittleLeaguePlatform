@@ -32,6 +32,9 @@ import {
   getSportWeatherThresholds,
   evaluateWeatherThresholds,
   getLeagueWeatherThresholds,
+  createFieldClosureDraft,
+  getWeatherEscalationRules,
+  getWeatherSafetyNotes,
   getWeatherAlertHistory,
   getWeatherApprovalQueue,
   getWeatherProviderRetryLogs,
@@ -424,11 +427,16 @@ describe("weather policy", () => {
     expect(getWeatherAlertHistory(highRiskState)[0]?.alert.headline).toBe("Lightning risk");
     expect(getSportWeatherThresholds("baseball").thresholds.lightningMiles).toBe(10);
     expect(getLeagueWeatherThresholds("3U").heatIndex).toBe(90);
-    expect(evaluateWeatherThresholds({ heatIndex: 91, lightningMiles: 8, airQualityIndex: 105, thresholds: { heatIndex: 90, lightningMiles: 10, airQualityIndex: 100 } })).toEqual({
+    const thresholdReview = evaluateWeatherThresholds({ heatIndex: 91, lightningMiles: 8, airQualityIndex: 105, rainInchesPerHour: 0.3, thresholds: { heatIndex: 90, lightningMiles: 10, airQualityIndex: 100 } });
+    expect(thresholdReview).toEqual({
       heat: "review",
       lightning: "review",
-      airQuality: "review"
+      airQuality: "review",
+      rain: "review"
     });
+    expect(createFieldClosureDraft({ eventTitle: "Tiny Tigers Practice", reason: "heavy rain" }).title).toContain("Field closure draft");
+    expect(getWeatherEscalationRules(thresholdReview).level).toBe("escalate");
+    expect(getWeatherSafetyNotes()).toHaveLength(3);
   });
 });
 

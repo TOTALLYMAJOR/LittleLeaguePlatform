@@ -61,12 +61,37 @@ export function evaluateWeatherThresholds(input: {
   heatIndex: number;
   lightningMiles: number;
   airQualityIndex: number;
+  rainInchesPerHour?: number;
   thresholds?: { heatIndex: number; lightningMiles: number; airQualityIndex: number };
 }) {
   const thresholds = input.thresholds ?? getSportWeatherThresholds("baseball").thresholds;
   return {
     heat: input.heatIndex >= thresholds.heatIndex ? "review" : "ok",
     lightning: input.lightningMiles <= thresholds.lightningMiles ? "review" : "ok",
-    airQuality: input.airQualityIndex >= thresholds.airQualityIndex ? "review" : "ok"
+    airQuality: input.airQualityIndex >= thresholds.airQualityIndex ? "review" : "ok",
+    rain: (input.rainInchesPerHour ?? 0) >= 0.25 ? "review" : "ok"
   };
+}
+
+export function createFieldClosureDraft(input: { eventTitle: string; reason: string }) {
+  return {
+    title: `Field closure draft: ${input.eventTitle}`,
+    body: `${input.eventTitle} may need to close because ${input.reason}. Coach/admin approval is required before parent delivery.`
+  };
+}
+
+export function getWeatherEscalationRules(input: { heat: string; lightning: string; airQuality: string; rain: string }) {
+  const reviewCount = Object.values(input).filter((value) => value === "review").length;
+  return {
+    level: reviewCount >= 2 ? "escalate" : reviewCount === 1 ? "review" : "monitor",
+    detail: reviewCount >= 2 ? "Multiple weather thresholds require admin escalation." : "Coach review is sufficient unless conditions worsen."
+  };
+}
+
+export function getWeatherSafetyNotes() {
+  return [
+    "Pause outdoor activity when lightning is inside the configured radius.",
+    "Move younger divisions to shade and water breaks when heat thresholds are near review.",
+    "Field closure drafts require staff approval before parent notification delivery."
+  ];
 }

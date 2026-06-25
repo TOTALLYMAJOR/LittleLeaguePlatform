@@ -114,6 +114,7 @@ npm run supabase:push
 - Added push device summary, email fallback eligibility, urgent-only SMS rules, and notification open-rate tracking.
 - Added weather approval queue, provider retry log, alert history, and sport-specific threshold policy helpers.
 - Added league-specific, heat, lightning, and air-quality weather threshold review helpers.
+- Added rain thresholds, field-closure drafts, weather escalation rules, and coach safety notes.
 
 ### Remaining Gap
 

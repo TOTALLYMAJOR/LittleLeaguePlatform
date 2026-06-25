@@ -66,6 +66,10 @@ describe("CoachDashboardClient", () => {
     expect(html).toContain("Heat thresholds");
     expect(html).toContain("Lightning thresholds");
     expect(html).toContain("Air quality thresholds");
+    expect(html).toContain("Rain thresholds");
+    expect(html).toContain("Field closure drafts");
+    expect(html).toContain("Weather escalation rules");
+    expect(html).toContain("Weather safety notes");
     expect(html).toContain("Snacks");
     expect(html).toContain("Volunteers");
     expect(html).toContain("Draft weather alert");
