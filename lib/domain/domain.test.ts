@@ -987,7 +987,11 @@ describe("Parent Replay", () => {
       "smart_faq",
       "coach_inbox_prioritization",
       "game_day_parent_brief",
-      "season_timeline"
+      "season_timeline",
+      "coach_knowledge_base",
+      "action_item_extraction",
+      "safety_monitor",
+      "season_storybook"
     ]);
     expect(drafts[0]?.body).toContain("Welcome to Tiny Tigers");
     expect(drafts[1]?.body).toContain("This Week");
@@ -997,6 +1001,10 @@ describe("Parent Replay", () => {
     expect(drafts[5]?.body).toContain("Questions:");
     expect(drafts[6]?.body).toContain("Arrive 15 minutes early");
     expect(drafts[7]?.body).toContain("Tiny Tigers");
+    expect(drafts[8]?.body).toContain("reminder:");
+    expect(drafts[9]?.body).toContain("Volunteer Needed");
+    expect(drafts[10]?.body).toContain("Bullying:");
+    expect(drafts[11]?.body).toContain("Spring 2026");
     expect(drafts.every((draft) => draft.workflow.join(" -> ") === "Preview -> Edit -> Approve -> Publish")).toBe(true);
     expect(drafts.every((draft) => draft.boundary.toLowerCase().includes("coach") || draft.boundary.toLowerCase().includes("provider"))).toBe(true);
   });

@@ -379,6 +379,10 @@ describe("ParentReplayClient", () => {
     expect(html).toContain("Prioritize Coach Inbox");
     expect(html).toContain("Parent Brief Before Game");
     expect(html).toContain("Season Timeline");
+    expect(html).toContain("Coach Knowledge Base");
+    expect(html).toContain("Extract Action Items");
+    expect(html).toContain("Safety Monitor");
+    expect(html).toContain("Season Storybook");
     expect(html).toContain("Preview - Edit - Approve - Publish");
   });
 });

@@ -267,6 +267,10 @@ This backlog translates the pasted feature inventory into repo-fit work. It is n
   - `Covered`: Coach Inbox Prioritization.
   - `Covered`: Parent Brief Before Game.
   - `Covered`: Season Timeline.
+  - `Covered`: Coach Knowledge Base.
+  - `Covered`: Action Item Extraction.
+  - `Covered`: Safety Monitor.
+  - `Covered`: End-of-Season Storybook.
 
 ## P3 - Schedule, Alerts, Weather, And Venues
 

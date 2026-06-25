@@ -138,6 +138,7 @@ These 2026-06-22 next items were completed in the 2026-06-23 hardening pass:
 - Reconciled the feature-fit backlog section statuses after all item-level Build/Harden rows were completed; explicit Defer rows remain provider/product decisions.
 - Added the review-only AI Coach Workspace first slice: New Parent Brief, Weekly Digest, Practice Replay, and Announcement Cleaner drafts with source evidence and Preview -> Edit -> Approve -> Publish boundaries.
 - Added Smart FAQ, Coach Inbox Prioritization, Parent Brief Before Game, and Season Timeline drafts to the AI Coach Workspace with sourced answers, grouped chat evidence, game-day essentials, and season memory scaffolding.
+- Added Coach Knowledge Base, Action Item Extraction, Safety Monitor, and End-of-Season Storybook drafts to complete the AI Coach Workspace feature packet while keeping all outputs coach/admin reviewed.
 
 ### Remaining Gap
 

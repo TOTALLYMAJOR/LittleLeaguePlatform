@@ -9,7 +9,11 @@ export type AiCoachWorkspaceToolId =
   | "smart_faq"
   | "coach_inbox_prioritization"
   | "game_day_parent_brief"
-  | "season_timeline";
+  | "season_timeline"
+  | "coach_knowledge_base"
+  | "action_item_extraction"
+  | "safety_monitor"
+  | "season_storybook";
 
 export interface AiCoachWorkspaceInput {
   teamId: string;
@@ -136,6 +140,41 @@ function inboxSummary(state: AppState, teamId: string) {
   return groups;
 }
 
+function coachKnowledgeEntries(state: AppState, teamId: string) {
+  const messages = visibleTeamMessages(state, teamId);
+  return messages
+    .filter((message) => message.authorRole === "coach" || message.kind === "announcement")
+    .map((message) => {
+      const topic = message.topic ? message.topic.replace("_", " ") : "team note";
+      return `${topic}: ${message.body}`;
+    })
+    .slice(0, 6);
+}
+
+function extractedActionItems(state: AppState, teamId: string, roughAnnouncement: string) {
+  const volunteerItems = volunteerNeeds(state, teamId).map((signup) => `Volunteer Needed: ${signup.role}`);
+  const snackItems = snackNeeds(state, teamId).map((slot) => `Snack Needed: ${slot.item}`);
+  const roughItems = /volunteer|help|need/i.test(roughAnnouncement)
+    ? ["Coach draft contains a help request; review before creating a family action."]
+    : [];
+  return [...volunteerItems, ...snackItems, ...roughItems];
+}
+
+function safetyFindings(state: AppState, teamId: string) {
+  const patterns = [
+    { label: "Bullying", regex: /\bstupid\b|\bidiot\b|\bloser\b/i },
+    { label: "Profanity", regex: /\bdamn\b|\bhell\b/i },
+    { label: "Threats", regex: /\bhurt\b|\bfight\b|\bthreat\b/i },
+    { label: "Inappropriate adult conversation", regex: /\bprivate message\b|\bdm me\b|\bsecret\b/i }
+  ];
+  const messages = visibleTeamMessages(state, teamId);
+
+  return patterns.map((pattern) => ({
+    label: pattern.label,
+    count: messages.filter((message) => pattern.regex.test(message.body)).length
+  }));
+}
+
 export function buildAiCoachWorkspaceDrafts(state: AppState, input: AiCoachWorkspaceInput): AiCoachWorkspaceDraft[] {
   const team = state.teams.find((item) => item.id === input.teamId);
   const events = upcomingEvents(state, input.teamId, input.now);
@@ -215,6 +254,18 @@ export function buildAiCoachWorkspaceDrafts(state: AppState, input: AiCoachWorks
     ...state.mediaItems.filter((item) => item.teamId === input.teamId).map((item) => `${formatEventDate(item.createdAt)} - Media: ${item.title}`),
     ...(replayDraft ? [`${formatEventDate(replayDraft.generatedAt)} - Practice Replay: ${replayDraft.focusAreas.join(", ")}`] : [])
   ].slice(0, 8);
+  const knowledgeEntries = coachKnowledgeEntries(state, input.teamId);
+  const actionItems = extractedActionItems(state, input.teamId, roughAnnouncement);
+  const safetyItems = safetyFindings(state, input.teamId);
+  const storybookBody = [
+    `${teamName} ${state.activeSeason.name}`,
+    "",
+    `This season began with ${state.players.filter((player) => player.teamId === input.teamId).length} players learning how to work together.`,
+    announcement ? `Coach note: ${announcement.title} - ${announcement.body}` : undefined,
+    replayDraft ? `Practice growth: ${replayDraft.summary}` : undefined,
+    state.mediaItems.some((item) => item.teamId === input.teamId) ? "Family memories include approved team media and volunteer moments." : undefined,
+    "Coach review decides which photos, achievements, and milestones appear in the downloadable keepsake."
+  ].filter(Boolean).join("\n");
 
   return [
     {
@@ -322,6 +373,57 @@ export function buildAiCoachWorkspaceDrafts(state: AppState, input: AiCoachWorks
       ]),
       workflow: reviewWorkflow,
       boundary: "Timeline drafts are memory scaffolds; coach and admin review decides what becomes family-facing."
+    },
+    {
+      id: "coach_knowledge_base",
+      label: "Coach Knowledge Base",
+      title: `${teamName} searchable coach answers`,
+      body: knowledgeEntries.length ? knowledgeEntries.join("\n") : "No coach answers are available yet.",
+      sourceEvidence: evidence([
+        `${knowledgeEntries.length} coach-authored answer(s)`,
+        pins.length ? "pinned coach posts" : undefined
+      ]),
+      workflow: reviewWorkflow,
+      boundary: "Knowledge entries stay sourced to coach-authored messages and require coach review before reuse."
+    },
+    {
+      id: "action_item_extraction",
+      label: "Extract Action Items",
+      title: `${teamName} family action items`,
+      body: actionItems.length ? actionItems.join("\n") : "No family action items were found.",
+      sourceEvidence: evidence([
+        `${volunteers.length} volunteer opening(s)`,
+        `${snacks.length} snack opening(s)`,
+        /volunteer|help|need/i.test(roughAnnouncement) ? "rough coach draft" : undefined
+      ]),
+      workflow: reviewWorkflow,
+      boundary: "Action extraction creates review-ready tasks only; coach approval is required before parents can claim anything."
+    },
+    {
+      id: "safety_monitor",
+      label: "Safety Monitor",
+      title: `${teamName} private safety triage`,
+      body: safetyItems.map((item) => `${item.label}: ${item.count}`).join("\n"),
+      sourceEvidence: evidence([
+        `${messages.length} visible team chat message(s) scanned`,
+        "private escalation categories only"
+      ]),
+      workflow: reviewWorkflow,
+      boundary: "Safety monitor is not public moderation; it privately escalates bullying, profanity, threats, or inappropriate adult conversation for coach/admin review."
+    },
+    {
+      id: "season_storybook",
+      label: "Season Storybook",
+      title: `${teamName} end-of-season storybook`,
+      body: storybookBody,
+      sourceEvidence: evidence([
+        `${events.length} event(s)`,
+        `${state.mediaItems.filter((item) => item.teamId === input.teamId).length} approved media item(s)`,
+        announcement ? "coach announcement" : undefined,
+        replayDraft ? "practice replay draft" : undefined
+      ]),
+      workflow: reviewWorkflow,
+      boundary: "Storybook drafts are keepsake copy only until coach/admin review approves included media and child privacy."
     }
   ];
 }
