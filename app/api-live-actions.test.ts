@@ -7,6 +7,7 @@ import { POST as postProviderDeliveryReview } from "./api/provider-delivery/revi
 import { POST as postParentReplay } from "./api/coach/parent-replay/route";
 import { POST as postWeeklyUpdate } from "./api/coach/weekly-update/route";
 import { POST as postSponsorSave } from "./api/admin/sponsors/route";
+import { POST as postRosterImportAudit } from "./api/admin/roster-imports/audit/route";
 import { POST as postThemeDefaults } from "./api/admin/theme-defaults/route";
 import { POST as postMediaReport } from "./api/media/report/route";
 import { POST as postMediaModeration } from "./api/media/moderation/route";
@@ -17,6 +18,7 @@ import { POST as postTeamMembership } from "./api/admin/team-memberships/route";
 import type { ParentReplayDraft } from "@/lib/domain";
 import { updateTenantThemeDefaults } from "@/lib/supabase/team-branding";
 import { createTeamMembership } from "@/lib/supabase/memberships";
+import { recordRosterImportAudit } from "@/lib/supabase/roster-imports";
 import { createAdminExport } from "@/lib/supabase/reporting";
 import { reviewNotificationDelivery } from "@/lib/supabase/provider-delivery";
 import {
@@ -60,6 +62,10 @@ vi.mock("@/lib/supabase/memberships", () => ({
   createTeamMembership: vi.fn()
 }));
 
+vi.mock("@/lib/supabase/roster-imports", () => ({
+  recordRosterImportAudit: vi.fn()
+}));
+
 vi.mock("@/lib/supabase/reporting", () => ({
   createAdminExport: vi.fn()
 }));
@@ -82,6 +88,7 @@ const saveParentReplayMock = vi.mocked(saveParentReplay);
 const updateNotificationPreferenceMock = vi.mocked(updateNotificationPreference);
 const updateTenantThemeDefaultsMock = vi.mocked(updateTenantThemeDefaults);
 const createTeamMembershipMock = vi.mocked(createTeamMembership);
+const recordRosterImportAuditMock = vi.mocked(recordRosterImportAudit);
 const createAdminExportMock = vi.mocked(createAdminExport);
 const reviewNotificationDeliveryMock = vi.mocked(reviewNotificationDelivery);
 
@@ -455,6 +462,67 @@ describe("live action API routes", () => {
       userId: "coach-1",
       actorUserId: "user-live-session",
       role: "coach"
+    });
+  });
+
+  it("uses the authenticated admin session for roster import audit trails", async () => {
+    const analysis = {
+      id: "import-1",
+      status: "validated" as const,
+      totalRows: 1,
+      validRows: 1,
+      warningRows: 0,
+      errorRows: 0,
+      rows: [
+        {
+          rowNumber: 2,
+          raw: { team: "Tiny Tigers" },
+          normalized: {
+            teamName: "Tiny Tigers",
+            teamId: "team-1",
+            division: "3U",
+            firstName: "Mason",
+            lastInitial: "T",
+            jersey: "7",
+            parentName: "Jordan",
+            parentEmail: "parent@example.com",
+            parentPhone: "5551234567"
+          },
+          status: "valid" as const,
+          issues: []
+        }
+      ],
+      createdAt: "2026-06-24T12:00:00.000Z"
+    };
+    recordRosterImportAuditMock.mockResolvedValue({
+      ok: true,
+      message: "Audit saved.",
+      rosterImport: {
+        id: "import-1",
+        status: "validated",
+        total_rows: 1,
+        valid_rows: 1,
+        warning_rows: 0,
+        error_rows: 0,
+        created_at: "2026-06-24T12:00:00.000Z"
+      }
+    });
+
+    const response = await postRosterImportAudit(jsonRequest({
+      organizationId: "org-1",
+      seasonId: "season-1",
+      actorUserId: "client-spoof",
+      filename: "roster.csv",
+      analysis
+    }));
+
+    expect(response.status).toBe(201);
+    expect(recordRosterImportAuditMock).toHaveBeenCalledWith({
+      organizationId: "org-1",
+      seasonId: "season-1",
+      actorUserId: "user-live-session",
+      filename: "roster.csv",
+      analysis
     });
   });
 });

@@ -72,7 +72,9 @@ export function computeAdminHealth(state: AppState, now = new Date().toISOString
       title: "Archived season status",
       count: state.activeSeason.status === "archived" ? 1 : 0,
       status: state.activeSeason.status === "archived" ? "ok" : "warning",
-      detail: state.activeSeason.status === "archived" ? "Season has been archived." : "Current season is active and not archived."
+      detail: state.activeSeason.status === "archived"
+        ? "Season has been archived and should remain read-only."
+        : "Current season is active; archived-season write locks are tracked on /admin/security."
     }
   ];
 

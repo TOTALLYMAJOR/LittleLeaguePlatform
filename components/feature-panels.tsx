@@ -527,6 +527,22 @@ export function ImportsClient() {
   const analysis = useMemo(() => analyzeRosterCsv(csv, state, NOW), [csv, state]);
   const canCommit = analysis.totalRows > 0 && analysis.errorRows === 0;
   const latestImport = state.rosterImportReports[0];
+  const [auditMessage, setAuditMessage] = useState("");
+  const [isAuditPending, startAuditTransition] = useTransition();
+
+  function saveImportAudit() {
+    setAuditMessage("");
+    startAuditTransition(async () => {
+      const response = await authenticatedJsonFetch("/api/admin/roster-imports/audit", {
+        organizationId: state.organization.id,
+        seasonId: state.activeSeason.id,
+        filename: "roster-import.csv",
+        analysis
+      });
+      const result = await response.json().catch(() => null) as { message?: string } | null;
+      setAuditMessage(result?.message ?? "Roster import audit could not be saved.");
+    });
+  }
 
   return (
     <div className="page">
@@ -549,8 +565,12 @@ export function ImportsClient() {
           >
             Commit import simulation
           </button>
+          <button className="secondary" disabled={isAuditPending} onClick={saveImportAudit}>
+            Save audit trail
+          </button>
           {!canCommit ? <p className="muted">Resolve blocking errors before commit simulation is available.</p> : null}
           {latestImport ? <p className="notice">Last commit: {latestImport.validRows} valid, {latestImport.warningRows} warning, {latestImport.errorRows} error rows.</p> : null}
+          {auditMessage ? <p className="notice">{auditMessage}</p> : null}
         </article>
 
         <article className="grid three">

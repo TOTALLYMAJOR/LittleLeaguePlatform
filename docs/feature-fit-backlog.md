@@ -64,8 +64,8 @@ This backlog translates the pasted feature inventory into repo-fit work. It is n
   - `Covered`: RLS Production Proof Dashboard.
   - `Covered`: Audit Events.
   - `Covered`: Production Audit Logs.
-  - `Harden`: Provider Boundary Testing.
-  - `Build`: Live-Data Action Tests.
+  - `Covered`: Provider Boundary Testing.
+  - `Covered`: Live-Data Action Tests.
   - `Covered`: QA User Seeding.
   - `Covered`: Session Proof Script.
   - `Covered`: Build Verification.
@@ -86,7 +86,7 @@ This backlog translates the pasted feature inventory into repo-fit work. It is n
   - `Covered`: Roster Validation.
   - `Covered`: Import Preview.
   - `Covered`: Import Commit Simulation.
-  - `Harden`: Import Audit Trail.
+  - `Covered`: Import Audit Trail.
   - `Covered`: Registration Queue.
   - `Covered`: Parent Registration Review.
   - `Covered`: Smart Invite Recovery.
@@ -101,7 +101,7 @@ This backlog translates the pasted feature inventory into repo-fit work. It is n
   - `Covered`: Players Missing Parent Contact Check.
   - `Covered`: Duplicate Roster Warning Check.
   - `Covered`: Empty Schedule Detection.
-  - `Harden`: Archived Season Status.
+  - `Covered`: Archived Season Status.
   - `Covered`: Sponsor Records.
   - `Covered`: Notification Architecture View.
   - `Build`: Organization Settings.
