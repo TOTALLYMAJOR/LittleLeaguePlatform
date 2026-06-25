@@ -92,6 +92,7 @@ npm run supabase:push
 - Added deterministic assistive suggestions across admin, coach, and parent dashboards. Suggestions summarize existing scoped records only and cannot approve, publish, RSVP, or send provider messages.
 - Added Reporting and Archive exports with authenticated admin CSV generation, audit logging, and an archive readiness checklist covering non-chat preservation and chat deletion proof.
 - Added Provider Integration approval boundaries with notification provider approval status, authenticated provider delivery review, and delivery-attempt logs for approved or suppressed email/SMS/Web Push attempts. External provider sends remain disconnected.
+- Hardened the shared Supabase auth and role boundary by adding reusable access-control decisions, routing coach/admin team actions through the shared checker, and blocking parent RSVP writes unless the event and player share a team and the authenticated parent has an active guardian link.
 
 ### Remaining Gap
 

@@ -8,6 +8,7 @@ For current execution slices, use:
 - `docs/tech-stack.md` for the mobile-first stack decision and provider order.
 - `docs/backlog-now.md` for the immediate production-enabling backlog.
 - `docs/backlog-next.md` for the follow-on backlog after persistence, auth, RLS, and provider boundaries are in place.
+- `docs/feature-fit-backlog.md` for the pasted feature inventory mapped into repo-fit backlog items and current coverage status.
 
 ## P0 - Production Foundation
 

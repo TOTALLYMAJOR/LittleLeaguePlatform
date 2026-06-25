@@ -1,4 +1,5 @@
 import type { ParentReplayDraft, ParentReplayRecord, PracticeFocusArea } from "@/lib/domain";
+import { requireActiveParentForPlayerEvent, requireActiveTeamCoachOrOrgAdmin } from "./access-control";
 import { createSupabaseAdminClient } from "./admin";
 import { withSupabaseTimeout } from "./timeout";
 
@@ -210,37 +211,14 @@ export async function saveCoachWeeklyUpdate(input: {
 
   try {
     const db = adminDb();
-    const { data: team, error: teamError } = await runDynamicQuery<{
-      id: string;
-      organization_id: string;
-    }>(db
-      .from("teams")
-      .select("id,organization_id")
-      .eq("id", input.teamId)
-      .single());
-
-    if (teamError || !team) return { ok: false, message: "Weekly update requires a known team." };
-
-    const [{ data: coachMemberships }, { data: adminMemberships }] = await Promise.all([
-      runDynamicQuery<Array<{ id: string }>>(db
-        .from("team_memberships")
-        .select("id")
-        .eq("team_id", input.teamId)
-        .eq("user_id", input.coachUserId)
-        .eq("role", "coach")
-        .eq("status", "active")),
-      runDynamicQuery<Array<{ id: string }>>(db
-        .from("organization_memberships")
-        .select("id")
-        .eq("organization_id", team.organization_id)
-        .eq("user_id", input.coachUserId)
-        .eq("role", "admin")
-        .eq("status", "active"))
-    ]);
-
-    if (!coachMemberships?.length && !adminMemberships?.length) {
-      return { ok: false, message: "Only assigned coaches or org admins can save weekly updates." };
-    }
+    const access = await requireActiveTeamCoachOrOrgAdmin({
+      db,
+      teamId: input.teamId,
+      userId: input.coachUserId,
+      action: "save weekly updates"
+    });
+    if (!access.ok || !access.team) return { ok: false, message: access.message };
+    const team = access.team;
 
     const { data: announcement, error: announcementError } = await runDynamicQuery(db
       .from("announcements")
@@ -305,39 +283,19 @@ export async function saveParentReplay(input: {
 
   try {
     const db = adminDb();
-    const { data: team, error: teamError } = await runDynamicQuery<{
+    const access = await requireActiveTeamCoachOrOrgAdmin({
+      db,
+      teamId: input.teamId,
+      userId: input.actorUserId,
+      action: "publish Parent Replay"
+    });
+    if (!access.ok || !access.team) return { ok: false, message: access.message };
+    const team = access.team as {
       id: string;
       organization_id: string;
       season_id: string;
       name: string;
-    }>(db
-      .from("teams")
-      .select("id,organization_id,season_id,name")
-      .eq("id", input.teamId)
-      .single());
-
-    if (teamError || !team) return { ok: false, message: "Parent Replay requires a known team." };
-
-    const [{ data: coachMemberships }, { data: adminMemberships }] = await Promise.all([
-      runDynamicQuery<Array<{ id: string }>>(db
-        .from("team_memberships")
-        .select("id")
-        .eq("team_id", input.teamId)
-        .eq("user_id", input.actorUserId)
-        .eq("role", "coach")
-        .eq("status", "active")),
-      runDynamicQuery<Array<{ id: string }>>(db
-        .from("organization_memberships")
-        .select("id")
-        .eq("organization_id", team.organization_id)
-        .eq("user_id", input.actorUserId)
-        .eq("role", "admin")
-        .eq("status", "active"))
-    ]);
-
-    if (!coachMemberships?.length && !adminMemberships?.length) {
-      return { ok: false, message: "Only assigned coaches or org admins can publish Parent Replay." };
-    }
+    };
 
     const now = new Date().toISOString();
     const { data: replay, error: replayError } = await runDynamicQuery<{
@@ -475,6 +433,14 @@ export async function updateParentRsvp(input: {
   }
   try {
     const db = adminDb();
+    const access = await requireActiveParentForPlayerEvent({
+      db,
+      parentUserId: input.parentUserId,
+      playerId: input.playerId,
+      eventId: input.eventId
+    });
+    if (!access.ok) return { ok: false, message: access.message };
+
     const { data, error } = await runDynamicQuery(db
       .from("rsvps")
       .upsert({
