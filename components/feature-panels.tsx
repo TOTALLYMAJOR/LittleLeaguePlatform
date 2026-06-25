@@ -48,7 +48,9 @@ import {
   getEmbeddedMapUi,
   getFieldLayoutMetadata,
   getMapQuotaStatus,
+  getVenueAmenityNotes,
   getVenueMarkers,
+  getVenuePage,
   getVenueRecords,
   platformFeatureTiers,
   previewTeamCommunication,
@@ -3513,6 +3515,8 @@ export function TeamPortalClient({ teamPortalData }: { teamPortalData?: TeamPort
   const venueMarkers = getVenueMarkers(teamEvents);
   const mapQuotaStatus = getMapQuotaStatus({ requestsToday: 42, dailyLimit: 100 });
   const fieldLayout = getFieldLayoutMetadata(upcomingGame ?? nextPractice);
+  const venuePage = getVenuePage(upcomingGame ?? nextPractice);
+  const venueAmenityNotes = getVenueAmenityNotes(upcomingGame ?? nextPractice);
   const gameRsvps = upcomingGame ? state.rsvps.filter((rsvp) => rsvp.eventId === upcomingGame.id) : [];
   const gameSnackSlots = upcomingGame ? state.snackScheduleSlots.filter((slot) => slot.teamId === team.id && slot.eventId === upcomingGame.id) : [];
   const gameVolunteerSignups = upcomingGame ? state.volunteerSignups.filter((signup) => signup.teamId === team.id && signup.eventId === upcomingGame.id) : [];
@@ -3718,6 +3722,55 @@ export function TeamPortalClient({ teamPortalData }: { teamPortalData?: TeamPort
             <span className="muted">Assigned coaches can update only their own team. Org admins can update any team.</span>
           </div>
           {brandingMessage ? <p className="notice">{brandingMessage}</p> : null}
+        </article>
+      </section>
+
+      <section className="grid two">
+        <article className="card stack">
+          <div className="card-header">
+            <div>
+              <span className="eyebrow">Venue pages</span>
+              <h2>{venuePage.title}</h2>
+            </div>
+            <span className="badge ok">Portal</span>
+          </div>
+          <p>{venuePage.summary}</p>
+          <p className="muted">Canonical path: {venuePage.path}</p>
+        </article>
+
+        <article className="card stack">
+          <div className="card-header">
+            <div>
+              <span className="eyebrow">Parking notes</span>
+              <h2>Arrival parking</h2>
+            </div>
+            <span className="badge">Game day</span>
+          </div>
+          <p>{venueAmenityNotes.parking}</p>
+        </article>
+      </section>
+
+      <section className="grid two">
+        <article className="card stack">
+          <div className="card-header">
+            <div>
+              <span className="eyebrow">Field entrance notes</span>
+              <h2>Main entrance</h2>
+            </div>
+            <span className="badge">Directions</span>
+          </div>
+          <p>{venueAmenityNotes.entrance}</p>
+        </article>
+
+        <article className="card stack">
+          <div className="card-header">
+            <div>
+              <span className="eyebrow">Restroom info</span>
+              <h2>Facilities</h2>
+            </div>
+            <span className="badge ok">Family</span>
+          </div>
+          <p>{venueAmenityNotes.restrooms}</p>
         </article>
       </section>
 

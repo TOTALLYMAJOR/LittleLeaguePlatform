@@ -357,10 +357,10 @@ This backlog translates the pasted feature inventory into repo-fit work. It is n
   - `Covered`: Venue Marker Management.
   - `Covered`: Quota Handling.
   - `Covered`: Field Layout Metadata.
-  - `Build`: Venue Pages.
-  - `Build`: Parking Notes.
-  - `Build`: Field Entrance Notes.
-  - `Build`: Restroom Info.
+  - `Covered`: Venue Pages.
+  - `Covered`: Parking Notes.
+  - `Covered`: Field Entrance Notes.
+  - `Covered`: Restroom Info.
   - `Build`: Arrival Instructions.
   - `Build`: Venue Intelligence Layer.
   - `Build`: Map Fallback UX.

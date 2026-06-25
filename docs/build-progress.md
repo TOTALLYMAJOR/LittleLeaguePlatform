@@ -116,6 +116,7 @@ npm run supabase:push
 - Added league-specific, heat, lightning, and air-quality weather threshold review helpers.
 - Added rain thresholds, field-closure drafts, weather escalation rules, and coach safety notes.
 - Added team-portal embedded map metadata, venue markers, map quota handling, and field layout metadata.
+- Added venue page metadata plus parking, field entrance, and restroom notes to the team portal.
 
 ### Remaining Gap
 

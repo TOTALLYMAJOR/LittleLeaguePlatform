@@ -38,7 +38,9 @@ import {
   getEmbeddedMapUi,
   getFieldLayoutMetadata,
   getMapQuotaStatus,
+  getVenueAmenityNotes,
   getVenueMarkers,
+  getVenuePage,
   getWeatherAlertHistory,
   getWeatherApprovalQueue,
   getWeatherProviderRetryLogs,
@@ -456,6 +458,8 @@ describe("venue intelligence", () => {
     expect(markers).toHaveLength(2);
     expect(quota.status).toBe("warning");
     expect(layout.entrance).toContain("Main gate");
+    expect(getVenuePage(event).path).toBe("/venues/field-1");
+    expect(getVenueAmenityNotes(event).restrooms).toContain("Restrooms");
   });
 });
 

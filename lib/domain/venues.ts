@@ -39,3 +39,20 @@ export function getFieldLayoutMetadata(event?: LeagueEvent) {
     warmupArea: "Outfield grass beyond the foul line"
   };
 }
+
+export function getVenuePage(event?: LeagueEvent) {
+  const slug = event?.locationName.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "") || "venue-pending";
+  return {
+    title: event ? `${event.locationName} venue page` : "Venue page pending",
+    path: `/venues/${slug}`,
+    summary: event ? `${event.locationName} at ${event.locationAddress}` : "No venue event selected."
+  };
+}
+
+export function getVenueAmenityNotes(event?: LeagueEvent) {
+  return {
+    parking: event ? `Use the main lot closest to ${event.locationName}; overflow parking stays by the league entrance.` : "Parking note pending.",
+    entrance: "Enter through the main gate near concessions unless a coach posts an alternate entrance.",
+    restrooms: "Restrooms are beside concessions; portable restrooms are fallback if the building is closed."
+  };
+}
