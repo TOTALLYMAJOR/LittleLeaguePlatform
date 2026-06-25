@@ -5,6 +5,7 @@ import { describe, expect, it } from "vitest";
 const appRoutes = [
   "/",
   "/admin",
+  "/admin/operations",
   "/admin/security",
   "/admin/themes",
   "/admin/registrations",
@@ -59,5 +60,15 @@ describe("route smoke coverage", () => {
     expect(proof).toContain("parent cannot read cross-team players");
     expect(proof).toContain("coach cannot update archived-season events");
     expect(proof).toContain("team_membership_saved");
+  });
+
+  it("keeps the admin operations page tied to settings, providers, queues, and audits", () => {
+    const page = readFileSync(join(process.cwd(), "app", "admin", "operations", "page.tsx"), "utf8");
+    const data = readFileSync(join(process.cwd(), "lib", "supabase", "admin-operations.ts"), "utf8");
+
+    expect(page).toContain("listAdminOperationsData");
+    expect(data).toContain("providerInventory");
+    expect(data).toContain("approvalQueues");
+    expect(data).toContain("auditLogs");
   });
 });

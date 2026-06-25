@@ -104,10 +104,10 @@ This backlog translates the pasted feature inventory into repo-fit work. It is n
   - `Covered`: Archived Season Status.
   - `Covered`: Sponsor Records.
   - `Covered`: Notification Architecture View.
-  - `Build`: Organization Settings.
-  - `Harden`: Audit Logs.
-  - `Harden`: Provider Inventory.
-  - `Harden`: Approval Queues.
+  - `Covered`: Organization Settings.
+  - `Covered`: Audit Logs.
+  - `Covered`: Provider Inventory.
+  - `Covered`: Approval Queues.
   - `Harden`: Organization-Scoped Admin Auth.
 
 ## P1 - Team, Season, And Brand Management

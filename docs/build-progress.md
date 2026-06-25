@@ -96,6 +96,7 @@ npm run supabase:push
 - Hardened admin membership mutation and live RLS proof by requiring an active organization admin for team-membership changes, writing membership audit events, tightening RSVP RLS to active guardian links, and extending `qa:rls-proof` with an unlinked-player RSVP denial.
 - Added cross-team and archived-season RLS proof rows, locked archived-season event and RSVP mutations behind active-season checks, and added `/admin/security` as the production proof dashboard for RLS and audit evidence.
 - Added provider-boundary tests, expanded live-action route tests, added a Supabase-backed roster import audit endpoint, and pointed archived-season health status at the security proof route.
+- Added `/admin/operations` with organization settings, provider inventory, approval queue counts, and recent audit logs sourced from Supabase with local fallback.
 
 ### Remaining Gap
 
