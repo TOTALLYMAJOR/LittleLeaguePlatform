@@ -101,6 +101,8 @@ npm run supabase:push
 - Added team lifecycle status, coach assignment fields, roster counts, team archive audit actions, and tenant-isolated admin guards to the team setup path.
 - Added `/admin/guardian-links` and a guardian repair API that activates parent-player links, restores parent team membership, and writes audit events under org-admin authorization.
 - Added `/admin/archive`, team logo asset metadata, logo governance policy, and logo submission audit records for archive vault and brand governance coverage.
+- Hardened the admin theme console with per-team Theme QA, dark preview contrast labels, mobile contrast labels, and coverage in feature-panel tests.
+- Added a parent onboarding checklist to the parent dashboard covering guardian link, schedule, notification preference, and RSVP readiness.
 
 ### Remaining Gap
 

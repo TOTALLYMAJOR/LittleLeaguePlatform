@@ -167,9 +167,9 @@ This backlog translates the pasted feature inventory into repo-fit work. It is n
   - `Covered`: Logo Asset Policy.
   - `Covered`: Tenant Brand Defaults.
   - `Covered`: Brand Governance.
-  - `Harden`: Dark Mode Theme QA.
-  - `Harden`: Mobile Theme QA.
-  - `Harden`: Per-Team Brand Contrast Checks.
+  - `Covered`: Dark Mode Theme QA.
+  - `Covered`: Mobile Theme QA.
+  - `Covered`: Per-Team Brand Contrast Checks.
 
 ## P2 - Parent, RSVP, And Coach Operations
 
@@ -188,7 +188,7 @@ This backlog translates the pasted feature inventory into repo-fit work. It is n
   - `Covered`: Registration Completion Status.
   - `Covered`: Signed-Out Empty State.
   - `Covered`: Parent-Scoped Data Loading.
-  - `Build`: Parent Onboarding Flow.
+  - `Covered`: Parent Onboarding Flow.
   - `Harden`: Missing-Link Parent UX.
   - `Build`: RSVP History.
   - `Build`: RSVP Edits.

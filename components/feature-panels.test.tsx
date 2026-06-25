@@ -93,6 +93,8 @@ describe("ParentDashboardClient", () => {
 
     expect(html).toContain("Notification preference center");
     expect(html).toContain("Parent help assistant");
+    expect(html).toContain("Parent onboarding");
+    expect(html).toContain("Confirm guardian link");
     expect(html).toContain("PUSH");
     expect(html).toContain("EMAIL");
     expect(html).toContain("SMS");
@@ -195,6 +197,9 @@ describe("AdminThemesClient", () => {
     expect(html).toContain("Save as tenant defaults");
     expect(html).toContain("Tenant defaults");
     expect(html).toContain("Logo:");
+    expect(html).toContain("Theme QA");
+    expect(html).toContain("Dark:");
+    expect(html).toContain("Mobile:");
   });
 });
 

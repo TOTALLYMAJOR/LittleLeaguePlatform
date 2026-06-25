@@ -204,6 +204,20 @@ function contrastStatus(primaryColor: string, secondaryColor: string) {
   return { label: "Needs contrast", className: "danger", ratio };
 }
 
+function themeQaStatus(primaryColor: string, secondaryColor: string) {
+  const direct = contrastStatus(primaryColor, secondaryColor);
+  const dark = contrastStatus(primaryColor, "#111827");
+  const mobile = contrastStatus("#ffffff", primaryColor);
+  const allPass = direct.className === "ok" && dark.className === "ok" && mobile.className === "ok";
+  return {
+    label: allPass ? "Theme QA pass" : "Theme QA review",
+    className: allPass ? "ok" : "warning",
+    darkLabel: dark.label,
+    mobileLabel: mobile.label,
+    contrastLabel: direct.label
+  };
+}
+
 async function authenticatedJsonFetch(url: string, payload: unknown) {
   const headers: Record<string, string> = { "Content-Type": "application/json" };
   try {
@@ -776,6 +790,12 @@ export function ParentDashboardClient({ dashboardData }: { dashboardData?: Paren
   const accessGate = privateAccessGate(dashboardData, "parent");
   const parentTeamIds = new Set(dashboard.children.map(({ team }) => team.id));
   const primaryTeamId = dashboard.children[0]?.team.id;
+  const onboardingSteps = [
+    { label: "Confirm guardian link", done: dashboard.children.length > 0 },
+    { label: "Review upcoming schedule", done: dashboard.nextEvents.length > 0 },
+    { label: "Set notification preferences", done: sourceState.notificationPreferences.some((item) => item.userId === parentUserId) },
+    { label: "Answer open RSVPs", done: dashboard.rsvpNeeded.length === 0 }
+  ];
   const openSnackSlots = sourceState.snackScheduleSlots.filter((slot) => parentTeamIds.has(slot.teamId) && slot.status === "open");
   const openVolunteerSignups = sourceState.volunteerSignups.filter((signup) => parentTeamIds.has(signup.teamId) && signup.status === "open");
   const eventById = new Map(sourceState.events.map((event) => [event.id, event]));
@@ -856,6 +876,16 @@ export function ParentDashboardClient({ dashboardData }: { dashboardData?: Paren
             </div>
           ))}
         </article>
+      </section>
+
+      <section className="card stack">
+        <h2>Parent onboarding</h2>
+        {onboardingSteps.map((step) => (
+          <p key={step.label}>
+            <span className={`badge ${step.done ? "ok" : "warning"}`}>{step.done ? "Done" : "Next"}</span>{" "}
+            {step.label}
+          </p>
+        ))}
       </section>
 
       <section className="grid two">
@@ -2018,6 +2048,7 @@ export function AdminThemesClient({ initialData }: { initialData: AdminThemeData
           <h2>All team themes</h2>
           {teams.map((item) => {
             const status = contrastStatus(item.primaryColor, item.secondaryColor);
+            const qa = themeQaStatus(item.primaryColor, item.secondaryColor);
             const lastAudit = audits.find((audit) => audit.teamId === item.id);
             const usesTenantDefaults = item.themeKey === tenantDefaults.themeKey &&
               item.mascot === tenantDefaults.mascot &&
@@ -2033,6 +2064,9 @@ export function AdminThemesClient({ initialData }: { initialData: AdminThemeData
                 <span>{lastAudit ? formatDate(lastAudit.createdAt) : "No audit yet"}</span>
                 {usesTenantDefaults ? <span className="badge ok">Default</span> : null}
                 <span className={`badge ${status.className}`}>{status.label}</span>
+                <span className={`badge ${qa.className}`}>{qa.label}</span>
+                <span>Dark: {qa.darkLabel}</span>
+                <span>Mobile: {qa.mobileLabel}</span>
               </button>
             );
           })}
