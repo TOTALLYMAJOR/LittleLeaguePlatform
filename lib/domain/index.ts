@@ -20,6 +20,7 @@ export * from "./weather";
 export * from "./venues";
 export * from "./community";
 export * from "./sponsors";
+export * from "./sponsor-billing";
 export * from "./ux";
 export * from "./metrics";
 export * from "./ai-coach-workspace";

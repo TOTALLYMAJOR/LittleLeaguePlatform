@@ -41,11 +41,11 @@ npm run supabase:push
 | League structure | `seasons`, `teams`, `players`, `player_guardians`, `parent_invites` |
 | Guardian safety | `guardian_authorizations`, `emergency_contacts`, `player_health_notes` |
 | Scheduling | `events`, `event_series`, `event_change_logs`, `field_locations`, `field_reservations`, `rsvps`, `snack_schedule_slots`, `volunteer_signups`, `weather_alerts` |
-| Team portal | `announcements`, `media_items`, `sponsors`, `sponsor_packages`, `sponsor_placements`, `sponsor_assets` |
+| Team portal | `announcements`, `media_items`, `sponsors`, `sponsor_packages`, `sponsor_placements`, `sponsor_assets`, `sponsor_billing_records` |
 | Parent Replay | `parent_replays`, `parent_replay_templates`, `ai_generation_runs`, `learning_plans` |
 | Team chat | `team_chat_channels`, `team_chat_messages`, `team_chat_threads`, `team_chat_message_reads`, `team_chat_reactions`, `team_chat_attachments`, `team_chat_reports`, `chat_moderation_audit_events` |
 | Notifications | `notifications`, `notification_preferences`, `notification_delivery_attempts`, `push_subscriptions` |
-| Admin operations | `registration_requests`, `registration_approval_actions`, `roster_imports`, `roster_import_rows`, `audit_events` |
+| Admin operations | `registration_requests`, `registration_approval_actions`, `roster_imports`, `roster_import_rows`, `team_build_plans`, `audit_events` |
 
 ## Hardening Additions
 
@@ -58,7 +58,8 @@ npm run supabase:push
 - Scheduling supports recurring series, field inventory, field reservation conflict prevention, cancellation reasons, schedule versions, and change logs.
 - Team chat supports threads, replies, attachments, reactions, reports, read receipts, moderation, and retention timestamps.
 - Parent Replay has reusable templates, deterministic/AI/coach-written source tracking, review timestamps, generated-run evidence, and approved learning plans.
-- Sponsor management supports packages, placements, assets, contacts, dates, and review status.
+- Sponsor management supports packages, placements, assets, contacts, dates, review status, and billing proof records separated from child-facing display.
+- Automatic team-builder plans store preview/edit/approve/publish status, constraints, assignments, warnings, and admin approval evidence.
 - Registration approval actions record the exact steps taken after a request: match existing player, create player, create guardian, create membership, or queue invite.
 
 ## Security Shape

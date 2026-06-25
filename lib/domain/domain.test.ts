@@ -8,6 +8,8 @@ import {
   buildParentAssistiveSuggestions,
   computeAdminHealth,
   computeSeasonPlanningMetrics,
+  previewBalancedTeamBuild,
+  publishBalancedTeamBuild,
   createScheduleEvent,
   createRegistrationRequest,
   createParentReplay,
@@ -103,6 +105,7 @@ import {
   getMediaGallerySponsorPlacement,
   getEmailSponsorPlacement,
   getBannerSponsorPlacement,
+  buildSponsorBillingProofs,
   getTouchTargetQa,
   getOfflineStateSummary,
   getCacheInvalidationPolicy,
@@ -662,6 +665,11 @@ describe("sponsor placement", () => {
     expect(getMediaGallerySponsorPlacement(seedState.sponsors)).toHaveLength(0);
     expect(getEmailSponsorPlacement(seedState.sponsors)).toHaveLength(0);
     expect(getBannerSponsorPlacement(seedState.sponsors)).toHaveLength(0);
+    const billingProofs = buildSponsorBillingProofs(seedState.sponsors);
+    expect(billingProofs[0]?.productName).toContain("sponsorship");
+    expect(billingProofs[0]?.publicDisplaySeparated).toBe(true);
+    expect(billingProofs[0]?.childFacingDisplayBlocked).toBe(true);
+    expect(billingProofs[0]?.securityNotes.join(" ")).toContain("restricted keys");
     expect(getTouchTargetQa().minimumPixels).toBe(44);
     expect(getOfflineStateSummary().detail).toContain("read-only");
     expect(getCacheInvalidationPolicy().strategy).toBe("stale_while_revalidate");
@@ -711,6 +719,31 @@ describe("start-of-season planning", () => {
     expect(threeU?.teamCount).toBe(2);
     expect(threeU?.rosterMakerNote).toContain("Roster maker");
     expect(threeUBracket?.matchups[0]).toContain("vs");
+    const preview = previewBalancedTeamBuild(seedState, {
+      division: "3U",
+      targetRosterSize: 10,
+      actorUserId: "user-admin",
+      now: NOW,
+      skillRatings: {
+        "player-mason": 4,
+        "player-avery": 3,
+        "player-noah": 3
+      },
+      friendRequests: [{ playerId: "player-mason", friendPlayerId: "player-avery" }]
+    });
+    const published = publishBalancedTeamBuild(seedState, {
+      division: "3U",
+      targetRosterSize: 10,
+      actorUserId: "user-admin",
+      now: NOW
+    });
+
+    expect(preview.ok).toBe(true);
+    expect(preview.workflow.join(" -> ")).toBe("Preview -> Edit -> Approve -> Publish");
+    expect(preview.publishBoundary).toContain("Preview does not update");
+    expect(preview.teams.flatMap((team) => team.players).map((player) => player.constraintNotes.join(" ")).join(" ")).toContain("Friend request considered");
+    expect(published.ok).toBe(true);
+    expect(published.state.auditEvents[0]?.action).toBe("automatic_team_build_published");
   });
 });
 

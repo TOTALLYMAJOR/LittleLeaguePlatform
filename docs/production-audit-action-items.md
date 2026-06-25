@@ -74,9 +74,10 @@ The app is not ready for real-family production launch yet. The core scaffold, r
     - Current truth: media intake is link-based with Google Photos/YouTube validation, reporting, and moderation; upload storage provider is not configured.
     - Action if needed: add Supabase Storage or another private asset provider, upload review policy, file limits, scanning, and deletion/takedown workflow.
 
-12. Decide whether sponsor billing is in scope.
-    - Current truth: sponsor records, placements, logo metadata, and audits exist; Stripe billing is intentionally disconnected.
-    - Action if needed: add Stripe products/invoices/payment proof and keep billing separate from child-facing sponsor display.
+12. Sponsor billing proof foundation is now in scope.
+    - Current truth: sponsor records, placements, logo metadata, audits, Stripe Product/Price lookup keys, invoice references, and payment-proof statuses are represented as admin-only readiness records.
+    - Remaining action if live collection is required: connect server-side Stripe Product/Price/Invoice or Checkout flows with environment-managed restricted keys, webhook signature verification, and sandbox payment proof.
+    - Boundary: sponsor billing proof remains separate from child-facing sponsor display and does not expose payment status to families.
 
 13. Keep native Expo deferred unless PWA metrics prove need.
     - Current truth: PWA install and usage metrics exist; Expo readiness remains deferred.
@@ -86,9 +87,9 @@ The app is not ready for real-family production launch yet. The core scaffold, r
     - Current truth: AI Coach Workspace and Parent Replay are deterministic, review-only draft tools.
     - Action if adding an AI provider: add prompt/eval harness, hallucination tests, privacy filters, source citations, provider usage controls, and review gates before any generated content is publishable.
 
-15. Decide whether automatic team building is required.
-    - Current truth: roster maker readiness and bracket preview exist, but there is no auto team assignment algorithm or publish flow.
-    - Action if required: build balanced team generation from unassigned players with age/skill/sibling/friend/coach constraints, preview/edit/approve/publish workflow, and audit logs.
+15. Automatic team building foundation is now in scope.
+    - Current truth: roster maker readiness now includes balanced team-builder previews, sibling/guardian grouping, friend-request consideration, skill-balance scores, target roster warnings, Preview -> Edit -> Approve -> Publish workflow, and admin-only team-build plan tables.
+    - Remaining action before real roster publication: wire persisted Supabase team-build plan saves, add birthdate/age-band and explicit player evaluation fields, and run browser-level admin publish proof.
 
 ## Evidence To Preserve
 

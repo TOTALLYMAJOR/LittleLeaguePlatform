@@ -104,6 +104,8 @@ import {
   getMediaGallerySponsorPlacement,
   getEmailSponsorPlacement,
   getBannerSponsorPlacement,
+  buildSponsorBillingProofs,
+  previewBalancedTeamBuild,
   getTouchTargetQa,
   getOfflineStateSummary,
   getCacheInvalidationPolicy,
@@ -1868,6 +1870,7 @@ export function AdminDashboardClient({ registrationRequests, sponsorData, mediaD
   const mediaGallerySponsorPlacement = getMediaGallerySponsorPlacement(sponsors);
   const emailSponsorPlacement = getEmailSponsorPlacement(sponsors);
   const bannerSponsorPlacement = getBannerSponsorPlacement(sponsors);
+  const sponsorBillingProofs = buildSponsorBillingProofs(sponsors);
   const touchTargetQa = getTouchTargetQa();
   const offlineStateSummary = getOfflineStateSummary();
   const cacheInvalidationPolicy = getCacheInvalidationPolicy();
@@ -1921,6 +1924,22 @@ export function AdminDashboardClient({ registrationRequests, sponsorData, mediaD
   const seasonPlanning = useMemo(() => computeSeasonPlanningMetrics(state, targetRosterSize), [state, targetRosterSize]);
   const selectedPlanningDivision = seasonPlanning.divisions.find((division) => division.division === planningDivision) ?? seasonPlanning.divisions[0];
   const selectedBracketRound = seasonPlanning.bracketRounds.find((round) => round.division === selectedPlanningDivision?.division);
+  const teamBuildPreview = useMemo(() => previewBalancedTeamBuild(state, {
+    division: selectedPlanningDivision?.division ?? planningDivision,
+    targetRosterSize,
+    actorUserId: "user-admin",
+    now: NOW,
+    skillRatings: {
+      "player-mason": 4,
+      "player-avery": 3,
+      "player-noah": 3,
+      "player-ella": 4,
+      "player-liam": 2
+    },
+    friendRequests: [
+      { playerId: "player-mason", friendPlayerId: "player-avery" }
+    ]
+  }), [planningDivision, selectedPlanningDivision?.division, state, targetRosterSize]);
   const communicationPreview = useMemo(() => previewTeamCommunication(state, {
     teamId: communicationTeamId,
     actorUserId: "user-admin",
@@ -2207,6 +2226,19 @@ export function AdminDashboardClient({ registrationRequests, sponsorData, mediaD
               </div>
             ))}
           </div>
+          <div className="stack compact">
+            <h3>Automatic team builder preview</h3>
+            <p className="muted"><strong>Workflow:</strong> {teamBuildPreview.workflow.join(" -> ")}</p>
+            <p className="muted"><strong>Sibling/friend constraints:</strong> sibling groups stay together and friend requests are considered before roster balance.</p>
+            <p className="muted"><strong>Publish boundary:</strong> {teamBuildPreview.publishBoundary}</p>
+            {teamBuildPreview.teams.map((team) => (
+              <p key={team.teamId}>
+                <strong>{team.teamName}</strong><br />
+                <span className="muted">{team.playerCount} player(s), skill-balance score {team.averageSkill}: {team.players.map((player) => player.name).join(", ") || "No players"}</span>
+              </p>
+            ))}
+            {teamBuildPreview.warnings.slice(0, 3).map((warning) => <p className="notice" key={warning}>{warning}</p>)}
+          </div>
         </article>
 
         <article className="card stack season-planning-panel">
@@ -2428,7 +2460,18 @@ export function AdminDashboardClient({ registrationRequests, sponsorData, mediaD
             </label>
           </div>
           <button disabled={isSponsorPending} onClick={saveSponsorDraft}>Save sponsor</button>
-          <p className="muted">Stripe/payment billing is not connected. Sponsor display never overrides registration, RSVP, schedule, safety, or parent workflow clarity.</p>
+          <p className="muted">Stripe live collection is not connected. Sponsor billing proof stays separate from registration, RSVP, schedule, safety, and child-facing sponsor display.</p>
+          <div className="stack compact">
+            <h3>Sponsor billing proof</h3>
+            <p className="muted">Stripe Product/Price, invoice proof, and payment proof are admin-only readiness records. Public sponsor placement does not depend on or reveal payment status.</p>
+            {sponsorBillingProofs.slice(0, 3).map((proof) => (
+              <p key={proof.sponsorId}>
+                <strong>{proof.sponsorName}</strong><br />
+                <span className="muted">Stripe Product/Price: {proof.priceLookupKey}; Invoice proof: {proof.invoiceReference}; Payment proof: {proof.paymentProofStatus}; ${(proof.amountCents / 100).toFixed(2)} {proof.currency.toUpperCase()}.</span>
+              </p>
+            ))}
+            <p className="notice">Sponsor billing stays separate from child-facing display. Stripe keys must stay server-side and preferably use restricted keys.</p>
+          </div>
           <div className="stack compact">
             {sponsors.map((sponsor) => (
               <p key={sponsor.id}>

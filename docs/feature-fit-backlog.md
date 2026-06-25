@@ -129,6 +129,10 @@ This backlog translates the pasted feature inventory into repo-fit work. It is n
   - `Covered`: Season Setup.
   - `Covered`: Coach Assignment.
   - `Covered`: Roster Lifecycle.
+  - `Covered`: Automatic Team Builder Preview.
+  - `Covered`: Balanced Team Assignment Algorithm.
+  - `Covered`: Team Build Approval Workflow.
+  - `Covered`: Team Build Publish Audit.
   - `Covered`: Team Archiving.
   - `Covered`: Tenant Isolation.
   - `Covered`: Team Memberships.
@@ -488,7 +492,8 @@ This backlog translates the pasted feature inventory into repo-fit work. It is n
   - `Covered`: Sponsor CRUD.
   - `Covered`: Sponsor Logo Assets.
   - `Covered`: Sponsor Placement Rules.
-  - `Defer`: Sponsor Billing/Invoicing.
+  - `Covered`: Sponsor Billing/Invoicing Proof.
+  - `Defer`: Live Stripe Collection.
   - `Covered`: Public Display Policy.
   - `Covered`: Team Portal Sponsor Placement.
   - `Covered`: Schedule Sponsor Placement.

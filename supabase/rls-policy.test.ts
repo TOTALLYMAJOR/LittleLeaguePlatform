@@ -21,6 +21,7 @@ describe("Supabase RLS policy coverage", () => {
   const teamLifecycleStatus = migration("0014_team_lifecycle_status.sql");
   const teamLogoAssets = migration("0015_team_logo_assets.sql");
   const rsvpCancellations = migration("0016_rsvp_cancellations.sql");
+  const sponsorBillingAndTeamBuilder = migration("0017_sponsor_billing_and_team_builder.sql");
   const packageJson = readFileSync(join(process.cwd(), "package.json"), "utf8");
   const rlsProof = readFileSync(join(process.cwd(), "scripts", "verify-rls-boundaries.mjs"), "utf8");
 
@@ -118,5 +119,15 @@ describe("Supabase RLS policy coverage", () => {
   it("keeps RSVP cancellation as retained history", () => {
     expect(rsvpCancellations).toContain("'cancelled'");
     expect(rsvpCancellations).toContain("rsvps_response_check");
+  });
+
+  it("keeps sponsor billing and automatic team-builder proof admin-only", () => {
+    expect(sponsorBillingAndTeamBuilder).toContain("create table if not exists public.sponsor_billing_records");
+    expect(sponsorBillingAndTeamBuilder).toContain("stripe_product_id");
+    expect(sponsorBillingAndTeamBuilder).toContain("public_display_separated boolean not null default true");
+    expect(sponsorBillingAndTeamBuilder).toContain("organization admins manage sponsor billing records");
+    expect(sponsorBillingAndTeamBuilder).toContain("create table if not exists public.team_build_plans");
+    expect(sponsorBillingAndTeamBuilder).toContain("assignments jsonb");
+    expect(sponsorBillingAndTeamBuilder).toContain("organization admins manage team build plans");
   });
 });
