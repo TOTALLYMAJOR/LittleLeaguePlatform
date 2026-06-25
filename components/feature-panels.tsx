@@ -94,6 +94,10 @@ import {
   cancelVolunteerSignup,
   getVolunteerApprovalPolicies,
   getSnackVolunteerFairness,
+  getDutyRotation,
+  getFamilyOptOuts,
+  getSiblingAwareDutyAssignments,
+  getMissedSlotTracking,
   type ChatAnnouncementTopic,
   type CommunicationTemplate,
   type EventType,
@@ -3627,6 +3631,10 @@ export function TeamPortalClient({ teamPortalData }: { teamPortalData?: TeamPort
   const volunteerCancellation = cancelVolunteerSignup(state, state.volunteerSignups.find((signup) => signup.teamId === team.id)?.id ?? "volunteer-pending", "Family schedule changed.");
   const volunteerApprovalPolicies = getVolunteerApprovalPolicies();
   const snackVolunteerFairness = getSnackVolunteerFairness(state, team.id);
+  const dutyRotation = getDutyRotation(state, team.id);
+  const familyOptOuts = getFamilyOptOuts(state, team.id);
+  const siblingAwareAssignments = getSiblingAwareDutyAssignments(state, team.id);
+  const missedSlots = getMissedSlotTracking(state, team.id);
   const latestReplay = parentReplaysSource
     .filter((replay) => replay.teamId === team.id)
     .sort((left, right) => Date.parse(right.createdAt) - Date.parse(left.createdAt))[0];
@@ -4083,6 +4091,55 @@ export function TeamPortalClient({ teamPortalData }: { teamPortalData?: TeamPort
             <span className="badge">{snackVolunteerFairness.balanceScore} gap</span>
           </div>
           <p>Snack assignments {snackVolunteerFairness.snackAssignments}, volunteer assignments {snackVolunteerFairness.volunteerAssignments}.</p>
+        </article>
+      </section>
+
+      <section className="grid two">
+        <article className="card stack">
+          <div className="card-header">
+            <div>
+              <span className="eyebrow">Duty rotation</span>
+              <h2>Next family duties</h2>
+            </div>
+            <span className="badge">{dutyRotation.length} family(ies)</span>
+          </div>
+          {dutyRotation.map((entry) => <p key={entry.parentUserId}><strong>{entry.order}. {entry.parentUserId}</strong><br /><span className="muted">Next duty: {entry.nextDuty}</span></p>)}
+        </article>
+
+        <article className="card stack">
+          <div className="card-header">
+            <div>
+              <span className="eyebrow">Family opt-outs</span>
+              <h2>Duty preferences</h2>
+            </div>
+            <span className="badge">{familyOptOuts.filter((entry) => entry.optedOut).length} opt-out(s)</span>
+          </div>
+          {familyOptOuts.map((entry) => <p key={entry.parentUserId}><strong>{entry.parentUserId}</strong><br /><span className="muted">{entry.reason}</span></p>)}
+        </article>
+      </section>
+
+      <section className="grid two">
+        <article className="card stack">
+          <div className="card-header">
+            <div>
+              <span className="eyebrow">Sibling-aware duty assignment</span>
+              <h2>Household grouping</h2>
+            </div>
+            <span className="badge">{siblingAwareAssignments.length} group(s)</span>
+          </div>
+          {siblingAwareAssignments.map((entry) => <p key={entry.parentUserId}><strong>{entry.siblingGroupKey}</strong><br /><span className="muted">Duty: {entry.nextDuty}</span></p>)}
+        </article>
+
+        <article className="card stack">
+          <div className="card-header">
+            <div>
+              <span className="eyebrow">Missed-slot tracking</span>
+              <h2>Open past duties</h2>
+            </div>
+            <span className="badge warning">{missedSlots.length} missed</span>
+          </div>
+          {missedSlots.map((slot) => <p key={slot.id}>{slot.detail}</p>)}
+          {!missedSlots.length ? <p className="muted">No missed snack or volunteer slots are detected.</p> : null}
         </article>
       </section>
 

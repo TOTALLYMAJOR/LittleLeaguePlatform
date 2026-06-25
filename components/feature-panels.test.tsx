@@ -388,6 +388,10 @@ describe("TeamPortalClient", () => {
     expect(html).toContain("Volunteer cancellation flow");
     expect(html).toContain("Volunteer approval policies");
     expect(html).toContain("Snack and volunteer fairness engine");
+    expect(html).toContain("Duty rotation");
+    expect(html).toContain("Family opt-outs");
+    expect(html).toContain("Sibling-aware duty assignment");
+    expect(html).toContain("Missed-slot tracking");
     expect(html).toContain("Coach video library");
     expect(html).toContain("Parent education center");
     expect(html).toContain("Skill trees");

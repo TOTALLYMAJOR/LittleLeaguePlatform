@@ -125,6 +125,7 @@ npm run supabase:push
 - Added parent/volunteer memory moments, exportable season memory rows, and snack reminder summaries.
 - Added snack conflict handling, snack audit trail, snack cancellation preview, and volunteer role caps.
 - Added volunteer reminders, cancellation preview, approval policies, and snack/volunteer fairness balance.
+- Added duty rotation, family opt-out, sibling-aware assignment, and missed-slot tracking summaries.
 
 ### Remaining Gap
 

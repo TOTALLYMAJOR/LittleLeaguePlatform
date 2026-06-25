@@ -75,3 +75,42 @@ export function getSnackVolunteerFairness(state: AppState, teamId: string) {
     balanceScore: Math.abs(snackAssignments - volunteerAssignments)
   };
 }
+
+export function getDutyRotation(state: AppState, teamId: string) {
+  const parentIds = Array.from(new Set(state.teamMemberships
+    .filter((membership) => membership.teamId === teamId && membership.role === "parent" && membership.status === "active")
+    .map((membership) => membership.userId)));
+  return parentIds.map((parentUserId, index) => ({
+    parentUserId,
+    order: index + 1,
+    nextDuty: index % 2 === 0 ? "snack" : "volunteer"
+  }));
+}
+
+export function getFamilyOptOuts(state: AppState, teamId: string) {
+  return state.teamMemberships
+    .filter((membership) => membership.teamId === teamId && membership.role === "parent" && membership.status === "active")
+    .map((membership) => ({
+      parentUserId: membership.userId,
+      optedOut: false,
+      reason: "No opt-out recorded."
+    }));
+}
+
+export function getSiblingAwareDutyAssignments(state: AppState, teamId: string) {
+  const rotation = getDutyRotation(state, teamId);
+  return rotation.map((entry) => ({
+    ...entry,
+    siblingGroupKey: entry.parentUserId
+  }));
+}
+
+export function getMissedSlotTracking(state: AppState, teamId: string) {
+  return state.snackScheduleSlots
+    .filter((slot) => slot.teamId === teamId && slot.status === "open" && new Date(state.events.find((event) => event.id === slot.eventId)?.startsAt ?? "2999-01-01").getTime() < Date.now())
+    .map((slot) => ({
+      id: `missed-${slot.id}`,
+      slotId: slot.id,
+      detail: `${slot.item} was not claimed before the event.`
+    }));
+}

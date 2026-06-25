@@ -92,7 +92,11 @@ import {
   getVolunteerReminders,
   cancelVolunteerSignup,
   getVolunteerApprovalPolicies,
-  getSnackVolunteerFairness
+  getSnackVolunteerFairness,
+  getDutyRotation,
+  getFamilyOptOuts,
+  getSiblingAwareDutyAssignments,
+  getMissedSlotTracking
 } from "./index";
 
 describe("CSV duplicate detection", () => {
@@ -186,6 +190,13 @@ describe("media URL validation", () => {
     expect(cancelled.state.volunteerSignups.find((signup) => signup.id === "volunteer-score-helper")?.status).toBe("open");
     expect(getVolunteerApprovalPolicies()).toHaveLength(3);
     expect(getSnackVolunteerFairness(seedState, "team-tigers").balanceScore).toBe(0);
+  });
+
+  it("tracks duty rotation, opt-outs, sibling-aware duties, and missed slots", () => {
+    expect(getDutyRotation(seedState, "team-tigers")).toHaveLength(2);
+    expect(getFamilyOptOuts(seedState, "team-tigers")[0]?.optedOut).toBe(false);
+    expect(getSiblingAwareDutyAssignments(seedState, "team-tigers")[0]?.siblingGroupKey).toContain("user-parent");
+    expect(getMissedSlotTracking(seedState, "team-tigers").length).toBeGreaterThan(0);
   });
 });
 

@@ -459,10 +459,10 @@ This backlog translates the pasted feature inventory into repo-fit work. It is n
   - `Covered`: Volunteer Approval Policies.
   - `Covered`: Volunteer Center.
   - `Covered`: Snack and Volunteer Fairness Engine.
-  - `Build`: Duty Rotation.
-  - `Build`: Family Opt-Outs.
-  - `Build`: Sibling-Aware Duty Assignment.
-  - `Build`: Missed-Slot Tracking.
+  - `Covered`: Duty Rotation.
+  - `Covered`: Family Opt-Outs.
+  - `Covered`: Sibling-Aware Duty Assignment.
+  - `Covered`: Missed-Slot Tracking.
 
 ### Sponsors
 
