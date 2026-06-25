@@ -5,6 +5,7 @@ import { describe, expect, it } from "vitest";
 const appRoutes = [
   "/",
   "/admin",
+  "/admin/security",
   "/admin/themes",
   "/admin/registrations",
   "/coach",
@@ -48,5 +49,15 @@ describe("route smoke coverage", () => {
     expect(checklist).toContain("/api/admin/exports");
     expect(checklist).toContain("deleted chat message text");
     expect(checklist).toContain("read-only archived-season smoke check");
+  });
+
+  it("keeps the admin security proof page tied to RLS and audit evidence", () => {
+    const page = readFileSync(join(process.cwd(), "app", "admin", "security", "page.tsx"), "utf8");
+    const proof = readFileSync(join(process.cwd(), "lib", "supabase", "security-proof.ts"), "utf8");
+
+    expect(page).toContain("buildSecurityProofDashboard");
+    expect(proof).toContain("parent cannot read cross-team players");
+    expect(proof).toContain("coach cannot update archived-season events");
+    expect(proof).toContain("team_membership_saved");
   });
 });

@@ -6,6 +6,7 @@ const featureLinks = [
   ["Team-specific portal", "/team-portal", "One team surface for weekly digest, Game Day Mode, field maps, learning, memories, volunteers, and skill progress."],
   ["Coach dashboard", "/coach", "Coach view for assigned teams, RSVP summaries, weather drafts, snacks, volunteers, and Parent Replay."],
   ["Admin dashboard", "/admin", "League operations view for teams, registration queue, sponsors, notifications, and launch readiness."],
+  ["Security proof", "/admin/security", "Track RLS, cross-team denial, archived read-only behavior, and production audit evidence."],
   ["Registration system", "/registration", "Parent self-registration request flow with admin review before account or child access."],
   ["CSV duplicate detection", "/admin/imports", "Validate roster imports, separate blocking errors from warnings, and simulate an audited commit."],
   ["Smart invite recovery", "/invite/recover", "Recover pending parent invites without exposing raw tokens or sending real provider messages."],

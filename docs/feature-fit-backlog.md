@@ -59,11 +59,11 @@ This backlog translates the pasted feature inventory into repo-fit work. It is n
   - `Covered`: Row-Level Security Policies.
   - `Covered`: Live-Data RLS Tests.
   - `Covered`: Production RLS Coverage.
-  - `Build`: Cross-Team Access Tests.
-  - `Build`: Archived-Season Access Tests.
-  - `Build`: RLS Production Proof Dashboard.
+  - `Covered`: Cross-Team Access Tests.
+  - `Covered`: Archived-Season Access Tests.
+  - `Covered`: RLS Production Proof Dashboard.
   - `Covered`: Audit Events.
-  - `Harden`: Production Audit Logs.
+  - `Covered`: Production Audit Logs.
   - `Harden`: Provider Boundary Testing.
   - `Build`: Live-Data Action Tests.
   - `Covered`: QA User Seeding.

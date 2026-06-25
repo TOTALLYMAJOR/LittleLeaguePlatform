@@ -6,7 +6,9 @@ const envFile = ".env.local";
 const ids = {
   playerMason: "44444444-4444-4444-8444-444444444441",
   playerAvery: "44444444-4444-4444-8444-444444444442",
+  playerOtherTeam: "44444444-4444-4444-8444-444444444443",
   game: "55555555-5555-4555-8555-555555555551",
+  archivedGame: "55555555-5555-4555-8555-555555555553",
   weather: "cccccccc-cccc-4ccc-8ccc-ccccccccccc1"
 };
 
@@ -103,6 +105,13 @@ async function main() {
   assertNoError(parentOrgMembershipRead.error, "parent org membership read");
   assertRows(parentOrgMembershipRead.data, 0, "parent cannot read org admin memberships");
 
+  const parentOtherTeamPlayerRead = await parent
+    .from("players")
+    .select("id,first_name")
+    .eq("id", ids.playerOtherTeam);
+  assertNoError(parentOtherTeamPlayerRead.error, "parent cross-team player read denial");
+  assertRows(parentOtherTeamPlayerRead.data, 0, "parent cannot read cross-team players");
+
   const parentWeatherUpdate = await parent
     .from("weather_alerts")
     .update({ status: "queued" })
@@ -131,6 +140,13 @@ async function main() {
     .select("id,status");
   assertNoError(coachWeatherUpdate.error, "coach weather update");
   assertRows(coachWeatherUpdate.data, 1, "coach can update assigned-team weather alerts");
+
+  const archivedEventUpdate = await coach
+    .from("events")
+    .update({ location_name: "Archived Field Edited" })
+    .eq("id", ids.archivedGame)
+    .select("id,location_name");
+  assertDenied(archivedEventUpdate, "coach cannot update archived-season events");
 
   const anonymousTeamRead = await anonymous
     .from("teams")

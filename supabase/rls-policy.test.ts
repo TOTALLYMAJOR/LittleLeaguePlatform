@@ -17,6 +17,7 @@ describe("Supabase RLS policy coverage", () => {
   const mobileDecisionMetrics = migration("0010_mobile_decision_metrics.sql");
   const providerDeliveryApproval = migration("0011_provider_delivery_approval.sql");
   const rsvpGuardianScope = migration("0012_rsvp_guardian_scope.sql");
+  const archivedSeasonReadOnly = migration("0013_archived_season_read_only.sql");
   const packageJson = readFileSync(join(process.cwd(), "package.json"), "utf8");
   const rlsProof = readFileSync(join(process.cwd(), "scripts", "verify-rls-boundaries.mjs"), "utf8");
 
@@ -88,6 +89,14 @@ describe("Supabase RLS policy coverage", () => {
     expect(rlsProof).toContain("signInWithPassword");
     expect(rlsProof).toContain("parent cannot update weather alerts");
     expect(rlsProof).toContain("parent cannot RSVP for unlinked player");
+    expect(rlsProof).toContain("parent cannot read cross-team players");
+    expect(rlsProof).toContain("coach cannot update archived-season events");
     expect(rlsProof).toContain("anonymous cannot read private teams");
+  });
+
+  it("keeps archived seasons readable but mutation-locked", () => {
+    expect(archivedSeasonReadOnly).toContain("current_team_season_is_active");
+    expect(archivedSeasonReadOnly).toContain("coaches and admins manage active season events");
+    expect(archivedSeasonReadOnly).toContain("parents can upsert active linked child rsvps");
   });
 });

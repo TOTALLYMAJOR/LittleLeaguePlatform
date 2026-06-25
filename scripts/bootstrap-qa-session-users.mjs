@@ -139,13 +139,19 @@ async function main() {
   const ids = {
     organization: "11111111-1111-4111-8111-111111111111",
     season: "22222222-2222-4222-8222-222222222222",
+    archivedSeason: "22222222-2222-4222-8222-222222222223",
     team: "33333333-3333-4333-8333-333333333331",
+    otherTeam: "33333333-3333-4333-8333-333333333332",
+    archivedTeam: "33333333-3333-4333-8333-333333333333",
     playerMason: "44444444-4444-4444-8444-444444444441",
     playerAvery: "44444444-4444-4444-8444-444444444442",
+    playerOtherTeam: "44444444-4444-4444-8444-444444444443",
     game: "55555555-5555-4555-8555-555555555551",
     practice: "55555555-5555-4555-8555-555555555552",
+    archivedGame: "55555555-5555-4555-8555-555555555553",
     coachMembership: "66666666-6666-4666-8666-666666666661",
     parentMembership: "66666666-6666-4666-8666-666666666662",
+    archivedCoachMembership: "66666666-6666-4666-8666-666666666663",
     guardian: "77777777-7777-4777-8777-777777777771",
     announcement: "88888888-8888-4888-8888-888888888881",
     mediaAlbum: "99999999-9999-4999-8999-999999999991",
@@ -181,6 +187,15 @@ async function main() {
     starts_at: "2026-03-01T00:00:00.000Z",
     ends_at: "2026-06-15T23:59:59.000Z"
   });
+  await upsertOrThrow(supabase, "seasons", {
+    id: ids.archivedSeason,
+    organization_id: ids.organization,
+    name: "Spring 2025",
+    status: "archived",
+    starts_at: "2025-03-01T00:00:00.000Z",
+    ends_at: "2025-06-15T23:59:59.000Z",
+    archived_at: "2025-06-30T12:00:00.000Z"
+  });
   await upsertOrThrow(supabase, "teams", {
     id: ids.team,
     organization_id: ids.organization,
@@ -191,6 +206,30 @@ async function main() {
     mascot: "Tiger Cub",
     primary_color: "#f97316",
     secondary_color: "#1d4ed8",
+    theme_key: "baseball"
+  });
+  await upsertOrThrow(supabase, "teams", {
+    id: ids.otherTeam,
+    organization_id: ids.organization,
+    season_id: ids.season,
+    division: "4U",
+    name: "Rookie Rockets",
+    coach_user_id: null,
+    mascot: "Rocket",
+    primary_color: "#2563eb",
+    secondary_color: "#f97316",
+    theme_key: "baseball"
+  });
+  await upsertOrThrow(supabase, "teams", {
+    id: ids.archivedTeam,
+    organization_id: ids.organization,
+    season_id: ids.archivedSeason,
+    division: "3U",
+    name: "Archived Tigers",
+    coach_user_id: coach.id,
+    mascot: "Tiger Cub",
+    primary_color: "#64748b",
+    secondary_color: "#94a3b8",
     theme_key: "baseball"
   });
   await upsertOrThrow(supabase, "team_memberships", {
@@ -205,6 +244,13 @@ async function main() {
     team_id: ids.team,
     user_id: parent.id,
     role: "parent",
+    status: "active"
+  }, { onConflict: "team_id,user_id,role" });
+  await upsertOrThrow(supabase, "team_memberships", {
+    id: ids.archivedCoachMembership,
+    team_id: ids.archivedTeam,
+    user_id: coach.id,
+    role: "coach",
     status: "active"
   }, { onConflict: "team_id,user_id,role" });
   await upsertOrThrow(supabase, "players", {
@@ -224,6 +270,15 @@ async function main() {
     first_name: "Avery",
     last_initial: "P",
     jersey: "12"
+  });
+  await upsertOrThrow(supabase, "players", {
+    id: ids.playerOtherTeam,
+    organization_id: ids.organization,
+    season_id: ids.season,
+    team_id: ids.otherTeam,
+    first_name: "Sam",
+    last_initial: "R",
+    jersey: "3"
   });
   await upsertOrThrow(supabase, "player_guardians", {
     id: ids.guardian,
@@ -258,6 +313,20 @@ async function main() {
     location_name: "Practice Field",
     location_address: "100 League Way",
     status: "scheduled"
+  });
+  await upsertOrThrow(supabase, "events", {
+    id: ids.archivedGame,
+    organization_id: ids.organization,
+    team_id: ids.archivedTeam,
+    season_id: ids.archivedSeason,
+    title: "Archived Tigers Championship",
+    event_type: "game",
+    starts_at: "2025-05-10T15:00:00.000Z",
+    ends_at: "2025-05-10T16:00:00.000Z",
+    location_name: "Archived Field",
+    location_address: "100 League Way",
+    opponent: "Past Rockets",
+    status: "completed"
   });
   await upsertOrThrow(supabase, "announcements", {
     id: ids.announcement,
