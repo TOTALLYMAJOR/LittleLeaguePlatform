@@ -104,7 +104,11 @@ import {
   getEmailSponsorPlacement,
   getBannerSponsorPlacement,
   getTouchTargetQa,
-  getOfflineStateSummary
+  getOfflineStateSummary,
+  getCacheInvalidationPolicy,
+  getManualDarkToggleState,
+  getAccessibilityContrastChecks,
+  getPromptEvalHarness
 } from "./index";
 
 describe("CSV duplicate detection", () => {
@@ -643,6 +647,18 @@ describe("sponsor placement", () => {
     expect(getBannerSponsorPlacement(seedState.sponsors)).toHaveLength(0);
     expect(getTouchTargetQa().minimumPixels).toBe(44);
     expect(getOfflineStateSummary().detail).toContain("read-only");
+    expect(getCacheInvalidationPolicy().strategy).toBe("stale_while_revalidate");
+    expect(getManualDarkToggleState(true).label).toBe("Dark mode on");
+    expect(getAccessibilityContrastChecks()).toHaveLength(3);
+  });
+});
+
+describe("parent replay evaluation", () => {
+  it("keeps prompt/eval harness local and coach-reviewed", () => {
+    const harness = getPromptEvalHarness();
+
+    expect(harness.status).toBe("local");
+    expect(harness.checks.join(" ")).toContain("Coach review");
   });
 });
 

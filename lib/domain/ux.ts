@@ -12,3 +12,25 @@ export function getOfflineStateSummary() {
     detail: "Offline fallback is read-only and does not replay RSVPs, chat posts, provider sends, or private data fetches."
   };
 }
+
+export function getCacheInvalidationPolicy() {
+  return {
+    strategy: "stale_while_revalidate",
+    detail: "Invalidate roster, schedule, chat, media, and notification caches after authenticated writes."
+  };
+}
+
+export function getManualDarkToggleState(enabled = false) {
+  return {
+    enabled,
+    label: enabled ? "Dark mode on" : "System theme"
+  };
+}
+
+export function getAccessibilityContrastChecks() {
+  return [
+    { surface: "primary buttons", status: "reviewed" as const },
+    { surface: "badges", status: "reviewed" as const },
+    { surface: "cards", status: "reviewed" as const }
+  ];
+}

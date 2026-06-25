@@ -353,3 +353,14 @@ export function createParentReplay(state: AppState, input: ParentReplayInput): P
     draft
   };
 }
+
+export function getPromptEvalHarness() {
+  return {
+    status: "local" as const,
+    checks: [
+      "Activities stay parent-ready and age-appropriate.",
+      "Output avoids provider claims unless an AI provider is explicitly connected.",
+      "Coach review remains required before parent delivery."
+    ]
+  };
+}

@@ -279,6 +279,9 @@ describe("AdminDashboardClient", () => {
     expect(html).toContain("Queued communication records");
     expect(html).toContain("Touch Target QA");
     expect(html).toContain("Offline states");
+    expect(html).toContain("Cache invalidation policy");
+    expect(html).toContain("Manual dark toggle");
+    expect(html).toContain("Accessibility contrast checks");
   });
 });
 
@@ -347,6 +350,7 @@ describe("ParentReplayClient", () => {
     expect(html).toContain("Coach video");
     expect(html).toContain("Parent tip");
     expect(html).toContain("Team quest");
+    expect(html).toContain("Prompt/Eval harness");
     expect(html).toContain("Translation engine");
     expect(html).toContain("Healthy streak");
     expect(html).toContain("Memory timeline");

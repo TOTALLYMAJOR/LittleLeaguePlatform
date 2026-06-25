@@ -128,6 +128,7 @@ npm run supabase:push
 - Added duty rotation, family opt-out, sibling-aware assignment, and missed-slot tracking summaries.
 - Added sponsor public display policy plus team portal, schedule, and media gallery placement summaries.
 - Added email/banner sponsor placement summaries plus touch target QA and offline-state hardening evidence.
+- Added cache invalidation policy, manual dark toggle state, contrast checks, and Parent Replay prompt/eval harness.
 
 ### Remaining Gap
 

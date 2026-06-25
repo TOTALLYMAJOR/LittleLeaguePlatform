@@ -106,6 +106,10 @@ import {
   getBannerSponsorPlacement,
   getTouchTargetQa,
   getOfflineStateSummary,
+  getCacheInvalidationPolicy,
+  getManualDarkToggleState,
+  getAccessibilityContrastChecks,
+  getPromptEvalHarness,
   type ChatAnnouncementTopic,
   type CommunicationTemplate,
   type EventType,
@@ -1849,6 +1853,9 @@ export function AdminDashboardClient({ registrationRequests, sponsorData, mediaD
   const bannerSponsorPlacement = getBannerSponsorPlacement(sponsors);
   const touchTargetQa = getTouchTargetQa();
   const offlineStateSummary = getOfflineStateSummary();
+  const cacheInvalidationPolicy = getCacheInvalidationPolicy();
+  const manualDarkToggle = getManualDarkToggleState(false);
+  const contrastChecks = getAccessibilityContrastChecks();
   const [communicationTeamId, setCommunicationTeamId] = useState("team-tigers");
   const [communicationChannel, setCommunicationChannel] = useState<AdminCommunicationChannel>("email");
   const [communicationTemplate, setCommunicationTemplate] = useState<CommunicationTemplate>("weekly_digest");
@@ -2405,6 +2412,9 @@ export function AdminDashboardClient({ registrationRequests, sponsorData, mediaD
           ))}
           <p><strong>Touch Target QA:</strong> {touchTargetQa.status} · {touchTargetQa.minimumPixels}px minimum.</p>
           <p><strong>Offline states:</strong> {offlineStateSummary.status} · {offlineStateSummary.detail}</p>
+          <p><strong>Cache invalidation policy:</strong> {cacheInvalidationPolicy.strategy} · {cacheInvalidationPolicy.detail}</p>
+          <p><strong>Manual dark toggle:</strong> {manualDarkToggle.label}</p>
+          <p><strong>Accessibility contrast checks:</strong> {contrastChecks.length} reviewed surface(s).</p>
         </article>
       </section>
     </div>
@@ -3287,6 +3297,7 @@ export function ParentReplayClient() {
       now: NOW
     });
   }, [coachUserId, focusAreas, state, teamId]);
+  const promptEvalHarness = getPromptEvalHarness();
   const teamReplays = [...savedReplays, ...state.parentReplays].filter((replay) => replay.teamId === teamId);
   const selectedFocus = new Set(focusAreas);
   const canQueueReplay = focusAreas.length >= 2 && focusAreas.length <= 3;
@@ -3461,6 +3472,19 @@ export function ParentReplayClient() {
           <span className="badge">Team quest</span>
           <h2>Quest before next practice</h2>
           <p>{draft.teamQuest}</p>
+        </article>
+      </section>
+
+      <section className="grid one">
+        <article className="card stack">
+          <div className="card-header">
+            <div>
+              <span className="eyebrow">Prompt/Eval harness</span>
+              <h2>Replay quality checks</h2>
+            </div>
+            <span className="badge ok">{promptEvalHarness.status}</span>
+          </div>
+          {promptEvalHarness.checks.map((check) => <p className="muted" key={check}>{check}</p>)}
         </article>
       </section>
 

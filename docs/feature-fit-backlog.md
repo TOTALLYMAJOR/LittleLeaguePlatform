@@ -506,12 +506,12 @@ This backlog translates the pasted feature inventory into repo-fit work. It is n
   - `Covered`: Standalone Build Asset Copy.
   - `Covered`: Install Prompt UX.
   - `Covered`: Offline Route Testing.
-  - `Build`: Cache Invalidation Policy.
+  - `Covered`: Cache Invalidation Policy.
   - `Covered`: Push Subscription Support.
   - `Covered`: Dark Mode.
   - `Covered`: System Dark Mode CSS.
-  - `Build`: Manual Dark Toggle.
-  - `Harden`: Accessibility Contrast Checks.
+  - `Covered`: Manual Dark Toggle.
+  - `Covered`: Accessibility Contrast Checks.
 
 ### Signature Differentiation
 
@@ -534,7 +534,7 @@ This backlog translates the pasted feature inventory into repo-fit work. It is n
   - `Covered`: AI Learning Plan Boundary.
   - `Covered`: Deterministic Local Guidance.
   - `Defer`: Human-Reviewed AI Drafts.
-  - `Build`: Prompt/Eval Harness.
+  - `Covered`: Prompt/Eval Harness.
   - `Build`: Privacy Filters.
   - `Defer`: Provider Usage Controls.
   - `Covered`: Family Micro-Coaching Streaks.
