@@ -203,7 +203,7 @@ This backlog translates the pasted feature inventory into repo-fit work. It is n
   - `Covered`: Parent Media Feed.
   - `Covered`: Parent Team Home.
   - `Covered`: Parent Action Checklist.
-  - `Build`: Parent Support Request Flow.
+  - `Covered`: Parent Support Request Flow.
 
 ### RSVP And Attendance
 
@@ -223,11 +223,11 @@ This backlog translates the pasted feature inventory into repo-fit work. It is n
   - `Covered`: Parent Can RSVP Only For Linked Child.
   - `Covered`: Coach Can View Assigned-Team RSVPs.
   - `Covered`: Org Admin Can View All RSVP Data.
-  - `Build`: Archived RSVP Read-Only Mode.
+  - `Covered`: Archived RSVP Read-Only Mode.
   - `Covered`: RSVP Reliability Tracker.
   - `Covered`: Late RSVP Change Tracking.
   - `Covered`: No-Response Pattern Tracking.
-  - `Harden`: RSVP Reminder Queue.
+  - `Covered`: RSVP Reminder Queue.
   - `Covered`: RSVP Aggregate Counts.
   - `Covered`: Event-Level Attendance Summary.
   - `Covered`: Player-Level RSVP Status.
@@ -245,7 +245,7 @@ This backlog translates the pasted feature inventory into repo-fit work. It is n
   - `Covered`: Snack Slot View.
   - `Covered`: Volunteer Role View.
   - `Covered`: Parent Replay Entry Point.
-  - `Harden`: Coach Role Auth UX.
+  - `Covered`: Coach Role Auth UX.
   - `Build`: Coach Onboarding.
   - `Covered`: Weekly Update Drafts.
   - `Covered`: Coach Weekly Update Builder.

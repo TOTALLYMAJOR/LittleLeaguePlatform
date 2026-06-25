@@ -66,6 +66,9 @@ describe("CoachDashboardClient", () => {
     expect(html).toContain("Editable weekly message");
     expect(html).toContain("Save weekly update draft");
     expect(html).toContain("pending notification drafts");
+    expect(html).toContain("RSVP reminder queue");
+    expect(html).toContain("Queue RSVP reminder draft");
+    expect(html).toContain("Provider sending remains approval-gated");
   });
 
   it("blocks private coach actions when no active coach membership exists", () => {
@@ -76,7 +79,8 @@ describe("CoachDashboardClient", () => {
     );
 
     expect(html).toContain("No active coach membership is assigned");
-    expect(html).toContain("What stays protected");
+    expect(html).toContain("Coach role access checklist");
+    expect(html).toContain("active coach team membership");
     expect(html).not.toContain("Draft weather alert");
     expect(html).not.toContain("Claim snack slot");
     expect(html).not.toContain("Claim volunteer role");
@@ -113,6 +117,9 @@ describe("ParentDashboardClient", () => {
     expect(html).toContain("Volunteer openings");
     expect(html).toContain("Claim snack slot");
     expect(html).toContain("Claim volunteer role");
+    expect(html).toContain("Parent support request flow");
+    expect(html).toContain("Submit support request");
+    expect(html).toContain("Staff routing is not connected");
     expect(html).toContain("Report media");
     expect(html).toContain("Google Photos link looks valid");
   });
@@ -143,6 +150,28 @@ describe("ParentRsvpClient", () => {
     expect(html).toContain("Going");
     expect(html).toContain("Maybe");
     expect(html).toContain("Cancel RSVP");
+  });
+
+  it("keeps archived RSVP records visible but edit controls read-only", () => {
+    const html = renderToStaticMarkup(
+      <AppStateProvider>
+        <ParentRsvpClient dashboardData={{
+          state: {
+            ...seedState,
+            activeSeason: { ...seedState.activeSeason, status: "archived", archivedAt: "2026-06-16T00:00:00.000Z" }
+          },
+          parentUserId: "user-parent-jordan",
+          coachUserId: "user-coach-taylor",
+          isSupabaseBacked: false,
+          accessStatus: "live",
+          message: "Archived season proof data."
+        }} />
+      </AppStateProvider>
+    );
+
+    expect(html).toContain("Archived RSVP read-only mode");
+    expect(html).toContain("Past attendance remains visible");
+    expect(html).toContain("Going</button>");
   });
 });
 

@@ -105,6 +105,7 @@ npm run supabase:push
 - Added a parent onboarding checklist to the parent dashboard covering guardian link, schedule, notification preference, and RSVP readiness.
 - Added RSVP history, edit buttons, retained cancellation status, and cancellation migration support to the parent RSVP workflow.
 - Added parent family calendar filters, an expanded approved media feed, and a computed action checklist on the parent dashboard.
+- Added draft-only parent support intake, archived RSVP read-only UI, a coach RSVP reminder queue, and explicit coach role access copy.
 
 ### Remaining Gap
 

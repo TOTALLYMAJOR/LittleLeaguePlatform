@@ -135,9 +135,9 @@ function privateAccessGate(
         <a href={copy.actionHref}>{copy.actionLabel}</a>
       </article>
       <article className="card stack">
-        <h2>What stays protected</h2>
+        <h2>{surface === "coach" ? "Coach role access checklist" : "What stays protected"}</h2>
         <p>Private child, team, RSVP, media, weather, snack, volunteer, and coach workflow rows stay hidden until the signed-in account has the required approved relationship.</p>
-        <p className="muted">Signup proves identity only; team or guardian records grant access.</p>
+        <p className="muted">{surface === "coach" ? "A user account is not enough; the coach route requires an active coach team membership." : "Signup proves identity only; team or guardian records grant access."}</p>
       </article>
     </section>
   );
@@ -784,6 +784,8 @@ export function ParentDashboardClient({ dashboardData }: { dashboardData?: Paren
   const [helpMessage, setHelpMessage] = useState("");
   const [scheduleTypeFilter, setScheduleTypeFilter] = useState<"all" | EventType>("all");
   const [mediaTypeFilter, setMediaTypeFilter] = useState<"all" | MediaItem["type"]>("all");
+  const [supportTopic, setSupportTopic] = useState("schedule");
+  const [supportDetail, setSupportDetail] = useState("Need help with this weekend's schedule.");
   const [isHelpPending, startHelpTransition] = useTransition();
   const sourceState = dashboardData?.state ?? state;
   const parentUserId = dashboardData?.parentUserId ?? "user-parent-jordan";
@@ -885,6 +887,12 @@ export function ParentDashboardClient({ dashboardData }: { dashboardData?: Paren
       const result = await response.json().catch(() => null) as { ok?: boolean; message?: string } | null;
       setHelpMessage(result?.message ?? (response.ok ? "Preference saved." : "Preference could not be saved."));
     });
+  }
+
+  function submitSupportRequest() {
+    setHelpMessage(supportDetail.trim()
+      ? `Support request drafted for ${supportTopic.replace("_", " ")}. Staff routing is not connected yet.`
+      : "Add a short support request before submitting.");
   }
 
   return (
@@ -1160,6 +1168,40 @@ export function ParentDashboardClient({ dashboardData }: { dashboardData?: Paren
           <p className="notice">Urgent alerts can still be drafted for review, but production sending must honor quiet hours and fallback settings.</p>
         </article>
       </section>
+
+      <section className="grid two">
+        <article className="card stack">
+          <div className="card-header">
+            <div>
+              <span className="eyebrow">Parent support request flow</span>
+              <h2>Ask league staff for help</h2>
+            </div>
+            <span className="badge warning">Draft</span>
+          </div>
+          <label>
+            Topic
+            <select value={supportTopic} onChange={(event) => setSupportTopic(event.target.value)}>
+              <option value="schedule">Schedule</option>
+              <option value="rsvp">RSVP</option>
+              <option value="registration">Registration</option>
+              <option value="media">Media</option>
+              <option value="notifications">Notifications</option>
+            </select>
+          </label>
+          <label>
+            Details
+            <textarea value={supportDetail} onChange={(event) => setSupportDetail(event.target.value)} rows={4} />
+          </label>
+          <button disabled={isHelpPending || !supportDetail.trim()} onClick={submitSupportRequest}>Submit support request</button>
+          <p className="muted">Staff routing is not connected yet; this keeps the parent intake path visible without implying a connected helpdesk or provider send.</p>
+        </article>
+        <article className="card stack">
+          <h2>Support routing context</h2>
+          <p><strong>Family:</strong> {parentUser?.name ?? "Parent account"}</p>
+          <p><strong>Linked teams:</strong> {dashboard.children.map(({ team }) => team.name).join(", ") || "No approved team links"}</p>
+          <p className="muted">Staff should see team, child, RSVP, and notification context before replying.</p>
+        </article>
+      </section>
         </>
       )}
     </div>
@@ -1177,6 +1219,7 @@ export function ParentRsvpClient({ dashboardData }: { dashboardData?: ParentCoac
   const parentUser = displayState.users.find((user) => user.id === parentUserId);
   const dashboard = getParentDashboard(displayState, parentUserId, NOW);
   const accessGate = privateAccessGate(dashboardData, "parent");
+  const isArchivedSeason = displayState.activeSeason.status === "archived";
   const rsvpHistory = displayState.rsvps
     .filter((rsvp) => rsvp.parentUserId === parentUserId)
     .sort((left, right) => new Date(right.updatedAt).getTime() - new Date(left.updatedAt).getTime())
@@ -1218,6 +1261,7 @@ export function ParentRsvpClient({ dashboardData }: { dashboardData?: ParentCoac
       <p className={`notice ${dashboardData?.isSupabaseBacked ? "ok" : "warning"}`}>
         {dashboardData?.accessStatus === "live" ? "RSVP rows and button payloads are loaded from Supabase." : dashboardData?.message ?? "Showing local seed fallback until Supabase has linked parent and coach records."}
       </p>
+      {isArchivedSeason ? <p className="notice warning">Archived RSVP read-only mode is active. Past attendance remains visible, but edits are locked.</p> : null}
       {message ? <p className="notice">{message}</p> : null}
       {accessGate ?? (
       <section className="grid two">
@@ -1229,10 +1273,10 @@ export function ParentRsvpClient({ dashboardData }: { dashboardData?: ParentCoac
             </div>
             <p>{player.firstName} {player.lastInitial}. · {formatDate(event.startsAt)} · {event.locationName}</p>
             <div className="toolbar">
-              <button disabled={isPending} onClick={() => save(event.id, player.id, "going")}>Going</button>
-              <button disabled={isPending} className="secondary" onClick={() => save(event.id, player.id, "maybe")}>Maybe</button>
-              <button disabled={isPending} className="secondary" onClick={() => save(event.id, player.id, "not_going")}>Not going</button>
-              <button disabled={isPending} className="secondary" onClick={() => save(event.id, player.id, "cancelled")}>Cancel RSVP</button>
+              <button disabled={isPending || isArchivedSeason} onClick={() => save(event.id, player.id, "going")}>Going</button>
+              <button disabled={isPending || isArchivedSeason} className="secondary" onClick={() => save(event.id, player.id, "maybe")}>Maybe</button>
+              <button disabled={isPending || isArchivedSeason} className="secondary" onClick={() => save(event.id, player.id, "not_going")}>Not going</button>
+              <button disabled={isPending || isArchivedSeason} className="secondary" onClick={() => save(event.id, player.id, "cancelled")}>Cancel RSVP</button>
             </div>
           </article>
         ))}
@@ -1270,6 +1314,7 @@ export function CoachDashboardClient({ dashboardData }: { dashboardData?: Parent
   const summaries = getCoachRsvpSummaries(sourceState, coachId, NOW);
   const coachSuggestions = buildCoachAssistiveSuggestions(sourceState, coachId, NOW);
   const reliabilityRows = getCoachRsvpReliability(sourceState, coachId, NOW);
+  const rsvpReminderQueue = reliabilityRows.filter((row) => row.noResponse > 0);
   const teamIds = new Set(teams.map((team) => team.id));
   const assignedEvents = sourceState.events.filter((event) => teamIds.has(event.teamId) && event.status === "scheduled");
   const weatherAlerts = sourceState.weatherAlerts.filter((alert) => teamIds.has(alert.teamId));
@@ -1308,6 +1353,10 @@ export function CoachDashboardClient({ dashboardData }: { dashboardData?: Parent
       title: `Weekly update for ${teams[0]?.name ?? "team"}`,
       body: weeklyUpdateBody
     });
+  }
+
+  function draftRsvpReminder(parentName: string, noResponse: number) {
+    setActionMessage(`RSVP reminder draft queued for ${parentName}: ${noResponse} missing response(s). Provider sending remains approval-gated.`);
   }
 
   return (
@@ -1385,6 +1434,32 @@ export function CoachDashboardClient({ dashboardData }: { dashboardData?: Parent
           ))}
           {!reliabilityRows.length ? <p className="muted">No active parent response history for assigned teams.</p> : null}
         </article>
+        <article className="card stack">
+          <div className="card-header">
+            <div>
+              <span className="eyebrow">RSVP reminder queue</span>
+              <h2>No-response drafts</h2>
+            </div>
+            <span className="badge warning">{rsvpReminderQueue.length} queued</span>
+          </div>
+          {rsvpReminderQueue.map((row) => (
+            <div className="stack compact" key={row.parentUser?.id ?? row.linkedPlayers.map((player) => player.id).join("-")}>
+              <p><strong>{row.parentUser?.name ?? "Linked family"}</strong><br /><span className="muted">{row.noResponse} no response · {row.linkedPlayers.map((player) => `${player.firstName} ${player.lastInitial}.`).join(", ")}</span></p>
+              <button
+                className="secondary"
+                disabled={isActionPending}
+                onClick={() => draftRsvpReminder(row.parentUser?.name ?? "linked family", row.noResponse)}
+              >
+                Queue RSVP reminder draft
+              </button>
+            </div>
+          ))}
+          {!rsvpReminderQueue.length ? <p className="muted">No RSVP reminder drafts are needed.</p> : null}
+          <p className="muted">Provider sending remains approval-gated. Queueing here is a coach draft status only; email, SMS, and push delivery stay behind provider approval rules.</p>
+        </article>
+      </section>
+
+      <section className="grid two">
         <article className="card stack">
           <div className="card-header">
             <div>
