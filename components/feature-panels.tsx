@@ -82,6 +82,10 @@ import {
   getPhotoVisibilityFlags,
   getPrivateTeamAlbum,
   createMediaTakedownRequest,
+  getParentSubmittedMoments,
+  getVolunteerMoments,
+  exportSeasonMemories,
+  getSnackReminders,
   type ChatAnnouncementTopic,
   type CommunicationTemplate,
   type EventType,
@@ -3603,6 +3607,10 @@ export function TeamPortalClient({ teamPortalData }: { teamPortalData?: TeamPort
   const media = mediaItemsSource.filter((item) => item.teamId === team.id);
   const privateTeamAlbum = getPrivateTeamAlbum(mediaItemsSource, team.id);
   const firstPlayerConsent = getPerPlayerMediaConsent(players[0]?.id ?? "player-pending", players.slice(0, 1).map((player) => player.id));
+  const parentSubmittedMoments = getParentSubmittedMoments(state, team.id);
+  const volunteerMoments = getVolunteerMoments(state, team.id);
+  const seasonMemoryExport = exportSeasonMemories(state, team.id);
+  const snackReminders = getSnackReminders(state, team.id);
   const latestReplay = parentReplaysSource
     .filter((replay) => replay.teamId === team.id)
     .sort((left, right) => Date.parse(right.createdAt) - Date.parse(left.createdAt))[0];
@@ -3913,6 +3921,55 @@ export function TeamPortalClient({ teamPortalData }: { teamPortalData?: TeamPort
             <span className="badge">Venue</span>
           </div>
           {facilityNotes.notes.map((note) => <p className="muted" key={note}>{note}</p>)}
+        </article>
+      </section>
+
+      <section className="grid two">
+        <article className="card stack">
+          <div className="card-header">
+            <div>
+              <span className="eyebrow">Parent-submitted moments</span>
+              <h2>Family memories</h2>
+            </div>
+            <span className="badge">{parentSubmittedMoments.length} moment(s)</span>
+          </div>
+          {parentSubmittedMoments.map((moment) => <p key={moment.id}><strong>{moment.title}</strong><br /><span className="muted">{moment.source}</span></p>)}
+        </article>
+
+        <article className="card stack">
+          <div className="card-header">
+            <div>
+              <span className="eyebrow">Volunteer moments</span>
+              <h2>Help that became story</h2>
+            </div>
+            <span className="badge">{volunteerMoments.length} moment(s)</span>
+          </div>
+          {volunteerMoments.map((moment) => <p key={moment.id}><strong>{moment.title}</strong><br /><span className="muted">{moment.source}</span></p>)}
+          {!volunteerMoments.length ? <p className="muted">No volunteer moments are filled yet.</p> : null}
+        </article>
+      </section>
+
+      <section className="grid two">
+        <article className="card stack">
+          <div className="card-header">
+            <div>
+              <span className="eyebrow">Exportable season memories</span>
+              <h2>{seasonMemoryExport.filename}</h2>
+            </div>
+            <span className="badge ok">{seasonMemoryExport.rows.length} row(s)</span>
+          </div>
+          <pre>{seasonMemoryExport.rows.slice(0, 4).join("\n")}</pre>
+        </article>
+
+        <article className="card stack">
+          <div className="card-header">
+            <div>
+              <span className="eyebrow">Snack reminders</span>
+              <h2>Snack duty prompts</h2>
+            </div>
+            <span className="badge warning">{snackReminders.length} reminder(s)</span>
+          </div>
+          {snackReminders.map((reminder) => <p key={reminder.id}><strong>{reminder.title}</strong><br /><span className="muted">{reminder.detail}</span></p>)}
         </article>
       </section>
 

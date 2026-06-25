@@ -376,6 +376,10 @@ describe("TeamPortalClient", () => {
     expect(html).toContain("Facility notes");
     expect(html).toContain("Per-player media consent");
     expect(html).toContain("Private team album");
+    expect(html).toContain("Parent-submitted moments");
+    expect(html).toContain("Volunteer moments");
+    expect(html).toContain("Exportable season memories");
+    expect(html).toContain("Snack reminders");
     expect(html).toContain("Coach video library");
     expect(html).toContain("Parent education center");
     expect(html).toContain("Skill trees");

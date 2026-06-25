@@ -80,7 +80,11 @@ import {
   getPerPlayerMediaConsent,
   getPhotoVisibilityFlags,
   getPrivateTeamAlbum,
-  createMediaTakedownRequest
+  createMediaTakedownRequest,
+  getParentSubmittedMoments,
+  getVolunteerMoments,
+  exportSeasonMemories,
+  getSnackReminders
 } from "./index";
 
 describe("CSV duplicate detection", () => {
@@ -149,6 +153,13 @@ describe("media URL validation", () => {
     expect(getPhotoVisibilityFlags(item).teamVisible).toBe(true);
     expect(getPrivateTeamAlbum(seedState.mediaItems, "team-tigers")).toHaveLength(2);
     expect(createMediaTakedownRequest(item, "Parent requested removal.").status).toBe("needs_review");
+  });
+
+  it("builds parent moments, volunteer moments, export rows, and snack reminders", () => {
+    expect(getParentSubmittedMoments(seedState, "team-tigers")).toHaveLength(2);
+    expect(getVolunteerMoments(seedState, "team-tigers")).toHaveLength(1);
+    expect(exportSeasonMemories(seedState, "team-tigers").filename).toContain("season-memories");
+    expect(getSnackReminders(seedState, "team-tigers")).toHaveLength(2);
   });
 });
 

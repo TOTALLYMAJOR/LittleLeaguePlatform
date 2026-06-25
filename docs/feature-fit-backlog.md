@@ -431,9 +431,9 @@ This backlog translates the pasted feature inventory into repo-fit work. It is n
   - `Covered`: Season Storybook.
   - `Covered`: End-of-Season Highlights.
   - `Covered`: Player Milestones.
-  - `Build`: Parent-Submitted Moments.
-  - `Build`: Volunteer Moments.
-  - `Build`: Exportable Season Memories.
+  - `Covered`: Parent-Submitted Moments.
+  - `Covered`: Volunteer Moments.
+  - `Covered`: Exportable Season Memories.
 
 ### Snacks, Volunteers, And Community
 
@@ -445,7 +445,7 @@ This backlog translates the pasted feature inventory into repo-fit work. It is n
   - `Covered`: Snack Slot Claim Endpoint.
   - `Covered`: Coach Snack Slot View.
   - `Covered`: Parent-Facing Snack Claim UI.
-  - `Build`: Snack Reminders.
+  - `Covered`: Snack Reminders.
   - `Build`: Snack Conflict Handling.
   - `Build`: Snack Audit Trail.
   - `Build`: Snack Cancellations.

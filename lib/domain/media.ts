@@ -1,4 +1,4 @@
-import type { MediaItem, UserRole } from "./types";
+import type { AppState, MediaItem, UserRole } from "./types";
 
 export interface MediaUrlValidation {
   ok: boolean;
@@ -121,4 +121,46 @@ export function createMediaTakedownRequest(item: MediaItem, reason: string) {
     reason,
     status: "needs_review" as const
   };
+}
+
+export function getParentSubmittedMoments(state: AppState, teamId: string) {
+  return state.mediaItems
+    .filter((item) => item.teamId === teamId && (item.moderationStatus ?? "approved") === "approved")
+    .map((item) => ({
+      id: `parent-moment-${item.id}`,
+      title: item.title,
+      source: "parent_submitted" as const
+    }));
+}
+
+export function getVolunteerMoments(state: AppState, teamId: string) {
+  return state.volunteerSignups
+    .filter((signup) => signup.teamId === teamId && signup.status === "filled")
+    .map((signup) => ({
+      id: `volunteer-moment-${signup.id}`,
+      title: `${signup.role} covered`,
+      source: "volunteer" as const
+    }));
+}
+
+export function exportSeasonMemories(state: AppState, teamId: string) {
+  const parentMoments = getParentSubmittedMoments(state, teamId);
+  const volunteerMoments = getVolunteerMoments(state, teamId);
+  return {
+    filename: `${teamId}-season-memories.csv`,
+    rows: [...parentMoments, ...volunteerMoments].map((moment) => `${moment.id},${moment.title},${moment.source}`)
+  };
+}
+
+export function getSnackReminders(state: AppState, teamId: string) {
+  return state.snackScheduleSlots
+    .filter((slot) => slot.teamId === teamId)
+    .map((slot) => {
+      const event = state.events.find((item) => item.id === slot.eventId);
+      return {
+        id: `snack-reminder-${slot.id}`,
+        title: slot.status === "open" ? "Snack slot open" : "Snack reminder",
+        detail: `${slot.item} · ${event?.title ?? "Team event"}`
+      };
+    });
 }

@@ -122,6 +122,7 @@ npm run supabase:push
 - Added media approve/reject helpers, upload storage provider status, and admin media reporting summary.
 - Added family-facing media moderation queue, retention policy, role visibility, and consent-control summaries.
 - Added per-player media consent, photo visibility flags, private team album, and takedown request summaries.
+- Added parent/volunteer memory moments, exportable season memory rows, and snack reminder summaries.
 
 ### Remaining Gap
 
