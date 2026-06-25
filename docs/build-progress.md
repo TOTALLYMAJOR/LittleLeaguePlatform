@@ -123,6 +123,7 @@ npm run supabase:push
 - Added family-facing media moderation queue, retention policy, role visibility, and consent-control summaries.
 - Added per-player media consent, photo visibility flags, private team album, and takedown request summaries.
 - Added parent/volunteer memory moments, exportable season memory rows, and snack reminder summaries.
+- Added snack conflict handling, snack audit trail, snack cancellation preview, and volunteer role caps.
 
 ### Remaining Gap
 

@@ -446,14 +446,14 @@ This backlog translates the pasted feature inventory into repo-fit work. It is n
   - `Covered`: Coach Snack Slot View.
   - `Covered`: Parent-Facing Snack Claim UI.
   - `Covered`: Snack Reminders.
-  - `Build`: Snack Conflict Handling.
-  - `Build`: Snack Audit Trail.
-  - `Build`: Snack Cancellations.
+  - `Covered`: Snack Conflict Handling.
+  - `Covered`: Snack Audit Trail.
+  - `Covered`: Snack Cancellations.
   - `Covered`: Volunteer Signups.
   - `Covered`: Volunteer Claim Endpoint.
   - `Covered`: Coach Volunteer Role View.
   - `Covered`: Parent-Facing Volunteer Claim UI.
-  - `Build`: Volunteer Role Caps.
+  - `Covered`: Volunteer Role Caps.
   - `Build`: Volunteer Reminders.
   - `Build`: Volunteer Cancellation Flow.
   - `Build`: Volunteer Approval Policies.

@@ -86,6 +86,10 @@ import {
   getVolunteerMoments,
   exportSeasonMemories,
   getSnackReminders,
+  getSnackConflicts,
+  getSnackAuditTrail,
+  cancelSnackSlot,
+  getVolunteerRoleCaps,
   type ChatAnnouncementTopic,
   type CommunicationTemplate,
   type EventType,
@@ -3611,6 +3615,10 @@ export function TeamPortalClient({ teamPortalData }: { teamPortalData?: TeamPort
   const volunteerMoments = getVolunteerMoments(state, team.id);
   const seasonMemoryExport = exportSeasonMemories(state, team.id);
   const snackReminders = getSnackReminders(state, team.id);
+  const snackConflicts = getSnackConflicts(state, team.id);
+  const snackAuditTrail = getSnackAuditTrail(state, team.id);
+  const snackCancellation = cancelSnackSlot(state, state.snackScheduleSlots.find((slot) => slot.teamId === team.id)?.id ?? "slot-pending", "Family schedule changed.");
+  const volunteerRoleCaps = getVolunteerRoleCaps(state, team.id);
   const latestReplay = parentReplaysSource
     .filter((replay) => replay.teamId === team.id)
     .sort((left, right) => Date.parse(right.createdAt) - Date.parse(left.createdAt))[0];
@@ -3970,6 +3978,55 @@ export function TeamPortalClient({ teamPortalData }: { teamPortalData?: TeamPort
             <span className="badge warning">{snackReminders.length} reminder(s)</span>
           </div>
           {snackReminders.map((reminder) => <p key={reminder.id}><strong>{reminder.title}</strong><br /><span className="muted">{reminder.detail}</span></p>)}
+        </article>
+      </section>
+
+      <section className="grid two">
+        <article className="card stack">
+          <div className="card-header">
+            <div>
+              <span className="eyebrow">Snack conflict handling</span>
+              <h2>Duplicate snack assignments</h2>
+            </div>
+            <span className="badge">{snackConflicts.length} conflict(s)</span>
+          </div>
+          {snackConflicts.map((slot) => <p key={slot.id}><strong>{slot.item}</strong><br /><span className="muted">{slot.eventId}</span></p>)}
+          {!snackConflicts.length ? <p className="muted">No snack assignment conflicts are detected.</p> : null}
+        </article>
+
+        <article className="card stack">
+          <div className="card-header">
+            <div>
+              <span className="eyebrow">Snack audit trail</span>
+              <h2>Snack changes</h2>
+            </div>
+            <span className="badge">{snackAuditTrail.length} audit row(s)</span>
+          </div>
+          {snackAuditTrail.map((audit) => <p key={audit.id}>{audit.summary}</p>)}
+        </article>
+      </section>
+
+      <section className="grid two">
+        <article className="card stack">
+          <div className="card-header">
+            <div>
+              <span className="eyebrow">Snack cancellations</span>
+              <h2>Cancellation preview</h2>
+            </div>
+            <span className="badge warning">Preview</span>
+          </div>
+          <p>{snackCancellation.message}</p>
+        </article>
+
+        <article className="card stack">
+          <div className="card-header">
+            <div>
+              <span className="eyebrow">Volunteer role caps</span>
+              <h2>Role capacity</h2>
+            </div>
+            <span className="badge">{volunteerRoleCaps.length} role(s)</span>
+          </div>
+          {volunteerRoleCaps.map((cap) => <p key={cap.role}><strong>{cap.role}</strong><br /><span className="muted">{cap.filled} filled of {cap.cap}</span></p>)}
         </article>
       </section>
 

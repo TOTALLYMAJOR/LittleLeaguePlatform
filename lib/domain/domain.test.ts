@@ -84,7 +84,11 @@ import {
   getParentSubmittedMoments,
   getVolunteerMoments,
   exportSeasonMemories,
-  getSnackReminders
+  getSnackReminders,
+  getSnackConflicts,
+  getSnackAuditTrail,
+  cancelSnackSlot,
+  getVolunteerRoleCaps
 } from "./index";
 
 describe("CSV duplicate detection", () => {
@@ -160,6 +164,15 @@ describe("media URL validation", () => {
     expect(getVolunteerMoments(seedState, "team-tigers")).toHaveLength(1);
     expect(exportSeasonMemories(seedState, "team-tigers").filename).toContain("season-memories");
     expect(getSnackReminders(seedState, "team-tigers")).toHaveLength(2);
+  });
+
+  it("tracks snack conflicts, snack audit, cancellations, and volunteer caps", () => {
+    const cancelled = cancelSnackSlot(seedState, "snack-tigers-game", "Family schedule changed.");
+
+    expect(getSnackConflicts(seedState, "team-tigers")).toHaveLength(0);
+    expect(getSnackAuditTrail(seedState, "team-tigers")).toHaveLength(2);
+    expect(cancelled.state.snackScheduleSlots.find((slot) => slot.id === "snack-tigers-game")?.status).toBe("open");
+    expect(getVolunteerRoleCaps(seedState, "team-tigers").map((cap) => cap.role)).toContain("Score helper");
   });
 });
 
