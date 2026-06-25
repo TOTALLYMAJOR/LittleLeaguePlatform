@@ -8,6 +8,7 @@ import { POST as postParentReplay } from "./api/coach/parent-replay/route";
 import { POST as postWeeklyUpdate } from "./api/coach/weekly-update/route";
 import { POST as postSponsorSave } from "./api/admin/sponsors/route";
 import { POST as postAdminTeam } from "./api/admin/teams/route";
+import { POST as postGuardianRepair } from "./api/admin/guardian-links/repair/route";
 import { POST as postRosterImportAudit } from "./api/admin/roster-imports/audit/route";
 import { POST as postThemeDefaults } from "./api/admin/theme-defaults/route";
 import { POST as postMediaReport } from "./api/media/report/route";
@@ -21,6 +22,7 @@ import { updateTenantThemeDefaults } from "@/lib/supabase/team-branding";
 import { createTeamMembership } from "@/lib/supabase/memberships";
 import { recordRosterImportAudit } from "@/lib/supabase/roster-imports";
 import { saveAdminTeam } from "@/lib/supabase/team-management";
+import { repairGuardianLink } from "@/lib/supabase/guardian-links";
 import { createAdminExport } from "@/lib/supabase/reporting";
 import { reviewNotificationDelivery } from "@/lib/supabase/provider-delivery";
 import {
@@ -72,6 +74,10 @@ vi.mock("@/lib/supabase/team-management", () => ({
   saveAdminTeam: vi.fn()
 }));
 
+vi.mock("@/lib/supabase/guardian-links", () => ({
+  repairGuardianLink: vi.fn()
+}));
+
 vi.mock("@/lib/supabase/reporting", () => ({
   createAdminExport: vi.fn()
 }));
@@ -96,6 +102,7 @@ const updateTenantThemeDefaultsMock = vi.mocked(updateTenantThemeDefaults);
 const createTeamMembershipMock = vi.mocked(createTeamMembership);
 const recordRosterImportAuditMock = vi.mocked(recordRosterImportAudit);
 const saveAdminTeamMock = vi.mocked(saveAdminTeam);
+const repairGuardianLinkMock = vi.mocked(repairGuardianLink);
 const createAdminExportMock = vi.mocked(createAdminExport);
 const reviewNotificationDeliveryMock = vi.mocked(reviewNotificationDelivery);
 
@@ -578,6 +585,31 @@ describe("live action API routes", () => {
       secondaryColor: "#f97316",
       coachUserId: "coach-1",
       status: "active"
+    });
+  });
+
+  it("uses the authenticated admin session for guardian link repair", async () => {
+    repairGuardianLinkMock.mockResolvedValue({
+      ok: true,
+      message: "Guardian repaired.",
+      guardianLink: { id: "guardian-1", player_id: "player-1", parent_user_id: "parent-1", status: "active" }
+    });
+
+    const response = await postGuardianRepair(jsonRequest({
+      organizationId: "org-1",
+      actorUserId: "client-spoof",
+      playerId: "player-1",
+      parentUserId: "parent-1",
+      relationship: "guardian"
+    }));
+
+    expect(response.status).toBe(200);
+    expect(repairGuardianLinkMock).toHaveBeenCalledWith({
+      organizationId: "org-1",
+      actorUserId: "user-live-session",
+      playerId: "player-1",
+      parentUserId: "parent-1",
+      relationship: "guardian"
     });
   });
 });

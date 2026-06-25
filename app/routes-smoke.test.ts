@@ -5,6 +5,7 @@ import { describe, expect, it } from "vitest";
 const appRoutes = [
   "/",
   "/admin",
+  "/admin/guardian-links",
   "/admin/operations",
   "/admin/security",
   "/admin/teams",
@@ -83,5 +84,14 @@ describe("route smoke coverage", () => {
     expect(data).toContain("season_id");
     expect(data).toContain("rosterCount");
     expect(data).toContain("team_archived");
+  });
+
+  it("keeps guardian link repair tied to missing-link access recovery", () => {
+    const page = readFileSync(join(process.cwd(), "app", "admin", "guardian-links", "page.tsx"), "utf8");
+    const data = readFileSync(join(process.cwd(), "lib", "supabase", "guardian-links.ts"), "utf8");
+
+    expect(page).toContain("listGuardianLinkRepairData");
+    expect(data).toContain("guardian_link_repaired");
+    expect(data).toContain("team_memberships");
   });
 });

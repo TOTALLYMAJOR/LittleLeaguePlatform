@@ -132,11 +132,11 @@ This backlog translates the pasted feature inventory into repo-fit work. It is n
   - `Covered`: Team Archiving.
   - `Covered`: Tenant Isolation.
   - `Covered`: Team Memberships.
-  - `Harden`: Role-Based Team Access.
+  - `Covered`: Role-Based Team Access.
   - `Covered`: Player-Guardian Linking.
-  - `Build`: Guardian Link Repair Flow.
-  - `Harden`: Missing-Link UX.
-  - `Build`: Archived Season Read-Only Mode.
+  - `Covered`: Guardian Link Repair Flow.
+  - `Covered`: Missing-Link UX.
+  - `Covered`: Archived Season Read-Only Mode.
   - `Build`: Season Archive Vault.
 
 ### Theme And Branding

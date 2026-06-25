@@ -6,6 +6,7 @@ const featureLinks = [
   ["Team-specific portal", "/team-portal", "One team surface for weekly digest, Game Day Mode, field maps, learning, memories, volunteers, and skill progress."],
   ["Coach dashboard", "/coach", "Coach view for assigned teams, RSVP summaries, weather drafts, snacks, volunteers, and Parent Replay."],
   ["Admin dashboard", "/admin", "League operations view for teams, registration queue, sponsors, notifications, and launch readiness."],
+  ["Guardian links", "/admin/guardian-links", "Repair missing parent-player links and activate team access."],
   ["Admin operations", "/admin/operations", "Review organization settings, provider inventory, approval queues, and audit logs."],
   ["Team setup", "/admin/teams", "Manage organization-scoped team records by season and division."],
   ["Security proof", "/admin/security", "Track RLS, cross-team denial, archived read-only behavior, and production audit evidence."],

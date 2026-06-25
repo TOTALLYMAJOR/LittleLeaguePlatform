@@ -99,6 +99,7 @@ npm run supabase:push
 - Added `/admin/operations` with organization settings, provider inventory, approval queue counts, and recent audit logs sourced from Supabase with local fallback.
 - Added `/admin/teams` and `/api/admin/teams` for organization-scoped team CRUD by active admin, with season/division setup evidence and team audit events.
 - Added team lifecycle status, coach assignment fields, roster counts, team archive audit actions, and tenant-isolated admin guards to the team setup path.
+- Added `/admin/guardian-links` and a guardian repair API that activates parent-player links, restores parent team membership, and writes audit events under org-admin authorization.
 
 ### Remaining Gap
 
