@@ -130,6 +130,7 @@ npm run supabase:push
 - Added email/banner sponsor placement summaries plus touch target QA and offline-state hardening evidence.
 - Added cache invalidation policy, manual dark toggle state, contrast checks, and Parent Replay prompt/eval harness.
 - Added privacy filters plus invite acceptance, invite-to-account time, and failed-invite metrics.
+- Added parent-link completion, RSVP response, schedule-alert open, and weekly-active-parent metrics.
 
 ### Remaining Gap
 

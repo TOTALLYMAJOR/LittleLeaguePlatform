@@ -24,3 +24,28 @@ export function getAverageInviteToAccountTimeHours(state: AppState) {
 export function getFailedInviteCount(state: AppState) {
   return state.parentInvites.filter((invite) => invite.deliveryStatus === "failed").length;
 }
+
+export function getParentLinkCompletionRate(state: AppState) {
+  const total = state.guardianLinks.length;
+  const active = state.guardianLinks.filter((link) => link.status === "active").length;
+  return total ? Math.round((active / total) * 100) : 0;
+}
+
+export function getRsvpResponseRate(state: AppState) {
+  const eventPlayerPairs = state.events.flatMap((event) => state.players.filter((player) => player.teamId === event.teamId).map((player) => `${event.id}:${player.id}`));
+  const responded = new Set(state.rsvps.map((rsvp) => `${rsvp.eventId}:${rsvp.playerId}`));
+  return eventPlayerPairs.length ? Math.round((eventPlayerPairs.filter((pair) => responded.has(pair)).length / eventPlayerPairs.length) * 100) : 0;
+}
+
+export function getScheduleAlertOpenRate(state: AppState) {
+  const scheduleAlerts = state.notifications.filter((notification) => notification.notificationType === "schedule_changed" || notification.notificationType === "event_cancelled");
+  const opened = scheduleAlerts.filter((notification) => notification.status === "read").length;
+  return scheduleAlerts.length ? Math.round((opened / scheduleAlerts.length) * 100) : 0;
+}
+
+export function getWeeklyActiveParents(state: AppState) {
+  return new Set([
+    ...state.rsvps.map((rsvp) => rsvp.parentUserId),
+    ...state.chatMessages.filter((message) => message.authorRole === "parent").map((message) => message.authorUserId)
+  ]).size;
+}

@@ -286,6 +286,10 @@ describe("AdminDashboardClient", () => {
     expect(html).toContain("Invite acceptance rate");
     expect(html).toContain("Average invite-to-account time");
     expect(html).toContain("Failed invite count");
+    expect(html).toContain("Parent link completion rate");
+    expect(html).toContain("RSVP response rate");
+    expect(html).toContain("Schedule alert open rate");
+    expect(html).toContain("Weekly active parents");
   });
 });
 

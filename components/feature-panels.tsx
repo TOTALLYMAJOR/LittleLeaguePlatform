@@ -114,6 +114,10 @@ import {
   getInviteAcceptanceRate,
   getAverageInviteToAccountTimeHours,
   getFailedInviteCount,
+  getParentLinkCompletionRate,
+  getRsvpResponseRate,
+  getScheduleAlertOpenRate,
+  getWeeklyActiveParents,
   type ChatAnnouncementTopic,
   type CommunicationTemplate,
   type EventType,
@@ -1864,6 +1868,10 @@ export function AdminDashboardClient({ registrationRequests, sponsorData, mediaD
   const inviteAcceptanceRate = getInviteAcceptanceRate(state);
   const averageInviteToAccountTime = getAverageInviteToAccountTimeHours(state);
   const failedInviteCount = getFailedInviteCount(state);
+  const parentLinkCompletionRate = getParentLinkCompletionRate(state);
+  const rsvpResponseRate = getRsvpResponseRate(state);
+  const scheduleAlertOpenRate = getScheduleAlertOpenRate(state);
+  const weeklyActiveParents = getWeeklyActiveParents(state);
   const [communicationTeamId, setCommunicationTeamId] = useState("team-tigers");
   const [communicationChannel, setCommunicationChannel] = useState<AdminCommunicationChannel>("email");
   const [communicationTemplate, setCommunicationTemplate] = useState<CommunicationTemplate>("weekly_digest");
@@ -2427,6 +2435,10 @@ export function AdminDashboardClient({ registrationRequests, sponsorData, mediaD
           <p><strong>Invite acceptance rate:</strong> {inviteAcceptanceRate}%</p>
           <p><strong>Average invite-to-account time:</strong> {averageInviteToAccountTime} hour(s)</p>
           <p><strong>Failed invite count:</strong> {failedInviteCount}</p>
+          <p><strong>Parent link completion rate:</strong> {parentLinkCompletionRate}%</p>
+          <p><strong>RSVP response rate:</strong> {rsvpResponseRate}%</p>
+          <p><strong>Schedule alert open rate:</strong> {scheduleAlertOpenRate}%</p>
+          <p><strong>Weekly active parents:</strong> {weeklyActiveParents}</p>
         </article>
       </section>
     </div>

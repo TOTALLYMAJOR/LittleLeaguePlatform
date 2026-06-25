@@ -554,10 +554,10 @@ This backlog translates the pasted feature inventory into repo-fit work. It is n
   - `Covered`: Invite Acceptance Rate.
   - `Covered`: Average Invite-to-Account Time.
   - `Covered`: Failed Invite Count.
-  - `Build`: Parent Link Completion Rate.
-  - `Build`: RSVP Response Rate.
-  - `Build`: Schedule Alert Open Rate.
-  - `Build`: Weekly Active Parents.
+  - `Covered`: Parent Link Completion Rate.
+  - `Covered`: RSVP Response Rate.
+  - `Covered`: Schedule Alert Open Rate.
+  - `Covered`: Weekly Active Parents.
   - `Build`: Support Requests Per Team.
   - `Build`: CSV Import Error Rate.
   - `Build`: Coach Weekly Update Send Rate.

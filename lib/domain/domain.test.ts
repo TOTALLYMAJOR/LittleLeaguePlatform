@@ -112,7 +112,11 @@ import {
   getPrivacyFilters,
   getInviteAcceptanceRate,
   getAverageInviteToAccountTimeHours,
-  getFailedInviteCount
+  getFailedInviteCount,
+  getParentLinkCompletionRate,
+  getRsvpResponseRate,
+  getScheduleAlertOpenRate,
+  getWeeklyActiveParents
 } from "./index";
 
 describe("CSV duplicate detection", () => {
@@ -672,6 +676,10 @@ describe("analytics metrics", () => {
     expect(getInviteAcceptanceRate(seedState)).toBe(25);
     expect(getAverageInviteToAccountTimeHours(seedState)).toBeGreaterThan(0);
     expect(getFailedInviteCount(seedState)).toBe(1);
+    expect(getParentLinkCompletionRate(seedState)).toBe(50);
+    expect(getRsvpResponseRate(seedState)).toBeGreaterThan(0);
+    expect(getScheduleAlertOpenRate(seedState)).toBe(0);
+    expect(getWeeklyActiveParents(seedState)).toBeGreaterThan(0);
   });
 });
 
