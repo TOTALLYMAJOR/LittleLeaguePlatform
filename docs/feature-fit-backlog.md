@@ -413,11 +413,11 @@ This backlog translates the pasted feature inventory into repo-fit work. It is n
   - `Covered`: Team Media.
   - `Covered`: Supabase Media Reads.
   - `Covered`: Media Moderation API.
-  - `Harden`: Approve Media.
-  - `Harden`: Reject Media.
+  - `Covered`: Approve Media.
+  - `Covered`: Reject Media.
   - `Covered`: Remove Media.
-  - `Build`: Upload Storage Provider.
-  - `Build`: Reporting UI.
+  - `Covered`: Upload Storage Provider.
+  - `Covered`: Reporting UI.
   - `Covered`: Link Validation.
   - `Build`: Family-Facing Moderation Queue.
   - `Build`: Media Retention Policy.

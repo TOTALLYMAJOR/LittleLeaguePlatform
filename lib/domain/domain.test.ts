@@ -68,7 +68,11 @@ import {
   sendCoachAnnouncement,
   setRsvp,
   updateTeamPortalBranding,
-  validateMediaUrl
+  validateMediaUrl,
+  approveMediaItem,
+  rejectMediaItem,
+  getMediaReportingSummary,
+  getUploadStorageProviderStatus
 } from "./index";
 
 describe("CSV duplicate detection", () => {
@@ -101,6 +105,20 @@ describe("media URL validation", () => {
     expect(validateMediaUrl("youtube", "https://youtu.be/demo").ok).toBe(true);
     expect(validateMediaUrl("youtube", "http://youtu.be/demo").ok).toBe(false);
     expect(validateMediaUrl("google_photos", "https://example.com/album").ok).toBe(false);
+  });
+
+  it("summarizes approve, reject, upload provider, and reporting state", () => {
+    const item = seedState.mediaItems[0]!;
+    const approved = approveMediaItem(item);
+    const rejected = rejectMediaItem(item);
+    const reporting = getMediaReportingSummary([{ ...item, reportCount: 2, moderationStatus: "pending" }]);
+    const storage = getUploadStorageProviderStatus(false);
+
+    expect(approved.moderationStatus).toBe("approved");
+    expect(rejected.item.moderationStatus).toBe("rejected");
+    expect(reporting.totalReports).toBe(2);
+    expect(reporting.pendingReview).toBe(1);
+    expect(storage.provider).toBe("not_configured");
   });
 });
 

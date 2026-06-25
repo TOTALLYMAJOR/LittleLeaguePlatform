@@ -33,3 +33,32 @@ export function validateMediaUrl(type: MediaItem["type"], url: string): MediaUrl
 
   return { ok: false, message: "Unsupported media type." };
 }
+
+export function approveMediaItem(item: MediaItem, reason = "Approved by coach/admin review."): MediaItem {
+  return { ...item, moderationStatus: "approved", reportCount: item.reportCount ?? 0 };
+}
+
+export function rejectMediaItem(item: MediaItem, reason = "Rejected by coach/admin review.") {
+  return {
+    item: { ...item, moderationStatus: "rejected" as const },
+    auditSummary: `${item.title}: ${reason}`
+  };
+}
+
+export function getUploadStorageProviderStatus(configured = false) {
+  return {
+    configured,
+    provider: configured ? "Supabase Storage" : "not_configured",
+    detail: configured
+      ? "Upload storage is configured; consent and moderation still apply."
+      : "Upload storage provider is not configured; media intake remains link-based."
+  };
+}
+
+export function getMediaReportingSummary(items: MediaItem[]) {
+  return {
+    totalReports: items.reduce((total, item) => total + (item.reportCount ?? 0), 0),
+    pendingReview: items.filter((item) => (item.reportCount ?? 0) > 0 || item.moderationStatus === "pending").length,
+    hiddenOrRejected: items.filter((item) => item.moderationStatus === "hidden" || item.moderationStatus === "rejected").length
+  };
+}

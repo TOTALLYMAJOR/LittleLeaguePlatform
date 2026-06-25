@@ -70,6 +70,10 @@ import {
   setRsvp,
   updateTeamPortalBranding,
   validateMediaUrl,
+  approveMediaItem,
+  rejectMediaItem,
+  getMediaReportingSummary,
+  getUploadStorageProviderStatus,
   type ChatAnnouncementTopic,
   type CommunicationTemplate,
   type EventType,
@@ -1773,6 +1777,8 @@ export function AdminDashboardClient({ registrationRequests, sponsorData, mediaD
   const initialMediaItems = mediaData?.mediaItems.length ? mediaData.mediaItems : state.mediaItems;
   const [sponsors, setSponsors] = useState<Sponsor[]>(initialSponsors);
   const [mediaItems, setMediaItems] = useState<MediaItem[]>(initialMediaItems);
+  const mediaReportingSummary = getMediaReportingSummary(mediaItems);
+  const uploadStorageProvider = getUploadStorageProviderStatus(false);
   const activeSponsors = sponsors.filter((sponsor) => sponsor.status === "active");
   const [communicationTeamId, setCommunicationTeamId] = useState("team-tigers");
   const [communicationChannel, setCommunicationChannel] = useState<AdminCommunicationChannel>("email");
@@ -2193,6 +2199,12 @@ export function AdminDashboardClient({ registrationRequests, sponsorData, mediaD
             <span className="badge warning">Coach/Admin</span>
           </div>
           <p className="notice">{mediaMessage}</p>
+          <div className="grid three">
+            <div className="metric"><span className="muted">Media reports</span><strong>{mediaReportingSummary.totalReports}</strong></div>
+            <div className="metric"><span className="muted">Pending review</span><strong>{mediaReportingSummary.pendingReview}</strong></div>
+            <div className="metric"><span className="muted">Upload storage</span><strong>{uploadStorageProvider.provider}</strong></div>
+          </div>
+          <p className="muted">{uploadStorageProvider.detail}</p>
           {mediaItems.map((item) => {
             const team = mediaTeams.find((candidate) => candidate.id === item.teamId);
             const status = item.moderationStatus ?? "approved";
@@ -2216,6 +2228,16 @@ export function AdminDashboardClient({ registrationRequests, sponsorData, mediaD
                   </select>
                 </label>
                 <div className="button-row">
+                  <button className="secondary" disabled={isMediaPending} onClick={() => {
+                    const approved = approveMediaItem(item);
+                    setMediaItems((current) => current.map((candidate) => candidate.id === item.id ? approved : candidate));
+                    setMediaMessage(`${item.title} approved for ${mediaVisibilityDrafts[item.id] ?? item.visibility ?? "team"} visibility.`);
+                  }}>Approve media</button>
+                  <button className="secondary" disabled={isMediaPending} onClick={() => {
+                    const rejected = rejectMediaItem(item);
+                    setMediaItems((current) => current.map((candidate) => candidate.id === item.id ? rejected.item : candidate));
+                    setMediaMessage(rejected.auditSummary);
+                  }}>Reject media</button>
                   <button className="secondary" disabled={isMediaPending} onClick={() => runMediaModeration(item, "hidden", "Hidden pending coach/admin review.")}>Hide media</button>
                   <button className="secondary" disabled={isMediaPending} onClick={() => runMediaModeration(item, "approved", "Restored after review.")}>Restore media</button>
                   <button className="secondary" disabled={isMediaPending} onClick={() => runMediaModeration(item, "removed", "Removed by coach/admin moderation.")}>Remove media</button>

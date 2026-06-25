@@ -249,6 +249,10 @@ describe("AdminDashboardClient", () => {
     expect(html).toContain("Admin copilot");
     expect(html).toContain("Registration queue");
     expect(html).toContain("Media governance");
+    expect(html).toContain("Media reports");
+    expect(html).toContain("Upload storage");
+    expect(html).toContain("Approve media");
+    expect(html).toContain("Reject media");
     expect(html).toContain("Team/org visibility");
     expect(html).toContain("Hide media");
     expect(html).toContain("Restore media");
