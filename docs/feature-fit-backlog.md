@@ -263,6 +263,10 @@ This backlog translates the pasted feature inventory into repo-fit work. It is n
   - `Covered`: Weekly Digest Draft.
   - `Covered`: Practice Replay Draft.
   - `Covered`: Announcement Cleaner Draft.
+  - `Covered`: Smart FAQ.
+  - `Covered`: Coach Inbox Prioritization.
+  - `Covered`: Parent Brief Before Game.
+  - `Covered`: Season Timeline.
 
 ## P3 - Schedule, Alerts, Weather, And Venues
 

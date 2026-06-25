@@ -5,7 +5,11 @@ export type AiCoachWorkspaceToolId =
   | "new_parent_brief"
   | "weekly_digest"
   | "practice_replay"
-  | "announcement_cleaner";
+  | "announcement_cleaner"
+  | "smart_faq"
+  | "coach_inbox_prioritization"
+  | "game_day_parent_brief"
+  | "season_timeline";
 
 export interface AiCoachWorkspaceInput {
   teamId: string;
@@ -71,6 +75,10 @@ function coachName(state: AppState, coachUserId: string) {
   return state.users.find((user) => user.id === coachUserId)?.name ?? "Coach";
 }
 
+function visibleTeamMessages(state: AppState, teamId: string) {
+  return state.chatMessages.filter((message) => message.teamId === teamId && message.moderationStatus === "visible");
+}
+
 function evidence(items: Array<string | undefined>) {
   return items.filter((item): item is string => Boolean(item));
 }
@@ -95,6 +103,39 @@ function cleanAnnouncement(input: string, fallbackTitle: string) {
   ].filter(Boolean).join("\n");
 }
 
+function answerSmartFaq(state: AppState, teamId: string) {
+  const game = upcomingEvents(state, teamId, "1970-01-01T00:00:00.000Z").find((event) => event.eventType === "game");
+  if (!game) {
+    return {
+      body: "Question: When is the next game?\nAnswer: No sourced game answer is available yet. Coach should reply or add it to the schedule.",
+      source: undefined
+    };
+  }
+
+  return {
+    body: [
+      "Question: When and where is the next game?",
+      `Answer: ${game.title} is ${formatEventDate(game.startsAt)} at ${game.locationName}.`,
+      "Source: team schedule."
+    ].join("\n"),
+    source: "team schedule"
+  };
+}
+
+function inboxSummary(state: AppState, teamId: string) {
+  const messages = visibleTeamMessages(state, teamId);
+  const groups = [
+    { label: "Urgent", count: messages.filter((message) => /weather|cancel|urgent|hurt|late/i.test(message.body)).length },
+    { label: "Attendance", count: messages.filter((message) => /rsvp|going|not going|late|attendance/i.test(message.body)).length },
+    { label: "Questions", count: messages.filter((message) => /\?|question/i.test(message.body)).length },
+    { label: "Equipment", count: messages.filter((message) => /glove|hat|helmet|jersey|water/i.test(message.body)).length },
+    { label: "Volunteer", count: messages.filter((message) => /snack|volunteer|setup|score/i.test(message.body)).length },
+    { label: "Praise", count: messages.filter((message) => /great|thanks|thank you|awesome|proud/i.test(message.body)).length }
+  ];
+
+  return groups;
+}
+
 export function buildAiCoachWorkspaceDrafts(state: AppState, input: AiCoachWorkspaceInput): AiCoachWorkspaceDraft[] {
   const team = state.teams.find((item) => item.id === input.teamId);
   const events = upcomingEvents(state, input.teamId, input.now);
@@ -105,6 +146,7 @@ export function buildAiCoachWorkspaceDrafts(state: AppState, input: AiCoachWorks
   const pins = pinnedPosts(state, input.teamId);
   const volunteers = volunteerNeeds(state, input.teamId);
   const snacks = snackNeeds(state, input.teamId);
+  const messages = visibleTeamMessages(state, input.teamId);
   const focusAreas: PracticeFocusArea[] = input.focusAreas?.length ? input.focusAreas : ["throwing", "catching", "teamwork"];
   const replayDraft = team ? generateParentReplayDraft(state, {
     teamId: input.teamId,
@@ -155,6 +197,24 @@ export function buildAiCoachWorkspaceDrafts(state: AppState, input: AiCoachWorks
     : "Select a known team before drafting a practice replay.";
 
   const roughAnnouncement = input.roughAnnouncement ?? announcement?.body ?? "hey everyone weather may change tomorrow please bring water glove and hat";
+  const faq = answerSmartFaq(state, input.teamId);
+  const inboxGroups = inboxSummary(state, input.teamId);
+  const gameDayBriefBody = nextGame ? [
+    "Tomorrow",
+    `${nextGame.locationName}`,
+    `${formatEventDate(nextGame.startsAt)} game time`,
+    "Arrive 15 minutes early.",
+    "Blue jersey if the coach confirms uniforms in chat.",
+    "Bring glove, water, hat, and helmet.",
+    snacks.find((slot) => slot.eventId === nextGame.id)?.assignedParentUserId ? "Snack volunteer is assigned." : "Snack volunteer still needs confirmation.",
+    "Weather: check the approved coach update before leaving."
+  ].join("\n") : "No upcoming game is scheduled for this team.";
+  const timelineItems = [
+    ...events.map((event) => `${formatEventDate(event.startsAt)} - ${event.title}`),
+    ...(announcement ? [`${formatEventDate(announcement.createdAt)} - Coach note: ${announcement.title}`] : []),
+    ...state.mediaItems.filter((item) => item.teamId === input.teamId).map((item) => `${formatEventDate(item.createdAt)} - Media: ${item.title}`),
+    ...(replayDraft ? [`${formatEventDate(replayDraft.generatedAt)} - Practice Replay: ${replayDraft.focusAreas.join(", ")}`] : [])
+  ].slice(0, 8);
 
   return [
     {
@@ -209,6 +269,59 @@ export function buildAiCoachWorkspaceDrafts(state: AppState, input: AiCoachWorks
       ]),
       workflow: reviewWorkflow,
       boundary: "Cleaner rewrites structure only; a coach still owns accuracy and publishing."
+    },
+    {
+      id: "smart_faq",
+      label: "Build FAQ",
+      title: `Smart FAQ for ${teamName}`,
+      body: faq.body,
+      sourceEvidence: evidence([
+        faq.source,
+        announcement ? "announcements searched" : undefined,
+        pins.length ? "pinned posts searched" : undefined,
+        `${events.length} schedule item(s) searched`
+      ]),
+      workflow: reviewWorkflow,
+      boundary: "FAQ answers must cite existing schedule, announcement, or pinned-post evidence; coach review is required before publishing."
+    },
+    {
+      id: "coach_inbox_prioritization",
+      label: "Prioritize Coach Inbox",
+      title: `Inbox groups for ${teamName}`,
+      body: inboxGroups.map((group) => `${group.label}: ${group.count}`).join("\n"),
+      sourceEvidence: evidence([
+        `${messages.length} visible team chat message(s)`,
+        pins.length ? `${pins.length} pinned coach note(s)` : undefined
+      ]),
+      workflow: reviewWorkflow,
+      boundary: "Inbox grouping is a coach triage view only; it does not hide, delete, or answer messages."
+    },
+    {
+      id: "game_day_parent_brief",
+      label: "Parent Brief Before Game",
+      title: `Game-day parent brief for ${teamName}`,
+      body: gameDayBriefBody,
+      sourceEvidence: evidence([
+        nextGame ? "next game schedule" : undefined,
+        snacks.length ? "snack assignments" : undefined,
+        pins.length ? "pinned coach notes" : undefined
+      ]),
+      workflow: reviewWorkflow,
+      boundary: "Game-day brief stays coach-reviewed because arrival, uniform, snack, and weather details can change."
+    },
+    {
+      id: "season_timeline",
+      label: "Season Timeline",
+      title: `${teamName} season timeline draft`,
+      body: timelineItems.length ? timelineItems.join("\n") : "No sourced season timeline items are available yet.",
+      sourceEvidence: evidence([
+        `${events.length} schedule item(s)`,
+        announcement ? "coach announcement" : undefined,
+        `${state.mediaItems.filter((item) => item.teamId === input.teamId).length} media item(s)`,
+        replayDraft ? "practice replay focus areas" : undefined
+      ]),
+      workflow: reviewWorkflow,
+      boundary: "Timeline drafts are memory scaffolds; coach and admin review decides what becomes family-facing."
     }
   ];
 }

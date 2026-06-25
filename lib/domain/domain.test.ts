@@ -983,12 +983,20 @@ describe("Parent Replay", () => {
       "new_parent_brief",
       "weekly_digest",
       "practice_replay",
-      "announcement_cleaner"
+      "announcement_cleaner",
+      "smart_faq",
+      "coach_inbox_prioritization",
+      "game_day_parent_brief",
+      "season_timeline"
     ]);
     expect(drafts[0]?.body).toContain("Welcome to Tiny Tigers");
     expect(drafts[1]?.body).toContain("This Week");
     expect(drafts[2]?.body).toContain("At home:");
     expect(drafts[3]?.body).toContain("Bring:");
+    expect(drafts[4]?.body).toContain("Source: team schedule");
+    expect(drafts[5]?.body).toContain("Questions:");
+    expect(drafts[6]?.body).toContain("Arrive 15 minutes early");
+    expect(drafts[7]?.body).toContain("Tiny Tigers");
     expect(drafts.every((draft) => draft.workflow.join(" -> ") === "Preview -> Edit -> Approve -> Publish")).toBe(true);
     expect(drafts.every((draft) => draft.boundary.toLowerCase().includes("coach") || draft.boundary.toLowerCase().includes("provider"))).toBe(true);
   });

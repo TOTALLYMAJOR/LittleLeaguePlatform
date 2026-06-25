@@ -375,6 +375,10 @@ describe("ParentReplayClient", () => {
     expect(html).toContain("Create Weekly Digest");
     expect(html).toContain("Practice Replay");
     expect(html).toContain("Draft Announcement");
+    expect(html).toContain("Build FAQ");
+    expect(html).toContain("Prioritize Coach Inbox");
+    expect(html).toContain("Parent Brief Before Game");
+    expect(html).toContain("Season Timeline");
     expect(html).toContain("Preview - Edit - Approve - Publish");
   });
 });
