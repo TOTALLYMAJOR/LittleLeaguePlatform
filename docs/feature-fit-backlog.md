@@ -278,10 +278,10 @@ This backlog translates the pasted feature inventory into repo-fit work. It is n
   - `Covered`: Location Change Alerts.
   - `Covered`: Schedule CRUD Service.
   - `Covered`: Conflict Detection.
-  - `Build`: Venue Records.
-  - `Build`: Recurring Events.
-  - `Build`: Calendar Export.
-  - `Build`: RSVP Sync.
+  - `Covered`: Venue Records.
+  - `Covered`: Recurring Events.
+  - `Covered`: Calendar Export.
+  - `Covered`: RSVP Sync.
   - `Harden`: Schedule Notification Workflow.
   - `Covered`: Schedule Change Impact Preview.
   - `Covered`: Event Affected-Family Preview.

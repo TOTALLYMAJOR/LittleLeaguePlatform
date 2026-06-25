@@ -22,11 +22,15 @@ import {
   getParentDashboard,
   getTeamChatView,
   generateParentReplayDraft,
+  exportTeamCalendarIcs,
   getProgramThemePreset,
+  getScheduleRsvpSyncRows,
   defaultPracticeFocusAreas,
+  getVenueRecords,
   platformFeatureTiers,
   previewTeamCommunication,
   previewScheduleChangeImpact,
+  previewRecurringEvents,
   programThemePresets,
   roleLabel,
   sampleRosterCsv,
@@ -2567,6 +2571,10 @@ export function ScheduleAlertsClient() {
   const [status, setStatus] = useState<EventStatus>(event?.status ?? "scheduled");
   const [message, setMessage] = useState("");
   const eventTeam = event ? state.teams.find((team) => team.id === event.teamId) : undefined;
+  const venueRecords = getVenueRecords(state);
+  const recurringPreview = event ? previewRecurringEvents(state, { sourceEventId: event.id, count: 3, intervalDays: 7 }) : [];
+  const calendarExport = eventTeam ? exportTeamCalendarIcs(state, eventTeam.id) : "";
+  const rsvpSyncRows = getScheduleRsvpSyncRows(state).filter((row) => !eventTeam || row.event.teamId === eventTeam.id);
   const eventWindowMs = event ? new Date(event.endsAt).getTime() - new Date(event.startsAt).getTime() : 60 * 60 * 1000;
   const conflictEndsAt = event ? new Date(new Date(startsAt).getTime() + eventWindowMs).toISOString() : "";
   const scheduleConflicts = event ? detectScheduleConflicts(state, {
@@ -2695,6 +2703,68 @@ export function ScheduleAlertsClient() {
             </p>
           ))}
           {!scheduleConflicts.length ? <p className="muted">No team or venue overlap found for the selected event window.</p> : null}
+        </article>
+      </section>
+
+      <section className="grid two">
+        <article className="card stack">
+          <div className="card-header">
+            <div>
+              <span className="eyebrow">Venue records</span>
+              <h2>Known locations</h2>
+            </div>
+            <span className="badge">{venueRecords.length} venue(s)</span>
+          </div>
+          {venueRecords.map((venue) => (
+            <p key={`${venue.name}-${venue.address}`}>
+              <strong>{venue.name}</strong><br />
+              <span className="muted">{venue.address} · {venue.eventCount} event(s) · {venue.teamNames.join(", ")}</span>
+            </p>
+          ))}
+        </article>
+
+        <article className="card stack">
+          <div className="card-header">
+            <div>
+              <span className="eyebrow">Recurring events</span>
+              <h2>Weekly preview</h2>
+            </div>
+            <span className="badge warning">Preview</span>
+          </div>
+          {recurringPreview.map((repeat) => (
+            <p key={repeat.id}><strong>{repeat.title}</strong><br /><span className="muted">{formatDate(repeat.startsAt)} · {repeat.locationName}</span></p>
+          ))}
+          {!recurringPreview.length ? <p className="muted">Select an event to preview recurrence.</p> : null}
+        </article>
+      </section>
+
+      <section className="grid two">
+        <article className="card stack">
+          <div className="card-header">
+            <div>
+              <span className="eyebrow">Calendar export</span>
+              <h2>ICS feed preview</h2>
+            </div>
+            <span className="badge ok">{eventTeam?.name ?? "Team"}</span>
+          </div>
+          <pre>{calendarExport.split("\n").slice(0, 8).join("\n")}</pre>
+          <p className="muted">Export text is generated locally; hosted calendar subscriptions need a dedicated read endpoint before production use.</p>
+        </article>
+
+        <article className="card stack">
+          <div className="card-header">
+            <div>
+              <span className="eyebrow">RSVP sync</span>
+              <h2>Schedule attendance counts</h2>
+            </div>
+            <span className="badge">{rsvpSyncRows.length} event(s)</span>
+          </div>
+          {rsvpSyncRows.map((row) => (
+            <p key={row.event.id}>
+              <strong>{row.event.title}</strong><br />
+              <span className="muted">Going {row.going}, maybe {row.maybe}, not going {row.notGoing}, cancelled {row.cancelled}, no response {row.noResponse}</span>
+            </p>
+          ))}
         </article>
       </section>
 

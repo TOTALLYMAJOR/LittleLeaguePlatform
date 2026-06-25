@@ -107,6 +107,7 @@ npm run supabase:push
 - Added parent family calendar filters, an expanded approved media feed, and a computed action checklist on the parent dashboard.
 - Added draft-only parent support intake, archived RSVP read-only UI, a coach RSVP reminder queue, and explicit coach role access copy.
 - Added coach onboarding, selected-event schedule detail, schedule create/update service helpers, and team/venue conflict detection.
+- Added schedule venue records, recurring-event previews, local ICS calendar export, and RSVP sync counts.
 
 ### Remaining Gap
 

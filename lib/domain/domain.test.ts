@@ -13,18 +13,22 @@ import {
   createParentReplay,
   defaultTeamCommunicationCopy,
   detectScheduleConflicts,
+  exportTeamCalendarIcs,
   evaluateInviteRecovery,
   generateParentReplayDraft,
   getCoachRsvpReliability,
   canModerateTeamChat,
   getCoachRsvpSummaries,
   getParentDashboard,
+  getScheduleRsvpSyncRows,
   getTeamChatAccess,
   getTeamChatView,
+  getVenueRecords,
   moderateTeamChatMessage,
   postTeamChatMessage,
   previewTeamCommunication,
   previewScheduleChangeImpact,
+  previewRecurringEvents,
   queueTeamCommunication,
   sampleRosterCsv,
   seedState,
@@ -197,6 +201,20 @@ describe("schedule changes and admin health", () => {
     expect(result.event?.title).toBe("Tiny Tigers Picture Day");
     expect(result.state.events).toHaveLength(seedState.events.length + 1);
     expect(result.state.auditEvents[0]?.action).toBe("schedule_event_created");
+  });
+
+  it("builds venue records, recurrence previews, calendar export, and RSVP sync rows", () => {
+    const venues = getVenueRecords(seedState);
+    const repeats = previewRecurringEvents(seedState, { sourceEventId: "event-tigers-practice", count: 2, intervalDays: 7 });
+    const calendar = exportTeamCalendarIcs(seedState, "team-tigers");
+    const syncRows = getScheduleRsvpSyncRows(seedState);
+
+    expect(venues.map((venue) => venue.name)).toContain("Field 1");
+    expect(repeats).toHaveLength(2);
+    expect(repeats[0]?.title).toContain("#2");
+    expect(calendar).toContain("BEGIN:VCALENDAR");
+    expect(calendar).toContain("Tiny Tigers Practice");
+    expect(syncRows.find((row) => row.event.id === "event-tigers-game")?.going).toBe(1);
   });
 
   it("computes launch readiness card counts", () => {

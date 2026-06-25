@@ -34,6 +34,12 @@ export interface ScheduleConflictInput {
   locationName: string;
 }
 
+export interface RecurringEventPreviewInput {
+  sourceEventId: string;
+  count: number;
+  intervalDays: number;
+}
+
 function actorCanEditEvent(state: AppState, actorUserId: string, actorRole: UserRole, teamId: string) {
   if (actorRole === "admin") return true;
   if (actorRole !== "coach") return false;
@@ -110,6 +116,98 @@ export function createScheduleEvent(state: AppState, input: CreateScheduleEventI
     },
     event
   };
+}
+
+export function getVenueRecords(state: AppState) {
+  const venues = new Map<string, {
+    name: string;
+    address: string;
+    eventCount: number;
+    nextEventAt?: string;
+    teamNames: Set<string>;
+  }>();
+
+  state.events.forEach((event) => {
+    const key = `${event.locationName.toLowerCase()}|${event.locationAddress.toLowerCase()}`;
+    const teamName = state.teams.find((team) => team.id === event.teamId)?.name ?? "Team";
+    const current = venues.get(key) ?? {
+      name: event.locationName,
+      address: event.locationAddress,
+      eventCount: 0,
+      nextEventAt: undefined,
+      teamNames: new Set<string>()
+    };
+    current.eventCount += 1;
+    current.teamNames.add(teamName);
+    if (!current.nextEventAt || new Date(event.startsAt).getTime() < new Date(current.nextEventAt).getTime()) {
+      current.nextEventAt = event.startsAt;
+    }
+    venues.set(key, current);
+  });
+
+  return Array.from(venues.values()).map((venue) => ({
+    ...venue,
+    teamNames: Array.from(venue.teamNames).sort()
+  })).sort((left, right) => left.name.localeCompare(right.name));
+}
+
+export function previewRecurringEvents(state: AppState, input: RecurringEventPreviewInput) {
+  const source = state.events.find((event) => event.id === input.sourceEventId);
+  if (!source) return [];
+  const durationMs = new Date(source.endsAt).getTime() - new Date(source.startsAt).getTime();
+  return Array.from({ length: Math.max(input.count, 0) }, (_, index) => {
+    const startsAt = new Date(new Date(source.startsAt).getTime() + input.intervalDays * (index + 1) * 24 * 60 * 60 * 1000).toISOString();
+    return {
+      ...source,
+      id: `${source.id}-repeat-${index + 1}`,
+      title: `${source.title} #${index + 2}`,
+      startsAt,
+      endsAt: new Date(new Date(startsAt).getTime() + durationMs).toISOString(),
+      createdAt: source.createdAt,
+      updatedAt: source.updatedAt
+    };
+  });
+}
+
+export function exportTeamCalendarIcs(state: AppState, teamId: string) {
+  const events = state.events
+    .filter((event) => event.teamId === teamId)
+    .sort((left, right) => new Date(left.startsAt).getTime() - new Date(right.startsAt).getTime());
+
+  const lines = [
+    "BEGIN:VCALENDAR",
+    "VERSION:2.0",
+    "PRODID:-//Little League HQ//Schedule//EN"
+  ];
+  events.forEach((event) => {
+    lines.push(
+      "BEGIN:VEVENT",
+      `UID:${event.id}@little-league-hq.local`,
+      `SUMMARY:${event.title}`,
+      `DTSTART:${event.startsAt.replace(/[-:]/g, "").replace(".000", "")}`,
+      `DTEND:${event.endsAt.replace(/[-:]/g, "").replace(".000", "")}`,
+      `LOCATION:${event.locationName}`,
+      `STATUS:${event.status.toUpperCase()}`,
+      "END:VEVENT"
+    );
+  });
+  lines.push("END:VCALENDAR");
+  return lines.join("\n");
+}
+
+export function getScheduleRsvpSyncRows(state: AppState) {
+  return state.events.map((event) => {
+    const players = state.players.filter((player) => player.teamId === event.teamId);
+    const rsvps = state.rsvps.filter((rsvp) => rsvp.eventId === event.id);
+    return {
+      event,
+      going: rsvps.filter((rsvp) => rsvp.response === "going").length,
+      maybe: rsvps.filter((rsvp) => rsvp.response === "maybe").length,
+      notGoing: rsvps.filter((rsvp) => rsvp.response === "not_going").length,
+      cancelled: rsvps.filter((rsvp) => rsvp.response === "cancelled").length,
+      noResponse: Math.max(players.length - rsvps.length, 0)
+    };
+  });
 }
 
 export function previewScheduleChangeImpact(state: AppState, input: ScheduleChangeInput) {

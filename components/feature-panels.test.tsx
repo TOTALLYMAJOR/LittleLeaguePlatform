@@ -191,6 +191,14 @@ describe("ScheduleAlertsClient", () => {
     expect(html).toContain("Create, update, cancel");
     expect(html).toContain("Conflict detection");
     expect(html).toContain("Schedule conflicts");
+    expect(html).toContain("Venue records");
+    expect(html).toContain("Known locations");
+    expect(html).toContain("Recurring events");
+    expect(html).toContain("Weekly preview");
+    expect(html).toContain("Calendar export");
+    expect(html).toContain("ICS feed preview");
+    expect(html).toContain("RSVP sync");
+    expect(html).toContain("Schedule attendance counts");
     expect(html).toContain("Affected families");
     expect(html).toContain("Already RSVP");
     expect(html).toContain("Preview only");
