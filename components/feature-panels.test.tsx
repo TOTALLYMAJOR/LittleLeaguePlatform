@@ -294,6 +294,10 @@ describe("AdminDashboardClient", () => {
     expect(html).toContain("CSV import error rate");
     expect(html).toContain("Coach weekly update send rate");
     expect(html).toContain("Game Day Calm Mode usage");
+    expect(html).toContain("Parent Replay completion rate");
+    expect(html).toContain("Micro-Coaching streak rate");
+    expect(html).toContain("Media engagement rate");
+    expect(html).toContain("Notification opt-out rate");
   });
 });
 

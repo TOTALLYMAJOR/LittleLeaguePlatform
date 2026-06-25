@@ -562,10 +562,10 @@ This backlog translates the pasted feature inventory into repo-fit work. It is n
   - `Covered`: CSV Import Error Rate.
   - `Covered`: Coach Weekly Update Send Rate.
   - `Covered`: Game Day Calm Mode Usage.
-  - `Build`: Parent Replay Completion Rate.
-  - `Build`: Micro-Coaching Streak Rate.
-  - `Build`: Media Engagement Rate.
-  - `Build`: Notification Opt-Out Rate.
+  - `Covered`: Parent Replay Completion Rate.
+  - `Covered`: Micro-Coaching Streak Rate.
+  - `Covered`: Media Engagement Rate.
+  - `Covered`: Notification Opt-Out Rate.
 
 ## Suggested Build Order
 

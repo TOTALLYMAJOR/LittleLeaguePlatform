@@ -122,6 +122,10 @@ import {
   getCsvImportErrorRate,
   getCoachWeeklyUpdateSendRate,
   getGameDayCalmModeUsage,
+  getParentReplayCompletionRate,
+  getMicroCoachingStreakRate,
+  getMediaEngagementRate,
+  getNotificationOptOutRate,
   type ChatAnnouncementTopic,
   type CommunicationTemplate,
   type EventType,
@@ -1880,6 +1884,10 @@ export function AdminDashboardClient({ registrationRequests, sponsorData, mediaD
   const csvImportErrorRate = getCsvImportErrorRate(state);
   const coachWeeklyUpdateSendRate = getCoachWeeklyUpdateSendRate(state);
   const gameDayCalmModeUsage = getGameDayCalmModeUsage(state);
+  const parentReplayCompletionRate = getParentReplayCompletionRate(state);
+  const microCoachingStreakRate = getMicroCoachingStreakRate(state);
+  const mediaEngagementRate = getMediaEngagementRate(state);
+  const notificationOptOutRate = getNotificationOptOutRate(state);
   const [communicationTeamId, setCommunicationTeamId] = useState("team-tigers");
   const [communicationChannel, setCommunicationChannel] = useState<AdminCommunicationChannel>("email");
   const [communicationTemplate, setCommunicationTemplate] = useState<CommunicationTemplate>("weekly_digest");
@@ -2451,6 +2459,10 @@ export function AdminDashboardClient({ registrationRequests, sponsorData, mediaD
           <p><strong>CSV import error rate:</strong> {csvImportErrorRate}%</p>
           <p><strong>Coach weekly update send rate:</strong> {coachWeeklyUpdateSendRate}%</p>
           <p><strong>Game Day Calm Mode usage:</strong> {gameDayCalmModeUsage} game(s)</p>
+          <p><strong>Parent Replay completion rate:</strong> {parentReplayCompletionRate}%</p>
+          <p><strong>Micro-Coaching streak rate:</strong> {microCoachingStreakRate}%</p>
+          <p><strong>Media engagement rate:</strong> {mediaEngagementRate}%</p>
+          <p><strong>Notification opt-out rate:</strong> {notificationOptOutRate}%</p>
         </article>
       </section>
     </div>

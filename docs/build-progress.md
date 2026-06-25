@@ -132,6 +132,7 @@ npm run supabase:push
 - Added privacy filters plus invite acceptance, invite-to-account time, and failed-invite metrics.
 - Added parent-link completion, RSVP response, schedule-alert open, and weekly-active-parent metrics.
 - Added support-request, CSV import error, coach weekly update send, and Game Day Calm Mode usage metrics.
+- Added Parent Replay completion, micro-coaching streak, media engagement, and notification opt-out metrics.
 
 ### Remaining Gap
 

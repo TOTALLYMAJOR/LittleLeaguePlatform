@@ -70,3 +70,26 @@ export function getCoachWeeklyUpdateSendRate(state: AppState) {
 export function getGameDayCalmModeUsage(state: AppState) {
   return state.events.filter((event) => event.eventType === "game").length;
 }
+
+export function getParentReplayCompletionRate(state: AppState) {
+  const totalFamilies = state.guardianLinks.filter((link) => link.status === "active").length;
+  const completedFamilies = state.parentReplays.reduce((total, replay) => total + replay.microCoachingStreak.completedFamilies, 0);
+  const cappedCompletions = Math.min(totalFamilies, completedFamilies);
+  return totalFamilies ? Math.round((cappedCompletions / totalFamilies) * 100) : 0;
+}
+
+export function getMicroCoachingStreakRate(state: AppState) {
+  const latestReplay = state.parentReplays[0];
+  return latestReplay?.microCoachingStreak.completionRate ?? 0;
+}
+
+export function getMediaEngagementRate(state: AppState) {
+  const visibleItems = state.mediaItems.filter((item) => (item.moderationStatus ?? "approved") === "approved").length;
+  return state.mediaItems.length ? Math.round((visibleItems / state.mediaItems.length) * 100) : 0;
+}
+
+export function getNotificationOptOutRate(state: AppState) {
+  const total = state.notificationPreferences.length;
+  const optedOut = state.notificationPreferences.filter((preference) => !preference.enabled || preference.optedOutAt).length;
+  return total ? Math.round((optedOut / total) * 100) : 0;
+}

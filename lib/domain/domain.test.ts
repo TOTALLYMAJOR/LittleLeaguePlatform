@@ -120,7 +120,11 @@ import {
   getSupportRequestsPerTeam,
   getCsvImportErrorRate,
   getCoachWeeklyUpdateSendRate,
-  getGameDayCalmModeUsage
+  getGameDayCalmModeUsage,
+  getParentReplayCompletionRate,
+  getMicroCoachingStreakRate,
+  getMediaEngagementRate,
+  getNotificationOptOutRate
 } from "./index";
 
 describe("CSV duplicate detection", () => {
@@ -688,6 +692,10 @@ describe("analytics metrics", () => {
     expect(getCsvImportErrorRate(seedState)).toBe(0);
     expect(getCoachWeeklyUpdateSendRate(seedState)).toBe(0);
     expect(getGameDayCalmModeUsage(seedState)).toBeGreaterThan(0);
+    expect(getParentReplayCompletionRate(seedState)).toBe(0);
+    expect(getMicroCoachingStreakRate(seedState)).toBe(0);
+    expect(getMediaEngagementRate(seedState)).toBe(100);
+    expect(getNotificationOptOutRate(seedState)).toBe(0);
   });
 });
 
