@@ -22,6 +22,9 @@ import {
   getEventStatusTracking,
   getNotificationChannelReadiness,
   getNotificationRetryLogs,
+  getDeviceManagementSummary,
+  getEmailFallbackPlan,
+  getAlertOpenRateTracking,
   getParentDashboard,
   getScheduleNotificationWorkflow,
   getScheduleRsvpSyncRows,
@@ -37,6 +40,7 @@ import {
   queueTeamCommunication,
   applyNotificationUnsubscribe,
   recipientAllowsNotification,
+  smsUrgencyAllowed,
   sampleRosterCsv,
   seedState,
   sendCoachAnnouncement,
@@ -330,6 +334,54 @@ describe("schedule changes and admin health", () => {
       notificationType: "schedule_changed"
     })).toBe(false);
     expect(getNotificationRetryLogs(failedState)).toHaveLength(1);
+  });
+
+  it("summarizes device, email fallback, SMS urgency, and open-rate rules", () => {
+    const telemetryState = {
+      ...seedState,
+      notifications: [
+        {
+          id: "notification-sent-open-rate",
+          organizationId: seedState.organization.id,
+          recipientUserId: "user-parent-jordan",
+          teamId: "team-tigers",
+          notificationType: "schedule_changed" as const,
+          title: "Schedule changed",
+          body: "Updated time.",
+          channel: "email" as const,
+          status: "sent" as const,
+          createdAt: NOW,
+          sentAt: NOW
+        },
+        {
+          id: "notification-read-open-rate",
+          organizationId: seedState.organization.id,
+          recipientUserId: "user-parent-riley",
+          teamId: "team-tigers",
+          notificationType: "schedule_changed" as const,
+          title: "Schedule changed",
+          body: "Updated time.",
+          channel: "push" as const,
+          status: "read" as const,
+          createdAt: NOW,
+          readAt: NOW
+        }
+      ],
+      notificationPreferences: [{
+        id: "pref-push",
+        userId: "user-parent-jordan",
+        channel: "push" as const,
+        notificationType: "schedule_changed" as const,
+        enabled: true,
+        timezone: "America/Chicago"
+      }]
+    };
+
+    expect(getDeviceManagementSummary(telemetryState).registeredUsers).toBe(1);
+    expect(getEmailFallbackPlan(seedState, { notificationType: "schedule_changed" }).reachableCount).toBe(2);
+    expect(smsUrgencyAllowed({ notificationType: "event_cancelled", urgent: true })).toBe(true);
+    expect(smsUrgencyAllowed({ notificationType: "schedule_changed", urgent: false })).toBe(false);
+    expect(getAlertOpenRateTracking(telemetryState).openRate).toBe(50);
   });
 
   it("computes launch readiness card counts", () => {

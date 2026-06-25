@@ -111,6 +111,7 @@ npm run supabase:push
 - Added schedule notification workflow/status summaries plus push and email channel readiness gates.
 - Hardened SMS channel readiness and sent/failed/read notification status coverage.
 - Added VAPID adapter status, unsubscribe preference updates, retry-log derivation, and recipient preference enforcement checks.
+- Added push device summary, email fallback eligibility, urgent-only SMS rules, and notification open-rate tracking.
 
 ### Remaining Gap
 

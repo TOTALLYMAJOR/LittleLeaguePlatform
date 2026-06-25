@@ -128,3 +128,48 @@ export function recipientAllowsNotification(state: AppState, input: {
 
   return preference?.enabled ?? input.channel !== "sms";
 }
+
+export function getDeviceManagementSummary(state: AppState) {
+  const pushPreferenceUsers = new Set(state.notificationPreferences
+    .filter((preference) => preference.channel === "push")
+    .map((preference) => preference.userId));
+
+  return {
+    registeredUsers: pushPreferenceUsers.size,
+    detail: pushPreferenceUsers.size
+      ? `${pushPreferenceUsers.size} user(s) have push preference records; subscription device rows remain provider-backed.`
+      : "No push device preference records are available yet."
+  };
+}
+
+export function getEmailFallbackPlan(state: AppState, input: { notificationType: NotificationPreferenceType }) {
+  const parentUsers = state.users.filter((user) => user.role === "parent");
+  const reachable = parentUsers.filter((user) => (
+    user.email.includes("@") &&
+    recipientAllowsNotification(state, {
+      userId: user.id,
+      channel: "email",
+      notificationType: input.notificationType
+    })
+  ));
+
+  return {
+    reachableCount: reachable.length,
+    fallbackChannel: "email" as const,
+    detail: `${reachable.length} parent email fallback recipient(s) are eligible after preference checks.`
+  };
+}
+
+export function smsUrgencyAllowed(input: { notificationType: NotificationPreferenceType; urgent: boolean }) {
+  return input.urgent && ["event_cancelled", "weather_alert"].includes(input.notificationType);
+}
+
+export function getAlertOpenRateTracking(state: AppState) {
+  const sentOrRead = state.notifications.filter((notification) => notification.status === "sent" || notification.status === "read");
+  const read = sentOrRead.filter((notification) => notification.status === "read");
+  return {
+    opened: read.length,
+    deliveredOrOpened: sentOrRead.length,
+    openRate: sentOrRead.length ? Math.round((read.length / sentOrRead.length) * 100) : 0
+  };
+}

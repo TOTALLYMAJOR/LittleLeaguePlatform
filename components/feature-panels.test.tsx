@@ -212,6 +212,10 @@ describe("ScheduleAlertsClient", () => {
     expect(html).toContain("Unsubscribe flow");
     expect(html).toContain("Retry logs");
     expect(html).toContain("Recipient preference enforcement");
+    expect(html).toContain("Device management");
+    expect(html).toContain("Email fallback");
+    expect(html).toContain("SMS urgency rules");
+    expect(html).toContain("Alert open rate tracking");
     expect(html).toContain("Affected families");
     expect(html).toContain("Already RSVP");
     expect(html).toContain("Preview only");

@@ -310,10 +310,10 @@ This backlog translates the pasted feature inventory into repo-fit work. It is n
   - `Covered`: Unsubscribe Flow.
   - `Covered`: Retry Logs.
   - `Covered`: Recipient Preference Enforcement.
-  - `Build`: Device Management.
-  - `Build`: Email Fallback.
-  - `Harden`: SMS Urgency Rules.
-  - `Build`: Alert Open Rate Tracking.
+  - `Covered`: Device Management.
+  - `Covered`: Email Fallback.
+  - `Covered`: SMS Urgency Rules.
+  - `Covered`: Alert Open Rate Tracking.
 
 ### Weather
 

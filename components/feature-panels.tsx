@@ -27,11 +27,15 @@ import {
   getScheduleRsvpSyncRows,
   getEventStatusTracking,
   getNotificationRetryLogs,
+  getDeviceManagementSummary,
+  getEmailFallbackPlan,
   defaultPracticeFocusAreas,
   getNotificationChannelReadiness,
   getScheduleNotificationWorkflow,
   getVapidSendAdapterStatus,
   recipientAllowsNotification,
+  getAlertOpenRateTracking,
+  smsUrgencyAllowed,
   getVenueRecords,
   platformFeatureTiers,
   previewTeamCommunication,
@@ -2586,6 +2590,10 @@ export function ScheduleAlertsClient() {
   const channelReadiness = getNotificationChannelReadiness(state);
   const vapidStatus = getVapidSendAdapterStatus();
   const retryLogs = getNotificationRetryLogs(state);
+  const deviceSummary = getDeviceManagementSummary(state);
+  const emailFallback = getEmailFallbackPlan(state, { notificationType: status === "cancelled" ? "event_cancelled" : "schedule_changed" });
+  const smsUrgentAllowed = smsUrgencyAllowed({ notificationType: status === "cancelled" ? "event_cancelled" : "schedule_changed", urgent: status === "cancelled" });
+  const openRate = getAlertOpenRateTracking(state);
   const preferenceAllowed = event ? recipientAllowsNotification(state, {
     userId: "user-parent-jordan",
     teamId: event.teamId,
@@ -2902,6 +2910,54 @@ export function ScheduleAlertsClient() {
             </p>
           ))}
           {!retryLogs.length ? <p className="muted">No failed notification records need retry review.</p> : null}
+        </article>
+      </section>
+
+      <section className="grid two">
+        <article className="card stack">
+          <div className="card-header">
+            <div>
+              <span className="eyebrow">Device management</span>
+              <h2>Push device records</h2>
+            </div>
+            <span className="badge">{deviceSummary.registeredUsers} user(s)</span>
+          </div>
+          <p className="muted">{deviceSummary.detail}</p>
+        </article>
+
+        <article className="card stack">
+          <div className="card-header">
+            <div>
+              <span className="eyebrow">Email fallback</span>
+              <h2>Fallback recipients</h2>
+            </div>
+            <span className="badge ok">{emailFallback.reachableCount} reachable</span>
+          </div>
+          <p className="muted">{emailFallback.detail}</p>
+        </article>
+      </section>
+
+      <section className="grid two">
+        <article className="card stack">
+          <div className="card-header">
+            <div>
+              <span className="eyebrow">SMS urgency rules</span>
+              <h2>Urgent-only SMS</h2>
+            </div>
+            <span className={`badge ${smsUrgentAllowed ? "ok" : "warning"}`}>{smsUrgentAllowed ? "Allowed" : "Blocked"}</span>
+          </div>
+          <p className="muted">SMS delivery is reserved for urgent cancellation or weather cases after consent and provider approval.</p>
+        </article>
+
+        <article className="card stack">
+          <div className="card-header">
+            <div>
+              <span className="eyebrow">Alert open rate tracking</span>
+              <h2>Read telemetry</h2>
+            </div>
+            <span className="badge">{openRate.openRate}% open</span>
+          </div>
+          <p className="muted">{openRate.opened} read out of {openRate.deliveredOrOpened} sent/read notification record(s).</p>
         </article>
       </section>
 
