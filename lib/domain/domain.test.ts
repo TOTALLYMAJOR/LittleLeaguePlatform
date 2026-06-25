@@ -237,6 +237,60 @@ describe("schedule changes and admin health", () => {
     expect(status.cancelled).toBe(1);
     expect(channels.find((channel) => channel.channel === "push")?.label).toBe("Push notification channel");
     expect(channels.find((channel) => channel.channel === "email")?.status).toBe("ok");
+    expect(channels.find((channel) => channel.channel === "sms")?.status).toBe("ok");
+  });
+
+  it("tracks sent, failed, and read notification statuses from records", () => {
+    const workflow = getScheduleNotificationWorkflow({
+      ...seedState,
+      notifications: [
+        {
+          id: "notification-sent",
+          organizationId: seedState.organization.id,
+          recipientUserId: "user-parent-jordan",
+          teamId: "team-tigers",
+          eventId: "event-tigers-game",
+          notificationType: "schedule_changed",
+          title: "Schedule changed",
+          body: "Updated time.",
+          channel: "email",
+          status: "sent",
+          createdAt: NOW,
+          sentAt: NOW
+        },
+        {
+          id: "notification-failed",
+          organizationId: seedState.organization.id,
+          recipientUserId: "user-parent-riley",
+          teamId: "team-tigers",
+          eventId: "event-tigers-game",
+          notificationType: "schedule_changed",
+          title: "Schedule changed",
+          body: "Updated time.",
+          channel: "sms",
+          status: "failed",
+          createdAt: NOW
+        },
+        {
+          id: "notification-read",
+          organizationId: seedState.organization.id,
+          recipientUserId: "user-parent-jordan",
+          teamId: "team-tigers",
+          eventId: "event-tigers-game",
+          notificationType: "event_cancelled",
+          title: "Event cancelled",
+          body: "Game cancelled.",
+          channel: "push",
+          status: "read",
+          createdAt: NOW,
+          readAt: NOW
+        }
+      ]
+    });
+
+    expect(workflow.statusCounts.sent).toBe(1);
+    expect(workflow.statusCounts.failed).toBe(1);
+    expect(workflow.statusCounts.read).toBe(1);
   });
 
   it("computes launch readiness card counts", () => {

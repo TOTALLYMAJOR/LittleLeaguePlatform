@@ -109,6 +109,7 @@ npm run supabase:push
 - Added coach onboarding, selected-event schedule detail, schedule create/update service helpers, and team/venue conflict detection.
 - Added schedule venue records, recurring-event previews, local ICS calendar export, and RSVP sync counts.
 - Added schedule notification workflow/status summaries plus push and email channel readiness gates.
+- Hardened SMS channel readiness and sent/failed/read notification status coverage.
 
 ### Remaining Gap
 

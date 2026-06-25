@@ -297,12 +297,12 @@ This backlog translates the pasted feature inventory into repo-fit work. It is n
   - `Covered`: Notification Records.
   - `Covered`: Push Notification Channel.
   - `Covered`: Email Notification Channel.
-  - `Harden`: SMS Notification Channel.
+  - `Covered`: SMS Notification Channel.
   - `Covered`: Notification Status Tracking.
   - `Covered`: Pending Notification Status.
-  - `Harden`: Sent Notification Status.
-  - `Harden`: Failed Notification Status.
-  - `Harden`: Read Notification Status.
+  - `Covered`: Sent Notification Status.
+  - `Covered`: Failed Notification Status.
+  - `Covered`: Read Notification Status.
   - `Covered`: Web Push Subscription Storage.
   - `Covered`: PWA Service Worker.
   - `Build`: VAPID Send Adapter.

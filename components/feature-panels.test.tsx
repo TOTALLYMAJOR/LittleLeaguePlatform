@@ -204,6 +204,10 @@ describe("ScheduleAlertsClient", () => {
     expect(html).toContain("Event status tracking");
     expect(html).toContain("Push notification channel");
     expect(html).toContain("Email notification channel");
+    expect(html).toContain("SMS notification channel");
+    expect(html).toContain("sent");
+    expect(html).toContain("failed");
+    expect(html).toContain("read");
     expect(html).toContain("Affected families");
     expect(html).toContain("Already RSVP");
     expect(html).toContain("Preview only");
