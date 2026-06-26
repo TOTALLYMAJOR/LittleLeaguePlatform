@@ -8,6 +8,10 @@ import { POST as postParentReplay } from "./api/coach/parent-replay/route";
 import { POST as postWeeklyUpdate } from "./api/coach/weekly-update/route";
 import { POST as postSponsorSave } from "./api/admin/sponsors/route";
 import { POST as postAdminTeam } from "./api/admin/teams/route";
+import { POST as postAdminSeason } from "./api/admin/seasons/route";
+import { POST as postAdminRoster } from "./api/admin/rosters/route";
+import { POST as postScheduleEvent } from "./api/schedule/route";
+import { POST as postSupportRequest } from "./api/support-requests/route";
 import { POST as postGuardianRepair } from "./api/admin/guardian-links/repair/route";
 import { POST as postRosterImportAudit } from "./api/admin/roster-imports/audit/route";
 import { POST as postThemeDefaults } from "./api/admin/theme-defaults/route";
@@ -21,7 +25,8 @@ import type { ParentReplayDraft } from "@/lib/domain";
 import { updateTenantThemeDefaults } from "@/lib/supabase/team-branding";
 import { createTeamMembership } from "@/lib/supabase/memberships";
 import { recordRosterImportAudit } from "@/lib/supabase/roster-imports";
-import { saveAdminTeam } from "@/lib/supabase/team-management";
+import { saveAdminSeason, saveAdminTeam, saveRosterPlayer } from "@/lib/supabase/team-management";
+import { saveScheduleEvent } from "@/lib/supabase/schedule-management";
 import { repairGuardianLink } from "@/lib/supabase/guardian-links";
 import { createAdminExport } from "@/lib/supabase/reporting";
 import { reviewNotificationDelivery } from "@/lib/supabase/provider-delivery";
@@ -35,6 +40,7 @@ import {
   reportMediaItem,
   recordMobileUsageEvent,
   saveParentReplay,
+  submitParentSupportRequest,
   updateNotificationPreference,
   updateParentRsvp
 } from "@/lib/supabase/operations";
@@ -54,6 +60,7 @@ vi.mock("@/lib/supabase/operations", () => ({
   reportMediaItem: vi.fn(),
   recordMobileUsageEvent: vi.fn(),
   saveParentReplay: vi.fn(),
+  submitParentSupportRequest: vi.fn(),
   updateNotificationPreference: vi.fn(),
   updateParentRsvp: vi.fn()
 }));
@@ -71,7 +78,13 @@ vi.mock("@/lib/supabase/roster-imports", () => ({
 }));
 
 vi.mock("@/lib/supabase/team-management", () => ({
-  saveAdminTeam: vi.fn()
+  saveAdminSeason: vi.fn(),
+  saveAdminTeam: vi.fn(),
+  saveRosterPlayer: vi.fn()
+}));
+
+vi.mock("@/lib/supabase/schedule-management", () => ({
+  saveScheduleEvent: vi.fn()
 }));
 
 vi.mock("@/lib/supabase/guardian-links", () => ({
@@ -97,11 +110,15 @@ const moderateMediaItemMock = vi.mocked(moderateMediaItem);
 const reportMediaItemMock = vi.mocked(reportMediaItem);
 const recordMobileUsageEventMock = vi.mocked(recordMobileUsageEvent);
 const saveParentReplayMock = vi.mocked(saveParentReplay);
+const submitParentSupportRequestMock = vi.mocked(submitParentSupportRequest);
 const updateNotificationPreferenceMock = vi.mocked(updateNotificationPreference);
 const updateTenantThemeDefaultsMock = vi.mocked(updateTenantThemeDefaults);
 const createTeamMembershipMock = vi.mocked(createTeamMembership);
 const recordRosterImportAuditMock = vi.mocked(recordRosterImportAudit);
+const saveAdminSeasonMock = vi.mocked(saveAdminSeason);
 const saveAdminTeamMock = vi.mocked(saveAdminTeam);
+const saveRosterPlayerMock = vi.mocked(saveRosterPlayer);
+const saveScheduleEventMock = vi.mocked(saveScheduleEvent);
 const repairGuardianLinkMock = vi.mocked(repairGuardianLink);
 const createAdminExportMock = vi.mocked(createAdminExport);
 const reviewNotificationDeliveryMock = vi.mocked(reviewNotificationDelivery);
@@ -157,6 +174,29 @@ describe("live action API routes", () => {
     });
   });
 
+  it("uses the authenticated parent session for support requests", async () => {
+    submitParentSupportRequestMock.mockResolvedValue({
+      ok: true,
+      message: "Support request saved.",
+      supportRequest: { id: "support-1", team_id: "team-1", parent_user_id: "user-live-session", topic: "schedule", status: "open" }
+    });
+
+    const response = await postSupportRequest(jsonRequest({
+      teamId: "team-1",
+      parentUserId: "client-spoof",
+      topic: "schedule",
+      detail: "Need help with the Saturday game."
+    }));
+
+    expect(response.status).toBe(201);
+    expect(submitParentSupportRequestMock).toHaveBeenCalledWith({
+      parentUserId: "user-live-session",
+      teamId: "team-1",
+      topic: "schedule",
+      detail: "Need help with the Saturday game."
+    });
+  });
+
   it("uses the authenticated user session for volunteer claims", async () => {
     claimVolunteerRoleMock.mockResolvedValue({ ok: true, message: "Volunteer saved.", signup: { id: "volunteer-1" } });
 
@@ -178,6 +218,63 @@ describe("live action API routes", () => {
     expect(createWeatherAlertDraftMock).toHaveBeenCalledWith({
       eventId: "event-1",
       reviewerUserId: "user-live-session"
+    });
+  });
+
+  it("uses the authenticated coach or admin session for schedule event changes", async () => {
+    saveScheduleEventMock.mockResolvedValue({
+      ok: true,
+      message: "Schedule saved.",
+      event: {
+        id: "event-1",
+        organizationId: "org-1",
+        teamId: "team-1",
+        seasonId: "season-1",
+        title: "Practice",
+        eventType: "practice",
+        startsAt: "2026-06-25T22:30:00.000Z",
+        endsAt: "2026-06-25T23:30:00.000Z",
+        locationName: "Field 1",
+        locationAddress: "100 Park Ave",
+        status: "scheduled",
+        createdAt: "2026-06-25T12:00:00.000Z",
+        updatedAt: "2026-06-25T12:00:00.000Z"
+      },
+      notificationCount: 1
+    });
+
+    const response = await postScheduleEvent(jsonRequest({
+      actorUserId: "client-spoof",
+      eventId: "event-1",
+      organizationId: "org-1",
+      seasonId: "season-1",
+      teamId: "team-1",
+      title: "Practice",
+      eventType: "practice",
+      startsAt: "2026-06-25T22:30:00.000Z",
+      endsAt: "2026-06-25T23:30:00.000Z",
+      locationName: "Field 1",
+      locationAddress: "100 Park Ave",
+      status: "scheduled"
+    }));
+
+    expect(response.status).toBe(201);
+    expect(saveScheduleEventMock).toHaveBeenCalledWith({
+      actorUserId: "user-live-session",
+      eventId: "event-1",
+      organizationId: "org-1",
+      seasonId: "season-1",
+      teamId: "team-1",
+      title: "Practice",
+      eventType: "practice",
+      startsAt: "2026-06-25T22:30:00.000Z",
+      endsAt: "2026-06-25T23:30:00.000Z",
+      locationName: "Field 1",
+      locationAddress: "100 Park Ave",
+      fieldLocationId: undefined,
+      opponent: undefined,
+      status: "scheduled",
+      reason: undefined
     });
   });
 
@@ -585,6 +682,83 @@ describe("live action API routes", () => {
       secondaryColor: "#f97316",
       coachUserId: "coach-1",
       status: "active"
+    });
+  });
+
+  it("uses the authenticated admin session for season lifecycle changes", async () => {
+    saveAdminSeasonMock.mockResolvedValue({
+      ok: true,
+      message: "Season saved.",
+      season: {
+        id: "season-1",
+        name: "Spring 2026",
+        status: "active",
+        starts_at: "2026-03-01T00:00:00.000Z",
+        ends_at: "2026-06-30T23:59:59.000Z",
+        archived_at: null
+      }
+    });
+
+    const response = await postAdminSeason(jsonRequest({
+      organizationId: "org-1",
+      actorUserId: "client-spoof",
+      seasonId: "season-1",
+      name: "Spring 2026",
+      startsAt: "2026-03-01T00:00:00.000Z",
+      endsAt: "2026-06-30T23:59:59.000Z",
+      status: "active"
+    }));
+
+    expect(response.status).toBe(201);
+    expect(saveAdminSeasonMock).toHaveBeenCalledWith({
+      organizationId: "org-1",
+      actorUserId: "user-live-session",
+      seasonId: "season-1",
+      name: "Spring 2026",
+      startsAt: "2026-03-01T00:00:00.000Z",
+      endsAt: "2026-06-30T23:59:59.000Z",
+      status: "active"
+    });
+  });
+
+  it("uses the authenticated admin session for roster lifecycle changes", async () => {
+    saveRosterPlayerMock.mockResolvedValue({
+      ok: true,
+      message: "Roster saved.",
+      player: {
+        id: "player-1",
+        team_id: "team-1",
+        season_id: "season-1",
+        first_name: "Mason",
+        last_initial: "T",
+        jersey: "7",
+        roster_status: "active"
+      }
+    });
+
+    const response = await postAdminRoster(jsonRequest({
+      organizationId: "org-1",
+      actorUserId: "client-spoof",
+      playerId: "player-1",
+      teamId: "team-1",
+      seasonId: "season-1",
+      firstName: "Mason",
+      lastInitial: "T",
+      jersey: "7",
+      rosterStatus: "active"
+    }));
+
+    expect(response.status).toBe(201);
+    expect(saveRosterPlayerMock).toHaveBeenCalledWith({
+      organizationId: "org-1",
+      actorUserId: "user-live-session",
+      playerId: "player-1",
+      teamId: "team-1",
+      seasonId: "season-1",
+      firstName: "Mason",
+      lastInitial: "T",
+      jersey: "7",
+      rosterStatus: "active"
     });
   });
 

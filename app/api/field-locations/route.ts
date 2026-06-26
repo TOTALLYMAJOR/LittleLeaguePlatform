@@ -1,6 +1,17 @@
 import { NextResponse } from "next/server";
-import { upsertFieldLocation } from "@/lib/supabase/operations";
+import { listFieldLocations, upsertFieldLocation } from "@/lib/supabase/operations";
 import { requireAuthenticatedRouteUser } from "@/lib/supabase/route-auth";
+
+export async function GET(request: Request) {
+  const auth = await requireAuthenticatedRouteUser(request);
+  if (!auth.ok || !auth.user) {
+    return NextResponse.json({ ok: false, message: auth.message }, { status: 401 });
+  }
+
+  const url = new URL(request.url);
+  const result = await listFieldLocations(url.searchParams.get("organizationId") ?? undefined);
+  return NextResponse.json(result, { status: result.ok ? 200 : 400 });
+}
 
 export async function POST(request: Request) {
   const auth = await requireAuthenticatedRouteUser(request);

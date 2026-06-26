@@ -80,6 +80,29 @@ export async function upsertFieldLocation(input: {
   }
 }
 
+export async function listFieldLocations(organizationId?: string) {
+  try {
+    const db = adminDb();
+    let query = db
+      .from("field_locations")
+      .select("id,organization_id,name,address,latitude,longitude,google_place_id,map_url,map_embed_url,status,updated_at")
+      .order("name", { ascending: true });
+
+    if (organizationId) query = query.eq("organization_id", organizationId);
+
+    const { data, error } = await runDynamicQuery(query);
+    if (error) return { ok: false, message: "Field locations could not be loaded.", fieldLocations: [] };
+
+    return {
+      ok: true,
+      message: "Field locations loaded from Supabase with map fallback metadata.",
+      fieldLocations: data ?? []
+    };
+  } catch {
+    return { ok: false, message: "Field locations could not reach Supabase.", fieldLocations: [] };
+  }
+}
+
 export async function registerPushSubscription(input: {
   userId: string;
   endpoint: string;
@@ -441,6 +464,13 @@ export async function updateParentRsvp(input: {
     });
     if (!access.ok) return { ok: false, message: access.message };
 
+    const { data: previousRsvp } = await runDynamicQuery<{ id: string; response: "going" | "not_going" | "maybe" | "cancelled" }>(db
+      .from("rsvps")
+      .select("id,response")
+      .eq("event_id", input.eventId)
+      .eq("player_id", input.playerId)
+      .maybeSingle());
+    const respondedAt = new Date().toISOString();
     const { data, error } = await runDynamicQuery(db
       .from("rsvps")
       .upsert({
@@ -449,14 +479,85 @@ export async function updateParentRsvp(input: {
         parent_user_id: input.parentUserId,
         response: input.response,
         note: input.note ?? null,
-        responded_at: new Date().toISOString()
+        responded_at: respondedAt
       }, { onConflict: "event_id,player_id" })
       .select("id,event_id,player_id,parent_user_id,response,note,responded_at")
       .single());
     if (error || !data) return { ok: false, message: "RSVP could not be saved." };
+
+    const historyResult = await runDynamicQuery(db
+      .from("rsvp_change_logs")
+      .insert({
+        event_id: input.eventId,
+        player_id: input.playerId,
+        parent_user_id: input.parentUserId,
+        previous_response: previousRsvp?.response ?? null,
+        next_response: input.response,
+        note: input.note ?? null,
+        created_at: respondedAt
+      })
+      .select("id")
+      .single());
+
+    if (historyResult.error) {
+      return { ok: false, message: "RSVP saved, but RSVP history could not be recorded.", rsvp: data };
+    }
+
     return { ok: true, message: "RSVP saved to Supabase.", rsvp: data };
   } catch {
     return { ok: false, message: "RSVP could not reach Supabase." };
+  }
+}
+
+export async function submitParentSupportRequest(input: {
+  parentUserId: string;
+  teamId?: string;
+  topic: "schedule" | "rsvp" | "registration" | "media" | "notifications" | "other";
+  detail: string;
+}) {
+  const detail = input.detail.trim();
+  if (!input.parentUserId || !detail) {
+    return { ok: false, message: "Support request requires a signed-in parent and details." };
+  }
+
+  try {
+    const db = adminDb();
+    let teamQuery = db
+      .from("players")
+      .select("team_id,organization_id,player_guardians!inner(id,parent_user_id,status)")
+      .eq("player_guardians.parent_user_id", input.parentUserId)
+      .eq("player_guardians.status", "active")
+      .limit(1);
+
+    if (input.teamId) teamQuery = teamQuery.eq("team_id", input.teamId);
+
+    const { data: linkedPlayers, error: linkError } = await runDynamicQuery<Array<{ team_id: string; organization_id: string }>>(teamQuery);
+    const linkedPlayer = linkedPlayers?.[0];
+    if (linkError || !linkedPlayer) {
+      return { ok: false, message: "Support request requires an active parent-child team link." };
+    }
+
+    const { data, error } = await runDynamicQuery(db
+      .from("support_requests")
+      .insert({
+        organization_id: linkedPlayer.organization_id,
+        team_id: input.teamId ?? linkedPlayer.team_id,
+        parent_user_id: input.parentUserId,
+        topic: input.topic,
+        detail,
+        status: "open",
+        context_json: {
+          source: "parent_dashboard",
+          requestedTeamId: input.teamId ?? linkedPlayer.team_id
+        }
+      })
+      .select("id,team_id,parent_user_id,topic,status,created_at")
+      .single());
+
+    if (error || !data) return { ok: false, message: "Support request could not be saved." };
+    return { ok: true, message: "Support request saved for staff review.", supportRequest: data };
+  } catch {
+    return { ok: false, message: "Support request could not reach Supabase." };
   }
 }
 

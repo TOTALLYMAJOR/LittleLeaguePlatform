@@ -134,6 +134,7 @@ import {
   type CommunicationTemplate,
   type EventType,
   type EventStatus,
+  type LeagueEvent,
   type MediaItem,
   type NotificationChannel,
   type ParentReplayDraft,
@@ -154,6 +155,8 @@ import type { TeamPortalData } from "@/lib/supabase/team-portal";
 import type { AdminThemeData, TeamThemeAudit, TenantThemeDefaults } from "@/lib/supabase/team-branding";
 import type { TeamChatData } from "@/lib/supabase/team-chat";
 import type { ParentCoachDashboardData } from "@/lib/supabase/dashboard-data";
+import type { AdminTeamManagementData } from "@/lib/supabase/team-management";
+import type { ScheduleOperationsData } from "@/lib/supabase/schedule-management";
 
 interface RegistrationTeamOption {
   id: string;
@@ -990,9 +993,24 @@ export function ParentDashboardClient({ dashboardData }: { dashboardData?: Paren
   }
 
   function submitSupportRequest() {
-    setHelpMessage(supportDetail.trim()
-      ? `Support request drafted for ${supportTopic.replace("_", " ")}. Staff routing is not connected yet.`
-      : "Add a short support request before submitting.");
+    if (!supportDetail.trim()) {
+      setHelpMessage("Add a short support request before submitting.");
+      return;
+    }
+    if (!dashboardData?.isSupabaseBacked) {
+      setHelpMessage("Sign in with an approved parent link before submitting support requests.");
+      return;
+    }
+
+    startHelpTransition(async () => {
+      const response = await authenticatedJsonFetch("/api/support-requests", {
+        teamId: primaryTeamId,
+        topic: supportTopic,
+        detail: supportDetail
+      });
+      const result = await response.json().catch(() => null) as { ok?: boolean; message?: string } | null;
+      setHelpMessage(result?.message ?? (response.ok ? "Support request saved." : "Support request could not be saved."));
+    });
   }
 
   return (
@@ -1302,7 +1320,7 @@ export function ParentDashboardClient({ dashboardData }: { dashboardData?: Paren
               <span className="eyebrow">Parent support request flow</span>
               <h2>Ask league staff for help</h2>
             </div>
-            <span className="badge warning">Draft</span>
+            <span className={`badge ${dashboardData?.isSupabaseBacked ? "ok" : "warning"}`}>{dashboardData?.isSupabaseBacked ? "Persisted" : "Local preview"}</span>
           </div>
           <label>
             Topic
@@ -1319,7 +1337,7 @@ export function ParentDashboardClient({ dashboardData }: { dashboardData?: Paren
             <textarea value={supportDetail} onChange={(event) => setSupportDetail(event.target.value)} rows={4} />
           </label>
           <button disabled={isHelpPending || !supportDetail.trim()} onClick={submitSupportRequest}>Submit support request</button>
-          <p className="muted">Staff routing is not connected yet; this keeps the parent intake path visible without implying a connected helpdesk or provider send.</p>
+          <p className="muted">Submitting saves a staff-review support record. It does not imply a connected helpdesk or provider send.</p>
         </article>
         <article className="card stack">
           <h2>Support routing context</h2>
@@ -1840,6 +1858,298 @@ export function CoachDashboardClient({ dashboardData }: { dashboardData?: Parent
         </>
       )}
     </div>
+  );
+}
+
+export function AdminTeamManagementClient({ data }: { data: AdminTeamManagementData }) {
+  const [teams, setTeams] = useState(data.teams);
+  const [seasons, setSeasons] = useState(data.seasons);
+  const [players, setPlayers] = useState(data.players);
+  const [message, setMessage] = useState("");
+  const [isPending, startTransition] = useTransition();
+  const [seasonDraft, setSeasonDraft] = useState({
+    seasonId: data.seasons[0]?.id ?? "",
+    name: data.seasons[0]?.name ?? "Spring 2026",
+    startsAt: data.seasons[0]?.startsAt ?? "2026-03-01T00:00:00.000Z",
+    endsAt: data.seasons[0]?.endsAt ?? "2026-06-30T23:59:59.000Z",
+    status: data.seasons[0]?.status ?? "active"
+  });
+  const [teamDraft, setTeamDraft] = useState({
+    teamId: data.teams[0]?.id ?? "",
+    seasonId: data.teams[0]?.seasonId ?? data.seasons[0]?.id ?? "",
+    name: data.teams[0]?.name ?? "New Team",
+    division: data.teams[0]?.division ?? data.divisions[0] ?? "6U",
+    mascot: data.teams[0]?.mascot ?? "Team",
+    themeKey: data.teams[0]?.themeKey ?? "baseball",
+    primaryColor: "#1d4ed8",
+    secondaryColor: "#f97316",
+    coachUserId: data.teams[0]?.coachUserId ?? "",
+    status: data.teams[0]?.status ?? "active"
+  });
+  const [playerDraft, setPlayerDraft] = useState({
+    playerId: data.players[0]?.id ?? "",
+    teamId: data.players[0]?.teamId ?? data.teams[0]?.id ?? "",
+    seasonId: data.players[0]?.seasonId ?? data.seasons[0]?.id ?? "",
+    firstName: data.players[0]?.firstName ?? "Player",
+    lastInitial: data.players[0]?.lastInitial ?? "A",
+    jersey: data.players[0]?.jersey ?? "",
+    rosterStatus: data.players[0]?.rosterStatus ?? "active"
+  });
+  const selectedTeamSeason = seasons.find((season) => season.id === teamDraft.seasonId);
+  const selectedRosterSeason = seasons.find((season) => season.id === playerDraft.seasonId);
+  const teamSeasonArchived = selectedTeamSeason?.status === "archived";
+  const rosterSeasonArchived = selectedRosterSeason?.status === "archived";
+
+  function selectTeam(teamId: string) {
+    const team = teams.find((item) => item.id === teamId);
+    setTeamDraft((current) => ({
+      ...current,
+      teamId,
+      seasonId: team?.seasonId ?? current.seasonId,
+      name: team?.name ?? current.name,
+      division: team?.division ?? current.division,
+      mascot: team?.mascot ?? current.mascot,
+      themeKey: team?.themeKey ?? current.themeKey,
+      coachUserId: team?.coachUserId ?? "",
+      status: team?.status ?? current.status
+    }));
+  }
+
+  function selectPlayer(playerId: string) {
+    const player = players.find((item) => item.id === playerId);
+    setPlayerDraft((current) => ({
+      ...current,
+      playerId,
+      teamId: player?.teamId ?? current.teamId,
+      seasonId: player?.seasonId ?? current.seasonId,
+      firstName: player?.firstName ?? current.firstName,
+      lastInitial: player?.lastInitial ?? current.lastInitial,
+      jersey: player?.jersey ?? current.jersey,
+      rosterStatus: player?.rosterStatus ?? current.rosterStatus
+    }));
+  }
+
+  function saveSeason() {
+    setMessage("");
+    startTransition(async () => {
+      const response = await authenticatedJsonFetch("/api/admin/seasons", {
+        organizationId: data.organizationId,
+        seasonId: seasonDraft.seasonId || undefined,
+        name: seasonDraft.name,
+        startsAt: seasonDraft.startsAt,
+        endsAt: seasonDraft.endsAt,
+        status: seasonDraft.status
+      });
+      const result = await response.json().catch(() => null) as {
+        ok?: boolean;
+        message?: string;
+        season?: { id: string; name: string; status: "active" | "archived"; starts_at: string; ends_at: string };
+      } | null;
+      setMessage(result?.message ?? (response.ok ? "Season saved." : "Season could not be saved."));
+      if (result?.ok && result.season) {
+        const mapped = {
+          id: result.season.id,
+          name: result.season.name,
+          status: result.season.status,
+          startsAt: result.season.starts_at,
+          endsAt: result.season.ends_at
+        };
+        setSeasons((current) => [mapped, ...current.filter((item) => item.id !== mapped.id)]);
+      }
+    });
+  }
+
+  function saveTeam() {
+    if (teamSeasonArchived) {
+      setMessage("Archived seasons are read-only for team lifecycle changes.");
+      return;
+    }
+
+    setMessage("");
+    startTransition(async () => {
+      const response = await authenticatedJsonFetch("/api/admin/teams", {
+        organizationId: data.organizationId,
+        teamId: teamDraft.teamId || undefined,
+        seasonId: teamDraft.seasonId,
+        name: teamDraft.name,
+        division: teamDraft.division,
+        mascot: teamDraft.mascot,
+        themeKey: teamDraft.themeKey,
+        primaryColor: teamDraft.primaryColor,
+        secondaryColor: teamDraft.secondaryColor,
+        coachUserId: teamDraft.coachUserId || undefined,
+        status: teamDraft.status
+      });
+      const result = await response.json().catch(() => null) as {
+        ok?: boolean;
+        message?: string;
+        team?: { id: string; name: string; division: string; season_id: string; coach_user_id: string | null; mascot: string; theme_key: ProgramThemeKey; status: "active" | "archived" };
+      } | null;
+      setMessage(result?.message ?? (response.ok ? "Team saved." : "Team could not be saved."));
+      if (result?.ok && result.team) {
+        const season = seasons.find((item) => item.id === result.team!.season_id);
+        const mapped = {
+          id: result.team.id,
+          name: result.team.name,
+          division: result.team.division,
+          seasonId: result.team.season_id,
+          seasonName: season?.name ?? "Season",
+          seasonStatus: season?.status ?? "active" as const,
+          status: result.team.status,
+          coachUserId: result.team.coach_user_id ?? undefined,
+          rosterCount: players.filter((player) => player.teamId === result.team!.id).length,
+          mascot: result.team.mascot,
+          themeKey: result.team.theme_key
+        };
+        setTeams((current) => [mapped, ...current.filter((item) => item.id !== mapped.id)]);
+      }
+    });
+  }
+
+  function saveRosterPlayer() {
+    if (rosterSeasonArchived) {
+      setMessage("Archived seasons are read-only for roster lifecycle changes.");
+      return;
+    }
+
+    setMessage("");
+    startTransition(async () => {
+      const response = await authenticatedJsonFetch("/api/admin/rosters", {
+        organizationId: data.organizationId,
+        playerId: playerDraft.playerId || undefined,
+        teamId: playerDraft.teamId,
+        seasonId: playerDraft.seasonId,
+        firstName: playerDraft.firstName,
+        lastInitial: playerDraft.lastInitial,
+        jersey: playerDraft.jersey,
+        rosterStatus: playerDraft.rosterStatus
+      });
+      const result = await response.json().catch(() => null) as {
+        ok?: boolean;
+        message?: string;
+        player?: { id: string; team_id: string; season_id: string; first_name: string; last_initial: string; jersey: string | null; roster_status: "active" | "inactive" | "archived" };
+      } | null;
+      setMessage(result?.message ?? (response.ok ? "Roster player saved." : "Roster player could not be saved."));
+      if (result?.ok && result.player) {
+        const mapped = {
+          id: result.player.id,
+          teamId: result.player.team_id,
+          seasonId: result.player.season_id,
+          firstName: result.player.first_name,
+          lastInitial: result.player.last_initial,
+          jersey: result.player.jersey ?? "TBD",
+          rosterStatus: result.player.roster_status
+        };
+        setPlayers((current) => [mapped, ...current.filter((item) => item.id !== mapped.id)]);
+      }
+    });
+  }
+
+  return (
+    <>
+      {message ? <p className="notice">{message}</p> : null}
+
+      <section className="grid three">
+        <article className="card stack">
+          <div className="card-header">
+            <div>
+              <span className="eyebrow">Season lifecycle</span>
+              <h2>Create or archive seasons</h2>
+            </div>
+            <span className="badge">{seasons.length} season(s)</span>
+          </div>
+          <label>Existing season<select value={seasonDraft.seasonId} onChange={(event) => {
+            const season = seasons.find((item) => item.id === event.target.value);
+            setSeasonDraft({
+              seasonId: event.target.value,
+              name: season?.name ?? "",
+              startsAt: season?.startsAt ?? "2026-03-01T00:00:00.000Z",
+              endsAt: season?.endsAt ?? "2026-06-30T23:59:59.000Z",
+              status: season?.status ?? "active"
+            });
+          }}>
+            <option value="">New season</option>
+            {seasons.map((season) => <option key={season.id} value={season.id}>{season.name}</option>)}
+          </select></label>
+          <label>Name<input value={seasonDraft.name} onChange={(event) => setSeasonDraft({ ...seasonDraft, name: event.target.value })} /></label>
+          <label>Starts<input value={seasonDraft.startsAt} onChange={(event) => setSeasonDraft({ ...seasonDraft, startsAt: event.target.value })} /></label>
+          <label>Ends<input value={seasonDraft.endsAt} onChange={(event) => setSeasonDraft({ ...seasonDraft, endsAt: event.target.value })} /></label>
+          <label>Status<select value={seasonDraft.status} onChange={(event) => setSeasonDraft({ ...seasonDraft, status: event.target.value as "active" | "archived" })}>
+            <option value="active">Active</option>
+            <option value="archived">Archived</option>
+          </select></label>
+          <button disabled={isPending || !seasonDraft.name.trim()} onClick={saveSeason}>Save season</button>
+        </article>
+
+        <article className="card stack">
+          <div className="card-header">
+            <div>
+              <span className="eyebrow">Team CRUD</span>
+              <h2>Team and coach assignment</h2>
+            </div>
+            <span className={`badge ${teamSeasonArchived ? "warning" : "ok"}`}>{teamSeasonArchived ? "Read-only" : "Editable"}</span>
+          </div>
+          <label>Team<select value={teamDraft.teamId} onChange={(event) => selectTeam(event.target.value)}>
+            <option value="">New team</option>
+            {teams.map((team) => <option key={team.id} value={team.id}>{team.name}</option>)}
+          </select></label>
+          <label>Season<select value={teamDraft.seasonId} onChange={(event) => setTeamDraft({ ...teamDraft, seasonId: event.target.value })}>{seasons.map((season) => <option key={season.id} value={season.id}>{season.name} ({season.status})</option>)}</select></label>
+          <label>Name<input value={teamDraft.name} onChange={(event) => setTeamDraft({ ...teamDraft, name: event.target.value })} /></label>
+          <label>Division<input value={teamDraft.division} onChange={(event) => setTeamDraft({ ...teamDraft, division: event.target.value })} /></label>
+          <label>Mascot<input value={teamDraft.mascot} onChange={(event) => setTeamDraft({ ...teamDraft, mascot: event.target.value })} /></label>
+          <label>Coach<select value={teamDraft.coachUserId} onChange={(event) => setTeamDraft({ ...teamDraft, coachUserId: event.target.value })}>
+            <option value="">Unassigned</option>
+            {data.coaches.map((coach) => <option key={coach.id} value={coach.id}>{coach.name}</option>)}
+          </select></label>
+          <label>Status<select value={teamDraft.status} onChange={(event) => setTeamDraft({ ...teamDraft, status: event.target.value as "active" | "archived" })}>
+            <option value="active">Active</option>
+            <option value="archived">Archived</option>
+          </select></label>
+          <button disabled={isPending || teamSeasonArchived || !teamDraft.name.trim()} onClick={saveTeam}>Save team</button>
+        </article>
+
+        <article className="card stack">
+          <div className="card-header">
+            <div>
+              <span className="eyebrow">Roster lifecycle</span>
+              <h2>Player records</h2>
+            </div>
+            <span className={`badge ${rosterSeasonArchived ? "warning" : "ok"}`}>{rosterSeasonArchived ? "Read-only" : "Editable"}</span>
+          </div>
+          <label>Player<select value={playerDraft.playerId} onChange={(event) => selectPlayer(event.target.value)}>
+            <option value="">New player</option>
+            {players.map((player) => <option key={player.id} value={player.id}>{player.firstName} {player.lastInitial}.</option>)}
+          </select></label>
+          <label>Team<select value={playerDraft.teamId} onChange={(event) => {
+            const team = teams.find((item) => item.id === event.target.value);
+            setPlayerDraft({ ...playerDraft, teamId: event.target.value, seasonId: team?.seasonId ?? playerDraft.seasonId });
+          }}>{teams.map((team) => <option key={team.id} value={team.id}>{team.name}</option>)}</select></label>
+          <label>First name<input value={playerDraft.firstName} onChange={(event) => setPlayerDraft({ ...playerDraft, firstName: event.target.value })} /></label>
+          <label>Last initial<input value={playerDraft.lastInitial} maxLength={2} onChange={(event) => setPlayerDraft({ ...playerDraft, lastInitial: event.target.value })} /></label>
+          <label>Jersey<input value={playerDraft.jersey} onChange={(event) => setPlayerDraft({ ...playerDraft, jersey: event.target.value })} /></label>
+          <label>Status<select value={playerDraft.rosterStatus} onChange={(event) => setPlayerDraft({ ...playerDraft, rosterStatus: event.target.value as "active" | "inactive" | "archived" })}>
+            <option value="active">Active</option>
+            <option value="inactive">Inactive</option>
+            <option value="archived">Archived</option>
+          </select></label>
+          <button disabled={isPending || rosterSeasonArchived || !playerDraft.firstName.trim()} onClick={saveRosterPlayer}>Save roster player</button>
+        </article>
+      </section>
+
+      <section className="grid two">
+        {teams.map((team) => (
+          <article className="card stack" key={team.id}>
+            <span className="eyebrow">{team.division}</span>
+            <h2>{team.name}</h2>
+            <p>{team.mascot} - {team.themeKey}</p>
+            <p><span className={`badge ${team.status === "active" ? "ok" : "warning"}`}>{team.status}</span></p>
+            <p>Roster: {players.filter((player) => player.teamId === team.id && player.rosterStatus === "active").length} active player(s)</p>
+            <p className="muted">Coach: {data.coaches.find((coach) => coach.id === team.coachUserId)?.name ?? team.coachUserId ?? "Unassigned"}</p>
+            <p className="muted">{team.seasonName} ({team.seasonStatus})</p>
+          </article>
+        ))}
+      </section>
+    </>
   );
 }
 
@@ -3039,44 +3349,55 @@ export function CoachRsvpsClient() {
   );
 }
 
-export function ScheduleAlertsClient() {
+export function ScheduleAlertsClient({ scheduleData }: { scheduleData?: ScheduleOperationsData | null } = {}) {
   const { state, dispatch } = useAppState();
-  const [eventId, setEventId] = useState(state.events[0]?.id ?? "");
-  const event = state.events.find((item) => item.id === eventId) ?? state.events[0];
+  const [remoteEvents, setRemoteEvents] = useState<LeagueEvent[]>(() => scheduleData?.events ?? []);
+  const scheduleState = scheduleData?.isSupabaseBacked
+    ? { ...state, teams: scheduleData.teams, events: remoteEvents }
+    : state;
+  const [eventId, setEventId] = useState(scheduleState.events[0]?.id ?? "");
+  const event = scheduleState.events.find((item) => item.id === eventId) ?? scheduleState.events[0];
   const [startsAt, setStartsAt] = useState(event?.startsAt ?? "");
+  const [endsAt, setEndsAt] = useState(event?.endsAt ?? "");
+  const [title, setTitle] = useState(event?.title ?? "");
+  const [eventType, setEventType] = useState<EventType>(event?.eventType ?? "practice");
   const [locationName, setLocationName] = useState(event?.locationName ?? "");
+  const [locationAddress, setLocationAddress] = useState(event?.locationAddress ?? "");
+  const [fieldLocationId, setFieldLocationId] = useState("");
   const [status, setStatus] = useState<EventStatus>(event?.status ?? "scheduled");
   const [message, setMessage] = useState("");
-  const eventTeam = event ? state.teams.find((team) => team.id === event.teamId) : undefined;
-  const venueRecords = getVenueRecords(state);
-  const recurringPreview = event ? previewRecurringEvents(state, { sourceEventId: event.id, count: 3, intervalDays: 7 }) : [];
-  const calendarExport = eventTeam ? exportTeamCalendarIcs(state, eventTeam.id) : "";
-  const rsvpSyncRows = getScheduleRsvpSyncRows(state).filter((row) => !eventTeam || row.event.teamId === eventTeam.id);
-  const scheduleWorkflow = getScheduleNotificationWorkflow(state);
-  const eventStatusTracking = getEventStatusTracking(state);
-  const channelReadiness = getNotificationChannelReadiness(state);
+  const [isSchedulePending, startScheduleTransition] = useTransition();
+  const eventTeam = event ? scheduleState.teams.find((team) => team.id === event.teamId) : undefined;
+  const venueRecords = getVenueRecords(scheduleState);
+  const persistedVenueRecords = scheduleData?.fieldLocations ?? [];
+  const recurringPreview = event ? previewRecurringEvents(scheduleState, { sourceEventId: event.id, count: 3, intervalDays: 7 }) : [];
+  const calendarExport = eventTeam ? exportTeamCalendarIcs(scheduleState, eventTeam.id) : "";
+  const calendarExportHref = scheduleData?.isSupabaseBacked && eventTeam ? `/api/schedule/export?teamId=${encodeURIComponent(eventTeam.id)}` : "";
+  const rsvpSyncRows = getScheduleRsvpSyncRows(scheduleState).filter((row) => !eventTeam || row.event.teamId === eventTeam.id);
+  const scheduleWorkflow = getScheduleNotificationWorkflow(scheduleState);
+  const eventStatusTracking = getEventStatusTracking(scheduleState);
+  const channelReadiness = getNotificationChannelReadiness(scheduleState);
   const vapidStatus = getVapidSendAdapterStatus();
-  const retryLogs = getNotificationRetryLogs(state);
-  const deviceSummary = getDeviceManagementSummary(state);
-  const emailFallback = getEmailFallbackPlan(state, { notificationType: status === "cancelled" ? "event_cancelled" : "schedule_changed" });
+  const retryLogs = getNotificationRetryLogs(scheduleState);
+  const deviceSummary = getDeviceManagementSummary(scheduleState);
+  const emailFallback = getEmailFallbackPlan(scheduleState, { notificationType: status === "cancelled" ? "event_cancelled" : "schedule_changed" });
   const smsUrgentAllowed = smsUrgencyAllowed({ notificationType: status === "cancelled" ? "event_cancelled" : "schedule_changed", urgent: status === "cancelled" });
-  const openRate = getAlertOpenRateTracking(state);
-  const preferenceAllowed = event ? recipientAllowsNotification(state, {
+  const openRate = getAlertOpenRateTracking(scheduleState);
+  const preferenceAllowed = event ? recipientAllowsNotification(scheduleState, {
     userId: "user-parent-jordan",
     teamId: event.teamId,
     channel: "push",
     notificationType: status === "cancelled" ? "event_cancelled" : "schedule_changed"
   }) : false;
-  const eventWindowMs = event ? new Date(event.endsAt).getTime() - new Date(event.startsAt).getTime() : 60 * 60 * 1000;
-  const conflictEndsAt = event ? new Date(new Date(startsAt).getTime() + eventWindowMs).toISOString() : "";
-  const scheduleConflicts = event ? detectScheduleConflicts(state, {
+  const conflictEndsAt = endsAt || (event ? event.endsAt : "");
+  const scheduleConflicts = event ? detectScheduleConflicts(scheduleState, {
     eventId,
     teamId: event.teamId,
     startsAt,
     endsAt: conflictEndsAt,
     locationName
   }) : [];
-  const impactPreview = previewScheduleChangeImpact(state, {
+  const impactPreview = previewScheduleChangeImpact(scheduleState, {
     eventId,
     actorUserId: "user-admin",
     actorRole: "admin",
@@ -3087,11 +3408,67 @@ export function ScheduleAlertsClient() {
   });
 
   function selectEvent(nextId: string) {
-    const next = state.events.find((item) => item.id === nextId);
+    const next = scheduleState.events.find((item) => item.id === nextId);
     setEventId(nextId);
     setStartsAt(next?.startsAt ?? "");
+    setEndsAt(next?.endsAt ?? "");
+    setTitle(next?.title ?? "");
+    setEventType(next?.eventType ?? "practice");
     setLocationName(next?.locationName ?? "");
+    setLocationAddress(next?.locationAddress ?? "");
+    setFieldLocationId("");
     setStatus(next?.status ?? "scheduled");
+  }
+
+  function saveScheduleChange() {
+    if (!event) {
+      setMessage("Select a schedule event before saving.");
+      return;
+    }
+
+    startScheduleTransition(async () => {
+      const response = await authenticatedJsonFetch("/api/schedule", {
+        eventId,
+        organizationId: event.organizationId,
+        seasonId: event.seasonId,
+        teamId: event.teamId,
+        title,
+        eventType,
+        startsAt,
+        endsAt: conflictEndsAt,
+        locationName,
+        locationAddress,
+        fieldLocationId: fieldLocationId || undefined,
+        opponent: event.opponent,
+        status,
+        reason: status === "cancelled" ? "Schedule change entered from the operations screen." : undefined
+      });
+      const result = await response.json().catch(() => null) as { ok?: boolean; message?: string; event?: LeagueEvent } | null;
+      setMessage(result?.message ?? (response.ok ? "Schedule event saved." : "Schedule event could not be saved."));
+
+      if (result?.ok && result.event) {
+        setRemoteEvents((current) => {
+          const others = current.filter((item) => item.id !== result.event!.id);
+          return [...others, result.event!].sort((left, right) => Date.parse(left.startsAt) - Date.parse(right.startsAt));
+        });
+        return;
+      }
+
+      if (response.status === 401 && !scheduleData?.isSupabaseBacked) {
+        const input = {
+          eventId,
+          actorUserId: "user-admin",
+          actorRole: "admin" as const,
+          startsAt,
+          locationName,
+          status,
+          now: new Date().toISOString()
+        };
+        const preview = applyScheduleChange(state, input);
+        setMessage(preview.message);
+        if (preview.ok) dispatch({ type: "applyScheduleChange", input });
+      }
+    });
   }
 
   return (
@@ -3102,6 +3479,9 @@ export function ScheduleAlertsClient() {
         <p className="lead">Admin and assigned coaches can update time, location, or cancellation status. The scaffold creates notification records only; no provider send occurs.</p>
       </section>
 
+      <p className={`notice ${scheduleData?.isSupabaseBacked ? "ok" : "warning"}`}>
+        {scheduleData?.message ?? "Showing local schedule fallback until Supabase schedule rows are available."}
+      </p>
       {message ? <p className="notice">{message}</p> : null}
       <section className="grid two">
         <article className="card stack">
@@ -3109,7 +3489,19 @@ export function ScheduleAlertsClient() {
           <label>
             Event
             <select value={eventId} onChange={(input) => selectEvent(input.target.value)}>
-              {state.events.map((item) => <option key={item.id} value={item.id}>{item.title}</option>)}
+              {scheduleState.events.map((item) => <option key={item.id} value={item.id}>{item.title}</option>)}
+            </select>
+          </label>
+          <label>
+            Title
+            <input value={title} onChange={(input) => setTitle(input.target.value)} />
+          </label>
+          <label>
+            Type
+            <select value={eventType} onChange={(input) => setEventType(input.target.value as EventType)}>
+              <option value="practice">Practice</option>
+              <option value="game">Game</option>
+              <option value="team_event">Team event</option>
             </select>
           </label>
           <label>
@@ -3117,8 +3509,37 @@ export function ScheduleAlertsClient() {
             <input value={startsAt} onChange={(input) => setStartsAt(input.target.value)} />
           </label>
           <label>
+            Ends at
+            <input value={endsAt} onChange={(input) => setEndsAt(input.target.value)} />
+          </label>
+          {persistedVenueRecords.length ? (
+            <label>
+              Saved venue
+              <select
+                value={fieldLocationId}
+                onChange={(input) => {
+                  const field = persistedVenueRecords.find((item) => item.id === input.target.value);
+                  setFieldLocationId(input.target.value);
+                  if (field) {
+                    setLocationName(field.name);
+                    setLocationAddress(field.address);
+                  }
+                }}
+              >
+                <option value="">Use event location</option>
+                {persistedVenueRecords.map((field) => (
+                  <option key={field.id} value={field.id}>{field.name}</option>
+                ))}
+              </select>
+            </label>
+          ) : null}
+          <label>
             Location
             <input value={locationName} onChange={(input) => setLocationName(input.target.value)} />
+          </label>
+          <label>
+            Address
+            <input value={locationAddress} onChange={(input) => setLocationAddress(input.target.value)} />
           </label>
           <label>
             Status
@@ -3129,20 +3550,8 @@ export function ScheduleAlertsClient() {
             </select>
           </label>
           <button
-            onClick={() => {
-              const input = {
-                eventId,
-                actorUserId: "user-admin",
-                actorRole: "admin" as const,
-                startsAt,
-                locationName,
-                status,
-                now: new Date().toISOString()
-              };
-              const preview = applyScheduleChange(state, input);
-              setMessage(preview.message);
-              if (preview.ok) dispatch({ type: "applyScheduleChange", input });
-            }}
+            disabled={isSchedulePending || !title.trim() || !locationName.trim() || !locationAddress.trim()}
+            onClick={saveScheduleChange}
           >
             Queue schedule alert records
           </button>
@@ -3160,7 +3569,7 @@ export function ScheduleAlertsClient() {
             <>
               <p><strong>{eventTeam?.name ?? "Team"}</strong> · {event.eventType.replace("_", " ")}</p>
               <p className="muted">{formatDate(startsAt)} to {formatDate(conflictEndsAt)} · {locationName}</p>
-              <p className="muted">{event.locationAddress}</p>
+              <p className="muted">{locationAddress}</p>
               <p>Created {formatDate(event.createdAt)} · Updated {formatDate(event.updatedAt)}</p>
             </>
           ) : <p className="muted">No event is available.</p>}
@@ -3213,6 +3622,14 @@ export function ScheduleAlertsClient() {
               <span className="muted">{venue.address} · {venue.eventCount} event(s) · {venue.teamNames.join(", ")}</span>
             </p>
           ))}
+          {persistedVenueRecords.map((venue) => (
+            <p key={venue.id}>
+              <strong>{venue.name}</strong><br />
+              <span className="muted">{venue.address} · {venue.status} · {venue.mapUrl ? "fallback link ready" : "fallback link pending"}</span>
+              {venue.mapUrl ? <><br /><a href={venue.mapUrl}>Open map fallback</a></> : null}
+            </p>
+          ))}
+          {!venueRecords.length && !persistedVenueRecords.length ? <p className="muted">No venue records are available yet.</p> : null}
         </article>
 
         <article className="card stack">
@@ -3240,7 +3657,8 @@ export function ScheduleAlertsClient() {
             <span className="badge ok">{eventTeam?.name ?? "Team"}</span>
           </div>
           <pre>{calendarExport.split("\n").slice(0, 8).join("\n")}</pre>
-          <p className="muted">Export text is generated locally; hosted calendar subscriptions need a dedicated read endpoint before production use.</p>
+          {calendarExportHref ? <a href={calendarExportHref}>Download persisted calendar</a> : null}
+          <p className="muted">{calendarExportHref ? "Calendar export is served by the authenticated schedule export endpoint." : "Export text is generated locally until Supabase schedule rows are available."}</p>
         </article>
 
         <article className="card stack">
@@ -3276,14 +3694,14 @@ export function ScheduleAlertsClient() {
 
         <article className="card stack">
           <h2>Queued notifications</h2>
-          {state.notifications.filter((notification) => notification.eventId).slice(0, 8).map((notification) => (
+          {scheduleState.notifications.filter((notification) => notification.eventId).slice(0, 8).map((notification) => (
             <div key={notification.id}>
               <strong>{notification.title}</strong>
               <p>{notification.body}</p>
               <p className="muted">{notification.channel} · {notification.status}</p>
             </div>
           ))}
-          {!state.notifications.some((notification) => notification.eventId) ? <p className="muted">No schedule notifications queued yet.</p> : null}
+          {!scheduleState.notifications.some((notification) => notification.eventId) ? <p className="muted">No schedule notifications queued yet.</p> : null}
         </article>
       </section>
 

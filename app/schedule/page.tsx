@@ -1,5 +1,9 @@
 import { ScheduleAlertsClient } from "@/components/feature-panels";
+import { listScheduleOperationsData } from "@/lib/supabase/schedule-management";
 
-export default function SchedulePage() {
-  return <ScheduleAlertsClient />;
+export const dynamic = "force-dynamic";
+
+export default async function SchedulePage() {
+  const scheduleData = await listScheduleOperationsData();
+  return <ScheduleAlertsClient scheduleData={scheduleData} />;
 }

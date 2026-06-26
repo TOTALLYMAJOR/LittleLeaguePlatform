@@ -138,7 +138,7 @@ describe("ParentDashboardClient", () => {
     expect(html).toContain("Claim volunteer role");
     expect(html).toContain("Parent support request flow");
     expect(html).toContain("Submit support request");
-    expect(html).toContain("Staff routing is not connected");
+    expect(html).toContain("staff-review support record");
     expect(html).toContain("Report media");
     expect(html).toContain("Google Photos link looks valid");
   });

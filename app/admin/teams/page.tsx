@@ -1,4 +1,5 @@
 import { listAdminTeamManagementData } from "@/lib/supabase/team-management";
+import { AdminTeamManagementClient } from "@/components/feature-panels";
 
 export const dynamic = "force-dynamic";
 
@@ -32,19 +33,7 @@ export default async function AdminTeamsPage() {
         </article>
       </section>
 
-      <section className="grid two">
-        {data.teams.map((team) => (
-          <article className="card stack" key={team.id}>
-            <span className="eyebrow">{team.division}</span>
-            <h2>{team.name}</h2>
-            <p>{team.mascot} - {team.themeKey}</p>
-            <p><span className={`badge ${team.status === "active" ? "ok" : "warning"}`}>{team.status}</span></p>
-            <p>Roster: {team.rosterCount} player(s)</p>
-            <p className="muted">Coach: {team.coachUserId ?? "Unassigned"}</p>
-            <p className="muted">{team.seasonName} ({team.seasonStatus})</p>
-          </article>
-        ))}
-      </section>
+      <AdminTeamManagementClient data={data} />
     </div>
   );
 }
