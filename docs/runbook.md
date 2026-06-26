@@ -71,9 +71,10 @@ Use these checks after migrations are applied to a Supabase QA or preview projec
 npm run supabase:qa-users
 npm run qa:rls-proof
 npm run qa:session-proof
+npm run qa:brand-proof
 ```
 
-`supabase:qa-users` creates or updates the QA parent and coach credentials in `.env.local`. `qa:rls-proof` signs in through the anon key and verifies parent, coach, and anonymous Row Level Security boundaries. `qa:session-proof` verifies the signed-in browser routes and captures screenshots under `output/playwright/`.
+`supabase:qa-users` creates or updates the QA parent and coach credentials in `.env.local`. `qa:rls-proof` signs in through the anon key and verifies parent, coach, and anonymous Row Level Security boundaries. `qa:session-proof` verifies the signed-in browser routes and captures screenshots under `output/playwright/`. `qa:brand-proof` verifies the `/admin/themes` brand launch checklist, all 20 target brand surfaces, monitoring events, and alert rules against `QA_PROOF_BASE_URL`, then captures `output/playwright/brand-launch-validation.png`.
 
 CI runs source validation in `.github/workflows/static-smoke.yml`. Live Supabase QA proof is manual through `.github/workflows/supabase-qa-proof.yml` because it requires project secrets and mutates seeded QA rows.
 

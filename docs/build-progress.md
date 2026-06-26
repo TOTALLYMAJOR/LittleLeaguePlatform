@@ -142,6 +142,7 @@ These 2026-06-22 next items were completed in the 2026-06-23 hardening pass:
 - Added sponsor billing proof foundations with Stripe Product/Price lookup keys, invoice references, payment-proof status, admin-only migration tables, and child-facing display separation.
 - Added automatic team-builder foundations with balanced assignment previews, sibling/guardian grouping, friend-request consideration, skill-balance scores, approval workflow, publish audit, and admin-only migration tables.
 - Added brand-profile launch validation foundations with 20 surface checks, test brands, success metrics, monitoring events, alert rules, coach feedback prompts, acceptance criteria, and Supabase tables for brand profiles, validation runs, asset uploads, and monitoring events.
+- Added `qa:brand-proof` and wired the manual Supabase QA workflow to capture hosted browser proof for the `/admin/themes` 20-surface brand launch checklist, monitoring events, alert rules, and screenshot artifact.
 
 ### Remaining Gap
 

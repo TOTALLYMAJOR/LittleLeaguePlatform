@@ -29,7 +29,7 @@ jobs:
         run: npm run supabase:qa-users
       - name: Prove real-session RLS
         run: npm run qa:rls-proof
-      - name: Prove signed-in browser paths
+      - name: Prove signed-in browser paths and brand surfaces
         run: |
           npm run start -- --hostname 127.0.0.1 --port 3020 &
           server_pid=$!
@@ -37,6 +37,7 @@ jobs:
           for _ in {1..60}; do
             if curl -fsS "$QA_PROOF_BASE_URL" >/dev/null; then
               npm run qa:session-proof
+              npm run qa:brand-proof
               exit 0
             fi
             sleep 1

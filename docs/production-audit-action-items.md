@@ -64,8 +64,8 @@ The app is not ready for real-family production launch yet. The core scaffold, r
    - Done when: admin proof screenshots and RLS checks cover every admin route.
 
 10. Prove brand profiles across the 20 launch surfaces.
-    - Current truth: `/admin/themes` now renders a 20-surface brand launch checklist, test-brand previews, metrics, monitoring events, alerts, coach feedback questions, and acceptance criteria. `team_brand_profiles`, validation runs, asset uploads, and brand monitoring events are modeled in Supabase with coach/admin RLS.
-    - Action: create several hosted test brands with distinct logo URLs, banner URLs, primary/secondary/accent/button colors, display names, short names, fallback avatars, and hero copy, then browser-test parent team switching, invite pages, email templates, and push identity.
+    - Current truth: `/admin/themes` now renders a 20-surface brand launch checklist, test-brand previews, metrics, monitoring events, alerts, coach feedback questions, and acceptance criteria. `team_brand_profiles`, validation runs, asset uploads, and brand monitoring events are modeled in Supabase with coach/admin RLS. `npm run qa:brand-proof` captures hosted browser proof for the checklist and monitoring contract.
+    - Action: run `QA_PROOF_BASE_URL=<hosted-url> npm run qa:brand-proof`, then create several hosted test brands with distinct logo URLs, banner URLs, primary/secondary/accent/button colors, display names, short names, fallback avatars, and hero copy before browser-testing parent team switching, invite pages, email templates, and push identity.
     - Done when: all 20 surfaces pass hosted QA, non-coaches cannot edit branding, fallback email branding works, and brand monitoring alerts are wired to production telemetry.
 
 11. Add rate limits and abuse controls to public intake endpoints.

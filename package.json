@@ -13,6 +13,7 @@
     "supabase:push": "node scripts/supabase-push.mjs",
     "supabase:qa-users": "node scripts/bootstrap-qa-session-users.mjs",
     "qa:session-proof": "node scripts/verify-qa-session-paths.mjs",
+    "qa:brand-proof": "node scripts/verify-brand-surface-proof.mjs",
     "qa:rls-proof": "node scripts/verify-rls-boundaries.mjs"
   },
   "dependencies": {

@@ -105,4 +105,16 @@ describe("route smoke coverage", () => {
     expect(logoPolicy).toContain("Logos must use HTTPS URLs");
     expect(logoService).toContain("team_logo_asset_submitted");
   });
+
+  it("keeps hosted brand proof wired into QA automation", () => {
+    const packageJson = readFileSync(join(process.cwd(), "package.json"), "utf8");
+    const workflow = readFileSync(join(process.cwd(), ".github", "workflows", "supabase-qa-proof.yml"), "utf8");
+    const proofScript = readFileSync(join(process.cwd(), "scripts", "verify-brand-surface-proof.mjs"), "utf8");
+
+    expect(packageJson).toContain("\"qa:brand-proof\"");
+    expect(workflow).toContain("npm run qa:brand-proof");
+    expect(proofScript).toContain("20 target brand surfaces");
+    expect(proofScript).toContain("brand_profile_published");
+    expect(proofScript).toContain("brand-launch-validation.png");
+  });
 });
