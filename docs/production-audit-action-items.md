@@ -22,8 +22,8 @@ The app is not ready for real-family production launch yet. The core scaffold, r
    - Done when: `npm run supabase:qa-users`, `npm run qa:rls-proof`, and `npm run qa:session-proof` pass against the intended QA Supabase project.
 
 2. Prove the manual Supabase QA workflow in GitHub.
-   - Evidence: `.github/workflows/supabase-qa-proof.yml` exists but depends on QA secrets.
-   - Action: add `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`, `SUPABASE_SERVICE_ROLE_KEY`, `QA_PARENT_EMAIL`, `QA_PARENT_PASSWORD`, `QA_COACH_EMAIL`, and `QA_COACH_PASSWORD` secrets.
+   - Evidence: `.github/workflows/supabase-qa-proof.yml` exists and is scoped to the `qa` GitHub environment, but still depends on the real QA project secrets before it can pass.
+   - Action: add required `qa` environment secrets `QA_SUPABASE_URL`, `QA_SUPABASE_ANON_KEY`, `QA_SUPABASE_SERVICE_ROLE_KEY`, and `QA_SUPABASE_PROJECT_REF`. Optional user override secrets are `QA_ADMIN_EMAIL`, `QA_ADMIN_PASSWORD`, `QA_PARENT_EMAIL`, `QA_PARENT_PASSWORD`, `QA_COACH_EMAIL`, and `QA_COACH_PASSWORD`; otherwise the bootstrap step generates/appends QA credentials. The QA service-role key must be QA-only, not production.
    - Done when: the manual `Supabase QA proof` workflow passes and uploads parent/coach proof screenshots.
 
 3. Make typecheck deterministic before CI/production reliance.

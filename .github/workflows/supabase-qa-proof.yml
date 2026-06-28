@@ -3,17 +3,18 @@ name: Supabase QA proof
 on:
   workflow_dispatch:
 
+permissions:
+  contents: read
+
 jobs:
   qa-proof:
     runs-on: ubuntu-latest
+    environment: qa
     env:
-      NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
-      NEXT_PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.NEXT_PUBLIC_SUPABASE_ANON_KEY }}
-      SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
-      QA_PARENT_EMAIL: ${{ secrets.QA_PARENT_EMAIL }}
-      QA_PARENT_PASSWORD: ${{ secrets.QA_PARENT_PASSWORD }}
-      QA_COACH_EMAIL: ${{ secrets.QA_COACH_EMAIL }}
-      QA_COACH_PASSWORD: ${{ secrets.QA_COACH_PASSWORD }}
+      QA_SUPABASE_PROJECT_REF: ${{ secrets.QA_SUPABASE_PROJECT_REF }}
+      NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.QA_SUPABASE_URL }}
+      NEXT_PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.QA_SUPABASE_ANON_KEY }}
+      SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.QA_SUPABASE_SERVICE_ROLE_KEY }}
       QA_PROOF_BASE_URL: http://127.0.0.1:3020
     steps:
       - uses: actions/checkout@v4
@@ -21,11 +22,60 @@ jobs:
         with:
           node-version: 22
           cache: npm
+      - name: Validate QA proof configuration
+        run: |
+          node <<'NODE'
+          const required = [
+            ["QA_SUPABASE_PROJECT_REF", "QA_SUPABASE_PROJECT_REF"],
+            ["QA_SUPABASE_URL", "NEXT_PUBLIC_SUPABASE_URL"],
+            ["QA_SUPABASE_ANON_KEY", "NEXT_PUBLIC_SUPABASE_ANON_KEY"],
+            ["QA_SUPABASE_SERVICE_ROLE_KEY", "SUPABASE_SERVICE_ROLE_KEY"]
+          ];
+          const missing = required.filter(([, envName]) => {
+            const value = process.env[envName];
+            return !value || value.includes("[YOUR-");
+          }).map(([secretName]) => secretName);
+          if (missing.length) {
+            console.error(`Missing required QA Supabase secret(s): ${missing.join(", ")}`);
+            process.exit(1);
+          }
+
+          let supabaseUrl;
+          try {
+            supabaseUrl = new URL(process.env.NEXT_PUBLIC_SUPABASE_URL);
+          } catch {
+            console.error("NEXT_PUBLIC_SUPABASE_URL must be a valid URL.");
+            process.exit(1);
+          }
+
+          const projectRef = process.env.QA_SUPABASE_PROJECT_REF.trim();
+          if (!/^[a-z0-9-]+$/.test(projectRef)) {
+            console.error("QA_SUPABASE_PROJECT_REF has an invalid format.");
+            process.exit(1);
+          }
+
+          const expectedHost = `${projectRef}.supabase.co`;
+          if (supabaseUrl.protocol !== "https:" || supabaseUrl.hostname !== expectedHost) {
+            console.error("NEXT_PUBLIC_SUPABASE_URL does not match QA_SUPABASE_PROJECT_REF.");
+            process.exit(1);
+          }
+
+          console.log("QA proof configuration is present and scoped to the expected Supabase project.");
+          NODE
       - name: Install
         run: npm ci
+      - name: Install Playwright Chromium
+        run: npx playwright install --with-deps chromium
       - name: Build
         run: npm run build
       - name: Seed QA users and rows
+        env:
+          QA_ADMIN_EMAIL: ${{ secrets.QA_ADMIN_EMAIL }}
+          QA_ADMIN_PASSWORD: ${{ secrets.QA_ADMIN_PASSWORD }}
+          QA_PARENT_EMAIL: ${{ secrets.QA_PARENT_EMAIL }}
+          QA_PARENT_PASSWORD: ${{ secrets.QA_PARENT_PASSWORD }}
+          QA_COACH_EMAIL: ${{ secrets.QA_COACH_EMAIL }}
+          QA_COACH_PASSWORD: ${{ secrets.QA_COACH_PASSWORD }}
         run: npm run supabase:qa-users
       - name: Prove real-session RLS
         run: npm run qa:rls-proof
