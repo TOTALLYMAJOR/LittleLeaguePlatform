@@ -4,8 +4,8 @@
 
 - Platform: Vercel
 - Project: `mbmapps/youth-sports-platform-mvp-v3`
-- Deployment id: `dpl_2ms2Fz5BTdsMjPwnsSod8uXbiHA3`
-- Deployment URL: `https://youth-sports-platform-mvp-v3-61x9xetq3-mbmapps.vercel.app`
+- Deployment id: `dpl_BRYzXxggGfNqacAq3899DXyHvj1W`
+- Deployment URL: `https://youth-sports-platform-mvp-v3-b8oo30r8w-mbmapps.vercel.app`
 - Primary aliases:
   - `https://www.leaguepilot.us`
   - `https://leaguepilot.us`
@@ -21,19 +21,31 @@
   - `NEXT_PUBLIC_SUPABASE_URL`
   - `NEXT_PUBLIC_SUPABASE_ANON_KEY`
   - `SUPABASE_SERVICE_ROLE_KEY`
+  - `OPENAI_API_KEY`
+  - `AI_COACH_PROVIDER_ENABLED`
+  - `OPENAI_AI_COACH_MODEL`
+- Manual GitHub `Supabase QA proof` passed after deployment in run https://github.com/TOTALLYMAJOR/LittleLeaguePlatform/actions/runs/28328007719, covering `qa:rls-proof`, `qa:session-proof`, `qa:brand-proof`, and screenshot artifact upload against the QA Supabase project.
+- Local OpenAI Responses API smoke passed with `store: false` and `gpt-5.5` after key rotation.
 
 ## Non-Blocking Warnings
 
-- Vercel warned that the repository has a `.env` file and recommends Vercel env handling.
-- Vercel warned that the lockfile is missing SWC optional dependencies and suggested running Next locally to patch them.
-- Turbopack emitted an NFT trace warning through `next.config.ts`, `lib/supabase/security-proof.ts`, and `app/admin/security/page.tsx`.
+- Resolved: the root `.env` file was removed from the project directory so Vercel env handling is used.
+- Resolved: the Turbopack NFT trace warning through `next.config.ts`, `lib/supabase/security-proof.ts`, and `app/admin/security/page.tsx` no longer appears in the local production build.
+- Still open: Vercel remote build still emits `Found lockfile missing swc dependencies`. Next's local lockfile patch and `npm install` cycle did not produce a stable committed lockfile shape, so this remains a non-blocking warning to revisit separately.
 
 ## Remaining Production-Readiness Blockers
 
 Hosting is complete, but production readiness is not complete until these separate proof gates are closed:
 
 - Hosted browser smoke evidence is still needed for signed-out, parent, coach, and admin routes.
-- QA proof secrets are not visible in Vercel env listing; run the Supabase QA proof workflow before real-family use.
+- Vercel production Supabase values still need hosted browser smoke to prove they target the intended production project and preserve auth/RLS boundaries.
+- Vercel Preview OpenAI env values are not configured yet; Vercel CLI rejected all-branch Preview via stdin and rejected the production branch `main` as a Preview branch.
 - Provider sends remain disconnected unless a send worker, provider adapters, webhooks, suppression rules, and retry proof are added.
-- AI Coach Workspace remains deterministic and review-only; no AI provider is connected.
-- Hosted browser smoke still needs browser artifacts; the deploy skill used for this task confirms Vercel readiness but does not fetch the deployed URL.
+- AI Coach Workspace provider rewrites are connected through `/api/coach/ai-workspace` for signed-in assigned coaches/admins only, but output remains draft/review-only and cannot publish or send automatically.
+- Hosted browser smoke still needs browser artifacts from the deployed URL.
+
+## Networking Posture
+
+- Vercel Static IP is not required for the current launch path because the app should use Supabase HTTPS APIs with Supabase Auth and RLS.
+- Do not enable Supabase Postgres/pooler network restrictions for the Vercel app unless a fixed-egress path is added first.
+- Keep direct migration/proof access separate from browser/runtime access, with service-role keys restricted to server-side CI or admin tooling.

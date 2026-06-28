@@ -130,6 +130,7 @@ import {
   getNotificationOptOutRate,
   buildAiCoachWorkspaceDrafts,
   buildBrandLaunchValidation,
+  type AiCoachWorkspaceDraft,
   type ChatAnnouncementTopic,
   type CommunicationTemplate,
   type EventType,
@@ -3858,7 +3859,10 @@ export function ParentReplayClient() {
   const [focusAreas, setFocusAreas] = useState<PracticeFocusArea[]>(["catching", "throwing", "teamwork"]);
   const [message, setMessage] = useState("");
   const [savedReplays, setSavedReplays] = useState<ParentReplayRecord[]>([]);
+  const [aiProviderMessage, setAiProviderMessage] = useState("");
+  const [aiProviderDrafts, setAiProviderDrafts] = useState<Record<string, AiCoachWorkspaceDraft>>({});
   const [isReplayPending, startReplayTransition] = useTransition();
+  const [isAiProviderPending, startAiProviderTransition] = useTransition();
   const selectedTeam = state.teams.find((team) => team.id === teamId);
   const draft = useMemo(() => {
     const previewFocusAreas: PracticeFocusArea[] = focusAreas.length ? focusAreas : ["teamwork"];
@@ -3876,6 +3880,9 @@ export function ParentReplayClient() {
     focusAreas,
     now: NOW
   }), [coachUserId, focusAreas, state, teamId]);
+  const visibleCoachWorkspaceDrafts = useMemo(() => (
+    coachWorkspaceDrafts.map((workspaceDraft) => aiProviderDrafts[workspaceDraft.id] ?? workspaceDraft)
+  ), [aiProviderDrafts, coachWorkspaceDrafts]);
   const teamReplays = [...savedReplays, ...state.parentReplays].filter((replay) => replay.teamId === teamId);
   const selectedFocus = new Set(focusAreas);
   const canQueueReplay = focusAreas.length >= 2 && focusAreas.length <= 3;
@@ -3914,6 +3921,35 @@ export function ParentReplayClient() {
         response.status === 401
           ? `Parent Replay queued locally for ${selectedTeam?.name ?? "team"}. Sign in as an assigned coach to publish it to families.`
           : "Parent Replay could not be queued."
+      ));
+    });
+  }
+
+  function requestAiProviderDraft(workspaceDraft: AiCoachWorkspaceDraft) {
+    setAiProviderMessage("");
+    startAiProviderTransition(async () => {
+      const response = await authenticatedJsonFetch("/api/coach/ai-workspace", {
+        teamId,
+        draft: workspaceDraft
+      });
+      const result = await response.json().catch(() => null) as {
+        ok?: boolean;
+        message?: string;
+        draft?: AiCoachWorkspaceDraft;
+        source?: "openai" | "deterministic";
+      } | null;
+
+      if (result?.ok && result.draft) {
+        setAiProviderDrafts((current) => ({
+          ...current,
+          [workspaceDraft.id]: result.draft!
+        }));
+      }
+
+      setAiProviderMessage(result?.message ?? (
+        response.status === 401
+          ? "Sign in as an assigned coach or org admin before requesting AI provider drafting."
+          : "AI provider draft could not be created."
       ));
     });
   }
@@ -4062,9 +4098,10 @@ export function ParentReplayClient() {
             </div>
             <span className="badge warning">Preview - Edit - Approve - Publish</span>
           </div>
-          <p className="muted">These drafts are deterministic workspace previews. They do not publish or send until a coach reviews the copy and uses the existing save/queue workflow.</p>
+          <p className="muted">These drafts start as deterministic workspace previews. Signed-in coaches and admins can request an AI provider rewrite only when the server-side provider gate is configured; nothing publishes or sends without review.</p>
+          {aiProviderMessage ? <p className="notice">{aiProviderMessage}</p> : null}
           <div className="grid two">
-            {coachWorkspaceDrafts.map((workspaceDraft) => (
+            {visibleCoachWorkspaceDrafts.map((workspaceDraft) => (
               <div className="stack compact" key={workspaceDraft.id}>
                 <span className="badge">{workspaceDraft.label}</span>
                 <h3>{workspaceDraft.title}</h3>
@@ -4072,6 +4109,9 @@ export function ParentReplayClient() {
                 <p className="muted"><strong>Sources:</strong> {workspaceDraft.sourceEvidence.join(", ") || "coach draft"}</p>
                 <p className="muted"><strong>Workflow:</strong> {workspaceDraft.workflow.join(" -> ")}</p>
                 <p className="notice">{workspaceDraft.boundary}</p>
+                <button type="button" disabled={isAiProviderPending} onClick={() => requestAiProviderDraft(workspaceDraft)}>
+                  Request AI rewrite
+                </button>
               </div>
             ))}
           </div>

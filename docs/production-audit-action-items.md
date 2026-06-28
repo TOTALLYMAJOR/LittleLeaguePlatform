@@ -12,19 +12,20 @@ The app is not ready for real-family production launch yet. The core scaffold, r
 - `npm run build` passed and generated 41 app routes.
 - `npm run typecheck` initially failed against stale `.next/types` route definitions, then passed after `npm run build` regenerated the route types.
 - `docker compose config --quiet` passed.
-- `git status` is clean except for untracked local editor config: `.vscode/`.
+- Manual GitHub `Supabase QA proof` passed on 2026-06-28: https://github.com/TOTALLYMAJOR/LittleLeaguePlatform/actions/runs/28328007719 completed `npm run qa:rls-proof`, `npm run qa:session-proof`, `npm run qa:brand-proof`, and uploaded screenshot artifacts after QA migrations through `0019` were applied.
+- Original audit worktree had only untracked local editor config; check current worktree state before release packaging.
 
 ## P0 Launch Blockers
 
-1. Fix Supabase QA and hosted environment secrets.
-   - Evidence: `docs/build-progress.md` still records that local `.env.local` used a service-role JWT for `NEXT_PUBLIC_SUPABASE_ANON_KEY`, and `qa:rls-proof` correctly refuses that.
-   - Action: set a real Supabase anon key in local, Vercel/hosted env, and GitHub Actions secrets; keep `SUPABASE_SERVICE_ROLE_KEY` server-only.
-   - Done when: `npm run supabase:qa-users`, `npm run qa:rls-proof`, and `npm run qa:session-proof` pass against the intended QA Supabase project.
+1. Verify hosted Supabase environment secrets before production reliance.
+   - Evidence: local and GitHub QA Supabase secrets are now corrected and proven by the passing manual `Supabase QA proof` run. Vercel production env names exist, but hosted browser smoke still needs to verify that those values point at the intended production Supabase project and do not expose service-role behavior to client code.
+   - Action: run hosted signed-out, parent, coach, and admin smoke against the production aliases; keep `SUPABASE_SERVICE_ROLE_KEY` server-only and separate from `NEXT_PUBLIC_SUPABASE_ANON_KEY`.
+   - Done when: hosted browser proof passes against the intended production Supabase project with screenshots or CI artifacts.
 
-2. Prove the manual Supabase QA workflow in GitHub.
-   - Evidence: `.github/workflows/supabase-qa-proof.yml` exists and is scoped to the `qa` GitHub environment, but still depends on the real QA project secrets before it can pass.
-   - Action: add required `qa` environment secrets `QA_SUPABASE_URL`, `QA_SUPABASE_ANON_KEY`, `QA_SUPABASE_SERVICE_ROLE_KEY`, and `QA_SUPABASE_PROJECT_REF`. Optional user override secrets are `QA_ADMIN_EMAIL`, `QA_ADMIN_PASSWORD`, `QA_PARENT_EMAIL`, `QA_PARENT_PASSWORD`, `QA_COACH_EMAIL`, and `QA_COACH_PASSWORD`; otherwise the bootstrap step generates/appends QA credentials. The QA service-role key must be QA-only, not production.
-   - Done when: the manual `Supabase QA proof` workflow passes and uploads parent/coach proof screenshots.
+2. Preserve the manual Supabase QA workflow as release proof.
+   - Evidence: `.github/workflows/supabase-qa-proof.yml` is scoped to the `qa` GitHub environment and passed on 2026-06-28 in workflow run https://github.com/TOTALLYMAJOR/LittleLeaguePlatform/actions/runs/28328007719.
+   - Action: keep required `qa` environment secrets `QA_SUPABASE_URL`, `QA_SUPABASE_ANON_KEY`, `QA_SUPABASE_SERVICE_ROLE_KEY`, and `QA_SUPABASE_PROJECT_REF` current. Optional user override secrets remain `QA_ADMIN_EMAIL`, `QA_ADMIN_PASSWORD`, `QA_PARENT_EMAIL`, `QA_PARENT_PASSWORD`, `QA_COACH_EMAIL`, and `QA_COACH_PASSWORD`; otherwise the bootstrap step generates/appends QA credentials. The QA service-role key must be QA-only, not production.
+   - Done when: met for the 2026-06-28 QA proof run; rerun after migrations, RLS changes, or secret rotation.
 
 3. Make typecheck deterministic before CI/production reliance.
    - Evidence: `npm run typecheck` failed before build because stale `.next/types` referenced routes that no longer matched generated App Router types; it passed after `npm run build`.
@@ -88,17 +89,23 @@ The app is not ready for real-family production launch yet. The core scaffold, r
     - Current truth: PWA install and usage metrics exist; Expo readiness remains deferred.
     - Action: launch PWA first and use `mobile_usage_events` to decide whether app-store distribution, stronger native push, camera/media, or OS integration is justified.
 
-15. Keep AI provider disconnected unless evaluated.
-    - Current truth: AI Coach Workspace and Parent Replay are deterministic, review-only draft tools.
-    - Action if adding an AI provider: add prompt/eval harness, hallucination tests, privacy filters, source citations, provider usage controls, and review gates before any generated content is publishable.
+15. Keep AI provider output review-only unless evaluated.
+    - Current truth: AI Coach Workspace starts with deterministic drafts and now has an authenticated `/api/coach/ai-workspace` OpenAI Responses API rewrite path for assigned coaches/admins only. The local key smoke passed against `gpt-5.5` with `store: false`, and Vercel Production/Development env values are configured. Parent Replay publishing remains deterministic and coach-reviewed.
+    - Remaining action: run hosted browser proof for the AI rewrite path, configure Preview env only for a real preview branch if needed, expand prompt/eval coverage for hallucinated records and child privacy, and keep generated content draft/review-only until approval and audit gates are proven.
 
 16. Automatic team building foundation is now in scope.
     - Current truth: roster maker readiness now includes balanced team-builder previews, sibling/guardian grouping, friend-request consideration, skill-balance scores, target roster warnings, Preview -> Edit -> Approve -> Publish workflow, and admin-only team-build plan tables.
     - Remaining action before real roster publication: wire persisted Supabase team-build plan saves, add birthdate/age-band and explicit player evaluation fields, and run browser-level admin publish proof.
 
+## Hosting And Network Boundary
+
+- Vercel Static IP is not part of the current launch path. The app should use Supabase HTTPS APIs with Supabase Auth, RLS, and server-only service-role boundaries.
+- Do not enable Supabase Postgres/pooler IP allowlisting for the Vercel app unless a static egress path is deliberately added, such as Vercel Static IP, a controlled proxy, or another fixed-egress deployment path.
+- Direct database migration/proof commands should run from controlled local or CI environments using QA/prod-specific credentials, not from client-visible app code.
+
 ## Evidence To Preserve
 
 - Keep `npm test`, `npm run build`, and final `npm run typecheck` outputs in release notes.
-- Keep Supabase QA proof screenshots under `output/playwright/` as CI artifacts, not source-controlled files.
+- Keep Supabase QA proof screenshots under `output/playwright/` as CI artifacts, not source-controlled files; preserve the passing 2026-06-28 workflow URL in release notes.
 - Keep provider-send proof separate from notification-record proof: queued records are not sent messages.
-- Keep AI Coach Workspace wording clear: deterministic draft generation is not an AI-provider integration.
+- Keep AI Coach Workspace wording clear: deterministic draft generation is the default, OpenAI rewrites are provider-backed only through `/api/coach/ai-workspace`, and neither path publishes or sends automatically.

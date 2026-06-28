@@ -167,13 +167,18 @@ These 2026-06-22 next items were completed in the 2026-06-23 hardening pass:
 - Added automatic team-builder foundations with balanced assignment previews, sibling/guardian grouping, friend-request consideration, skill-balance scores, approval workflow, publish audit, and admin-only migration tables.
 - Added brand-profile launch validation foundations with 20 surface checks, test brands, success metrics, monitoring events, alert rules, coach feedback prompts, acceptance criteria, and Supabase tables for brand profiles, validation runs, asset uploads, and monitoring events.
 - Added `qa:brand-proof` and wired the manual Supabase QA workflow to capture hosted browser proof for the `/admin/themes` 20-surface brand launch checklist, monitoring events, alert rules, and screenshot artifact.
+- Corrected QA Supabase secret configuration, applied QA migrations through `0019`, and passed the manual GitHub `Supabase QA proof` workflow on 2026-06-28: https://github.com/TOTALLYMAJOR/LittleLeaguePlatform/actions/runs/28328007719.
+- Documented the current Vercel/Supabase networking posture: no Vercel Static IP requirement unless direct Postgres/pooler IP allowlisting becomes a deliberate fixed-egress architecture decision.
+- Added the authenticated AI Coach Workspace provider rewrite path with OpenAI Responses API support, local privacy filters, `store: false`, source-evidence prompts, Vercel Production/Development env wiring, and review-only UI messaging.
 
 ### Remaining Gap
 
 - Signed-out users now correctly receive `401` responses from private mutation APIs, and parent/coach private surfaces show explicit signed-out or missing-membership states instead of empty private forms.
-- Local `.env.local` must use a real Supabase anon key for `NEXT_PUBLIC_SUPABASE_ANON_KEY`; the current local value is a service-role JWT and `qa:rls-proof` correctly refuses to run.
-- The manual GitHub `supabase-qa-proof.yml` workflow needs QA Supabase secrets before it can prove `qa:rls-proof` and `qa:session-proof` in CI.
+- QA Supabase proof is now passing in GitHub Actions. The remaining hosted gap is production browser smoke against the deployed aliases and production Supabase env values.
+- Vercel Preview OpenAI env setup is still blocked until a non-production preview branch target is chosen.
 
 ### Next
 
-- Correct local and GitHub QA secrets, then run `npm run supabase:qa-users`, `npm run qa:rls-proof`, and the manual Supabase QA proof workflow.
+- Run hosted production browser smoke for signed-out, parent, coach, and admin routes, preserving screenshots or CI artifacts.
+- Run hosted AI Coach Workspace rewrite proof with a signed-in assigned coach/admin, preserving evidence that output stays draft/review-only.
+- Keep provider sends and direct database IP allowlisting out of launch scope unless they become explicit production requirements.
