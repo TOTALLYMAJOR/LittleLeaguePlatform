@@ -29,6 +29,22 @@ function requireEnv(name) {
   return value;
 }
 
+function jwtRole(token) {
+  try {
+    return JSON.parse(Buffer.from(token.split(".")[1], "base64url").toString()).role;
+  } catch {
+    return undefined;
+  }
+}
+
+function requireAnonKey() {
+  const anonKey = requireEnv("NEXT_PUBLIC_SUPABASE_ANON_KEY");
+  if (jwtRole(anonKey) === "service_role") {
+    throw new Error("NEXT_PUBLIC_SUPABASE_ANON_KEY must be the Supabase anon key, not the service role key.");
+  }
+  return anonKey;
+}
+
 function chromiumExecutablePath() {
   const candidates = [
     process.env.PLAYWRIGHT_MCP_EXECUTABLE_PATH,
@@ -68,6 +84,10 @@ async function proveRole(browser, input) {
       const proofUrl = `${baseUrl}${route.path}?qa_proof=${Date.now()}`;
       await page.goto(proofUrl, { waitUntil: "networkidle" });
       for (const text of route.expectedText) await assertText(page, text);
+      for (const action of route.actions ?? []) {
+        await page.getByRole("button", { name: action.buttonName }).first().click();
+        await assertText(page, action.expectedText);
+      }
       const screenshotPath = join(screenshotDir, route.screenshot);
       await page.screenshot({ path: screenshotPath, fullPage: true });
       console.log(`${input.label}: ${route.path} verified (${screenshotPath})`);
@@ -79,6 +99,7 @@ async function proveRole(browser, input) {
 
 async function main() {
   loadLocalEnv();
+  requireAnonKey();
   mkdirSync(screenshotDir, { recursive: true });
 
   const executablePath = chromiumExecutablePath();
@@ -110,6 +131,12 @@ async function main() {
             "RSVP rows and button payloads are loaded from Supabase.",
             "Tiny Tigers vs Rookie Rockets",
             "Going"
+          ],
+          actions: [
+            {
+              buttonName: "Going",
+              expectedText: "RSVP saved"
+            }
           ]
         }
       ]
@@ -128,6 +155,32 @@ async function main() {
             "Tiny Tigers",
             "Light rain watch",
             "Field setup"
+          ]
+        }
+      ]
+    });
+
+    await proveRole(browser, {
+      label: "QA admin",
+      email: requireEnv("QA_ADMIN_EMAIL"),
+      password: requireEnv("QA_ADMIN_PASSWORD"),
+      routes: [
+        {
+          path: "/admin/operations",
+          screenshot: "admin-operations-qa-session-live.png",
+          expectedText: [
+            "Admin operations",
+            "Provider inventory",
+            "Approval queues"
+          ]
+        },
+        {
+          path: "/admin/security",
+          screenshot: "admin-security-qa-session-live.png",
+          expectedText: [
+            "Security proof",
+            "RLS and audit boundaries",
+            "Proof checks"
           ]
         }
       ]

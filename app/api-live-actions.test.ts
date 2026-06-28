@@ -2,8 +2,10 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import { POST as postRsvp } from "./api/rsvps/route";
 import { POST as postAdminExport } from "./api/admin/exports/route";
 import { POST as postNotificationPreference } from "./api/notification-preferences/route";
+import { POST as postNotificationUnsubscribe } from "./api/notification-preferences/unsubscribe/route";
 import { POST as postMobileUsageEvent } from "./api/mobile-usage-events/route";
 import { POST as postProviderDeliveryReview } from "./api/provider-delivery/review/route";
+import { GET as getProviderDeliveryRetryPlan } from "./api/provider-delivery/retry-plan/route";
 import { POST as postParentReplay } from "./api/coach/parent-replay/route";
 import { POST as postWeeklyUpdate } from "./api/coach/weekly-update/route";
 import { POST as postSponsorSave } from "./api/admin/sponsors/route";
@@ -29,7 +31,7 @@ import { saveAdminSeason, saveAdminTeam, saveRosterPlayer } from "@/lib/supabase
 import { saveScheduleEvent } from "@/lib/supabase/schedule-management";
 import { repairGuardianLink } from "@/lib/supabase/guardian-links";
 import { createAdminExport } from "@/lib/supabase/reporting";
-import { reviewNotificationDelivery } from "@/lib/supabase/provider-delivery";
+import { listProviderDeliveryRetryQueue, reviewNotificationDelivery } from "@/lib/supabase/provider-delivery";
 import {
   claimSnackSlot,
   claimVolunteerRole,
@@ -96,6 +98,7 @@ vi.mock("@/lib/supabase/reporting", () => ({
 }));
 
 vi.mock("@/lib/supabase/provider-delivery", () => ({
+  listProviderDeliveryRetryQueue: vi.fn(),
   reviewNotificationDelivery: vi.fn()
 }));
 
@@ -121,6 +124,7 @@ const saveRosterPlayerMock = vi.mocked(saveRosterPlayer);
 const saveScheduleEventMock = vi.mocked(saveScheduleEvent);
 const repairGuardianLinkMock = vi.mocked(repairGuardianLink);
 const createAdminExportMock = vi.mocked(createAdminExport);
+const listProviderDeliveryRetryQueueMock = vi.mocked(listProviderDeliveryRetryQueue);
 const reviewNotificationDeliveryMock = vi.mocked(reviewNotificationDelivery);
 
 function jsonRequest(body: unknown) {
@@ -303,6 +307,31 @@ describe("live action API routes", () => {
     });
   });
 
+  it("uses the authenticated parent session for notification unsubscribes", async () => {
+    updateNotificationPreferenceMock.mockResolvedValue({ ok: true, message: "Preference saved.", preference: { id: "pref-unsub-1" } });
+
+    const response = await postNotificationUnsubscribe(jsonRequest({
+      teamId: "team-1",
+      channel: "push",
+      notificationType: "schedule_changed",
+      enabled: true,
+      userId: "client-spoof"
+    }));
+
+    expect(response.status).toBe(200);
+    expect(updateNotificationPreferenceMock).toHaveBeenCalledWith({
+      userId: "user-live-session",
+      organizationId: undefined,
+      teamId: "team-1",
+      channel: "push",
+      notificationType: "schedule_changed",
+      enabled: false,
+      quietHoursStart: undefined,
+      quietHoursEnd: undefined,
+      timezone: undefined
+    });
+  });
+
   it("uses the authenticated admin session for reporting exports", async () => {
     createAdminExportMock.mockResolvedValue({
       ok: true,
@@ -347,6 +376,35 @@ describe("live action API routes", () => {
       actorUserId: "user-live-session",
       decision: "approved",
       provider: "email"
+    });
+  });
+
+  it("uses the authenticated coach or admin session for provider retry queue reads", async () => {
+    listProviderDeliveryRetryQueueMock.mockResolvedValue({
+      ok: true,
+      message: "Provider retry queue loaded for review. No external send occurred.",
+      retryQueue: [{
+        id: "attempt-1",
+        notificationId: "notification-1",
+        title: "Schedule changed",
+        provider: "email",
+        channel: "email",
+        status: "suppressed",
+        reason: "Provider retry review required.",
+        attemptedAt: "2026-06-23T12:00:00.000Z",
+        nextReviewAt: "2026-06-23T12:15:00.000Z"
+      }]
+    });
+
+    const response = await getProviderDeliveryRetryPlan(new Request("http://localhost/api/provider-delivery/retry-plan", {
+      headers: {
+        authorization: "Bearer live-session"
+      }
+    }));
+
+    expect(response.status).toBe(200);
+    expect(listProviderDeliveryRetryQueueMock).toHaveBeenCalledWith({
+      actorUserId: "user-live-session"
     });
   });
 

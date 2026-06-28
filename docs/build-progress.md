@@ -2,6 +2,30 @@
 
 This file tracks implementation progress while moving the app from the local reducer scaffold to Supabase-backed production slices.
 
+## 2026-06-27
+
+### Completed
+
+- Added `lib/domain/contracts.ts` as the strict domain contract source for existing entities, enum values, workflow-state unions, and state type guards.
+- Added pure domain state machines and runtime guards for notification, weather-alert, and Parent Replay actionable states. UI code cannot move an object to `sent`; system-only transitions are enforced in the domain layer.
+- Added `db/schema.sql` plus `db/rls/*.sql` as a Supabase Postgres/RLS reference schema for teams, players, events, RSVPs, notifications, weather alerts, and team chat messages.
+- Added `lib/services/weather/` with National Weather Service first, Open-Meteo fallback, and optional Tomorrow.io adapters. Provider results normalize into `WeatherEventDraft` and always return draft weather-alert state.
+- Added `lib/domain/policies.ts` and read-only React feature panels in `components/features/` for parent, coach, and admin audit surfaces. Panels render from domain types, use policy visibility helpers, and make no API calls.
+- Hardened provider delivery review so approval checks provider/channel match, recipient notification preferences, and provider credential readiness before writing a queued or suppressed delivery-attempt record. External provider sends remain disconnected.
+- Added authenticated notification unsubscribe and provider retry-plan routes. Both derive the actor from the verified Supabase session.
+- Extended QA browser proof to seed a QA admin, verify `/admin/operations` and `/admin/security`, and click a parent RSVP action during `/parent/rsvp` proof.
+- Added focused coverage for feature panels, provider readiness, unsubscribe/retry routes, weather provider fallback, domain policies, and state guards.
+
+### Validation
+
+- `npm run typecheck` passed.
+- Focused API/provider/weather/feature-panel tests passed.
+
+### Remaining Gap
+
+- The new weather provider service is not yet wired into the existing Supabase weather draft route, which still uses the older Tomorrow.io path.
+- Live browser proof still depends on valid QA Supabase anon/user secrets.
+
 ## 2026-06-22
 
 ### Completed

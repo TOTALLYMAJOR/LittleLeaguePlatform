@@ -108,6 +108,8 @@ async function upsertOrThrow(supabase, table, row, options = {}) {
 async function main() {
   loadLocalEnv();
   appendMissingEnv({
+    QA_ADMIN_EMAIL: process.env.QA_ADMIN_EMAIL || "qa.admin.littleleague@example.com",
+    QA_ADMIN_PASSWORD: process.env.QA_ADMIN_PASSWORD || generatedPassword(),
     QA_PARENT_EMAIL: process.env.QA_PARENT_EMAIL || "qa.parent.littleleague@example.com",
     QA_PARENT_PASSWORD: process.env.QA_PARENT_PASSWORD || generatedPassword(),
     QA_COACH_EMAIL: process.env.QA_COACH_EMAIL || "qa.coach.littleleague@example.com",
@@ -123,6 +125,12 @@ async function main() {
     }
   });
 
+  const admin = await upsertAuthUser(supabase, {
+    email: requireEnv("QA_ADMIN_EMAIL"),
+    password: requireEnv("QA_ADMIN_PASSWORD"),
+    displayName: "QA Org Admin",
+    defaultRole: "admin"
+  });
   const parent = await upsertAuthUser(supabase, {
     email: requireEnv("QA_PARENT_EMAIL"),
     password: requireEnv("QA_PARENT_PASSWORD"),
@@ -164,6 +172,12 @@ async function main() {
   };
 
   await upsertOrThrow(supabase, "profiles", {
+    id: admin.id,
+    display_name: "QA Org Admin",
+    email: requireEnv("QA_ADMIN_EMAIL"),
+    default_role: "admin"
+  });
+  await upsertOrThrow(supabase, "profiles", {
     id: parent.id,
     display_name: "QA Parent Jordan",
     email: requireEnv("QA_PARENT_EMAIL"),
@@ -179,6 +193,13 @@ async function main() {
     id: ids.organization,
     name: "Little League HQ"
   });
+  await upsertOrThrow(supabase, "organization_memberships", {
+    id: "66666666-6666-4666-8666-666666666660",
+    organization_id: ids.organization,
+    user_id: admin.id,
+    role: "admin",
+    status: "active"
+  }, { onConflict: "organization_id,user_id,role" });
   await upsertOrThrow(supabase, "seasons", {
     id: ids.season,
     organization_id: ids.organization,
@@ -397,7 +418,7 @@ async function main() {
   });
 
   console.log("QA Supabase users and linked dashboard rows are ready.");
-  console.log("QA credentials are stored in .env.local keys: QA_PARENT_EMAIL, QA_PARENT_PASSWORD, QA_COACH_EMAIL, QA_COACH_PASSWORD.");
+  console.log("QA credentials are stored in .env.local keys: QA_ADMIN_EMAIL, QA_ADMIN_PASSWORD, QA_PARENT_EMAIL, QA_PARENT_PASSWORD, QA_COACH_EMAIL, QA_COACH_PASSWORD.");
 }
 
 main().catch((error) => {

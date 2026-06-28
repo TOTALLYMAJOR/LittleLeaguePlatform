@@ -318,7 +318,7 @@ This backlog translates the pasted feature inventory into repo-fit work. It is n
 
 - Status: `Covered`
 - Repo fit: Notification records, preferences, subscription storage, service worker, mobile usage events, and approval-gated provider delivery already exist. Real sends remain deferred until provider credentials and production safety checks are in place.
-- Current seams: `app/api/push-subscriptions/route.ts`, `app/api/notification-preferences/route.ts`, `app/api/mobile-usage-events/route.ts`, `app/api/provider-delivery/review/route.ts`, `public/sw.js`, `public/manifest.webmanifest`, `lib/supabase/provider-delivery.ts`.
+- Current seams: `app/api/push-subscriptions/route.ts`, `app/api/notification-preferences/route.ts`, `app/api/notification-preferences/unsubscribe/route.ts`, `app/api/mobile-usage-events/route.ts`, `app/api/provider-delivery/review/route.ts`, `app/api/provider-delivery/retry-plan/route.ts`, `public/sw.js`, `public/manifest.webmanifest`, `lib/supabase/provider-delivery.ts`.
 - Backlog list:
   - `Covered`: Notification Records.
   - `Covered`: Push Notification Channel.
@@ -345,7 +345,7 @@ This backlog translates the pasted feature inventory into repo-fit work. It is n
 
 - Status: `Covered`
 - Repo fit: Weather should remain coach/admin scoped, event-linked, and approval-gated before parent delivery. Thresholds are future policy/config work.
-- Current seams: `app/coach/page.tsx`, `app/team-portal/page.tsx`, `app/api/weather-alerts/draft/route.ts`, `app/api/provider-delivery/review/route.ts`, `lib/supabase/provider-delivery.ts`.
+- Current seams: `app/coach/page.tsx`, `app/team-portal/page.tsx`, `app/api/weather-alerts/draft/route.ts`, `app/api/provider-delivery/review/route.ts`, `lib/services/weather/`, `lib/supabase/provider-delivery.ts`.
 - Backlog list:
   - `Covered`: Weather Alerts.
   - `Covered`: Tomorrow.io Adapter.
@@ -596,11 +596,8 @@ This backlog translates the pasted feature inventory into repo-fit work. It is n
 
 ## Suggested Build Order
 
-1. Finish production safety proof: RLS tests, cross-team access tests, audit-log coverage, and admin/provider boundary dashboard.
-2. Complete team/season management: team CRUD, division setup, season setup, coach assignment, roster lifecycle, archive read-only states.
-3. Complete parent and RSVP lifecycle: RSVP history, edits, cancellations, parent onboarding, parent calendar, action checklist, support requests.
-4. Complete schedule and venue operations: real schedule CRUD, conflict detection, venue records, map fallback UX, calendar export.
-5. Complete notification hardening: unsubscribe flow, retry logs, device management, VAPID send adapter, provider-send tests after provider approval.
-6. Complete chat/media retention and reporting: chat retention jobs, media consent controls, private albums, takedown flow, exportable season memories.
-7. Complete community operations: snack/volunteer reminders, cancellations, fairness engine, role caps, audit trail.
-8. Complete metrics: admin/coach success dashboards from existing app events and Supabase records.
+1. Commit and publish the current production-foundation batch: domain contracts, state machines, guards, policies, schema/RLS SQL, weather providers, provider hardening routes, and role-scoped feature panels.
+2. Run live QA proof with valid Supabase anon/user secrets: `npm run supabase:qa-users`, `npm run qa:rls-proof`, and `npm run qa:session-proof`.
+3. Wire `app/api/weather-alerts/draft/route.ts`/Supabase weather draft creation to the `lib/services/weather/` provider order instead of the older Tomorrow.io-only path.
+4. Add browser-level action proof for parent RSVP, snack, volunteer, coach weather draft, provider review, and admin approval flows once QA credentials are valid.
+5. Add real provider send workers only after hosted credentials, recipient preferences, approval records, retry behavior, and webhooks are proven.

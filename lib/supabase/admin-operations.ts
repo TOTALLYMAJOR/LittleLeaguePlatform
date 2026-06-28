@@ -1,5 +1,6 @@
 import { seedState } from "@/lib/domain";
 import { createSupabaseAdminClient } from "./admin";
+import { getProviderDeliveryReadiness } from "./provider-delivery";
 import { withSupabaseTimeout } from "./timeout";
 
 type UnsafeSupabase = {
@@ -51,6 +52,14 @@ function providerStatus(envKey: string): "configured" | "missing" {
   return process.env[envKey] ? "configured" : "missing";
 }
 
+function notificationProviderStatus(): "configured" | "missing" {
+  return (
+    getProviderDeliveryReadiness("email").configured ||
+    getProviderDeliveryReadiness("sms").configured ||
+    getProviderDeliveryReadiness("web_push").configured
+  ) ? "configured" : "missing";
+}
+
 function fallbackOperationsData(): AdminOperationsData {
   const pendingRegistrations = seedState.registrationRequests.filter((request) => request.status === "pending").length;
   const pendingNotifications = seedState.notifications.filter((notification) => notification.status === "pending").length;
@@ -67,7 +76,7 @@ function fallbackOperationsData(): AdminOperationsData {
       { provider: "Supabase Auth", channel: "auth", status: "configured", boundary: "Verified session required before private mutations." },
       { provider: "Tomorrow.io", channel: "weather", status: providerStatus("TOMORROW_API_KEY"), boundary: "Creates weather drafts only; parent delivery stays approval-gated." },
       { provider: "Google Maps", channel: "maps", status: providerStatus("NEXT_PUBLIC_GOOGLE_MAPS_API_KEY"), boundary: "Stores map URLs/embed URLs; no route tracking." },
-      { provider: "Email/SMS/Web Push", channel: "notifications", status: "missing", boundary: "Provider sends remain disconnected until approval and retry workers exist." }
+      { provider: "Email/SMS/Web Push", channel: "notifications", status: notificationProviderStatus(), boundary: "Provider sends remain disconnected; approval creates queued or suppressed delivery-attempt records after preference and readiness checks." }
     ],
     approvalQueues: [
       { queue: "Registration review", count: pendingRegistrations, actionHref: "/admin/registrations", boundary: "Approval creates guardian/team access only after admin review." },
@@ -127,7 +136,7 @@ export async function listAdminOperationsData(): Promise<AdminOperationsData> {
         { provider: "Supabase Auth", channel: "auth", status: "configured", boundary: "Verified session required before private mutations." },
         { provider: "Tomorrow.io", channel: "weather", status: providerStatus("TOMORROW_API_KEY"), boundary: "Creates weather drafts only; parent delivery stays approval-gated." },
         { provider: "Google Maps", channel: "maps", status: providerStatus("NEXT_PUBLIC_GOOGLE_MAPS_API_KEY"), boundary: "Stores map URLs/embed URLs; no route tracking." },
-        { provider: "Email/SMS/Web Push", channel: "notifications", status: "missing", boundary: "Provider sends remain disconnected until approval and retry workers exist." }
+        { provider: "Email/SMS/Web Push", channel: "notifications", status: notificationProviderStatus(), boundary: "Provider sends remain disconnected; approval creates queued or suppressed delivery-attempt records after preference and readiness checks." }
       ],
       approvalQueues: [
         { queue: "Registration review", count: registrationRequests?.length ?? 0, actionHref: "/admin/registrations", boundary: "Approval creates guardian/team access only after admin review." },

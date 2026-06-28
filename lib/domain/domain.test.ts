@@ -131,8 +131,94 @@ import {
   getMicroCoachingStreakRate,
   getMediaEngagementRate,
   getNotificationOptOutRate,
-  buildAiCoachWorkspaceDrafts
+  buildAiCoachWorkspaceDrafts,
+  assertNotificationStartsAsDraft,
+  assertNotificationTransition,
+  assertParentReplayOutputTransition,
+  assertWeatherAlertStartsAsDraft,
+  assertWeatherAlertTransition,
+  canTransition,
+  canTransitionNotification,
+  canTransitionParentReplayOutput,
+  canTransitionWeatherAlert,
+  initialActionableState,
+  transitionNotificationState,
+  transitionParentReplayOutputState,
+  transitionWeatherAlertState,
+  transitionActionableState,
+  validateTransition
 } from "./index";
+
+describe("actionable state machines", () => {
+  it("starts every actionable object as a draft", () => {
+    expect(initialActionableState()).toBe("draft");
+  });
+
+  it("requires approval before system delivery and blocks user-sent transitions", () => {
+    expect(canTransition("draft", "sent", "system")).toBe(false);
+    expect(canTransition("approved", "sent", "admin")).toBe(false);
+    expect(canTransition("queued", "sent", "coach")).toBe(false);
+    expect(canTransition("approved", "sent", "system")).toBe(true);
+    expect(canTransition("queued", "sent", "system")).toBe(true);
+  });
+
+  it("keeps approval and queue transitions staff-controlled", () => {
+    expect(canTransition("draft", "approved", "coach")).toBe(true);
+    expect(canTransition("draft", "approved", "admin")).toBe(true);
+    expect(canTransition("draft", "approved", "parent")).toBe(false);
+    expect(canTransition("approved", "queued", "coach")).toBe(true);
+    expect(canTransition("draft", "queued", "coach")).toBe(false);
+  });
+
+  it("validates notification, weather, and Parent Replay output states", () => {
+    expect(canTransitionNotification("sent", "read", "parent")).toBe(true);
+    expect(canTransitionWeatherAlert("approved", "queued", "admin")).toBe(true);
+    expect(canTransitionParentReplayOutput("failed", "approved", "coach")).toBe(true);
+    expect(transitionActionableState("draft", "sent", "system")).toBe("draft");
+    expect(validateTransition("approved", "sent", "system").ok).toBe(true);
+  });
+});
+
+describe("runtime transition guards", () => {
+  it("throws when actionable objects do not start as draft", () => {
+    expect(assertNotificationStartsAsDraft("notification-1", "draft")).toBe("draft");
+    expect(assertWeatherAlertStartsAsDraft("weather-1", "draft")).toBe("draft");
+    expect(() => assertNotificationStartsAsDraft("notification-1", "approved")).toThrow("expected draft");
+  });
+
+  it("prevents notification sends unless the system sends from approved or queued", () => {
+    expect(transitionNotificationState("notification-1", "approved", "sent", "system")).toBe("sent");
+    expect(() => assertNotificationTransition({
+      objectId: "notification-1",
+      from: "draft",
+      to: "sent",
+      actorRole: "system"
+    })).toThrow("Invalid notification transition");
+    expect(() => assertNotificationTransition({
+      objectId: "notification-1",
+      from: "approved",
+      to: "sent",
+      actorRole: "coach"
+    })).toThrow("approved -> sent by coach");
+  });
+
+  it("guards weather alert and Parent Replay output transitions", () => {
+    expect(transitionWeatherAlertState("weather-1", "draft", "approved", "admin")).toBe("approved");
+    expect(transitionParentReplayOutputState("replay-1", "approved", "queued", "coach")).toBe("queued");
+    expect(() => assertWeatherAlertTransition({
+      objectId: "weather-1",
+      from: "draft",
+      to: "sent",
+      actorRole: "system"
+    })).toThrow("draft -> sent");
+    expect(() => assertParentReplayOutputTransition({
+      objectId: "replay-1",
+      from: "queued",
+      to: "sent",
+      actorRole: "admin"
+    })).toThrow("queued -> sent by admin");
+  });
+});
 
 describe("CSV duplicate detection", () => {
   it("separates blocking duplicate-player errors from reviewable warnings", () => {
