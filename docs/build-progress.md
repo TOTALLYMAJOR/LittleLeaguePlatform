@@ -13,8 +13,9 @@ This file tracks implementation progress while moving the app from the local red
 - Added `lib/domain/policies.ts` and read-only React feature panels in `components/features/` for parent, coach, and admin audit surfaces. Panels render from domain types, use policy visibility helpers, and make no API calls.
 - Hardened provider delivery review so approval checks provider/channel match, recipient notification preferences, and provider credential readiness before writing a queued or suppressed delivery-attempt record. External provider sends remain disconnected.
 - Added authenticated notification unsubscribe and provider retry-plan routes. Both derive the actor from the verified Supabase session.
+- Wired Supabase weather draft creation to the provider-order weather service: National Weather Service, Open-Meteo fallback, then optional Tomorrow.io. Persisted weather alerts still save as draft records only.
 - Extended QA browser proof to seed a QA admin, verify `/admin/operations` and `/admin/security`, and click a parent RSVP action during `/parent/rsvp` proof.
-- Added focused coverage for feature panels, provider readiness, unsubscribe/retry routes, weather provider fallback, domain policies, and state guards.
+- Added focused coverage for feature panels, provider readiness, unsubscribe/retry routes, weather provider fallback, Supabase weather draft wiring, domain policies, and state guards.
 
 ### Validation
 
@@ -23,7 +24,6 @@ This file tracks implementation progress while moving the app from the local red
 
 ### Remaining Gap
 
-- The new weather provider service is not yet wired into the existing Supabase weather draft route, which still uses the older Tomorrow.io path.
 - Live browser proof still depends on valid QA Supabase anon/user secrets.
 
 ## 2026-06-22

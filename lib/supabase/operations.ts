@@ -1,4 +1,5 @@
 import type { ParentReplayDraft, ParentReplayRecord, PracticeFocusArea } from "@/lib/domain";
+import { getWeatherEventDraft } from "@/lib/services/weather";
 import { requireActiveParentForPlayerEvent, requireActiveTeamCoachOrOrgAdmin } from "./access-control";
 import { createSupabaseAdminClient } from "./admin";
 import { withSupabaseTimeout } from "./timeout";
@@ -896,8 +897,6 @@ export async function createWeatherAlertDraft(input: {
   reviewerUserId?: string;
 }) {
   if (!input.eventId) return { ok: false, message: "Weather lookup requires an event." };
-  const apiKey = process.env.TOMORROW_API_KEY || process.env.WEATHER_PROVIDER_API_KEY;
-  if (!apiKey) return { ok: false, message: "TOMORROW_API_KEY is required before live weather lookup can run." };
 
   try {
     const db = adminDb();
@@ -908,41 +907,37 @@ export async function createWeatherAlertDraft(input: {
       .single();
     if (!event) return { ok: false, message: "Weather lookup requires a known event." };
 
-    const location = event.latitude && event.longitude
-      ? `${event.latitude},${event.longitude}`
-      : event.location_address || event.location_name;
-    if (!location) return { ok: false, message: "Weather lookup requires an event location." };
+    const forecast = await getWeatherEventDraft({
+      teamId: event.team_id,
+      eventId: event.id,
+      eventTitle: event.title,
+      startsAt: event.starts_at,
+      latitude: event.latitude ?? undefined,
+      longitude: event.longitude ?? undefined,
+      locationName: event.location_name ?? undefined,
+      locationAddress: event.location_address ?? undefined
+    }, {
+      now: new Date().toISOString(),
+      tomorrowApiKey: process.env.TOMORROW_API_KEY || process.env.WEATHER_PROVIDER_API_KEY,
+      userAgent: process.env.WEATHER_USER_AGENT
+    });
 
-    const url = new URL("https://api.tomorrow.io/v4/weather/forecast");
-    url.searchParams.set("location", location);
-    url.searchParams.set("timesteps", "1h");
-    url.searchParams.set("units", "imperial");
-    url.searchParams.set("apikey", apiKey);
-
-    const response = await fetch(url, { headers: { accept: "application/json" } });
-    if (!response.ok) return { ok: false, message: "Tomorrow.io weather lookup failed." };
-    const payload = await response.json();
-    const hourly = payload?.timelines?.hourly?.[0]?.values ?? {};
-    const precipitation = Number(hourly.precipitationProbability ?? 0);
-    const windSpeed = Number(hourly.windSpeed ?? 0);
-    const temperature = Number(hourly.temperature ?? 0);
-    const severity = precipitation >= 60 || windSpeed >= 25 ? "delay" : precipitation >= 35 || windSpeed >= 18 ? "watch" : "watch";
-    const headline = precipitation >= 35 || windSpeed >= 18
-      ? `Weather watch for ${event.title}`
-      : `Weather checked for ${event.title}`;
-    const detail = `Tomorrow.io forecast: ${Math.round(temperature)}F, ${Math.round(precipitation)}% precipitation chance, ${Math.round(windSpeed)} mph wind.`;
+    if (!forecast) {
+      return { ok: false, message: "Weather provider lookup returned no draft for this event." };
+    }
+    const draft = forecast.draft;
 
     const { data, error } = await db
       .from("weather_alerts")
       .insert({
         team_id: event.team_id,
         event_id: event.id,
-        headline,
-        detail,
-        severity,
+        headline: draft.headline,
+        detail: draft.detail,
+        severity: draft.severity,
         status: "draft",
-        provider: "tomorrow.io",
-        provider_payload: payload,
+        provider: forecast.providerId,
+        provider_payload: forecast.raw,
         reviewed_by_user_id: input.reviewerUserId ?? null,
         reviewed_at: input.reviewerUserId ? new Date().toISOString() : null
       })
@@ -950,8 +945,8 @@ export async function createWeatherAlertDraft(input: {
       .single();
 
     if (error || !data) return { ok: false, message: "Weather alert draft could not be saved. Make sure migration 0005 is applied." };
-    return { ok: true, message: "Tomorrow.io weather alert draft saved. No parent notification was sent.", alert: data };
+    return { ok: true, message: `${forecast.providerId} weather alert draft saved. No parent notification was sent.`, alert: data };
   } catch {
-    return { ok: false, message: "Weather lookup could not reach Tomorrow.io or Supabase." };
+    return { ok: false, message: "Weather lookup could not reach the configured provider chain or Supabase." };
   }
 }

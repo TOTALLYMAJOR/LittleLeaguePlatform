@@ -596,8 +596,7 @@ This backlog translates the pasted feature inventory into repo-fit work. It is n
 
 ## Suggested Build Order
 
-1. Commit and publish the current production-foundation batch: domain contracts, state machines, guards, policies, schema/RLS SQL, weather providers, provider hardening routes, and role-scoped feature panels.
-2. Run live QA proof with valid Supabase anon/user secrets: `npm run supabase:qa-users`, `npm run qa:rls-proof`, and `npm run qa:session-proof`.
-3. Wire `app/api/weather-alerts/draft/route.ts`/Supabase weather draft creation to the `lib/services/weather/` provider order instead of the older Tomorrow.io-only path.
-4. Add browser-level action proof for parent RSVP, snack, volunteer, coach weather draft, provider review, and admin approval flows once QA credentials are valid.
-5. Add real provider send workers only after hosted credentials, recipient preferences, approval records, retry behavior, and webhooks are proven.
+1. Run live QA proof with valid Supabase anon/user secrets: `npm run supabase:qa-users`, `npm run qa:rls-proof`, and `npm run qa:session-proof`.
+2. Add browser-level action proof for parent RSVP, snack, volunteer, coach weather draft, provider review, and admin approval flows once QA credentials are valid.
+3. Add hosted provider credential proof for the weather provider order and notification provider readiness.
+4. Add real provider send workers only after hosted credentials, recipient preferences, approval records, retry behavior, and webhooks are proven.
