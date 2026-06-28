@@ -398,6 +398,8 @@ describe("ParentReplayClient", () => {
     expect(html).toContain("Memory timeline");
     expect(html).toContain("AI Coach Workspace");
     expect(html).toContain("Generate Parent Brief");
+    expect(html).toContain("Team Onboarding Brief");
+    expect(html).toContain("New coach and participant brief");
     expect(html).toContain("Create Weekly Digest");
     expect(html).toContain("Practice Replay");
     expect(html).toContain("Draft Announcement");

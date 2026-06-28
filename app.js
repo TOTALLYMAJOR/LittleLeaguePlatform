@@ -1090,7 +1090,6 @@ function openAddMediaModal() {
 
 function openModal(title, bodyHtml, onSave) {
   const modal = document.getElementById("modal");
-  const form = document.getElementById("modalForm");
   document.getElementById("modalTitle").textContent = title;
   document.getElementById("modalBody").innerHTML = bodyHtml;
 

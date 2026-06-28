@@ -1103,6 +1103,7 @@ describe("Parent Replay", () => {
 
     expect(drafts.map((draft) => draft.id)).toEqual([
       "new_parent_brief",
+      "team_onboarding_brief",
       "weekly_digest",
       "practice_replay",
       "announcement_cleaner",
@@ -1116,17 +1117,21 @@ describe("Parent Replay", () => {
       "season_storybook"
     ]);
     expect(drafts[0]?.body).toContain("Welcome to Tiny Tigers");
-    expect(drafts[1]?.body).toContain("This Week");
-    expect(drafts[2]?.body).toContain("At home:");
-    expect(drafts[3]?.body).toContain("Bring:");
-    expect(drafts[4]?.body).toContain("Source: team schedule");
-    expect(drafts[5]?.body).toContain("Questions:");
-    expect(drafts[6]?.body).toContain("Arrive 15 minutes early");
-    expect(drafts[7]?.body).toContain("Tiny Tigers");
-    expect(drafts[8]?.body).toContain("reminder:");
-    expect(drafts[9]?.body).toContain("Volunteer Needed");
-    expect(drafts[10]?.body).toContain("Bullying:");
-    expect(drafts[11]?.body).toContain("Spring 2026");
+    expect(drafts[1]?.body).toContain("What the group is discussing:");
+    expect(drafts[1]?.body).toContain("Game-Day Questions: should everyone wear the blue jersey?");
+    expect(drafts[1]?.body).toContain("Mason T. (#7)");
+    expect(drafts[1]?.body).toContain("Privacy boundary");
+    expect(drafts[2]?.body).toContain("This Week");
+    expect(drafts[3]?.body).toContain("At home:");
+    expect(drafts[4]?.body).toContain("Bring:");
+    expect(drafts[5]?.body).toContain("Source: team schedule");
+    expect(drafts[6]?.body).toContain("Questions:");
+    expect(drafts[7]?.body).toContain("Arrive 15 minutes early");
+    expect(drafts[8]?.body).toContain("Tiny Tigers");
+    expect(drafts[9]?.body).toContain("reminder:");
+    expect(drafts[10]?.body).toContain("Volunteer Needed");
+    expect(drafts[11]?.body).toContain("Bullying:");
+    expect(drafts[12]?.body).toContain("Spring 2026");
     expect(drafts.every((draft) => draft.workflow.join(" -> ") === "Preview -> Edit -> Approve -> Publish")).toBe(true);
     expect(drafts.every((draft) => draft.boundary.toLowerCase().includes("coach") || draft.boundary.toLowerCase().includes("provider"))).toBe(true);
   });

@@ -3,6 +3,7 @@ import type { AppState, PracticeFocusArea } from "./types";
 
 export type AiCoachWorkspaceToolId =
   | "new_parent_brief"
+  | "team_onboarding_brief"
   | "weekly_digest"
   | "practice_replay"
   | "announcement_cleaner"
@@ -81,6 +82,35 @@ function coachName(state: AppState, coachUserId: string) {
 
 function visibleTeamMessages(state: AppState, teamId: string) {
   return state.chatMessages.filter((message) => message.teamId === teamId && message.moderationStatus === "visible");
+}
+
+function recentDiscussionItems(state: AppState, teamId: string) {
+  return visibleTeamMessages(state, teamId)
+    .sort((left, right) => Date.parse(right.createdAt) - Date.parse(left.createdAt))
+    .slice(0, 4)
+    .map((message) => {
+      const topic = message.topic ? message.topic.replace("_", " ") : message.kind;
+      return `${message.authorRole} ${topic}: ${message.body}`;
+    });
+}
+
+function rosterItems(state: AppState, teamId: string) {
+  return state.players
+    .filter((player) => player.teamId === teamId)
+    .sort((left, right) => left.firstName.localeCompare(right.firstName))
+    .map((player) => `${player.firstName} ${player.lastInitial}. (#${player.jersey})`);
+}
+
+function guardianAccessSummary(state: AppState, teamId: string) {
+  const players = state.players.filter((player) => player.teamId === teamId);
+  const playerIds = new Set(players.map((player) => player.id));
+  const relevantLinks = state.guardianLinks.filter((link) => playerIds.has(link.playerId));
+  const activeLinks = relevantLinks.filter((link) => link.status === "active").length;
+  const invitedLinks = relevantLinks.filter((link) => link.status === "invited").length;
+  const linkedPlayerIds = new Set(relevantLinks.map((link) => link.playerId));
+  const missingPlayers = Math.max(players.length - linkedPlayerIds.size, 0);
+
+  return `${activeLinks} active guardian link(s), ${invitedLinks} invited guardian link(s), ${missingPlayers} player(s) without a guardian link.`;
 }
 
 function evidence(items: Array<string | undefined>) {
@@ -186,6 +216,8 @@ export function buildAiCoachWorkspaceDrafts(state: AppState, input: AiCoachWorks
   const volunteers = volunteerNeeds(state, input.teamId);
   const snacks = snackNeeds(state, input.teamId);
   const messages = visibleTeamMessages(state, input.teamId);
+  const discussionItems = recentDiscussionItems(state, input.teamId);
+  const roster = rosterItems(state, input.teamId);
   const focusAreas: PracticeFocusArea[] = input.focusAreas?.length ? input.focusAreas : ["throwing", "catching", "teamwork"];
   const replayDraft = team ? generateParentReplayDraft(state, {
     teamId: input.teamId,
@@ -213,6 +245,22 @@ export function buildAiCoachWorkspaceDrafts(state: AppState, input: AiCoachWorks
     snacks[0] ? `Next snack opening: ${snacks[0].item}.` : undefined,
     "Welcome!"
   ].filter(Boolean).join("\n");
+
+  const onboardingBriefBody = [
+    `Team onboarding brief for ${teamName}`,
+    "",
+    "Use this when a new coach or newly added team participant needs safe context before joining the group.",
+    "",
+    "What the group is discussing:",
+    ...(discussionItems.length ? discussionItems.map((item) => `- ${item}`) : ["- No visible team chat discussion is available yet."]),
+    "",
+    "Important player context:",
+    ...(roster.length ? roster.map((item) => `- ${item}`) : ["- No roster players are available for this team yet."]),
+    `- Access state: ${guardianAccessSummary(state, input.teamId)}`,
+    nextEvent ? `- Next event: ${nextEvent.title} at ${nextEvent.locationName} on ${formatEventDate(nextEvent.startsAt)}.` : "- No upcoming event is scheduled.",
+    "",
+    "Privacy boundary: first names, last initials, jersey numbers, visible chat, and aggregate access state only. Do not include private RSVP notes, parent contact details, hidden messages, billing proof, or medical/safety assumptions."
+  ].join("\n");
 
   const weeklyDigestBody = [
     "This Week",
@@ -282,6 +330,21 @@ export function buildAiCoachWorkspaceDrafts(state: AppState, input: AiCoachWorks
       ]),
       workflow: reviewWorkflow,
       boundary: "Coach must approve before this becomes a family-facing welcome brief."
+    },
+    {
+      id: "team_onboarding_brief",
+      label: "Team Onboarding Brief",
+      title: `New coach and participant brief for ${teamName}`,
+      body: onboardingBriefBody,
+      sourceEvidence: evidence([
+        `${messages.length} visible team chat message(s)`,
+        `${roster.length} roster player(s)`,
+        "guardian-link aggregate",
+        nextEvent ? "next schedule item" : undefined,
+        pins.length ? `${pins.length} pinned team post(s)` : undefined
+      ]),
+      workflow: reviewWorkflow,
+      boundary: "Coach or admin must review before sharing; this brief excludes private notes, parent contact details, hidden moderation records, and provider sends."
     },
     {
       id: "weekly_digest",

@@ -34,7 +34,7 @@ export function validateMediaUrl(type: MediaItem["type"], url: string): MediaUrl
   return { ok: false, message: "Unsupported media type." };
 }
 
-export function approveMediaItem(item: MediaItem, reason = "Approved by coach/admin review."): MediaItem {
+export function approveMediaItem(item: MediaItem): MediaItem {
   return { ...item, moderationStatus: "approved", reportCount: item.reportCount ?? 0 };
 }
 

@@ -211,6 +211,7 @@ export type ReviewWorkflowState = (typeof REVIEW_WORKFLOW_STATES)[number];
 
 export const AI_COACH_WORKSPACE_TOOL_IDS = [
   "new_parent_brief",
+  "team_onboarding_brief",
   "weekly_digest",
   "practice_replay",
   "announcement_cleaner",

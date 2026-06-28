@@ -2206,8 +2206,9 @@ export function AdminDashboardClient({ registrationRequests, sponsorData, mediaD
   const [communicationTeamId, setCommunicationTeamId] = useState("team-tigers");
   const [communicationChannel, setCommunicationChannel] = useState<AdminCommunicationChannel>("email");
   const [communicationTemplate, setCommunicationTemplate] = useState<CommunicationTemplate>("weekly_digest");
-  const [communicationSubject, setCommunicationSubject] = useState("This week with Tiny Tigers");
-  const [communicationBody, setCommunicationBody] = useState("Practice, game-day details, RSVP needs, snacks, volunteer openings, and the latest Parent Replay are ready for Tiny Tigers families.");
+  const initialCommunicationCopy = defaultTeamCommunicationCopy(state, "team-tigers", "weekly_digest");
+  const [communicationSubject, setCommunicationSubject] = useState(initialCommunicationCopy.subject);
+  const [communicationBody, setCommunicationBody] = useState(initialCommunicationCopy.body);
   const [communicationMessage, setCommunicationMessage] = useState("");
   const [sponsorId, setSponsorId] = useState(initialSponsors[0]?.id ?? "new");
   const [sponsorName, setSponsorName] = useState(initialSponsors[0]?.name ?? "");
@@ -2266,26 +2267,11 @@ export function AdminDashboardClient({ registrationRequests, sponsorData, mediaD
   const assignedPlayerIds = new Set(Object.values(lineupPositions).filter(Boolean));
   const unassignedLineupPlayers = lineupPlayers.filter((player) => !assignedPlayerIds.has(player.id));
 
-  useEffect(() => {
-    const copy = defaultTeamCommunicationCopy(state, communicationTeamId, communicationTemplate);
+  function applyCommunicationDefaults(teamId: string, template: CommunicationTemplate) {
+    const copy = defaultTeamCommunicationCopy(state, teamId, template);
     setCommunicationSubject(copy.subject);
     setCommunicationBody(copy.body);
-  }, [communicationTeamId, communicationTemplate, state]);
-
-  useEffect(() => {
-    if (!sponsorData) return;
-    const nextSponsors = sponsorData.sponsors.length ? sponsorData.sponsors : state.sponsors;
-    setSponsors(nextSponsors);
-    setSponsorMessage(sponsorData.message);
-  }, [sponsorData, state.sponsors]);
-
-  useEffect(() => {
-    if (!mediaData) return;
-    const nextMediaItems = mediaData.mediaItems.length ? mediaData.mediaItems : state.mediaItems;
-    setMediaItems(nextMediaItems);
-    setMediaVisibilityDrafts(Object.fromEntries(nextMediaItems.map((item) => [item.id, item.visibility ?? "team"])));
-    setMediaMessage(mediaData.message);
-  }, [mediaData, state.mediaItems]);
+  }
 
   function selectSponsor(nextSponsorId: string) {
     setSponsorId(nextSponsorId);
@@ -2450,13 +2436,21 @@ export function AdminDashboardClient({ registrationRequests, sponsorData, mediaD
           <div className="grid two">
             <label>
               Team
-              <select value={communicationTeamId} onChange={(event) => setCommunicationTeamId(event.target.value)}>
+              <select value={communicationTeamId} onChange={(event) => {
+                const teamId = event.target.value;
+                setCommunicationTeamId(teamId);
+                applyCommunicationDefaults(teamId, communicationTemplate);
+              }}>
                 {state.teams.map((team) => <option key={team.id} value={team.id}>{team.name}</option>)}
               </select>
             </label>
             <label>
               Automation
-              <select value={communicationTemplate} onChange={(event) => setCommunicationTemplate(event.target.value as CommunicationTemplate)}>
+              <select value={communicationTemplate} onChange={(event) => {
+                const template = event.target.value as CommunicationTemplate;
+                setCommunicationTemplate(template);
+                applyCommunicationDefaults(communicationTeamId, template);
+              }}>
                 {communicationTemplates.map((template) => <option key={template.id} value={template.id}>{template.label}</option>)}
               </select>
             </label>

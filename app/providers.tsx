@@ -47,7 +47,6 @@ export function AppStateProvider({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     const standalone = window.matchMedia("(display-mode: standalone)").matches || (navigator as Navigator & { standalone?: boolean }).standalone === true;
-    setIsInstalled(standalone);
     if (standalone) recordMobileUsageEvent("standalone_launch");
 
     function onBeforeInstallPrompt(event: Event) {
