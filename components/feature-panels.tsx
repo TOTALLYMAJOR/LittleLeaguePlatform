@@ -129,6 +129,12 @@ import {
   getMediaEngagementRate,
   getNotificationOptOutRate,
   buildAiCoachWorkspaceDrafts,
+  generateRookieCoachAssist,
+  rookieCoachAgeBandOptions,
+  rookieCoachChallengeOptions,
+  rookieCoachExperienceOptions,
+  rookieCoachMotivationStrategyOptions,
+  rookieCoachPracticePersonalityOptions,
   buildBrandLaunchValidation,
   type AiCoachWorkspaceDraft,
   type ChatAnnouncementTopic,
@@ -143,6 +149,11 @@ import {
   type PracticeFocusArea,
   type ProgramThemeKey,
   type RegistrationRequest,
+  type RookieCoachAgeBand,
+  type RookieCoachChallenge,
+  type RookieCoachExperienceLevel,
+  type RookieCoachMotivationStrategy,
+  type RookieCoachPracticePersonality,
   type RsvpResponse,
   type Sponsor,
   type Team,
@@ -153,11 +164,26 @@ import type { MediaGovernanceData } from "@/lib/supabase/media-governance";
 import type { RegistrationReviewData } from "@/lib/supabase/registration-approvals";
 import type { SponsorAdminData } from "@/lib/supabase/sponsors";
 import type { TeamPortalData } from "@/lib/supabase/team-portal";
-import type { AdminThemeData, TeamThemeAudit, TenantThemeDefaults } from "@/lib/supabase/team-branding";
+import type { AdminThemeData, TeamLogoAsset, TeamThemeAudit, TenantThemeDefaults } from "@/lib/supabase/team-branding";
 import type { TeamChatData } from "@/lib/supabase/team-chat";
 import type { ParentCoachDashboardData } from "@/lib/supabase/dashboard-data";
 import type { AdminTeamManagementData } from "@/lib/supabase/team-management";
 import type { ScheduleOperationsData } from "@/lib/supabase/schedule-management";
+import {
+  AvatarStack,
+  BreadcrumbTrail,
+  BroadcastMode,
+  Chip,
+  Divider,
+  EmptyState,
+  PageHeader,
+  PinnedMessagesBar,
+  ReadReceipt,
+  StatusBadge,
+  Tooltip,
+  Toggle,
+  TypingIndicator
+} from "@/components/ui/primitives";
 
 interface RegistrationTeamOption {
   id: string;
@@ -2822,8 +2848,12 @@ export function AdminDashboardClient({ registrationRequests, sponsorData, mediaD
 export function AdminThemesClient({ initialData }: { initialData: AdminThemeData }) {
   const [teams, setTeams] = useState(initialData.teams);
   const [audits, setAudits] = useState<TeamThemeAudit[]>(initialData.audits);
+  const [logoAssets, setLogoAssets] = useState<TeamLogoAsset[]>(initialData.logoAssets);
   const [tenantDefaults, setTenantDefaults] = useState<TenantThemeDefaults>(initialData.tenantDefaults);
   const [teamId, setTeamId] = useState(initialData.teams[0]?.id ?? "");
+  const [logoTeamId, setLogoTeamId] = useState(initialData.teams[0]?.id ?? "");
+  const [logoUrl, setLogoUrl] = useState("");
+  const [logoPolicyNotes, setLogoPolicyNotes] = useState("Pending logo asset review.");
   const [actorUserId, setActorUserId] = useState(initialData.users.find((user) => user.role === "admin")?.id ?? initialData.users[0]?.id ?? "");
   const [drafts, setDrafts] = useState<Record<string, Pick<Team, "mascot" | "primaryColor" | "secondaryColor" | "themeKey">>>({});
   const [message, setMessage] = useState("");
@@ -2839,6 +2869,14 @@ export function AdminThemesClient({ initialData }: { initialData: AdminThemeData
   const selectedActorId = actors.some((user) => user.id === actorUserId) ? actorUserId : actors[0]?.id ?? actorUserId;
   const selectedContrast = draft ? contrastStatus(draft.primaryColor, draft.secondaryColor) : null;
   const brandLaunchValidation = useMemo(() => buildBrandLaunchValidation(teams), [teams]);
+  const teamsUsingDefaults = teams.filter((item) => item.themeKey === tenantDefaults.themeKey &&
+    item.mascot === tenantDefaults.mascot &&
+    item.primaryColor.toLowerCase() === tenantDefaults.primaryColor.toLowerCase() &&
+    item.secondaryColor.toLowerCase() === tenantDefaults.secondaryColor.toLowerCase()).length;
+  const pendingLogoAssets = logoAssets.filter((asset) => asset.status === "pending").length;
+  const approvedLogoAssets = logoAssets.filter((asset) => asset.status === "approved").length;
+  const themeQaPassCount = teams.filter((item) => themeQaStatus(item.primaryColor, item.secondaryColor).className === "ok").length;
+  const logoTargetTeam = teams.find((item) => item.id === logoTeamId);
 
   function updateDraft(field: "mascot" | "primaryColor" | "secondaryColor" | "themeKey", value: string) {
     if (!team || !draft) return;
@@ -2922,15 +2960,68 @@ export function AdminThemesClient({ initialData }: { initialData: AdminThemeData
     });
   }
 
+  function saveLogoAsset() {
+    if (!logoUrl.trim()) return;
+    setMessage("");
+    startTransition(async () => {
+      const response = await authenticatedJsonFetch("/api/admin/team-logos", {
+        organizationId: tenantDefaults.organizationId,
+        teamId: logoTeamId || undefined,
+        url: logoUrl,
+        policyNotes: logoPolicyNotes
+      });
+      const result = await response.json().catch(() => null) as {
+        ok?: boolean;
+        message?: string;
+        tenantLogoStatus?: TenantThemeDefaults["logoStatus"];
+        logoAsset?: TeamLogoAsset;
+      } | null;
+
+      if (result?.ok && result.logoAsset) {
+        setLogoAssets((current) => [result.logoAsset!, ...current].slice(0, 25));
+        setLogoUrl("");
+        if (result.tenantLogoStatus) {
+          setTenantDefaults((current) => ({ ...current, logoStatus: result.tenantLogoStatus! }));
+        }
+      }
+
+      setMessage(result?.message ?? "Logo asset could not be queued for review.");
+    });
+  }
+
   return (
     <div className="page admin-themes-page">
       <section className="hero">
-        <span className="eyebrow">Admin theme console</span>
+        <span className="eyebrow">Admin customization workbench</span>
         <h1>First-class team branding control across every portal.</h1>
-        <p className="lead">Update mascot, sport theme, and team colors from Supabase-backed records. The console shows mobile and dark previews, basic contrast checks, and audit evidence for saved changes.</p>
+        <p className="lead">Update team identity, tenant defaults, logo review metadata, and launch proof from Supabase-backed admin controls.</p>
+        <p className="muted">Admin theme console writes still derive the acting user from the verified Supabase session. Preview controls do not grant access.</p>
       </section>
 
       {message ? <p className="notice">{message}</p> : null}
+
+      <section className="admin-workbench-grid" aria-label="Customization modules">
+        <article className="card stack workbench-module active">
+          <span className="badge ok">Live editor</span>
+          <h2>Identity and colors</h2>
+          <p className="muted">{teams.length} team theme records. {themeQaPassCount} pass the current contrast QA checks.</p>
+        </article>
+        <article className="card stack workbench-module">
+          <span className="badge info">Tenant baseline</span>
+          <h2>Future team defaults</h2>
+          <p className="muted">{teamsUsingDefaults} team(s) match the current default preset. Logo status is {tenantDefaults.logoStatus.replace("_", " ")}.</p>
+        </article>
+        <article className="card stack workbench-module">
+          <span className="badge warning">Review queue</span>
+          <h2>Logo assets</h2>
+          <p className="muted">{pendingLogoAssets} pending and {approvedLogoAssets} approved metadata record(s). Binary storage remains provider-gated.</p>
+        </article>
+        <article className="card stack workbench-module">
+          <span className={`badge ${brandLaunchValidation.coveragePercent === 100 ? "ok" : "warning"}`}>{brandLaunchValidation.coveragePercent}% covered</span>
+          <h2>Launch proof</h2>
+          <p className="muted">20 target brand surfaces, monitoring events, alert rules, and coach feedback checks.</p>
+        </article>
+      </section>
 
       <section className="grid two">
         <article className="card stack">
@@ -2941,13 +3032,15 @@ export function AdminThemesClient({ initialData }: { initialData: AdminThemeData
             </div>
             {selectedContrast ? <span className={`badge ${selectedContrast.className}`}>{selectedContrast.label}</span> : null}
           </div>
+          <p className="muted">Customization editor for mascot, sport preset, and portal colors. The private API ignores client-supplied actor IDs and uses the signed-in session.</p>
           <label>
-            Acting admin or coach
+            Preview actor
             <select value={selectedActorId} onChange={(event) => setActorUserId(event.target.value)}>
               {actors.map((user) => (
                 <option key={user.id} value={user.id}>{user.name} - {roleLabel(user.role)}</option>
               ))}
             </select>
+            <span className="field-hint">For admin review context only. Authorization is checked server-side.</span>
           </label>
           <label>
             Team
@@ -3005,6 +3098,62 @@ export function AdminThemesClient({ initialData }: { initialData: AdminThemeData
       </section>
 
       <section className="grid two">
+        <article className="card stack admin-logo-workbench">
+          <div className="card-header">
+            <div>
+              <span className="eyebrow">Logo asset review</span>
+              <h2>Queue logo metadata for customization</h2>
+            </div>
+            <span className={`badge ${tenantDefaults.logoStatus === "approved" ? "ok" : tenantDefaults.logoStatus === "queued" ? "warning" : "neutral"}`}>
+              {tenantDefaults.logoStatus.replace("_", " ")}
+            </span>
+          </div>
+          <p className="muted">Admins can register an HTTPS logo URL for review. This does not upload a binary file, publish a family-facing logo, or connect provider storage.</p>
+          <div className="grid two">
+            <label>
+              Logo applies to
+              <select value={logoTeamId} onChange={(event) => setLogoTeamId(event.target.value)}>
+                <option value="">Tenant default logo</option>
+                {teams.map((item) => (
+                  <option key={item.id} value={item.id}>{item.name} - {item.division}</option>
+                ))}
+              </select>
+            </label>
+            <label>
+              HTTPS logo URL
+              <input type="url" value={logoUrl} onChange={(event) => setLogoUrl(event.target.value)} placeholder="https://assets.example.com/logo.png" />
+            </label>
+            <label>
+              Policy notes
+              <textarea value={logoPolicyNotes} onChange={(event) => setLogoPolicyNotes(event.target.value)} />
+              <span className="field-hint">Use notes for child-safety, sponsor-separation, and contrast review evidence.</span>
+            </label>
+          </div>
+          <button onClick={saveLogoAsset} disabled={isPending || !logoUrl.trim()}>{isPending ? "Queueing..." : "Queue logo review"}</button>
+          <p className="muted">Current target: {logoTargetTeam ? `${logoTargetTeam.name} team logo` : "tenant default logo"}. Sponsor logos stay in sponsor records.</p>
+        </article>
+
+        <article className="card stack">
+          <h2>Logo review queue</h2>
+          {logoAssets.map((asset) => {
+            const assetTeam = teams.find((item) => item.id === asset.teamId);
+            return (
+              <p key={asset.id} className="logo-asset-row">
+                <strong>{assetTeam?.name ?? "Tenant default logo"}</strong>
+                <br />
+                <span className="muted">{asset.url}</span>
+                <br />
+                <span className={`badge ${statusClass(asset.status)}`}>{asset.status}</span>
+                <span className="muted"> Submitted {formatDate(asset.createdAt)}{asset.policyNotes ? ` - ${asset.policyNotes}` : ""}</span>
+              </p>
+            );
+          })}
+          {!logoAssets.length ? <p className="muted">No logo assets queued yet.</p> : null}
+          <p className="notice">Binary upload, public rendering, and email/push logo use still require provider configuration, review approval, and browser proof.</p>
+        </article>
+      </section>
+
+      <section className="grid two">
         <article className="card stack">
           <h2>All team themes</h2>
           {teams.map((item) => {
@@ -3021,13 +3170,15 @@ export function AdminThemesClient({ initialData }: { initialData: AdminThemeData
                 <span className="theme-swatch" style={{ background: item.secondaryColor }} />
                 <strong>{item.name}</strong>
                 <span>{getProgramThemePreset(item.themeKey).label} - {item.mascot}</span>
-                <span>Logo: {tenantDefaults.logoStatus.replace("_", " ")}</span>
-                <span>{lastAudit ? formatDate(lastAudit.createdAt) : "No audit yet"}</span>
-                {usesTenantDefaults ? <span className="badge ok">Default</span> : null}
-                <span className={`badge ${status.className}`}>{status.label}</span>
-                <span className={`badge ${qa.className}`}>{qa.label}</span>
-                <span>Dark: {qa.darkLabel}</span>
-                <span>Mobile: {qa.mobileLabel}</span>
+                <span className="theme-row-meta">
+                  <span>Logo: {tenantDefaults.logoStatus.replace("_", " ")}</span>
+                  <span>{lastAudit ? formatDate(lastAudit.createdAt) : "No audit yet"}</span>
+                  {usesTenantDefaults ? <span className="badge ok">Default</span> : null}
+                  <span className={`badge ${status.className}`}>{status.label}</span>
+                  <span className={`badge ${qa.className}`}>{qa.label}</span>
+                  <span>Dark: {qa.darkLabel}</span>
+                  <span>Mobile: {qa.mobileLabel}</span>
+                </span>
               </button>
             );
           })}
@@ -3857,6 +4008,14 @@ export function ParentReplayClient() {
   const [teamId, setTeamId] = useState("team-tigers");
   const [coachUserId, setCoachUserId] = useState("user-coach-taylor");
   const [focusAreas, setFocusAreas] = useState<PracticeFocusArea[]>(["catching", "throwing", "teamwork"]);
+  const [rookieAgeBand, setRookieAgeBand] = useState<RookieCoachAgeBand>("3-4");
+  const [rookieSport, setRookieSport] = useState("baseball");
+  const [rookieExperienceLevel, setRookieExperienceLevel] = useState<RookieCoachExperienceLevel>("first_time");
+  const [rookieChallenge, setRookieChallenge] = useState<RookieCoachChallenge>("listening");
+  const [rookieMotivationStrategy, setRookieMotivationStrategy] = useState<RookieCoachMotivationStrategy>("mission_game");
+  const [rookiePracticePersonality, setRookiePracticePersonality] = useState<RookieCoachPracticePersonality>("wild_today");
+  const [rookieFocusAreasText, setRookieFocusAreasText] = useState("listening, teamwork, confidence with the ball");
+  const [sidelineResetVisible, setSidelineResetVisible] = useState(false);
   const [message, setMessage] = useState("");
   const [savedReplays, setSavedReplays] = useState<ParentReplayRecord[]>([]);
   const [aiProviderMessage, setAiProviderMessage] = useState("");
@@ -3883,6 +4042,26 @@ export function ParentReplayClient() {
   const visibleCoachWorkspaceDrafts = useMemo(() => (
     coachWorkspaceDrafts.map((workspaceDraft) => aiProviderDrafts[workspaceDraft.id] ?? workspaceDraft)
   ), [aiProviderDrafts, coachWorkspaceDrafts]);
+  const rookieAssistFocusAreas = useMemo(() => (
+    rookieFocusAreasText.split(",").map((area) => area.trim()).filter(Boolean)
+  ), [rookieFocusAreasText]);
+  const rookieAssist = useMemo(() => generateRookieCoachAssist({
+    ageBand: rookieAgeBand,
+    sport: rookieSport,
+    experienceLevel: rookieExperienceLevel,
+    challenge: rookieChallenge,
+    motivationStrategy: rookieMotivationStrategy,
+    practicePersonality: rookiePracticePersonality,
+    focusAreas: rookieAssistFocusAreas
+  }), [
+    rookieAgeBand,
+    rookieAssistFocusAreas,
+    rookieChallenge,
+    rookieExperienceLevel,
+    rookieMotivationStrategy,
+    rookiePracticePersonality,
+    rookieSport
+  ]);
   const teamReplays = [...savedReplays, ...state.parentReplays].filter((replay) => replay.teamId === teamId);
   const selectedFocus = new Set(focusAreas);
   const canQueueReplay = focusAreas.length >= 2 && focusAreas.length <= 3;
@@ -3893,6 +4072,16 @@ export function ParentReplayClient() {
         ? current.filter((item) => item !== area)
         : [...current, area]
     ));
+  }
+
+  function applyRookieAssistSeed() {
+    setFocusAreas(rookieAssist.parentReplaySeed.focusAreas);
+    setMessage("Rookie Coach Assist seed applied locally. Review the Parent Replay preview before queueing.");
+  }
+
+  function showSidelineReset() {
+    setSidelineResetVisible(true);
+    setMessage("Chaos Button loaded a 90-second reset locally. Coach still chooses whether to use or share it.");
   }
 
   function queueParentReplay() {
@@ -3965,6 +4154,164 @@ export function ParentReplayClient() {
       </section>
 
       {message ? <p className="notice">{message}</p> : null}
+
+      <section className="grid one">
+        <article className="card stack rookie-coach-assist">
+          <div className="card-header">
+            <div>
+              <span className="eyebrow">Rookie Coach Assist</span>
+              <h2>Age-safe practice help for new volunteer coaches</h2>
+            </div>
+            <span className="badge warning">Local preview only</span>
+          </div>
+          <p className="muted">
+            Deterministic guidance for coaches who are new to a sport, new to coaching, or coaching ages 3-6. It creates a reviewed Parent Replay seed only; it does not publish or send.
+          </p>
+
+          <div className="grid three rookie-assist-form">
+            <label>
+              Age band
+              <select value={rookieAgeBand} onChange={(event) => setRookieAgeBand(event.target.value as RookieCoachAgeBand)}>
+                {rookieCoachAgeBandOptions.map((option) => (
+                  <option key={option.id} value={option.id}>{option.label}</option>
+                ))}
+              </select>
+            </label>
+            <label>
+              Sport
+              <input value={rookieSport} onChange={(event) => setRookieSport(event.target.value)} />
+            </label>
+            <label>
+              Coach experience
+              <select value={rookieExperienceLevel} onChange={(event) => setRookieExperienceLevel(event.target.value as RookieCoachExperienceLevel)}>
+                {rookieCoachExperienceOptions.map((option) => (
+                  <option key={option.id} value={option.id}>{option.label}</option>
+                ))}
+              </select>
+            </label>
+            <label>
+              Challenge
+              <select value={rookieChallenge} onChange={(event) => setRookieChallenge(event.target.value as RookieCoachChallenge)}>
+                {rookieCoachChallengeOptions.map((option) => (
+                  <option key={option.id} value={option.id}>{option.label}</option>
+                ))}
+              </select>
+            </label>
+            <label>
+              Motivation strategy
+              <select value={rookieMotivationStrategy} onChange={(event) => setRookieMotivationStrategy(event.target.value as RookieCoachMotivationStrategy)}>
+                {rookieCoachMotivationStrategyOptions.map((option) => (
+                  <option key={option.id} value={option.id}>{option.label}</option>
+                ))}
+              </select>
+            </label>
+            <label>
+              Team energy
+              <select value={rookiePracticePersonality} onChange={(event) => setRookiePracticePersonality(event.target.value as RookieCoachPracticePersonality)}>
+                {rookieCoachPracticePersonalityOptions.map((option) => (
+                  <option key={option.id} value={option.id}>{option.label}</option>
+                ))}
+              </select>
+            </label>
+            <label>
+              Focus areas
+              <textarea value={rookieFocusAreasText} onChange={(event) => setRookieFocusAreasText(event.target.value)} />
+            </label>
+          </div>
+
+          <div className="notice stack">
+            <div className="card-header">
+              <div>
+                <strong>Chaos Button</strong>
+                <p className="muted">Live sideline reset for when kids are losing focus.</p>
+              </div>
+              <button type="button" onClick={showSidelineReset}>Give me a 90-second reset</button>
+            </div>
+            {sidelineResetVisible ? (
+              <div className="grid three">
+                <p><strong>Call-and-response:</strong> {rookieAssist.chaosReset.callAndResponse}</p>
+                <p><strong>Movement reset:</strong> {rookieAssist.chaosReset.movementReset}</p>
+                <p><strong>Water break:</strong> {rookieAssist.chaosReset.waterBreak}</p>
+                <p><strong>Quick game:</strong> {rookieAssist.chaosReset.quickGame}</p>
+                <p><strong>Regroup phrase:</strong> {rookieAssist.chaosReset.regroupPhrase}</p>
+              </div>
+            ) : <p className="muted">Press the button to reveal coach-reviewed reset copy. Nothing is sent or saved.</p>}
+          </div>
+
+          <div className="grid two rookie-assist-preview">
+            <div className="stack">
+              <span className="badge ok">Practice plan</span>
+              <h3>{rookieAssist.practiceTitle}</h3>
+              <p><strong>Coach objective:</strong> {rookieAssist.coachObjective}</p>
+              <div className="notice">
+                <strong>Practice Personality Engine: {rookieAssist.personalityAdjustment.label}</strong>
+                <p>{rookieAssist.personalityAdjustment.drillChange}</p>
+                <p className="muted">{rookieAssist.personalityAdjustment.tempo}</p>
+              </div>
+              <div className="grid three replay-activities">
+                {rookieAssist.practiceBlocks.map((block) => (
+                  <div className="replay-activity" key={block.title}>
+                    <span className="badge">{block.duration}</span>
+                    <h3>{block.title}</h3>
+                    <p>{block.activity}</p>
+                    <p className="muted">{block.coachCue}</p>
+                  </div>
+                ))}
+              </div>
+              <p><strong>Attention reset:</strong> {rookieAssist.attentionReset}</p>
+              <p><strong>Age-specific explanation:</strong> {rookieAssist.ageSpecificExplanation}</p>
+              <p><strong>Incentive strategy:</strong> {rookieAssist.incentiveStrategy}</p>
+            </div>
+
+            <div className="stack">
+              <span className="badge">Coach script</span>
+              <pre className="draft-preview rookie-assist-script">{rookieAssist.exactCoachScript}</pre>
+              <div className="notice">
+                <strong>Coach Voice Coach</strong>
+                <p><span className="muted">Instead of:</span> {rookieAssist.voiceCoach.insteadOf}</p>
+                <p><span className="muted">Say:</span> {rookieAssist.voiceCoach.say}</p>
+                <p className="muted">{rookieAssist.voiceCoach.why}</p>
+              </div>
+              <div className="grid two">
+                <div className="notice">
+                  <strong>Do-say phrases</strong>
+                  <ul className="list compact">
+                    {rookieAssist.doSayPhrases.map((phrase) => <li key={phrase}>{phrase}</li>)}
+                  </ul>
+                </div>
+                <div className="notice">
+                  <strong>Avoid-saying phrases</strong>
+                  <ul className="list compact">
+                    {rookieAssist.avoidSayingPhrases.map((phrase) => <li key={phrase}>{phrase}</li>)}
+                  </ul>
+                </div>
+              </div>
+              <p><strong>Parent Replay seed:</strong> {rookieAssist.parentReplaySeed.focusAreas.map(formatFocusArea).join(", ")}</p>
+              <p className="muted">{rookieAssist.parentReplaySeed.summary}</p>
+              <button type="button" onClick={applyRookieAssistSeed}>Use seed in Parent Replay</button>
+            </div>
+          </div>
+
+          <div className="grid two">
+            <div className="stack">
+              <h3>Parent message draft</h3>
+              <p>{rookieAssist.parentMessageDraft}</p>
+              <div className="notice">
+                <strong>Parent Reinforcement Loop</strong>
+                <p>{rookieAssist.parentReinforcementLoop.today}</p>
+                <p>{rookieAssist.parentReinforcementLoop.atHome}</p>
+                <p>{rookieAssist.parentReinforcementLoop.praise}</p>
+                <p className="muted">{rookieAssist.parentReinforcementLoop.deliveryBoundary}</p>
+              </div>
+            </div>
+            <div className="stack">
+              <h3>Source evidence</h3>
+              <p className="muted">{rookieAssist.sourceEvidence.join(", ")}</p>
+              <p className="notice">{rookieAssist.safetyBoundary}</p>
+            </div>
+          </div>
+        </article>
+      </section>
 
       <section className="grid two">
         <article className="card stack">
@@ -5226,6 +5573,18 @@ export function TeamChatClient({ teamChatData }: { teamChatData?: TeamChatData |
 
   return (
     <div className="page clubhouse-chat-page" style={chatStyle}>
+      <BreadcrumbTrail items={[{ label: "Home", href: "/" }, { label: "Team Chat" }]} />
+      <PageHeader
+        eyebrow="Safe family communication"
+        title={`${selectedTeam?.name ?? "Team"} Chat`}
+        subtitle="A private, assigned-team workspace for coach notes, game-day questions, read receipts, and moderation review. No child accounts."
+        actions={(
+          <div className="cluster">
+            <StatusBadge label={isSupabaseBacked ? "Live data" : "Seed fallback"} variant={isSupabaseBacked ? "success" : "warning"} dot={isSupabaseBacked} />
+            <StatusBadge label="Read-only" variant="neutral" />
+          </div>
+        )}
+      />
       <section className="hero clubhouse-chat-hero">
         <div className="clubhouse-hero-mark" aria-hidden="true">{selectedTeam?.mascot.slice(0, 1) ?? "T"}</div>
         <span className="eyebrow">Safe family communication</span>
@@ -5258,29 +5617,6 @@ export function TeamChatClient({ teamChatData }: { teamChatData?: TeamChatData |
         </div>
       </section>
 
-      <section className="grid three">
-        <article className="card stack">
-          <span className="eyebrow">Reporting UI</span>
-          <h2>Chat report summary</h2>
-          <p><strong>{reportingSummary?.reportableMessages ?? 0}</strong> visible message(s) can be reported.</p>
-          <p className="muted">{reportingSummary?.hiddenMessages ?? 0} hidden, {reportingSummary?.deletedMessages ?? 0} deleted.</p>
-        </article>
-        <article className="card stack">
-          <span className="eyebrow">Retention jobs</span>
-          <h2>Archive cleanup</h2>
-          {retentionJobs.map((job) => (
-            <p key={job.id}><strong>{job.title}</strong><br /><span className="muted">{job.status} · {job.detail}</span></p>
-          ))}
-        </article>
-        <article className="card stack">
-          <span className="eyebrow">Media/message policy screens</span>
-          <h2>Policy checks</h2>
-          {policyScreens.map((policy) => (
-            <p key={policy.title}><strong>{policy.title}</strong><br /><span className="muted">{policy.detail}</span></p>
-          ))}
-        </article>
-      </section>
-
       {!view ? (
         <section className="card stack">
           <span className="badge danger">Private Team Chat</span>
@@ -5289,17 +5625,22 @@ export function TeamChatClient({ teamChatData }: { teamChatData?: TeamChatData |
           <p className="muted">Parents can only view chats for teams connected to their rostered child. Coaches can only view assigned teams. Org admins can view all team chats.</p>
         </section>
       ) : (
-        <section className="clubhouse-chat-shell">
-          <aside className="card clubhouse-team-card">
+        <section className="clubhouse-chat-shell chat-workspace" aria-label="Team Chat workspace">
+          <aside className="card clubhouse-team-card chat-thread-rail">
+            <span className="eyebrow">Thread rail</span>
             <div className="clubhouse-team-mark" aria-hidden="true">{view.team.mascot.slice(0, 1)}</div>
-            <span className="badge ok">Team Chat</span>
+            <StatusBadge label="Team Chat" variant="success" />
             <h2>{view.team.name}</h2>
             <p className="muted">{view.team.mascot} · {view.team.division} · {roleLabel(view.viewer.role)} view</p>
+            <div className="chat-rail-presence">
+              <span className="eyebrow">Team presence</span>
+              <AvatarStack names={chatState.users.slice(0, 8).map((user) => user.name)} label={`${chatState.users.length} team participants`} />
+            </div>
             <div className="clubhouse-chip-row" aria-label="Team chat quick topics">
-              <span>Arrival</span>
-              <span>Uniforms</span>
-              <span>Snacks</span>
-              <span>Weather</span>
+              <Chip label="Arrival" />
+              <Chip label="Uniforms" />
+              <Chip label="Snacks" />
+              <Chip label="Weather" />
             </div>
             <div className="clubhouse-unread">
               <strong>{view.unreadCount}</strong>
@@ -5317,28 +5658,38 @@ export function TeamChatClient({ teamChatData }: { teamChatData?: TeamChatData |
             </div>
           </aside>
 
-          <section className="card clubhouse-chat-panel">
+          <section className="card clubhouse-chat-panel chat-conversation-panel">
             <div className="card-header">
               <div>
                 <span className="eyebrow">Private to assigned team members</span>
                 <h2>{view.team.mascot} clubhouse</h2>
               </div>
-              <span className="badge">{view.access.reason}</span>
+              <StatusBadge label={view.access.reason} variant="info" />
             </div>
+            <div className="chat-broadcast-control">
+              <div>
+                <strong>Coach Broadcast Mode</strong>
+                <p className="muted">When enabled, families see a Read-only game-day announcement stream.</p>
+              </div>
+              <Toggle checked={!view.access.canPost} label={!view.access.canPost ? "Read-only" : "Open thread"} />
+            </div>
+            <BroadcastMode enabled={!view.access.canPost} />
 
             {view.pinnedMessage ? (
-              <article className="clubhouse-pinned">
-                <span className="badge warning">Pinned Reminder</span>
-                <h3>Coach Note</h3>
-                <p>{view.pinnedMessage.body}</p>
-                <small>{formatDate(view.pinnedMessage.createdAt)} · {formatTopic(view.pinnedMessage.topic)}</small>
-              </article>
+              <PinnedMessagesBar count={1}>
+                <article className="clubhouse-pinned">
+                  <StatusBadge label="Pinned Reminder" variant="warning" />
+                  <h3>Coach Note</h3>
+                  <p>{view.pinnedMessage.body}</p>
+                  <small>{formatDate(view.pinnedMessage.createdAt)} · {formatTopic(view.pinnedMessage.topic)}</small>
+                </article>
+              </PinnedMessagesBar>
             ) : null}
 
             {view.upcomingGame ? (
               <article className="clubhouse-game-day">
                 <div>
-                  <span className="badge ok">Game-Day Questions</span>
+                  <StatusBadge label="Game-Day Questions" variant="success" />
                   <h3>{view.upcomingGame.title}</h3>
                   <p className="muted">
                     {formatDate(view.upcomingGame.startsAt)} · Arrive by {formatArrivalTime(view.upcomingGame.startsAt)}
@@ -5398,7 +5749,7 @@ export function TeamChatClient({ teamChatData }: { teamChatData?: TeamChatData |
                   <span className="eyebrow">Coach Announcements</span>
                   <h3>Coach Note</h3>
                 </div>
-                <span className="badge warning">{view.access.canAnnounce ? "Coach/Admin" : "Read only"}</span>
+                <StatusBadge label={view.access.canAnnounce ? "Coach/Admin" : "Read-only"} variant="warning" />
               </div>
               <div className="grid two">
                 <label>
@@ -5442,78 +5793,93 @@ export function TeamChatClient({ teamChatData }: { teamChatData?: TeamChatData |
               {announcementNotice ? <p className="notice">{announcementNotice}</p> : null}
             </form>
 
-            <div className="clubhouse-message-list" aria-label="Team Chat messages">
-              {view.messages.length ? view.messages.map((message) => (
-                <article className={`clubhouse-message ${message.kind}`} key={message.id}>
-                  <div className="clubhouse-message-meta">
-                    <strong>{roleLabel(message.authorRole)}</strong>
-                    <span>{message.kind === "announcement" ? "Coach Note" : "Team Chat"}</span>
-                    {message.eventId ? <span>Game linked</span> : null}
-                  </div>
-                  <p>{message.body}</p>
-                  <small>{formatDate(message.createdAt)}</small>
-                  {view.access.canModerate ? (
-                    <div className="clubhouse-message-actions">
-                      <button
-                        className="secondary"
-                        type="button"
-                        onClick={() => {
-                          if (isSupabaseBacked) {
-                            moderateSupabaseMessage(message.id, "message_hidden");
-                            return;
-                          }
-                          dispatch({
-                            type: "moderateTeamChatMessage",
-                            input: {
-                              messageId: message.id,
-                              actorUserId: view.viewer.id,
-                              action: "message_hidden",
-                              reason: "Coach or admin moderated this Team Chat message.",
-                              now: new Date().toISOString()
-                            }
-                          });
-                          setModerationNotice("Message hidden and moderation audit recorded.");
-                        }}
-                      >
-                        Hide
-                      </button>
-                      <button
-                        className="secondary"
-                        type="button"
-                        onClick={() => {
-                          if (isSupabaseBacked) {
-                            moderateSupabaseMessage(message.id, "message_deleted");
-                            return;
-                          }
-                          dispatch({
-                            type: "moderateTeamChatMessage",
-                            input: {
-                              messageId: message.id,
-                              actorUserId: view.viewer.id,
-                              action: "message_deleted",
-                              reason: "Coach or admin deleted this Team Chat message.",
-                              now: new Date().toISOString()
-                            }
-                          });
-                          setModerationNotice("Message deleted and moderation audit recorded.");
-                        }}
-                      >
-                        Delete
-                      </button>
+            <Divider label="Today" />
+            <div className="clubhouse-message-list chat-message-list" aria-label="Team Chat messages">
+              {view.messages.length ? view.messages.map((message) => {
+                const author = chatState.users.find((user) => user.id === message.authorUserId);
+                const isOutbound = message.authorUserId === view.viewer.id;
+                return (
+                  <article className={`chat-message-row ${isOutbound ? "outbound" : "inbound"} ${message.kind}`} key={message.id} aria-label={`Message from ${author?.name ?? roleLabel(message.authorRole)}`}>
+                    <div className="avatar sm" aria-hidden="true">{author?.name ? author.name.slice(0, 2).toUpperCase() : roleLabel(message.authorRole).slice(0, 2).toUpperCase()}</div>
+                    <div className={`chat-bubble ${isOutbound ? "out" : "in"}`}>
+                      <div className="chat-bubble-meta">
+                        <strong>{author?.name ?? roleLabel(message.authorRole)}</strong>
+                        <span>{roleLabel(message.authorRole)}</span>
+                        <span>{message.kind === "announcement" ? "Coach Note" : "Team Chat"}</span>
+                        {message.eventId ? <span>Game linked</span> : null}
+                      </div>
+                      <p>{message.body}</p>
+                      <time>{formatDate(message.createdAt)}</time>
+                      <ReadReceipt read={message.readByUserIds.length} total={Math.max(1, chatState.users.length)} />
+                      {view.access.canModerate ? (
+                        <div className="clubhouse-message-actions">
+                          <Tooltip tip="Hide this message from the team thread.">
+                            <button
+                              className="secondary"
+                              type="button"
+                              onClick={() => {
+                                if (isSupabaseBacked) {
+                                  moderateSupabaseMessage(message.id, "message_hidden");
+                                  return;
+                                }
+                                dispatch({
+                                  type: "moderateTeamChatMessage",
+                                  input: {
+                                    messageId: message.id,
+                                    actorUserId: view.viewer.id,
+                                    action: "message_hidden",
+                                    reason: "Coach or admin moderated this Team Chat message.",
+                                    now: new Date().toISOString()
+                                  }
+                                });
+                                setModerationNotice("Message hidden and moderation audit recorded.");
+                              }}
+                            >
+                              Hide
+                            </button>
+                          </Tooltip>
+                          <Tooltip tip="Delete and audit this message.">
+                            <button
+                              className="secondary"
+                              type="button"
+                              onClick={() => {
+                                if (isSupabaseBacked) {
+                                  moderateSupabaseMessage(message.id, "message_deleted");
+                                  return;
+                                }
+                                dispatch({
+                                  type: "moderateTeamChatMessage",
+                                  input: {
+                                    messageId: message.id,
+                                    actorUserId: view.viewer.id,
+                                    action: "message_deleted",
+                                    reason: "Coach or admin deleted this Team Chat message.",
+                                    now: new Date().toISOString()
+                                  }
+                                });
+                                setModerationNotice("Message deleted and moderation audit recorded.");
+                              }}
+                            >
+                              Delete
+                            </button>
+                          </Tooltip>
+                        </div>
+                      ) : null}
                     </div>
-                  ) : null}
-                </article>
-              )) : (
-                <article className="clubhouse-empty">
-                  <h3>Team Chat is ready.</h3>
-                  <p>Use this space for schedule questions, field details, uniforms, snacks, weather updates, and coach reminders.</p>
-                </article>
+                  </article>
+                );
+              }) : (
+                <EmptyState
+                  title="Team Chat is ready."
+                  body="Use this space for schedule questions, field details, uniforms, snacks, weather updates, and coach reminders."
+                />
               )}
+              <TypingIndicator label="Coach is drafting a field note" />
             </div>
             {moderationNotice ? <p className="notice">{moderationNotice}</p> : null}
 
             <form
-              className="clubhouse-compose"
+              className="clubhouse-compose message-input-toolbar"
               onSubmit={(event) => {
                 event.preventDefault();
                 if (!view?.access.canPost) {
@@ -5575,6 +5941,33 @@ export function TeamChatClient({ teamChatData }: { teamChatData?: TeamChatData |
               {postNotice ? <p className="notice">{postNotice}</p> : null}
             </form>
           </section>
+
+          <aside className="card chat-context-rail">
+            <span className="eyebrow">Context rail</span>
+            <h2>Safety and provider status</h2>
+            <div className="stack-sm">
+              <StatusBadge label={isSupabaseBacked ? "Live data" : "Seed fallback"} variant={isSupabaseBacked ? "success" : "warning"} dot={isSupabaseBacked} />
+              <StatusBadge label={isSupabaseBacked ? "Queued" : "Provider disconnected"} variant={isSupabaseBacked ? "info" : "error"} />
+              <StatusBadge label="No child accounts" variant="neutral" />
+            </div>
+            <section className="chat-context-card">
+              <span className="eyebrow">Reporting UI</span>
+              <p><strong>{reportingSummary?.reportableMessages ?? 0}</strong> visible message(s) can be reported.</p>
+              <p className="muted">{reportingSummary?.hiddenMessages ?? 0} hidden, {reportingSummary?.deletedMessages ?? 0} deleted.</p>
+            </section>
+            <section className="chat-context-card">
+              <span className="eyebrow">Retention jobs</span>
+              {retentionJobs.map((job) => (
+                <p key={job.id}><strong>{job.title}</strong><br /><span className="muted">{job.status} · {job.detail}</span></p>
+              ))}
+            </section>
+            <section className="chat-context-card">
+              <span className="eyebrow">Media/message policy screens</span>
+              {policyScreens.map((policy) => (
+                <p key={policy.title}><strong>{policy.title}</strong><br /><span className="muted">{policy.detail}</span></p>
+              ))}
+            </section>
+          </aside>
         </section>
       )}
     </div>

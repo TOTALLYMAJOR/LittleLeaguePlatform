@@ -1,12 +1,18 @@
 import type { Metadata } from "next";
-import Link from "next/link";
 import "./globals.css";
-import { AppStateProvider } from "./providers";
+import { AppShell } from "@/components/ui/AppShell";
 
 export const metadata: Metadata = {
   title: "Little League HQ",
   description: "Production scaffold for a private youth sports operations platform.",
   manifest: "/manifest.webmanifest",
+  icons: {
+    icon: [
+      { url: "/favicons/favicon-option-1-shield.svg", type: "image/svg+xml" },
+      { url: "/favicons/favicon-option-1-shield.png", sizes: "512x512", type: "image/png" }
+    ],
+    apple: [{ url: "/favicons/favicon-option-1-shield.png", sizes: "512x512", type: "image/png" }]
+  },
   appleWebApp: {
     capable: true,
     title: "Little League HQ",
@@ -14,55 +20,11 @@ export const metadata: Metadata = {
   }
 };
 
-const navItems = [
-  ["Home", "/"],
-  ["Auth", "/auth"],
-  ["Account", "/account"],
-  ["Team Portal", "/team-portal"],
-  ["Admin Dashboard", "/admin"],
-  ["Theme Console", "/admin/themes"],
-  ["Registration Review", "/admin/registrations"],
-  ["Memberships", "/admin/memberships"],
-  ["Admin Health", "/admin/health"],
-  ["CSV Imports", "/admin/imports"],
-  ["Invites", "/admin/invites"],
-  ["Recover Invite", "/invite/recover"],
-  ["Parent Home", "/parent"],
-  ["Parent RSVP", "/parent/rsvp"],
-  ["Coach Home", "/coach"],
-  ["Coach RSVPs", "/coach/rsvps"],
-  ["Registration", "/registration"],
-  ["Parent Replay", "/coach/parent-replay"],
-  ["Schedule", "/schedule"],
-  ["Team Chat", "/team-chat"],
-  ["Static Prototype", "/prototype/index.html"]
-] as const;
-
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
   return (
     <html lang="en">
       <body>
-        <AppStateProvider>
-          <div className="shell">
-            <aside className="sidebar">
-              <Link href="/" className="brand" aria-label="Little League HQ home">
-                <span className="brand-mark">LL</span>
-                <span>
-                  <strong>Little League HQ</strong>
-                  <small>Production scaffold</small>
-                </span>
-              </Link>
-              <nav className="nav" aria-label="Main navigation">
-                {navItems.map(([label, href]) => (
-                  <Link key={href} href={href}>
-                    {label}
-                  </Link>
-                ))}
-              </nav>
-            </aside>
-            <main className="main">{children}</main>
-          </div>
-        </AppStateProvider>
+        <AppShell>{children}</AppShell>
       </body>
     </html>
   );

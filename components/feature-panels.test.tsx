@@ -41,6 +41,13 @@ describe("TeamChatClient", () => {
     expect(html).toContain("Pinned Reminder");
     expect(html).toContain("Coach Note");
     expect(html).toContain("Game-Day Questions");
+    expect(html).toContain("Thread rail");
+    expect(html).toContain("Team presence");
+    expect(html).toContain("Context rail");
+    expect(html).toContain("Coach Broadcast Mode");
+    expect(html).toContain("Read by");
+    expect(html).toContain("Seed fallback");
+    expect(html).toContain("Provider disconnected");
     expect(html).toContain("Reporting UI");
     expect(html).toContain("Retention jobs");
     expect(html).toContain("Media/message policy screens");
@@ -326,20 +333,34 @@ describe("AdminThemesClient", () => {
               secondaryColor: "#fbbc04",
               logoStatus: "not_configured"
             },
-            audits: []
+            audits: [],
+            logoAssets: []
           }}
         />
       </AppStateProvider>
     );
 
+    expect(html).toContain("Admin customization workbench");
     expect(html).toContain("Admin theme console");
+    expect(html).toContain("Customization modules");
     expect(html).toContain("First-class team branding control");
+    expect(html).toContain("Identity and colors");
+    expect(html).toContain("Future team defaults");
+    expect(html).toContain("Logo assets");
     expect(html).toContain("Theme editor");
+    expect(html).toContain("Customization editor");
     expect(html).toContain("All team themes");
     expect(html).toContain("Theme audit");
     expect(html).toContain("Save as tenant defaults");
     expect(html).toContain("Tenant defaults");
     expect(html).toContain("Logo:");
+    expect(html).toContain("Logo asset review");
+    expect(html).toContain("Queue logo metadata for customization");
+    expect(html).toContain("HTTPS logo URL");
+    expect(html).toContain("Queue logo review");
+    expect(html).toContain("Sponsor logos stay in sponsor records");
+    expect(html).toContain("No logo assets queued yet");
+    expect(html).toContain("Binary upload, public rendering, and email/push logo use still require provider configuration");
     expect(html).toContain("Theme QA");
     expect(html).toContain("Dark:");
     expect(html).toContain("Mobile:");
@@ -387,6 +408,28 @@ describe("ParentReplayClient", () => {
     );
 
     expect(html).toContain("Parent Replay");
+    expect(html).toContain("Rookie Coach Assist");
+    expect(html).toContain("Age-safe practice help for new volunteer coaches");
+    expect(html).toContain("Local preview only");
+    expect(html).toContain("Coach experience");
+    expect(html).toContain("Motivation strategy");
+    expect(html).toContain("Team energy");
+    expect(html).toContain("Chaos Button");
+    expect(html).toContain("Give me a 90-second reset");
+    expect(html).toContain("Press the button to reveal coach-reviewed reset copy");
+    expect(html).toContain("Practice plan");
+    expect(html).toContain("Coach objective");
+    expect(html).toContain("Practice Personality Engine");
+    expect(html).toContain("Coach Voice Coach");
+    expect(html).toContain("Stop messing around");
+    expect(html).toContain("Do-say phrases");
+    expect(html).toContain("Avoid-saying phrases");
+    expect(html).toContain("Parent Replay seed");
+    expect(html).toContain("Parent message draft");
+    expect(html).toContain("Parent Reinforcement Loop");
+    expect(html).toContain("Praise the brave try, not the result");
+    expect(html).toContain("Source evidence");
+    expect(html).toContain("Use seed in Parent Replay");
     expect(html).toContain("Today we worked on");
     expect(html).toContain("Two-minute home activity");
     expect(html).toContain("Coach video");
