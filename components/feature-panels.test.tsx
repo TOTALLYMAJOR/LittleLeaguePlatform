@@ -4,6 +4,7 @@ import { AppStateProvider } from "@/app/providers";
 import {
   AdminDashboardClient,
   AdminThemesClient,
+  AuthClient,
   CoachDashboardClient,
   ParentDashboardClient,
   ParentRsvpClient,
@@ -52,6 +53,27 @@ describe("TeamChatClient", () => {
     expect(html).toContain("Retention jobs");
     expect(html).toContain("Media/message policy screens");
     expect(html).toContain("No child accounts");
+  });
+});
+
+describe("AuthClient", () => {
+  it("renders an explicit Supabase browser env message when auth cannot be configured", () => {
+    const originalUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+    const originalAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+
+    try {
+      delete process.env.NEXT_PUBLIC_SUPABASE_URL;
+      delete process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+
+      const html = renderToStaticMarkup(<AuthClient />);
+
+      expect(html).toContain("Supabase Auth is not configured for this app environment");
+      expect(html).toContain("NEXT_PUBLIC_SUPABASE_URL");
+      expect(html).toContain("NEXT_PUBLIC_SUPABASE_ANON_KEY");
+    } finally {
+      process.env.NEXT_PUBLIC_SUPABASE_URL = originalUrl;
+      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY = originalAnonKey;
+    }
   });
 });
 

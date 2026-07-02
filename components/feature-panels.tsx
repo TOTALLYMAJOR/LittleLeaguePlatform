@@ -141,7 +141,7 @@ import {
   type Team,
   type UserRole
 } from "@/lib/domain";
-import { createSupabaseBrowserClient } from "@/lib/supabase/browser";
+import { createSupabaseBrowserClient, getSupabaseAuthClientErrorMessage, getSupabaseBrowserConfigStatus } from "@/lib/supabase/browser";
 import type { MediaGovernanceData } from "@/lib/supabase/media-governance";
 import type { RegistrationReviewData } from "@/lib/supabase/registration-approvals";
 import type { SponsorAdminData } from "@/lib/supabase/sponsors";
@@ -395,9 +395,15 @@ export function AuthClient() {
   const [defaultRole, setDefaultRole] = useState<"admin" | "coach" | "parent">("coach");
   const [message, setMessage] = useState("");
   const [isPending, startTransition] = useTransition();
+  const authConfigStatus = getSupabaseBrowserConfigStatus();
 
   function submitAuth() {
     setMessage("");
+    if (!authConfigStatus.ok) {
+      setMessage(authConfigStatus.message ?? "Supabase Auth is not configured for this app environment.");
+      return;
+    }
+
     startTransition(async () => {
       try {
         const supabase = createSupabaseBrowserClient();
@@ -424,8 +430,8 @@ export function AuthClient() {
 
         const { error } = await supabase.auth.signInWithPassword({ email, password });
         setMessage(error ? error.message : "Signed in. Role-scoped dashboards can now use Supabase session state.");
-      } catch {
-        setMessage("Supabase Auth is not reachable from this app environment yet.");
+      } catch (error) {
+        setMessage(getSupabaseAuthClientErrorMessage(error));
       }
     });
   }
@@ -438,6 +444,7 @@ export function AuthClient() {
         <p className="lead">Signup creates a Supabase Auth user and the database trigger creates a matching profile. Team access still requires membership records; signup alone does not grant private team or child access.</p>
       </section>
 
+      {!authConfigStatus.ok ? <p className="notice warning">{authConfigStatus.message}</p> : null}
       {message ? <p className="notice">{message}</p> : null}
 
       <section className="grid two">
@@ -462,7 +469,7 @@ export function AuthClient() {
 
           <label>Email<input type="email" value={email} onChange={(event) => setEmail(event.target.value)} /></label>
           <label>Password<input type="password" value={password} onChange={(event) => setPassword(event.target.value)} /></label>
-          <button onClick={submitAuth} disabled={isPending || password.length < 6}>{isPending ? "Working..." : mode === "sign-up" ? "Create account" : "Sign in"}</button>
+          <button onClick={submitAuth} disabled={!authConfigStatus.ok || isPending || password.length < 6}>{isPending ? "Working..." : mode === "sign-up" ? "Create account" : "Sign in"}</button>
         </article>
 
         <article className="card stack">
