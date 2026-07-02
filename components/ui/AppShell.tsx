@@ -44,6 +44,14 @@ const mobileItems = [
   navItems.find((item) => item.href === "/admin")!
 ];
 
+const parentMobileItems: ShellNavItem[] = [
+  { label: "Home", href: "/parent", short: "HM", group: "Family" },
+  { label: "Schedule", href: "/schedule", short: "SC", group: "Family" },
+  { label: "Msgs", href: "/team-chat", short: "MS", group: "Family", unread: 3 },
+  { label: "Photos", href: "/parent#team-media", short: "PH", group: "Family" },
+  { label: "More", href: "/account", short: "MO", group: "Support" }
+];
+
 const groups: ShellNavItem["group"][] = ["Family", "Coach", "League Ops", "Admin Tools", "Support"];
 
 function isActive(pathname: string, href: string) {
@@ -71,6 +79,7 @@ export function AppShell({ children }: { children: ReactNode }) {
   const previousFocus = useRef<HTMLElement | null>(null);
   const commandDialogRef = useRef<HTMLDialogElement>(null);
   const commandInputRef = useRef<HTMLInputElement>(null);
+  const activeMobileItems = pathname.startsWith("/parent") ? parentMobileItems : mobileItems;
 
   const filteredNav = useMemo(() => {
     const query = commandQuery.trim().toLowerCase();
@@ -209,7 +218,7 @@ export function AppShell({ children }: { children: ReactNode }) {
         </main>
 
         <nav className="mobile-tabbar" aria-label="Mobile navigation">
-          {mobileItems.map((item) => {
+          {activeMobileItems.map((item) => {
             const active = isActive(pathname, item.href);
             return (
               <Link key={item.href} href={item.href} aria-current={active ? "page" : undefined} data-active={active ? "true" : undefined}>
@@ -237,7 +246,7 @@ export function AppShell({ children }: { children: ReactNode }) {
       <dialog
         ref={commandDialogRef}
         className="command-dialog"
-        aria-labelledby="command-palette-title"
+        aria-labelledby="route-finder-title"
         onCancel={(event) => {
           event.preventDefault();
           setCommandOpen(false);
@@ -248,15 +257,15 @@ export function AppShell({ children }: { children: ReactNode }) {
       >
         <div className="dialog-header">
           <div>
-            <span className="eyebrow">Command palette</span>
-            <h2 id="command-palette-title">Open a workspace route</h2>
+            <span className="eyebrow">Route finder</span>
+            <h2 id="route-finder-title">Open a route</h2>
           </div>
-          <button type="button" className="dialog-close" aria-label="Close command palette" onClick={() => setCommandOpen(false)}>
+          <button type="button" className="dialog-close" aria-label="Close route finder" onClick={() => setCommandOpen(false)}>
             x
           </button>
         </div>
         <label>
-          Search routes and actions
+          Search routes
           <input
             ref={commandInputRef}
             value={commandQuery}

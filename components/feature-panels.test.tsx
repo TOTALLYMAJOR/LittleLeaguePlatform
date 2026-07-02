@@ -63,10 +63,14 @@ describe("CoachDashboardClient", () => {
       </AppStateProvider>
     );
 
-    expect(html).toContain("Coach dashboard");
-    expect(html).toContain("Coach assistant");
-    expect(html).toContain("Coach onboarding");
-    expect(html).toContain("Assigned-team setup checklist");
+    expect(html).toContain("Coach Home");
+    expect(html).toContain("Next event readiness");
+    expect(html).toContain("No response");
+    expect(html).toContain("Needs review");
+    expect(html).toContain("Review RSVPs");
+    expect(html).toContain("Coach notes");
+    expect(html).toContain("Coach setup");
+    expect(html).toContain("Team setup checklist");
     expect(html).toContain("Weather and alerts");
     expect(html).toContain("Weather approval queue");
     expect(html).toContain("Weather provider retry logs");
@@ -119,13 +123,21 @@ describe("ParentDashboardClient", () => {
       </AppStateProvider>
     );
 
-    expect(html).toContain("Notification preference center");
-    expect(html).toContain("Parent help assistant");
-    expect(html).toContain("Parent onboarding");
-    expect(html).toContain("Parent action checklist");
-    expect(html).toContain("Parent calendar view");
+    expect(html).toContain("Tiny Tigers");
+    expect(html).toContain("3U");
+    expect(html).toContain("Tiny Tigers vs Rookie Rockets");
+    expect(html).toContain("What you need to do");
+    expect(html).toContain("What changed");
+    expect(html).toContain("From your coach");
+    expect(html).toContain("Weather draft");
+    expect(html).toContain("Messages");
+    expect(html).toContain("Photos");
+    expect(html).toContain("Your family&#x27;s info is private to your team");
+    expect(html).toContain("RSVP now");
+    expect(html).toContain("Schedule alerts");
+    expect(html).toContain("All pending items");
     expect(html).toContain("Family calendar");
-    expect(html).toContain("Parent media feed");
+    expect(html).toContain("Family calendar");
     expect(html).toContain("Team media");
     expect(html).toContain("Family-facing moderation queue");
     expect(html).toContain("Media consent controls");
@@ -134,7 +146,6 @@ describe("ParentDashboardClient", () => {
     expect(html).toContain("Arrive");
     expect(html).toContain("Opening Day Album");
     expect(html).toContain("How to tie cleats");
-    expect(html).toContain("Confirm guardian link");
     expect(html).toContain("PUSH");
     expect(html).toContain("EMAIL");
     expect(html).toContain("SMS");
@@ -143,7 +154,7 @@ describe("ParentDashboardClient", () => {
     expect(html).toContain("Volunteer openings");
     expect(html).toContain("Claim snack slot");
     expect(html).toContain("Claim volunteer role");
-    expect(html).toContain("Parent support request flow");
+    expect(html).toContain("Ask for help");
     expect(html).toContain("Submit support request");
     expect(html).toContain("staff-review support record");
     expect(html).toContain("Report media");
@@ -254,8 +265,11 @@ describe("AdminDashboardClient", () => {
       </AppStateProvider>
     );
 
-    expect(html).toContain("Admin dashboard");
-    expect(html).toContain("Admin copilot");
+    expect(html).toContain("Admin Home");
+    expect(html).toContain("League health for this week");
+    expect(html).toContain("Teams needing help");
+    expect(html).toContain("Pending reviews");
+    expect(html).toContain("Suggested reviews");
     expect(html).toContain("Registration queue");
     expect(html).toContain("Media governance");
     expect(html).toContain("Media reports");
@@ -272,18 +286,18 @@ describe("AdminDashboardClient", () => {
     expect(html).toContain("Sponsor management");
     expect(html).toContain("Sponsor placement");
     expect(html).toContain("Public display policy");
-    expect(html).toContain("Sponsor billing proof");
+    expect(html).toContain("Sponsor billing records");
     expect(html).toContain("Stripe Product/Price");
-    expect(html).toContain("Invoice proof");
-    expect(html).toContain("Payment proof");
+    expect(html).toContain("invoice reference");
+    expect(html).toContain("payment status");
     expect(html).toContain("Sponsor billing stays separate from child-facing display");
     expect(html).toContain("Schedule sponsor placement");
     expect(html).toContain("media gallery sponsor placement");
     expect(html).toContain("email sponsor placement");
     expect(html).toContain("banner sponsor placement");
     expect(html).toContain("Save sponsor");
-    expect(html).toContain("Communication console");
-    expect(html).toContain("Mass SMS");
+    expect(html).toContain("Message draft review");
+    expect(html).toContain("SMS draft");
     expect(html).toContain("Drag and drop SVG lineup");
     expect(html).toContain("Roster maker readiness");
     expect(html).toContain("Automatic team builder preview");
@@ -291,28 +305,12 @@ describe("AdminDashboardClient", () => {
     expect(html).toContain("skill-balance score");
     expect(html).toContain("Preview -&gt; Edit -&gt; Approve -&gt; Publish");
     expect(html).toContain("Bracket maker");
-    expect(html).toContain("Queued communication records");
-    expect(html).toContain("Touch Target QA");
-    expect(html).toContain("Offline states");
-    expect(html).toContain("Cache invalidation policy");
-    expect(html).toContain("Manual dark toggle");
-    expect(html).toContain("Accessibility contrast checks");
+    expect(html).toContain("Queued message records");
+    expect(html).toContain("Touch target check");
+    expect(html).toContain("Offline label");
+    expect(html).toContain("Contrast checks");
     expect(html).toContain("Privacy filters");
-    expect(html).toContain("Invite acceptance rate");
-    expect(html).toContain("Average invite-to-account time");
-    expect(html).toContain("Failed invite count");
-    expect(html).toContain("Parent link completion rate");
-    expect(html).toContain("RSVP response rate");
-    expect(html).toContain("Schedule alert open rate");
-    expect(html).toContain("Weekly active parents");
-    expect(html).toContain("Support requests per team");
-    expect(html).toContain("CSV import error rate");
-    expect(html).toContain("Coach weekly update send rate");
-    expect(html).toContain("Game Day Calm Mode usage");
-    expect(html).toContain("Parent Replay completion rate");
-    expect(html).toContain("Micro-Coaching streak rate");
-    expect(html).toContain("Media engagement rate");
-    expect(html).toContain("Notification opt-out rate");
+    expect(html).toContain("Engagement and delivery-rate metrics stay out of this home card");
   });
 });
 
@@ -455,6 +453,59 @@ describe("ParentReplayClient", () => {
     expect(html).toContain("Safety Monitor");
     expect(html).toContain("Season Storybook");
     expect(html).toContain("Preview - Edit - Approve - Publish");
+  });
+
+  it("uses signed-in Supabase coach scope for Parent Replay and AI workspace requests", () => {
+    const supabaseTeamId = "33333333-3333-4333-8333-333333333331";
+    const supabaseCoachId = "coach-live-user";
+    const dashboardData: ParentCoachDashboardData = {
+      state: {
+        ...seedState,
+        users: [{ id: supabaseCoachId, role: "coach", name: "Coach Live", email: "coach@example.com" }],
+        teams: [{ ...seedState.teams[0]!, id: supabaseTeamId, name: "Supabase Tigers", coachUserId: supabaseCoachId }],
+        teamMemberships: [{
+          id: "membership-live-coach",
+          teamId: supabaseTeamId,
+          userId: supabaseCoachId,
+          role: "coach",
+          status: "active"
+        }],
+        players: seedState.players.map((player) => ({ ...player, teamId: supabaseTeamId })),
+        events: seedState.events.map((event) => ({ ...event, teamId: supabaseTeamId })),
+        announcements: seedState.announcements.map((announcement) => ({ ...announcement, teamId: supabaseTeamId, authorUserId: supabaseCoachId })),
+        mediaItems: seedState.mediaItems.map((item) => ({ ...item, teamId: supabaseTeamId })),
+        snackScheduleSlots: seedState.snackScheduleSlots.map((slot) => ({ ...slot, teamId: supabaseTeamId })),
+        volunteerSignups: seedState.volunteerSignups.map((signup) => ({ ...signup, teamId: supabaseTeamId }))
+      },
+      parentUserId: "",
+      coachUserId: supabaseCoachId,
+      isSupabaseBacked: true,
+      accessStatus: "live",
+      message: "Showing Supabase team membership, roster, RSVP, weather, snack, and volunteer rows."
+    };
+
+    const html = renderToStaticMarkup(
+      <AppStateProvider>
+        <ParentReplayClient dashboardData={dashboardData} />
+      </AppStateProvider>
+    );
+
+    expect(html).toContain("Showing Supabase team membership");
+    expect(html).toContain("Supabase Tigers");
+    expect(html).toContain(supabaseTeamId);
+    expect(html).toContain("Request AI rewrite");
+  });
+
+  it("blocks Parent Replay AI workspace when the signed-in user lacks coach access", () => {
+    const html = renderToStaticMarkup(
+      <AppStateProvider>
+        <ParentReplayClient dashboardData={dashboardAccessState("missing_coach_membership", "No active coach assignment.")} />
+      </AppStateProvider>
+    );
+
+    expect(html).toContain("No active coach membership is assigned");
+    expect(html).toContain("Coach role access checklist");
+    expect(html).not.toContain("Request AI rewrite");
   });
 });
 

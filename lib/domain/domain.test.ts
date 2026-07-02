@@ -1136,6 +1136,67 @@ describe("Parent Replay", () => {
     expect(drafts.every((draft) => draft.workflow.join(" -> ") === "Preview -> Edit -> Approve -> Publish")).toBe(true);
     expect(drafts.every((draft) => draft.boundary.toLowerCase().includes("coach") || draft.boundary.toLowerCase().includes("provider"))).toBe(true);
   });
+
+  it("keeps hidden media, hidden messages, and cross-team context out of AI Coach Workspace drafts", () => {
+    const state = {
+      ...seedState,
+      mediaItems: [
+        ...seedState.mediaItems,
+        {
+          id: "media-hidden-ai-proof",
+          teamId: "team-tigers",
+          title: "Hidden injury photo",
+          type: "google_photos" as const,
+          url: "https://photos.google.com/share/hidden-ai-proof",
+          moderationStatus: "hidden" as const,
+          visibility: "team" as const,
+          reportCount: 1,
+          createdAt: NOW
+        },
+        {
+          id: "media-cross-team-ai-proof",
+          teamId: "team-other",
+          title: "Other team celebration",
+          type: "google_photos" as const,
+          url: "https://photos.google.com/share/other-team-ai-proof",
+          moderationStatus: "approved" as const,
+          visibility: "team" as const,
+          reportCount: 0,
+          createdAt: NOW
+        }
+      ],
+      chatMessages: [
+        ...seedState.chatMessages,
+        {
+          ...seedState.chatMessages[0]!,
+          id: "chat-hidden-ai-proof",
+          body: "Hidden message with parent contact 555-123-4567.",
+          moderationStatus: "hidden" as const
+        },
+        {
+          ...seedState.chatMessages[0]!,
+          id: "chat-cross-team-ai-proof",
+          teamId: "team-other",
+          body: "Other team private context.",
+          moderationStatus: "visible" as const
+        }
+      ]
+    };
+
+    const drafts = buildAiCoachWorkspaceDrafts(state, {
+      teamId: "team-tigers",
+      coachUserId: "user-coach-taylor",
+      focusAreas: ["throwing", "catching", "teamwork"],
+      now: NOW
+    });
+    const content = drafts.map((draft) => [draft.title, draft.body, draft.sourceEvidence.join(" ")].join("\n")).join("\n");
+
+    expect(content).not.toContain("Hidden injury photo");
+    expect(content).not.toContain("555-123-4567");
+    expect(content).not.toContain("Other team celebration");
+    expect(content).not.toContain("Other team private context");
+    expect(content).toContain("2 approved media item(s)");
+  });
 });
 
 describe("Rookie Coach Assist", () => {

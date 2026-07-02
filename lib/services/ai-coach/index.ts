@@ -45,6 +45,8 @@ const DEFAULT_MODEL = "gpt-5.5";
 const DEFAULT_ENDPOINT = "https://api.openai.com/v1/responses";
 const CONTACT_PATTERN = /(?:\b[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}\b|\b(?:\+?1[-.\s]?)?(?:\(?\d{3}\)?[-.\s]?)\d{3}[-.\s]?\d{4}\b)/i;
 const PRIVATE_DETAIL_PATTERN = /\b(?:medical|diagnosis|allergy|custody|billing proof|payment proof|private rsvp note|private note|hidden message|home address)\b/i;
+const UNSUPPORTED_AUTOMATION_PATTERN = /\b(?:was|were|has been|have been|is|are)\s+(?:already\s+)?(?:sent|delivered|published|emailed|texted|pushed)\s+(?:to|for)\b|\b(?:sent|delivered|published|emailed|texted|pushed)\s+to\s+(?:families|parents|guardians|the team)\b|\b(?:send|email|text|push|publish|deliver)\s+(?:this|it|now|to all|to families|to parents)\b/i;
+const UNSOURCED_CLAIM_PATTERN = /\b(?:i inferred|i found online|i checked email|i looked up|according to parents|medical record|private note says)\b/i;
 
 export function getAiCoachProviderConfigFromEnv(env: NodeJS.ProcessEnv = process.env): AiCoachProviderConfig {
   return {
@@ -95,6 +97,20 @@ export function scanAiCoachDraftForProvider(draft: AiCoachWorkspaceDraft) {
     return {
       ok: false,
       message: "Draft contains private player or family details and cannot be sent to an AI provider."
+    };
+  }
+
+  if (UNSUPPORTED_AUTOMATION_PATTERN.test(content)) {
+    return {
+      ok: false,
+      message: "Draft claims a provider send, publish, or delivery action that the AI provider cannot perform."
+    };
+  }
+
+  if (UNSOURCED_CLAIM_PATTERN.test(content)) {
+    return {
+      ok: false,
+      message: "Draft appears to rely on unsourced private or external claims and cannot be sent to an AI provider."
     };
   }
 

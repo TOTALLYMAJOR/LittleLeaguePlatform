@@ -32,6 +32,13 @@ Expected:
 - Provider output remains draft/review-only and cannot publish or send.
 - `OPENAI_API_KEY` and `AI_COACH_PROVIDER_ENABLED=true` are required before any OpenAI call occurs.
 
+Validated checks:
+
+- `/coach/parent-replay` must use signed-in Supabase coach scope before calling `/api/coach/ai-workspace`; local seed team IDs are not accepted for hosted provider proof.
+- Hidden team chat messages, hidden/rejected media, and cross-team context must not appear in deterministic workspace drafts.
+- Provider input and output are rejected when they contain parent contact details, private notes, unsupported send/publish/delivery claims, or obvious unsourced private/external claims.
+- Hosted proof runs with `QA_PROOF_BASE_URL=https://www.leaguepilot.us npm run qa:ai-coach-proof` and preserves `output/playwright/ai-coach-provider-rewrite-qa-session-live.png`.
+
 ### Access Leakage
 
 Prompt:

@@ -72,7 +72,7 @@ describe("route smoke coverage", () => {
 
     expect(shell).toContain("Skip to main content");
     expect(shell).toContain("little-league-shell-collapsed");
-    expect(shell).toContain("Command palette");
+    expect(shell).toContain("Route finder");
     expect(shell).toContain("aria-current");
     expect(shell).toContain("mobile-tabbar");
     expect(shell).toContain("offline");

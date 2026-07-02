@@ -14,6 +14,7 @@ The first shippable mobile experience should be a responsive PWA from the existi
 | --- | --- | --- |
 | Web app | Next.js App Router, React, TypeScript | Already implemented; good fit for admin, coach, parent, PWA, and server/client boundaries. |
 | Styling | Current CSS with design tokens | Reuse existing styles, dark mode, team branding, and sport theme presets before adding a UI framework. |
+| Motion | Motion for React (`motion`) | Installed for targeted client-side animation. Use `motion/react` only in client components, animate transform/opacity, and respect reduced-motion preferences. No required workflow should depend on animation. |
 | Mobile first | PWA first, Expo later | Fastest reuse path. Native app should share domain contracts and policies if/when added. |
 | Database | Supabase Postgres | Fits teams, seasons, rosters, registrations, events, RSVPs, chat, notifications, sponsors, themes, and audits. |
 | Auth | Supabase Auth | Aligns with Supabase RLS and role-scoped parent/coach/admin access. |
