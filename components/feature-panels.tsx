@@ -8,7 +8,6 @@ import {
   applyScheduleChange,
   buildAdminAssistiveSuggestions,
   buildCoachAssistiveSuggestions,
-  buildParentAssistiveSuggestions,
   canUpdateTeamPortalBranding,
   communicationTemplates,
   computeAdminHealth,
@@ -108,27 +107,16 @@ import {
   previewBalancedTeamBuild,
   getTouchTargetQa,
   getOfflineStateSummary,
-  getCacheInvalidationPolicy,
-  getManualDarkToggleState,
   getAccessibilityContrastChecks,
   getPromptEvalHarness,
   getPrivacyFilters,
-  getInviteAcceptanceRate,
-  getAverageInviteToAccountTimeHours,
-  getFailedInviteCount,
-  getParentLinkCompletionRate,
-  getRsvpResponseRate,
-  getScheduleAlertOpenRate,
-  getWeeklyActiveParents,
-  getSupportRequestsPerTeam,
-  getCsvImportErrorRate,
-  getCoachWeeklyUpdateSendRate,
-  getGameDayCalmModeUsage,
-  getParentReplayCompletionRate,
-  getMicroCoachingStreakRate,
-  getMediaEngagementRate,
-  getNotificationOptOutRate,
   buildAiCoachWorkspaceDrafts,
+  generateRookieCoachAssist,
+  rookieCoachAgeBandOptions,
+  rookieCoachChallengeOptions,
+  rookieCoachExperienceOptions,
+  rookieCoachMotivationStrategyOptions,
+  rookieCoachPracticePersonalityOptions,
   buildBrandLaunchValidation,
   type AiCoachWorkspaceDraft,
   type ChatAnnouncementTopic,
@@ -143,21 +131,41 @@ import {
   type PracticeFocusArea,
   type ProgramThemeKey,
   type RegistrationRequest,
+  type RookieCoachAgeBand,
+  type RookieCoachChallenge,
+  type RookieCoachExperienceLevel,
+  type RookieCoachMotivationStrategy,
+  type RookieCoachPracticePersonality,
   type RsvpResponse,
   type Sponsor,
   type Team,
   type UserRole
 } from "@/lib/domain";
-import { createSupabaseBrowserClient } from "@/lib/supabase/browser";
+import { createSupabaseBrowserClient, getSupabaseAuthClientErrorMessage, getSupabaseBrowserConfigStatus } from "@/lib/supabase/browser";
 import type { MediaGovernanceData } from "@/lib/supabase/media-governance";
 import type { RegistrationReviewData } from "@/lib/supabase/registration-approvals";
 import type { SponsorAdminData } from "@/lib/supabase/sponsors";
 import type { TeamPortalData } from "@/lib/supabase/team-portal";
-import type { AdminThemeData, TeamThemeAudit, TenantThemeDefaults } from "@/lib/supabase/team-branding";
+import type { AdminThemeData, TeamLogoAsset, TeamThemeAudit, TenantThemeDefaults } from "@/lib/supabase/team-branding";
 import type { TeamChatData } from "@/lib/supabase/team-chat";
 import type { ParentCoachDashboardData } from "@/lib/supabase/dashboard-data";
 import type { AdminTeamManagementData } from "@/lib/supabase/team-management";
 import type { ScheduleOperationsData } from "@/lib/supabase/schedule-management";
+import {
+  AvatarStack,
+  BreadcrumbTrail,
+  BroadcastMode,
+  Chip,
+  Divider,
+  EmptyState,
+  PageHeader,
+  PinnedMessagesBar,
+  ReadReceipt,
+  StatusBadge,
+  Tooltip,
+  Toggle,
+  TypingIndicator
+} from "@/components/ui/primitives";
 
 interface RegistrationTeamOption {
   id: string;
@@ -187,6 +195,36 @@ function formatDate(value: string) {
     hour: "numeric",
     minute: "2-digit"
   });
+}
+
+function formatShortDay(value?: string) {
+  if (!value) return "No date set";
+  return new Date(value).toLocaleDateString("en-US", {
+    weekday: "short",
+    month: "short",
+    day: "numeric"
+  });
+}
+
+function formatShortTime(value?: string) {
+  if (!value) return "Time pending";
+  return new Date(value).toLocaleTimeString("en-US", {
+    hour: "numeric",
+    minute: "2-digit"
+  });
+}
+
+function formatLongEventDate(value?: string) {
+  if (!value) return "Date and time pending";
+  const eventDate = new Date(value);
+  return `${eventDate.toLocaleDateString("en-US", {
+    weekday: "long",
+    month: "long",
+    day: "numeric"
+  })} at ${eventDate.toLocaleTimeString("en-US", {
+    hour: "numeric",
+    minute: "2-digit"
+  })}`;
 }
 
 function statusClass(status: string) {
@@ -234,7 +272,7 @@ function privateAccessGate(
         <span className="eyebrow">Access required</span>
         <h2>{copy.title}</h2>
         <p>{copy.body}</p>
-        <a href={copy.actionHref}>{copy.actionLabel}</a>
+        <a className="button" href={copy.actionHref}>{copy.actionLabel}</a>
       </article>
       <article className="card stack">
         <h2>{surface === "coach" ? "Coach role access checklist" : "What stays protected"}</h2>
@@ -357,9 +395,15 @@ export function AuthClient() {
   const [defaultRole, setDefaultRole] = useState<"admin" | "coach" | "parent">("coach");
   const [message, setMessage] = useState("");
   const [isPending, startTransition] = useTransition();
+  const authConfigStatus = getSupabaseBrowserConfigStatus();
 
   function submitAuth() {
     setMessage("");
+    if (!authConfigStatus.ok) {
+      setMessage(authConfigStatus.message ?? "Supabase Auth is not configured for this app environment.");
+      return;
+    }
+
     startTransition(async () => {
       try {
         const supabase = createSupabaseBrowserClient();
@@ -386,8 +430,8 @@ export function AuthClient() {
 
         const { error } = await supabase.auth.signInWithPassword({ email, password });
         setMessage(error ? error.message : "Signed in. Role-scoped dashboards can now use Supabase session state.");
-      } catch {
-        setMessage("Supabase Auth is not reachable from this app environment yet.");
+      } catch (error) {
+        setMessage(getSupabaseAuthClientErrorMessage(error));
       }
     });
   }
@@ -400,6 +444,7 @@ export function AuthClient() {
         <p className="lead">Signup creates a Supabase Auth user and the database trigger creates a matching profile. Team access still requires membership records; signup alone does not grant private team or child access.</p>
       </section>
 
+      {!authConfigStatus.ok ? <p className="notice warning">{authConfigStatus.message}</p> : null}
       {message ? <p className="notice">{message}</p> : null}
 
       <section className="grid two">
@@ -424,7 +469,7 @@ export function AuthClient() {
 
           <label>Email<input type="email" value={email} onChange={(event) => setEmail(event.target.value)} /></label>
           <label>Password<input type="password" value={password} onChange={(event) => setPassword(event.target.value)} /></label>
-          <button onClick={submitAuth} disabled={isPending || password.length < 6}>{isPending ? "Working..." : mode === "sign-up" ? "Create account" : "Sign in"}</button>
+          <button onClick={submitAuth} disabled={!authConfigStatus.ok || isPending || password.length < 6}>{isPending ? "Working..." : mode === "sign-up" ? "Create account" : "Sign in"}</button>
         </article>
 
         <article className="card stack">
@@ -893,7 +938,6 @@ export function ParentDashboardClient({ dashboardData }: { dashboardData?: Paren
   const parentUserId = dashboardData?.parentUserId ?? "user-parent-jordan";
   const parentUser = sourceState.users.find((user) => user.id === parentUserId);
   const dashboard = getParentDashboard(sourceState, parentUserId, NOW);
-  const parentSuggestions = buildParentAssistiveSuggestions(sourceState, parentUserId, NOW);
   const accessGate = privateAccessGate(dashboardData, "parent");
   const parentTeamIds = new Set(dashboard.children.map(({ team }) => team.id));
   const primaryTeamId = dashboard.children[0]?.team.id;
@@ -907,15 +951,88 @@ export function ParentDashboardClient({ dashboardData }: { dashboardData?: Paren
   const filteredMediaFeed = mediaFeed.filter((item) => mediaTypeFilter === "all" || item.type === mediaTypeFilter);
   const familyModerationQueue = getFamilyFacingModerationQueue(sourceState.mediaItems.filter((item) => parentTeamIds.has(item.teamId)));
   const mediaConsentControls = getMediaConsentControls();
-  const onboardingSteps = [
-    { label: "Confirm guardian link", done: dashboard.children.length > 0 },
-    { label: "Review upcoming schedule", done: dashboard.nextEvents.length > 0 },
-    { label: "Set notification preferences", done: sourceState.notificationPreferences.some((item) => item.userId === parentUserId) },
-    { label: "Answer open RSVPs", done: dashboard.rsvpNeeded.length === 0 }
-  ];
   const openSnackSlots = sourceState.snackScheduleSlots.filter((slot) => parentTeamIds.has(slot.teamId) && slot.status === "open");
   const openVolunteerSignups = sourceState.volunteerSignups.filter((signup) => parentTeamIds.has(signup.teamId) && signup.status === "open");
   const eventById = new Map(sourceState.events.map((event) => [event.id, event]));
+  const nextParentEvent = dashboard.nextEvents[0];
+  const primaryFamilyRow = dashboard.children[0];
+  const primaryTeam = primaryFamilyRow?.team;
+  const primaryPlayer = primaryFamilyRow?.player;
+  const teamName = primaryTeam?.name ?? "Team home";
+  const teamDivision = primaryTeam?.division ?? "Division pending";
+  const teamInitials = teamName
+    .split(" ")
+    .map((part) => part[0])
+    .join("")
+    .slice(0, 2)
+    .toUpperCase() || "LH";
+  const parentTeamStyle = primaryTeam ? teamBrandStyle(primaryTeam.primaryColor, primaryTeam.secondaryColor) : undefined;
+  const nextParentRsvp = nextParentEvent ? dashboard.rsvpNeeded.find((item) => item.event.id === nextParentEvent.id) : undefined;
+  const nextParentRsvpCopy = nextParentRsvp
+    ? `RSVP needed for ${nextParentRsvp.player.firstName} ${nextParentRsvp.player.lastInitial}.`
+    : nextParentEvent
+      ? "RSVP is answered for linked players."
+      : "No RSVP is open yet.";
+  const nextWeatherAlert = nextParentEvent
+    ? sourceState.weatherAlerts.find((alert) => alert.eventId === nextParentEvent.id && parentTeamIds.has(alert.teamId))
+    : undefined;
+  const directionsUrl = nextParentEvent?.locationAddress
+    ? `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(`${nextParentEvent.locationName} ${nextParentEvent.locationAddress}`)}`
+    : "";
+  const nextEventTime = nextParentEvent ? new Date(nextParentEvent.startsAt).getTime() : 0;
+  const nowTime = new Date(NOW).getTime();
+  const isToday = nextParentEvent
+    ? new Date(nextParentEvent.startsAt).toDateString() === new Date(NOW).toDateString()
+    : false;
+  const isSoon = nextParentEvent ? nextEventTime >= nowTime && nextEventTime - nowTime <= 48 * 60 * 60 * 1000 : false;
+  const nextEventBadge = isToday ? "Today" : isSoon ? "Coming up soon" : "Next event";
+  const parentHelpCount = openSnackSlots.length + openVolunteerSignups.length;
+  const latestChangeCopy = dashboard.latestAnnouncement
+    ? `${dashboard.latestAnnouncement.title}: ${dashboard.latestAnnouncement.body}`
+    : "No coach update has been posted yet.";
+  const parentChanges = dashboard.latestAnnouncement
+    ? [`Coach posted ${dashboard.latestAnnouncement.title} (${formatDate(dashboard.latestAnnouncement.createdAt)})`]
+    : [];
+  let parentUnreadCount = 0;
+  try {
+    parentUnreadCount = primaryTeamId ? getTeamChatView(sourceState, parentUserId, primaryTeamId, NOW).unreadCount : 0;
+  } catch {
+    parentUnreadCount = 0;
+  }
+  const latestMediaItem = mediaFeed[0];
+  const firstMissingRsvp = nextParentRsvp ?? dashboard.rsvpNeeded[0];
+  const pendingParentActions = [
+    ...(firstMissingRsvp ? [{
+      id: "missing-rsvp",
+      label: `Confirm whether ${firstMissingRsvp.player.firstName} is coming ${formatShortDay(firstMissingRsvp.event.startsAt)}`,
+      cta: "RSVP now",
+      href: "/parent/rsvp"
+    }] : []),
+    ...(openSnackSlots[0] ? [{
+      id: "snack-open",
+      label: `${openSnackSlots[0].item} is still open for ${eventById.get(openSnackSlots[0].eventId)?.title ?? "a team event"}`,
+      cta: "View snacks",
+      href: "#family-help"
+    }] : []),
+    ...(openVolunteerSignups[0] ? [{
+      id: "volunteer-open",
+      label: `${openVolunteerSignups.length} volunteer slot${openVolunteerSignups.length === 1 ? "" : "s"} open for your team`,
+      cta: "Sign up",
+      href: "#family-help"
+    }] : []),
+    ...(!sourceState.notificationPreferences.some((item) => item.userId === parentUserId && item.notificationType === "schedule_changed") ? [{
+      id: "notification-preference",
+      label: "Set schedule alert preferences for this team",
+      cta: "Set up",
+      href: "#schedule-alerts"
+    }] : []),
+    ...(dashboard.children.length === 0 ? [{
+      id: "guardian-link",
+      label: "Your family access is not yet verified",
+      cta: "Verify now",
+      href: "/registration"
+    }] : [])
+  ].slice(0, 3);
   const actionChecklist = [
     {
       label: "Check the family calendar",
@@ -1015,12 +1132,151 @@ export function ParentDashboardClient({ dashboardData }: { dashboardData?: Paren
   }
 
   return (
-    <div className="page">
-      <section className="hero">
-        <span className="eyebrow">Parent dashboard</span>
-        <h1>One place for the next thing a parent needs to know.</h1>
-        <p className="lead">This dashboard is scoped to {parentUser?.name ?? "the selected parent"} and only shows linked child, team, schedule, RSVP, media, and coach update records.</p>
+    <div className="page parent-team-home-page" style={parentTeamStyle}>
+      {accessGate ? null : (
+      <section className="parent-team-home" aria-labelledby="parent-home-title">
+        <header className="parent-team-header">
+          <a className="parent-team-brand" href="/team-portal">
+            <span className="parent-team-logo" aria-hidden="true">{teamInitials}</span>
+            <span>
+              <strong>{teamName}</strong>
+              <small>{teamDivision}</small>
+            </span>
+          </a>
+          <div className="parent-team-actions" aria-label="Parent notifications and account">
+            <a className="parent-header-icon" href="/team-chat" aria-label={`${parentUnreadCount} unread team chat messages`}>
+              <span aria-hidden="true">!</span>
+              {parentUnreadCount > 0 ? <strong>{parentUnreadCount}</strong> : null}
+            </a>
+            <a className="parent-avatar" href="/account" aria-label="Open account settings">
+              {(parentUser?.name ?? "Parent").slice(0, 1).toUpperCase()}
+            </a>
+          </div>
+        </header>
+
+        <div className="parent-home-layout">
+          <nav className="parent-home-nav" aria-label="Parent team navigation">
+            {[
+              ["Home", "/parent", "HM", undefined],
+              ["Schedule", "/schedule", "SC", undefined],
+              ["RSVP", "/parent/rsvp", "RS", dashboard.rsvpNeeded.length || undefined],
+              ["Messages", "/team-chat", "MS", parentUnreadCount || undefined],
+              ["Roster", "/team-portal", "RO", undefined],
+              ["Photos", "#team-media", "PH", mediaFeed.length || undefined],
+              ["Volunteer & Snacks", "#family-help", "VS", parentHelpCount || undefined],
+              ["Player Notes", "/team-portal", "PN", undefined],
+              ["Settings", "/account", "ST", undefined]
+            ].map(([label, href, mark, count]) => (
+              <a
+                className={href === "/parent" ? "active" : undefined}
+                href={String(href)}
+                key={String(label)}
+                aria-current={href === "/parent" ? "page" : undefined}
+              >
+                <span aria-hidden="true">{mark}</span>
+                <strong>{label}</strong>
+                {typeof count === "number" && count > 0 ? <em>{count}</em> : null}
+              </a>
+            ))}
+          </nav>
+
+          <div className="parent-home-stream">
+            <article className="parent-next-card" aria-labelledby="parent-home-title">
+              <div className="parent-card-topline">
+                <span className={`parent-event-badge ${isToday ? "danger" : isSoon ? "warning" : ""}`}>{nextEventBadge}</span>
+                <span className="parent-event-type">{nextParentEvent?.eventType.replace("_", " ") ?? "schedule"}</span>
+              </div>
+              <h1 id="parent-home-title">{nextParentEvent ? nextParentEvent.title : "No upcoming events scheduled yet."}</h1>
+              <div className="parent-event-details">
+                <p>
+                  <span>When</span>
+                  <strong>{formatLongEventDate(nextParentEvent?.startsAt)}</strong>
+                </p>
+                <p>
+                  <span>Where</span>
+                  <strong>{nextParentEvent?.locationName ?? "Field pending"}</strong>
+                  <small>{nextParentEvent?.locationAddress ?? "Coach will add the address."}</small>
+                  {directionsUrl ? <a className="parent-directions-link" href={directionsUrl} target="_blank" rel="noreferrer">Get directions</a> : null}
+                </p>
+              </div>
+              {nextWeatherAlert ? (
+                <div className="parent-alert-row" role="status">
+                  <strong>Weather draft:</strong> {nextWeatherAlert.headline}. {nextWeatherAlert.detail}
+                </div>
+              ) : null}
+              {parentChanges[0] ? (
+                <div className="parent-change-chip">
+                  <strong>Updated:</strong> {parentChanges[0]}
+                </div>
+              ) : null}
+              <div className="parent-rsvp-row">
+                <p>
+                  <span>RSVP</span>
+                  <strong>{primaryPlayer ? `${primaryPlayer.firstName} ${primaryPlayer.lastInitial}.` : "Linked player"}</strong>
+                  <small>{nextParentRsvpCopy}</small>
+                </p>
+                <a className="button" href="/parent/rsvp">{nextParentRsvp ? "RSVP now" : "Change RSVP"}</a>
+              </div>
+              {!nextParentEvent ? <a className="text-link" href="/schedule">View full schedule</a> : null}
+            </article>
+
+            {pendingParentActions.length ? (
+              <section className="parent-action-card" aria-labelledby="parent-action-title">
+                <div className="parent-section-heading">
+                  <h2 id="parent-action-title">What you need to do</h2>
+                  {actionChecklist.filter((item) => !item.done).length > pendingParentActions.length ? <a href="#more-parent-actions">See all pending</a> : null}
+                </div>
+                <div className="parent-action-list">
+                  {pendingParentActions.map((action) => (
+                    <a className="parent-action-row" href={action.href} key={action.id}>
+                      <span aria-hidden="true">!</span>
+                      <strong>{action.label}</strong>
+                      <em>{action.cta}</em>
+                    </a>
+                  ))}
+                </div>
+              </section>
+            ) : null}
+
+            {parentChanges.length ? (
+              <section className="parent-summary-card" aria-labelledby="parent-changes-title">
+                <h2 id="parent-changes-title">What changed</h2>
+                {parentChanges.slice(0, 3).map((change) => <p key={change}>{change}</p>)}
+              </section>
+            ) : null}
+
+            <section className="parent-summary-card" aria-labelledby="coach-update-title">
+              <h2 id="coach-update-title">From your coach</h2>
+              {dashboard.latestAnnouncement ? (
+                <>
+                  <p>{latestChangeCopy.length > 120 ? `${latestChangeCopy.slice(0, 117)}...` : latestChangeCopy}</p>
+                  <small>{dashboard.latestAnnouncement.teamName} - {formatShortDay(dashboard.latestAnnouncement.createdAt)}</small>
+                  <a className="text-link" href="/team-portal">Read full recap</a>
+                </>
+              ) : <p>No updates this week.</p>}
+            </section>
+
+            {parentUnreadCount > 0 ? (
+              <section className="parent-summary-card compact" aria-labelledby="parent-message-title">
+                <h2 id="parent-message-title">Messages</h2>
+                <p>{parentUnreadCount} unread message{parentUnreadCount === 1 ? "" : "s"} in {teamName} chat.</p>
+                <a className="button secondary" href="/team-chat">Open chat</a>
+              </section>
+            ) : null}
+
+            {latestMediaItem ? (
+              <section className="parent-summary-card compact" aria-labelledby="parent-photos-title">
+                <h2 id="parent-photos-title">Photos</h2>
+                <p>{mediaFeed.length} approved media item{mediaFeed.length === 1 ? "" : "s"} for {teamName}. Latest: {latestMediaItem.title}.</p>
+                <a className="button secondary" href="#team-media">View photos</a>
+              </section>
+            ) : null}
+
+            <p className="parent-privacy-indicator">Your family&apos;s info is private to your team. <a href="/account">Privacy settings</a></p>
+          </div>
+        </div>
       </section>
+      )}
 
       <p className={`notice ${dashboardData?.isSupabaseBacked ? "ok" : "warning"}`}>
         {dashboardData?.message ?? "Showing local seed fallback until Supabase has linked parent and coach records."}
@@ -1029,35 +1285,11 @@ export function ParentDashboardClient({ dashboardData }: { dashboardData?: Paren
       {accessGate ?? (
         <>
 
-      <section className="grid one">
-        <article className="card stack">
-          <span className="eyebrow">Parent help assistant</span>
-          <h2>{parentSuggestions[0]?.title ?? "Scoped help"}</h2>
-          {parentSuggestions.map((suggestion) => (
-            <div className="stack compact" key={suggestion.id}>
-              <p><strong>{suggestion.body}</strong></p>
-              <p>{suggestion.recommendation}</p>
-              <p className="muted">{suggestion.boundary}</p>
-            </div>
-          ))}
-        </article>
-      </section>
-
-      <section className="card stack">
-        <h2>Parent onboarding</h2>
-        {onboardingSteps.map((step) => (
-          <p key={step.label}>
-            <span className={`badge ${step.done ? "ok" : "warning"}`}>{step.done ? "Done" : "Next"}</span>{" "}
-            {step.label}
-          </p>
-        ))}
-      </section>
-
-      <section className="card stack">
+      <section className="card stack" id="more-parent-actions">
         <div className="card-header">
-          <div>
-            <span className="eyebrow">Parent action checklist</span>
-            <h2>Next family actions</h2>
+            <div>
+              <span className="eyebrow">More family tasks</span>
+              <h2>All pending items</h2>
           </div>
           <span className="badge">{actionChecklist.filter((item) => !item.done).length} open</span>
         </div>
@@ -1083,7 +1315,7 @@ export function ParentDashboardClient({ dashboardData }: { dashboardData?: Paren
         </article>
 
         <article className="card stack">
-          <h2>Coach Updates</h2>
+          <h2>Coach updates</h2>
           {dashboard.latestAnnouncement ? (
             <>
               <strong>{dashboard.latestAnnouncement.title}</strong>
@@ -1107,7 +1339,7 @@ export function ParentDashboardClient({ dashboardData }: { dashboardData?: Paren
             <p key={`${event.id}-${player.id}`}>{player.firstName} {player.lastInitial}. · {event.title}</p>
           )) : <p className="muted">No RSVP needed right now.</p>}
         </article>
-        <article className="card stack">
+        <article className="card stack" id="team-media">
           <h2>Recent Media</h2>
           {dashboard.recentMedia.map((item) => {
             const validation = validateMediaUrl(item.type, item.url);
@@ -1158,7 +1390,7 @@ export function ParentDashboardClient({ dashboardData }: { dashboardData?: Paren
         <article className="card stack">
           <div className="card-header">
             <div>
-              <span className="eyebrow">Parent calendar view</span>
+              <span className="eyebrow">Family calendar</span>
               <h2>Family calendar</h2>
             </div>
             <span className="badge">{filteredParentEvents.length} event(s)</span>
@@ -1187,7 +1419,7 @@ export function ParentDashboardClient({ dashboardData }: { dashboardData?: Paren
         <article className="card stack">
           <div className="card-header">
             <div>
-              <span className="eyebrow">Parent media feed</span>
+              <span className="eyebrow">Team media</span>
               <h2>Team media</h2>
             </div>
             <span className="badge">{filteredMediaFeed.length} item(s)</span>
@@ -1222,7 +1454,7 @@ export function ParentDashboardClient({ dashboardData }: { dashboardData?: Paren
         </article>
       </section>
 
-      <section className="grid two">
+      <section className="grid two" id="family-help">
         <article className="card stack">
           <div className="card-header">
             <div>
@@ -1275,11 +1507,11 @@ export function ParentDashboardClient({ dashboardData }: { dashboardData?: Paren
         </article>
       </section>
 
-      <section className="grid two">
+      <section className="grid two" id="schedule-alerts">
         <article className="card stack">
           <div className="card-header">
             <div>
-              <span className="eyebrow">Notification preference center</span>
+              <span className="eyebrow">Schedule alerts</span>
               <h2>Family alert rules</h2>
             </div>
             <span className={`badge ${dashboardData?.isSupabaseBacked ? "ok" : "warning"}`}>{dashboardData?.isSupabaseBacked ? "Persisted" : "Local preview"}</span>
@@ -1318,7 +1550,7 @@ export function ParentDashboardClient({ dashboardData }: { dashboardData?: Paren
         <article className="card stack">
           <div className="card-header">
             <div>
-              <span className="eyebrow">Parent support request flow</span>
+              <span className="eyebrow">Ask for help</span>
               <h2>Ask league staff for help</h2>
             </div>
             <span className={`badge ${dashboardData?.isSupabaseBacked ? "ok" : "warning"}`}>{dashboardData?.isSupabaseBacked ? "Persisted" : "Local preview"}</span>
@@ -1463,12 +1695,15 @@ export function CoachDashboardClient({ dashboardData }: { dashboardData?: Parent
   const teamIds = new Set(teams.map((team) => team.id));
   const assignedEvents = sourceState.events.filter((event) => teamIds.has(event.teamId) && event.status === "scheduled");
   const nextAssignedEvent = assignedEvents[0];
+  const primaryCoachTeam = teams.find((team) => team.id === nextAssignedEvent?.teamId)
+    ?? teams.find((team) => team.seasonId === sourceState.activeSeason.id)
+    ?? teams[0];
   const weatherAlerts = sourceState.weatherAlerts.filter((alert) => teamIds.has(alert.teamId));
   const weatherApprovalQueue = getWeatherApprovalQueue(sourceState).filter((item) => teamIds.has(item.alert.teamId));
   const weatherRetryLogs = getWeatherProviderRetryLogs(sourceState).filter((item) => teamIds.has(item.alert.teamId));
   const weatherAlertHistory = getWeatherAlertHistory(sourceState).filter((item) => teamIds.has(item.alert.teamId));
   const sportWeatherThresholds = getSportWeatherThresholds("baseball");
-  const leagueWeatherThresholds = getLeagueWeatherThresholds(teams[0]?.division ?? "3U");
+  const leagueWeatherThresholds = getLeagueWeatherThresholds(primaryCoachTeam?.division ?? "3U");
   const weatherThresholdReview = evaluateWeatherThresholds({
     heatIndex: 91,
     lightningMiles: 8,
@@ -1486,6 +1721,14 @@ export function CoachDashboardClient({ dashboardData }: { dashboardData?: Parent
   const volunteerNeeds = sourceState.volunteerSignups.filter((signup) => teamIds.has(signup.teamId) && signup.status === "open");
   const snackNeeds = sourceState.snackScheduleSlots.filter((slot) => teamIds.has(slot.teamId) && slot.status === "open");
   const accessGate = privateAccessGate(dashboardData, "coach");
+  const nextCoachSummary = summaries[0];
+  const nextCoachEvent = nextCoachSummary?.event ?? nextAssignedEvent;
+  const coachReviewCount = (nextCoachSummary?.noResponse ?? 0) + weatherApprovalQueue.length + snackNeeds.length + volunteerNeeds.length;
+  const coachReviewItems = [
+    nextCoachSummary?.noResponse ? `${nextCoachSummary.noResponse} RSVP response${nextCoachSummary.noResponse === 1 ? "" : "s"} still missing.` : "No RSVP gaps on the next event.",
+    weatherApprovalQueue.length ? `${weatherApprovalQueue.length} weather draft${weatherApprovalQueue.length === 1 ? "" : "s"} need review.` : "No weather draft needs review.",
+    snackNeeds.length || volunteerNeeds.length ? `${snackNeeds.length + volunteerNeeds.length} snack or volunteer item${snackNeeds.length + volunteerNeeds.length === 1 ? "" : "s"} open.` : "Family help coverage looks set."
+  ];
   const coachOnboardingSteps = [
     { label: "Active coach membership", done: teams.length > 0, detail: teams.map((team) => team.name).join(", ") || "No assigned teams." },
     { label: "Review attendance snapshot", done: summaries.length > 0, detail: `${summaries.length} upcoming assigned event(s).` },
@@ -1512,15 +1755,14 @@ export function CoachDashboardClient({ dashboardData }: { dashboardData?: Parent
   }
 
   function saveWeeklyUpdate() {
-    const teamId = teams[0]?.id;
-    if (!teamId) {
+    if (!primaryCoachTeam) {
       setActionMessage("An assigned team is required before saving a weekly update.");
       return;
     }
 
     runCoachAction("/api/coach/weekly-update", {
-      teamId,
-      title: `Weekly update for ${teams[0]?.name ?? "team"}`,
+      teamId: primaryCoachTeam.id,
+      title: `Weekly update for ${primaryCoachTeam.name}`,
       body: weeklyUpdateBody
     });
   }
@@ -1531,10 +1773,42 @@ export function CoachDashboardClient({ dashboardData }: { dashboardData?: Parent
 
   return (
     <div className="page">
-      <section className="hero">
-        <span className="eyebrow">Coach dashboard</span>
-        <h1>{coachUser?.name ?? "Coach"}&apos;s week, attendance, replay, and team help in one view.</h1>
-        <p className="lead">This view is scoped to assigned teams and now sends weather, snack, and volunteer actions through the private Supabase APIs when a coach is signed in.</p>
+      <section className="season-home season-coach-home" aria-labelledby="coach-home-title">
+        <article className="season-hero-card">
+          <div className="season-hero-main">
+            <span className="season-label">Coach Home</span>
+            <h1 id="coach-home-title">{nextCoachEvent ? `${nextCoachEvent.title} is the next event.` : "No assigned event is scheduled yet."}</h1>
+            <div className="season-event-strip" aria-label="Next event readiness">
+              <div className="season-fact">
+                <span>When</span>
+                <strong>{formatShortDay(nextCoachEvent?.startsAt)}</strong>
+                <small>{formatShortTime(nextCoachEvent?.startsAt)}</small>
+              </div>
+              <div className="season-fact">
+                <span>Where</span>
+                <strong>{nextCoachEvent?.locationName ?? "Field pending"}</strong>
+                <small>{nextCoachEvent?.locationAddress ?? "Add a location before families arrive."}</small>
+              </div>
+              <div className="season-fact">
+                <span>No response</span>
+                <strong>{nextCoachSummary?.noResponse ?? 0}</strong>
+                <small>{nextCoachSummary ? `${nextCoachSummary.going} going, ${nextCoachSummary.maybe} maybe, ${nextCoachSummary.notGoing} not going.` : "No RSVP summary yet."}</small>
+              </div>
+            </div>
+            <a className="button season-primary-action" href="/coach/rsvps">Review RSVPs</a>
+          </div>
+          <aside className="season-side" aria-label="Coach review list">
+            <div className="season-readiness-score">
+              <span>Needs review</span>
+              <strong>{coachReviewCount}</strong>
+              <p>RSVP gaps, weather drafts, snacks, and volunteer roles only.</p>
+            </div>
+            <ul className="season-review-list">
+              {coachReviewItems.map((item) => <li key={item}>{item}</li>)}
+            </ul>
+            <p className="season-privacy-note">This home screen is limited to {coachUser?.name ?? "this coach"} and assigned team records.</p>
+          </aside>
+        </article>
       </section>
 
       <p className={`notice ${dashboardData?.isSupabaseBacked ? "ok" : "warning"}`}>
@@ -1552,9 +1826,9 @@ export function CoachDashboardClient({ dashboardData }: { dashboardData?: Parent
 
       <section className="card stack">
         <div className="card-header">
-          <div>
-            <span className="eyebrow">Coach onboarding</span>
-            <h2>Assigned-team setup checklist</h2>
+            <div>
+              <span className="eyebrow">Coach setup</span>
+              <h2>Team setup checklist</h2>
           </div>
           <span className="badge">{coachOnboardingSteps.filter((step) => !step.done).length} open</span>
         </div>
@@ -1570,7 +1844,7 @@ export function CoachDashboardClient({ dashboardData }: { dashboardData?: Parent
       <section className="grid two">
         {coachSuggestions.map((suggestion) => (
           <article className="card stack" key={suggestion.id}>
-            <span className="eyebrow">Coach assistant</span>
+            <span className="eyebrow">Coach notes</span>
             <h2>{suggestion.title}</h2>
             <p><strong>{suggestion.body}</strong></p>
             <p>{suggestion.recommendation}</p>
@@ -2185,25 +2459,20 @@ export function AdminDashboardClient({ registrationRequests, sponsorData, mediaD
   const sponsorBillingProofs = buildSponsorBillingProofs(sponsors);
   const touchTargetQa = getTouchTargetQa();
   const offlineStateSummary = getOfflineStateSummary();
-  const cacheInvalidationPolicy = getCacheInvalidationPolicy();
-  const manualDarkToggle = getManualDarkToggleState(false);
   const contrastChecks = getAccessibilityContrastChecks();
   const privacyFilters = getPrivacyFilters();
-  const inviteAcceptanceRate = getInviteAcceptanceRate(state);
-  const averageInviteToAccountTime = getAverageInviteToAccountTimeHours(state);
-  const failedInviteCount = getFailedInviteCount(state);
-  const parentLinkCompletionRate = getParentLinkCompletionRate(state);
-  const rsvpResponseRate = getRsvpResponseRate(state);
-  const scheduleAlertOpenRate = getScheduleAlertOpenRate(state);
-  const weeklyActiveParents = getWeeklyActiveParents(state);
-  const supportRequestsPerTeam = getSupportRequestsPerTeam(state);
-  const csvImportErrorRate = getCsvImportErrorRate(state);
-  const coachWeeklyUpdateSendRate = getCoachWeeklyUpdateSendRate(state);
-  const gameDayCalmModeUsage = getGameDayCalmModeUsage(state);
-  const parentReplayCompletionRate = getParentReplayCompletionRate(state);
-  const microCoachingStreakRate = getMicroCoachingStreakRate(state);
-  const mediaEngagementRate = getMediaEngagementRate(state);
-  const notificationOptOutRate = getNotificationOptOutRate(state);
+  const teamsWithUpcomingEvents = new Set(state.events
+    .filter((event) => event.status === "scheduled" && new Date(event.startsAt).getTime() >= new Date(NOW).getTime())
+    .map((event) => event.teamId));
+  const teamHelpRows = state.teams.map((team) => {
+    const issues = [
+      !team.coachUserId ? "coach" : undefined,
+      !teamsWithUpcomingEvents.has(team.id) ? "event" : undefined
+    ].filter(Boolean) as string[];
+    return { team, issues };
+  }).filter((row) => row.issues.length > 0);
+  const pendingSponsorReviews = sponsors.filter((sponsor) => sponsor.status === "pending").length;
+  const pendingReviewCount = pendingRegistrations.length + mediaReportingSummary.pendingReview + pendingSponsorReviews;
   const [communicationTeamId, setCommunicationTeamId] = useState("team-tigers");
   const [communicationChannel, setCommunicationChannel] = useState<AdminCommunicationChannel>("email");
   const [communicationTemplate, setCommunicationTemplate] = useState<CommunicationTemplate>("weekly_digest");
@@ -2377,7 +2646,7 @@ export function AdminDashboardClient({ registrationRequests, sponsorData, mediaD
         now: new Date().toISOString()
       }
     });
-    setCommunicationMessage(`${communicationPreview.notificationCount} ${communicationChannel.toUpperCase()} automation record(s) queued. Provider delivery is still disconnected.`);
+    setCommunicationMessage(`${communicationPreview.notificationCount} ${communicationChannel.toUpperCase()} message draft record(s) queued. Provider delivery is still disconnected.`);
   }
 
   function assignLineupPlayer(positionId: LineupPositionId) {
@@ -2394,10 +2663,46 @@ export function AdminDashboardClient({ registrationRequests, sponsorData, mediaD
 
   return (
     <div className="page">
-      <section className="hero">
-        <span className="eyebrow">Admin dashboard</span>
-        <h1>League operations across teams, registrations, sponsors, notifications, and readiness.</h1>
-        <p className="lead">Admin actions remain local and review-oriented. Provider sends, account grants, and payment/sponsor billing are not connected.</p>
+      <section className="season-home season-admin-home" aria-labelledby="admin-home-title">
+        <article className="season-hero-card">
+          <div className="season-hero-main">
+            <span className="season-label">Admin Home</span>
+            <h1 id="admin-home-title">League health for this week.</h1>
+            <div className="season-score-row" aria-label="League health summary">
+              <div className="season-fact">
+                <span>Teams needing help</span>
+                <strong>{teamHelpRows.length}</strong>
+                <small>{teamHelpRows[0] ? `${teamHelpRows[0].team.name}: needs ${teamHelpRows[0].issues.join(", ")}` : "Every team has a coach and upcoming event."}</small>
+              </div>
+              <div className="season-fact">
+                <span>Pending reviews</span>
+                <strong>{pendingReviewCount}</strong>
+                <small>{pendingRegistrations.length} registrations, {mediaReportingSummary.pendingReview} media, {pendingSponsorReviews} sponsors.</small>
+              </div>
+              <div className="season-fact">
+                <span>Families not linked</span>
+                <strong>{healthCards.find((card) => card.id === "players-without-parents")?.count ?? 0}</strong>
+                <small>Guardian links stay admin-reviewed.</small>
+              </div>
+            </div>
+            <a className="button season-primary-action" href={pendingRegistrations.length ? "/admin/registrations" : "/admin/operations"}>
+              {pendingRegistrations.length ? "Review registrations" : "Open operations"}
+            </a>
+          </div>
+          <aside className="season-side" aria-label="Teams needing help">
+            <div className="season-readiness-score">
+              <span>Review queues</span>
+              <strong>{pendingReviewCount}</strong>
+              <p>Registration, media, and sponsor records only. No payment or provider send is implied.</p>
+            </div>
+            <ul className="season-review-list">
+              {teamHelpRows.slice(0, 4).map((row) => (
+                <li key={row.team.id}><strong>{row.team.name}</strong> needs {row.issues.join(" and ")}.</li>
+              ))}
+              {!teamHelpRows.length ? <li>All teams have a coach and at least one upcoming event.</li> : null}
+            </ul>
+          </aside>
+        </article>
       </section>
 
       <section className="grid three">
@@ -2409,7 +2714,7 @@ export function AdminDashboardClient({ registrationRequests, sponsorData, mediaD
       <section className="grid two">
         {adminSuggestions.map((suggestion) => (
           <article className="card stack" key={suggestion.id}>
-            <span className="eyebrow">Admin copilot</span>
+            <span className="eyebrow">Suggested reviews</span>
             <h2>{suggestion.title}</h2>
             <p><strong>{suggestion.body}</strong></p>
             <p>{suggestion.recommendation}</p>
@@ -2429,8 +2734,8 @@ export function AdminDashboardClient({ registrationRequests, sponsorData, mediaD
         <article className="card stack">
           <div className="card-header">
             <div>
-              <span className="eyebrow">Email automation and mass SMS</span>
-              <h2>Communication console</h2>
+              <span className="eyebrow">Family message drafts</span>
+              <h2>Message draft review</h2>
             </div>
             <span className={`badge ${communicationPreview.ok ? "ok" : "warning"}`}>{communicationPreview.notificationCount} recipient(s)</span>
           </div>
@@ -2446,7 +2751,7 @@ export function AdminDashboardClient({ registrationRequests, sponsorData, mediaD
               </select>
             </label>
             <label>
-              Automation
+              Message type
               <select value={communicationTemplate} onChange={(event) => {
                 const template = event.target.value as CommunicationTemplate;
                 setCommunicationTemplate(template);
@@ -2458,8 +2763,8 @@ export function AdminDashboardClient({ registrationRequests, sponsorData, mediaD
             <label>
               Channel
               <select value={communicationChannel} onChange={(event) => setCommunicationChannel(event.target.value as AdminCommunicationChannel)}>
-                <option value="email">Email automation</option>
-                <option value="sms">Mass SMS</option>
+                <option value="email">Email draft</option>
+                <option value="sms">SMS draft</option>
               </select>
             </label>
             <label>
@@ -2478,7 +2783,7 @@ export function AdminDashboardClient({ registrationRequests, sponsorData, mediaD
               <span className="badge" key={recipient.id}>{recipient.name}</span>
             ))}
           </div>
-          <button disabled={!communicationPreview.ok} onClick={queueCommunication}>Queue automation records</button>
+          <button disabled={!communicationPreview.ok} onClick={queueCommunication}>Queue message drafts</button>
           {communicationMessage ? <p className="notice">{communicationMessage}</p> : null}
         </article>
       </section>
@@ -2623,7 +2928,7 @@ export function AdminDashboardClient({ registrationRequests, sponsorData, mediaD
 
       <section className="grid three">
         <article className="card stack">
-          <h2>Queued communication records</h2>
+          <h2>Queued message records</h2>
           <p>{state.notifications.length} local notification records queued across push, email, and SMS channels.</p>
           {state.notifications.slice(0, 4).map((notification) => (
             <p key={notification.id}><strong>{notification.title}</strong><br /><span className="muted">{notification.channel} - {notification.status}</span></p>
@@ -2766,14 +3071,14 @@ export function AdminDashboardClient({ registrationRequests, sponsorData, mediaD
             </label>
           </div>
           <button disabled={isSponsorPending} onClick={saveSponsorDraft}>Save sponsor</button>
-          <p className="muted">Stripe live collection is not connected. Sponsor billing proof stays separate from registration, RSVP, schedule, safety, and child-facing sponsor display.</p>
+          <p className="muted">Stripe live collection is not connected. Sponsor billing records stay separate from registration, RSVP, schedule, safety, and child-facing sponsor display.</p>
           <div className="stack compact">
-            <h3>Sponsor billing proof</h3>
-            <p className="muted">Stripe Product/Price, invoice proof, and payment proof are admin-only readiness records. Public sponsor placement does not depend on or reveal payment status.</p>
+            <h3>Sponsor billing records</h3>
+            <p className="muted">Stripe Product/Price, invoice reference, and payment status are admin-only records. Public sponsor placement does not depend on or reveal payment status.</p>
             {sponsorBillingProofs.slice(0, 3).map((proof) => (
               <p key={proof.sponsorId}>
                 <strong>{proof.sponsorName}</strong><br />
-                <span className="muted">Stripe Product/Price: {proof.priceLookupKey}; Invoice proof: {proof.invoiceReference}; Payment proof: {proof.paymentProofStatus}; ${(proof.amountCents / 100).toFixed(2)} {proof.currency.toUpperCase()}.</span>
+                <span className="muted">Stripe Product/Price: {proof.priceLookupKey}; invoice reference: {proof.invoiceReference}; payment status: {proof.paymentProofStatus}; ${(proof.amountCents / 100).toFixed(2)} {proof.currency.toUpperCase()}.</span>
               </p>
             ))}
             <p className="notice">Sponsor billing stays separate from child-facing display. Stripe keys must stay server-side and preferably use restricted keys.</p>
@@ -2789,30 +3094,14 @@ export function AdminDashboardClient({ registrationRequests, sponsorData, mediaD
         </article>
         <article className="card stack">
           <h2>Readiness</h2>
-          {healthCards.slice(0, 3).map((card) => (
-            <p key={card.id}>{card.title}: {card.count}</p>
+          {healthCards.slice(0, 4).map((card) => (
+            <p key={card.id}><strong>{card.title}:</strong> {card.count}<br /><span className="muted">{card.detail}</span></p>
           ))}
-          <p><strong>Touch Target QA:</strong> {touchTargetQa.status} · {touchTargetQa.minimumPixels}px minimum.</p>
-          <p><strong>Offline states:</strong> {offlineStateSummary.status} · {offlineStateSummary.detail}</p>
-          <p><strong>Cache invalidation policy:</strong> {cacheInvalidationPolicy.strategy} · {cacheInvalidationPolicy.detail}</p>
-          <p><strong>Manual dark toggle:</strong> {manualDarkToggle.label}</p>
-          <p><strong>Accessibility contrast checks:</strong> {contrastChecks.length} reviewed surface(s).</p>
+          <p><strong>Touch target check:</strong> {touchTargetQa.status}, {touchTargetQa.minimumPixels}px minimum.</p>
+          <p><strong>Offline label:</strong> {offlineStateSummary.status}. {offlineStateSummary.detail}</p>
+          <p><strong>Contrast checks:</strong> {contrastChecks.length} reviewed surface(s).</p>
           <p><strong>Privacy filters:</strong> {privacyFilters.length} active filter(s).</p>
-          <p><strong>Invite acceptance rate:</strong> {inviteAcceptanceRate}%</p>
-          <p><strong>Average invite-to-account time:</strong> {averageInviteToAccountTime} hour(s)</p>
-          <p><strong>Failed invite count:</strong> {failedInviteCount}</p>
-          <p><strong>Parent link completion rate:</strong> {parentLinkCompletionRate}%</p>
-          <p><strong>RSVP response rate:</strong> {rsvpResponseRate}%</p>
-          <p><strong>Schedule alert open rate:</strong> {scheduleAlertOpenRate}%</p>
-          <p><strong>Weekly active parents:</strong> {weeklyActiveParents}</p>
-          <p><strong>Support requests per team:</strong> {supportRequestsPerTeam.length} team(s) tracked</p>
-          <p><strong>CSV import error rate:</strong> {csvImportErrorRate}%</p>
-          <p><strong>Coach weekly update send rate:</strong> {coachWeeklyUpdateSendRate}%</p>
-          <p><strong>Game Day Calm Mode usage:</strong> {gameDayCalmModeUsage} game(s)</p>
-          <p><strong>Parent Replay completion rate:</strong> {parentReplayCompletionRate}%</p>
-          <p><strong>Micro-Coaching streak rate:</strong> {microCoachingStreakRate}%</p>
-          <p><strong>Media engagement rate:</strong> {mediaEngagementRate}%</p>
-          <p><strong>Notification opt-out rate:</strong> {notificationOptOutRate}%</p>
+          <p className="muted">Engagement and delivery-rate metrics stay out of this home card until they are backed by production reporting.</p>
         </article>
       </section>
     </div>
@@ -2822,8 +3111,12 @@ export function AdminDashboardClient({ registrationRequests, sponsorData, mediaD
 export function AdminThemesClient({ initialData }: { initialData: AdminThemeData }) {
   const [teams, setTeams] = useState(initialData.teams);
   const [audits, setAudits] = useState<TeamThemeAudit[]>(initialData.audits);
+  const [logoAssets, setLogoAssets] = useState<TeamLogoAsset[]>(initialData.logoAssets);
   const [tenantDefaults, setTenantDefaults] = useState<TenantThemeDefaults>(initialData.tenantDefaults);
   const [teamId, setTeamId] = useState(initialData.teams[0]?.id ?? "");
+  const [logoTeamId, setLogoTeamId] = useState(initialData.teams[0]?.id ?? "");
+  const [logoUrl, setLogoUrl] = useState("");
+  const [logoPolicyNotes, setLogoPolicyNotes] = useState("Pending logo asset review.");
   const [actorUserId, setActorUserId] = useState(initialData.users.find((user) => user.role === "admin")?.id ?? initialData.users[0]?.id ?? "");
   const [drafts, setDrafts] = useState<Record<string, Pick<Team, "mascot" | "primaryColor" | "secondaryColor" | "themeKey">>>({});
   const [message, setMessage] = useState("");
@@ -2839,6 +3132,14 @@ export function AdminThemesClient({ initialData }: { initialData: AdminThemeData
   const selectedActorId = actors.some((user) => user.id === actorUserId) ? actorUserId : actors[0]?.id ?? actorUserId;
   const selectedContrast = draft ? contrastStatus(draft.primaryColor, draft.secondaryColor) : null;
   const brandLaunchValidation = useMemo(() => buildBrandLaunchValidation(teams), [teams]);
+  const teamsUsingDefaults = teams.filter((item) => item.themeKey === tenantDefaults.themeKey &&
+    item.mascot === tenantDefaults.mascot &&
+    item.primaryColor.toLowerCase() === tenantDefaults.primaryColor.toLowerCase() &&
+    item.secondaryColor.toLowerCase() === tenantDefaults.secondaryColor.toLowerCase()).length;
+  const pendingLogoAssets = logoAssets.filter((asset) => asset.status === "pending").length;
+  const approvedLogoAssets = logoAssets.filter((asset) => asset.status === "approved").length;
+  const themeQaPassCount = teams.filter((item) => themeQaStatus(item.primaryColor, item.secondaryColor).className === "ok").length;
+  const logoTargetTeam = teams.find((item) => item.id === logoTeamId);
 
   function updateDraft(field: "mascot" | "primaryColor" | "secondaryColor" | "themeKey", value: string) {
     if (!team || !draft) return;
@@ -2922,15 +3223,68 @@ export function AdminThemesClient({ initialData }: { initialData: AdminThemeData
     });
   }
 
+  function saveLogoAsset() {
+    if (!logoUrl.trim()) return;
+    setMessage("");
+    startTransition(async () => {
+      const response = await authenticatedJsonFetch("/api/admin/team-logos", {
+        organizationId: tenantDefaults.organizationId,
+        teamId: logoTeamId || undefined,
+        url: logoUrl,
+        policyNotes: logoPolicyNotes
+      });
+      const result = await response.json().catch(() => null) as {
+        ok?: boolean;
+        message?: string;
+        tenantLogoStatus?: TenantThemeDefaults["logoStatus"];
+        logoAsset?: TeamLogoAsset;
+      } | null;
+
+      if (result?.ok && result.logoAsset) {
+        setLogoAssets((current) => [result.logoAsset!, ...current].slice(0, 25));
+        setLogoUrl("");
+        if (result.tenantLogoStatus) {
+          setTenantDefaults((current) => ({ ...current, logoStatus: result.tenantLogoStatus! }));
+        }
+      }
+
+      setMessage(result?.message ?? "Logo asset could not be queued for review.");
+    });
+  }
+
   return (
     <div className="page admin-themes-page">
       <section className="hero">
-        <span className="eyebrow">Admin theme console</span>
+        <span className="eyebrow">Admin customization workbench</span>
         <h1>First-class team branding control across every portal.</h1>
-        <p className="lead">Update mascot, sport theme, and team colors from Supabase-backed records. The console shows mobile and dark previews, basic contrast checks, and audit evidence for saved changes.</p>
+        <p className="lead">Update team identity, tenant defaults, logo review metadata, and launch proof from Supabase-backed admin controls.</p>
+        <p className="muted">Admin theme console writes still derive the acting user from the verified Supabase session. Preview controls do not grant access.</p>
       </section>
 
       {message ? <p className="notice">{message}</p> : null}
+
+      <section className="admin-workbench-grid" aria-label="Customization modules">
+        <article className="card stack workbench-module active">
+          <span className="badge ok">Live editor</span>
+          <h2>Identity and colors</h2>
+          <p className="muted">{teams.length} team theme records. {themeQaPassCount} pass the current contrast QA checks.</p>
+        </article>
+        <article className="card stack workbench-module">
+          <span className="badge info">Tenant baseline</span>
+          <h2>Future team defaults</h2>
+          <p className="muted">{teamsUsingDefaults} team(s) match the current default preset. Logo status is {tenantDefaults.logoStatus.replace("_", " ")}.</p>
+        </article>
+        <article className="card stack workbench-module">
+          <span className="badge warning">Review queue</span>
+          <h2>Logo assets</h2>
+          <p className="muted">{pendingLogoAssets} pending and {approvedLogoAssets} approved metadata record(s). Binary storage remains provider-gated.</p>
+        </article>
+        <article className="card stack workbench-module">
+          <span className={`badge ${brandLaunchValidation.coveragePercent === 100 ? "ok" : "warning"}`}>{brandLaunchValidation.coveragePercent}% covered</span>
+          <h2>Launch proof</h2>
+          <p className="muted">20 target brand surfaces, monitoring events, alert rules, and coach feedback checks.</p>
+        </article>
+      </section>
 
       <section className="grid two">
         <article className="card stack">
@@ -2941,13 +3295,15 @@ export function AdminThemesClient({ initialData }: { initialData: AdminThemeData
             </div>
             {selectedContrast ? <span className={`badge ${selectedContrast.className}`}>{selectedContrast.label}</span> : null}
           </div>
+          <p className="muted">Customization editor for mascot, sport preset, and portal colors. The private API ignores client-supplied actor IDs and uses the signed-in session.</p>
           <label>
-            Acting admin or coach
+            Preview actor
             <select value={selectedActorId} onChange={(event) => setActorUserId(event.target.value)}>
               {actors.map((user) => (
                 <option key={user.id} value={user.id}>{user.name} - {roleLabel(user.role)}</option>
               ))}
             </select>
+            <span className="field-hint">For admin review context only. Authorization is checked server-side.</span>
           </label>
           <label>
             Team
@@ -3005,6 +3361,62 @@ export function AdminThemesClient({ initialData }: { initialData: AdminThemeData
       </section>
 
       <section className="grid two">
+        <article className="card stack admin-logo-workbench">
+          <div className="card-header">
+            <div>
+              <span className="eyebrow">Logo asset review</span>
+              <h2>Queue logo metadata for customization</h2>
+            </div>
+            <span className={`badge ${tenantDefaults.logoStatus === "approved" ? "ok" : tenantDefaults.logoStatus === "queued" ? "warning" : "neutral"}`}>
+              {tenantDefaults.logoStatus.replace("_", " ")}
+            </span>
+          </div>
+          <p className="muted">Admins can register an HTTPS logo URL for review. This does not upload a binary file, publish a family-facing logo, or connect provider storage.</p>
+          <div className="grid two">
+            <label>
+              Logo applies to
+              <select value={logoTeamId} onChange={(event) => setLogoTeamId(event.target.value)}>
+                <option value="">Tenant default logo</option>
+                {teams.map((item) => (
+                  <option key={item.id} value={item.id}>{item.name} - {item.division}</option>
+                ))}
+              </select>
+            </label>
+            <label>
+              HTTPS logo URL
+              <input type="url" value={logoUrl} onChange={(event) => setLogoUrl(event.target.value)} placeholder="https://assets.example.com/logo.png" />
+            </label>
+            <label>
+              Policy notes
+              <textarea value={logoPolicyNotes} onChange={(event) => setLogoPolicyNotes(event.target.value)} />
+              <span className="field-hint">Use notes for child-safety, sponsor-separation, and contrast review evidence.</span>
+            </label>
+          </div>
+          <button onClick={saveLogoAsset} disabled={isPending || !logoUrl.trim()}>{isPending ? "Queueing..." : "Queue logo review"}</button>
+          <p className="muted">Current target: {logoTargetTeam ? `${logoTargetTeam.name} team logo` : "tenant default logo"}. Sponsor logos stay in sponsor records.</p>
+        </article>
+
+        <article className="card stack">
+          <h2>Logo review queue</h2>
+          {logoAssets.map((asset) => {
+            const assetTeam = teams.find((item) => item.id === asset.teamId);
+            return (
+              <p key={asset.id} className="logo-asset-row">
+                <strong>{assetTeam?.name ?? "Tenant default logo"}</strong>
+                <br />
+                <span className="muted">{asset.url}</span>
+                <br />
+                <span className={`badge ${statusClass(asset.status)}`}>{asset.status}</span>
+                <span className="muted"> Submitted {formatDate(asset.createdAt)}{asset.policyNotes ? ` - ${asset.policyNotes}` : ""}</span>
+              </p>
+            );
+          })}
+          {!logoAssets.length ? <p className="muted">No logo assets queued yet.</p> : null}
+          <p className="notice">Binary upload, public rendering, and email/push logo use still require provider configuration, review approval, and browser proof.</p>
+        </article>
+      </section>
+
+      <section className="grid two">
         <article className="card stack">
           <h2>All team themes</h2>
           {teams.map((item) => {
@@ -3021,13 +3433,15 @@ export function AdminThemesClient({ initialData }: { initialData: AdminThemeData
                 <span className="theme-swatch" style={{ background: item.secondaryColor }} />
                 <strong>{item.name}</strong>
                 <span>{getProgramThemePreset(item.themeKey).label} - {item.mascot}</span>
-                <span>Logo: {tenantDefaults.logoStatus.replace("_", " ")}</span>
-                <span>{lastAudit ? formatDate(lastAudit.createdAt) : "No audit yet"}</span>
-                {usesTenantDefaults ? <span className="badge ok">Default</span> : null}
-                <span className={`badge ${status.className}`}>{status.label}</span>
-                <span className={`badge ${qa.className}`}>{qa.label}</span>
-                <span>Dark: {qa.darkLabel}</span>
-                <span>Mobile: {qa.mobileLabel}</span>
+                <span className="theme-row-meta">
+                  <span>Logo: {tenantDefaults.logoStatus.replace("_", " ")}</span>
+                  <span>{lastAudit ? formatDate(lastAudit.createdAt) : "No audit yet"}</span>
+                  {usesTenantDefaults ? <span className="badge ok">Default</span> : null}
+                  <span className={`badge ${status.className}`}>{status.label}</span>
+                  <span className={`badge ${qa.className}`}>{qa.label}</span>
+                  <span>Dark: {qa.darkLabel}</span>
+                  <span>Mobile: {qa.mobileLabel}</span>
+                </span>
               </button>
             );
           })}
@@ -3852,38 +4266,72 @@ export function ScheduleAlertsClient({ scheduleData }: { scheduleData?: Schedule
   );
 }
 
-export function ParentReplayClient() {
+export function ParentReplayClient({ dashboardData }: { dashboardData?: ParentCoachDashboardData | null } = {}) {
   const { state, dispatch } = useAppState();
-  const [teamId, setTeamId] = useState("team-tigers");
-  const [coachUserId, setCoachUserId] = useState("user-coach-taylor");
+  const sourceState = dashboardData?.accessStatus === "live" ? dashboardData.state : state;
+  const initialTeamId = sourceState.teams[0]?.id ?? "team-tigers";
+  const initialCoachUserId = dashboardData?.accessStatus === "live"
+    ? dashboardData.coachUserId || sourceState.users[0]?.id || "user-coach-taylor"
+    : "user-coach-taylor";
+  const [teamId, setTeamId] = useState(initialTeamId);
+  const [coachUserId, setCoachUserId] = useState(initialCoachUserId);
   const [focusAreas, setFocusAreas] = useState<PracticeFocusArea[]>(["catching", "throwing", "teamwork"]);
+  const [rookieAgeBand, setRookieAgeBand] = useState<RookieCoachAgeBand>("3-4");
+  const [rookieSport, setRookieSport] = useState("baseball");
+  const [rookieExperienceLevel, setRookieExperienceLevel] = useState<RookieCoachExperienceLevel>("first_time");
+  const [rookieChallenge, setRookieChallenge] = useState<RookieCoachChallenge>("listening");
+  const [rookieMotivationStrategy, setRookieMotivationStrategy] = useState<RookieCoachMotivationStrategy>("mission_game");
+  const [rookiePracticePersonality, setRookiePracticePersonality] = useState<RookieCoachPracticePersonality>("wild_today");
+  const [rookieFocusAreasText, setRookieFocusAreasText] = useState("listening, teamwork, confidence with the ball");
+  const [sidelineResetVisible, setSidelineResetVisible] = useState(false);
   const [message, setMessage] = useState("");
   const [savedReplays, setSavedReplays] = useState<ParentReplayRecord[]>([]);
   const [aiProviderMessage, setAiProviderMessage] = useState("");
   const [aiProviderDrafts, setAiProviderDrafts] = useState<Record<string, AiCoachWorkspaceDraft>>({});
   const [isReplayPending, startReplayTransition] = useTransition();
   const [isAiProviderPending, startAiProviderTransition] = useTransition();
-  const selectedTeam = state.teams.find((team) => team.id === teamId);
+  const selectedTeam = sourceState.teams.find((team) => team.id === teamId);
+  const accessGate = privateAccessGate(dashboardData, "coach");
   const draft = useMemo(() => {
     const previewFocusAreas: PracticeFocusArea[] = focusAreas.length ? focusAreas : ["teamwork"];
-    return generateParentReplayDraft(state, {
+    return generateParentReplayDraft(sourceState, {
       teamId,
       coachUserId,
       focusAreas: previewFocusAreas,
       now: NOW
     });
-  }, [coachUserId, focusAreas, state, teamId]);
+  }, [coachUserId, focusAreas, sourceState, teamId]);
   const promptEvalHarness = getPromptEvalHarness();
-  const coachWorkspaceDrafts = useMemo(() => buildAiCoachWorkspaceDrafts(state, {
+  const coachWorkspaceDrafts = useMemo(() => buildAiCoachWorkspaceDrafts(sourceState, {
     teamId,
     coachUserId,
     focusAreas,
     now: NOW
-  }), [coachUserId, focusAreas, state, teamId]);
+  }), [coachUserId, focusAreas, sourceState, teamId]);
   const visibleCoachWorkspaceDrafts = useMemo(() => (
     coachWorkspaceDrafts.map((workspaceDraft) => aiProviderDrafts[workspaceDraft.id] ?? workspaceDraft)
   ), [aiProviderDrafts, coachWorkspaceDrafts]);
-  const teamReplays = [...savedReplays, ...state.parentReplays].filter((replay) => replay.teamId === teamId);
+  const rookieAssistFocusAreas = useMemo(() => (
+    rookieFocusAreasText.split(",").map((area) => area.trim()).filter(Boolean)
+  ), [rookieFocusAreasText]);
+  const rookieAssist = useMemo(() => generateRookieCoachAssist({
+    ageBand: rookieAgeBand,
+    sport: rookieSport,
+    experienceLevel: rookieExperienceLevel,
+    challenge: rookieChallenge,
+    motivationStrategy: rookieMotivationStrategy,
+    practicePersonality: rookiePracticePersonality,
+    focusAreas: rookieAssistFocusAreas
+  }), [
+    rookieAgeBand,
+    rookieAssistFocusAreas,
+    rookieChallenge,
+    rookieExperienceLevel,
+    rookieMotivationStrategy,
+    rookiePracticePersonality,
+    rookieSport
+  ]);
+  const teamReplays = [...savedReplays, ...sourceState.parentReplays].filter((replay) => replay.teamId === teamId);
   const selectedFocus = new Set(focusAreas);
   const canQueueReplay = focusAreas.length >= 2 && focusAreas.length <= 3;
 
@@ -3893,6 +4341,16 @@ export function ParentReplayClient() {
         ? current.filter((item) => item !== area)
         : [...current, area]
     ));
+  }
+
+  function applyRookieAssistSeed() {
+    setFocusAreas(rookieAssist.parentReplaySeed.focusAreas);
+    setMessage("Rookie Coach Assist seed applied locally. Review the Parent Replay preview before queueing.");
+  }
+
+  function showSidelineReset() {
+    setSidelineResetVisible(true);
+    setMessage("Chaos Button loaded a 90-second reset locally. Coach still chooses whether to use or share it.");
   }
 
   function queueParentReplay() {
@@ -3954,6 +4412,21 @@ export function ParentReplayClient() {
     });
   }
 
+  if (accessGate) {
+    return (
+      <div className="page parent-replay-page">
+        <section className="hero parent-replay-hero">
+          <span className="eyebrow">Signature feature</span>
+          <h1>Parent Replay turns every practice into help parents can use tonight.</h1>
+          <p className="lead">
+            Coaches click what the team worked on. The scaffold generates home activities, a coach video recommendation, a parent tip, skill cards, and a team quest without sending real provider messages.
+          </p>
+        </section>
+        {accessGate}
+      </div>
+    );
+  }
+
   return (
     <div className="page parent-replay-page">
       <section className="hero parent-replay-hero">
@@ -3965,6 +4438,169 @@ export function ParentReplayClient() {
       </section>
 
       {message ? <p className="notice">{message}</p> : null}
+      {dashboardData ? (
+        <p className={`notice ${dashboardData.isSupabaseBacked ? "ok" : "warning"}`}>
+          {dashboardData.message}
+        </p>
+      ) : null}
+
+      <section className="grid one">
+        <article className="card stack rookie-coach-assist">
+          <div className="card-header">
+            <div>
+              <span className="eyebrow">Rookie Coach Assist</span>
+              <h2>Age-safe practice help for new volunteer coaches</h2>
+            </div>
+            <span className="badge warning">Local preview only</span>
+          </div>
+          <p className="muted">
+            Deterministic guidance for coaches who are new to a sport, new to coaching, or coaching ages 3-6. It creates a reviewed Parent Replay seed only; it does not publish or send.
+          </p>
+
+          <div className="grid three rookie-assist-form">
+            <label>
+              Age band
+              <select value={rookieAgeBand} onChange={(event) => setRookieAgeBand(event.target.value as RookieCoachAgeBand)}>
+                {rookieCoachAgeBandOptions.map((option) => (
+                  <option key={option.id} value={option.id}>{option.label}</option>
+                ))}
+              </select>
+            </label>
+            <label>
+              Sport
+              <input value={rookieSport} onChange={(event) => setRookieSport(event.target.value)} />
+            </label>
+            <label>
+              Coach experience
+              <select value={rookieExperienceLevel} onChange={(event) => setRookieExperienceLevel(event.target.value as RookieCoachExperienceLevel)}>
+                {rookieCoachExperienceOptions.map((option) => (
+                  <option key={option.id} value={option.id}>{option.label}</option>
+                ))}
+              </select>
+            </label>
+            <label>
+              Challenge
+              <select value={rookieChallenge} onChange={(event) => setRookieChallenge(event.target.value as RookieCoachChallenge)}>
+                {rookieCoachChallengeOptions.map((option) => (
+                  <option key={option.id} value={option.id}>{option.label}</option>
+                ))}
+              </select>
+            </label>
+            <label>
+              Motivation strategy
+              <select value={rookieMotivationStrategy} onChange={(event) => setRookieMotivationStrategy(event.target.value as RookieCoachMotivationStrategy)}>
+                {rookieCoachMotivationStrategyOptions.map((option) => (
+                  <option key={option.id} value={option.id}>{option.label}</option>
+                ))}
+              </select>
+            </label>
+            <label>
+              Team energy
+              <select value={rookiePracticePersonality} onChange={(event) => setRookiePracticePersonality(event.target.value as RookieCoachPracticePersonality)}>
+                {rookieCoachPracticePersonalityOptions.map((option) => (
+                  <option key={option.id} value={option.id}>{option.label}</option>
+                ))}
+              </select>
+            </label>
+            <label>
+              Focus areas
+              <textarea value={rookieFocusAreasText} onChange={(event) => setRookieFocusAreasText(event.target.value)} />
+            </label>
+          </div>
+
+          <div className="notice stack">
+            <div className="card-header">
+              <div>
+                <strong>Chaos Button</strong>
+                <p className="muted">Live sideline reset for when kids are losing focus.</p>
+              </div>
+              <button type="button" onClick={showSidelineReset}>Give me a 90-second reset</button>
+            </div>
+            {sidelineResetVisible ? (
+              <div className="grid three">
+                <p><strong>Call-and-response:</strong> {rookieAssist.chaosReset.callAndResponse}</p>
+                <p><strong>Movement reset:</strong> {rookieAssist.chaosReset.movementReset}</p>
+                <p><strong>Water break:</strong> {rookieAssist.chaosReset.waterBreak}</p>
+                <p><strong>Quick game:</strong> {rookieAssist.chaosReset.quickGame}</p>
+                <p><strong>Regroup phrase:</strong> {rookieAssist.chaosReset.regroupPhrase}</p>
+              </div>
+            ) : <p className="muted">Press the button to reveal coach-reviewed reset copy. Nothing is sent or saved.</p>}
+          </div>
+
+          <div className="grid two rookie-assist-preview">
+            <div className="stack">
+              <span className="badge ok">Practice plan</span>
+              <h3>{rookieAssist.practiceTitle}</h3>
+              <p><strong>Coach objective:</strong> {rookieAssist.coachObjective}</p>
+              <div className="notice">
+                <strong>Practice Personality Engine: {rookieAssist.personalityAdjustment.label}</strong>
+                <p>{rookieAssist.personalityAdjustment.drillChange}</p>
+                <p className="muted">{rookieAssist.personalityAdjustment.tempo}</p>
+              </div>
+              <div className="grid three replay-activities">
+                {rookieAssist.practiceBlocks.map((block) => (
+                  <div className="replay-activity" key={block.title}>
+                    <span className="badge">{block.duration}</span>
+                    <h3>{block.title}</h3>
+                    <p>{block.activity}</p>
+                    <p className="muted">{block.coachCue}</p>
+                  </div>
+                ))}
+              </div>
+              <p><strong>Attention reset:</strong> {rookieAssist.attentionReset}</p>
+              <p><strong>Age-specific explanation:</strong> {rookieAssist.ageSpecificExplanation}</p>
+              <p><strong>Incentive strategy:</strong> {rookieAssist.incentiveStrategy}</p>
+            </div>
+
+            <div className="stack">
+              <span className="badge">Coach script</span>
+              <pre className="draft-preview rookie-assist-script">{rookieAssist.exactCoachScript}</pre>
+              <div className="notice">
+                <strong>Coach Voice Coach</strong>
+                <p><span className="muted">Instead of:</span> {rookieAssist.voiceCoach.insteadOf}</p>
+                <p><span className="muted">Say:</span> {rookieAssist.voiceCoach.say}</p>
+                <p className="muted">{rookieAssist.voiceCoach.why}</p>
+              </div>
+              <div className="grid two">
+                <div className="notice">
+                  <strong>Do-say phrases</strong>
+                  <ul className="list compact">
+                    {rookieAssist.doSayPhrases.map((phrase) => <li key={phrase}>{phrase}</li>)}
+                  </ul>
+                </div>
+                <div className="notice">
+                  <strong>Avoid-saying phrases</strong>
+                  <ul className="list compact">
+                    {rookieAssist.avoidSayingPhrases.map((phrase) => <li key={phrase}>{phrase}</li>)}
+                  </ul>
+                </div>
+              </div>
+              <p><strong>Parent Replay seed:</strong> {rookieAssist.parentReplaySeed.focusAreas.map(formatFocusArea).join(", ")}</p>
+              <p className="muted">{rookieAssist.parentReplaySeed.summary}</p>
+              <button type="button" onClick={applyRookieAssistSeed}>Use seed in Parent Replay</button>
+            </div>
+          </div>
+
+          <div className="grid two">
+            <div className="stack">
+              <h3>Parent message draft</h3>
+              <p>{rookieAssist.parentMessageDraft}</p>
+              <div className="notice">
+                <strong>Parent Reinforcement Loop</strong>
+                <p>{rookieAssist.parentReinforcementLoop.today}</p>
+                <p>{rookieAssist.parentReinforcementLoop.atHome}</p>
+                <p>{rookieAssist.parentReinforcementLoop.praise}</p>
+                <p className="muted">{rookieAssist.parentReinforcementLoop.deliveryBoundary}</p>
+              </div>
+            </div>
+            <div className="stack">
+              <h3>Source evidence</h3>
+              <p className="muted">{rookieAssist.sourceEvidence.join(", ")}</p>
+              <p className="notice">{rookieAssist.safetyBoundary}</p>
+            </div>
+          </div>
+        </article>
+      </section>
 
       <section className="grid two">
         <article className="card stack">
@@ -3980,7 +4616,7 @@ export function ParentReplayClient() {
             <label>
               Team portal
               <select value={teamId} onChange={(event) => setTeamId(event.target.value)}>
-                {state.teams.map((team) => (
+                {sourceState.teams.map((team) => (
                   <option key={team.id} value={team.id}>{team.name} - {team.division}</option>
                 ))}
               </select>
@@ -3988,7 +4624,7 @@ export function ParentReplayClient() {
             <label>
               Preview as
               <select value={coachUserId} onChange={(event) => setCoachUserId(event.target.value)}>
-                {state.users.filter((user) => user.role !== "parent").map((user) => (
+                {sourceState.users.filter((user) => user.role !== "parent").map((user) => (
                   <option key={user.id} value={user.id}>{user.name} - {roleLabel(user.role)}</option>
                 ))}
               </select>
@@ -5226,6 +5862,18 @@ export function TeamChatClient({ teamChatData }: { teamChatData?: TeamChatData |
 
   return (
     <div className="page clubhouse-chat-page" style={chatStyle}>
+      <BreadcrumbTrail items={[{ label: "Home", href: "/" }, { label: "Team Chat" }]} />
+      <PageHeader
+        eyebrow="Safe family communication"
+        title={`${selectedTeam?.name ?? "Team"} Chat`}
+        subtitle="A private, assigned-team workspace for coach notes, game-day questions, read receipts, and moderation review. No child accounts."
+        actions={(
+          <div className="cluster">
+            <StatusBadge label={isSupabaseBacked ? "Live data" : "Seed fallback"} variant={isSupabaseBacked ? "success" : "warning"} dot={isSupabaseBacked} />
+            <StatusBadge label="Read-only" variant="neutral" />
+          </div>
+        )}
+      />
       <section className="hero clubhouse-chat-hero">
         <div className="clubhouse-hero-mark" aria-hidden="true">{selectedTeam?.mascot.slice(0, 1) ?? "T"}</div>
         <span className="eyebrow">Safe family communication</span>
@@ -5258,29 +5906,6 @@ export function TeamChatClient({ teamChatData }: { teamChatData?: TeamChatData |
         </div>
       </section>
 
-      <section className="grid three">
-        <article className="card stack">
-          <span className="eyebrow">Reporting UI</span>
-          <h2>Chat report summary</h2>
-          <p><strong>{reportingSummary?.reportableMessages ?? 0}</strong> visible message(s) can be reported.</p>
-          <p className="muted">{reportingSummary?.hiddenMessages ?? 0} hidden, {reportingSummary?.deletedMessages ?? 0} deleted.</p>
-        </article>
-        <article className="card stack">
-          <span className="eyebrow">Retention jobs</span>
-          <h2>Archive cleanup</h2>
-          {retentionJobs.map((job) => (
-            <p key={job.id}><strong>{job.title}</strong><br /><span className="muted">{job.status} · {job.detail}</span></p>
-          ))}
-        </article>
-        <article className="card stack">
-          <span className="eyebrow">Media/message policy screens</span>
-          <h2>Policy checks</h2>
-          {policyScreens.map((policy) => (
-            <p key={policy.title}><strong>{policy.title}</strong><br /><span className="muted">{policy.detail}</span></p>
-          ))}
-        </article>
-      </section>
-
       {!view ? (
         <section className="card stack">
           <span className="badge danger">Private Team Chat</span>
@@ -5289,17 +5914,22 @@ export function TeamChatClient({ teamChatData }: { teamChatData?: TeamChatData |
           <p className="muted">Parents can only view chats for teams connected to their rostered child. Coaches can only view assigned teams. Org admins can view all team chats.</p>
         </section>
       ) : (
-        <section className="clubhouse-chat-shell">
-          <aside className="card clubhouse-team-card">
+        <section className="clubhouse-chat-shell chat-workspace" aria-label="Team Chat workspace">
+          <aside className="card clubhouse-team-card chat-thread-rail">
+            <span className="eyebrow">Thread rail</span>
             <div className="clubhouse-team-mark" aria-hidden="true">{view.team.mascot.slice(0, 1)}</div>
-            <span className="badge ok">Team Chat</span>
+            <StatusBadge label="Team Chat" variant="success" />
             <h2>{view.team.name}</h2>
             <p className="muted">{view.team.mascot} · {view.team.division} · {roleLabel(view.viewer.role)} view</p>
+            <div className="chat-rail-presence">
+              <span className="eyebrow">Team presence</span>
+              <AvatarStack names={chatState.users.slice(0, 8).map((user) => user.name)} label={`${chatState.users.length} team participants`} />
+            </div>
             <div className="clubhouse-chip-row" aria-label="Team chat quick topics">
-              <span>Arrival</span>
-              <span>Uniforms</span>
-              <span>Snacks</span>
-              <span>Weather</span>
+              <Chip label="Arrival" />
+              <Chip label="Uniforms" />
+              <Chip label="Snacks" />
+              <Chip label="Weather" />
             </div>
             <div className="clubhouse-unread">
               <strong>{view.unreadCount}</strong>
@@ -5317,28 +5947,38 @@ export function TeamChatClient({ teamChatData }: { teamChatData?: TeamChatData |
             </div>
           </aside>
 
-          <section className="card clubhouse-chat-panel">
+          <section className="card clubhouse-chat-panel chat-conversation-panel">
             <div className="card-header">
               <div>
                 <span className="eyebrow">Private to assigned team members</span>
                 <h2>{view.team.mascot} clubhouse</h2>
               </div>
-              <span className="badge">{view.access.reason}</span>
+              <StatusBadge label={view.access.reason} variant="info" />
             </div>
+            <div className="chat-broadcast-control">
+              <div>
+                <strong>Coach Broadcast Mode</strong>
+                <p className="muted">When enabled, families see a Read-only game-day announcement stream.</p>
+              </div>
+              <Toggle checked={!view.access.canPost} label={!view.access.canPost ? "Read-only" : "Open thread"} />
+            </div>
+            <BroadcastMode enabled={!view.access.canPost} />
 
             {view.pinnedMessage ? (
-              <article className="clubhouse-pinned">
-                <span className="badge warning">Pinned Reminder</span>
-                <h3>Coach Note</h3>
-                <p>{view.pinnedMessage.body}</p>
-                <small>{formatDate(view.pinnedMessage.createdAt)} · {formatTopic(view.pinnedMessage.topic)}</small>
-              </article>
+              <PinnedMessagesBar count={1}>
+                <article className="clubhouse-pinned">
+                  <StatusBadge label="Pinned Reminder" variant="warning" />
+                  <h3>Coach Note</h3>
+                  <p>{view.pinnedMessage.body}</p>
+                  <small>{formatDate(view.pinnedMessage.createdAt)} · {formatTopic(view.pinnedMessage.topic)}</small>
+                </article>
+              </PinnedMessagesBar>
             ) : null}
 
             {view.upcomingGame ? (
               <article className="clubhouse-game-day">
                 <div>
-                  <span className="badge ok">Game-Day Questions</span>
+                  <StatusBadge label="Game-Day Questions" variant="success" />
                   <h3>{view.upcomingGame.title}</h3>
                   <p className="muted">
                     {formatDate(view.upcomingGame.startsAt)} · Arrive by {formatArrivalTime(view.upcomingGame.startsAt)}
@@ -5398,7 +6038,7 @@ export function TeamChatClient({ teamChatData }: { teamChatData?: TeamChatData |
                   <span className="eyebrow">Coach Announcements</span>
                   <h3>Coach Note</h3>
                 </div>
-                <span className="badge warning">{view.access.canAnnounce ? "Coach/Admin" : "Read only"}</span>
+                <StatusBadge label={view.access.canAnnounce ? "Coach/Admin" : "Read-only"} variant="warning" />
               </div>
               <div className="grid two">
                 <label>
@@ -5442,78 +6082,93 @@ export function TeamChatClient({ teamChatData }: { teamChatData?: TeamChatData |
               {announcementNotice ? <p className="notice">{announcementNotice}</p> : null}
             </form>
 
-            <div className="clubhouse-message-list" aria-label="Team Chat messages">
-              {view.messages.length ? view.messages.map((message) => (
-                <article className={`clubhouse-message ${message.kind}`} key={message.id}>
-                  <div className="clubhouse-message-meta">
-                    <strong>{roleLabel(message.authorRole)}</strong>
-                    <span>{message.kind === "announcement" ? "Coach Note" : "Team Chat"}</span>
-                    {message.eventId ? <span>Game linked</span> : null}
-                  </div>
-                  <p>{message.body}</p>
-                  <small>{formatDate(message.createdAt)}</small>
-                  {view.access.canModerate ? (
-                    <div className="clubhouse-message-actions">
-                      <button
-                        className="secondary"
-                        type="button"
-                        onClick={() => {
-                          if (isSupabaseBacked) {
-                            moderateSupabaseMessage(message.id, "message_hidden");
-                            return;
-                          }
-                          dispatch({
-                            type: "moderateTeamChatMessage",
-                            input: {
-                              messageId: message.id,
-                              actorUserId: view.viewer.id,
-                              action: "message_hidden",
-                              reason: "Coach or admin moderated this Team Chat message.",
-                              now: new Date().toISOString()
-                            }
-                          });
-                          setModerationNotice("Message hidden and moderation audit recorded.");
-                        }}
-                      >
-                        Hide
-                      </button>
-                      <button
-                        className="secondary"
-                        type="button"
-                        onClick={() => {
-                          if (isSupabaseBacked) {
-                            moderateSupabaseMessage(message.id, "message_deleted");
-                            return;
-                          }
-                          dispatch({
-                            type: "moderateTeamChatMessage",
-                            input: {
-                              messageId: message.id,
-                              actorUserId: view.viewer.id,
-                              action: "message_deleted",
-                              reason: "Coach or admin deleted this Team Chat message.",
-                              now: new Date().toISOString()
-                            }
-                          });
-                          setModerationNotice("Message deleted and moderation audit recorded.");
-                        }}
-                      >
-                        Delete
-                      </button>
+            <Divider label="Today" />
+            <div className="clubhouse-message-list chat-message-list" aria-label="Team Chat messages">
+              {view.messages.length ? view.messages.map((message) => {
+                const author = chatState.users.find((user) => user.id === message.authorUserId);
+                const isOutbound = message.authorUserId === view.viewer.id;
+                return (
+                  <article className={`chat-message-row ${isOutbound ? "outbound" : "inbound"} ${message.kind}`} key={message.id} aria-label={`Message from ${author?.name ?? roleLabel(message.authorRole)}`}>
+                    <div className="avatar sm" aria-hidden="true">{author?.name ? author.name.slice(0, 2).toUpperCase() : roleLabel(message.authorRole).slice(0, 2).toUpperCase()}</div>
+                    <div className={`chat-bubble ${isOutbound ? "out" : "in"}`}>
+                      <div className="chat-bubble-meta">
+                        <strong>{author?.name ?? roleLabel(message.authorRole)}</strong>
+                        <span>{roleLabel(message.authorRole)}</span>
+                        <span>{message.kind === "announcement" ? "Coach Note" : "Team Chat"}</span>
+                        {message.eventId ? <span>Game linked</span> : null}
+                      </div>
+                      <p>{message.body}</p>
+                      <time>{formatDate(message.createdAt)}</time>
+                      <ReadReceipt read={message.readByUserIds.length} total={Math.max(1, chatState.users.length)} />
+                      {view.access.canModerate ? (
+                        <div className="clubhouse-message-actions">
+                          <Tooltip tip="Hide this message from the team thread.">
+                            <button
+                              className="secondary"
+                              type="button"
+                              onClick={() => {
+                                if (isSupabaseBacked) {
+                                  moderateSupabaseMessage(message.id, "message_hidden");
+                                  return;
+                                }
+                                dispatch({
+                                  type: "moderateTeamChatMessage",
+                                  input: {
+                                    messageId: message.id,
+                                    actorUserId: view.viewer.id,
+                                    action: "message_hidden",
+                                    reason: "Coach or admin moderated this Team Chat message.",
+                                    now: new Date().toISOString()
+                                  }
+                                });
+                                setModerationNotice("Message hidden and moderation audit recorded.");
+                              }}
+                            >
+                              Hide
+                            </button>
+                          </Tooltip>
+                          <Tooltip tip="Delete and audit this message.">
+                            <button
+                              className="secondary"
+                              type="button"
+                              onClick={() => {
+                                if (isSupabaseBacked) {
+                                  moderateSupabaseMessage(message.id, "message_deleted");
+                                  return;
+                                }
+                                dispatch({
+                                  type: "moderateTeamChatMessage",
+                                  input: {
+                                    messageId: message.id,
+                                    actorUserId: view.viewer.id,
+                                    action: "message_deleted",
+                                    reason: "Coach or admin deleted this Team Chat message.",
+                                    now: new Date().toISOString()
+                                  }
+                                });
+                                setModerationNotice("Message deleted and moderation audit recorded.");
+                              }}
+                            >
+                              Delete
+                            </button>
+                          </Tooltip>
+                        </div>
+                      ) : null}
                     </div>
-                  ) : null}
-                </article>
-              )) : (
-                <article className="clubhouse-empty">
-                  <h3>Team Chat is ready.</h3>
-                  <p>Use this space for schedule questions, field details, uniforms, snacks, weather updates, and coach reminders.</p>
-                </article>
+                  </article>
+                );
+              }) : (
+                <EmptyState
+                  title="Team Chat is ready."
+                  body="Use this space for schedule questions, field details, uniforms, snacks, weather updates, and coach reminders."
+                />
               )}
+              <TypingIndicator label="Coach is drafting a field note" />
             </div>
             {moderationNotice ? <p className="notice">{moderationNotice}</p> : null}
 
             <form
-              className="clubhouse-compose"
+              className="clubhouse-compose message-input-toolbar"
               onSubmit={(event) => {
                 event.preventDefault();
                 if (!view?.access.canPost) {
@@ -5575,6 +6230,33 @@ export function TeamChatClient({ teamChatData }: { teamChatData?: TeamChatData |
               {postNotice ? <p className="notice">{postNotice}</p> : null}
             </form>
           </section>
+
+          <aside className="card chat-context-rail">
+            <span className="eyebrow">Context rail</span>
+            <h2>Safety and provider status</h2>
+            <div className="stack-sm">
+              <StatusBadge label={isSupabaseBacked ? "Live data" : "Seed fallback"} variant={isSupabaseBacked ? "success" : "warning"} dot={isSupabaseBacked} />
+              <StatusBadge label={isSupabaseBacked ? "Queued" : "Provider disconnected"} variant={isSupabaseBacked ? "info" : "error"} />
+              <StatusBadge label="No child accounts" variant="neutral" />
+            </div>
+            <section className="chat-context-card">
+              <span className="eyebrow">Reporting UI</span>
+              <p><strong>{reportingSummary?.reportableMessages ?? 0}</strong> visible message(s) can be reported.</p>
+              <p className="muted">{reportingSummary?.hiddenMessages ?? 0} hidden, {reportingSummary?.deletedMessages ?? 0} deleted.</p>
+            </section>
+            <section className="chat-context-card">
+              <span className="eyebrow">Retention jobs</span>
+              {retentionJobs.map((job) => (
+                <p key={job.id}><strong>{job.title}</strong><br /><span className="muted">{job.status} · {job.detail}</span></p>
+              ))}
+            </section>
+            <section className="chat-context-card">
+              <span className="eyebrow">Media/message policy screens</span>
+              {policyScreens.map((policy) => (
+                <p key={policy.title}><strong>{policy.title}</strong><br /><span className="muted">{policy.detail}</span></p>
+              ))}
+            </section>
+          </aside>
         </section>
       )}
     </div>

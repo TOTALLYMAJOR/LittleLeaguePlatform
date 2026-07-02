@@ -4,7 +4,7 @@ Audit date: 2026-06-25
 
 ## Verdict
 
-The app is not ready for real-family production launch yet. The core scaffold, route coverage, authenticated mutation boundaries, Supabase-backed slices, deterministic AI Coach Workspace, and provider-safe draft flows are in place. The remaining work is mostly hosted proof, secret/config correctness, provider-delivery execution, live browser proof, and a few intentionally deferred product decisions.
+The app is not ready for real-family production launch yet. The core scaffold, route coverage, authenticated mutation boundaries, Supabase-backed slices, deterministic AI Coach Workspace, and provider-safe draft flows are in place. The remaining work is mostly provider-delivery execution if approved, continued hosted proof after env rotation, and intentionally deferred product decisions.
 
 ## Validation Run
 
@@ -13,14 +13,23 @@ The app is not ready for real-family production launch yet. The core scaffold, r
 - `npm run typecheck` initially failed against stale `.next/types` route definitions, then passed after `npm run build` regenerated the route types.
 - `docker compose config --quiet` passed.
 - Manual GitHub `Supabase QA proof` passed on 2026-06-28: https://github.com/TOTALLYMAJOR/LittleLeaguePlatform/actions/runs/28328007719 completed `npm run qa:rls-proof`, `npm run qa:session-proof`, `npm run qa:brand-proof`, and uploaded screenshot artifacts after QA migrations through `0019` were applied.
+- Hosted production proof passed on 2026-07-01 against `https://www.leaguepilot.us` after correcting Vercel Production `NEXT_PUBLIC_SUPABASE_ANON_KEY` from a `service_role` JWT to an `anon` JWT and redeploying deployment `dpl_D8kTCkYhtrn6VA7VXrJAwM9kbYmf`.
+- `QA_PROOF_BASE_URL=https://www.leaguepilot.us npm run qa:session-proof` passed on 2026-07-01 after `npm run supabase:qa-users` refreshed the QA rows. It verified signed-out parent gates, signed-in parent and coach routes, parent RSVP/snack/volunteer/preference writes, Parent Replay publish rows, provider-delivery review rows, and signed-in admin `/admin/operations` plus `/admin/security` screenshots.
+- Hosted route smoke on 2026-07-01 captured `/`, `/auth`, `/registration`, `/coach/parent-replay`, `/team-chat`, `/admin`, and `/offline` screenshots under `output/playwright/`.
+- `npm run qa:rls-proof` passed locally on 2026-07-01 against the configured Supabase project.
+- `QA_PROOF_BASE_URL=https://www.leaguepilot.us npm run qa:brand-proof` passed on 2026-07-01 and captured `output/playwright/brand-launch-validation.png`.
+- `npm run typecheck` now runs `next typegen && tsc --noEmit -p tsconfig.typecheck.json`; it passed on 2026-07-01 after `.next/types` was moved aside and regenerated.
+- `npm test` passed on 2026-07-01: 18 files, 174 tests.
+- `npm run build` passed on 2026-07-02 and generated 47 static pages with dynamic private routes. The known Next SWC lockfile warning still appears during Vercel deploy builds even after local lockfile repair attempts, but local `npm run typecheck` and `npm run build` pass.
+- `QA_PROOF_BASE_URL=https://www.leaguepilot.us npm run qa:session-proof` passed again on 2026-07-02 against deployment `dpl_ERncYiyZE3BXSz8TJHzKHsu7DPGZ`. The run added hosted browser proof that a signed-in QA coach saves a weekly update, Supabase persists the announcement plus pending `team_broadcast` notification draft, and no provider delivery attempt is created.
 - Original audit worktree had only untracked local editor config; check current worktree state before release packaging.
 
 ## P0 Launch Blockers
 
 1. Verify hosted Supabase environment secrets before production reliance.
-   - Evidence: local and GitHub QA Supabase secrets are now corrected and proven by the passing manual `Supabase QA proof` run. Vercel production env names exist, but hosted browser smoke still needs to verify that those values point at the intended production Supabase project and do not expose service-role behavior to client code.
-   - Action: run hosted signed-out, parent, coach, and admin smoke against the production aliases; keep `SUPABASE_SERVICE_ROLE_KEY` server-only and separate from `NEXT_PUBLIC_SUPABASE_ANON_KEY`.
-   - Done when: hosted browser proof passes against the intended production Supabase project with screenshots or CI artifacts.
+   - Evidence: local and GitHub QA Supabase secrets are corrected and proven by the passing manual `Supabase QA proof` run. On 2026-07-01, Vercel Production was found with `NEXT_PUBLIC_SUPABASE_ANON_KEY` incorrectly set to a `service_role` JWT; it was corrected to an `anon` JWT, redeployed, and the hosted proof passed against `https://www.leaguepilot.us`.
+   - Current status: covered for the currently configured production alias and Supabase project. Keep `SUPABASE_SERVICE_ROLE_KEY` server-only and separate from `NEXT_PUBLIC_SUPABASE_ANON_KEY`.
+   - Repeat when: production Supabase project refs change, Vercel env values rotate, or a separate non-QA production Supabase project is introduced.
 
 2. Preserve the manual Supabase QA workflow as release proof.
    - Evidence: `.github/workflows/supabase-qa-proof.yml` is scoped to the `qa` GitHub environment and passed on 2026-06-28 in workflow run https://github.com/TOTALLYMAJOR/LittleLeaguePlatform/actions/runs/28328007719.
@@ -28,18 +37,18 @@ The app is not ready for real-family production launch yet. The core scaffold, r
    - Done when: met for the 2026-06-28 QA proof run; rerun after migrations, RLS changes, or secret rotation.
 
 3. Make typecheck deterministic before CI/production reliance.
-   - Evidence: `npm run typecheck` failed before build because stale `.next/types` referenced routes that no longer matched generated App Router types; it passed after `npm run build`.
-   - Action: choose one policy: clean `.next` before standalone typecheck, generate route types before typecheck, or remove stale generated route types from the typecheck path.
-   - Done when: a clean checkout and a dirty local checkout both pass `npm run typecheck` without needing manual build-order knowledge.
+   - Evidence: `npm run typecheck` previously failed before build because stale `.next/types` referenced routes that no longer matched generated App Router types.
+   - Current status: covered on 2026-07-01. `npm run typecheck` now runs `next typegen` before `tsc`, and it passed after `.next/types` was moved aside and regenerated.
+   - Repeat when: Next.js route generation, `next-env.d.ts`, `tsconfig.typecheck.json`, or typed-route settings change.
 
 4. Run hosted production smoke against the deployed URL, not only local build.
-   - Evidence: local `npm run build` passes, but production proof still needs the real host, env, cookies, auth redirect, and Supabase project.
-   - Action: test `/`, `/auth`, `/registration`, `/parent`, `/parent/rsvp`, `/coach`, `/coach/parent-replay`, `/team-chat`, `/admin`, `/admin/security`, and `/offline` on the hosted domain.
-   - Done when: signed-out, parent, coach, and admin flows have screenshots or CI artifacts from the hosted URL.
+   - Evidence: hosted proof passed on 2026-07-01 against `https://www.leaguepilot.us`, covering `/`, `/auth`, `/registration`, `/parent`, `/parent/rsvp`, `/coach`, `/coach/parent-replay`, `/team-chat`, `/admin`, `/admin/operations`, `/admin/security`, and `/offline`.
+   - Current status: covered for deployment `dpl_D8kTCkYhtrn6VA7VXrJAwM9kbYmf`.
+   - Repeat when: production aliases, auth cookies, Supabase env values, role routing, or private route shells change.
 
 ## P1 Production Hardening
 
-5. Decide whether provider sends remain deferred or become production scope.
+5. Provider sends are deferred from launch as draft/internal records only unless real email/SMS/Web Push delivery becomes explicit production scope.
    - Current truth: notification records, approval review, and delivery-attempt logs exist; external email/SMS/Web Push sends are intentionally disconnected.
    - Action if launching without sends: update launch copy/runbook to say notification drafts are internal only.
    - Action if launching with sends: implement send worker/adapters, recipient preference enforcement, unsubscribe UI, retry backoff, provider webhooks, and provider-send tests.
@@ -50,9 +59,9 @@ The app is not ready for real-family production launch yet. The core scaffold, r
    - Done when: approved provider attempts create real sandbox sends and rejected attempts suppress sends with audit logs.
 
 7. Add browser-level live action tests for key private writes.
-   - Current truth: route-level tests verify session-derived actor IDs; QA browser proof covers signed-in read surfaces.
-   - Action: add Playwright proofs for RSVP save, snack claim, volunteer claim, weekly update draft, Parent Replay publish, media report/moderation, and provider-delivery review.
-   - Done when: CI screenshots or traces prove signed-in browser writes use real Supabase sessions.
+   - Current truth: partially covered on 2026-07-02. Hosted QA browser proof now covers signed-out parent gates, signed-in parent/coach/admin read surfaces, parent RSVP save, snack claim, volunteer claim, notification preference save, coach weekly update draft, Parent Replay publish, and provider-delivery review against Supabase rows. New evidence screenshots include `output/playwright/parent-live-actions-qa-session-live.png`, `output/playwright/coach-weekly-update-qa-session-live.png`, `output/playwright/coach-parent-replay-private-write-live.png`, and `output/playwright/provider-delivery-review-qa-session-live.png`.
+   - Remaining action: add Playwright proofs for media report/moderation, registration/admin approval flows, and team-builder/admin publish flows.
+   - Done when: CI screenshots or traces prove every release-critical signed-in browser write uses real Supabase sessions.
 
 8. Reconcile stale capability-matrix gaps.
    - Evidence: `docs/capability-matrix.md` still lists some gaps that later implementation covered, including team CRUD, division/season setup, coach assignment, roster lifecycle, tenant isolation, RSVP history UX, snack/volunteer reminders, caps, cancellation, and approval policies.
@@ -90,8 +99,8 @@ The app is not ready for real-family production launch yet. The core scaffold, r
     - Action: launch PWA first and use `mobile_usage_events` to decide whether app-store distribution, stronger native push, camera/media, or OS integration is justified.
 
 15. Keep AI provider output review-only unless evaluated.
-    - Current truth: AI Coach Workspace starts with deterministic drafts and now has an authenticated `/api/coach/ai-workspace` OpenAI Responses API rewrite path for assigned coaches/admins only. The local key smoke passed against `gpt-5.5` with `store: false`, and Vercel Production/Development env values are configured. Parent Replay publishing remains deterministic and coach-reviewed.
-    - Remaining action: run hosted browser proof for the AI rewrite path, configure Preview env only for a real preview branch if needed, expand prompt/eval coverage for hallucinated records and child privacy, and keep generated content draft/review-only until approval and audit gates are proven.
+    - Current truth: AI Coach Workspace starts with deterministic drafts and has an authenticated `/api/coach/ai-workspace` OpenAI Responses API rewrite path for assigned coaches/admins only. Requests use signed-in Supabase coach scope, `store: false`, local privacy filters, approved media only, source evidence, and review-only output. Hosted proof passed with `QA_PROOF_BASE_URL=https://www.leaguepilot.us npm run qa:ai-coach-proof`, capturing `output/playwright/ai-coach-provider-rewrite-qa-session-live.png`. Parent Replay publishing remains deterministic and coach-reviewed.
+    - Remaining action: keep generated content draft/review-only until approval and audit gates are proven. Preview OpenAI env remains out of launch scope until a real non-production preview branch is chosen.
 
 16. Automatic team building foundation is now in scope.
     - Current truth: roster maker readiness now includes balanced team-builder previews, sibling/guardian grouping, friend-request consideration, skill-balance scores, target roster warnings, Preview -> Edit -> Approve -> Publish workflow, and admin-only team-build plan tables.

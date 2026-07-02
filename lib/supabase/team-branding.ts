@@ -37,12 +37,26 @@ export interface TenantThemeDefaults {
   logoStatus: "not_configured" | "queued" | "approved";
 }
 
+export interface TeamLogoAsset {
+  id: string;
+  organizationId: string;
+  teamId?: string;
+  uploadedByUserId?: string;
+  url: string;
+  status: "pending" | "approved" | "rejected" | "removed";
+  policyNotes?: string;
+  createdAt: string;
+  reviewedAt?: string;
+  reviewedByUserId?: string;
+}
+
 export interface AdminThemeData {
   tenantDefaults: TenantThemeDefaults;
   teams: Team[];
   users: User[];
   teamMemberships: TeamMembership[];
   audits: TeamThemeAudit[];
+  logoAssets: TeamLogoAsset[];
 }
 
 export interface UpdateTeamBrandingInput {
@@ -87,6 +101,32 @@ function mapTeam(row: {
   };
 }
 
+function mapLogoAsset(row: {
+  id: string;
+  organization_id: string;
+  team_id: string | null;
+  uploaded_by_user_id: string | null;
+  url: string;
+  status: TeamLogoAsset["status"];
+  policy_notes: string | null;
+  created_at: string;
+  reviewed_at: string | null;
+  reviewed_by_user_id: string | null;
+}): TeamLogoAsset {
+  return {
+    id: row.id,
+    organizationId: row.organization_id,
+    teamId: row.team_id ?? undefined,
+    uploadedByUserId: row.uploaded_by_user_id ?? undefined,
+    url: row.url,
+    status: row.status,
+    policyNotes: row.policy_notes ?? undefined,
+    createdAt: row.created_at,
+    reviewedAt: row.reviewed_at ?? undefined,
+    reviewedByUserId: row.reviewed_by_user_id ?? undefined
+  };
+}
+
 function fallbackThemeData(): AdminThemeData {
   return {
     tenantDefaults: {
@@ -108,7 +148,8 @@ function fallbackThemeData(): AdminThemeData {
         teamId: event.targetId,
         summary: event.summary,
         createdAt: event.createdAt
-      }))
+      })),
+    logoAssets: []
   };
 }
 
@@ -127,7 +168,7 @@ export async function listAdminThemeData(): Promise<AdminThemeData> {
   try {
     const supabase = createSupabaseAdminClient();
     const unsafeSupabase = supabase as unknown as UnsafeSupabase;
-    const [organizationsResult, teamsResult, profilesResult, membershipsResult, auditsResult] = await withSupabaseTimeout(Promise.all([
+    const [organizationsResult, teamsResult, profilesResult, membershipsResult, auditsResult, logoAssetsResult] = await withSupabaseTimeout(Promise.all([
       unsafeSupabase
         .from("organizations")
         .select("id,default_theme_key,default_mascot,default_primary_color,default_secondary_color,logo_status")
@@ -151,6 +192,11 @@ export async function listAdminThemeData(): Promise<AdminThemeData> {
         .select("id,actor_user_id,target_id,summary,created_at")
         .eq("action", "team_portal_branding_updated")
         .eq("target_type", "team")
+        .order("created_at", { ascending: false })
+        .limit(25),
+      unsafeSupabase
+        .from("team_logo_assets")
+        .select("id,organization_id,team_id,uploaded_by_user_id,url,status,policy_notes,created_at,reviewed_at,reviewed_by_user_id")
         .order("created_at", { ascending: false })
         .limit(25)
     ]), 7000);
@@ -190,7 +236,8 @@ export async function listAdminThemeData(): Promise<AdminThemeData> {
         teamId: audit.target_id,
         summary: audit.summary,
         createdAt: audit.created_at
-      }))
+      })),
+      logoAssets: logoAssetsResult.error ? [] : (logoAssetsResult.data ?? []).map(mapLogoAsset)
     };
   } catch {
     return fallbackThemeData();

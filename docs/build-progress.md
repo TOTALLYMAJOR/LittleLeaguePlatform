@@ -2,6 +2,72 @@
 
 This file tracks implementation progress while moving the app from the local reducer scaffold to Supabase-backed production slices.
 
+## 2026-07-02
+
+### Completed
+
+- Wired `/coach/parent-replay` to the same signed-in Supabase coach dashboard adapter as `/coach`, so AI Coach Workspace requests now use the authenticated coach's real team UUID instead of local seed team IDs.
+- Added explicit Parent Replay access gating for signed-out or unassigned coach users; the private AI workspace no longer falls back to seed team data when a signed-in coach membership is missing.
+- Expanded AI Coach Workspace safety coverage for hidden media, hidden chat messages, cross-team context, private contacts, unsupported provider-send/publish claims, and obvious unsourced private/external claims.
+- Filtered AI workspace media-derived drafts to approved team media only.
+- Added `npm run qa:ai-coach-proof` to sign in as the QA coach, request a hosted OpenAI rewrite from `/coach/parent-replay`, assert draft/review-only boundaries, and capture `output/playwright/ai-coach-provider-rewrite-qa-session-live.png`.
+- Deployed the corrected worktree to Vercel Production. `https://www.leaguepilot.us` now aliases deployment `dpl_EwvgSQY6ws7u7GmSnSAFtu9V9Zfi`.
+- Ran hosted AI Coach Workspace proof against `https://www.leaguepilot.us`; the provider rewrite completed as OpenAI-sourced draft copy with no publish/send claim.
+- Set launch scope for provider sends to draft/internal records only. Real email/SMS/Web Push sends remain a separate explicit implementation decision.
+- Set Vercel Preview OpenAI env setup out of launch scope until a named non-production preview branch is chosen.
+- Hardened `/auth` hosted diagnostics so missing browser Supabase env, public service-role key misuse, and browser/network failures show specific messages instead of the generic unreachable banner.
+- Redeployed the auth diagnostics patch to Vercel Production. `https://www.leaguepilot.us` now aliases deployment `dpl_v9eq5AkHhDjkhDodXGUVaAcTMaYn`.
+- Fixed coach weekly update team targeting so current updates use the next scheduled event team, then active-season team, instead of the first returned coach membership, which could be archived.
+- Extended hosted session proof to save a signed-in coach weekly update through `/coach`, verify the Supabase announcement plus pending `team_broadcast` notification draft, confirm no provider delivery attempt was created, and capture `output/playwright/coach-weekly-update-qa-session-live.png`.
+- Redeployed the weekly-update proof fix to Vercel Production. `https://www.leaguepilot.us` now aliases deployment `dpl_ERncYiyZE3BXSz8TJHzKHsu7DPGZ`.
+
+### Validation
+
+- `npm test -- components/feature-panels.test.tsx lib/services/ai-coach/ai-coach-provider.test.ts lib/domain/domain.test.ts app/api/coach/ai-workspace/route.test.ts app/routes-smoke.test.ts` passed: 5 files, 107 tests.
+- `npm run typecheck` passed.
+- `npm run build` passed and generated 47 static pages with `/coach/parent-replay` server-rendered dynamically.
+- `npm test` passed: 18 files, 178 tests.
+- `QA_PROOF_BASE_URL=https://www.leaguepilot.us npm run qa:ai-coach-proof` passed.
+- `vercel deploy --prod --yes` passed and aliased the deployment to `https://www.leaguepilot.us`.
+- Hosted `/auth` browser proof against `https://www.leaguepilot.us` returned real Supabase Auth responses for bogus sign-in and invalid sign-up email, confirming Production Supabase Auth is reachable.
+- Post-deploy hosted `/auth` proof against deployment `dpl_v9eq5AkHhDjkhDodXGUVaAcTMaYn` returned `Invalid login credentials` for bogus sign-in and captured `output/playwright/auth-supabase-error-specific-hosted-deployed.png`.
+- `npm test -- components/feature-panels.test.tsx app/api-live-actions.test.ts` passed: 2 files, 40 tests.
+- `QA_PROOF_BASE_URL=https://www.leaguepilot.us npm run qa:session-proof` passed after `npm run supabase:qa-users`, including coach weekly update browser write proof against Supabase rows.
+
+### Remaining Gap
+
+- Real email/SMS/Web Push sends remain disconnected by launch decision; implement provider adapters, webhooks, idempotent retries, suppression handling, cost controls, and sandbox proof only if real sends become explicit scope.
+- Vercel Preview OpenAI env values remain unset by launch decision until a non-production preview branch target is named.
+- The Next SWC lockfile warning still appears during the Vercel build even though local `typecheck` and `build` passed; it remains a non-blocking lockfile follow-up.
+
+## 2026-07-01
+
+### Completed
+
+- Corrected Vercel Production `NEXT_PUBLIC_SUPABASE_ANON_KEY` from a `service_role` JWT to an `anon` JWT while keeping `SUPABASE_SERVICE_ROLE_KEY` server-only.
+- Redeployed the existing production deployment instead of packaging the dirty local worktree; `https://www.leaguepilot.us` now aliases deployment `dpl_D8kTCkYhtrn6VA7VXrJAwM9kbYmf`.
+- Ran hosted browser proof against `https://www.leaguepilot.us` for signed-out parent gates, signed-in parent and coach routes, parent RSVP/snack/volunteer/preference writes verified against Supabase rows, Parent Replay publish rows, provider-delivery review rows, and signed-in admin operations/security routes.
+- Captured hosted route smoke screenshots for `/`, `/auth`, `/registration`, `/coach/parent-replay`, `/team-chat`, `/admin`, and `/offline`.
+- Ran hosted brand proof for the `/admin/themes` 20-surface launch checklist.
+- Made standalone typecheck deterministic by running `next typegen` before `tsc` in `npm run typecheck`.
+
+### Validation
+
+- `npm run supabase:qa-users` passed.
+- `QA_PROOF_BASE_URL=https://www.leaguepilot.us npm run qa:session-proof` passed, including screenshots for parent live actions, Parent Replay private write, provider-delivery review, and admin operations/security.
+- `npm run qa:rls-proof` passed.
+- `QA_PROOF_BASE_URL=https://www.leaguepilot.us npm run qa:brand-proof` passed.
+- `npm run typecheck` passed after `.next/types` was moved aside and regenerated.
+- `npm test` passed: 18 files, 174 tests.
+- `npm run build` passed and generated 48 app routes.
+
+### Remaining Gap
+
+- Superseded by the 2026-07-02 closeout above: hosted AI rewrite proof and broader AI eval coverage are now complete.
+- Provider sends remain disconnected by launch decision unless real email/SMS/Web Push delivery becomes explicit production scope.
+- Vercel Preview OpenAI env values remain unset by launch decision until a non-production preview branch target is named.
+- The Next SWC lockfile warning remains a non-blocking Vercel build follow-up.
+
 ## 2026-06-27
 
 ### Completed
@@ -128,6 +194,7 @@ These 2026-06-22 next items were completed in the 2026-06-23 hardening pass:
 - Added `/admin/guardian-links` and a guardian repair API that activates parent-player links, restores parent team membership, and writes audit events under org-admin authorization.
 - Added `/admin/archive`, team logo asset metadata, logo governance policy, and logo submission audit records for archive vault and brand governance coverage.
 - Hardened the admin theme console with per-team Theme QA, dark preview contrast labels, mobile contrast labels, and coverage in feature-panel tests.
+- Expanded `/admin/themes` into an admin customization workbench with identity/color modules, tenant defaults, logo asset metadata review, and launch-proof summaries while keeping binary upload and provider rendering gated.
 - Added a parent onboarding checklist to the parent dashboard covering guardian link, schedule, notification preference, and RSVP readiness.
 - Added RSVP history, edit buttons, retained cancellation status, and cancellation migration support to the parent RSVP workflow.
 - Added parent family calendar filters, an expanded approved media feed, and a computed action checklist on the parent dashboard.

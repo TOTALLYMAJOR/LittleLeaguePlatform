@@ -25,6 +25,8 @@ describe("AI Coach provider", () => {
   it("blocks contact and private details before a provider call", () => {
     expect(scanAiCoachDraftForProvider({ ...baseDraft, body: `${baseDraft.body}\nCall 555-123-4567.` }).ok).toBe(false);
     expect(scanAiCoachDraftForProvider({ ...baseDraft, body: `${baseDraft.body}\nPrivate RSVP note: running late.` }).ok).toBe(false);
+    expect(scanAiCoachDraftForProvider({ ...baseDraft, body: `${baseDraft.body}\nThis was sent to families by email.` }).ok).toBe(false);
+    expect(scanAiCoachDraftForProvider({ ...baseDraft, body: `${baseDraft.body}\nI inferred this from a private note.` }).ok).toBe(false);
   });
 
   it("calls the Responses API with store disabled and returns a coach-reviewed draft", async () => {
@@ -51,6 +53,30 @@ describe("AI Coach provider", () => {
     const requestBody = JSON.parse(String(fetcher.mock.calls[0]?.[1]?.body));
     expect(requestBody.model).toBe("gpt-5.5");
     expect(requestBody.store).toBe(false);
+    expect(requestBody.instructions).toContain("Use only supplied source evidence");
+    expect(requestBody.instructions).toContain("Do not say it was sent, published, approved, or delivered");
     expect(requestBody.input).toContain("guardian-link aggregate");
+  });
+
+  it("discards provider output that claims publishing or delivery happened", async () => {
+    const fetcher = vi.fn<typeof fetch>().mockResolvedValue(new Response(JSON.stringify({
+      output_text: JSON.stringify({
+        title: "Tiny Tigers onboarding brief",
+        body: "This was sent to families by email. Everyone should arrive early.",
+        reviewNotes: ["Claimed a provider send."]
+      })
+    }), { status: 200 }));
+
+    const result = await enhanceAiCoachWorkspaceDraft(baseDraft, {
+      apiKey: "test-key",
+      enabled: true,
+      model: "gpt-5.5",
+      fetcher
+    });
+
+    expect(result.ok).toBe(false);
+    expect(result.source).toBe("deterministic");
+    expect(result.draft).toBe(baseDraft);
+    expect(result.reviewNotes).toContain("Provider output was discarded.");
   });
 });

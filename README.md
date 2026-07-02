@@ -1,8 +1,30 @@
-# Little League HQ — MVP Prototype v3
+# Little League HQ / LeaguePilot
 
-A stronger runnable static prototype for a private youth sports organization platform.
+A root-level Next.js + TypeScript production scaffold for a private youth sports organization platform. The original static MVP prototype is preserved under `public/prototype/`.
 
-## What improved in v3
+The current app has Supabase-backed slices for authenticated parent, coach, and admin workflows while retaining typed seed fallbacks where live rows or auth context are unavailable. External email, SMS, push, Stripe, AI provider, and native app distribution remain disconnected unless explicitly approved and configured.
+
+## Agent Skill Baseline
+
+This repo uses a light agent skill baseline for LeaguePilot / Little League HQ work. The baseline routes API/runtime resilience, Supabase/RLS proof, React/Next.js UI work, Playwright evidence, provider-boundary work, GitHub publishing, and hosted proof through skills that are available locally or project-vendored.
+
+Check the current baseline:
+
+```bash
+npm run check:skills
+```
+
+The repo-local skill lives at `.agents/skills/leaguepilot-api-runtime-resilience/SKILL.md`. It adapts the QuietPilot runtime-resilience pattern to this app's Next.js, Supabase, RLS, provider-boundary, and child-privacy seams.
+
+Public skill search found a strong optional Supabase skill for this stack:
+
+```bash
+npx skills add supabase/agent-skills@supabase -g -y
+```
+
+Do not treat external skills as permission to bypass `AGENTS.md`, `docs/codex-rules.md`, role boundaries, child privacy defaults, provider approval gates, or hosted proof requirements.
+
+## Preserved Prototype Notes
 
 - Added parent/coach friendly My Team home screen
 - Added onboarding checklist

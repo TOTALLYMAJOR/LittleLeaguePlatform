@@ -32,6 +32,19 @@ describe("route smoke coverage", () => {
     }
   });
 
+  it("keeps the homepage positioned as a product landing page with accurate provider boundaries", () => {
+    const page = readFileSync(join(process.cwd(), "app", "page.tsx"), "utf8");
+
+    expect(page).toContain("Stop chasing families.");
+    expect(page).toContain("Run the season from one private team home");
+    expect(page).toContain("Parent Replay is the signature loop.");
+    expect(page).toContain("Explore the product surfaces.");
+    expect(page).toContain("Supabase-backed paths when signed-in rows and roles exist");
+    expect(page).toContain("no external email, SMS, push, Stripe, AI-provider, or native-app delivery");
+    expect(page).not.toContain("session-only local state");
+    expect(page).not.toContain("does not persist production data");
+  });
+
   it("keeps the PWA offline fallback route wired into the service worker", () => {
     const serviceWorker = readFileSync(join(process.cwd(), "public", "sw.js"), "utf8");
 
@@ -41,10 +54,51 @@ describe("route smoke coverage", () => {
 
   it("keeps PWA install and standalone usage measurement wired", () => {
     const provider = readFileSync(join(process.cwd(), "app", "providers.tsx"), "utf8");
+    const layout = readFileSync(join(process.cwd(), "app", "layout.tsx"), "utf8");
+    const manifest = readFileSync(join(process.cwd(), "public", "manifest.webmanifest"), "utf8");
 
     expect(provider).toContain("/api/mobile-usage-events");
     expect(provider).toContain("install_prompt_shown");
     expect(provider).toContain("standalone_launch");
+    expect(layout).toContain("AppShell");
+    expect(layout).toContain("apple");
+    expect(manifest).toContain("/favicons/favicon-option-1-shield.png");
+    expect(manifest).toContain("/favicons/favicon-option-4-team-chat.png");
+  });
+
+  it("keeps the global app shell wired for accessible navigation and PWA state", () => {
+    const shell = readFileSync(join(process.cwd(), "components", "ui", "AppShell.tsx"), "utf8");
+    const css = readFileSync(join(process.cwd(), "app", "globals.css"), "utf8");
+
+    expect(shell).toContain("Skip to main content");
+    expect(shell).toContain("little-league-shell-collapsed");
+    expect(shell).toContain("Route finder");
+    expect(shell).toContain("aria-current");
+    expect(shell).toContain("mobile-tabbar");
+    expect(shell).toContain("offline");
+    expect(shell).toContain("sessionWarningVisible");
+    expect(shell).toContain("live-region");
+    expect(shell).toContain("showModal");
+    expect(shell).toContain("previousFocus.current?.focus");
+    expect(css).toContain(".mobile-tabbar");
+    expect(css).toContain("@media print");
+    expect(css).toContain("@media (forced-colors: active)");
+  });
+
+  it("keeps the 100 concept scorecard documented and route-integrated", () => {
+    const scorecard = readFileSync(join(process.cwd(), "components", "ui", "concept-scorecard.ts"), "utf8");
+    const doc = readFileSync(join(process.cwd(), "docs", "ui-ux-100-implementation-scorecard.md"), "utf8");
+    const chat = readFileSync(join(process.cwd(), "components", "feature-panels.tsx"), "utf8");
+
+    expect(scorecard).toContain("uiConceptScorecard");
+    expect(scorecard).toContain("allComplete");
+    expect(doc).toContain("| 100 | Audit trail display |");
+    expect(doc).toContain("Provider disconnected");
+    expect(doc).toContain("Read-only");
+    expect(chat).toContain("chat-workspace");
+    expect(chat).toContain("Thread rail");
+    expect(chat).toContain("Context rail");
+    expect(chat).toContain("Coach Broadcast Mode");
   });
 
   it("keeps season archive readiness proof documented", () => {
@@ -104,6 +158,8 @@ describe("route smoke coverage", () => {
     expect(archivePage).toContain("listArchiveVaultData");
     expect(logoPolicy).toContain("Logos must use HTTPS URLs");
     expect(logoService).toContain("team_logo_asset_submitted");
+    expect(logoService).toContain("Logo asset team must belong to the selected organization.");
+    expect(logoService).toContain("logo_status");
   });
 
   it("keeps hosted brand proof wired into QA automation", () => {

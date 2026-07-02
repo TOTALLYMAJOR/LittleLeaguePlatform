@@ -4,13 +4,30 @@
 
 - Platform: Vercel
 - Project: `mbmapps/youth-sports-platform-mvp-v3`
-- Deployment id: `dpl_BRYzXxggGfNqacAq3899DXyHvj1W`
-- Deployment URL: `https://youth-sports-platform-mvp-v3-b8oo30r8w-mbmapps.vercel.app`
+- Deployment id: `dpl_EwvgSQY6ws7u7GmSnSAFtu9V9Zfi`
+- Deployment URL: `https://youth-sports-platform-mvp-v3-ltvfwabzi-mbmapps.vercel.app`
 - Primary aliases:
   - `https://www.leaguepilot.us`
   - `https://leaguepilot.us`
   - `https://youth-sports-platform-mvp-v3.vercel.app`
 - Vercel state: `Ready`
+
+## 2026-07-01 Hosted Proof Update
+
+- Vercel Production `NEXT_PUBLIC_SUPABASE_ANON_KEY` was corrected from a `service_role` JWT to an `anon` JWT. `SUPABASE_SERVICE_ROLE_KEY` remains server-only and has the `service_role` JWT role.
+- The corrected environment was rebuilt by redeploying the previous production deployment instead of packaging the dirty local worktree.
+- `https://www.leaguepilot.us` now aliases deployment `dpl_D8kTCkYhtrn6VA7VXrJAwM9kbYmf`.
+- `QA_PROOF_BASE_URL=https://www.leaguepilot.us npm run qa:session-proof` passed after `npm run supabase:qa-users`, proving signed-out gates, signed-in parent and coach routes, parent RSVP/snack/volunteer/preference writes against Supabase rows, and signed-in admin `/admin/operations` plus `/admin/security`.
+- Hosted route smoke captured `/`, `/auth`, `/registration`, `/coach/parent-replay`, `/team-chat`, `/admin`, and `/offline` screenshots under `output/playwright/`.
+- `npm run qa:rls-proof` passed against the configured Supabase project.
+- `QA_PROOF_BASE_URL=https://www.leaguepilot.us npm run qa:brand-proof` passed and captured `output/playwright/brand-launch-validation.png`.
+
+## 2026-07-02 AI Provider Proof Update
+
+- `https://www.leaguepilot.us` now aliases deployment `dpl_EwvgSQY6ws7u7GmSnSAFtu9V9Zfi`.
+- `/coach/parent-replay` now loads signed-in Supabase coach scope before Parent Replay and AI Coach Workspace provider requests.
+- `QA_PROOF_BASE_URL=https://www.leaguepilot.us npm run qa:ai-coach-proof` passed and captured `output/playwright/ai-coach-provider-rewrite-qa-session-live.png`.
+- AI provider output remained draft/review-only; no publish or provider send occurred.
 
 ## Verified During Deployment
 
@@ -31,18 +48,15 @@
 
 - Resolved: the root `.env` file was removed from the project directory so Vercel env handling is used.
 - Resolved: the Turbopack NFT trace warning through `next.config.ts`, `lib/supabase/security-proof.ts`, and `app/admin/security/page.tsx` no longer appears in the local production build.
-- Still open: Vercel remote build still emits `Found lockfile missing swc dependencies`. Next's local lockfile patch and `npm install` cycle did not produce a stable committed lockfile shape, so this remains a non-blocking warning to revisit separately.
+- Still open: the Vercel production build still emits `Found lockfile missing swc dependencies`. Local `npm run typecheck` and `npm run build` passed on 2026-07-02, but Vercel still reports the warning, so this remains a non-blocking lockfile follow-up.
 
 ## Remaining Production-Readiness Blockers
 
-Hosting is complete, but production readiness is not complete until these separate proof gates are closed:
+Hosting and current hosted browser proof are complete for deployment `dpl_EwvgSQY6ws7u7GmSnSAFtu9V9Zfi`, but production readiness is not complete until these separate proof gates are closed:
 
-- Hosted browser smoke evidence is still needed for signed-out, parent, coach, and admin routes.
-- Vercel production Supabase values still need hosted browser smoke to prove they target the intended production project and preserve auth/RLS boundaries.
-- Vercel Preview OpenAI env values are not configured yet; Vercel CLI rejected all-branch Preview via stdin and rejected the production branch `main` as a Preview branch.
-- Provider sends remain disconnected unless a send worker, provider adapters, webhooks, suppression rules, and retry proof are added.
-- AI Coach Workspace provider rewrites are connected through `/api/coach/ai-workspace` for signed-in assigned coaches/admins only, but output remains draft/review-only and cannot publish or send automatically.
-- Hosted browser smoke still needs browser artifacts from the deployed URL.
+- Vercel Preview OpenAI env values are intentionally unset until a named non-production preview branch is chosen.
+- Provider sends remain disconnected for launch as draft/internal records only unless a send worker, provider adapters, webhooks, suppression rules, and retry proof are explicitly scoped.
+- AI Coach Workspace provider rewrites are connected through `/api/coach/ai-workspace` for signed-in assigned coaches/admins only, and output remains draft/review-only with no automatic publish or send.
 
 ## Networking Posture
 

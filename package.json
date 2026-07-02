@@ -8,17 +8,21 @@
     "postbuild": "mkdir -p .next/standalone/public .next/standalone/.next/static && cp -R public/. .next/standalone/public/ && cp -R .next/static/. .next/standalone/.next/static/",
     "start": "next start",
     "lint": "eslint .",
-    "typecheck": "tsc --noEmit -p tsconfig.typecheck.json",
+    "typegen": "next typegen",
+    "typecheck": "next typegen && tsc --noEmit -p tsconfig.typecheck.json",
     "test": "TMPDIR=/tmp TEMP=/tmp TMP=/tmp vitest run",
     "supabase:push": "node scripts/supabase-push.mjs",
     "supabase:qa-users": "node scripts/bootstrap-qa-session-users.mjs",
     "qa:session-proof": "node scripts/verify-qa-session-paths.mjs",
+    "qa:ai-coach-proof": "node scripts/verify-ai-coach-provider-proof.mjs",
     "qa:brand-proof": "node scripts/verify-brand-surface-proof.mjs",
-    "qa:rls-proof": "node scripts/verify-rls-boundaries.mjs"
+    "qa:rls-proof": "node scripts/verify-rls-boundaries.mjs",
+    "check:skills": "node scripts/check-agent-skills.mjs"
   },
   "dependencies": {
     "@supabase/ssr": "^0.12.0",
     "@supabase/supabase-js": "^2.108.2",
+    "motion": "^12.42.2",
     "next": "^16.2.9",
     "react": "^19.2.7",
     "react-dom": "^19.2.7"

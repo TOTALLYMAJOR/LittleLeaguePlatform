@@ -248,12 +248,15 @@ This backlog translates the pasted feature inventory into repo-fit work. It is n
 ### Coach Tools
 
 - Status: `Covered`
-- Repo fit: Coach work belongs on `/coach`, `/coach/rsvps`, `/coach/parent-replay`, and provider-safe action APIs. AI-like tools should stay deterministic or draft-only until provider policy is added.
-- Current seams: `app/coach/page.tsx`, `app/coach/rsvps/page.tsx`, `app/coach/parent-replay/page.tsx`, `app/api/coach/weekly-update/route.ts`, `app/api/coach/parent-replay/route.ts`, `lib/domain/parent-replay.ts`, `lib/domain/communications.ts`.
+- Repo fit: Coach work belongs on `/coach`, `/coach/rsvps`, `/coach/parent-replay`, and provider-safe action APIs. AI-like tools should stay deterministic or draft-only until provider policy is added. Sideline help, coach wording, and practice-energy adaptation fit as coach-reviewed local guidance before any Parent Replay publish.
+- Current seams: `app/coach/page.tsx`, `app/coach/rsvps/page.tsx`, `app/coach/parent-replay/page.tsx`, `app/api/coach/weekly-update/route.ts`, `app/api/coach/parent-replay/route.ts`, `lib/domain/parent-replay.ts`, `lib/domain/rookie-coach-assist.ts`, `lib/domain/communications.ts`.
 - Backlog list:
   - `Covered`: Coach Dashboard.
   - `Covered`: Assigned-Team Coach View.
   - `Covered`: RSVP Summaries.
+  - `Covered`: Chaos Button.
+  - `Covered`: Coach Voice Coach.
+  - `Covered`: Practice Personality Engine.
   - `Covered`: Weather Alert Drafts.
   - `Covered`: Snack Slot View.
   - `Covered`: Volunteer Role View.
@@ -543,11 +546,12 @@ This backlog translates the pasted feature inventory into repo-fit work. It is n
 ### Signature Differentiation
 
 - Status: `Covered`
-- Repo fit: Parent Replay is the signature differentiator. Keep coaching output parent-ready, age-appropriate, and coach-reviewed. AI remains a boundary, not a shipping claim.
-- Current seams: `app/coach/parent-replay/page.tsx`, `app/api/coach/parent-replay/route.ts`, `lib/domain/parent-replay.ts`, `app/team-portal/page.tsx`, `docs/evaluation-plan.md`.
+- Repo fit: Parent Replay is the signature differentiator. Keep coaching output parent-ready, age-appropriate, and coach-reviewed. AI remains a boundary, not a shipping claim. Parent reinforcement copy should stay a reviewed draft until provider delivery, preferences, and audit proof are connected.
+- Current seams: `app/coach/parent-replay/page.tsx`, `app/api/coach/parent-replay/route.ts`, `lib/domain/parent-replay.ts`, `lib/domain/rookie-coach-assist.ts`, `app/team-portal/page.tsx`, `docs/evaluation-plan.md`.
 - Backlog list:
   - `Covered`: Parent Replay.
   - `Covered`: Parent Replay Home Practice Loop.
+  - `Covered`: Parent Reinforcement Loop.
   - `Covered`: 30-Second Home Activity.
   - `Covered`: 2-Minute Home Activity.
   - `Covered`: 5-Minute Home Activity.

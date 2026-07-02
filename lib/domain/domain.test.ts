@@ -132,6 +132,7 @@ import {
   getMediaEngagementRate,
   getNotificationOptOutRate,
   buildAiCoachWorkspaceDrafts,
+  generateRookieCoachAssist,
   assertNotificationStartsAsDraft,
   assertNotificationTransition,
   assertParentReplayOutputTransition,
@@ -1134,6 +1135,145 @@ describe("Parent Replay", () => {
     expect(drafts[12]?.body).toContain("Spring 2026");
     expect(drafts.every((draft) => draft.workflow.join(" -> ") === "Preview -> Edit -> Approve -> Publish")).toBe(true);
     expect(drafts.every((draft) => draft.boundary.toLowerCase().includes("coach") || draft.boundary.toLowerCase().includes("provider"))).toBe(true);
+  });
+
+  it("keeps hidden media, hidden messages, and cross-team context out of AI Coach Workspace drafts", () => {
+    const state = {
+      ...seedState,
+      mediaItems: [
+        ...seedState.mediaItems,
+        {
+          id: "media-hidden-ai-proof",
+          teamId: "team-tigers",
+          title: "Hidden injury photo",
+          type: "google_photos" as const,
+          url: "https://photos.google.com/share/hidden-ai-proof",
+          moderationStatus: "hidden" as const,
+          visibility: "team" as const,
+          reportCount: 1,
+          createdAt: NOW
+        },
+        {
+          id: "media-cross-team-ai-proof",
+          teamId: "team-other",
+          title: "Other team celebration",
+          type: "google_photos" as const,
+          url: "https://photos.google.com/share/other-team-ai-proof",
+          moderationStatus: "approved" as const,
+          visibility: "team" as const,
+          reportCount: 0,
+          createdAt: NOW
+        }
+      ],
+      chatMessages: [
+        ...seedState.chatMessages,
+        {
+          ...seedState.chatMessages[0]!,
+          id: "chat-hidden-ai-proof",
+          body: "Hidden message with parent contact 555-123-4567.",
+          moderationStatus: "hidden" as const
+        },
+        {
+          ...seedState.chatMessages[0]!,
+          id: "chat-cross-team-ai-proof",
+          teamId: "team-other",
+          body: "Other team private context.",
+          moderationStatus: "visible" as const
+        }
+      ]
+    };
+
+    const drafts = buildAiCoachWorkspaceDrafts(state, {
+      teamId: "team-tigers",
+      coachUserId: "user-coach-taylor",
+      focusAreas: ["throwing", "catching", "teamwork"],
+      now: NOW
+    });
+    const content = drafts.map((draft) => [draft.title, draft.body, draft.sourceEvidence.join(" ")].join("\n")).join("\n");
+
+    expect(content).not.toContain("Hidden injury photo");
+    expect(content).not.toContain("555-123-4567");
+    expect(content).not.toContain("Other team celebration");
+    expect(content).not.toContain("Other team private context");
+    expect(content).toContain("2 approved media item(s)");
+  });
+});
+
+describe("Rookie Coach Assist", () => {
+  it("generates every required coach-reviewed practice section without provider or publish behavior", () => {
+    const plan = generateRookieCoachAssist({
+      ageBand: "3-4",
+      sport: "baseball",
+      experienceLevel: "first_time",
+      challenge: "fear_of_ball",
+      motivationStrategy: "animal_mode",
+      practicePersonality: "wild_today",
+      focusAreas: ["confidence with ball", "throwing"]
+    });
+
+    expect(plan.practiceTitle).toContain("baseball");
+    expect(plan.coachObjective).toContain("First-time coach".toLowerCase());
+    expect(plan.practiceBlocks).toHaveLength(3);
+    expect(plan.practiceBlocks[1]?.activity).toContain("Shrink the drill");
+    expect(plan.chaosReset.callAndResponse).toContain("Ready feet");
+    expect(plan.chaosReset.waterBreak).toContain("water sip");
+    expect(plan.chaosReset.regroupPhrase).toBe("Show me ready feet. We launch in 3, 2, 1.");
+    expect(plan.voiceCoach.insteadOf).toBe("Stop messing around.");
+    expect(plan.voiceCoach.say).toBe("Show me ready feet. We launch in 3, 2, 1.");
+    expect(plan.personalityAdjustment.label).toBe("Wild today");
+    expect(plan.exactCoachScript).toContain("Team, come to your station");
+    expect(plan.attentionReset).toContain("Ball down");
+    expect(plan.doSayPhrases).toHaveLength(4);
+    expect(plan.avoidSayingPhrases).toHaveLength(4);
+    expect(plan.ageSpecificExplanation).toContain("Ages 3-4");
+    expect(plan.incentiveStrategy).toContain("group choose");
+    expect(plan.parentReplaySeed.focusAreas).toEqual(["catching", "throwing", "teamwork"]);
+    expect(plan.parentReinforcementLoop.today).toContain("catching, throwing, and teamwork");
+    expect(plan.parentReinforcementLoop.atHome).toContain("3 soft tosses");
+    expect(plan.parentReinforcementLoop.praise).toBe("Praise the brave try, not the result.");
+    expect(plan.parentReinforcementLoop.deliveryBoundary).toContain("no external parent send");
+    expect(plan.parentMessageDraft).toContain("At home");
+    expect(plan.sourceEvidence).toContain("Parent Replay seed uses existing PracticeFocusArea values only");
+    expect(plan.sourceEvidence).toContain("Team energy: Wild today");
+    expect(plan.safetyBoundary).toContain("local preview copy only");
+  });
+
+  it("adapts deterministic copy by age band, challenge, and motivation strategy", () => {
+    const plan = generateRookieCoachAssist({
+      ageBand: "5-6",
+      sport: "soccer",
+      experienceLevel: "new_to_age_group",
+      challenge: "high_energy",
+      motivationStrategy: "treasure_map",
+      practicePersonality: "mixed_skill",
+      focusAreas: ["spacing", "listening reset"]
+    });
+
+    expect(plan.practiceTitle).toBe("soccer rookie practice: High energy reset");
+    expect(plan.coachObjective).toContain("new to ages 3-6");
+    expect(plan.attentionReset).toContain("marker");
+    expect(plan.ageSpecificExplanation).toContain("Ages 5-6");
+    expect(plan.incentiveStrategy).toContain("map stop");
+    expect(plan.personalityAdjustment.label).toBe("Mixed skill");
+    expect(plan.personalityAdjustment.drillChange).toContain("easy, middle, and challenge targets");
+    expect(plan.voiceCoach.say).toContain("Pick the target");
+    expect(plan.parentReplaySeed.focusAreas).toEqual(["listening", "spacing", "teamwork"]);
+  });
+
+  it("keeps guidance away from medical, ranking, food reward, and harsh discipline language", () => {
+    const plan = generateRookieCoachAssist({
+      ageBand: "5-6",
+      sport: "basketball",
+      experienceLevel: "new_to_sport",
+      challenge: "trying_again",
+      motivationStrategy: "high_five_challenge",
+      focusAreas: ["teamwork", "trying again"]
+    });
+    const output = JSON.stringify(plan).toLowerCase();
+
+    expect(output).not.toMatch(/candy|bribe|leaderboard|public ranking|return to play|diagnos|shame|punish/);
+    expect(plan.safetyBoundary).toContain("no provider send");
+    expect(plan.safetyBoundary).toContain("no automatic publish");
   });
 });
 
