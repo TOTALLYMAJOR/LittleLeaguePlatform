@@ -1695,12 +1695,15 @@ export function CoachDashboardClient({ dashboardData }: { dashboardData?: Parent
   const teamIds = new Set(teams.map((team) => team.id));
   const assignedEvents = sourceState.events.filter((event) => teamIds.has(event.teamId) && event.status === "scheduled");
   const nextAssignedEvent = assignedEvents[0];
+  const primaryCoachTeam = teams.find((team) => team.id === nextAssignedEvent?.teamId)
+    ?? teams.find((team) => team.seasonId === sourceState.activeSeason.id)
+    ?? teams[0];
   const weatherAlerts = sourceState.weatherAlerts.filter((alert) => teamIds.has(alert.teamId));
   const weatherApprovalQueue = getWeatherApprovalQueue(sourceState).filter((item) => teamIds.has(item.alert.teamId));
   const weatherRetryLogs = getWeatherProviderRetryLogs(sourceState).filter((item) => teamIds.has(item.alert.teamId));
   const weatherAlertHistory = getWeatherAlertHistory(sourceState).filter((item) => teamIds.has(item.alert.teamId));
   const sportWeatherThresholds = getSportWeatherThresholds("baseball");
-  const leagueWeatherThresholds = getLeagueWeatherThresholds(teams[0]?.division ?? "3U");
+  const leagueWeatherThresholds = getLeagueWeatherThresholds(primaryCoachTeam?.division ?? "3U");
   const weatherThresholdReview = evaluateWeatherThresholds({
     heatIndex: 91,
     lightningMiles: 8,
@@ -1752,15 +1755,14 @@ export function CoachDashboardClient({ dashboardData }: { dashboardData?: Parent
   }
 
   function saveWeeklyUpdate() {
-    const teamId = teams[0]?.id;
-    if (!teamId) {
+    if (!primaryCoachTeam) {
       setActionMessage("An assigned team is required before saving a weekly update.");
       return;
     }
 
     runCoachAction("/api/coach/weekly-update", {
-      teamId,
-      title: `Weekly update for ${teams[0]?.name ?? "team"}`,
+      teamId: primaryCoachTeam.id,
+      title: `Weekly update for ${primaryCoachTeam.name}`,
       body: weeklyUpdateBody
     });
   }

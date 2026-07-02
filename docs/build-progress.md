@@ -17,6 +17,9 @@ This file tracks implementation progress while moving the app from the local red
 - Set Vercel Preview OpenAI env setup out of launch scope until a named non-production preview branch is chosen.
 - Hardened `/auth` hosted diagnostics so missing browser Supabase env, public service-role key misuse, and browser/network failures show specific messages instead of the generic unreachable banner.
 - Redeployed the auth diagnostics patch to Vercel Production. `https://www.leaguepilot.us` now aliases deployment `dpl_v9eq5AkHhDjkhDodXGUVaAcTMaYn`.
+- Fixed coach weekly update team targeting so current updates use the next scheduled event team, then active-season team, instead of the first returned coach membership, which could be archived.
+- Extended hosted session proof to save a signed-in coach weekly update through `/coach`, verify the Supabase announcement plus pending `team_broadcast` notification draft, confirm no provider delivery attempt was created, and capture `output/playwright/coach-weekly-update-qa-session-live.png`.
+- Redeployed the weekly-update proof fix to Vercel Production. `https://www.leaguepilot.us` now aliases deployment `dpl_ERncYiyZE3BXSz8TJHzKHsu7DPGZ`.
 
 ### Validation
 
@@ -28,6 +31,8 @@ This file tracks implementation progress while moving the app from the local red
 - `vercel deploy --prod --yes` passed and aliased the deployment to `https://www.leaguepilot.us`.
 - Hosted `/auth` browser proof against `https://www.leaguepilot.us` returned real Supabase Auth responses for bogus sign-in and invalid sign-up email, confirming Production Supabase Auth is reachable.
 - Post-deploy hosted `/auth` proof against deployment `dpl_v9eq5AkHhDjkhDodXGUVaAcTMaYn` returned `Invalid login credentials` for bogus sign-in and captured `output/playwright/auth-supabase-error-specific-hosted-deployed.png`.
+- `npm test -- components/feature-panels.test.tsx app/api-live-actions.test.ts` passed: 2 files, 40 tests.
+- `QA_PROOF_BASE_URL=https://www.leaguepilot.us npm run qa:session-proof` passed after `npm run supabase:qa-users`, including coach weekly update browser write proof against Supabase rows.
 
 ### Remaining Gap
 

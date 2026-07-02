@@ -43,11 +43,12 @@ Task-specific checks are required only when the surface is touched:
 ### LP-002 - Prove Coach Weekly Update Browser Write
 
 - Priority: P1 proof.
-- Current state: route-level tests cover the verified session path; hosted browser proof is still missing.
+- Status: Done 2026-07-02.
+- Current state: hosted browser proof now covers the signed-in QA coach path. The proof saves a weekly update through `/coach`, verifies the announcement row plus pending `team_broadcast` notification draft in Supabase, confirms no provider delivery attempts were created, and preserves `output/playwright/coach-weekly-update-qa-session-live.png`.
 - Seams: `/coach`, `/api/coach/weekly-update`, `lib/domain/communications.ts`, `scripts/verify-qa-session-paths.mjs`.
-- Done when: signed-in QA coach saves a weekly update through the browser, Supabase rows show announcement plus pending `team_broadcast` notification drafts, and screenshots/traces are preserved.
+- Done when: met. The coach dashboard now targets the next scheduled event team, falling back to the active-season team, so archived team memberships do not receive current weekly updates.
 - SaaS constants focus: tenant/team scope, actor authorization, notification draft state, auditability, provider-send boundary.
-- Validation: `npm run supabase:qa-users`; `QA_PROOF_BASE_URL=https://www.leaguepilot.us npm run qa:session-proof` after script extension.
+- Validation: `npm run supabase:qa-users`; `QA_PROOF_BASE_URL=https://www.leaguepilot.us npm run qa:session-proof`; hosted deployment `dpl_ERncYiyZE3BXSz8TJHzKHsu7DPGZ`.
 
 ### LP-003 - Prove Media Report Browser Write
 

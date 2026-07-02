@@ -311,6 +311,70 @@ async function assertParentReplayPublishRows(supabase, input) {
   return notification.id;
 }
 
+async function assertCoachWeeklyUpdateRows(supabase, input) {
+  const { data: announcement, error: announcementError } = await supabase
+    .from("announcements")
+    .select("id,team_id,author_user_id,title,body,created_at")
+    .eq("team_id", qaIds.team)
+    .eq("author_user_id", input.coachUserId)
+    .eq("body", input.body)
+    .gte("created_at", input.proofStartedAt)
+    .order("created_at", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+  if (
+    announcementError ||
+    !announcement ||
+    announcement.team_id !== qaIds.team ||
+    announcement.author_user_id !== input.coachUserId ||
+    announcement.title !== input.title ||
+    announcement.body !== input.body
+  ) {
+    throw new Error("Coach weekly update browser proof did not persist the expected announcement row.");
+  }
+
+  const { data: notifications, error: notificationError } = await supabase
+    .from("notifications")
+    .select("id,recipient_user_id,team_id,notification_type,channel,status,provider_approval_status,title,body,created_at")
+    .eq("team_id", qaIds.team)
+    .eq("notification_type", "team_broadcast")
+    .eq("channel", "email")
+    .eq("body", input.body)
+    .gte("created_at", input.proofStartedAt)
+    .order("created_at", { ascending: false });
+  if (notificationError || !notifications?.length) {
+    throw new Error("Coach weekly update browser proof did not queue pending team-broadcast notification drafts.");
+  }
+
+  const expectedDraft = notifications.find((notification) => (
+    notification.recipient_user_id === input.parentUserId &&
+    notification.status === "pending" &&
+    notification.provider_approval_status === "pending" &&
+    notification.title === input.title &&
+    notification.body === input.body
+  ));
+  if (!expectedDraft) {
+    throw new Error("Coach weekly update notification draft did not preserve the expected pending provider boundary.");
+  }
+
+  const notificationIds = notifications.map((notification) => notification.id);
+  const { data: attempts, error: attemptError } = await supabase
+    .from("notification_delivery_attempts")
+    .select("id,notification_id,status")
+    .in("notification_id", notificationIds);
+  if (attemptError) {
+    throw new Error("Coach weekly update proof could not verify provider delivery attempts.");
+  }
+  if (attempts?.length) {
+    throw new Error("Coach weekly update browser proof created provider delivery attempts before approval.");
+  }
+
+  return {
+    announcementId: announcement.id,
+    notificationIds
+  };
+}
+
 async function assertProviderDeliveryReviewRows(supabase, input) {
   const { data: notification, error: notificationError } = await supabase
     .from("notifications")
@@ -353,6 +417,58 @@ async function assertProviderDeliveryReviewRows(supabase, input) {
     .eq("target_id", input.notificationId);
   if (auditError || !auditEvents?.length) {
     throw new Error("Provider delivery browser proof did not write the expected admin audit event.");
+  }
+}
+
+async function proveCoachWeeklyUpdateWrite(browser, supabase) {
+  const [coach, parent] = await Promise.all([
+    findUserByEmail(supabase, requireEnv("QA_COACH_EMAIL")),
+    findUserByEmail(supabase, requireEnv("QA_PARENT_EMAIL"))
+  ]);
+  const context = await browser.newContext({
+    viewport: { width: 390, height: 844 },
+    isMobile: true,
+    deviceScaleFactor: 2,
+    extraHTTPHeaders: {
+      "Cache-Control": "no-cache"
+    }
+  });
+  const page = await context.newPage();
+  const proofStartedAt = new Date(Date.now() - 2000).toISOString();
+  const proofId = `qa-weekly-${Date.now()}`;
+  const title = "Weekly update for Tiny Tigers";
+  const body = [
+    `QA hosted weekly update proof ${proofId}.`,
+    "Please review RSVP gaps, snack coverage, and field arrival details.",
+    "This proof must create pending team broadcast drafts only; no provider send should occur."
+  ].join("\n");
+
+  try {
+    await signIn(page, requireEnv("QA_COACH_EMAIL"), requireEnv("QA_COACH_PASSWORD"));
+    await page.goto(`${baseUrl}/coach?qa_weekly_update=${proofId}`, { waitUntil: "networkidle" });
+    await assertText(page, "Coach weekly update builder");
+    await assertText(page, "Saving creates an announcement and pending notification drafts only");
+    await page.locator("textarea").first().fill(body);
+    await clickAndAssertText(
+      page.getByRole("button", { name: "Save weekly update draft" }).first(),
+      page,
+      "Weekly update saved with"
+    );
+    await assertText(page, "No provider send occurred.");
+
+    const proofRows = await assertCoachWeeklyUpdateRows(supabase, {
+      coachUserId: coach.id,
+      parentUserId: parent.id,
+      title,
+      body,
+      proofStartedAt
+    });
+
+    const screenshotPath = join(screenshotDir, "coach-weekly-update-qa-session-live.png");
+    await page.screenshot({ path: screenshotPath, fullPage: true });
+    console.log(`QA coach weekly update browser write verified against Supabase rows (${screenshotPath}, announcement ${proofRows.announcementId}, ${proofRows.notificationIds.length} notification draft(s))`);
+  } finally {
+    await context.close();
   }
 }
 
@@ -600,6 +716,8 @@ async function main() {
         }
       ]
     });
+
+    await proveCoachWeeklyUpdateWrite(browser, supabase);
 
     await proveCoachProviderPrivateWrites(browser, supabase);
 

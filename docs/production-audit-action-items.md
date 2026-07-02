@@ -21,6 +21,7 @@ The app is not ready for real-family production launch yet. The core scaffold, r
 - `npm run typecheck` now runs `next typegen && tsc --noEmit -p tsconfig.typecheck.json`; it passed on 2026-07-01 after `.next/types` was moved aside and regenerated.
 - `npm test` passed on 2026-07-01: 18 files, 174 tests.
 - `npm run build` passed on 2026-07-02 and generated 47 static pages with dynamic private routes. The known Next SWC lockfile warning still appears during Vercel deploy builds even after local lockfile repair attempts, but local `npm run typecheck` and `npm run build` pass.
+- `QA_PROOF_BASE_URL=https://www.leaguepilot.us npm run qa:session-proof` passed again on 2026-07-02 against deployment `dpl_ERncYiyZE3BXSz8TJHzKHsu7DPGZ`. The run added hosted browser proof that a signed-in QA coach saves a weekly update, Supabase persists the announcement plus pending `team_broadcast` notification draft, and no provider delivery attempt is created.
 - Original audit worktree had only untracked local editor config; check current worktree state before release packaging.
 
 ## P0 Launch Blockers
@@ -58,8 +59,8 @@ The app is not ready for real-family production launch yet. The core scaffold, r
    - Done when: approved provider attempts create real sandbox sends and rejected attempts suppress sends with audit logs.
 
 7. Add browser-level live action tests for key private writes.
-   - Current truth: partially covered on 2026-07-01. Hosted QA browser proof now covers signed-out parent gates, signed-in parent/coach/admin read surfaces, parent RSVP save, snack claim, volunteer claim, notification preference save, Parent Replay publish, and provider-delivery review against Supabase rows. New evidence screenshots include `output/playwright/parent-live-actions-qa-session-live.png`, `output/playwright/coach-parent-replay-private-write-live.png`, and `output/playwright/provider-delivery-review-qa-session-live.png`.
-   - Remaining action: add Playwright proofs for weekly update draft, media report/moderation, registration/admin approval flows, and team-builder/admin publish flows.
+   - Current truth: partially covered on 2026-07-02. Hosted QA browser proof now covers signed-out parent gates, signed-in parent/coach/admin read surfaces, parent RSVP save, snack claim, volunteer claim, notification preference save, coach weekly update draft, Parent Replay publish, and provider-delivery review against Supabase rows. New evidence screenshots include `output/playwright/parent-live-actions-qa-session-live.png`, `output/playwright/coach-weekly-update-qa-session-live.png`, `output/playwright/coach-parent-replay-private-write-live.png`, and `output/playwright/provider-delivery-review-qa-session-live.png`.
+   - Remaining action: add Playwright proofs for media report/moderation, registration/admin approval flows, and team-builder/admin publish flows.
    - Done when: CI screenshots or traces prove every release-critical signed-in browser write uses real Supabase sessions.
 
 8. Reconcile stale capability-matrix gaps.
