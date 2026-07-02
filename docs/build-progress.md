@@ -16,6 +16,7 @@ This file tracks implementation progress while moving the app from the local red
 - Set launch scope for provider sends to draft/internal records only. Real email/SMS/Web Push sends remain a separate explicit implementation decision.
 - Set Vercel Preview OpenAI env setup out of launch scope until a named non-production preview branch is chosen.
 - Hardened `/auth` hosted diagnostics so missing browser Supabase env, public service-role key misuse, and browser/network failures show specific messages instead of the generic unreachable banner.
+- Redeployed the auth diagnostics patch to Vercel Production. `https://www.leaguepilot.us` now aliases deployment `dpl_v9eq5AkHhDjkhDodXGUVaAcTMaYn`.
 
 ### Validation
 
@@ -26,6 +27,7 @@ This file tracks implementation progress while moving the app from the local red
 - `QA_PROOF_BASE_URL=https://www.leaguepilot.us npm run qa:ai-coach-proof` passed.
 - `vercel deploy --prod --yes` passed and aliased the deployment to `https://www.leaguepilot.us`.
 - Hosted `/auth` browser proof against `https://www.leaguepilot.us` returned real Supabase Auth responses for bogus sign-in and invalid sign-up email, confirming Production Supabase Auth is reachable.
+- Post-deploy hosted `/auth` proof against deployment `dpl_v9eq5AkHhDjkhDodXGUVaAcTMaYn` returned `Invalid login credentials` for bogus sign-in and captured `output/playwright/auth-supabase-error-specific-hosted-deployed.png`.
 
 ### Remaining Gap
 
