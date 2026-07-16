@@ -2,6 +2,34 @@
 
 This file tracks implementation progress while moving the app from the local reducer scaffold to Supabase-backed production slices.
 
+## 2026-07-03
+
+### Completed
+
+- Added shared Season Certainty read models for parent, coach, and admin home screens. The builders compose existing scoped dashboard state into viewer context, team context, next-event certainty, RSVP/attendance status, readiness, changes, actions, and freshness without adding Supabase access to client UI.
+- Added reusable Season Certainty card primitives and role cards for next event, action checklist, changes, coach updates, messages, photos, privacy, event readiness, attendance, weather/field review, drafts, practice recaps, league health, pending queues, team status, registration queue, and security status.
+- Redesigned the first viewport of `/parent`, `/coach`, and `/admin` around the Saturday Ready IA: parents see next event, child RSVP, important change, primary action, and privacy; coaches see readiness, RSVP counts, missing replies, field/weather status, drafts, and practice recaps; admins see teams needing help, pending queues, team status, registrations, and Review & Safety.
+- Kept parent, coach, and admin data minimization at the read-model boundary. Parent views only use linked child/team rows, coach views only use assigned team rows, and admin views stay behind the active-admin route guard added in the topology pass.
+- Cleaned primary IA/home terminology from abstract labels to Home, Practice Recaps, Coach Updates, Review & Safety, Family Access, Message Delivery Review, and Drafts to Review while leaving compatibility route names and persisted enums untouched.
+- Added signed-in QA visual proof for `/parent`, `/coach`, and `/admin` at 375px, 390px, 768px, and 1440px under `output/playwright/season-certainty/`, with compact mobile spacing that keeps the role question, critical facts, status, and first action visible before deeper workflow sections.
+- Updated feature and capability trackers for the Season Certainty home UI.
+
+### Validation
+
+- `npm test -- lib/season-certainty.test.ts lib/navigation/route-topology.test.ts app/routes-smoke.test.ts components/feature-panels.test.tsx` passed: 4 files, 47 tests.
+- `npm run qa:season-certainty-proof` passed and captured signed-in QA parent, coach, and admin states at all required viewports.
+- `npm run typecheck` passed after `next typegen`.
+- `npm test` passed: 23 files, 208 tests.
+- `npm run build` passed and listed the canonical parent, coach, and admin wrapper routes plus preserved compatibility routes as dynamic App Router pages.
+- `npm run qa:rls-proof` passed for QA parent, QA coach, and anonymous clients.
+- `git diff --check` passed.
+
+### Remaining Gap
+
+- Deeper workflow sections below the new home summaries still use the existing dense production panels and remain future polish.
+- Dedicated compatibility/legacy copy still appears where compatibility routes intentionally preserve old Parent Replay surfaces; primary navigation and home surfaces now use Practice Recaps.
+- Hosted production browser visual proof for the new home screens has not been run in this local slice; local signed-in QA visual proof is captured.
+
 ## 2026-07-02
 
 ### Completed
@@ -20,6 +48,10 @@ This file tracks implementation progress while moving the app from the local red
 - Fixed coach weekly update team targeting so current updates use the next scheduled event team, then active-season team, instead of the first returned coach membership, which could be archived.
 - Extended hosted session proof to save a signed-in coach weekly update through `/coach`, verify the Supabase announcement plus pending `team_broadcast` notification draft, confirm no provider delivery attempt was created, and capture `output/playwright/coach-weekly-update-qa-session-live.png`.
 - Redeployed the weekly-update proof fix to Vercel Production. `https://www.leaguepilot.us` now aliases deployment `dpl_ERncYiyZE3BXSz8TJHzKHsu7DPGZ`.
+- Added a pure route topology registry plus server-only ShellAccess helper so AppShell sidebar, mobile nav, command search, canonicalHref metadata, role-home switch links, compatibility hiding, and prototype noindex are derived from one IA source.
+- Added canonical role wrappers for parent schedule/messages/photos/practice-recaps/family-access/settings, coach attendance/practice-recaps/schedule/messages/weather/drafts/roster/snacks/settings, and admin family-access/branding/security-audit/reports-archive/media/safety/communications/schedule-venues/message-delivery/sponsor/settings surfaces while preserving old route URLs as compatibility routes.
+- Added page-level parent, coach, and active-admin guards before role wrapper data loads, plus server-side schedule/chat/portal data scoping for role-specific wrappers.
+- Kept `/prototype/index.html` available as the old static prototype while removing it from visible IA and marking it `noindex,nofollow`.
 
 ### Validation
 
@@ -33,12 +65,18 @@ This file tracks implementation progress while moving the app from the local red
 - Post-deploy hosted `/auth` proof against deployment `dpl_v9eq5AkHhDjkhDodXGUVaAcTMaYn` returned `Invalid login credentials` for bogus sign-in and captured `output/playwright/auth-supabase-error-specific-hosted-deployed.png`.
 - `npm test -- components/feature-panels.test.tsx app/api-live-actions.test.ts` passed: 2 files, 40 tests.
 - `QA_PROOF_BASE_URL=https://www.leaguepilot.us npm run qa:session-proof` passed after `npm run supabase:qa-users`, including coach weekly update browser write proof against Supabase rows.
+- `npm test -- lib/navigation/route-topology.test.ts lib/supabase/route-scopes.test.ts app/route-guards.test.ts app/routes-smoke.test.ts components/feature-panels.test.tsx app/dashboard-read-adapters.test.ts` passed: 6 files, 50 tests.
+- `npm run typecheck` passed after adding the topology and wrapper routes.
+- `npm test` passed: 22 files, 201 tests.
+- `npm run build` passed with all App Router routes server-rendered dynamically.
+- `npm run qa:rls-proof` passed for QA parent, QA coach, and anonymous clients.
 
 ### Remaining Gap
 
 - Real email/SMS/Web Push sends remain disconnected by launch decision; implement provider adapters, webhooks, idempotent retries, suppression handling, cost controls, and sandbox proof only if real sends become explicit scope.
 - Vercel Preview OpenAI env values remain unset by launch decision until a non-production preview branch target is named.
 - The Next SWC lockfile warning still appears during the Vercel build even though local `typecheck` and `build` passed; it remains a non-blocking lockfile follow-up.
+- Superseded by the 2026-07-03 Season Certainty home UI pass for `/parent`, `/coach`, and `/admin`; deeper workflow sections still reuse existing scoped production panels.
 
 ## 2026-07-01
 

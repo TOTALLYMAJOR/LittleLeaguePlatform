@@ -360,7 +360,17 @@ describe("live action API routes", () => {
       ok: true,
       message: "Provider delivery approved.",
       notification: { id: "notification-1", provider_approval_status: "approved", approved_at: "2026-06-23T12:00:00.000Z" },
-      attempt: { id: "attempt-1", provider: "email", channel: "email", status: "queued", attempted_at: "2026-06-23T12:00:00.000Z" }
+      attempt: {
+        id: "attempt-1",
+        provider: "email",
+        channel: "email",
+        status: "queued",
+        attempted_at: "2026-06-23T12:00:00.000Z",
+        idempotency_key: "notification-1:email",
+        next_attempt_at: "2026-06-23T12:00:00.000Z",
+        retry_count: 0,
+        max_retries: 3
+      }
     });
 
     const response = await postProviderDeliveryReview(jsonRequest({
@@ -832,7 +842,8 @@ describe("live action API routes", () => {
       actorUserId: "client-spoof",
       playerId: "player-1",
       parentUserId: "parent-1",
-      relationship: "guardian"
+      relationship: "guardian",
+      verificationNote: "Confirmed with family access records."
     }));
 
     expect(response.status).toBe(200);
@@ -841,7 +852,20 @@ describe("live action API routes", () => {
       actorUserId: "user-live-session",
       playerId: "player-1",
       parentUserId: "parent-1",
-      relationship: "guardian"
+      relationship: "guardian",
+      verificationNote: "Confirmed with family access records."
     });
+  });
+
+  it("rejects guardian link repair without verification evidence", async () => {
+    const response = await postGuardianRepair(jsonRequest({
+      organizationId: "org-1",
+      playerId: "player-1",
+      parentUserId: "parent-1",
+      relationship: "guardian"
+    }));
+
+    expect(response.status).toBe(400);
+    expect(repairGuardianLinkMock).not.toHaveBeenCalled();
   });
 });

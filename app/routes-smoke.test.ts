@@ -6,18 +6,45 @@ const appRoutes = [
   "/",
   "/admin",
   "/admin/archive",
+  "/admin/branding",
+  "/admin/communications",
+  "/admin/family-access",
   "/admin/guardian-links",
+  "/admin/media-review",
+  "/admin/message-delivery-review",
   "/admin/operations",
+  "/admin/reports-archive",
+  "/admin/safety-weather",
+  "/admin/schedule-venues",
   "/admin/security",
+  "/admin/security-audit",
+  "/admin/settings",
+  "/admin/sponsors",
   "/admin/teams",
   "/admin/themes",
   "/admin/registrations",
   "/coach",
+  "/coach/attendance",
+  "/coach/drafts",
+  "/coach/messages",
+  "/coach/practice-recaps",
+  "/coach/roster",
+  "/coach/schedule",
+  "/coach/settings",
+  "/coach/snacks-volunteers",
+  "/coach/weather-fields",
   "/offline",
   "/parent",
+  "/parent/family-access",
+  "/parent/messages",
+  "/parent/photos",
+  "/parent/practice-recaps",
+  "/parent/schedule",
+  "/parent/settings",
   "/registration",
   "/team-portal",
   "/team-chat",
+  "/coach/rsvps",
   "/coach/parent-replay"
 ];
 
@@ -37,12 +64,26 @@ describe("route smoke coverage", () => {
 
     expect(page).toContain("Stop chasing families.");
     expect(page).toContain("Run the season from one private team home");
-    expect(page).toContain("Parent Replay is the signature loop.");
-    expect(page).toContain("Explore the product surfaces.");
+    expect(page).toContain("Practice recaps carry coaching home.");
+    expect(page).toContain("Explore the team tools.");
     expect(page).toContain("Supabase-backed paths when signed-in rows and roles exist");
     expect(page).toContain("no external email, SMS, push, Stripe, AI-provider, or native-app delivery");
+    expect(page).toContain("/coach/practice-recaps");
+    expect(page).toContain("/admin/security-audit");
+    expect(page).not.toContain("/prototype/index.html");
     expect(page).not.toContain("session-only local state");
     expect(page).not.toContain("does not persist production data");
+  });
+
+  it("keeps the static prototype available but hidden from indexable IA", () => {
+    const prototype = readFileSync(join(process.cwd(), "public", "prototype", "index.html"), "utf8");
+    const topology = readFileSync(join(process.cwd(), "lib", "navigation", "route-topology.ts"), "utf8");
+
+    expect(prototype).toContain("noindex,nofollow");
+    expect(topology).toContain("\"/prototype/index.html\"");
+    expect(topology).toContain("noindex: true");
+    expect(topology).toContain("navVisible: false");
+    expect(topology).toContain("commandVisible: false");
   });
 
   it("keeps the PWA offline fallback route wired into the service worker", () => {
@@ -111,9 +152,11 @@ describe("route smoke coverage", () => {
 
   it("keeps the admin security proof page tied to RLS and audit evidence", () => {
     const page = readFileSync(join(process.cwd(), "app", "admin", "security", "page.tsx"), "utf8");
+    const surfaces = readFileSync(join(process.cwd(), "app", "admin", "_surfaces.tsx"), "utf8");
     const proof = readFileSync(join(process.cwd(), "lib", "supabase", "security-proof.ts"), "utf8");
 
-    expect(page).toContain("buildSecurityProofDashboard");
+    expect(page).toContain("AdminSecurityAuditSurface");
+    expect(surfaces).toContain("buildSecurityProofDashboard");
     expect(proof).toContain("parent cannot read cross-team players");
     expect(proof).toContain("coach cannot update archived-season events");
     expect(proof).toContain("team_membership_saved");
@@ -121,9 +164,11 @@ describe("route smoke coverage", () => {
 
   it("keeps the admin operations page tied to settings, providers, queues, and audits", () => {
     const page = readFileSync(join(process.cwd(), "app", "admin", "operations", "page.tsx"), "utf8");
+    const surfaces = readFileSync(join(process.cwd(), "app", "admin", "_surfaces.tsx"), "utf8");
     const data = readFileSync(join(process.cwd(), "lib", "supabase", "admin-operations.ts"), "utf8");
 
-    expect(page).toContain("listAdminOperationsData");
+    expect(page).toContain("AdminOperationsSurface");
+    expect(surfaces).toContain("listAdminOperationsData");
     expect(data).toContain("providerInventory");
     expect(data).toContain("approvalQueues");
     expect(data).toContain("auditLogs");
@@ -131,9 +176,11 @@ describe("route smoke coverage", () => {
 
   it("keeps admin team setup tied to seasons and divisions", () => {
     const page = readFileSync(join(process.cwd(), "app", "admin", "teams", "page.tsx"), "utf8");
+    const surfaces = readFileSync(join(process.cwd(), "app", "admin", "_surfaces.tsx"), "utf8");
     const data = readFileSync(join(process.cwd(), "lib", "supabase", "team-management.ts"), "utf8");
 
-    expect(page).toContain("listAdminTeamManagementData");
+    expect(page).toContain("AdminTeamsSurface");
+    expect(surfaces).toContain("listAdminTeamManagementData");
     expect(data).toContain("requireActiveOrganizationAdmin");
     expect(data).toContain("division");
     expect(data).toContain("season_id");
@@ -143,19 +190,23 @@ describe("route smoke coverage", () => {
 
   it("keeps guardian link repair tied to missing-link access recovery", () => {
     const page = readFileSync(join(process.cwd(), "app", "admin", "guardian-links", "page.tsx"), "utf8");
+    const surfaces = readFileSync(join(process.cwd(), "app", "admin", "_surfaces.tsx"), "utf8");
     const data = readFileSync(join(process.cwd(), "lib", "supabase", "guardian-links.ts"), "utf8");
 
-    expect(page).toContain("listGuardianLinkRepairData");
+    expect(page).toContain("AdminFamilyAccessSurface");
+    expect(surfaces).toContain("listGuardianLinkRepairData");
     expect(data).toContain("guardian_link_repaired");
     expect(data).toContain("team_memberships");
   });
 
   it("keeps archive vault and brand governance evidence present", () => {
     const archivePage = readFileSync(join(process.cwd(), "app", "admin", "archive", "page.tsx"), "utf8");
+    const surfaces = readFileSync(join(process.cwd(), "app", "admin", "_surfaces.tsx"), "utf8");
     const logoPolicy = readFileSync(join(process.cwd(), "docs", "brand-governance.md"), "utf8");
     const logoService = readFileSync(join(process.cwd(), "lib", "supabase", "team-logos.ts"), "utf8");
 
-    expect(archivePage).toContain("listArchiveVaultData");
+    expect(archivePage).toContain("AdminReportsArchiveSurface");
+    expect(surfaces).toContain("listArchiveVaultData");
     expect(logoPolicy).toContain("Logos must use HTTPS URLs");
     expect(logoService).toContain("team_logo_asset_submitted");
     expect(logoService).toContain("Logo asset team must belong to the selected organization.");

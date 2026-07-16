@@ -80,11 +80,11 @@ Task-specific checks are required only when the surface is touched:
 ### LP-006 - Harden Guardian Verification Policy
 
 - Priority: P1 safety.
-- Current state: registration approval creates links; broader guardian verification policy is still called out as a gap.
+- Current state: registration approval and guardian-link repair now require an active organization-admin reviewer, an existing parent profile, and bounded verification evidence; an existing profile email match remains only a correlation signal, while unmatched parents stay invited. Hosted/browser proof and any stronger identity-verification provider remain open.
 - Seams: `/admin/registrations`, `/admin/guardian-links`, registration approval RPCs, guardian repair API, `docs/privacy-security.md`.
-- Done when: docs and tests define what evidence is enough to link a parent to a child/team and what remains admin-reviewed.
+- Done when: docs and tests define what evidence is enough to link a parent to a child/team and what remains admin-reviewed. Local policy is covered; hosted migration/RLS proof and any stronger identity evidence remain follow-up work.
 - SaaS constants focus: identity, authorization, child privacy, support repair, auditability, failure semantics.
-- Validation: focused policy tests or docs-only `git diff --check` depending on scope.
+- Validation: `lib/supabase/registration-approvals.test.ts`; `supabase/rls-policy.test.ts`; hosted migration/RLS proof for production closure.
 
 ### LP-007 - Prove Team-Builder Admin Publish
 
@@ -107,20 +107,20 @@ Task-specific checks are required only when the surface is touched:
 ### LP-009 - Prove Admin Operations Hosted Scope
 
 - Priority: P1 proof.
-- Current state: `/admin/operations` and `/admin/security` have hosted proof; broader admin surfaces need signed-in admin proof.
+- Current state: `/admin/operations` and `/admin/security` have hosted proof; export service reads now narrow related rows and profiles to the selected organization scope, with local cross-tenant regression coverage. Broader admin surfaces still need signed-in hosted proof.
 - Seams: `/admin/teams`, `/admin/guardian-links`, `/admin/archive`, `/admin/operations`, `/admin/security`.
 - Done when: signed-in QA admin sees only the intended organization data across all admin surfaces and screenshots are preserved.
 - SaaS constants focus: tenant isolation, support/admin operations, audit logs, observability by tenant.
-- Validation: hosted browser proof and `npm run qa:rls-proof`.
+- Validation: `lib/supabase/reporting.test.ts`; hosted browser proof and `npm run qa:rls-proof`.
 
 ### LP-010 - Add Public Intake Abuse Controls
 
 - Priority: P1 safety.
-- Current state: public endpoints are intentionally unauthenticated but need throttling/abuse control.
+- Current state: public endpoints remain intentionally unauthenticated. A bounded in-process fixed-window limiter now rejects registration bursts at 5 requests/minute/client and mobile telemetry bursts at 60 requests/minute/client, returning `429`, `Retry-After`, and `X-RateLimit-*` headers. This is route-level protection; a shared store or provider edge firewall is still required for full multi-instance enforcement.
 - Seams: `/api/registration-requests`, `/api/mobile-usage-events`, Vercel/firewall config if used.
-- Done when: burst requests are throttled or rejected, behavior is documented, and legitimate family signup/usage telemetry still works.
+- Done when: burst requests are throttled or rejected at the route boundary, behavior is documented, legitimate family signup/usage telemetry still works, and hosted edge/shared-store enforcement is proven for the deployed topology.
 - SaaS constants focus: noisy-neighbor control, rate limits, tenant spoofing, public attack path, observability.
-- Validation: route tests for accepted and throttled requests; `npm test`; `npm run typecheck`.
+- Validation: `app/public-intake-rate-limit.test.ts`; `npm test`; `npm run typecheck`; hosted burst proof or provider-firewall evidence for full production closure.
 
 ### LP-011 - Prove Hosted AI Coach Rewrite
 

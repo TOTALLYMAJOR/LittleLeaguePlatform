@@ -42,16 +42,12 @@ function fallbackReviewData(): RegistrationReviewData {
 export async function listRegistrationReviewData(): Promise<RegistrationReviewData> {
   try {
     const supabase = createSupabaseAdminClient();
-    const [registrationRequests, profilesResult, teamMembershipsResult, organizationMembershipsResult, actionsResult] = await withSupabaseTimeout(Promise.all([
+    const [registrationRequests, profilesResult, organizationMembershipsResult, actionsResult] = await withSupabaseTimeout(Promise.all([
       listRegistrationRequests(),
       supabase
         .from("profiles")
         .select("id,display_name,email,default_role")
         .order("display_name", { ascending: true }),
-      supabase
-        .from("team_memberships")
-        .select("user_id,team_id,role,status")
-        .eq("status", "active"),
       supabase
         .from("organization_memberships")
         .select("user_id,organization_id,role,status")
@@ -64,13 +60,6 @@ export async function listRegistrationReviewData(): Promise<RegistrationReviewDa
     ]), 7000);
 
     const scopeByUserId = new Map<string, string[]>();
-
-    for (const membership of teamMembershipsResult.data ?? []) {
-      if (membership.role !== "coach") continue;
-      const scopes = scopeByUserId.get(membership.user_id) ?? [];
-      scopes.push(`coach:${membership.team_id}`);
-      scopeByUserId.set(membership.user_id, scopes);
-    }
 
     for (const membership of organizationMembershipsResult.data ?? []) {
       if (membership.role !== "admin") continue;
@@ -109,8 +98,8 @@ export async function approveRegistrationRequest(input: {
   reviewerUserId: string;
   note?: string;
 }): Promise<RegistrationReviewResult> {
-  if (!input.requestId || !input.reviewerUserId) {
-    return { ok: false, message: "Registration request and reviewer are required." };
+  if (!input.requestId || !input.reviewerUserId || !input.note?.trim()) {
+    return { ok: false, message: "Registration request, reviewer, and verification note are required." };
   }
 
   try {
@@ -118,7 +107,7 @@ export async function approveRegistrationRequest(input: {
     const { data, error } = await withSupabaseTimeout(supabase.rpc("approve_registration_request", {
       target_registration_request_id: input.requestId,
       reviewer_user_id: input.reviewerUserId,
-      review_note: input.note ?? null
+      review_note: input.note.trim()
     }), 10000);
 
     if (error) return { ok: false, message: error.message };

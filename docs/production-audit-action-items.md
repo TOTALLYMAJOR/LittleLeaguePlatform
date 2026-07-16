@@ -80,8 +80,9 @@ The app is not ready for real-family production launch yet. The core scaffold, r
 
 11. Add rate limits and abuse controls to public intake endpoints.
     - Current public endpoints: `/api/registration-requests` and `/api/mobile-usage-events`.
-    - Action: add server-side rate limiting or provider firewall rules for registration intake and anonymous usage events.
-    - Done when: burst requests are rejected or throttled and the behavior is documented.
+    - Current truth: route-level bounded in-process throttles reject registration bursts at 5 requests/minute/client and mobile telemetry bursts at 60 requests/minute/client with documented `429`, `Retry-After`, and `X-RateLimit-*` behavior; focused accepted/throttled tests pass.
+    - Remaining action: add shared-store or provider-edge enforcement for the deployed multi-instance topology.
+    - Done when: local and hosted burst requests are rejected or throttled with stable behavior and legitimate signup/telemetry behavior remains intact.
 
 ## P2 Product Decisions Before Wider Launch
 

@@ -1,5 +1,7 @@
-import { AdminHealthClient } from "@/components/feature-panels";
+import { AdminHealthSurface } from "../_surfaces";
 
-export default function AdminHealthPage() {
-  return <AdminHealthClient />;
+export const dynamic = "force-dynamic";
+
+export default async function AdminHealthPage() {
+  return <AdminHealthSurface />;
 }

@@ -1,6 +1,6 @@
 # Tech Stack
 
-This file tracks the intended production stack for Little League HQ. The current app remains a local Next.js scaffold with typed seed data and browser-session reducer state. Production work should reuse the current code and move capabilities behind real auth, persistence, policies, and provider adapters.
+This file tracks the intended production stack for Little League HQ. The current app is a root Next.js scaffold with Supabase-backed production paths for several authenticated parent, coach, and admin workflows, plus typed seed fallback where live rows or auth context are unavailable. Production work should keep moving capabilities behind real auth, persistence, policies, and provider adapters without describing fallback state as production truth.
 
 ## Direction
 

@@ -1,0 +1,429 @@
+openapi: 3.1.0
+info:
+  title: LeaguePilot API
+  version: 0.1.0-draft
+  description: Initial OpenAPI draft for current Next.js route handlers. Field-level schemas are intentionally broad until route contracts stabilize.
+servers:
+  - url: https://www.leaguepilot.us
+    description: Production host when configured
+  - url: http://localhost:3000
+    description: Local Next.js dev server
+security:
+  - SupabaseSession: []
+tags:
+  - name: Public Intake
+  - name: Parent Coach Operations
+  - name: Team Chat
+  - name: Provider Boundary
+  - name: Admin
+  - name: Coach AI
+components:
+  securitySchemes:
+    SupabaseSession:
+      type: http
+      scheme: bearer
+      bearerFormat: Supabase JWT
+  schemas:
+    GenericJson:
+      type: object
+      additionalProperties: true
+    OkResponse:
+      type: object
+      required: [ok]
+      properties:
+        ok:
+          type: boolean
+        message:
+          type: string
+      additionalProperties: true
+    ErrorResponse:
+      type: object
+      required: [ok, message]
+      properties:
+        ok:
+          type: boolean
+          const: false
+        message:
+          type: string
+      additionalProperties: true
+  requestBodies:
+    GenericJson:
+      required: true
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/GenericJson"
+  responses:
+    Ok:
+      description: Request accepted by the route contract.
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/OkResponse"
+    BadRequest:
+      description: Missing or invalid request body.
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorResponse"
+    Unauthorized:
+      description: Authenticated Supabase session is required.
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorResponse"
+    Forbidden:
+      description: Session exists but actor is not allowed to perform this action.
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorResponse"
+paths:
+  /api/registration-requests:
+    post:
+      tags: [Public Intake]
+      security: []
+      summary: Create a pending registration request.
+      requestBody:
+        $ref: "#/components/requestBodies/GenericJson"
+      responses:
+        "201":
+          $ref: "#/components/responses/Ok"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+  /api/mobile-usage-events:
+    post:
+      tags: [Public Intake]
+      security: []
+      summary: Record PWA/native usage telemetry.
+      requestBody:
+        $ref: "#/components/requestBodies/GenericJson"
+      responses:
+        "201":
+          $ref: "#/components/responses/Ok"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+  /api/rsvps:
+    post:
+      tags: [Parent Coach Operations]
+      summary: Save a guardian-scoped RSVP.
+      requestBody:
+        $ref: "#/components/requestBodies/GenericJson"
+      responses:
+        "200": { $ref: "#/components/responses/Ok" }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+  /api/snack-slots/claim:
+    post:
+      tags: [Parent Coach Operations]
+      summary: Claim a snack slot.
+      requestBody: { $ref: "#/components/requestBodies/GenericJson" }
+      responses:
+        "200": { $ref: "#/components/responses/Ok" }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+  /api/volunteer-signups/claim:
+    post:
+      tags: [Parent Coach Operations]
+      summary: Claim a volunteer role.
+      requestBody: { $ref: "#/components/requestBodies/GenericJson" }
+      responses:
+        "200": { $ref: "#/components/responses/Ok" }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+  /api/notification-preferences:
+    post:
+      tags: [Provider Boundary]
+      summary: Save notification preferences.
+      requestBody: { $ref: "#/components/requestBodies/GenericJson" }
+      responses:
+        "200": { $ref: "#/components/responses/Ok" }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+  /api/notification-preferences/unsubscribe:
+    post:
+      tags: [Provider Boundary]
+      summary: Unsubscribe or suppress a notification channel/type.
+      requestBody: { $ref: "#/components/requestBodies/GenericJson" }
+      responses:
+        "200": { $ref: "#/components/responses/Ok" }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+  /api/push-subscriptions:
+    post:
+      tags: [Provider Boundary]
+      summary: Store a Web Push subscription record.
+      requestBody: { $ref: "#/components/requestBodies/GenericJson" }
+      responses:
+        "201": { $ref: "#/components/responses/Ok" }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+  /api/support-requests:
+    post:
+      tags: [Parent Coach Operations]
+      summary: Create a support request.
+      requestBody: { $ref: "#/components/requestBodies/GenericJson" }
+      responses:
+        "201": { $ref: "#/components/responses/Ok" }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+  /api/schedule:
+    post:
+      tags: [Parent Coach Operations]
+      summary: Create or update a schedule event.
+      requestBody: { $ref: "#/components/requestBodies/GenericJson" }
+      responses:
+        "201": { $ref: "#/components/responses/Ok" }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+  /api/schedule/export:
+    get:
+      tags: [Parent Coach Operations]
+      summary: Export scoped schedule data.
+      responses:
+        "200": { $ref: "#/components/responses/Ok" }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+  /api/field-locations:
+    get:
+      tags: [Parent Coach Operations]
+      summary: Read field locations.
+      responses:
+        "200": { $ref: "#/components/responses/Ok" }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+    post:
+      tags: [Parent Coach Operations]
+      summary: Create a field location.
+      requestBody: { $ref: "#/components/requestBodies/GenericJson" }
+      responses:
+        "201": { $ref: "#/components/responses/Ok" }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+  /api/weather-alerts/draft:
+    post:
+      tags: [Provider Boundary]
+      summary: Create a weather alert draft.
+      requestBody: { $ref: "#/components/requestBodies/GenericJson" }
+      responses:
+        "201": { $ref: "#/components/responses/Ok" }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+  /api/media/report:
+    post:
+      tags: [Parent Coach Operations]
+      summary: Report a media item.
+      requestBody: { $ref: "#/components/requestBodies/GenericJson" }
+      responses:
+        "200": { $ref: "#/components/responses/Ok" }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+  /api/media/moderation:
+    post:
+      tags: [Parent Coach Operations]
+      summary: Moderate a media item.
+      requestBody: { $ref: "#/components/requestBodies/GenericJson" }
+      responses:
+        "200": { $ref: "#/components/responses/Ok" }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+  /api/provider-delivery/review:
+    post:
+      tags: [Provider Boundary]
+      summary: Review provider-delivery draft records.
+      requestBody: { $ref: "#/components/requestBodies/GenericJson" }
+      responses:
+        "200": { $ref: "#/components/responses/Ok" }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+  /api/provider-delivery/retry-plan:
+    get:
+      tags: [Provider Boundary]
+      summary: Read provider retry-plan information.
+      responses:
+        "200": { $ref: "#/components/responses/Ok" }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+  /api/team-chat/messages:
+    post:
+      tags: [Team Chat]
+      summary: Create a team chat message or announcement.
+      requestBody: { $ref: "#/components/requestBodies/GenericJson" }
+      responses:
+        "201": { $ref: "#/components/responses/Ok" }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+  /api/team-chat/read-receipts:
+    post:
+      tags: [Team Chat]
+      summary: Mark team chat messages read.
+      requestBody: { $ref: "#/components/requestBodies/GenericJson" }
+      responses:
+        "200": { $ref: "#/components/responses/Ok" }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+  /api/team-chat/moderation:
+    post:
+      tags: [Team Chat]
+      summary: Moderate team chat content.
+      requestBody: { $ref: "#/components/requestBodies/GenericJson" }
+      responses:
+        "200": { $ref: "#/components/responses/Ok" }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+  /api/coach/weekly-update:
+    post:
+      tags: [Coach AI]
+      summary: Save a coach weekly update and pending broadcast draft.
+      requestBody: { $ref: "#/components/requestBodies/GenericJson" }
+      responses:
+        "201": { $ref: "#/components/responses/Ok" }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+  /api/coach/parent-replay:
+    post:
+      tags: [Coach AI]
+      summary: Publish a reviewed Parent Replay.
+      requestBody: { $ref: "#/components/requestBodies/GenericJson" }
+      responses:
+        "201": { $ref: "#/components/responses/Ok" }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+  /api/coach/ai-workspace:
+    post:
+      tags: [Coach AI]
+      summary: Request a review-only AI Coach Workspace rewrite.
+      requestBody: { $ref: "#/components/requestBodies/GenericJson" }
+      responses:
+        "200": { $ref: "#/components/responses/Ok" }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+  /api/admin/exports:
+    post:
+      tags: [Admin]
+      summary: Generate audited admin exports.
+      requestBody: { $ref: "#/components/requestBodies/GenericJson" }
+      responses:
+        "200": { $ref: "#/components/responses/Ok" }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+  /api/admin/teams:
+    post:
+      tags: [Admin]
+      summary: Create or update a team.
+      requestBody: { $ref: "#/components/requestBodies/GenericJson" }
+      responses:
+        "201": { $ref: "#/components/responses/Ok" }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+  /api/admin/seasons:
+    post:
+      tags: [Admin]
+      summary: Create or update a season.
+      requestBody: { $ref: "#/components/requestBodies/GenericJson" }
+      responses:
+        "201": { $ref: "#/components/responses/Ok" }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+  /api/admin/rosters:
+    post:
+      tags: [Admin]
+      summary: Save roster rows or status.
+      requestBody: { $ref: "#/components/requestBodies/GenericJson" }
+      responses:
+        "201": { $ref: "#/components/responses/Ok" }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+  /api/admin/team-memberships:
+    post:
+      tags: [Admin]
+      summary: Assign team membership.
+      requestBody: { $ref: "#/components/requestBodies/GenericJson" }
+      responses:
+        "201": { $ref: "#/components/responses/Ok" }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+  /api/admin/team-branding:
+    post:
+      tags: [Admin]
+      summary: Save team brand settings.
+      requestBody: { $ref: "#/components/requestBodies/GenericJson" }
+      responses:
+        "200": { $ref: "#/components/responses/Ok" }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+  /api/admin/theme-defaults:
+    post:
+      tags: [Admin]
+      summary: Save organization theme defaults.
+      requestBody: { $ref: "#/components/requestBodies/GenericJson" }
+      responses:
+        "200": { $ref: "#/components/responses/Ok" }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+  /api/admin/team-logos:
+    post:
+      tags: [Admin]
+      summary: Queue team logo metadata for review.
+      requestBody: { $ref: "#/components/requestBodies/GenericJson" }
+      responses:
+        "201": { $ref: "#/components/responses/Ok" }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+  /api/admin/roster-imports/audit:
+    post:
+      tags: [Admin]
+      summary: Persist roster import audit evidence.
+      requestBody: { $ref: "#/components/requestBodies/GenericJson" }
+      responses:
+        "201": { $ref: "#/components/responses/Ok" }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+  /api/admin/guardian-links/repair:
+    post:
+      tags: [Admin]
+      summary: Repair guardian-child links.
+      requestBody: { $ref: "#/components/requestBodies/GenericJson" }
+      responses:
+        "200": { $ref: "#/components/responses/Ok" }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+  /api/admin/registration-requests/{requestId}/approve:
+    post:
+      tags: [Admin]
+      summary: Approve a registration request.
+      parameters:
+        - name: requestId
+          in: path
+          required: true
+          schema: { type: string }
+      requestBody: { $ref: "#/components/requestBodies/GenericJson" }
+      responses:
+        "200": { $ref: "#/components/responses/Ok" }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+  /api/admin/registration-requests/{requestId}/reject:
+    post:
+      tags: [Admin]
+      summary: Reject a registration request.
+      parameters:
+        - name: requestId
+          in: path
+          required: true
+          schema: { type: string }
+      requestBody: { $ref: "#/components/requestBodies/GenericJson" }
+      responses:
+        "200": { $ref: "#/components/responses/Ok" }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+  /api/admin/sponsors:
+    post:
+      tags: [Admin]
+      summary: Save sponsor and billing-proof records.
+      requestBody: { $ref: "#/components/requestBodies/GenericJson" }
+      responses:
+        "200": { $ref: "#/components/responses/Ok" }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }

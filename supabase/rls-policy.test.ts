@@ -23,6 +23,7 @@ describe("Supabase RLS policy coverage", () => {
   const rsvpCancellations = migration("0016_rsvp_cancellations.sql");
   const sponsorBillingAndTeamBuilder = migration("0017_sponsor_billing_and_team_builder.sql");
   const teamBrandProfilesMonitoring = migration("0018_team_brand_profiles_monitoring.sql");
+  const guardianVerification = migration("0020_guardian_verification_policy.sql");
   const packageJson = readFileSync(join(process.cwd(), "package.json"), "utf8");
   const rlsProof = readFileSync(join(process.cwd(), "scripts", "verify-rls-boundaries.mjs"), "utf8");
 
@@ -130,6 +131,13 @@ describe("Supabase RLS policy coverage", () => {
     expect(sponsorBillingAndTeamBuilder).toContain("create table if not exists public.team_build_plans");
     expect(sponsorBillingAndTeamBuilder).toContain("assignments jsonb");
     expect(sponsorBillingAndTeamBuilder).toContain("organization admins manage team build plans");
+  });
+
+  it("keeps registration approval guardian access admin-reviewed with evidence", () => {
+    expect(guardianVerification).toContain("membership.role = 'admin'");
+    expect(guardianVerification).not.toContain("membership.role = 'coach'");
+    expect(guardianVerification).toContain("registration_approval_actions_evidence_note_check");
+    expect(guardianVerification).toContain("length(trim(coalesce(note, ''))) >= 10");
   });
 
   it("keeps team brand profiles coach/admin managed with monitoring proof", () => {

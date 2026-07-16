@@ -1,5 +1,7 @@
-import { CoachRsvpsClient } from "@/components/feature-panels";
+import { CoachAttendanceSurface } from "../_surfaces";
 
-export default function CoachRsvpsPage() {
-  return <CoachRsvpsClient />;
+export const dynamic = "force-dynamic";
+
+export default async function CoachRsvpsPage() {
+  return <CoachAttendanceSurface />;
 }

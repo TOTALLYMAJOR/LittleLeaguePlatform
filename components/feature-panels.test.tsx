@@ -6,6 +6,7 @@ import {
   AdminThemesClient,
   AuthClient,
   CoachDashboardClient,
+  CoachRsvpsClient,
   ParentDashboardClient,
   ParentRsvpClient,
   ParentReplayClient,
@@ -54,6 +55,31 @@ describe("TeamChatClient", () => {
     expect(html).toContain("Media/message policy screens");
     expect(html).toContain("No child accounts");
   });
+
+  it("renders locked viewer/team controls for role-specific wrappers", () => {
+    const html = renderToStaticMarkup(
+      <AppStateProvider>
+        <TeamChatClient
+          teamChatData={{
+            teams: seedState.teams.filter((team) => team.id === "team-tigers"),
+            users: seedState.users.filter((user) => ["user-parent-jordan", "user-coach-taylor"].includes(user.id)),
+            teamMemberships: seedState.teamMemberships.filter((membership) => membership.teamId === "team-tigers"),
+            events: seedState.events.filter((event) => event.teamId === "team-tigers"),
+            channels: seedState.teamChatChannels.filter((channel) => channel.teamId === "team-tigers"),
+            messages: seedState.chatMessages.filter((message) => message.teamId === "team-tigers"),
+            moderationEvents: seedState.chatModerationAuditEvents.filter((event) => event.teamId === "team-tigers")
+          }}
+          viewerUserId="user-parent-jordan"
+          lockedTeamId="team-tigers"
+        />
+      </AppStateProvider>
+    );
+
+    expect(html).toContain("Tiny Tigers Chat");
+    expect(html).toContain("Jordan Taylor");
+    expect(html).toContain("disabled");
+    expect(html).not.toContain("Happy Hawks");
+  });
 });
 
 describe("AuthClient", () => {
@@ -86,10 +112,11 @@ describe("CoachDashboardClient", () => {
     );
 
     expect(html).toContain("Coach Home");
-    expect(html).toContain("Next event readiness");
-    expect(html).toContain("No response");
-    expect(html).toContain("Needs review");
-    expect(html).toContain("Review RSVPs");
+    expect(html).toContain("Is the next event ready?");
+    expect(html).toContain("Attendance");
+    expect(html).toContain("No reply");
+    expect(html).toContain("Needs attention");
+    expect(html).toContain("Nudge missing replies");
     expect(html).toContain("Coach notes");
     expect(html).toContain("Coach setup");
     expect(html).toContain("Team setup checklist");
@@ -119,6 +146,8 @@ describe("CoachDashboardClient", () => {
     expect(html).toContain("RSVP reminder queue");
     expect(html).toContain("Queue RSVP reminder draft");
     expect(html).toContain("Provider sending remains approval-gated");
+    expect(html).toContain("Drafts stay Preview, Edit, Approve, Publish");
+    expect(html).not.toMatch(/blame|shame|lazy/i);
   });
 
   it("blocks private coach actions when no active coach membership exists", () => {
@@ -137,6 +166,38 @@ describe("CoachDashboardClient", () => {
   });
 });
 
+describe("CoachRsvpsClient", () => {
+  it("blocks attendance summaries when the signed-in coach lacks an active assignment", () => {
+    const html = renderToStaticMarkup(
+      <AppStateProvider>
+        <CoachRsvpsClient dashboardData={dashboardAccessState("missing_coach_membership", "No active coach assignment.")} />
+      </AppStateProvider>
+    );
+
+    expect(html).toContain("No active coach membership is assigned");
+    expect(html).not.toContain("No response:");
+  });
+
+  it("renders attendance summaries from scoped dashboard data", () => {
+    const html = renderToStaticMarkup(
+      <AppStateProvider>
+        <CoachRsvpsClient dashboardData={{
+          state: seedState,
+          parentUserId: "",
+          coachUserId: "user-coach-taylor",
+          isSupabaseBacked: true,
+          accessStatus: "live",
+          message: "Scoped coach rows."
+        }} />
+      </AppStateProvider>
+    );
+
+    expect(html).toContain("Attendance summaries for assigned teams");
+    expect(html).toContain("Tiny Tigers");
+    expect(html).toContain("Scoped coach rows.");
+  });
+});
+
 describe("ParentDashboardClient", () => {
   it("renders notification preferences without sending provider updates", () => {
     const html = renderToStaticMarkup(
@@ -146,13 +207,11 @@ describe("ParentDashboardClient", () => {
     );
 
     expect(html).toContain("Tiny Tigers");
-    expect(html).toContain("3U");
     expect(html).toContain("Tiny Tigers vs Rookie Rockets");
+    expect(html).toContain("What do I need to know before the next event?");
     expect(html).toContain("What you need to do");
-    expect(html).toContain("What changed");
+    expect(html).toContain("Coach added");
     expect(html).toContain("From your coach");
-    expect(html).toContain("Weather draft");
-    expect(html).toContain("Messages");
     expect(html).toContain("Photos");
     expect(html).toContain("Your family&#x27;s info is private to your team");
     expect(html).toContain("RSVP now");
@@ -181,6 +240,22 @@ describe("ParentDashboardClient", () => {
     expect(html).toContain("staff-review support record");
     expect(html).toContain("Report media");
     expect(html).toContain("Google Photos link looks valid");
+    expect(html).not.toContain("Drafts to Review");
+    expect(html).not.toContain("Request AI rewrite");
+    expect(html).not.toContain("Open messages");
+  });
+
+  it("renders explicit parent access states on the home screen", () => {
+    const html = renderToStaticMarkup(
+      <AppStateProvider>
+        <ParentDashboardClient dashboardData={dashboardAccessState("missing_parent_link", "No active guardian link.")} />
+      </AppStateProvider>
+    );
+
+    expect(html).toContain("Family access is not active yet");
+    expect(html).toContain("No active guardian link.");
+    expect(html).toContain("What stays protected");
+    expect(html).not.toContain("RSVP now");
   });
 });
 
@@ -287,10 +362,13 @@ describe("AdminDashboardClient", () => {
       </AppStateProvider>
     );
 
-    expect(html).toContain("Admin Home");
-    expect(html).toContain("League health for this week");
+    expect(html).toContain("Overview");
+    expect(html).toContain("Which teams need help before families complain?");
     expect(html).toContain("Teams needing help");
     expect(html).toContain("Pending reviews");
+    expect(html).toContain("Team status");
+    expect(html).toContain("Message Delivery Review");
+    expect(html).toContain("Review &amp; Safety");
     expect(html).toContain("Suggested reviews");
     expect(html).toContain("Registration queue");
     expect(html).toContain("Media governance");
@@ -333,6 +411,7 @@ describe("AdminDashboardClient", () => {
     expect(html).toContain("Contrast checks");
     expect(html).toContain("Privacy filters");
     expect(html).toContain("Engagement and delivery-rate metrics stay out of this home card");
+    expect(html).not.toContain("Provider sends live");
   });
 });
 

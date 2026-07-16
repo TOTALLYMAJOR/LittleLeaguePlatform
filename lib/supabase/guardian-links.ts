@@ -104,9 +104,11 @@ export async function repairGuardianLink(input: {
   playerId: string;
   parentUserId: string;
   relationship: "mother" | "father" | "guardian" | "other";
+  verificationNote: string;
 }) {
-  if (!input.organizationId || !input.actorUserId || !input.playerId || !input.parentUserId) {
-    return { ok: false, message: "Guardian repair requires organization, admin, player, and parent." };
+  const verificationNote = String(input.verificationNote ?? "").trim();
+  if (!input.organizationId || !input.actorUserId || !input.playerId || !input.parentUserId || verificationNote.length < 10 || verificationNote.length > 500) {
+    return { ok: false, message: "Guardian repair requires organization, admin, player, parent, and a 10-500 character verification note." };
   }
 
   try {
@@ -126,6 +128,15 @@ export async function repairGuardianLink(input: {
       .eq("organization_id", input.organizationId)
       .single(), 7000) as { data: { id: string; team_id: string; organization_id: string } | null };
     if (!player) return { ok: false, message: "Player must belong to this organization." };
+
+    const { data: parentProfile } = await withSupabaseTimeout(db
+      .from("profiles")
+      .select("id,default_role")
+      .eq("id", input.parentUserId)
+      .single(), 7000) as { data: { id: string; default_role: string } | null };
+    if (!parentProfile || parentProfile.default_role !== "parent") {
+      return { ok: false, message: "Guardian repair requires an existing parent profile." };
+    }
 
     const { data: guardianLink, error } = await withSupabaseTimeout(db
       .from("player_guardians")
@@ -155,7 +166,7 @@ export async function repairGuardianLink(input: {
       action: "guardian_link_repaired",
       target_type: "player_guardian",
       target_id: guardianLink.id,
-      summary: `Guardian link repaired for player ${input.playerId}; parent team access is active.`
+      summary: `Guardian link repaired for player ${input.playerId}; parent team access is active. Verification note: ${verificationNote}`
     }), 7000);
 
     return { ok: true, message: "Guardian link repaired and parent team access activated.", guardianLink };

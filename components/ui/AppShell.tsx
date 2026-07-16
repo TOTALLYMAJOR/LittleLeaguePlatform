@@ -4,69 +4,21 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { AppStateProvider } from "@/app/providers";
-import { StatusBadge, UnreadBadge } from "./primitives";
+import {
+  getCommandEntries,
+  getMobileNavEntries,
+  getPrimaryNavEntries,
+  getRouteParent,
+  isRouteActive,
+  signedOutShellAccess,
+  type ClientShellAccess,
+  type RouteTopologyEntry
+} from "@/lib/navigation/route-topology";
+import { StatusBadge } from "./primitives";
 
-interface ShellNavItem {
-  label: string;
-  href: string;
-  short: string;
-  group: "Family" | "Coach" | "League Ops" | "Admin Tools" | "Support";
-  unread?: number;
-}
+const groups: RouteTopologyEntry["group"][] = ["Family", "Coach", "League Ops", "Admin Tools", "Switch role", "Support"];
 
-const navItems: ShellNavItem[] = [
-  { label: "Home", href: "/", short: "HM", group: "Family" },
-  { label: "Parent Home", href: "/parent", short: "PA", group: "Family" },
-  { label: "Parent RSVP", href: "/parent/rsvp", short: "RS", group: "Family" },
-  { label: "Schedule", href: "/schedule", short: "SC", group: "Family" },
-  { label: "Team Portal", href: "/team-portal", short: "TP", group: "Family" },
-  { label: "Team Chat", href: "/team-chat", short: "CH", group: "Family", unread: 3 },
-  { label: "Coach Home", href: "/coach", short: "CO", group: "Coach" },
-  { label: "Coach RSVPs", href: "/coach/rsvps", short: "CR", group: "Coach" },
-  { label: "Parent Replay", href: "/coach/parent-replay", short: "PR", group: "Coach" },
-  { label: "Registration", href: "/registration", short: "RG", group: "League Ops" },
-  { label: "Admin Dashboard", href: "/admin", short: "AD", group: "Admin Tools" },
-  { label: "Operations", href: "/admin/operations", short: "OP", group: "Admin Tools" },
-  { label: "Security", href: "/admin/security", short: "SE", group: "Admin Tools" },
-  { label: "Themes", href: "/admin/themes", short: "TH", group: "Admin Tools" },
-  { label: "Registrations", href: "/admin/registrations", short: "RR", group: "Admin Tools" },
-  { label: "Teams", href: "/admin/teams", short: "TM", group: "Admin Tools" },
-  { label: "Auth", href: "/auth", short: "AU", group: "Support" },
-  { label: "Account", href: "/account", short: "AC", group: "Support" },
-  { label: "Recover Invite", href: "/invite/recover", short: "RI", group: "Support" }
-];
-
-const mobileItems = [
-  navItems.find((item) => item.href === "/")!,
-  navItems.find((item) => item.href === "/schedule")!,
-  navItems.find((item) => item.href === "/team-chat")!,
-  navItems.find((item) => item.href === "/account")!,
-  navItems.find((item) => item.href === "/admin")!
-];
-
-const parentMobileItems: ShellNavItem[] = [
-  { label: "Home", href: "/parent", short: "HM", group: "Family" },
-  { label: "Schedule", href: "/schedule", short: "SC", group: "Family" },
-  { label: "Msgs", href: "/team-chat", short: "MS", group: "Family", unread: 3 },
-  { label: "Photos", href: "/parent#team-media", short: "PH", group: "Family" },
-  { label: "More", href: "/account", short: "MO", group: "Support" }
-];
-
-const groups: ShellNavItem["group"][] = ["Family", "Coach", "League Ops", "Admin Tools", "Support"];
-
-function isActive(pathname: string, href: string) {
-  if (href === "/") return pathname === "/";
-  return pathname === href || pathname.startsWith(`${href}/`);
-}
-
-function routeParent(pathname: string) {
-  if (pathname.startsWith("/admin/")) return "/admin";
-  if (pathname.startsWith("/coach/")) return "/coach";
-  if (pathname.startsWith("/parent/")) return "/parent";
-  return "/";
-}
-
-export function AppShell({ children }: { children: ReactNode }) {
+export function AppShell({ access = signedOutShellAccess, children }: { access?: ClientShellAccess; children: ReactNode }) {
   const pathname = usePathname();
   const router = useRouter();
   const [hasHydrated, setHasHydrated] = useState(false);
@@ -79,13 +31,15 @@ export function AppShell({ children }: { children: ReactNode }) {
   const previousFocus = useRef<HTMLElement | null>(null);
   const commandDialogRef = useRef<HTMLDialogElement>(null);
   const commandInputRef = useRef<HTMLInputElement>(null);
-  const activeMobileItems = pathname.startsWith("/parent") ? parentMobileItems : mobileItems;
+  const navItems = useMemo(() => getPrimaryNavEntries(access, pathname), [access, pathname]);
+  const commandItems = useMemo(() => getCommandEntries(access, pathname), [access, pathname]);
+  const activeMobileItems = useMemo(() => getMobileNavEntries(access, pathname), [access, pathname]);
 
   const filteredNav = useMemo(() => {
     const query = commandQuery.trim().toLowerCase();
-    if (!query) return navItems;
-    return navItems.filter((item) => `${item.label} ${item.group} ${item.href}`.toLowerCase().includes(query));
-  }, [commandQuery]);
+    if (!query) return commandItems;
+    return commandItems.filter((item) => `${item.label} ${item.group} ${item.href}`.toLowerCase().includes(query));
+  }, [commandItems, commandQuery]);
 
   useEffect(() => {
     setHasHydrated(true);
@@ -145,7 +99,7 @@ export function AppShell({ children }: { children: ReactNode }) {
     setCommandIndex(0);
   }, [pathname]);
 
-  function openCommandRoute(item: ShellNavItem) {
+  function openCommandRoute(item: RouteTopologyEntry) {
     setCommandOpen(false);
     router.push(item.href);
   }
@@ -188,16 +142,16 @@ export function AppShell({ children }: { children: ReactNode }) {
           <nav className="nav" id="app-primary-nav" aria-label="Main navigation">
             {groups.map((group) => {
               const items = navItems.filter((item) => item.group === group);
+              if (!items.length) return null;
               return (
                 <div className="nav-group" key={group}>
                   <small className="nav-section">{group}</small>
                   {items.map((item) => {
-                    const active = isActive(pathname, item.href);
+                    const active = isRouteActive(pathname, item.href);
                     return (
                       <Link key={item.href} href={item.href} data-active={active ? "true" : undefined} aria-current={active ? "page" : undefined} title={item.label}>
                         <span className="nav-icon" aria-hidden="true">{item.short}</span>
                         <span className="nav-label">{item.label}</span>
-                        {item.unread ? <UnreadBadge count={item.unread} /> : null}
                       </Link>
                     );
                   })}
@@ -209,7 +163,7 @@ export function AppShell({ children }: { children: ReactNode }) {
 
         <main id="main-content" className="main">
           <div className="context-bar">
-            <button type="button" className="secondary context-back" onClick={() => (window.history.length > 1 ? router.back() : router.push(routeParent(pathname)))}>
+            <button type="button" className="secondary context-back" onClick={() => (window.history.length > 1 ? router.back() : router.push(getRouteParent(pathname)))}>
               Back
             </button>
             <StatusBadge label="Read-only" variant="neutral" />
@@ -219,12 +173,11 @@ export function AppShell({ children }: { children: ReactNode }) {
 
         <nav className="mobile-tabbar" aria-label="Mobile navigation">
           {activeMobileItems.map((item) => {
-            const active = isActive(pathname, item.href);
+            const active = isRouteActive(pathname, item.href);
             return (
               <Link key={item.href} href={item.href} aria-current={active ? "page" : undefined} data-active={active ? "true" : undefined}>
                 <span>{item.short}</span>
                 <small>{item.label.replace("Parent ", "")}</small>
-                {item.unread ? <UnreadBadge count={item.unread} /> : null}
               </Link>
             );
           })}
@@ -287,7 +240,7 @@ export function AppShell({ children }: { children: ReactNode }) {
                 openCommandRoute(filteredNav[commandIndex]);
               }
             }}
-            placeholder="Type schedule, chat, admin, or replay"
+            placeholder="Type schedule, messages, branding, or safety"
           />
         </label>
         <div className="command-results" role="listbox" aria-label="Route results">

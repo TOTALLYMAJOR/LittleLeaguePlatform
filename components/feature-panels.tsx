@@ -152,6 +152,30 @@ import type { ParentCoachDashboardData } from "@/lib/supabase/dashboard-data";
 import type { AdminTeamManagementData } from "@/lib/supabase/team-management";
 import type { ScheduleOperationsData } from "@/lib/supabase/schedule-management";
 import {
+  buildAdminSeasonCertaintyView,
+  buildCoachSeasonCertaintyView,
+  buildParentSeasonCertaintyView
+} from "@/lib/season-certainty";
+import {
+  ActionChecklist,
+  AttendanceRosterCard,
+  CoachUpdateCard,
+  DraftsToReviewCard,
+  EventReadinessCard,
+  LeagueHealthSummaryCard,
+  MessagesSummaryCard,
+  NextEventCard,
+  PendingActionsPanel,
+  PhotosSummaryCard,
+  PracticeRecapCard,
+  PrivacyIndicator,
+  RegistrationQueueCard,
+  SecurityStatusCard,
+  TeamStatusTable,
+  WeatherFieldCard,
+  WhatChangedCard
+} from "@/components/season-certainty-cards";
+import {
   AvatarStack,
   BreadcrumbTrail,
   BroadcastMode,
@@ -1075,6 +1099,14 @@ export function ParentDashboardClient({ dashboardData }: { dashboardData?: Paren
         : "8:30 PM-7:00 AM"
     };
   });
+  const parentSeasonView = buildParentSeasonCertaintyView({
+    state: sourceState,
+    parentUserId,
+    accessStatus: dashboardData?.accessStatus ?? "live",
+    message: dashboardData?.message ?? "Showing local seed fallback until Supabase has linked parent and coach records.",
+    isSupabaseBacked: dashboardData?.isSupabaseBacked ?? false,
+    now: NOW
+  });
 
   function claimFamilyHelp(url: string, payload: unknown) {
     if (!dashboardData?.isSupabaseBacked) {
@@ -1133,150 +1165,19 @@ export function ParentDashboardClient({ dashboardData }: { dashboardData?: Paren
 
   return (
     <div className="page parent-team-home-page" style={parentTeamStyle}>
-      {accessGate ? null : (
-      <section className="parent-team-home" aria-labelledby="parent-home-title">
-        <header className="parent-team-header">
-          <a className="parent-team-brand" href="/team-portal">
-            <span className="parent-team-logo" aria-hidden="true">{teamInitials}</span>
-            <span>
-              <strong>{teamName}</strong>
-              <small>{teamDivision}</small>
-            </span>
-          </a>
-          <div className="parent-team-actions" aria-label="Parent notifications and account">
-            <a className="parent-header-icon" href="/team-chat" aria-label={`${parentUnreadCount} unread team chat messages`}>
-              <span aria-hidden="true">!</span>
-              {parentUnreadCount > 0 ? <strong>{parentUnreadCount}</strong> : null}
-            </a>
-            <a className="parent-avatar" href="/account" aria-label="Open account settings">
-              {(parentUser?.name ?? "Parent").slice(0, 1).toUpperCase()}
-            </a>
-          </div>
-        </header>
-
-        <div className="parent-home-layout">
-          <nav className="parent-home-nav" aria-label="Parent team navigation">
-            {[
-              ["Home", "/parent", "HM", undefined],
-              ["Schedule", "/schedule", "SC", undefined],
-              ["RSVP", "/parent/rsvp", "RS", dashboard.rsvpNeeded.length || undefined],
-              ["Messages", "/team-chat", "MS", parentUnreadCount || undefined],
-              ["Roster", "/team-portal", "RO", undefined],
-              ["Photos", "#team-media", "PH", mediaFeed.length || undefined],
-              ["Volunteer & Snacks", "#family-help", "VS", parentHelpCount || undefined],
-              ["Player Notes", "/team-portal", "PN", undefined],
-              ["Settings", "/account", "ST", undefined]
-            ].map(([label, href, mark, count]) => (
-              <a
-                className={href === "/parent" ? "active" : undefined}
-                href={String(href)}
-                key={String(label)}
-                aria-current={href === "/parent" ? "page" : undefined}
-              >
-                <span aria-hidden="true">{mark}</span>
-                <strong>{label}</strong>
-                {typeof count === "number" && count > 0 ? <em>{count}</em> : null}
-              </a>
-            ))}
-          </nav>
-
-          <div className="parent-home-stream">
-            <article className="parent-next-card" aria-labelledby="parent-home-title">
-              <div className="parent-card-topline">
-                <span className={`parent-event-badge ${isToday ? "danger" : isSoon ? "warning" : ""}`}>{nextEventBadge}</span>
-                <span className="parent-event-type">{nextParentEvent?.eventType.replace("_", " ") ?? "schedule"}</span>
-              </div>
-              <h1 id="parent-home-title">{nextParentEvent ? nextParentEvent.title : "No upcoming events scheduled yet."}</h1>
-              <div className="parent-event-details">
-                <p>
-                  <span>When</span>
-                  <strong>{formatLongEventDate(nextParentEvent?.startsAt)}</strong>
-                </p>
-                <p>
-                  <span>Where</span>
-                  <strong>{nextParentEvent?.locationName ?? "Field pending"}</strong>
-                  <small>{nextParentEvent?.locationAddress ?? "Coach will add the address."}</small>
-                  {directionsUrl ? <a className="parent-directions-link" href={directionsUrl} target="_blank" rel="noreferrer">Get directions</a> : null}
-                </p>
-              </div>
-              {nextWeatherAlert ? (
-                <div className="parent-alert-row" role="status">
-                  <strong>Weather draft:</strong> {nextWeatherAlert.headline}. {nextWeatherAlert.detail}
-                </div>
-              ) : null}
-              {parentChanges[0] ? (
-                <div className="parent-change-chip">
-                  <strong>Updated:</strong> {parentChanges[0]}
-                </div>
-              ) : null}
-              <div className="parent-rsvp-row">
-                <p>
-                  <span>RSVP</span>
-                  <strong>{primaryPlayer ? `${primaryPlayer.firstName} ${primaryPlayer.lastInitial}.` : "Linked player"}</strong>
-                  <small>{nextParentRsvpCopy}</small>
-                </p>
-                <a className="button" href="/parent/rsvp">{nextParentRsvp ? "RSVP now" : "Change RSVP"}</a>
-              </div>
-              {!nextParentEvent ? <a className="text-link" href="/schedule">View full schedule</a> : null}
-            </article>
-
-            {pendingParentActions.length ? (
-              <section className="parent-action-card" aria-labelledby="parent-action-title">
-                <div className="parent-section-heading">
-                  <h2 id="parent-action-title">What you need to do</h2>
-                  {actionChecklist.filter((item) => !item.done).length > pendingParentActions.length ? <a href="#more-parent-actions">See all pending</a> : null}
-                </div>
-                <div className="parent-action-list">
-                  {pendingParentActions.map((action) => (
-                    <a className="parent-action-row" href={action.href} key={action.id}>
-                      <span aria-hidden="true">!</span>
-                      <strong>{action.label}</strong>
-                      <em>{action.cta}</em>
-                    </a>
-                  ))}
-                </div>
-              </section>
-            ) : null}
-
-            {parentChanges.length ? (
-              <section className="parent-summary-card" aria-labelledby="parent-changes-title">
-                <h2 id="parent-changes-title">What changed</h2>
-                {parentChanges.slice(0, 3).map((change) => <p key={change}>{change}</p>)}
-              </section>
-            ) : null}
-
-            <section className="parent-summary-card" aria-labelledby="coach-update-title">
-              <h2 id="coach-update-title">From your coach</h2>
-              {dashboard.latestAnnouncement ? (
-                <>
-                  <p>{latestChangeCopy.length > 120 ? `${latestChangeCopy.slice(0, 117)}...` : latestChangeCopy}</p>
-                  <small>{dashboard.latestAnnouncement.teamName} - {formatShortDay(dashboard.latestAnnouncement.createdAt)}</small>
-                  <a className="text-link" href="/team-portal">Read full recap</a>
-                </>
-              ) : <p>No updates this week.</p>}
-            </section>
-
-            {parentUnreadCount > 0 ? (
-              <section className="parent-summary-card compact" aria-labelledby="parent-message-title">
-                <h2 id="parent-message-title">Messages</h2>
-                <p>{parentUnreadCount} unread message{parentUnreadCount === 1 ? "" : "s"} in {teamName} chat.</p>
-                <a className="button secondary" href="/team-chat">Open chat</a>
-              </section>
-            ) : null}
-
-            {latestMediaItem ? (
-              <section className="parent-summary-card compact" aria-labelledby="parent-photos-title">
-                <h2 id="parent-photos-title">Photos</h2>
-                <p>{mediaFeed.length} approved media item{mediaFeed.length === 1 ? "" : "s"} for {teamName}. Latest: {latestMediaItem.title}.</p>
-                <a className="button secondary" href="#team-media">View photos</a>
-              </section>
-            ) : null}
-
-            <p className="parent-privacy-indicator">Your family&apos;s info is private to your team. <a href="/account">Privacy settings</a></p>
-          </div>
-        </div>
+      <section className="season-certainty-home parent-certainty-home" aria-label="Parent home">
+        <NextEventCard view={parentSeasonView} />
+        {accessGate ? null : (
+          <>
+            <ActionChecklist actions={parentSeasonView.actions} />
+            <WhatChangedCard changes={parentSeasonView.changes} />
+            <CoachUpdateCard view={parentSeasonView} />
+            <MessagesSummaryCard unreadCount={parentSeasonView.messages.unreadCount} href={parentSeasonView.messages.href} />
+            <PhotosSummaryCard count={parentSeasonView.photos.newApprovedCount} latestTitle={parentSeasonView.photos.latestTitle} href="#team-media" />
+            <PrivacyIndicator href="/parent/settings" />
+          </>
+        )}
       </section>
-      )}
 
       <p className={`notice ${dashboardData?.isSupabaseBacked ? "ok" : "warning"}`}>
         {dashboardData?.message ?? "Showing local seed fallback until Supabase has linked parent and coach records."}
@@ -1744,6 +1645,14 @@ export function CoachDashboardClient({ dashboardData }: { dashboardData?: Parent
     "Announcement: Please review RSVP and game-day details before the next event."
   ];
   const [weeklyUpdateBody, setWeeklyUpdateBody] = useState(weeklyUpdateDraft.join("\n"));
+  const coachSeasonView = buildCoachSeasonCertaintyView({
+    state: sourceState,
+    coachUserId: coachId,
+    accessStatus: dashboardData?.accessStatus ?? "live",
+    message: dashboardData?.message ?? "Showing local seed fallback until Supabase has linked parent and coach records.",
+    isSupabaseBacked: dashboardData?.isSupabaseBacked ?? false,
+    now: NOW
+  });
 
   function runCoachAction(url: string, payload: unknown) {
     setActionMessage("");
@@ -1773,42 +1682,17 @@ export function CoachDashboardClient({ dashboardData }: { dashboardData?: Parent
 
   return (
     <div className="page">
-      <section className="season-home season-coach-home" aria-labelledby="coach-home-title">
-        <article className="season-hero-card">
-          <div className="season-hero-main">
-            <span className="season-label">Coach Home</span>
-            <h1 id="coach-home-title">{nextCoachEvent ? `${nextCoachEvent.title} is the next event.` : "No assigned event is scheduled yet."}</h1>
-            <div className="season-event-strip" aria-label="Next event readiness">
-              <div className="season-fact">
-                <span>When</span>
-                <strong>{formatShortDay(nextCoachEvent?.startsAt)}</strong>
-                <small>{formatShortTime(nextCoachEvent?.startsAt)}</small>
-              </div>
-              <div className="season-fact">
-                <span>Where</span>
-                <strong>{nextCoachEvent?.locationName ?? "Field pending"}</strong>
-                <small>{nextCoachEvent?.locationAddress ?? "Add a location before families arrive."}</small>
-              </div>
-              <div className="season-fact">
-                <span>No response</span>
-                <strong>{nextCoachSummary?.noResponse ?? 0}</strong>
-                <small>{nextCoachSummary ? `${nextCoachSummary.going} going, ${nextCoachSummary.maybe} maybe, ${nextCoachSummary.notGoing} not going.` : "No RSVP summary yet."}</small>
-              </div>
-            </div>
-            <a className="button season-primary-action" href="/coach/rsvps">Review RSVPs</a>
+      <section className="season-home season-coach-home" aria-label="Coach home">
+        <EventReadinessCard view={coachSeasonView} />
+        {accessGate ? null : (
+          <div className="season-card-grid">
+            <AttendanceRosterCard view={coachSeasonView} />
+            <WhatChangedCard changes={coachSeasonView.changes} title="Recent changes" href="/coach/schedule" />
+            <WeatherFieldCard view={coachSeasonView} />
+            <DraftsToReviewCard view={coachSeasonView} />
+            <PracticeRecapCard view={coachSeasonView} />
           </div>
-          <aside className="season-side" aria-label="Coach review list">
-            <div className="season-readiness-score">
-              <span>Needs review</span>
-              <strong>{coachReviewCount}</strong>
-              <p>RSVP gaps, weather drafts, snacks, and volunteer roles only.</p>
-            </div>
-            <ul className="season-review-list">
-              {coachReviewItems.map((item) => <li key={item}>{item}</li>)}
-            </ul>
-            <p className="season-privacy-note">This home screen is limited to {coachUser?.name ?? "this coach"} and assigned team records.</p>
-          </aside>
-        </article>
+        )}
       </section>
 
       <p className={`notice ${dashboardData?.isSupabaseBacked ? "ok" : "warning"}`}>
@@ -2091,9 +1975,9 @@ export function CoachDashboardClient({ dashboardData }: { dashboardData?: Parent
 
       <section className="grid three">
         <article className="card stack">
-          <h2>Parent Replay</h2>
+          <h2>Practice Recaps</h2>
           <p>Use the recap builder after practice to generate parent activities and team quests.</p>
-          <a href="/coach/parent-replay">Open Parent Replay</a>
+          <a href="/coach/practice-recaps">Open practice recaps</a>
         </article>
         <article className="card stack">
           <h2>Snacks</h2>
@@ -2536,6 +2420,14 @@ export function AdminDashboardClient({ registrationRequests, sponsorData, mediaD
   const lineupPlayers = state.players.filter((player) => player.teamId === lineupTeam.id);
   const assignedPlayerIds = new Set(Object.values(lineupPositions).filter(Boolean));
   const unassignedLineupPlayers = lineupPlayers.filter((player) => !assignedPlayerIds.has(player.id));
+  const adminSeasonView = buildAdminSeasonCertaintyView({
+    state,
+    registrationRequests: visibleRegistrations,
+    sponsors,
+    mediaItems,
+    message: "Admin overview is scoped by the active organization admin guard before this client renders.",
+    now: NOW
+  });
 
   function applyCommunicationDefaults(teamId: string, template: CommunicationTemplate) {
     const copy = defaultTeamCommunicationCopy(state, teamId, template);
@@ -2664,45 +2556,15 @@ export function AdminDashboardClient({ registrationRequests, sponsorData, mediaD
   return (
     <div className="page">
       <section className="season-home season-admin-home" aria-labelledby="admin-home-title">
-        <article className="season-hero-card">
-          <div className="season-hero-main">
-            <span className="season-label">Admin Home</span>
-            <h1 id="admin-home-title">League health for this week.</h1>
-            <div className="season-score-row" aria-label="League health summary">
-              <div className="season-fact">
-                <span>Teams needing help</span>
-                <strong>{teamHelpRows.length}</strong>
-                <small>{teamHelpRows[0] ? `${teamHelpRows[0].team.name}: needs ${teamHelpRows[0].issues.join(", ")}` : "Every team has a coach and upcoming event."}</small>
-              </div>
-              <div className="season-fact">
-                <span>Pending reviews</span>
-                <strong>{pendingReviewCount}</strong>
-                <small>{pendingRegistrations.length} registrations, {mediaReportingSummary.pendingReview} media, {pendingSponsorReviews} sponsors.</small>
-              </div>
-              <div className="season-fact">
-                <span>Families not linked</span>
-                <strong>{healthCards.find((card) => card.id === "players-without-parents")?.count ?? 0}</strong>
-                <small>Guardian links stay admin-reviewed.</small>
-              </div>
-            </div>
-            <a className="button season-primary-action" href={pendingRegistrations.length ? "/admin/registrations" : "/admin/operations"}>
-              {pendingRegistrations.length ? "Review registrations" : "Open operations"}
-            </a>
-          </div>
-          <aside className="season-side" aria-label="Teams needing help">
-            <div className="season-readiness-score">
-              <span>Review queues</span>
-              <strong>{pendingReviewCount}</strong>
-              <p>Registration, media, and sponsor records only. No payment or provider send is implied.</p>
-            </div>
-            <ul className="season-review-list">
-              {teamHelpRows.slice(0, 4).map((row) => (
-                <li key={row.team.id}><strong>{row.team.name}</strong> needs {row.issues.join(" and ")}.</li>
-              ))}
-              {!teamHelpRows.length ? <li>All teams have a coach and at least one upcoming event.</li> : null}
-            </ul>
-          </aside>
-        </article>
+        <div className="season-admin-topgrid">
+          <LeagueHealthSummaryCard view={adminSeasonView} />
+          <PendingActionsPanel view={adminSeasonView} />
+        </div>
+        <TeamStatusTable view={adminSeasonView} />
+        <div className="season-card-grid">
+          <RegistrationQueueCard view={adminSeasonView} />
+          <SecurityStatusCard view={adminSeasonView} />
+        </div>
       </section>
 
       <section className="grid three">
@@ -3666,10 +3528,10 @@ export function RegistrationReviewClient({ initialData }: { initialData: Registr
               ))}
             </select>
           </label>
-          <label>Review note
+          <label>Verification / review note
             <textarea value={note} onChange={(event) => setNote(event.target.value)} />
           </label>
-          {initialData.reviewers.length === 0 ? <p className="notice">No reviewer profiles have active admin or coach membership yet. Create an account, then grant team membership before approving requests.</p> : null}
+          {initialData.reviewers.length === 0 ? <p className="notice">No reviewer profiles have active organization-admin membership yet. Create an account, then grant organization-admin membership before approving requests.</p> : null}
         </article>
 
         <article className="card stack">
@@ -3695,7 +3557,7 @@ export function RegistrationReviewClient({ initialData }: { initialData: Registr
               <div className="toolbar">
                 <button
                   onClick={() => reviewRequest(request.id, "approve")}
-                  disabled={isPending || busyRequestId === request.id || !reviewerUserId}
+                  disabled={isPending || busyRequestId === request.id || !reviewerUserId || !note.trim()}
                 >
                   {busyRequestId === request.id ? "Reviewing..." : "Approve"}
                 </button>
@@ -3728,18 +3590,27 @@ export function RegistrationReviewClient({ initialData }: { initialData: Registr
   );
 }
 
-export function CoachRsvpsClient() {
+export function CoachRsvpsClient({ dashboardData }: { dashboardData?: ParentCoachDashboardData | null } = {}) {
   const { state } = useAppState();
-  const summaries = getCoachRsvpSummaries(state, "user-coach-taylor", NOW);
+  const sourceState = dashboardData?.state ?? state;
+  const coachId = dashboardData?.coachUserId ?? "user-coach-taylor";
+  const accessGate = privateAccessGate(dashboardData, "coach");
+  const summaries = getCoachRsvpSummaries(sourceState, coachId, NOW);
 
   return (
     <div className="page">
       <section className="hero">
         <span className="eyebrow">Coach attendance view</span>
         <h1>Attendance summaries for assigned teams.</h1>
-        <p className="lead">Coach Taylor sees only assigned team events and aggregate RSVP counts.</p>
+        <p className="lead">Assigned coaches see only their team events and aggregate RSVP counts.</p>
       </section>
 
+      {dashboardData ? (
+        <p className={`notice ${dashboardData.isSupabaseBacked ? "ok" : "warning"}`}>
+          {dashboardData.message}
+        </p>
+      ) : null}
+      {accessGate ?? (
       <section className="grid two">
         {summaries.map((summary) => (
           <article className="card stack" key={summary.event.id}>
@@ -3754,16 +3625,27 @@ export function CoachRsvpsClient() {
           </article>
         ))}
       </section>
+      )}
     </div>
   );
 }
 
-export function ScheduleAlertsClient({ scheduleData }: { scheduleData?: ScheduleOperationsData | null } = {}) {
+export function ScheduleAlertsClient({ scheduleData, mode = "operations" }: { scheduleData?: ScheduleOperationsData | null; mode?: "operations" | "readonly" } = {}) {
   const { state, dispatch } = useAppState();
   const [remoteEvents, setRemoteEvents] = useState<LeagueEvent[]>(() => scheduleData?.events ?? []);
+  const scheduleEventIds = new Set((scheduleData?.events ?? []).map((event) => event.id));
+  const scheduleTeamIds = new Set((scheduleData?.teams ?? []).map((team) => team.id));
   const scheduleState = scheduleData?.isSupabaseBacked
-    ? { ...state, teams: scheduleData.teams, events: remoteEvents }
+    ? {
+      ...state,
+      teams: scheduleData.teams,
+      events: remoteEvents,
+      rsvps: state.rsvps.filter((rsvp) => scheduleEventIds.has(rsvp.eventId)),
+      notifications: state.notifications.filter((notification) => !notification.teamId || scheduleTeamIds.has(notification.teamId)),
+      notificationPreferences: state.notificationPreferences.filter((preference) => !preference.teamId || scheduleTeamIds.has(preference.teamId))
+    }
     : state;
+  const isReadonly = mode === "readonly";
   const [eventId, setEventId] = useState(scheduleState.events[0]?.id ?? "");
   const event = scheduleState.events.find((item) => item.id === eventId) ?? scheduleState.events[0];
   const [startsAt, setStartsAt] = useState(event?.startsAt ?? "");
@@ -3835,6 +3717,11 @@ export function ScheduleAlertsClient({ scheduleData }: { scheduleData?: Schedule
       return;
     }
 
+    if (isReadonly) {
+      setMessage("This route is read-only. Coaches or admins must use schedule operations to edit events.");
+      return;
+    }
+
     startScheduleTransition(async () => {
       const response = await authenticatedJsonFetch("/api/schedule", {
         eventId,
@@ -3894,7 +3781,7 @@ export function ScheduleAlertsClient({ scheduleData }: { scheduleData?: Schedule
       {message ? <p className="notice">{message}</p> : null}
       <section className="grid two">
         <article className="card stack">
-          <h2>Edit event</h2>
+          <h2>{isReadonly ? "Event details" : "Edit event"}</h2>
           <label>
             Event
             <select value={eventId} onChange={(input) => selectEvent(input.target.value)}>
@@ -3903,11 +3790,11 @@ export function ScheduleAlertsClient({ scheduleData }: { scheduleData?: Schedule
           </label>
           <label>
             Title
-            <input value={title} onChange={(input) => setTitle(input.target.value)} />
+            <input value={title} onChange={(input) => setTitle(input.target.value)} disabled={isReadonly} />
           </label>
           <label>
             Type
-            <select value={eventType} onChange={(input) => setEventType(input.target.value as EventType)}>
+            <select value={eventType} onChange={(input) => setEventType(input.target.value as EventType)} disabled={isReadonly}>
               <option value="practice">Practice</option>
               <option value="game">Game</option>
               <option value="team_event">Team event</option>
@@ -3915,17 +3802,18 @@ export function ScheduleAlertsClient({ scheduleData }: { scheduleData?: Schedule
           </label>
           <label>
             Starts at
-            <input value={startsAt} onChange={(input) => setStartsAt(input.target.value)} />
+            <input value={startsAt} onChange={(input) => setStartsAt(input.target.value)} disabled={isReadonly} />
           </label>
           <label>
             Ends at
-            <input value={endsAt} onChange={(input) => setEndsAt(input.target.value)} />
+            <input value={endsAt} onChange={(input) => setEndsAt(input.target.value)} disabled={isReadonly} />
           </label>
           {persistedVenueRecords.length ? (
             <label>
               Saved venue
               <select
                 value={fieldLocationId}
+                disabled={isReadonly}
                 onChange={(input) => {
                   const field = persistedVenueRecords.find((item) => item.id === input.target.value);
                   setFieldLocationId(input.target.value);
@@ -3944,25 +3832,25 @@ export function ScheduleAlertsClient({ scheduleData }: { scheduleData?: Schedule
           ) : null}
           <label>
             Location
-            <input value={locationName} onChange={(input) => setLocationName(input.target.value)} />
+            <input value={locationName} onChange={(input) => setLocationName(input.target.value)} disabled={isReadonly} />
           </label>
           <label>
             Address
-            <input value={locationAddress} onChange={(input) => setLocationAddress(input.target.value)} />
+            <input value={locationAddress} onChange={(input) => setLocationAddress(input.target.value)} disabled={isReadonly} />
           </label>
           <label>
             Status
-            <select value={status} onChange={(input) => setStatus(input.target.value as EventStatus)}>
+            <select value={status} onChange={(input) => setStatus(input.target.value as EventStatus)} disabled={isReadonly}>
               <option value="scheduled">Scheduled</option>
               <option value="cancelled">Cancelled</option>
               <option value="completed">Completed</option>
             </select>
           </label>
           <button
-            disabled={isSchedulePending || !title.trim() || !locationName.trim() || !locationAddress.trim()}
+            disabled={isReadonly || isSchedulePending || !title.trim() || !locationName.trim() || !locationAddress.trim()}
             onClick={saveScheduleChange}
           >
-            Queue schedule alert records
+            {isReadonly ? "Read-only route" : "Queue schedule alert records"}
           </button>
         </article>
 
@@ -4861,7 +4749,7 @@ function createEmptyTeamPortalReplay(team: { id: string; coachUserId?: string })
   };
 }
 
-export function TeamPortalClient({ teamPortalData }: { teamPortalData?: TeamPortalData | null } = {}) {
+export function TeamPortalClient({ teamPortalData, audience = "shared" }: { teamPortalData?: TeamPortalData | null; audience?: "shared" | "parent" | "coach" | "admin" } = {}) {
   const { state, dispatch } = useAppState();
   const [remoteBrandingOverrides, setRemoteBrandingOverrides] = useState<Record<string, Pick<Team, "mascot" | "primaryColor" | "secondaryColor" | "themeKey">>>({});
   const sourceTeams = teamPortalData?.teams.length ? teamPortalData.teams : state.teams;
@@ -4877,6 +4765,27 @@ export function TeamPortalClient({ teamPortalData }: { teamPortalData?: TeamPort
   const eventsSource = teamPortalData?.events ?? state.events;
   const mediaItemsSource = teamPortalData?.mediaItems ?? state.mediaItems;
   const parentReplaysSource = teamPortalData?.parentReplays ?? state.parentReplays;
+  const scopedTeamIds = new Set(teams.map((item) => item.id));
+  const scopedPlayerIds = new Set(playersSource.map((item) => item.id));
+  const scopedEventIds = new Set(eventsSource.map((item) => item.id));
+  const portalState = teamPortalData?.teams.length ? {
+    ...state,
+    teams,
+    players: playersSource,
+    guardianLinks: guardianLinksSource,
+    parentInvites: parentInvitesSource,
+    teamMemberships: teamMembershipsSource,
+    users: usersSource,
+    events: eventsSource,
+    mediaItems: mediaItemsSource,
+    parentReplays: parentReplaysSource,
+    announcements: state.announcements.filter((announcement) => scopedTeamIds.has(announcement.teamId)),
+    rsvps: state.rsvps.filter((rsvp) => scopedPlayerIds.has(rsvp.playerId) && scopedEventIds.has(rsvp.eventId)),
+    snackScheduleSlots: state.snackScheduleSlots.filter((slot) => scopedTeamIds.has(slot.teamId)),
+    volunteerSignups: state.volunteerSignups.filter((signup) => scopedTeamIds.has(signup.teamId)),
+    weatherAlerts: state.weatherAlerts.filter((alert) => scopedTeamIds.has(alert.teamId)),
+    sponsors: audience === "parent" ? [] : state.sponsors.filter((sponsor) => !sponsor.teamId || scopedTeamIds.has(sponsor.teamId))
+  } : state;
   const isSupabaseBacked = Boolean(teamPortalData?.teams.length);
   const [teamId, setTeamId] = useState(() => teamPortalData?.teams[0]?.id ?? "team-tigers");
   const [brandingActorId, setBrandingActorId] = useState("user-coach-taylor");
@@ -4910,7 +4819,7 @@ export function TeamPortalClient({ teamPortalData }: { teamPortalData?: TeamPort
         membership.status === "active"
       )))
     ))
-    : canUpdateTeamPortalBranding(state, brandingActorId, team.id);
+    : canUpdateTeamPortalBranding(portalState, brandingActorId, team.id);
   const portalStyle = teamBrandStyle(team.primaryColor, team.secondaryColor);
   const players = playersSource.filter((player) => player.teamId === team.id);
   const playerIds = new Set(players.map((player) => player.id));
@@ -4934,34 +4843,34 @@ export function TeamPortalClient({ teamPortalData }: { teamPortalData?: TeamPort
   const mapFallback = getMapFallbackUx({ quotaStatus: mapQuotaStatus.status, directionsUrl: embeddedMap.directionsUrl });
   const locationChange = highlightLocationChange(upcomingGame?.locationName ?? "Field pending", upcomingGame?.locationName ?? "Field pending");
   const facilityNotes = getFacilityNotes(upcomingGame ?? nextPractice);
-  const gameRsvps = upcomingGame ? state.rsvps.filter((rsvp) => rsvp.eventId === upcomingGame.id) : [];
-  const gameSnackSlots = upcomingGame ? state.snackScheduleSlots.filter((slot) => slot.teamId === team.id && slot.eventId === upcomingGame.id) : [];
-  const gameVolunteerSignups = upcomingGame ? state.volunteerSignups.filter((signup) => signup.teamId === team.id && signup.eventId === upcomingGame.id) : [];
-  const gameWeatherAlert = upcomingGame ? state.weatherAlerts.find((alert) => alert.eventId === upcomingGame.id) : undefined;
+  const gameRsvps = upcomingGame ? portalState.rsvps.filter((rsvp) => rsvp.eventId === upcomingGame.id) : [];
+  const gameSnackSlots = upcomingGame ? portalState.snackScheduleSlots.filter((slot) => slot.teamId === team.id && slot.eventId === upcomingGame.id) : [];
+  const gameVolunteerSignups = upcomingGame ? portalState.volunteerSignups.filter((signup) => signup.teamId === team.id && signup.eventId === upcomingGame.id) : [];
+  const gameWeatherAlert = upcomingGame ? portalState.weatherAlerts.find((alert) => alert.eventId === upcomingGame.id) : undefined;
   const media = mediaItemsSource.filter((item) => item.teamId === team.id);
   const privateTeamAlbum = getPrivateTeamAlbum(mediaItemsSource, team.id);
-  const teamPortalSponsors = getTeamPortalSponsorPlacement(state.sponsors, team.id);
+  const teamPortalSponsors = getTeamPortalSponsorPlacement(portalState.sponsors, team.id);
   const firstPlayerConsent = getPerPlayerMediaConsent(players[0]?.id ?? "player-pending", players.slice(0, 1).map((player) => player.id));
-  const parentSubmittedMoments = getParentSubmittedMoments(state, team.id);
-  const volunteerMoments = getVolunteerMoments(state, team.id);
-  const seasonMemoryExport = exportSeasonMemories(state, team.id);
-  const snackReminders = getSnackReminders(state, team.id);
-  const snackConflicts = getSnackConflicts(state, team.id);
-  const snackAuditTrail = getSnackAuditTrail(state, team.id);
-  const snackCancellation = cancelSnackSlot(state, state.snackScheduleSlots.find((slot) => slot.teamId === team.id)?.id ?? "slot-pending", "Family schedule changed.");
-  const volunteerRoleCaps = getVolunteerRoleCaps(state, team.id);
-  const volunteerReminders = getVolunteerReminders(state, team.id);
-  const volunteerCancellation = cancelVolunteerSignup(state, state.volunteerSignups.find((signup) => signup.teamId === team.id)?.id ?? "volunteer-pending", "Family schedule changed.");
+  const parentSubmittedMoments = getParentSubmittedMoments(portalState, team.id);
+  const volunteerMoments = getVolunteerMoments(portalState, team.id);
+  const seasonMemoryExport = exportSeasonMemories(portalState, team.id);
+  const snackReminders = getSnackReminders(portalState, team.id);
+  const snackConflicts = getSnackConflicts(portalState, team.id);
+  const snackAuditTrail = getSnackAuditTrail(portalState, team.id);
+  const snackCancellation = cancelSnackSlot(portalState, portalState.snackScheduleSlots.find((slot) => slot.teamId === team.id)?.id ?? "slot-pending", "Family schedule changed.");
+  const volunteerRoleCaps = getVolunteerRoleCaps(portalState, team.id);
+  const volunteerReminders = getVolunteerReminders(portalState, team.id);
+  const volunteerCancellation = cancelVolunteerSignup(portalState, portalState.volunteerSignups.find((signup) => signup.teamId === team.id)?.id ?? "volunteer-pending", "Family schedule changed.");
   const volunteerApprovalPolicies = getVolunteerApprovalPolicies();
-  const snackVolunteerFairness = getSnackVolunteerFairness(state, team.id);
-  const dutyRotation = getDutyRotation(state, team.id);
-  const familyOptOuts = getFamilyOptOuts(state, team.id);
-  const siblingAwareAssignments = getSiblingAwareDutyAssignments(state, team.id);
-  const missedSlots = getMissedSlotTracking(state, team.id);
+  const snackVolunteerFairness = getSnackVolunteerFairness(portalState, team.id);
+  const dutyRotation = getDutyRotation(portalState, team.id);
+  const familyOptOuts = getFamilyOptOuts(portalState, team.id);
+  const siblingAwareAssignments = getSiblingAwareDutyAssignments(portalState, team.id);
+  const missedSlots = getMissedSlotTracking(portalState, team.id);
   const latestReplay = parentReplaysSource
     .filter((replay) => replay.teamId === team.id)
     .sort((left, right) => Date.parse(right.createdAt) - Date.parse(left.createdAt))[0];
-  const replayDraft = latestReplay ?? (isSupabaseBacked ? createEmptyTeamPortalReplay(team) : generateParentReplayDraft(state, {
+  const replayDraft = latestReplay ?? (isSupabaseBacked ? createEmptyTeamPortalReplay(team) : generateParentReplayDraft(portalState, {
     teamId: team.id,
     coachUserId: team.coachUserId ?? "user-admin",
     focusAreas: ["catching", "throwing", "teamwork"],
@@ -4978,7 +4887,7 @@ export function TeamPortalClient({ teamPortalData }: { teamPortalData?: TeamPort
       title: replay.memoryMoment.title,
       detail: replay.memoryMoment.detail
     })),
-    ...state.announcements.filter((announcement) => announcement.teamId === team.id).map((announcement) => ({
+    ...portalState.announcements.filter((announcement) => announcement.teamId === team.id).map((announcement) => ({
       id: announcement.id,
       title: announcement.title,
       detail: `Coach note - ${announcement.body}`
@@ -4988,7 +4897,7 @@ export function TeamPortalClient({ teamPortalData }: { teamPortalData?: TeamPort
       title: item.title,
       detail: `${item.type.replace("_", " ")} memory`
     })),
-    ...state.volunteerSignups.filter((signup) => signup.teamId === team.id && signup.status === "filled").map((signup) => ({
+    ...portalState.volunteerSignups.filter((signup) => signup.teamId === team.id && signup.status === "filled").map((signup) => ({
       id: signup.id,
       title: `${signup.role} covered`,
       detail: "Volunteer moment saved to the season story."
@@ -5724,7 +5633,15 @@ function mapRealtimeTeamChatMessage(row: Record<string, unknown>) {
   };
 }
 
-export function TeamChatClient({ teamChatData }: { teamChatData?: TeamChatData | null } = {}) {
+export function TeamChatClient({
+  teamChatData,
+  viewerUserId,
+  lockedTeamId
+}: {
+  teamChatData?: TeamChatData | null;
+  viewerUserId?: string;
+  lockedTeamId?: string;
+} = {}) {
   const { state, dispatch } = useAppState();
   const isSupabaseBacked = Boolean(teamChatData?.teams.length);
   const [remoteMessages, setRemoteMessages] = useState(() => teamChatData?.messages ?? []);
@@ -5739,8 +5656,8 @@ export function TeamChatClient({ teamChatData }: { teamChatData?: TeamChatData |
     chatMessages: remoteMessages,
     chatModerationAuditEvents: remoteModerationEvents
   } : state;
-  const [viewerId, setViewerId] = useState(() => teamChatData?.users.find((user) => user.role !== "parent")?.id ?? "user-parent-jordan");
-  const [teamId, setTeamId] = useState(() => teamChatData?.teams[0]?.id ?? "team-tigers");
+  const [viewerId, setViewerId] = useState(() => viewerUserId ?? teamChatData?.users.find((user) => user.role !== "parent")?.id ?? "user-parent-jordan");
+  const [teamId, setTeamId] = useState(() => lockedTeamId ?? teamChatData?.teams[0]?.id ?? "team-tigers");
   const [draftMessage, setDraftMessage] = useState("");
   const [linkDraftToGameDay, setLinkDraftToGameDay] = useState(true);
   const [postNotice, setPostNotice] = useState("");
@@ -5750,8 +5667,12 @@ export function TeamChatClient({ teamChatData }: { teamChatData?: TeamChatData |
   const [announcementNotice, setAnnouncementNotice] = useState("");
   const [moderationNotice, setModerationNotice] = useState("");
   const [isChatPending, startChatTransition] = useTransition();
-  const selectedViewerId = chatState.users.some((user) => user.id === viewerId) ? viewerId : chatState.users[0]?.id ?? viewerId;
-  const selectedTeamId = chatState.teams.some((team) => team.id === teamId) ? teamId : chatState.teams[0]?.id ?? teamId;
+  const selectedViewerId = viewerUserId && chatState.users.some((user) => user.id === viewerUserId)
+    ? viewerUserId
+    : chatState.users.some((user) => user.id === viewerId) ? viewerId : chatState.users[0]?.id ?? viewerId;
+  const selectedTeamId = lockedTeamId && chatState.teams.some((team) => team.id === lockedTeamId)
+    ? lockedTeamId
+    : chatState.teams.some((team) => team.id === teamId) ? teamId : chatState.teams[0]?.id ?? teamId;
   const viewer = chatState.users.find((user) => user.id === selectedViewerId);
   const selectedTeam = chatState.teams.find((team) => team.id === selectedTeamId);
   const chatStyle = teamBrandStyle(selectedTeam?.primaryColor ?? "#1570ef", selectedTeam?.secondaryColor ?? "#dff4ff");
@@ -5886,7 +5807,7 @@ export function TeamChatClient({ teamChatData }: { teamChatData?: TeamChatData |
       <section className="clubhouse-toolbar card">
         <label>
           Preview as
-          <select value={selectedViewerId} onChange={(event) => setViewerId(event.target.value)}>
+          <select value={selectedViewerId} onChange={(event) => setViewerId(event.target.value)} disabled={Boolean(viewerUserId)}>
             {chatState.users.map((user) => (
               <option key={user.id} value={user.id}>{user.name} · {roleLabel(user.role)}</option>
             ))}
@@ -5894,7 +5815,7 @@ export function TeamChatClient({ teamChatData }: { teamChatData?: TeamChatData |
         </label>
         <label>
           Team Chat
-          <select value={selectedTeamId} onChange={(event) => setTeamId(event.target.value)}>
+          <select value={selectedTeamId} onChange={(event) => setTeamId(event.target.value)} disabled={Boolean(lockedTeamId)}>
             {chatState.teams.map((team) => (
               <option key={team.id} value={team.id}>{team.name} · {team.division}</option>
             ))}

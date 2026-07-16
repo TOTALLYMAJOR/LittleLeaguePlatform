@@ -11,15 +11,15 @@ const roleCards = [
   },
   {
     title: "Coaches",
-    href: "/coach/parent-replay",
-    action: "Coach loop",
-    body: "Check attendance, draft updates, adapt practice energy, and queue Parent Replay content after coach review.",
+    href: "/coach/practice-recaps",
+    action: "Coach updates",
+    body: "Check attendance, draft updates, adapt practice energy, and queue practice recap content after coach review.",
     proof: "Assigned-team scope"
   },
   {
     title: "Admins",
-    href: "/admin/security",
-    action: "Proof center",
+    href: "/admin/security-audit",
+    action: "Review & Safety",
     body: "Watch registration, team setup, RLS proof, provider readiness, audit events, and launch blockers from one operations layer.",
     proof: "Organization scope"
   }
@@ -40,20 +40,20 @@ const operatingSignals = [
 ] as const;
 
 const platformLinks = [
-  ["Parent Replay", "/coach/parent-replay", "Coach clicks practice focus areas and generates home activities, a coach video, parent tip, skill cards, and a team quest."],
+  ["Practice Recaps", "/coach/practice-recaps", "Coach clicks practice focus areas and generates home activities, a coach video, parent tip, skill cards, and a team quest."],
   ["Team-specific portal", "/team-portal", "One team surface for weekly digest, Game Day Mode, field maps, learning, memories, volunteers, and skill progress."],
-  ["Coach dashboard", "/coach", "Coach view for assigned teams, RSVP summaries, weather drafts, snacks, volunteers, and Parent Replay."],
-  ["Admin dashboard", "/admin", "League operations view for teams, registration queue, sponsors, notifications, and launch readiness."],
-  ["Archive vault", "/admin/archive", "Review archived seasons, export proof, and read-only boundaries."],
-  ["Guardian links", "/admin/guardian-links", "Repair missing parent-player links and activate team access."],
+  ["Coach home", "/coach", "Coach view for assigned teams, RSVP summaries, weather drafts, snacks, volunteers, and practice recaps."],
+  ["Admin overview", "/admin", "League operations view for teams, registration queue, sponsors, notifications, and launch readiness."],
+  ["Reports & Archive", "/admin/reports-archive", "Review archived seasons, export proof, and read-only boundaries."],
+  ["Family Access", "/admin/family-access", "Repair missing parent-player links and activate team access."],
   ["Admin operations", "/admin/operations", "Review organization settings, provider inventory, approval queues, and audit logs."],
   ["Team setup", "/admin/teams", "Manage organization-scoped team records by season and division."],
-  ["Security proof", "/admin/security", "Track RLS, cross-team denial, archived read-only behavior, and production audit evidence."],
+  ["Review & Safety", "/admin/security-audit", "Track RLS, cross-team denial, archived read-only behavior, and production audit evidence."],
   ["Registration system", "/registration", "Parent self-registration request flow with admin review before account or child access."],
   ["CSV duplicate detection", "/admin/imports", "Validate roster imports, separate blocking errors from warnings, and simulate an audited commit."],
   ["Smart invite recovery", "/invite/recover", "Recover pending parent invites without exposing raw tokens or sending real provider messages."],
-  ["Admin health dashboard", "/admin/health", "See launch readiness problems before families report them."],
-  ["Parent dashboard", "/parent", "Show each parent the schedule, coach updates, RSVP needs, and recent media that matter."],
+  ["Admin health", "/admin/health", "See launch readiness problems before families report them."],
+  ["Parent home", "/parent", "Show each parent the schedule, coach updates, RSVP needs, and recent media that matter."],
   ["One-tap RSVP", "/parent/rsvp", "Let parents answer going, not going, or maybe for linked children only."],
   ["Schedule change alerts", "/schedule", "Queue push, email, and urgent SMS notification records without real sends."],
   ["Team Chat", "/team-chat", "Give assigned parents and coaches a safe, private space for coach notes and game-day questions."]
@@ -72,8 +72,8 @@ export default function HomePage() {
         </Link>
         <div className="landing-nav-links">
           <a href="#roles">Roles</a>
-          <a href="#replay-loop">Parent Replay</a>
-          <a href="#platform-map">Platform map</a>
+          <a href="#replay-loop">Practice Recaps</a>
+          <a href="#platform-map">Team Tools</a>
         </div>
       </nav>
 
@@ -82,10 +82,10 @@ export default function HomePage() {
           <span className="landing-kicker">League operations for real families</span>
           <h1 id="landing-title">Stop chasing families.</h1>
           <p>
-            Run the season from one private team home: schedules, RSVPs, coach updates, and Parent Replay.
+            Run the season from one private team home: schedules, RSVPs, coach updates, and practice recaps.
           </p>
           <div className="landing-actions">
-            <Link className="button lg" href="/coach/parent-replay">Coach loop</Link>
+            <Link className="button lg" href="/coach/practice-recaps">Coach updates</Link>
             <Link className="button secondary lg" href="/parent">Parent view</Link>
           </div>
         </div>
@@ -136,7 +136,7 @@ export default function HomePage() {
 
       <section className="landing-section" id="roles" aria-labelledby="roles-title">
         <div className="landing-section-heading">
-          <h2 id="roles-title">Three jobs, one season rhythm.</h2>
+          <h2 id="roles-title">Three jobs for a ready Saturday.</h2>
           <p>Parents need clarity, coaches need coverage, admins need proof before the league depends on a workflow.</p>
         </div>
         <div className="landing-role-grid">
@@ -153,7 +153,7 @@ export default function HomePage() {
 
       <section className="landing-replay-section" id="replay-loop" aria-labelledby="replay-title">
         <div className="landing-section-heading">
-          <h2 id="replay-title">Parent Replay is the signature loop.</h2>
+          <h2 id="replay-title">Practice recaps carry coaching home.</h2>
           <p>Practice does not end at the field. Coaches turn what happened into simple family activities without automatic publish or external sends.</p>
         </div>
         <div className="landing-replay-grid">
@@ -185,8 +185,8 @@ export default function HomePage() {
 
       <section className="landing-section" id="platform-map" aria-labelledby="platform-map-title">
         <div className="landing-section-heading">
-          <h2 id="platform-map-title">Explore the product surfaces.</h2>
-          <p>The route map stays here for builders and reviewers, below the buyer-facing story.</p>
+          <h2 id="platform-map-title">Explore the team tools.</h2>
+          <p>The product surface list stays here for builders and reviewers, below the family-facing story.</p>
         </div>
         <div className="grid three">
           {platformLinks.map(([title, href, body]) => (
@@ -200,12 +200,11 @@ export default function HomePage() {
 
       <section className="notice landing-boundary">
         <strong>Production boundary:</strong> this app uses Supabase-backed paths when signed-in rows and roles exist, typed seed fallbacks when live context is unavailable, and no external email, SMS, push, Stripe, AI-provider, or native-app delivery unless explicitly approved and configured.
-        The original static prototype remains available at <Link href="/prototype/index.html">/prototype/index.html</Link>.
       </section>
 
       <section className="landing-section" aria-labelledby="feature-tier-title">
         <div className="landing-section-heading">
-          <h2 id="feature-tier-title">Feature tier workspace.</h2>
+          <h2 id="feature-tier-title">Feature inventory.</h2>
           <p>Use this lower workspace to inspect the current scaffold, provider boundaries, and feature inventory.</p>
         </div>
         <FeatureTierHubClient />

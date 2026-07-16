@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import "./globals.css";
 import { AppShell } from "@/components/ui/AppShell";
+import { getServerShellAccess, toClientShellAccess } from "@/lib/supabase/shell-access";
 
 export const metadata: Metadata = {
   title: "Little League HQ",
@@ -20,11 +21,13 @@ export const metadata: Metadata = {
   }
 };
 
-export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
+export default async function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
+  const shellAccess = toClientShellAccess(await getServerShellAccess());
+
   return (
     <html lang="en">
       <body>
-        <AppShell>{children}</AppShell>
+        <AppShell access={shellAccess}>{children}</AppShell>
       </body>
     </html>
   );

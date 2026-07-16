@@ -1,10 +1,7 @@
-import { RegistrationReviewClient } from "@/components/feature-panels";
-import { listRegistrationReviewData } from "@/lib/supabase/registration-approvals";
+import { AdminRegistrationsSurface } from "../_surfaces";
 
 export const dynamic = "force-dynamic";
 
 export default async function RegistrationReviewPage() {
-  const data = await listRegistrationReviewData();
-
-  return <RegistrationReviewClient initialData={data} />;
+  return <AdminRegistrationsSurface />;
 }
