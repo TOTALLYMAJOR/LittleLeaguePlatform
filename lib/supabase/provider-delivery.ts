@@ -357,6 +357,11 @@ async function mapAttemptPayload(db: UnsafeSupabase, attempt: DeliveryAttemptRow
   };
 }
 
+function providerOutcomeConfirmsDelivery(outcome: NotificationDeliveryOutcome) {
+  const providerStatus = String(outcome.providerStatus ?? "").toLowerCase();
+  return outcome.status === "sent" && !["accepted", "queued", "sending", "sent", "processed"].includes(providerStatus);
+}
+
 export async function claimQueuedNotificationDeliveries(input: {
   workerId: string;
   limit?: number;
@@ -445,7 +450,7 @@ export async function recordNotificationDeliveryOutcome(outcome: NotificationDel
 
     if (error || !attempt) return { ok: false, message: "Notification delivery attempt outcome could not be recorded." };
 
-    if (outcome.status === "sent") {
+    if (providerOutcomeConfirmsDelivery(outcome)) {
       await withSupabaseTimeout(db
         .from("notifications")
         .update({ status: "sent", sent_at: outcome.attemptedAt })

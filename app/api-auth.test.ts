@@ -74,4 +74,16 @@ describe("API mutation auth boundaries", () => {
     expect(file).toContain("status: 401");
     expect(file).toContain("runNotificationProviderSendWorker");
   });
+
+  it("keeps provider webhooks signature-gated instead of session-gated", () => {
+    const sendGrid = source("app/api/provider-webhooks/sendgrid/route.ts");
+    const twilio = source("app/api/provider-webhooks/twilio/route.ts");
+
+    expect(sendGrid).not.toContain("requireAuthenticatedRouteUser");
+    expect(sendGrid).toContain("verifySendGridWebhookSignature");
+    expect(sendGrid).toContain("SENDGRID_WEBHOOK_PUBLIC_KEY");
+    expect(twilio).not.toContain("requireAuthenticatedRouteUser");
+    expect(twilio).toContain("verifyTwilioWebhookSignature");
+    expect(twilio).toContain("TWILIO_AUTH_TOKEN");
+  });
 });
