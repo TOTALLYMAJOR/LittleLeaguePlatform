@@ -23,6 +23,7 @@ describe("Supabase RLS policy coverage", () => {
   const rsvpCancellations = migration("0016_rsvp_cancellations.sql");
   const sponsorBillingAndTeamBuilder = migration("0017_sponsor_billing_and_team_builder.sql");
   const teamBrandProfilesMonitoring = migration("0018_team_brand_profiles_monitoring.sql");
+  const teamSeasonParentScheduleLifecycle = migration("0019_team_season_parent_schedule_lifecycle.sql");
   const mediaUploadStoragePipeline = migration("0024_media_upload_storage_pipeline.sql");
   const snackVolunteerOperations = migration("0025_snack_volunteer_operations.sql");
   const packageJson = readFileSync(join(process.cwd(), "package.json"), "utf8");
@@ -124,6 +125,17 @@ describe("Supabase RLS policy coverage", () => {
   it("keeps RSVP cancellation as retained history", () => {
     expect(rsvpCancellations).toContain("'cancelled'");
     expect(rsvpCancellations).toContain("rsvps_response_check");
+  });
+
+  it("keeps RSVP change logs scoped to linked parents and assigned staff", () => {
+    expect(teamSeasonParentScheduleLifecycle).toContain("create table if not exists public.rsvp_change_logs");
+    expect(teamSeasonParentScheduleLifecycle).toContain("previous_response text");
+    expect(teamSeasonParentScheduleLifecycle).toContain("next_response text not null");
+    expect(teamSeasonParentScheduleLifecycle).toContain("alter table public.rsvp_change_logs enable row level security");
+    expect(teamSeasonParentScheduleLifecycle).toContain("create policy \"parents and staff read rsvp change logs\"");
+    expect(teamSeasonParentScheduleLifecycle).toContain("parent_user_id = auth.uid()");
+    expect(teamSeasonParentScheduleLifecycle).toContain("public.current_user_can_manage_team(event.team_id)");
+    expect(teamSeasonParentScheduleLifecycle).toContain("create policy \"parents insert own rsvp change logs\"");
   });
 
   it("keeps sponsor billing and automatic team-builder proof admin-only", () => {

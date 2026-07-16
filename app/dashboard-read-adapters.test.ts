@@ -8,7 +8,7 @@ function source(path: string) {
 
 describe("parent and coach dashboard Supabase reads", () => {
   it("keeps parent and coach routes wired through the shared Supabase read adapter", () => {
-    for (const route of ["app/parent/page.tsx", "app/parent/rsvp/page.tsx", "app/coach/page.tsx"]) {
+    for (const route of ["app/parent/page.tsx", "app/parent/rsvp/page.tsx", "app/coach/page.tsx", "app/coach/rsvps/page.tsx"]) {
       const file = source(route);
 
       expect(file, `${route} should resolve the signed-in Supabase server user`).toContain("getSupabaseServerUser");
@@ -28,6 +28,7 @@ describe("parent and coach dashboard Supabase reads", () => {
       "player_guardians",
       "events",
       "rsvps",
+      "rsvp_change_logs",
       "notification_preferences",
       "snack_schedule_slots",
       "volunteer_signups",

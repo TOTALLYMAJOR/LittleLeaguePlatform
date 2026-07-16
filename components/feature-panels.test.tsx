@@ -6,6 +6,7 @@ import {
   AdminThemesClient,
   AuthClient,
   CoachDashboardClient,
+  CoachRsvpsClient,
   ParentDashboardClient,
   ParentRsvpClient,
   ParentReplayClient,
@@ -24,6 +25,7 @@ function dashboardAccessState(accessStatus: ParentCoachDashboardData["accessStat
     state: { ...seedState, users: [], teams: [], teamMemberships: [], players: [], guardianLinks: [], events: [], rsvps: [] },
     parentUserId: "user-parent-missing",
     coachUserId: "user-coach-missing",
+    rsvpChangeLogs: [],
     isSupabaseBacked: false,
     accessStatus,
     message
@@ -231,11 +233,31 @@ describe("ParentRsvpClient", () => {
   it("renders RSVP history, edit buttons, and cancellation controls for linked parents", () => {
     const html = renderToStaticMarkup(
       <AppStateProvider>
-        <ParentRsvpClient />
+        <ParentRsvpClient dashboardData={{
+          state: seedState,
+          parentUserId: "user-parent-riley",
+          coachUserId: "user-coach-taylor",
+          rsvpChangeLogs: [{
+            id: "rsvp-log-avery",
+            eventId: "event-tigers-game",
+            playerId: "player-avery",
+            parentUserId: "user-parent-riley",
+            previousResponse: "maybe",
+            nextResponse: "going",
+            note: "Updated after carpool confirmed.",
+            createdAt: "2026-04-01T09:40:00.000Z"
+          }],
+          isSupabaseBacked: true,
+          accessStatus: "live",
+          message: "Showing Supabase roster, guardian, schedule, RSVP, and media rows."
+        }} />
       </AppStateProvider>
     );
 
-    expect(html).toContain("RSVP history");
+    expect(html).toContain("RSVP timeline");
+    expect(html).toContain("Changed from maybe to going");
+    expect(html).toContain("Support note: Updated after carpool confirmed.");
+    expect(html).toContain("Current RSVP snapshot");
     expect(html).toContain("Going");
     expect(html).toContain("Maybe");
     expect(html).toContain("Cancel RSVP");
@@ -251,6 +273,7 @@ describe("ParentRsvpClient", () => {
           },
           parentUserId: "user-parent-jordan",
           coachUserId: "user-coach-taylor",
+          rsvpChangeLogs: [],
           isSupabaseBacked: false,
           accessStatus: "live",
           message: "Archived season proof data."
@@ -261,6 +284,40 @@ describe("ParentRsvpClient", () => {
     expect(html).toContain("Archived RSVP read-only mode");
     expect(html).toContain("Past attendance remains visible");
     expect(html).toContain("Going</button>");
+  });
+});
+
+describe("CoachRsvpsClient", () => {
+  it("renders assigned-team RSVP summaries and scoped change logs", () => {
+    const html = renderToStaticMarkup(
+      <AppStateProvider>
+        <CoachRsvpsClient dashboardData={{
+          state: seedState,
+          parentUserId: "",
+          coachUserId: "user-coach-taylor",
+          rsvpChangeLogs: [{
+            id: "rsvp-log-coach-visible",
+            eventId: "event-tigers-game",
+            playerId: "player-avery",
+            parentUserId: "user-parent-riley",
+            previousResponse: "not_going",
+            nextResponse: "going",
+            note: "Parent corrected the response before lineup lock.",
+            createdAt: "2026-04-01T10:00:00.000Z"
+          }],
+          isSupabaseBacked: true,
+          accessStatus: "live",
+          message: "Showing Supabase team membership, roster, RSVP, weather, snack, and volunteer rows."
+        }} />
+      </AppStateProvider>
+    );
+
+    expect(html).toContain("Attendance summaries for assigned teams.");
+    expect(html).toContain("Coach RSVP summaries and change logs are loaded from Supabase");
+    expect(html).toContain("RSVP change timeline");
+    expect(html).toContain("Avery P.");
+    expect(html).toContain("changed from not going to going");
+    expect(html).toContain("Parent corrected the response before lineup lock.");
   });
 });
 
@@ -593,6 +650,7 @@ describe("ParentReplayClient", () => {
       },
       parentUserId: "",
       coachUserId: supabaseCoachId,
+      rsvpChangeLogs: [],
       isSupabaseBacked: true,
       accessStatus: "live",
       message: "Showing Supabase team membership, roster, RSVP, weather, snack, and volunteer rows."

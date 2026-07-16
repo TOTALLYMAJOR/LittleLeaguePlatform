@@ -8,7 +8,7 @@ Production scaffold decision: feature slices live in the root Next.js app with t
 | Smart Invite Recovery | Phase 1 - Launch Readiness | Done | `/invite/recover`, `/invite/expired`, `/admin/invites` | `lib/domain/domain.test.ts`; `npm test`; `npm run build` | Checks not found, expired, accepted, active season, and hourly/daily limits; hashes only, no raw token display. |
 | Admin Health Dashboard | Phase 1 - Launch Readiness | Done | `/admin/health` | `lib/domain/domain.test.ts`; `npm test`; `npm run build` | Computes missing coaches, missing parent links, pending/failed invites, duplicate warnings, empty schedules, media, archive state. |
 | Parent Dashboard | Phase 2 - Parent Engagement | Done | `/parent` | `lib/domain/domain.test.ts`; `components/feature-panels.test.tsx`; `npm test`; `npm run build` | Parent Home now uses the team-home layout: sticky team header, parent navigation, next-event card, RSVP row, weather draft/change rows, conditional action/message/photo summaries, and privacy footer. It stays scoped to linked child/team data and uses plain family setup, schedule alert, approved media, and help-request language. |
-| One-Tap RSVP | Phase 2 - Parent Engagement | Done | `/parent/rsvp`, `/coach/rsvps` | `lib/domain/domain.test.ts`; `npm test`; `npm run build` | Parent can RSVP only for linked child; coach sees assigned-team aggregate attendance summary. |
+| One-Tap RSVP | Phase 2 - Parent Engagement | Done | `/parent/rsvp`, `/coach/rsvps` | `lib/domain/domain.test.ts`; `components/feature-panels.test.tsx`; `app/dashboard-read-adapters.test.ts`; `supabase/rls-policy.test.ts`; `npm test`; `npm run build` | Parent can RSVP only for linked child. Parent and coach RSVP pages read Supabase-scoped data, surface persisted `rsvp_change_logs` as support-friendly timelines, and keep current RSVP snapshots visible for no-response triage. Coach views stay limited to assigned-team aggregate attendance and assigned-team change logs. |
 | RSVP Reliability Tracker | Phase 2 - Coach Operations | Done | `/coach` | `components/feature-panels.test.tsx`; `lib/domain/domain.test.ts`; `npm test`; `npm run build` | Coach dashboard derives family response rate, no-response count, late-change count, and reminder mode from assigned-team RSVP records without public parent leaderboards. |
 | Schedule Change Alerts | Phase 2 - Parent Engagement | Done | `/schedule`, `/api/schedule` | `components/feature-panels.test.tsx`; `lib/domain/domain.test.ts`; `lib/supabase/schedule-management.test.ts`; `app/api-live-actions.test.ts`; `npm test`; `npm run build` | Admin/coach event edits and new weekly series saves use the authenticated schedule service with active-season locks, managed venue records, team/venue conflict detection, recurring event expansion, event change logs, field reservations, and provider-safe notification drafts. Provider execution still requires approval, recipient checks, worker authorization, and configured provider credentials. |
 | Notification Preference Center | Phase 2 - Parent Engagement | Done | `/parent`, `/admin/operations`, `/api/notification-preferences`, `/api/notification-preferences/unsubscribe`, `/api/push-subscriptions`, `/api/provider-delivery/batch-review`, `/api/provider-delivery/retry-plan`, `/api/internal/notification-send-worker`, `/api/provider-webhooks/sendgrid`, `/api/provider-webhooks/twilio` | `components/feature-panels.test.tsx`; `app/api-live-actions.test.ts`; `lib/supabase/provider-delivery.test.ts`; `lib/services/notifications/adapters.test.ts`; `lib/services/notifications/webhooks.test.ts`; `QA_PROOF_BASE_URL=https://www.leaguepilot.us npm run qa:session-proof`; `npm test`; `npm run build` | Parent dashboard shows push, email, SMS fallback, urgent-only SMS, quiet hours, and digest frequency as the production messaging contract. Preference, unsubscribe, push-subscription, provider-review, provider batch-review, retry-plan, worker, and webhook routes preserve provider boundaries. `/admin/operations` includes filterable provider delivery triage with batch approve/reject, suppression reasons, retry context, and attempt history. Approved queued attempts can be executed only by the secret-gated worker with SendGrid, Twilio Messaging Service, or Web Push credentials; missing credentials, disabled preferences, quiet hours, non-urgent SMS, and missing recipients suppress without sending. SendGrid and Twilio webhooks are signature-gated, deduped, and reconcile delivery/open/bounce/failure status without treating provider acceptance as delivery. |
@@ -130,9 +130,19 @@ rsvps
 - responded_at
 - created_at
 - updated_at
+rsvp_change_logs
+- id
+- event_id
+- player_id
+- parent_user_id
+- previous_response
+- next_response
+- note
+- created_at
 Permission Rules
 Parent can RSVP only for their child.
 Coach can view RSVP summaries for assigned teams.
+Parent and coach timeline reads are scoped to linked children or assigned teams.
 Org admin can view all RSVP data.
 Archived season RSVP data is read-only.
 Coach Attendance View

@@ -148,7 +148,7 @@ import type { SponsorAdminData } from "@/lib/supabase/sponsors";
 import type { TeamPortalData } from "@/lib/supabase/team-portal";
 import type { AdminThemeData, TeamLogoAsset, TeamThemeAudit, TenantThemeDefaults } from "@/lib/supabase/team-branding";
 import type { TeamChatData, TeamChatReport, TeamChatReportStatus } from "@/lib/supabase/team-chat";
-import type { ParentCoachDashboardData } from "@/lib/supabase/dashboard-data";
+import type { ParentCoachDashboardData, RsvpChangeLog } from "@/lib/supabase/dashboard-data";
 import type { AdminTeamManagementData } from "@/lib/supabase/team-management";
 import type { ScheduleOperationsData } from "@/lib/supabase/schedule-management";
 import type { ProviderDeliveryReviewQueueItem, ProviderDeliveryReviewDecision } from "@/lib/supabase/provider-delivery";
@@ -196,6 +196,14 @@ function formatDate(value: string) {
     hour: "numeric",
     minute: "2-digit"
   });
+}
+
+function formatRsvpResponse(response?: RsvpResponse) {
+  return response ? response.replace("_", " ") : "no response";
+}
+
+function rsvpLogTimestamp(log: RsvpChangeLog) {
+  return new Date(log.createdAt).getTime();
 }
 
 function formatShortDay(value?: string) {
@@ -1621,15 +1629,27 @@ export function ParentDashboardClient({ dashboardData }: { dashboardData?: Paren
 export function ParentRsvpClient({ dashboardData }: { dashboardData?: ParentCoachDashboardData | null } = {}) {
   const { state, dispatch } = useAppState();
   const [snapshotRsvps, setSnapshotRsvps] = useState(() => dashboardData?.state.rsvps ?? []);
+  const [snapshotRsvpLogs, setSnapshotRsvpLogs] = useState(() => dashboardData?.rsvpChangeLogs ?? []);
   const [message, setMessage] = useState("");
   const [isPending, startTransition] = useTransition();
   const sourceState = dashboardData?.state ?? state;
   const displayState = dashboardData ? { ...sourceState, rsvps: snapshotRsvps } : sourceState;
+  const displayRsvpLogs = dashboardData ? snapshotRsvpLogs : [];
   const parentUserId = dashboardData?.parentUserId ?? "user-parent-jordan";
   const parentUser = displayState.users.find((user) => user.id === parentUserId);
   const dashboard = getParentDashboard(displayState, parentUserId, NOW);
   const accessGate = privateAccessGate(dashboardData, "parent");
   const isArchivedSeason = displayState.activeSeason.status === "archived";
+  const visiblePlayerIds = new Set(displayState.players.map((player) => player.id));
+  const visibleEventIds = new Set(displayState.events.map((event) => event.id));
+  const rsvpTimeline = displayRsvpLogs
+    .filter((log) => (
+      log.parentUserId === parentUserId &&
+      visiblePlayerIds.has(log.playerId) &&
+      visibleEventIds.has(log.eventId)
+    ))
+    .sort((left, right) => rsvpLogTimestamp(right) - rsvpLogTimestamp(left))
+    .slice(0, 12);
   const rsvpHistory = displayState.rsvps
     .filter((rsvp) => rsvp.parentUserId === parentUserId)
     .sort((left, right) => new Date(right.updatedAt).getTime() - new Date(left.updatedAt).getTime())
@@ -1644,16 +1664,27 @@ export function ParentRsvpClient({ dashboardData }: { dashboardData?: ParentCoac
 
   function save(eventId: string, playerId: string, response: RsvpResponse) {
     startTransition(async () => {
+      const previousRsvp = displayState.rsvps.find((item) => item.eventId === eventId && item.playerId === playerId);
       const apiResponse = await authenticatedJsonFetch("/api/rsvps", { eventId, playerId, response });
       const result = await apiResponse.json().catch(() => null) as { ok?: boolean; message?: string } | null;
       setMessage(result?.message ?? "RSVP could not be saved.");
       if (!result?.ok) return;
 
-      const input = { eventId, playerId, parentUserId, response, now: new Date().toISOString() };
+      const now = new Date().toISOString();
+      const input = { eventId, playerId, parentUserId, response, now };
       const preview = setRsvp(displayState, input);
       if (!preview.ok) return;
       if (dashboardData) {
         setSnapshotRsvps(preview.state.rsvps);
+        setSnapshotRsvpLogs((current) => [{
+          id: `local-rsvp-log-${eventId}-${playerId}-${Date.parse(now)}`,
+          eventId,
+          playerId,
+          parentUserId,
+          previousResponse: previousRsvp?.response,
+          nextResponse: response,
+          createdAt: now
+        }, ...current].slice(0, 100));
       } else {
         dispatch({ type: "setRsvp", input });
       }
@@ -1679,7 +1710,7 @@ export function ParentRsvpClient({ dashboardData }: { dashboardData?: ParentCoac
           <article className="card stack" key={`${event.id}-${player.id}`}>
             <div className="card-header">
               <h2>{event.title}</h2>
-              <span className="badge">{rsvp?.response.replace("_", " ") ?? "no response"}</span>
+              <span className="badge">{formatRsvpResponse(rsvp?.response)}</span>
             </div>
             <p>{player.firstName} {player.lastInitial}. · {formatDate(event.startsAt)} · {event.locationName}</p>
             <div className="toolbar">
@@ -1691,14 +1722,38 @@ export function ParentRsvpClient({ dashboardData }: { dashboardData?: ParentCoac
           </article>
         ))}
         <article className="card stack">
-          <h2>RSVP history</h2>
+          <div className="card-header">
+            <div>
+              <span className="eyebrow">Audit trail</span>
+              <h2>RSVP timeline</h2>
+            </div>
+            <span className="badge">{rsvpTimeline.length || rsvpHistory.length} record(s)</span>
+          </div>
+          <p className="muted">Saved RSVP changes show what changed and when, so staff can explain no-response confusion without exposing other families.</p>
+          {rsvpTimeline.map((log) => {
+            const event = displayState.events.find((item) => item.id === log.eventId);
+            const player = displayState.players.find((item) => item.id === log.playerId);
+            return (
+              <div className="stack" key={log.id}>
+                <p>
+                  <strong>{event?.title ?? "Event"}</strong><br />
+                  <span className="muted">
+                    {player ? `${player.firstName} ${player.lastInitial}.` : "Player"} - Changed from {formatRsvpResponse(log.previousResponse)} to {formatRsvpResponse(log.nextResponse)} - {formatDate(log.createdAt)}
+                  </span>
+                </p>
+                <p className="muted">Support note: {log.note ?? "This saved audit row is the source of truth for the latest RSVP change."}</p>
+              </div>
+            );
+          })}
+          {!rsvpTimeline.length ? <p className="muted">No persisted RSVP change logs are visible yet. Current responses are listed below.</p> : null}
+          <h3>Current RSVP snapshot</h3>
           {rsvpHistory.map((rsvp) => {
             const event = displayState.events.find((item) => item.id === rsvp.eventId);
             const player = displayState.players.find((item) => item.id === rsvp.playerId);
             return (
               <p key={rsvp.id}>
                 <strong>{event?.title ?? "Event"}</strong><br />
-                <span className="muted">{player ? `${player.firstName} ${player.lastInitial}.` : "Player"} - {rsvp.response.replace("_", " ")} - {formatDate(rsvp.updatedAt)}</span>
+                <span className="muted">{player ? `${player.firstName} ${player.lastInitial}.` : "Player"} - {formatRsvpResponse(rsvp.response)} - {formatDate(rsvp.updatedAt)}</span>
               </p>
             );
           })}
@@ -4079,18 +4134,39 @@ export function ProviderDeliveryReviewQueueClient({ initialQueue }: { initialQue
   );
 }
 
-export function CoachRsvpsClient() {
+export function CoachRsvpsClient({ dashboardData }: { dashboardData?: ParentCoachDashboardData | null } = {}) {
   const { state } = useAppState();
-  const summaries = getCoachRsvpSummaries(state, "user-coach-taylor", NOW);
+  const sourceState = dashboardData?.state ?? state;
+  const coachUserId = dashboardData?.coachUserId ?? "user-coach-taylor";
+  const coachUser = sourceState.users.find((user) => user.id === coachUserId);
+  const summaries = getCoachRsvpSummaries(sourceState, coachUserId, NOW);
+  const accessGate = privateAccessGate(dashboardData, "coach");
+  const teamIds = new Set([
+    ...summaries.map((summary) => summary.team.id),
+    ...sourceState.teamMemberships
+      .filter((membership) => membership.userId === coachUserId && membership.role === "coach" && membership.status === "active")
+      .map((membership) => membership.teamId)
+  ]);
+  const eventIds = new Set(sourceState.events.filter((event) => teamIds.has(event.teamId)).map((event) => event.id));
+  const playerIds = new Set(sourceState.players.filter((player) => teamIds.has(player.teamId)).map((player) => player.id));
+  const rsvpTimeline = (dashboardData?.rsvpChangeLogs ?? [])
+    .filter((log) => eventIds.has(log.eventId) && playerIds.has(log.playerId))
+    .sort((left, right) => rsvpLogTimestamp(right) - rsvpLogTimestamp(left))
+    .slice(0, 12);
 
   return (
     <div className="page">
       <section className="hero">
         <span className="eyebrow">Coach attendance view</span>
         <h1>Attendance summaries for assigned teams.</h1>
-        <p className="lead">Coach Taylor sees only assigned team events and aggregate RSVP counts.</p>
+        <p className="lead">{coachUser?.name ?? "The signed-in coach"} sees only assigned team events, aggregate RSVP counts, and scoped RSVP change history.</p>
       </section>
 
+      <p className={`notice ${dashboardData?.isSupabaseBacked ? "ok" : "warning"}`}>
+        {dashboardData?.accessStatus === "live" ? "Coach RSVP summaries and change logs are loaded from Supabase for assigned teams." : dashboardData?.message ?? "Showing local seed fallback until Supabase has active coach membership rows."}
+      </p>
+      {accessGate ?? (
+      <>
       <section className="grid two">
         {summaries.map((summary) => (
           <article className="card stack" key={summary.event.id}>
@@ -4104,7 +4180,40 @@ export function CoachRsvpsClient() {
             <p>No response: {summary.noResponse} of {summary.totalPlayers}</p>
           </article>
         ))}
+        {!summaries.length ? (
+          <article className="card stack">
+            <h2>No assigned RSVP summaries</h2>
+            <p className="muted">No scheduled events with rostered players are visible for this coach account.</p>
+          </article>
+        ) : null}
       </section>
+      <section className="card stack">
+        <div className="card-header">
+          <div>
+            <span className="eyebrow">Team audit trail</span>
+            <h2>RSVP change timeline</h2>
+          </div>
+          <span className="badge">{rsvpTimeline.length} change(s)</span>
+        </div>
+        <p className="muted">Coaches see change logs only for assigned team events, which helps separate late changes from families who have not responded.</p>
+        {rsvpTimeline.map((log) => {
+          const event = sourceState.events.find((item) => item.id === log.eventId);
+          const player = sourceState.players.find((item) => item.id === log.playerId);
+          const parent = sourceState.users.find((item) => item.id === log.parentUserId);
+          return (
+            <p key={log.id}>
+              <strong>{event?.title ?? "Event"}</strong><br />
+              <span className="muted">
+                {player ? `${player.firstName} ${player.lastInitial}.` : "Player"} - {parent?.name ?? "Parent"} changed from {formatRsvpResponse(log.previousResponse)} to {formatRsvpResponse(log.nextResponse)} - {formatDate(log.createdAt)}
+              </span><br />
+              <span className="muted">Support note: {log.note ?? "Use this audit row before sending no-response reminders."}</span>
+            </p>
+          );
+        })}
+        {!rsvpTimeline.length ? <p className="muted">No RSVP change logs are visible for assigned teams yet.</p> : null}
+      </section>
+      </>
+      )}
     </div>
   );
 }

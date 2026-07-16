@@ -63,7 +63,7 @@ The app is not ready for real-family production launch yet. The core scaffold, r
    - Done when: CI screenshots or traces prove every release-critical signed-in browser write uses real Supabase sessions.
 
 8. Reconcile stale capability-matrix gaps.
-   - Evidence: `docs/capability-matrix.md` still lists some gaps that later implementation covered, including team CRUD, division/season setup, coach assignment, roster lifecycle, tenant isolation, RSVP history UX, snack/volunteer reminders, caps, cancellation, and approval policies.
+   - Evidence: `docs/capability-matrix.md` still lists some gaps that later implementation covered, including team CRUD, division/season setup, coach assignment, roster lifecycle, tenant isolation, snack/volunteer reminders, caps, cancellation, and approval policies.
    - Action: update the matrix to separate current shipped truth from remaining hosted/provider proof.
    - Done when: `docs/capability-matrix.md`, `docs/Features.md`, and `docs/feature-fit-backlog.md` agree.
 
