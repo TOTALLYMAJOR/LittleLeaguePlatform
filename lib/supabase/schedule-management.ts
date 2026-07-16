@@ -21,11 +21,39 @@ export interface ScheduleOperationsData {
     organizationId: string;
     name: string;
     address: string;
+    latitude?: number;
+    longitude?: number;
+    googlePlaceId?: string;
     mapUrl?: string;
     mapEmbedUrl?: string;
+    fieldLabel?: string;
+    notes?: string;
     status: "active" | "inactive";
   }>;
 }
+
+export interface ScheduleVenueInput {
+  id?: string;
+  name?: string;
+  address?: string;
+  latitude?: number;
+  longitude?: number;
+  googlePlaceId?: string;
+  mapUrl?: string;
+  mapEmbedUrl?: string;
+  fieldLabel?: string;
+  notes?: string;
+  status?: "active" | "inactive";
+}
+
+export interface ScheduleRecurrenceInput {
+  frequency: "weekly";
+  count: number;
+  intervalWeeks?: number;
+  until?: string;
+}
+
+export type RecurrenceEditScope = "single" | "this_and_future" | "all";
 
 export interface SaveScheduleEventInput {
   actorUserId: string;
@@ -40,9 +68,30 @@ export interface SaveScheduleEventInput {
   locationName: string;
   locationAddress: string;
   fieldLocationId?: string;
+  venue?: ScheduleVenueInput;
   opponent?: string;
   status: EventStatus;
   reason?: string;
+  recurrence?: ScheduleRecurrenceInput;
+  recurrenceEditScope?: RecurrenceEditScope;
+}
+
+interface ScheduleConflictCandidate {
+  id: string;
+  title: string;
+  team_id: string;
+  field_location_id?: string | null;
+  location_name: string | null;
+  location_address?: string | null;
+  starts_at: string;
+  ends_at: string;
+  status: EventStatus;
+}
+
+interface ScheduleOccurrence {
+  startsAt: string;
+  endsAt: string;
+  instanceIndex: number;
 }
 
 function adminDb() {
@@ -99,6 +148,79 @@ function overlaps(leftStart: string, leftEnd: string, rightStart: string, rightE
     new Date(leftEnd).getTime() > new Date(rightStart).getTime();
 }
 
+function googleMapsUrl(address: string) {
+  return `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(address)}`;
+}
+
+function googleMapsEmbedUrl(address: string) {
+  const key = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY;
+  if (!key) return null;
+  return `https://www.google.com/maps/embed/v1/place?key=${encodeURIComponent(key)}&q=${encodeURIComponent(address)}`;
+}
+
+function normalizeVenueKey(name: string | null | undefined, address: string | null | undefined) {
+  return `${(name ?? "").trim().toLowerCase()}|${(address ?? "").trim().toLowerCase()}`;
+}
+
+function boundedRecurrence(input?: ScheduleRecurrenceInput) {
+  if (!input) return undefined;
+  if (input.frequency !== "weekly") return undefined;
+  const count = Math.max(1, Math.min(Math.trunc(input.count || 1), 26));
+  const intervalWeeks = Math.max(1, Math.min(Math.trunc(input.intervalWeeks || 1), 8));
+  return { ...input, count, intervalWeeks };
+}
+
+export function buildRecurringScheduleOccurrences(input: {
+  startsAt: string;
+  endsAt: string;
+  recurrence?: ScheduleRecurrenceInput;
+}): ScheduleOccurrence[] {
+  const startMs = Date.parse(input.startsAt);
+  const endMs = Date.parse(input.endsAt);
+  if (!Number.isFinite(startMs) || !Number.isFinite(endMs) || endMs <= startMs) return [];
+
+  const recurrence = boundedRecurrence(input.recurrence);
+  const count = recurrence?.count ?? 1;
+  const intervalMs = (recurrence?.intervalWeeks ?? 1) * 7 * 24 * 60 * 60 * 1000;
+  const untilMs = recurrence?.until ? Date.parse(recurrence.until) : Number.POSITIVE_INFINITY;
+  const durationMs = endMs - startMs;
+
+  return Array.from({ length: count }, (_, index) => {
+    const occurrenceStartMs = startMs + intervalMs * index;
+    return {
+      startsAt: new Date(occurrenceStartMs).toISOString(),
+      endsAt: new Date(occurrenceStartMs + durationMs).toISOString(),
+      instanceIndex: index
+    };
+  }).filter((occurrence) => Date.parse(occurrence.startsAt) <= untilMs);
+}
+
+export function findScheduleConflicts(input: {
+  occurrences: ScheduleOccurrence[];
+  existingEvents: ScheduleConflictCandidate[];
+  teamId: string;
+  fieldLocationId?: string | null;
+  locationName: string;
+  locationAddress: string;
+  excludedEventIds?: string[];
+}) {
+  const excluded = new Set(input.excludedEventIds ?? []);
+  const requestedVenueKey = normalizeVenueKey(input.locationName, input.locationAddress);
+
+  return input.occurrences.flatMap((occurrence) => input.existingEvents
+    .filter((event) => !excluded.has(event.id) && event.status === "scheduled")
+    .filter((event) => overlaps(occurrence.startsAt, occurrence.endsAt, event.starts_at, event.ends_at))
+    .flatMap((event) => {
+      const reasons = [
+        event.team_id === input.teamId ? "team overlap" : "",
+        input.fieldLocationId && event.field_location_id === input.fieldLocationId ? "venue overlap" : "",
+        normalizeVenueKey(event.location_name, event.location_address) === requestedVenueKey ? "venue overlap" : ""
+      ].filter(Boolean);
+      const uniqueReasons = Array.from(new Set(reasons));
+      return uniqueReasons.length ? [{ ...event, occurrence, reasons: uniqueReasons }] : [];
+    }));
+}
+
 export function exportScheduleIcs(events: LeagueEvent[], teamId: string) {
   const filtered = events
     .filter((event) => event.teamId === teamId)
@@ -139,12 +261,12 @@ export async function listScheduleOperationsData(): Promise<ScheduleOperationsDa
       db.from("organizations").select("id,name").limit(1),
       db.from("teams").select("id,organization_id,season_id,division,name,coach_user_id,mascot,primary_color,secondary_color,theme_key").order("division", { ascending: true }).order("name", { ascending: true }),
       db.from("events").select("id,organization_id,team_id,season_id,title,event_type,starts_at,ends_at,location_name,location_address,opponent,status,created_at,updated_at").order("starts_at", { ascending: true }),
-      db.from("field_locations").select("id,organization_id,name,address,map_url,map_embed_url,status").order("name", { ascending: true })
+      db.from("field_locations").select("id,organization_id,name,address,latitude,longitude,google_place_id,map_url,map_embed_url,field_label,notes,status").order("name", { ascending: true })
     ]), 7000) as [
       { data: Array<{ id: string; name: string }> | null },
       { data: Array<{ id: string; organization_id: string; season_id: string; division: string; name: string; coach_user_id: string | null; mascot: string; primary_color: string; secondary_color: string; theme_key: Team["themeKey"] }> | null },
       { data: Array<Parameters<typeof mapEvent>[0]> | null },
-      { data: Array<{ id: string; organization_id: string; name: string; address: string; map_url: string | null; map_embed_url: string | null; status: "active" | "inactive" }> | null }
+      { data: Array<{ id: string; organization_id: string; name: string; address: string; latitude: number | null; longitude: number | null; google_place_id: string | null; map_url: string | null; map_embed_url: string | null; field_label: string | null; notes: string | null; status: "active" | "inactive" }> | null }
     ];
 
     const organization = organizations?.[0];
@@ -172,8 +294,13 @@ export async function listScheduleOperationsData(): Promise<ScheduleOperationsDa
         organizationId: field.organization_id,
         name: field.name,
         address: field.address,
+        latitude: field.latitude ?? undefined,
+        longitude: field.longitude ?? undefined,
+        googlePlaceId: field.google_place_id ?? undefined,
         mapUrl: field.map_url ?? undefined,
         mapEmbedUrl: field.map_embed_url ?? undefined,
+        fieldLabel: field.field_label ?? undefined,
+        notes: field.notes ?? undefined,
         status: field.status
       }))
     };
@@ -212,18 +339,168 @@ export async function saveScheduleEvent(input: SaveScheduleEventInput) {
       return { ok: false, message: "Archived seasons are read-only for schedule changes." };
     }
 
+    let resolvedFieldLocationId = input.fieldLocationId ?? input.venue?.id ?? "";
+    let resolvedLocationName = input.venue?.name?.trim() || locationName;
+    let resolvedLocationAddress = input.venue?.address?.trim() || locationAddress;
+
+    if (input.venue || !resolvedFieldLocationId) {
+      const venue = input.venue ?? {};
+      const { data: fieldLocation, error: fieldError } = await withSupabaseTimeout(db
+        .from("field_locations")
+        .upsert({
+          ...(resolvedFieldLocationId ? { id: resolvedFieldLocationId } : {}),
+          organization_id: input.organizationId,
+          name: resolvedLocationName,
+          address: resolvedLocationAddress,
+          latitude: Number.isFinite(venue.latitude) ? venue.latitude : null,
+          longitude: Number.isFinite(venue.longitude) ? venue.longitude : null,
+          google_place_id: venue.googlePlaceId?.trim() || null,
+          map_url: venue.mapUrl?.trim() || googleMapsUrl(resolvedLocationAddress),
+          map_embed_url: venue.mapEmbedUrl?.trim() || googleMapsEmbedUrl(resolvedLocationAddress),
+          field_label: venue.fieldLabel?.trim() || null,
+          notes: venue.notes?.trim() || null,
+          status: venue.status ?? "active"
+        }, { onConflict: "organization_id,name" })
+        .select("id,name,address")
+        .single(), 7000) as {
+          data: { id: string; name: string; address: string } | null;
+          error: { message?: string } | null;
+        };
+
+      if (fieldError || !fieldLocation) {
+        return { ok: false, message: "Venue record could not be saved for this schedule event." };
+      }
+      resolvedFieldLocationId = fieldLocation.id;
+      resolvedLocationName = fieldLocation.name;
+      resolvedLocationAddress = fieldLocation.address;
+    } else if (resolvedFieldLocationId) {
+      const { data: fieldLocation, error: fieldError } = await withSupabaseTimeout(db
+        .from("field_locations")
+        .select("id,organization_id,name,address,status")
+        .eq("id", resolvedFieldLocationId)
+        .eq("organization_id", input.organizationId)
+        .single(), 7000) as {
+          data: { id: string; organization_id: string; name: string; address: string; status: "active" | "inactive" } | null;
+          error: { message?: string } | null;
+        };
+
+      if (fieldError || !fieldLocation || fieldLocation.status !== "active") {
+        return { ok: false, message: "Schedule event requires an active venue record for the selected field." };
+      }
+      resolvedLocationName = fieldLocation.name;
+      resolvedLocationAddress = fieldLocation.address;
+    }
+
+    const beforeResult = input.eventId
+      ? await withSupabaseTimeout(db.from("events").select("*").eq("id", input.eventId).maybeSingle(), 7000) as { data: Record<string, unknown> | null }
+      : { data: null };
+
+    if (input.eventId && !beforeResult.data) return { ok: false, message: "Schedule event could not be found." };
+
+    const baseOccurrences = buildRecurringScheduleOccurrences({
+      startsAt: input.startsAt,
+      endsAt: input.endsAt,
+      recurrence: input.eventId ? undefined : input.recurrence
+    });
+    if (!baseOccurrences.length) return { ok: false, message: "Schedule event recurrence could not be expanded." };
+
+    let eventSeriesId = typeof beforeResult.data?.event_series_id === "string" ? beforeResult.data.event_series_id : "";
+    let targetEvents: Array<{ id?: string; before?: Record<string, unknown> | null; occurrence: ScheduleOccurrence }> = baseOccurrences.map((occurrence) => ({
+      id: input.eventId,
+      before: beforeResult.data,
+      occurrence
+    }));
+
+    if (input.eventId && beforeResult.data && eventSeriesId && input.recurrenceEditScope && input.recurrenceEditScope !== "single") {
+      const sourceEvent = beforeResult.data;
+      const { data: seriesEvents } = await withSupabaseTimeout(db
+        .from("events")
+        .select("*")
+        .eq("event_series_id", eventSeriesId)
+        .order("starts_at", { ascending: true }), 7000) as { data: Array<Record<string, unknown>> | null };
+      const sourceStartsAt = Date.parse(String(sourceEvent.starts_at));
+      const shiftedStartMs = Date.parse(input.startsAt);
+      const shiftMs = shiftedStartMs - sourceStartsAt;
+      const durationMs = Date.parse(input.endsAt) - shiftedStartMs;
+      const scopedEvents = (seriesEvents ?? []).filter((event) => (
+        input.recurrenceEditScope === "all" ||
+        Date.parse(String(event.starts_at)) >= sourceStartsAt
+      ));
+
+      targetEvents = scopedEvents.map((event, index) => {
+        const nextStartMs = Date.parse(String(event.starts_at)) + shiftMs;
+        return {
+          id: String(event.id),
+          before: event,
+          occurrence: {
+            startsAt: new Date(nextStartMs).toISOString(),
+            endsAt: new Date(nextStartMs + durationMs).toISOString(),
+            instanceIndex: typeof event.recurrence_instance_index === "number" ? event.recurrence_instance_index : index
+          }
+        };
+      });
+    }
+
+    if (!input.eventId && baseOccurrences.length > 1) {
+      const recurrence = boundedRecurrence(input.recurrence);
+      const recurrenceRule = `FREQ=WEEKLY;INTERVAL=${recurrence?.intervalWeeks ?? 1};COUNT=${baseOccurrences.length}`;
+      const { data: series, error: seriesError } = await withSupabaseTimeout(db
+        .from("event_series")
+        .insert({
+          organization_id: input.organizationId,
+          team_id: input.teamId,
+          season_id: input.seasonId,
+          title,
+          event_type: input.eventType,
+          recurrence_rule: recurrenceRule,
+          starts_at: input.startsAt,
+          ends_at: input.endsAt,
+          field_location_id: resolvedFieldLocationId || null,
+          location_name: resolvedLocationName,
+          location_address: resolvedLocationAddress,
+          opponent: input.opponent?.trim() || null,
+          created_by_user_id: input.actorUserId,
+          metadata_json: {
+            recurrenceCount: baseOccurrences.length,
+            recurrenceEndsAt: baseOccurrences.at(-1)?.endsAt
+          }
+        })
+        .select("id")
+        .single(), 7000) as { data: { id: string } | null; error: { message?: string } | null };
+
+      if (seriesError || !series) return { ok: false, message: "Recurring event series could not be saved." };
+      eventSeriesId = series.id;
+    } else if (eventSeriesId && input.recurrenceEditScope && input.recurrenceEditScope !== "single") {
+      await withSupabaseTimeout(db
+        .from("event_series")
+        .update({
+          title,
+          event_type: input.eventType,
+          field_location_id: resolvedFieldLocationId || null,
+          location_name: resolvedLocationName,
+          location_address: resolvedLocationAddress,
+          opponent: input.opponent?.trim() || null
+        })
+        .eq("id", eventSeriesId), 7000);
+    }
+
     const { data: existingEvents } = await withSupabaseTimeout(db
       .from("events")
-      .select("id,title,team_id,location_name,starts_at,ends_at,status")
-      .eq("organization_id", input.organizationId)
-      .eq("status", "scheduled"), 7000) as {
-        data: Array<{ id: string; title: string; team_id: string; location_name: string | null; starts_at: string; ends_at: string; status: EventStatus }> | null;
+      .select("id,title,team_id,field_location_id,location_name,location_address,starts_at,ends_at,status")
+      .eq("organization_id", input.organizationId), 7000) as {
+        data: ScheduleConflictCandidate[] | null;
       };
 
-    const conflicts = (existingEvents ?? [])
-      .filter((event) => event.id !== input.eventId)
-      .filter((event) => overlaps(input.startsAt, input.endsAt, event.starts_at, event.ends_at))
-      .filter((event) => event.team_id === input.teamId || (event.location_name ?? "").toLowerCase() === locationName.toLowerCase());
+    const excludedEventIds = targetEvents.map((event) => event.id).filter(Boolean) as string[];
+    const conflicts = findScheduleConflicts({
+      occurrences: targetEvents.map((event) => event.occurrence),
+      existingEvents: existingEvents ?? [],
+      teamId: input.teamId,
+      fieldLocationId: resolvedFieldLocationId || null,
+      locationName: resolvedLocationName,
+      locationAddress: resolvedLocationAddress,
+      excludedEventIds
+    });
 
     if (conflicts.length) {
       return {
@@ -233,56 +510,81 @@ export async function saveScheduleEvent(input: SaveScheduleEventInput) {
       };
     }
 
-    const beforeResult = input.eventId
-      ? await withSupabaseTimeout(db.from("events").select("*").eq("id", input.eventId).maybeSingle(), 7000) as { data: Record<string, unknown> | null }
-      : { data: null };
     const changeType = !input.eventId
       ? "created"
       : input.status === "cancelled"
         ? "cancelled"
         : input.status === "completed"
           ? "completed"
-          : beforeResult.data?.location_name !== locationName
-            ? "location_changed"
-            : "time_changed";
+          : beforeResult.data?.status === "cancelled" && input.status === "scheduled"
+            ? "restored"
+            : beforeResult.data?.location_name !== resolvedLocationName || beforeResult.data?.field_location_id !== resolvedFieldLocationId
+              ? "location_changed"
+              : "time_changed";
 
-    const { data: event, error } = await withSupabaseTimeout(db
+    const eventPayloads = targetEvents.map((target) => ({
+      ...(target.id ? { id: target.id } : {}),
+      organization_id: input.organizationId,
+      season_id: input.seasonId,
+      team_id: input.teamId,
+      title,
+      event_type: input.eventType,
+      starts_at: target.occurrence.startsAt,
+      ends_at: target.occurrence.endsAt,
+      location_name: resolvedLocationName,
+      location_address: resolvedLocationAddress,
+      field_location_id: resolvedFieldLocationId || null,
+      event_series_id: eventSeriesId || null,
+      recurrence_instance_index: eventSeriesId ? target.occurrence.instanceIndex : null,
+      opponent: input.opponent?.trim() || null,
+      status: input.status,
+      cancelled_reason: input.status === "cancelled" ? input.reason?.trim() || "Cancelled by staff." : null,
+      schedule_version: (typeof target.before?.schedule_version === "number" ? target.before.schedule_version : 0) + 1
+    }));
+
+    const { data: savedEvents, error } = await withSupabaseTimeout(db
       .from("events")
-      .upsert({
-        ...(input.eventId ? { id: input.eventId } : {}),
-        organization_id: input.organizationId,
-        season_id: input.seasonId,
-        team_id: input.teamId,
-        title,
-        event_type: input.eventType,
-        starts_at: input.startsAt,
-        ends_at: input.endsAt,
-        location_name: locationName,
-        location_address: locationAddress,
-        field_location_id: input.fieldLocationId ?? null,
-        opponent: input.opponent?.trim() || null,
-        status: input.status,
-        cancelled_reason: input.status === "cancelled" ? input.reason?.trim() || "Cancelled by staff." : null,
-        schedule_version: (typeof beforeResult.data?.schedule_version === "number" ? beforeResult.data.schedule_version : 0) + 1
-      })
+      .upsert(eventPayloads)
       .select("id,organization_id,team_id,season_id,title,event_type,starts_at,ends_at,location_name,location_address,opponent,status,created_at,updated_at")
-      .single(), 7000) as {
-        data: Parameters<typeof mapEvent>[0] | null;
+      .order("starts_at", { ascending: true }), 7000) as {
+        data: Array<Parameters<typeof mapEvent>[0]> | null;
         error: { message?: string } | null;
       };
 
-    if (error || !event) return { ok: false, message: "Schedule event could not be saved." };
+    if (error || !savedEvents?.length) return { ok: false, message: "Schedule event could not be saved." };
 
-    await withSupabaseTimeout(db.from("event_change_logs").insert({
+    const changeLogs = savedEvents.map((event, index) => ({
       event_id: event.id,
       organization_id: input.organizationId,
       team_id: input.teamId,
       actor_user_id: input.actorUserId,
       change_type: changeType,
-      before_json: beforeResult.data,
+      before_json: targetEvents[index]?.before ?? null,
       after_json: event,
       reason: input.reason?.trim() || null
-    }), 7000);
+    }));
+    await withSupabaseTimeout(db.from("event_change_logs").insert(changeLogs), 7000);
+
+    const savedEventIds = savedEvents.map((event) => event.id);
+    if (savedEventIds.length) {
+      await withSupabaseTimeout(db
+        .from("field_reservations")
+        .update({ status: "released" })
+        .in("event_id", savedEventIds)
+        .eq("status", "reserved"), 7000);
+    }
+
+    if (resolvedFieldLocationId && input.status === "scheduled") {
+      await withSupabaseTimeout(db.from("field_reservations").insert(savedEvents.map((event) => ({
+        organization_id: input.organizationId,
+        field_location_id: resolvedFieldLocationId,
+        event_id: event.id,
+        starts_at: event.starts_at,
+        ends_at: event.ends_at,
+        status: "reserved",
+        created_by_user_id: input.actorUserId
+      }))), 7000);
+    }
 
     const { data: guardians } = await withSupabaseTimeout(db
       .from("player_guardians")
@@ -292,17 +594,17 @@ export async function saveScheduleEvent(input: SaveScheduleEventInput) {
       .not("parent_user_id", "is", null), 7000) as { data: Array<{ parent_user_id: string | null }> | null };
     const recipientIds = Array.from(new Set((guardians ?? []).map((guardian) => guardian.parent_user_id).filter(Boolean))) as string[];
     const notificationType = input.status === "cancelled" ? "event_cancelled" : input.eventId ? "schedule_changed" : "new_event";
-    const notificationRows = recipientIds.map((recipientUserId) => ({
+    const notificationRows = savedEvents.flatMap((event) => recipientIds.map((recipientUserId) => ({
       organization_id: input.organizationId,
       recipient_user_id: recipientUserId,
       team_id: input.teamId,
       event_id: event.id,
       notification_type: notificationType,
       title: input.status === "cancelled" ? `${title} cancelled` : `${title} schedule updated`,
-      body: `${title} is ${input.status} at ${locationName} on ${new Date(input.startsAt).toLocaleString("en-US")}.`,
+      body: `${title} is ${input.status} at ${resolvedLocationName} on ${new Date(event.starts_at).toLocaleString("en-US")}.`,
       channel: "email",
       status: "pending"
-    }));
+    })));
 
     if (notificationRows.length) {
       await withSupabaseTimeout(db.from("notifications").insert(notificationRows).select("id"), 7000);
@@ -310,8 +612,11 @@ export async function saveScheduleEvent(input: SaveScheduleEventInput) {
 
     return {
       ok: true,
-      message: `Schedule event saved with ${notificationRows.length} pending notification draft(s). No provider send occurred.`,
-      event: mapEvent(event),
+      message: `${savedEvents.length} schedule event(s) saved with ${notificationRows.length} pending notification draft(s). No provider send occurred.`,
+      event: mapEvent(savedEvents[0]),
+      events: savedEvents.map(mapEvent),
+      eventSeriesId: eventSeriesId || undefined,
+      recurrenceCount: savedEvents.length,
       notificationCount: notificationRows.length
     };
   } catch {

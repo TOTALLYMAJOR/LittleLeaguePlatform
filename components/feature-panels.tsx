@@ -3774,6 +3774,8 @@ export function ScheduleAlertsClient({ scheduleData }: { scheduleData?: Schedule
   const [locationAddress, setLocationAddress] = useState(event?.locationAddress ?? "");
   const [fieldLocationId, setFieldLocationId] = useState("");
   const [status, setStatus] = useState<EventStatus>(event?.status ?? "scheduled");
+  const [recurrenceCount, setRecurrenceCount] = useState(1);
+  const [recurrenceIntervalWeeks, setRecurrenceIntervalWeeks] = useState(1);
   const [message, setMessage] = useState("");
   const [isSchedulePending, startScheduleTransition] = useTransition();
   const eventTeam = event ? scheduleState.teams.find((team) => team.id === event.teamId) : undefined;
@@ -3827,9 +3829,11 @@ export function ScheduleAlertsClient({ scheduleData }: { scheduleData?: Schedule
     setLocationAddress(next?.locationAddress ?? "");
     setFieldLocationId("");
     setStatus(next?.status ?? "scheduled");
+    setRecurrenceCount(1);
+    setRecurrenceIntervalWeeks(1);
   }
 
-  function saveScheduleChange() {
+  function saveScheduleChange(mode: "update" | "create" = "update") {
     if (!event) {
       setMessage("Select a schedule event before saving.");
       return;
@@ -3837,7 +3841,7 @@ export function ScheduleAlertsClient({ scheduleData }: { scheduleData?: Schedule
 
     startScheduleTransition(async () => {
       const response = await authenticatedJsonFetch("/api/schedule", {
-        eventId,
+        eventId: mode === "update" ? eventId : undefined,
         organizationId: event.organizationId,
         seasonId: event.seasonId,
         teamId: event.teamId,
@@ -3850,15 +3854,23 @@ export function ScheduleAlertsClient({ scheduleData }: { scheduleData?: Schedule
         fieldLocationId: fieldLocationId || undefined,
         opponent: event.opponent,
         status,
-        reason: status === "cancelled" ? "Schedule change entered from the operations screen." : undefined
+        reason: status === "cancelled" ? "Schedule change entered from the operations screen." : undefined,
+        recurrence: mode === "create" && recurrenceCount > 1 ? {
+          frequency: "weekly",
+          count: recurrenceCount,
+          intervalWeeks: recurrenceIntervalWeeks
+        } : undefined,
+        recurrenceEditScope: mode === "update" ? "single" : undefined
       });
-      const result = await response.json().catch(() => null) as { ok?: boolean; message?: string; event?: LeagueEvent } | null;
+      const result = await response.json().catch(() => null) as { ok?: boolean; message?: string; event?: LeagueEvent; events?: LeagueEvent[] } | null;
       setMessage(result?.message ?? (response.ok ? "Schedule event saved." : "Schedule event could not be saved."));
 
-      if (result?.ok && result.event) {
+      if (result?.ok && (result.events?.length || result.event)) {
+        const savedEvents = result.events?.length ? result.events : [result.event!];
         setRemoteEvents((current) => {
-          const others = current.filter((item) => item.id !== result.event!.id);
-          return [...others, result.event!].sort((left, right) => Date.parse(left.startsAt) - Date.parse(right.startsAt));
+          const savedIds = new Set(savedEvents.map((item) => item.id));
+          const others = current.filter((item) => !savedIds.has(item.id));
+          return [...others, ...savedEvents].sort((left, right) => Date.parse(left.startsAt) - Date.parse(right.startsAt));
         });
         return;
       }
@@ -3958,11 +3970,28 @@ export function ScheduleAlertsClient({ scheduleData }: { scheduleData?: Schedule
               <option value="completed">Completed</option>
             </select>
           </label>
+          <div className="grid two">
+            <label>
+              Repeat count
+              <input type="number" min={1} max={26} value={recurrenceCount} onChange={(input) => setRecurrenceCount(Number(input.target.value))} />
+            </label>
+            <label>
+              Interval weeks
+              <input type="number" min={1} max={8} value={recurrenceIntervalWeeks} onChange={(input) => setRecurrenceIntervalWeeks(Number(input.target.value))} />
+            </label>
+          </div>
           <button
             disabled={isSchedulePending || !title.trim() || !locationName.trim() || !locationAddress.trim()}
-            onClick={saveScheduleChange}
+            onClick={() => saveScheduleChange("update")}
           >
             Queue schedule alert records
+          </button>
+          <button
+            className="secondary"
+            disabled={isSchedulePending || !title.trim() || !locationName.trim() || !locationAddress.trim()}
+            onClick={() => saveScheduleChange("create")}
+          >
+            Save as new event series
           </button>
         </article>
 
@@ -3994,8 +4023,8 @@ export function ScheduleAlertsClient({ scheduleData }: { scheduleData?: Schedule
             </div>
             <span className="badge ok">Domain-backed</span>
           </div>
-          <p>The schedule domain now exposes create and update paths with actor checks, audit records, and provider-safe notification drafts.</p>
-          <p className="muted">This screen exercises update/cancel. New event creation uses the same conflict and permission service before adding an event.</p>
+          <p>The schedule service saves single events and weekly series with actor checks, venue records, conflict detection, audit records, and provider-safe notification drafts.</p>
+          <p className="muted">Use the primary action for one event update/cancel or the secondary action to create a new recurring series from the selected details.</p>
         </article>
 
         <article className="card stack">
@@ -4034,7 +4063,8 @@ export function ScheduleAlertsClient({ scheduleData }: { scheduleData?: Schedule
           {persistedVenueRecords.map((venue) => (
             <p key={venue.id}>
               <strong>{venue.name}</strong><br />
-              <span className="muted">{venue.address} · {venue.status} · {venue.mapUrl ? "fallback link ready" : "fallback link pending"}</span>
+              <span className="muted">{venue.address} · {venue.fieldLabel ?? "field label pending"} · {venue.status} · {venue.mapUrl ? "fallback link ready" : "fallback link pending"}</span>
+              {venue.notes ? <><br /><span className="muted">{venue.notes}</span></> : null}
               {venue.mapUrl ? <><br /><a href={venue.mapUrl}>Open map fallback</a></> : null}
             </p>
           ))}

@@ -267,6 +267,23 @@ describe("live action API routes", () => {
         createdAt: "2026-06-25T12:00:00.000Z",
         updatedAt: "2026-06-25T12:00:00.000Z"
       },
+      events: [{
+        id: "event-1",
+        organizationId: "org-1",
+        teamId: "team-1",
+        seasonId: "season-1",
+        title: "Practice",
+        eventType: "practice",
+        startsAt: "2026-06-25T22:30:00.000Z",
+        endsAt: "2026-06-25T23:30:00.000Z",
+        locationName: "Field 1",
+        locationAddress: "100 Park Ave",
+        status: "scheduled",
+        createdAt: "2026-06-25T12:00:00.000Z",
+        updatedAt: "2026-06-25T12:00:00.000Z"
+      }],
+      eventSeriesId: undefined,
+      recurrenceCount: 1,
       notificationCount: 1
     });
 
@@ -282,6 +299,11 @@ describe("live action API routes", () => {
       endsAt: "2026-06-25T23:30:00.000Z",
       locationName: "Field 1",
       locationAddress: "100 Park Ave",
+      venue: {
+        name: "Field 1",
+        address: "100 Park Ave",
+        fieldLabel: "North diamond"
+      },
       status: "scheduled"
     }));
 
@@ -299,9 +321,24 @@ describe("live action API routes", () => {
       locationName: "Field 1",
       locationAddress: "100 Park Ave",
       fieldLocationId: undefined,
+      venue: {
+        id: undefined,
+        name: "Field 1",
+        address: "100 Park Ave",
+        latitude: undefined,
+        longitude: undefined,
+        googlePlaceId: undefined,
+        mapUrl: undefined,
+        mapEmbedUrl: undefined,
+        fieldLabel: "North diamond",
+        notes: undefined,
+        status: "active"
+      },
       opponent: undefined,
       status: "scheduled",
-      reason: undefined
+      reason: undefined,
+      recurrence: undefined,
+      recurrenceEditScope: undefined
     });
   });
 
