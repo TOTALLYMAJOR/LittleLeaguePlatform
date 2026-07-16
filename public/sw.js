@@ -19,3 +19,30 @@ self.addEventListener("fetch", (event) => {
     caches.match(event.request).then((cached) => cached ?? fetch(event.request).catch(() => caches.match("/offline")))
   );
 });
+
+self.addEventListener("push", (event) => {
+  let data = {};
+  try {
+    data = event.data ? event.data.json() : {};
+  } catch {
+    data = { body: event.data ? event.data.text() : "New team update." };
+  }
+
+  const title = data.title || "LeaguePilot";
+  event.waitUntil(self.registration.showNotification(title, {
+    body: data.body || "New team update.",
+    icon: "/favicons/favicon-option-1-shield.png",
+    badge: "/favicon.ico",
+    data: {
+      notificationId: data.notificationId,
+      teamId: data.teamId,
+      url: data.url || "/team-portal"
+    }
+  }));
+});
+
+self.addEventListener("notificationclick", (event) => {
+  event.notification.close();
+  const url = event.notification.data?.url || "/team-portal";
+  event.waitUntil(clients.openWindow(url));
+});

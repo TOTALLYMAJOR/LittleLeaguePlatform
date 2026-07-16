@@ -25,7 +25,8 @@
     "motion": "^12.42.2",
     "next": "^16.2.9",
     "react": "^19.2.7",
-    "react-dom": "^19.2.7"
+    "react-dom": "^19.2.7",
+    "web-push": "^3.6.7"
   },
   "overrides": {
     "esbuild": "0.27.2",
@@ -36,6 +37,7 @@
     "@types/node": "^24.10.1",
     "@types/react": "^19.2.7",
     "@types/react-dom": "^19.2.3",
+    "@types/web-push": "^3.6.4",
     "eslint": "^9.39.2",
     "eslint-config-next": "^16.2.9",
     "typescript": "^5.9.3",

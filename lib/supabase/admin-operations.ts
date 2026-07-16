@@ -76,7 +76,7 @@ function fallbackOperationsData(): AdminOperationsData {
       { provider: "Supabase Auth", channel: "auth", status: "configured", boundary: "Verified session required before private mutations." },
       { provider: "Tomorrow.io", channel: "weather", status: providerStatus("TOMORROW_API_KEY"), boundary: "Creates weather drafts only; parent delivery stays approval-gated." },
       { provider: "Google Maps", channel: "maps", status: providerStatus("NEXT_PUBLIC_GOOGLE_MAPS_API_KEY"), boundary: "Stores map URLs/embed URLs; no route tracking." },
-      { provider: "Email/SMS/Web Push", channel: "notifications", status: notificationProviderStatus(), boundary: "Provider sends remain disconnected; approval creates queued or suppressed delivery-attempt records after preference and readiness checks." }
+      { provider: "Email/SMS/Web Push", channel: "notifications", status: notificationProviderStatus(), boundary: "Provider sends require approval, preferences, worker secret, and configured SendGrid/Twilio/Web Push credentials before execution." }
     ],
     approvalQueues: [
       { queue: "Registration review", count: pendingRegistrations, actionHref: "/admin/registrations", boundary: "Approval creates guardian/team access only after admin review." },
@@ -136,7 +136,7 @@ export async function listAdminOperationsData(): Promise<AdminOperationsData> {
         { provider: "Supabase Auth", channel: "auth", status: "configured", boundary: "Verified session required before private mutations." },
         { provider: "Tomorrow.io", channel: "weather", status: providerStatus("TOMORROW_API_KEY"), boundary: "Creates weather drafts only; parent delivery stays approval-gated." },
         { provider: "Google Maps", channel: "maps", status: providerStatus("NEXT_PUBLIC_GOOGLE_MAPS_API_KEY"), boundary: "Stores map URLs/embed URLs; no route tracking." },
-        { provider: "Email/SMS/Web Push", channel: "notifications", status: notificationProviderStatus(), boundary: "Provider sends remain disconnected; approval creates queued or suppressed delivery-attempt records after preference and readiness checks." }
+        { provider: "Email/SMS/Web Push", channel: "notifications", status: notificationProviderStatus(), boundary: "Provider sends require approval, preferences, worker secret, and configured SendGrid/Twilio/Web Push credentials before execution." }
       ],
       approvalQueues: [
         { queue: "Registration review", count: registrationRequests?.length ?? 0, actionHref: "/admin/registrations", boundary: "Approval creates guardian/team access only after admin review." },

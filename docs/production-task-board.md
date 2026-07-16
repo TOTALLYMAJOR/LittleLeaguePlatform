@@ -155,17 +155,17 @@ Task-specific checks are required only when the surface is touched:
 ### LP-014 - Decide Provider-Send Launch Scope
 
 - Priority: P1 product/safety decision.
-- Status: Decided for launch 2026-07-02.
-- Current state: records, review, attempts, preferences, retry plans exist; live email/SMS/Web Push sends are disconnected. Launch scope is draft/internal records only.
+- Status: Superseded by provider-send implementation slices beginning 2026-07-16.
+- Current state: records, review, attempts, preferences, retry plans, worker metadata, and env-gated SendGrid/Twilio/Web Push adapters exist. Launching real sends still requires configured secrets, worker secret, webhook reconciliation, and hosted provider proof.
 - Seams: `/api/provider-delivery/review`, `lib/supabase/provider-delivery.ts`, `lib/domain/notifications.ts`, launch copy/runbook.
-- Done evidence: launch explicitly says "draft/internal records only"; live provider sends require a separate implementation slice.
+- Done evidence: provider-send scope is now explicit: only approved queued attempts may be executed by the secret-gated worker, and missing credentials/preferences suppress without sending.
 - SaaS constants focus: provider contracts, opt-in, billing/cost, failure semantics, idempotency, audit logs.
 - Validation: docs reconciliation if deferred; provider tests if implemented.
 
 ### LP-015 - Implement Real Provider Sends If Approved
 
 - Priority: P2 conditional.
-- Current state: intentionally disconnected.
+- Current state: worker foundation and env-gated SendGrid, Twilio Messaging Service, and Web Push adapters are implemented locally; provider webhooks and hosted credential proof remain pending.
 - Seams: provider delivery service, Web Push VAPID, email/SMS provider adapters, provider webhooks, delivery attempts.
 - Done when: approved attempts create real sandbox sends, rejected/suppressed attempts do not send, webhooks update delivery state, and retries are idempotent.
 - SaaS constants focus: provider contract, consent, suppression, retry, webhook replay, noisy-neighbor, billing/cost.

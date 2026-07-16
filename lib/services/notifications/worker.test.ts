@@ -81,6 +81,27 @@ describe("notification send worker foundation", () => {
     expect(outcome.deadLetteredAt).toBeNull();
   });
 
+  it("records provider suppression without retrying or dead-lettering", () => {
+    const outcome = deliveryOutcomeFromSendResult({
+      payload: payload(),
+      result: {
+        ok: false,
+        suppressed: true,
+        errorCode: "provider_not_configured",
+        errorMessage: "SendGrid credentials are missing."
+      },
+      now
+    });
+
+    expect(outcome).toMatchObject({
+      status: "suppressed",
+      retryCount: 0,
+      nextAttemptAt: null,
+      deadLetteredAt: null,
+      errorCode: "provider_not_configured"
+    });
+  });
+
   it("dead-letters exhausted attempts without adding a new status", () => {
     const outcome = deliveryOutcomeFromSendResult({
       payload: payload({ retryCount: 2, maxRetries: 2 }),
@@ -141,6 +162,7 @@ describe("notification send worker foundation", () => {
       claimed: 1,
       sent: 1,
       failed: 0,
+      suppressed: 0,
       retrying: 0,
       deadLettered: 0
     });

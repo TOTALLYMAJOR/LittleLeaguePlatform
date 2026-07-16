@@ -2778,7 +2778,7 @@ export function AdminDashboardClient({ registrationRequests, sponsorData, mediaD
           </label>
           <div className="communication-preview">
             <p><strong>{communicationPreview.message}</strong></p>
-            <p className="muted">SMS length: {communicationBody.length} character(s), {communicationPreview.smsSegments} segment(s). Email/SMS records stay pending until a provider adapter is connected.</p>
+            <p className="muted">SMS length: {communicationBody.length} character(s), {communicationPreview.smsSegments} segment(s). Email/SMS records stay pending until provider review and worker execution.</p>
             {communicationPreview.recipients.slice(0, 4).map((recipient) => (
               <span className="badge" key={recipient.id}>{recipient.name}</span>
             ))}
@@ -2933,7 +2933,7 @@ export function AdminDashboardClient({ registrationRequests, sponsorData, mediaD
           {state.notifications.slice(0, 4).map((notification) => (
             <p key={notification.id}><strong>{notification.title}</strong><br /><span className="muted">{notification.channel} - {notification.status}</span></p>
           ))}
-          <p className="muted">No provider send occurs without a production adapter and approval workflow.</p>
+          <p className="muted">No provider send occurs without approval, recipient checks, worker authorization, and configured provider credentials.</p>
         </article>
         <article className="card stack">
           <h2>Registration queue</h2>
@@ -3885,7 +3885,7 @@ export function ScheduleAlertsClient({ scheduleData }: { scheduleData?: Schedule
       <section className="hero">
         <span className="eyebrow">Schedule change alerts</span>
         <h1>Queue alert records when schedule details change.</h1>
-        <p className="lead">Admin and assigned coaches can update time, location, or cancellation status. The scaffold creates notification records only; no provider send occurs.</p>
+        <p className="lead">Admin and assigned coaches can update time, location, or cancellation status. Changes create reviewable notification records; provider send requires approval and worker execution.</p>
       </section>
 
       <p className={`notice ${scheduleData?.isSupabaseBacked ? "ok" : "warning"}`}>

@@ -11,15 +11,19 @@ describe("provider delivery hardening", () => {
   it("keeps Web Push suppressed until VAPID keys are complete", () => {
     expect(getProviderDeliveryReadiness("web_push", {}).configured).toBe(false);
     expect(getProviderDeliveryReadiness("web_push", {
-      NEXT_PUBLIC_VAPID_PUBLIC_KEY: "public",
-      VAPID_PRIVATE_KEY: "private",
-      VAPID_SUBJECT: "mailto:ops@example.com"
+      WEB_PUSH_VAPID_PUBLIC_KEY: "public",
+      WEB_PUSH_VAPID_PRIVATE_KEY: "private",
+      WEB_PUSH_VAPID_SUBJECT: "mailto:ops@example.com"
     }).configured).toBe(true);
   });
 
   it("keeps email and SMS suppressed until provider credentials are complete", () => {
     expect(getProviderDeliveryReadiness("email", {}).configured).toBe(false);
-    expect(getProviderDeliveryReadiness("email", { RESEND_API_KEY: "resend-key" }).configured).toBe(true);
+    expect(getProviderDeliveryReadiness("email", { SENDGRID_API_KEY: "sendgrid-key" }).configured).toBe(false);
+    expect(getProviderDeliveryReadiness("email", {
+      SENDGRID_API_KEY: "sendgrid-key",
+      SENDGRID_FROM_EMAIL: "league@example.com"
+    }).configured).toBe(true);
     expect(getProviderDeliveryReadiness("sms", { TWILIO_ACCOUNT_SID: "sid", TWILIO_AUTH_TOKEN: "token" }).configured).toBe(false);
     expect(getProviderDeliveryReadiness("sms", {
       TWILIO_ACCOUNT_SID: "sid",

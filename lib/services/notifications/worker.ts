@@ -60,6 +60,25 @@ export function deliveryOutcomeFromSendResult(input: {
     };
   }
 
+  if (input.result.suppressed) {
+    return {
+      attemptId: input.payload.attemptId,
+      notificationId: input.payload.notificationId,
+      provider: input.payload.provider,
+      status: "suppressed",
+      providerMessageId: input.result.providerMessageId ?? null,
+      providerStatus: input.result.providerStatus ?? "suppressed",
+      providerResponse: input.result.providerResponse ?? null,
+      errorCode: input.result.errorCode ?? "provider_send_suppressed",
+      errorMessage: input.result.errorMessage ?? "Notification provider send suppressed.",
+      retryCount: input.payload.retryCount,
+      nextAttemptAt: null,
+      deadLetteredAt: null,
+      attemptedAt,
+      idempotencyKey: input.payload.idempotencyKey
+    };
+  }
+
   const nextRetryCount = input.payload.retryCount + 1;
   const retryable = input.result.retryable === true && nextRetryCount <= input.payload.maxRetries;
 
@@ -134,6 +153,7 @@ export async function runNotificationSendWorker(input: {
     claimed: attempts.length,
     sent: outcomes.filter((outcome) => outcome.status === "sent").length,
     failed: outcomes.filter((outcome) => outcome.status === "failed").length,
+    suppressed: outcomes.filter((outcome) => outcome.status === "suppressed").length,
     retrying: outcomes.filter((outcome) => outcome.status === "failed" && outcome.nextAttemptAt).length,
     deadLettered: outcomes.filter((outcome) => outcome.deadLetteredAt).length,
     outcomes

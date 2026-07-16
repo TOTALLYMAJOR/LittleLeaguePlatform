@@ -48,10 +48,9 @@ The app is not ready for real-family production launch yet. The core scaffold, r
 
 ## P1 Production Hardening
 
-5. Provider sends are deferred from launch as draft/internal records only unless real email/SMS/Web Push delivery becomes explicit production scope.
-   - Current truth: notification records, approval review, and delivery-attempt logs exist; external email/SMS/Web Push sends are intentionally disconnected.
-   - Action if launching without sends: update launch copy/runbook to say notification drafts are internal only.
-   - Action if launching with sends: implement send worker/adapters, recipient preference enforcement, unsubscribe UI, retry backoff, provider webhooks, and provider-send tests.
+5. Provider sends are now explicit production-hardening scope rather than launch-deferred draft records only.
+   - Current truth: notification records, approval review, delivery-attempt logs, retry/dead-letter metadata, and env-gated SendGrid/Twilio/Web Push worker adapters exist.
+   - Remaining action: add provider webhooks, hosted credential proof, queue UX upgrades, and production observability before claiming end-to-end delivery readiness.
 
 6. Finish notification provider execution if real alerts are required.
    - Current seams: `/api/provider-delivery/review`, `lib/supabase/provider-delivery.ts`, `lib/domain/notifications.ts`.

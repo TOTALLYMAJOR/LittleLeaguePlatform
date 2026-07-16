@@ -31,6 +31,15 @@ export interface NotificationDeliveryPayload {
   retryCount: number;
   maxRetries: number;
   createdAt: string;
+  deliveryPolicy?: NotificationDeliveryPolicy;
+}
+
+export interface NotificationDeliveryPolicy {
+  preferencesAllowed: boolean;
+  quietHoursStart?: string | null;
+  quietHoursEnd?: string | null;
+  timezone?: string | null;
+  urgent?: boolean;
 }
 
 export interface NotificationDeliverySendContext {
@@ -40,6 +49,7 @@ export interface NotificationDeliverySendContext {
 
 export interface NotificationDeliverySendResult {
   ok: boolean;
+  suppressed?: boolean;
   providerMessageId?: string | null;
   providerStatus?: string | null;
   providerResponse?: Record<string, unknown> | null;
@@ -74,6 +84,7 @@ export interface NotificationSendWorkerResult {
   claimed: number;
   sent: number;
   failed: number;
+  suppressed: number;
   retrying: number;
   deadLettered: number;
   outcomes: NotificationDeliveryOutcome[];

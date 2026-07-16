@@ -65,4 +65,13 @@ describe("API mutation auth boundaries", () => {
     expect(file).not.toContain("requireAuthenticatedRouteUser");
     expect(file).toContain("recordMobileUsageEvent");
   });
+
+  it("keeps the internal notification worker secret-gated", () => {
+    const file = source("app/api/internal/notification-send-worker/route.ts");
+
+    expect(file).not.toContain("requireAuthenticatedRouteUser");
+    expect(file).toContain("NOTIFICATION_WORKER_SECRET");
+    expect(file).toContain("status: 401");
+    expect(file).toContain("runNotificationProviderSendWorker");
+  });
 });

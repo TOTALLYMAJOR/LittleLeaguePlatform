@@ -1,5 +1,6 @@
 import { createSupabaseAdminClient } from "./admin";
 import { withSupabaseTimeout } from "./timeout";
+import { isUrgentNotificationType } from "@/lib/services/notifications/rules";
 import { buildNotificationIdempotencyKey } from "@/lib/services/notifications/worker";
 import type {
   NotificationDeliveryOutcome,
@@ -34,9 +35,9 @@ export function getProviderDeliveryReadiness(
 ) {
   if (provider === "web_push") {
     const configured = Boolean(
-      (env.NEXT_PUBLIC_VAPID_PUBLIC_KEY || env.VAPID_PUBLIC_KEY) &&
-      env.VAPID_PRIVATE_KEY &&
-      (env.VAPID_SUBJECT || env.WEB_PUSH_SUBJECT)
+      (env.WEB_PUSH_VAPID_PUBLIC_KEY || env.NEXT_PUBLIC_VAPID_PUBLIC_KEY || env.VAPID_PUBLIC_KEY) &&
+      (env.WEB_PUSH_VAPID_PRIVATE_KEY || env.VAPID_PRIVATE_KEY) &&
+      (env.WEB_PUSH_VAPID_SUBJECT || env.VAPID_SUBJECT || env.WEB_PUSH_SUBJECT)
     );
     return {
       configured,
@@ -47,16 +48,16 @@ export function getProviderDeliveryReadiness(
   }
 
   if (provider === "email") {
-    const configured = Boolean(env.RESEND_API_KEY || env.SENDGRID_API_KEY || env.EMAIL_PROVIDER_API_KEY);
+    const configured = Boolean(env.SENDGRID_API_KEY && (env.SENDGRID_FROM_EMAIL || env.EMAIL_PROVIDER_FROM_EMAIL));
     return {
       configured,
       reason: configured
-        ? "Email provider credentials are configured; delivery still requires approval and preference checks."
-        : "Email provider credentials are missing, so approved attempts stay suppressed."
+        ? "SendGrid credentials are configured; delivery still requires approval and preference checks."
+        : "SendGrid API key and sender email are missing, so approved attempts stay suppressed."
     };
   }
 
-  const configured = Boolean(env.TWILIO_ACCOUNT_SID && env.TWILIO_AUTH_TOKEN && (env.TWILIO_MESSAGING_SERVICE_SID || env.TWILIO_FROM_NUMBER));
+  const configured = Boolean(env.TWILIO_ACCOUNT_SID && env.TWILIO_AUTH_TOKEN && env.TWILIO_MESSAGING_SERVICE_SID);
   return {
     configured,
     reason: configured
@@ -93,7 +94,7 @@ function providerSuppressionMessage(code: string | null, providerReason: string)
   return null;
 }
 
-async function recipientAllowsProviderDelivery(db: UnsafeSupabase, notification: {
+async function loadDeliveryPolicyForNotification(db: UnsafeSupabase, notification: {
   recipient_user_id: string;
   organization_id: string;
   team_id: string;
@@ -102,11 +103,19 @@ async function recipientAllowsProviderDelivery(db: UnsafeSupabase, notification:
 }) {
   const { data } = await withSupabaseTimeout(db
     .from("notification_preferences")
-    .select("id,organization_id,team_id,enabled")
+    .select("id,organization_id,team_id,enabled,quiet_hours_start,quiet_hours_end,timezone")
     .eq("user_id", notification.recipient_user_id)
     .eq("channel", notification.channel)
     .eq("notification_type", notification.notification_type), 7000) as {
-      data: Array<{ id: string; organization_id: string | null; team_id: string | null; enabled: boolean }> | null;
+      data: Array<{
+        id: string;
+        organization_id: string | null;
+        team_id: string | null;
+        enabled: boolean;
+        quiet_hours_start: string | null;
+        quiet_hours_end: string | null;
+        timezone: string | null;
+      }> | null;
     };
 
   const matchingPreferences = (data ?? []).filter((preference) => (
@@ -115,9 +124,28 @@ async function recipientAllowsProviderDelivery(db: UnsafeSupabase, notification:
     (!preference.team_id && !preference.organization_id)
   ));
 
-  if (matchingPreferences.some((preference) => preference.enabled === false)) return false;
-  if (matchingPreferences.some((preference) => preference.enabled === true)) return true;
-  return notification.channel !== "sms";
+  const disabledPreference = matchingPreferences.find((preference) => preference.enabled === false);
+  const enabledPreference = matchingPreferences.find((preference) => preference.enabled === true);
+  const activePreference = disabledPreference ?? enabledPreference ?? matchingPreferences[0];
+
+  return {
+    preferencesAllowed: disabledPreference ? false : (enabledPreference ? true : notification.channel !== "sms"),
+    quietHoursStart: activePreference?.quiet_hours_start ?? null,
+    quietHoursEnd: activePreference?.quiet_hours_end ?? null,
+    timezone: activePreference?.timezone ?? "America/Chicago",
+    urgent: isUrgentNotificationType(notification.notification_type)
+  };
+}
+
+async function recipientAllowsProviderDelivery(db: UnsafeSupabase, notification: {
+  recipient_user_id: string;
+  organization_id: string;
+  team_id: string;
+  channel: ProviderDeliveryChannel;
+  notification_type: string;
+}) {
+  const policy = await loadDeliveryPolicyForNotification(db, notification);
+  return policy.preferencesAllowed;
 }
 
 export async function reviewNotificationDelivery(input: {
@@ -318,7 +346,14 @@ async function mapAttemptPayload(db: UnsafeSupabase, attempt: DeliveryAttemptRow
     idempotencyKey,
     retryCount: attempt.retry_count ?? 0,
     maxRetries: attempt.max_retries ?? DEFAULT_DELIVERY_MAX_RETRIES,
-    createdAt: notification.created_at
+    createdAt: notification.created_at,
+    deliveryPolicy: await loadDeliveryPolicyForNotification(db, {
+      recipient_user_id: notification.recipient_user_id,
+      organization_id: notification.organization_id,
+      team_id: notification.team_id,
+      channel: attempt.channel,
+      notification_type: notification.notification_type
+    })
   };
 }
 

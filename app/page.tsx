@@ -55,7 +55,7 @@ const platformLinks = [
   ["Admin health dashboard", "/admin/health", "See launch readiness problems before families report them."],
   ["Parent dashboard", "/parent", "Show each parent the schedule, coach updates, RSVP needs, and recent media that matter."],
   ["One-tap RSVP", "/parent/rsvp", "Let parents answer going, not going, or maybe for linked children only."],
-  ["Schedule change alerts", "/schedule", "Queue push, email, and urgent SMS notification records without real sends."],
+  ["Schedule change alerts", "/schedule", "Queue push, email, and urgent SMS notification records for approval-gated worker delivery."],
   ["Team Chat", "/team-chat", "Give assigned parents and coaches a safe, private space for coach notes and game-day questions."]
 ] as const;
 
@@ -199,7 +199,7 @@ export default function HomePage() {
       </section>
 
       <section className="notice landing-boundary">
-        <strong>Production boundary:</strong> this app uses Supabase-backed paths when signed-in rows and roles exist, typed seed fallbacks when live context is unavailable, and no external email, SMS, push, Stripe, AI-provider, or native-app delivery unless explicitly approved and configured.
+        <strong>Production boundary:</strong> this app uses Supabase-backed paths when signed-in rows and roles exist, typed seed fallbacks when live context is unavailable, and email, SMS, or push delivery only after approval, recipient checks, worker authorization, and provider configuration. Stripe, AI-provider, and native-app delivery remain disconnected unless explicitly approved and configured.
         The original static prototype remains available at <Link href="/prototype/index.html">/prototype/index.html</Link>.
       </section>
 

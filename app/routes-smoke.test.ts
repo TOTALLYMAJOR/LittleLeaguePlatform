@@ -40,7 +40,8 @@ describe("route smoke coverage", () => {
     expect(page).toContain("Parent Replay is the signature loop.");
     expect(page).toContain("Explore the product surfaces.");
     expect(page).toContain("Supabase-backed paths when signed-in rows and roles exist");
-    expect(page).toContain("no external email, SMS, push, Stripe, AI-provider, or native-app delivery");
+    expect(page).toContain("email, SMS, or push delivery only after approval");
+    expect(page).toContain("Stripe, AI-provider, and native-app delivery remain disconnected");
     expect(page).not.toContain("session-only local state");
     expect(page).not.toContain("does not persist production data");
   });
@@ -50,6 +51,8 @@ describe("route smoke coverage", () => {
 
     expect(serviceWorker).toContain("\"/offline\"");
     expect(serviceWorker).toContain("caches.match(\"/offline\")");
+    expect(serviceWorker).toContain("showNotification");
+    expect(serviceWorker).toContain("notificationclick");
   });
 
   it("keeps PWA install and standalone usage measurement wired", () => {
