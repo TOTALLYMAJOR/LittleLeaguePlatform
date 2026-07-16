@@ -519,6 +519,12 @@ interface AccountMembership {
   status: "active" | "invited" | "removed";
 }
 
+interface AccountOrganizationMembership {
+  organization_id: string;
+  role: "admin" | "coach";
+  status: "active" | "invited" | "removed";
+}
+
 interface MembershipAdminData {
   profiles: Array<{
     id: string;
@@ -539,6 +545,7 @@ interface MembershipAdminData {
 export function AccountClient() {
   const [profile, setProfile] = useState<AccountProfile | null>(null);
   const [memberships, setMemberships] = useState<AccountMembership[]>([]);
+  const [organizationMemberships, setOrganizationMemberships] = useState<AccountOrganizationMembership[]>([]);
   const [message, setMessage] = useState("Checking Supabase session...");
 
   useEffect(() => {
@@ -554,7 +561,11 @@ export function AccountClient() {
           return;
         }
 
-        const [{ data: profileData, error: profileError }, { data: membershipData, error: membershipError }] = await Promise.all([
+        const [
+          { data: profileData, error: profileError },
+          { data: membershipData, error: membershipError },
+          { data: organizationMembershipData, error: organizationMembershipError }
+        ] = await Promise.all([
           supabase
             .from("profiles")
             .select("display_name,email,default_role")
@@ -564,6 +575,12 @@ export function AccountClient() {
             .from("team_memberships")
             .select("team_id,role,status")
             .eq("user_id", userData.user.id)
+            .eq("status", "active"),
+          supabase
+            .from("organization_memberships")
+            .select("organization_id,role,status")
+            .eq("user_id", userData.user.id)
+            .eq("status", "active")
         ]);
 
         if (cancelled) return;
@@ -575,9 +592,12 @@ export function AccountClient() {
 
         setProfile(profileData);
         setMemberships(membershipError ? [] : membershipData ?? []);
-        setMessage(membershipData?.length ? "Role-scoped membership is visible." : "Signed in. No team membership has been granted yet.");
-      } catch {
-        if (!cancelled) setMessage("Supabase account data is not reachable from this app environment yet.");
+        setOrganizationMemberships(organizationMembershipError ? [] : organizationMembershipData ?? []);
+        setMessage(membershipData?.length || organizationMembershipData?.length
+          ? "Role-scoped membership is visible."
+          : "Signed in. No team or organization membership has been granted yet.");
+      } catch (error) {
+        if (!cancelled) setMessage(getSupabaseAuthClientErrorMessage(error));
       }
     }
 
@@ -598,7 +618,7 @@ export function AccountClient() {
 
       <p className="notice">{message}</p>
 
-      <section className="grid two">
+      <section className="grid three">
         <article className="card stack">
           <h2>Profile</h2>
           {profile ? (
@@ -609,6 +629,17 @@ export function AccountClient() {
           ) : (
             <p className="muted">No profile loaded.</p>
           )}
+        </article>
+
+        <article className="card stack">
+          <h2>Organization memberships</h2>
+          {organizationMemberships.map((membership) => (
+            <p key={`${membership.organization_id}-${membership.role}`}>
+              <strong>{roleLabel(membership.role)}</strong><br />
+              <span className="muted">{membership.organization_id} - {membership.status}</span>
+            </p>
+          ))}
+          {organizationMemberships.length === 0 ? <p className="muted">No active organization memberships yet.</p> : null}
         </article>
 
         <article className="card stack">

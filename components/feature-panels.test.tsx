@@ -4,6 +4,7 @@ import { AppStateProvider } from "@/app/providers";
 import {
   AdminDashboardClient,
   AdminThemesClient,
+  AccountClient,
   AuthClient,
   CoachDashboardClient,
   CoachRsvpsClient,
@@ -100,6 +101,15 @@ describe("AuthClient", () => {
       process.env.NEXT_PUBLIC_SUPABASE_URL = originalUrl;
       process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY = originalAnonKey;
     }
+  });
+});
+
+describe("AccountClient", () => {
+  it("shows organization membership separately from team membership", () => {
+    const html = renderToStaticMarkup(<AccountClient />);
+
+    expect(html).toContain("Organization memberships");
+    expect(html).toContain("Team memberships");
   });
 });
 
