@@ -954,6 +954,8 @@ export function ParentDashboardClient({ dashboardData }: { dashboardData?: Paren
   const mediaConsentControls = getMediaConsentControls();
   const openSnackSlots = sourceState.snackScheduleSlots.filter((slot) => parentTeamIds.has(slot.teamId) && slot.status === "open");
   const openVolunteerSignups = sourceState.volunteerSignups.filter((signup) => parentTeamIds.has(signup.teamId) && signup.status === "open");
+  const assignedSnackSlots = sourceState.snackScheduleSlots.filter((slot) => parentTeamIds.has(slot.teamId) && slot.assignedParentUserId === parentUserId && slot.status === "assigned");
+  const assignedVolunteerSignups = sourceState.volunteerSignups.filter((signup) => parentTeamIds.has(signup.teamId) && signup.assignedUserId === parentUserId && signup.status === "filled");
   const eventById = new Map(sourceState.events.map((event) => [event.id, event]));
   const nextParentEvent = dashboard.nextEvents[0];
   const primaryFamilyRow = dashboard.children[0];
@@ -1468,7 +1470,7 @@ export function ParentDashboardClient({ dashboardData }: { dashboardData?: Paren
             const event = eventById.get(slot.eventId);
             return (
               <div className="stack compact" key={slot.id}>
-                <p><strong>{slot.item}</strong><br /><span className="muted">{event?.title ?? "Team event"} · {event ? formatDate(event.startsAt) : "Date pending"}</span></p>
+                <p><strong>{slot.item}</strong><br /><span className="muted">{event?.title ?? "Team event"} · {event ? formatDate(event.startsAt) : "Date pending"} · cap {slot.slotCap ?? 1}</span></p>
                 <button
                   className="secondary"
                   disabled={isHelpPending}
@@ -1480,6 +1482,21 @@ export function ParentDashboardClient({ dashboardData }: { dashboardData?: Paren
             );
           })}
           {!openSnackSlots.length ? <p className="muted">No open snack slots for linked teams.</p> : null}
+          {assignedSnackSlots.map((slot) => {
+            const event = eventById.get(slot.eventId);
+            return (
+              <div className="stack compact" key={`assigned-${slot.id}`}>
+                <p><strong>Your snack duty:</strong> {slot.item}<br /><span className="muted">{event?.title ?? "Team event"} · reminders drafted {slot.reminderDraftCount ?? 0}</span></p>
+                <button
+                  className="secondary"
+                  disabled={isHelpPending}
+                  onClick={() => claimFamilyHelp("/api/snack-slots/unclaim", { slotId: slot.id, reason: "Family schedule changed." })}
+                >
+                  Unclaim snack slot
+                </button>
+              </div>
+            );
+          })}
         </article>
         <article className="card stack">
           <div className="card-header">
@@ -1493,7 +1510,7 @@ export function ParentDashboardClient({ dashboardData }: { dashboardData?: Paren
             const event = signup.eventId ? eventById.get(signup.eventId) : undefined;
             return (
               <div className="stack compact" key={signup.id}>
-                <p><strong>{signup.role}</strong><br /><span className="muted">{event?.title ?? "Team need"}{event ? ` · ${formatDate(event.startsAt)}` : ""}</span></p>
+                <p><strong>{signup.role}</strong><br /><span className="muted">{event?.title ?? "Team need"}{event ? ` · ${formatDate(event.startsAt)}` : ""} · cap {signup.roleCap ?? 1}</span></p>
                 <button
                   className="secondary"
                   disabled={isHelpPending}
@@ -1505,6 +1522,21 @@ export function ParentDashboardClient({ dashboardData }: { dashboardData?: Paren
             );
           })}
           {!openVolunteerSignups.length ? <p className="muted">No open volunteer roles for linked teams.</p> : null}
+          {assignedVolunteerSignups.map((signup) => {
+            const event = signup.eventId ? eventById.get(signup.eventId) : undefined;
+            return (
+              <div className="stack compact" key={`assigned-${signup.id}`}>
+                <p><strong>Your volunteer duty:</strong> {signup.role}<br /><span className="muted">{event?.title ?? "Team need"} · reminders drafted {signup.reminderDraftCount ?? 0}</span></p>
+                <button
+                  className="secondary"
+                  disabled={isHelpPending}
+                  onClick={() => claimFamilyHelp("/api/volunteer-signups/unclaim", { signupId: signup.id, reason: "Family schedule changed." })}
+                >
+                  Unclaim volunteer role
+                </button>
+              </div>
+            );
+          })}
         </article>
       </section>
 
@@ -2098,9 +2130,18 @@ export function CoachDashboardClient({ dashboardData }: { dashboardData?: Parent
         </article>
         <article className="card stack">
           <h2>Snacks</h2>
+          {primaryCoachTeam ? (
+            <button
+              className="secondary"
+              disabled={isActionPending}
+              onClick={() => runCoachAction("/api/snack-slots/reminders/draft", { teamId: primaryCoachTeam.id })}
+            >
+              Draft snack reminders
+            </button>
+          ) : null}
           {sourceState.snackScheduleSlots.filter((slot) => teamIds.has(slot.teamId)).map((slot) => (
             <div className="stack compact" key={slot.id}>
-              <p>{slot.item} - {slot.status}</p>
+              <p>{slot.item} - {slot.status}<br /><span className="muted">Cap {slot.slotCap ?? 1}; reminders drafted {slot.reminderDraftCount ?? 0}</span></p>
               {slot.status === "open" ? (
                 <button
                   className="secondary"
@@ -2110,14 +2151,32 @@ export function CoachDashboardClient({ dashboardData }: { dashboardData?: Parent
                   Claim snack slot
                 </button>
               ) : null}
+              {slot.status === "assigned" ? (
+                <button
+                  className="secondary"
+                  disabled={isActionPending}
+                  onClick={() => runCoachAction("/api/snack-slots/unclaim", { slotId: slot.id, reason: "Coach reopened this snack duty." })}
+                >
+                  Reopen snack slot
+                </button>
+              ) : null}
             </div>
           ))}
         </article>
         <article className="card stack">
           <h2>Volunteers</h2>
+          {primaryCoachTeam ? (
+            <button
+              className="secondary"
+              disabled={isActionPending}
+              onClick={() => runCoachAction("/api/volunteer-signups/reminders/draft", { teamId: primaryCoachTeam.id })}
+            >
+              Draft volunteer reminders
+            </button>
+          ) : null}
           {sourceState.volunteerSignups.filter((signup) => teamIds.has(signup.teamId)).map((signup) => (
             <div className="stack compact" key={signup.id}>
-              <p>{signup.role} - {signup.status}</p>
+              <p>{signup.role} - {signup.status}<br /><span className="muted">Cap {signup.roleCap ?? 1}; reminders drafted {signup.reminderDraftCount ?? 0}</span></p>
               {signup.status === "open" ? (
                 <button
                   className="secondary"
@@ -2125,6 +2184,15 @@ export function CoachDashboardClient({ dashboardData }: { dashboardData?: Parent
                   onClick={() => runCoachAction("/api/volunteer-signups/claim", { signupId: signup.id })}
                 >
                   Claim volunteer role
+                </button>
+              ) : null}
+              {signup.status === "filled" ? (
+                <button
+                  className="secondary"
+                  disabled={isActionPending}
+                  onClick={() => runCoachAction("/api/volunteer-signups/unclaim", { signupId: signup.id, reason: "Coach reopened this volunteer role." })}
+                >
+                  Reopen volunteer role
                 </button>
               ) : null}
             </div>

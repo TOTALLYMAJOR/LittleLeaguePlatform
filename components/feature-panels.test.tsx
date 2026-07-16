@@ -133,9 +133,13 @@ describe("CoachDashboardClient", () => {
     expect(html).toContain("Weather safety notes");
     expect(html).toContain("Snacks");
     expect(html).toContain("Volunteers");
+    expect(html).toContain("Draft snack reminders");
+    expect(html).toContain("Draft volunteer reminders");
     expect(html).toContain("Draft weather alert");
     expect(html).toContain("Claim snack slot");
     expect(html).toContain("Claim volunteer role");
+    expect(html).toContain("Reopen snack slot");
+    expect(html).toContain("Reopen volunteer role");
     expect(html).toContain("RSVP reliability tracker");
     expect(html).toContain("Coach weekly update builder");
     expect(html).toContain("Editable weekly message");
@@ -201,6 +205,7 @@ describe("ParentDashboardClient", () => {
     expect(html).toContain("Volunteer openings");
     expect(html).toContain("Claim snack slot");
     expect(html).toContain("Claim volunteer role");
+    expect(html).toContain("Unclaim volunteer role");
     expect(html).toContain("Ask for help");
     expect(html).toContain("Submit support request");
     expect(html).toContain("staff-review support record");

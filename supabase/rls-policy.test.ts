@@ -24,6 +24,7 @@ describe("Supabase RLS policy coverage", () => {
   const sponsorBillingAndTeamBuilder = migration("0017_sponsor_billing_and_team_builder.sql");
   const teamBrandProfilesMonitoring = migration("0018_team_brand_profiles_monitoring.sql");
   const mediaUploadStoragePipeline = migration("0024_media_upload_storage_pipeline.sql");
+  const snackVolunteerOperations = migration("0025_snack_volunteer_operations.sql");
   const packageJson = readFileSync(join(process.cwd(), "package.json"), "utf8");
   const rlsProof = readFileSync(join(process.cwd(), "scripts", "verify-rls-boundaries.mjs"), "utf8");
 
@@ -159,5 +160,14 @@ describe("Supabase RLS policy coverage", () => {
     expect(mediaUploadStoragePipeline).toContain("upload_status in ('external_link', 'intent_created', 'uploaded', 'quarantined', 'removed')");
     expect(mediaUploadStoragePipeline).toContain("scan_status in ('not_applicable', 'pending', 'passed', 'flagged', 'not_configured')");
     expect(mediaUploadStoragePipeline).toContain("idx_media_items_storage_object");
+  });
+
+  it("keeps snack and volunteer operations capped and reminder-ready", () => {
+    expect(snackVolunteerOperations).toContain("slot_cap integer not null default 1");
+    expect(snackVolunteerOperations).toContain("role_cap integer not null default 1");
+    expect(snackVolunteerOperations).toContain("reminder_draft_count integer not null default 0");
+    expect(snackVolunteerOperations).toContain("unclaimed_by_user_id uuid");
+    expect(snackVolunteerOperations).toContain("'volunteer_reminder'");
+    expect(snackVolunteerOperations).toContain("'snack_reminder'");
   });
 });

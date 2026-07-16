@@ -217,8 +217,8 @@ export async function listParentCoachDashboardData(options: ParentCoachDashboard
       db.from("announcements").select("id,team_id,author_user_id,title,body,created_at").order("created_at", { ascending: false }),
       db.from("media_items").select("id,team_id,title,media_type,url,created_at,moderation_status,report_count").eq("moderation_status", "approved").order("created_at", { ascending: false }),
       db.from("notification_preferences").select("id,user_id,organization_id,team_id,channel,notification_type,enabled,quiet_hours_start,quiet_hours_end,timezone,opted_in_at,opted_out_at").order("updated_at", { ascending: false }),
-      db.from("snack_schedule_slots").select("id,team_id,event_id,assigned_parent_user_id,item,status").order("created_at", { ascending: true }),
-      db.from("volunteer_signups").select("id,team_id,event_id,role,assigned_user_id,status").order("created_at", { ascending: true }),
+      db.from("snack_schedule_slots").select("id,team_id,event_id,assigned_parent_user_id,item,status,slot_cap,reminder_draft_count,reminder_last_drafted_at,unclaimed_at,unclaimed_by_user_id,cancellation_reason").order("created_at", { ascending: true }),
+      db.from("volunteer_signups").select("id,team_id,event_id,role,assigned_user_id,status,role_cap,reminder_draft_count,reminder_last_drafted_at,unclaimed_at,unclaimed_by_user_id,cancellation_reason").order("created_at", { ascending: true }),
       db.from("weather_alerts").select("id,team_id,event_id,headline,detail,severity,status,created_at").order("created_at", { ascending: false })
     ]), 7000);
 
@@ -460,13 +460,25 @@ export async function listParentCoachDashboardData(options: ParentCoachDashboard
       assigned_parent_user_id: string | null;
       item: string;
       status: SnackScheduleSlot["status"];
+      slot_cap?: number | null;
+      reminder_draft_count?: number | null;
+      reminder_last_drafted_at?: string | null;
+      unclaimed_at?: string | null;
+      unclaimed_by_user_id?: string | null;
+      cancellation_reason?: string | null;
     }) => ({
       id: slot.id,
       teamId: slot.team_id,
       eventId: slot.event_id,
       assignedParentUserId: slot.assigned_parent_user_id ?? undefined,
       item: slot.item,
-      status: slot.status
+      status: slot.status,
+      slotCap: slot.slot_cap ?? undefined,
+      reminderDraftCount: slot.reminder_draft_count ?? undefined,
+      reminderLastDraftedAt: slot.reminder_last_drafted_at ?? undefined,
+      unclaimedAt: slot.unclaimed_at ?? undefined,
+      unclaimedByUserId: slot.unclaimed_by_user_id ?? undefined,
+      cancellationReason: slot.cancellation_reason ?? undefined
     }));
     const volunteerSignups: VolunteerSignup[] = (volunteersResult.data ?? []).map((signup: {
       id: string;
@@ -475,13 +487,25 @@ export async function listParentCoachDashboardData(options: ParentCoachDashboard
       role: string;
       assigned_user_id: string | null;
       status: VolunteerSignup["status"];
+      role_cap?: number | null;
+      reminder_draft_count?: number | null;
+      reminder_last_drafted_at?: string | null;
+      unclaimed_at?: string | null;
+      unclaimed_by_user_id?: string | null;
+      cancellation_reason?: string | null;
     }) => ({
       id: signup.id,
       teamId: signup.team_id,
       eventId: signup.event_id ?? undefined,
       role: signup.role,
       assignedUserId: signup.assigned_user_id ?? undefined,
-      status: signup.status
+      status: signup.status,
+      roleCap: signup.role_cap ?? undefined,
+      reminderDraftCount: signup.reminder_draft_count ?? undefined,
+      reminderLastDraftedAt: signup.reminder_last_drafted_at ?? undefined,
+      unclaimedAt: signup.unclaimed_at ?? undefined,
+      unclaimedByUserId: signup.unclaimed_by_user_id ?? undefined,
+      cancellationReason: signup.cancellation_reason ?? undefined
     }));
     const weatherAlerts: WeatherAlert[] = (weatherResult.data ?? []).map((alert: {
       id: string;

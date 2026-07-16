@@ -23,7 +23,11 @@ import { POST as postMediaModeration } from "./api/media/moderation/route";
 import { POST as postMediaUploadIntent } from "./api/media/uploads/intent/route";
 import { POST as postMediaUploadFinalize } from "./api/media/uploads/finalize/route";
 import { POST as postSnackClaim } from "./api/snack-slots/claim/route";
+import { POST as postSnackUnclaim } from "./api/snack-slots/unclaim/route";
+import { POST as postSnackReminderDraft } from "./api/snack-slots/reminders/draft/route";
 import { POST as postVolunteerClaim } from "./api/volunteer-signups/claim/route";
+import { POST as postVolunteerUnclaim } from "./api/volunteer-signups/unclaim/route";
+import { POST as postVolunteerReminderDraft } from "./api/volunteer-signups/reminders/draft/route";
 import { POST as postWeatherDraft } from "./api/weather-alerts/draft/route";
 import { POST as postTeamMembership } from "./api/admin/team-memberships/route";
 import { POST as postTeamChatReport } from "./api/team-chat/reports/route";
@@ -43,6 +47,8 @@ import { reportSupabaseTeamChatMessage, reviewSupabaseTeamChatReport, runSupabas
 import {
   claimSnackSlot,
   claimVolunteerRole,
+  createSnackReminderDrafts,
+  createVolunteerReminderDrafts,
   createWeatherAlertDraft,
   saveCoachWeeklyUpdate,
   saveSponsor,
@@ -51,6 +57,8 @@ import {
   recordMobileUsageEvent,
   saveParentReplay,
   submitParentSupportRequest,
+  unclaimSnackSlot,
+  unclaimVolunteerRole,
   updateNotificationPreference,
   updateParentRsvp
 } from "@/lib/supabase/operations";
@@ -64,6 +72,8 @@ vi.mock("@/lib/supabase/route-auth", () => ({
 vi.mock("@/lib/supabase/operations", () => ({
   claimSnackSlot: vi.fn(),
   claimVolunteerRole: vi.fn(),
+  createSnackReminderDrafts: vi.fn(),
+  createVolunteerReminderDrafts: vi.fn(),
   createWeatherAlertDraft: vi.fn(),
   saveCoachWeeklyUpdate: vi.fn(),
   saveSponsor: vi.fn(),
@@ -72,6 +82,8 @@ vi.mock("@/lib/supabase/operations", () => ({
   recordMobileUsageEvent: vi.fn(),
   saveParentReplay: vi.fn(),
   submitParentSupportRequest: vi.fn(),
+  unclaimSnackSlot: vi.fn(),
+  unclaimVolunteerRole: vi.fn(),
   updateNotificationPreference: vi.fn(),
   updateParentRsvp: vi.fn()
 }));
@@ -134,6 +146,10 @@ const authMock = vi.mocked(requireAuthenticatedRouteUser);
 const updateParentRsvpMock = vi.mocked(updateParentRsvp);
 const claimSnackSlotMock = vi.mocked(claimSnackSlot);
 const claimVolunteerRoleMock = vi.mocked(claimVolunteerRole);
+const unclaimSnackSlotMock = vi.mocked(unclaimSnackSlot);
+const unclaimVolunteerRoleMock = vi.mocked(unclaimVolunteerRole);
+const createSnackReminderDraftsMock = vi.mocked(createSnackReminderDrafts);
+const createVolunteerReminderDraftsMock = vi.mocked(createVolunteerReminderDrafts);
 const createWeatherAlertDraftMock = vi.mocked(createWeatherAlertDraft);
 const saveCoachWeeklyUpdateMock = vi.mocked(saveCoachWeeklyUpdate);
 const saveSponsorMock = vi.mocked(saveSponsor);
@@ -225,6 +241,38 @@ describe("live action API routes", () => {
     });
   });
 
+  it("uses the authenticated actor session for snack unclaims", async () => {
+    unclaimSnackSlotMock.mockResolvedValue({ ok: true, message: "Snack reopened.", slot: { id: "slot-1" } });
+
+    const response = await postSnackUnclaim(jsonRequest({
+      slotId: "slot-1",
+      actorUserId: "client-spoof",
+      reason: "Schedule changed"
+    }));
+
+    expect(response.status).toBe(200);
+    expect(unclaimSnackSlotMock).toHaveBeenCalledWith({
+      slotId: "slot-1",
+      actorUserId: "user-live-session",
+      reason: "Schedule changed"
+    });
+  });
+
+  it("uses the authenticated coach session for snack reminder drafts", async () => {
+    createSnackReminderDraftsMock.mockResolvedValue({ ok: true, message: "Snack reminders drafted.", notificationCount: 2 });
+
+    const response = await postSnackReminderDraft(jsonRequest({
+      teamId: "team-1",
+      actorUserId: "client-spoof"
+    }));
+
+    expect(response.status).toBe(200);
+    expect(createSnackReminderDraftsMock).toHaveBeenCalledWith({
+      teamId: "team-1",
+      actorUserId: "user-live-session"
+    });
+  });
+
   it("uses the authenticated parent session for support requests", async () => {
     submitParentSupportRequestMock.mockResolvedValue({
       ok: true,
@@ -257,6 +305,38 @@ describe("live action API routes", () => {
     expect(claimVolunteerRoleMock).toHaveBeenCalledWith({
       signupId: "volunteer-1",
       userId: "user-live-session"
+    });
+  });
+
+  it("uses the authenticated actor session for volunteer unclaims", async () => {
+    unclaimVolunteerRoleMock.mockResolvedValue({ ok: true, message: "Volunteer reopened.", signup: { id: "volunteer-1" } });
+
+    const response = await postVolunteerUnclaim(jsonRequest({
+      signupId: "volunteer-1",
+      actorUserId: "client-spoof",
+      reason: "Schedule changed"
+    }));
+
+    expect(response.status).toBe(200);
+    expect(unclaimVolunteerRoleMock).toHaveBeenCalledWith({
+      signupId: "volunteer-1",
+      actorUserId: "user-live-session",
+      reason: "Schedule changed"
+    });
+  });
+
+  it("uses the authenticated coach session for volunteer reminder drafts", async () => {
+    createVolunteerReminderDraftsMock.mockResolvedValue({ ok: true, message: "Volunteer reminders drafted.", notificationCount: 2 });
+
+    const response = await postVolunteerReminderDraft(jsonRequest({
+      teamId: "team-1",
+      actorUserId: "client-spoof"
+    }));
+
+    expect(response.status).toBe(200);
+    expect(createVolunteerReminderDraftsMock).toHaveBeenCalledWith({
+      teamId: "team-1",
+      actorUserId: "user-live-session"
     });
   });
 

@@ -613,7 +613,7 @@ export interface Database {
           recipient_user_id: RowId;
           team_id: RowId;
           event_id: RowId | null;
-          notification_type: "schedule_changed" | "event_cancelled" | "new_event" | "invite_sent" | "invite_recovered" | "parent_replay_ready";
+          notification_type: "schedule_changed" | "event_cancelled" | "new_event" | "invite_sent" | "invite_recovered" | "parent_replay_ready" | "team_broadcast" | "weather_alert" | "chat_announcement" | "volunteer_reminder" | "snack_reminder";
           title: string;
           body: string;
           channel: "push" | "email" | "sms";
@@ -628,7 +628,7 @@ export interface Database {
           recipient_user_id: RowId;
           team_id: RowId;
           event_id?: RowId | null;
-          notification_type: "schedule_changed" | "event_cancelled" | "new_event" | "invite_sent" | "invite_recovered" | "parent_replay_ready";
+          notification_type: "schedule_changed" | "event_cancelled" | "new_event" | "invite_sent" | "invite_recovered" | "parent_replay_ready" | "team_broadcast" | "weather_alert" | "chat_announcement" | "volunteer_reminder" | "snack_reminder";
           title: string;
           body: string;
           channel: "push" | "email" | "sms";

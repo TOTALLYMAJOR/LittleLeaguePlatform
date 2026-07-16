@@ -33,6 +33,8 @@ const privateMutationRoutes = [
   "app/api/schedule/export/route.ts",
   "app/api/schedule/route.ts",
   "app/api/snack-slots/claim/route.ts",
+  "app/api/snack-slots/reminders/draft/route.ts",
+  "app/api/snack-slots/unclaim/route.ts",
   "app/api/support-requests/route.ts",
   "app/api/team-chat/messages/route.ts",
   "app/api/team-chat/moderation/route.ts",
@@ -41,6 +43,8 @@ const privateMutationRoutes = [
   "app/api/team-chat/reports/review/route.ts",
   "app/api/team-chat/retention/run/route.ts",
   "app/api/volunteer-signups/claim/route.ts",
+  "app/api/volunteer-signups/reminders/draft/route.ts",
+  "app/api/volunteer-signups/unclaim/route.ts",
   "app/api/weather-alerts/draft/route.ts"
 ];
 
