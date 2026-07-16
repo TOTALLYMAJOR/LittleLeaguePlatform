@@ -31,6 +31,14 @@ Task-specific checks are required only when the surface is touched:
 
 ## Current 20-Item Plate
 
+## Release Checkpoint Notes - 2026-07-16
+
+- Local validation passed after the 16 production-hardening slices: `npm test`, `npm run typecheck`, `npm run build`, `npm audit`, `npm run qa:pwa-cache-proof`, hosted `QA_PROOF_BASE_URL=https://www.leaguepilot.us npm run qa:brand-proof`, and Docker smoke on `APP_PORT=8082`.
+- Supabase-backed hosted QA proof is blocked in this local shell because `NEXT_PUBLIC_SUPABASE_URL` and `NEXT_PUBLIC_SUPABASE_ANON_KEY` are not set. Affected commands: `npm run supabase:qa-users`, `npm run qa:rls-proof`, and `QA_PROOF_BASE_URL=https://www.leaguepilot.us npm run qa:session-proof`.
+- Hosted AI Coach proof timed out waiting for the signed-in QA coach state. Next action: rerun after QA Supabase env/user secrets are available and the production deployment is refreshed.
+- Hosted route contrast proof failed against the current production deployment with stale color tokens and pre-fix surfaces. Next action: deploy the current branch, then rerun `QA_PROOF_BASE_URL=https://www.leaguepilot.us npm run qa:contrast-proof`.
+- Default Docker port `8081` was already used by another local Compose stack; the same image passed smoke on `APP_PORT=8082`.
+
 ### LP-001 - Reconcile Product Truth Docs
 
 - Priority: P0 docs/safety.
