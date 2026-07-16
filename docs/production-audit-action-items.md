@@ -79,8 +79,8 @@ The app is not ready for real-family production launch yet. The core scaffold, r
 
 11. Add rate limits and abuse controls to public intake endpoints.
     - Current public endpoints: `/api/registration-requests` and `/api/mobile-usage-events`.
-    - Action: add server-side rate limiting or provider firewall rules for registration intake and anonymous usage events.
-    - Done when: burst requests are rejected or throttled and the behavior is documented.
+    - Current truth: local implementation now uses Supabase-backed durable buckets with memory fallback, `429`, `Retry-After`, and `X-RateLimit-*` headers.
+    - Remaining action: run hosted proof after migration application and add observability for public-intake throttles.
 
 ## P2 Product Decisions Before Wider Launch
 

@@ -47,6 +47,7 @@ import {
   updateParentRsvp
 } from "@/lib/supabase/operations";
 import { requireAuthenticatedRouteUser } from "@/lib/supabase/route-auth";
+import { applyPublicRateLimit } from "@/lib/supabase/public-rate-limit";
 
 vi.mock("@/lib/supabase/route-auth", () => ({
   requireAuthenticatedRouteUser: vi.fn()
@@ -102,6 +103,14 @@ vi.mock("@/lib/supabase/provider-delivery", () => ({
   reviewNotificationDelivery: vi.fn()
 }));
 
+vi.mock("@/lib/supabase/public-rate-limit", () => ({
+  PUBLIC_RATE_LIMITS: {
+    mobileUsageEvents: { routeKey: "mobile-usage-events", limit: 120, windowMs: 60_000 },
+    registrationRequests: { routeKey: "registration-requests", limit: 5, windowMs: 60_000 }
+  },
+  applyPublicRateLimit: vi.fn()
+}));
+
 const authMock = vi.mocked(requireAuthenticatedRouteUser);
 const updateParentRsvpMock = vi.mocked(updateParentRsvp);
 const claimSnackSlotMock = vi.mocked(claimSnackSlot);
@@ -126,6 +135,7 @@ const repairGuardianLinkMock = vi.mocked(repairGuardianLink);
 const createAdminExportMock = vi.mocked(createAdminExport);
 const listProviderDeliveryRetryQueueMock = vi.mocked(listProviderDeliveryRetryQueue);
 const reviewNotificationDeliveryMock = vi.mocked(reviewNotificationDelivery);
+const applyPublicRateLimitMock = vi.mocked(applyPublicRateLimit);
 
 function jsonRequest(body: unknown) {
   return new Request("http://localhost/api/test", {
@@ -142,6 +152,19 @@ describe("live action API routes", () => {
   beforeEach(() => {
     vi.resetAllMocks();
     authMock.mockResolvedValue({ ok: true, user: { id: "user-live-session", email: "parent@example.com" } });
+    applyPublicRateLimitMock.mockResolvedValue({
+      allowed: true,
+      hitCount: 1,
+      remaining: 119,
+      resetAtMs: 1790000000000,
+      retryAfterSeconds: undefined,
+      store: "shared",
+      headers: new Headers({
+        "X-RateLimit-Limit": "120",
+        "X-RateLimit-Remaining": "119",
+        "X-RateLimit-Reset": "1790000000"
+      })
+    });
   });
 
   it("uses the authenticated parent session for RSVP writes", async () => {

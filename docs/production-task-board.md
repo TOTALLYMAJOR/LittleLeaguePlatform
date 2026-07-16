@@ -116,11 +116,12 @@ Task-specific checks are required only when the surface is touched:
 ### LP-010 - Add Public Intake Abuse Controls
 
 - Priority: P1 safety.
-- Current state: public endpoints are intentionally unauthenticated but need throttling/abuse control.
-- Seams: `/api/registration-requests`, `/api/mobile-usage-events`, Vercel/firewall config if used.
-- Done when: burst requests are throttled or rejected, behavior is documented, and legitimate family signup/usage telemetry still works.
+- Status: Implemented locally 2026-07-16; hosted proof still pending.
+- Current state: public endpoints remain intentionally unauthenticated but now use Supabase-backed durable rate-limit buckets with memory fallback if the shared store is unavailable.
+- Seams: `/api/registration-requests`, `/api/mobile-usage-events`, `lib/supabase/public-rate-limit.ts`, `supabase/migrations/0022_public_rate_limits.sql`.
+- Done when: hosted proof shows the durable limiter and headers in the deployed environment without blocking normal family use.
 - SaaS constants focus: noisy-neighbor control, rate limits, tenant spoofing, public attack path, observability.
-- Validation: route tests for accepted and throttled requests; `npm test`; `npm run typecheck`.
+- Validation: `app/api-public-intake.test.ts`, `lib/supabase/public-rate-limit.test.ts`, `npm test`, `npm run typecheck`.
 
 ### LP-011 - Prove Hosted AI Coach Rewrite
 

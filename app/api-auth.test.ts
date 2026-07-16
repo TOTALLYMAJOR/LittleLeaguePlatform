@@ -57,6 +57,8 @@ describe("API mutation auth boundaries", () => {
 
     expect(file).not.toContain("requireAuthenticatedRouteUser");
     expect(file).toContain("createPendingRegistration");
+    expect(file).toContain("applyPublicRateLimit");
+    expect(file).toContain("status: 429");
   });
 
   it("keeps anonymous mobile usage measurement open for PWA decision data", () => {
@@ -64,6 +66,8 @@ describe("API mutation auth boundaries", () => {
 
     expect(file).not.toContain("requireAuthenticatedRouteUser");
     expect(file).toContain("recordMobileUsageEvent");
+    expect(file).toContain("applyPublicRateLimit");
+    expect(file).toContain("status: 429");
   });
 
   it("keeps the internal notification worker secret-gated", () => {
