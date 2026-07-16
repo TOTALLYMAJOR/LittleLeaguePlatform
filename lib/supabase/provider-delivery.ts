@@ -1,10 +1,17 @@
 import { createSupabaseAdminClient } from "./admin";
 import { withSupabaseTimeout } from "./timeout";
+import { buildNotificationIdempotencyKey } from "@/lib/services/notifications/worker";
+import type {
+  NotificationDeliveryOutcome,
+  NotificationDeliveryPayload,
+  NotificationPushSubscription
+} from "@/lib/services/notifications/types";
 
 type ProviderDeliveryReviewDecision = "approved" | "rejected";
 type ProviderDeliveryProvider = "email" | "sms" | "web_push";
 type ProviderDeliveryChannel = "push" | "email" | "sms";
 type ProviderDeliveryAttemptStatus = "queued" | "sent" | "failed" | "suppressed";
+const DEFAULT_DELIVERY_MAX_RETRIES = 3;
 
 type UnsafeSupabase = {
   // Provider approval columns are staged until generated types are refreshed.
@@ -185,13 +192,30 @@ export async function reviewNotificationDelivery(input: {
           channel: notification.channel,
           status: attemptStatus,
           error_code: suppressionCode,
-          error_message: suppressionMessage
+          error_message: suppressionMessage,
+          idempotency_key: buildNotificationIdempotencyKey({
+            notificationId: notification.id,
+            provider: input.provider
+          }),
+          next_attempt_at: attemptStatus === "queued" ? now : null,
+          retry_count: 0,
+          max_retries: DEFAULT_DELIVERY_MAX_RETRIES
         })
-        .select("id,provider,channel,status,attempted_at")
+        .select("id,provider,channel,status,attempted_at,idempotency_key,retry_count,next_attempt_at,dead_lettered_at")
         .single()
     ]), 7000) as [
       { data: { id: string; provider_approval_status: string; approved_at: string } | null },
-      { data: { id: string; provider: string; channel: string; status: string; attempted_at: string } | null }
+      { data: {
+        id: string;
+        provider: string;
+        channel: string;
+        status: string;
+        attempted_at: string;
+        idempotency_key: string;
+        retry_count: number;
+        next_attempt_at: string | null;
+        dead_lettered_at: string | null;
+      } | null }
     ];
 
     await withSupabaseTimeout(db.from("audit_events").insert({
@@ -218,6 +242,198 @@ export async function reviewNotificationDelivery(input: {
   }
 }
 
+type DeliveryAttemptRow = {
+  id: string;
+  notification_id: string;
+  provider: ProviderDeliveryProvider;
+  channel: ProviderDeliveryChannel;
+  status: ProviderDeliveryAttemptStatus;
+  attempted_at: string;
+  idempotency_key: string;
+  retry_count: number;
+  max_retries: number;
+  notifications: {
+    id: string;
+    organization_id: string;
+    recipient_user_id: string;
+    team_id: string;
+    event_id: string | null;
+    notification_type: string;
+    title: string;
+    body: string;
+    created_at: string;
+  } | null;
+};
+
+async function loadRecipientForNotification(db: UnsafeSupabase, notification: {
+  recipient_user_id: string;
+  channel: ProviderDeliveryChannel;
+}) {
+  const [{ data: profile }, { data: subscriptions }] = await withSupabaseTimeout(Promise.all([
+    db.from("profiles").select("id,email,phone").eq("id", notification.recipient_user_id).single(),
+    notification.channel === "push"
+      ? db.from("push_subscriptions").select("endpoint,p256dh,auth_secret").eq("user_id", notification.recipient_user_id).eq("enabled", true)
+      : Promise.resolve({ data: [] })
+  ]), 7000) as [
+    { data: { id: string; email: string | null; phone: string | null } | null },
+    { data: Array<{ endpoint: string; p256dh: string; auth_secret: string }> | null }
+  ];
+
+  return {
+    userId: notification.recipient_user_id,
+    email: profile?.email ?? null,
+    phone: profile?.phone ?? null,
+    pushSubscriptions: (subscriptions ?? []).map((subscription): NotificationPushSubscription => ({
+      endpoint: subscription.endpoint,
+      p256dh: subscription.p256dh,
+      authSecret: subscription.auth_secret
+    }))
+  };
+}
+
+async function mapAttemptPayload(db: UnsafeSupabase, attempt: DeliveryAttemptRow): Promise<NotificationDeliveryPayload | null> {
+  const notification = attempt.notifications;
+  if (!notification) return null;
+
+  const idempotencyKey = attempt.idempotency_key || buildNotificationIdempotencyKey({
+    notificationId: attempt.notification_id,
+    provider: attempt.provider
+  });
+
+  return {
+    attemptId: attempt.id,
+    notificationId: attempt.notification_id,
+    organizationId: notification.organization_id,
+    teamId: notification.team_id,
+    eventId: notification.event_id,
+    provider: attempt.provider,
+    channel: attempt.channel,
+    notificationType: notification.notification_type,
+    title: notification.title,
+    body: notification.body,
+    recipient: await loadRecipientForNotification(db, {
+      recipient_user_id: notification.recipient_user_id,
+      channel: attempt.channel
+    }),
+    idempotencyKey,
+    retryCount: attempt.retry_count ?? 0,
+    maxRetries: attempt.max_retries ?? DEFAULT_DELIVERY_MAX_RETRIES,
+    createdAt: notification.created_at
+  };
+}
+
+export async function claimQueuedNotificationDeliveries(input: {
+  workerId: string;
+  limit?: number;
+  now?: string;
+}) {
+  if (!input.workerId) return { ok: false, message: "Notification send worker requires a worker id.", attempts: [] };
+
+  try {
+    const db = adminDb();
+    const now = input.now ?? new Date().toISOString();
+    const staleLockBefore = new Date(new Date(now).getTime() - 15 * 60 * 1000).toISOString();
+    const limit = Math.min(Math.max(input.limit ?? 25, 1), 100);
+    const { data: candidates, error: candidateError } = await withSupabaseTimeout(db
+      .from("notification_delivery_attempts")
+      .select("id")
+      .eq("status", "queued")
+      .is("dead_lettered_at", null)
+      .lte("next_attempt_at", now)
+      .or(`locked_at.is.null,locked_at.lt.${staleLockBefore}`)
+      .order("next_attempt_at", { ascending: true })
+      .limit(limit), 7000) as {
+        data: Array<{ id: string }> | null;
+        error: { message?: string } | null;
+      };
+
+    if (candidateError) return { ok: false, message: "Notification delivery attempts could not be loaded.", attempts: [] };
+    const ids = (candidates ?? []).map((candidate) => candidate.id);
+    if (!ids.length) return { ok: true, message: "No notification delivery attempts are due.", attempts: [] };
+
+    const { data: lockedAttempts, error: lockError } = await withSupabaseTimeout(db
+      .from("notification_delivery_attempts")
+      .update({
+        locked_at: now,
+        locked_by: input.workerId
+      })
+      .in("id", ids)
+      .eq("status", "queued")
+      .is("dead_lettered_at", null)
+      .select("id,notification_id,provider,channel,status,attempted_at,idempotency_key,retry_count,max_retries,notifications(id,organization_id,recipient_user_id,team_id,event_id,notification_type,title,body,created_at)"), 7000) as {
+        data: DeliveryAttemptRow[] | null;
+        error: { message?: string } | null;
+      };
+
+    if (lockError) return { ok: false, message: "Notification delivery attempts could not be locked.", attempts: [] };
+
+    const attempts = (await Promise.all((lockedAttempts ?? []).map((attempt) => mapAttemptPayload(db, attempt))))
+      .filter((attempt): attempt is NotificationDeliveryPayload => Boolean(attempt));
+
+    return {
+      ok: true,
+      message: `${attempts.length} notification delivery attempt(s) claimed for execution.`,
+      attempts
+    };
+  } catch {
+    return { ok: false, message: "Notification delivery worker could not reach Supabase.", attempts: [] };
+  }
+}
+
+export async function recordNotificationDeliveryOutcome(outcome: NotificationDeliveryOutcome) {
+  try {
+    const db = adminDb();
+    const retrying = outcome.status === "failed" && Boolean(outcome.nextAttemptAt) && !outcome.deadLetteredAt;
+    const attemptStatus: ProviderDeliveryAttemptStatus = retrying ? "queued" : outcome.status;
+    const { data: attempt, error } = await withSupabaseTimeout(db
+      .from("notification_delivery_attempts")
+      .update({
+        status: attemptStatus,
+        provider_message_id: outcome.providerMessageId ?? null,
+        provider_status: outcome.providerStatus ?? null,
+        provider_response_json: outcome.providerResponse ?? {},
+        error_code: outcome.errorCode ?? null,
+        error_message: outcome.errorMessage ?? null,
+        attempted_at: outcome.attemptedAt,
+        retry_count: outcome.retryCount,
+        next_attempt_at: outcome.nextAttemptAt ?? null,
+        dead_lettered_at: outcome.deadLetteredAt ?? null,
+        locked_at: null,
+        locked_by: null
+      })
+      .eq("id", outcome.attemptId)
+      .select("id,status")
+      .single(), 7000) as {
+        data: { id: string; status: ProviderDeliveryAttemptStatus } | null;
+        error: { message?: string } | null;
+      };
+
+    if (error || !attempt) return { ok: false, message: "Notification delivery attempt outcome could not be recorded." };
+
+    if (outcome.status === "sent") {
+      await withSupabaseTimeout(db
+        .from("notifications")
+        .update({ status: "sent", sent_at: outcome.attemptedAt })
+        .eq("id", outcome.notificationId), 7000);
+    } else if (outcome.deadLetteredAt) {
+      await withSupabaseTimeout(db
+        .from("notifications")
+        .update({ status: "failed" })
+        .eq("id", outcome.notificationId), 7000);
+    }
+
+    return {
+      ok: true,
+      message: retrying
+        ? "Notification delivery attempt failed and was re-queued with retry metadata."
+        : "Notification delivery attempt outcome recorded.",
+      attempt
+    };
+  } catch {
+    return { ok: false, message: "Notification delivery worker could not record the outcome." };
+  }
+}
+
 export async function listProviderDeliveryRetryQueue(input: { actorUserId: string }) {
   if (!input.actorUserId) return { ok: false, message: "Provider retry queue requires an actor.", retryQueue: [] };
 
@@ -239,7 +455,7 @@ export async function listProviderDeliveryRetryQueue(input: { actorUserId: strin
 
     const { data, error } = await withSupabaseTimeout(db
       .from("notification_delivery_attempts")
-      .select("id,notification_id,provider,channel,status,error_code,error_message,attempted_at,notifications(id,organization_id,team_id,title)")
+      .select("id,notification_id,provider,channel,status,error_code,error_message,attempted_at,retry_count,next_attempt_at,dead_lettered_at,provider_status,notifications(id,organization_id,team_id,title)")
       .in("status", ["failed", "suppressed"])
       .order("attempted_at", { ascending: false })
       .limit(50), 7000) as {
@@ -252,6 +468,10 @@ export async function listProviderDeliveryRetryQueue(input: { actorUserId: strin
           error_code: string | null;
           error_message: string | null;
           attempted_at: string;
+          retry_count: number | null;
+          next_attempt_at: string | null;
+          dead_lettered_at: string | null;
+          provider_status: string | null;
           notifications: { id: string; organization_id: string; team_id: string; title: string } | null;
         }> | null;
         error: { message?: string } | null;
@@ -273,7 +493,10 @@ export async function listProviderDeliveryRetryQueue(input: { actorUserId: strin
         status: attempt.status,
         reason: attempt.error_message ?? attempt.error_code ?? "Provider retry review required.",
         attemptedAt: attempt.attempted_at,
-        nextReviewAt: new Date(new Date(attempt.attempted_at).getTime() + 15 * 60 * 1000).toISOString()
+        retryCount: attempt.retry_count ?? 0,
+        providerStatus: attempt.provider_status,
+        deadLetteredAt: attempt.dead_lettered_at,
+        nextReviewAt: attempt.next_attempt_at ?? new Date(new Date(attempt.attempted_at).getTime() + 15 * 60 * 1000).toISOString()
       }));
 
     return {

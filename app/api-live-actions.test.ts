@@ -360,7 +360,17 @@ describe("live action API routes", () => {
       ok: true,
       message: "Provider delivery approved.",
       notification: { id: "notification-1", provider_approval_status: "approved", approved_at: "2026-06-23T12:00:00.000Z" },
-      attempt: { id: "attempt-1", provider: "email", channel: "email", status: "queued", attempted_at: "2026-06-23T12:00:00.000Z" }
+      attempt: {
+        id: "attempt-1",
+        provider: "email",
+        channel: "email",
+        status: "queued",
+        attempted_at: "2026-06-23T12:00:00.000Z",
+        idempotency_key: "notification-1:email",
+        retry_count: 0,
+        next_attempt_at: "2026-06-23T12:00:00.000Z",
+        dead_lettered_at: null
+      }
     });
 
     const response = await postProviderDeliveryReview(jsonRequest({
@@ -392,6 +402,9 @@ describe("live action API routes", () => {
         status: "suppressed",
         reason: "Provider retry review required.",
         attemptedAt: "2026-06-23T12:00:00.000Z",
+        retryCount: 0,
+        providerStatus: null,
+        deadLetteredAt: null,
         nextReviewAt: "2026-06-23T12:15:00.000Z"
       }]
     });
