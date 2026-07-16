@@ -7,7 +7,7 @@ These tasks should follow after the Backlog Now foundation is in place. They are
 - Status: implemented 2026-06-23.
 - Tomorrow.io weather provider adapter creates event/venue forecast drafts.
 - Google Maps field metadata now stores approved fallback/embed URLs, marker labels, coordinates, and notes; remaining work is hosted key restriction and quota proof.
-- Email/SMS/Web Push delivery is approval-gated through provider review and delivery-attempt logs.
+- Email/SMS/Web Push delivery is approval-gated through provider review, delivery-attempt logs, the secret-gated send worker, env-gated SendGrid/Twilio/Web Push adapters, retry/dead-letter handling, and webhook reconciliation.
 - Web Push subscription storage, opt-in preferences, PWA usage metrics, and provider approval records are auditable.
 
 Acceptance:
@@ -18,10 +18,11 @@ Acceptance:
 ## 2. Media Governance
 
 - Status: implemented 2026-06-23.
-- Google Photos and YouTube URL validation runs in parent-visible media cards.
+- Google Photos and YouTube URL validation runs in parent-visible media cards, and Supabase Storage upload intent/finalize APIs exist for authenticated team members/admins.
 - Team/org visibility settings are available in `/admin`.
 - Report, hide, restore, and remove workflows are routed through authenticated Supabase APIs.
 - Media report and moderation actions write audit events.
+- Uploaded media uses organization/team-scoped object paths and remains pending until moderation; automated scanning and hosted bucket proof remain follow-up work.
 
 Acceptance:
 - Parents cannot remove other users' media links.
@@ -46,7 +47,7 @@ Acceptance:
 - Replay history persists per team through Supabase `parent_replays` and appears in Team Portal reads.
 - Template infrastructure exists in `parent_replay_templates` by sport/theme and focus area; the current builder remains deterministic.
 - Coach approval is required before publishing generated content through `/api/coach/parent-replay`.
-- AI-generated learning plans remain intentionally disconnected until prompts, filters, and review workflow exist.
+- AI Coach Workspace can request review-only OpenAI rewrites through the authenticated server route when provider env is configured; parent-facing publish still remains coach-reviewed and deterministic unless a future AI expansion is explicitly approved.
 
 Acceptance:
 - Parent Replay remains coach-approved.

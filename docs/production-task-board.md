@@ -34,7 +34,8 @@ Task-specific checks are required only when the surface is touched:
 ### LP-001 - Reconcile Product Truth Docs
 
 - Priority: P0 docs/safety.
-- Current state: `docs/capability-matrix.md` and older stack/backlog wording still contain gaps or scaffold framing that later work covered.
+- Status: Updated 2026-07-16.
+- Current state: `docs/capability-matrix.md`, `docs/Features.md`, `docs/feature-fit-backlog.md`, `docs/production-audit-action-items.md`, `docs/backlog-now.md`, `docs/backlog-next.md`, and `docs/runbook.md` now separate shipped code from hosted-proof, provider-credential, storage-scanning, Stripe, and team-builder-publish gaps.
 - Seams: `docs/Features.md`, `docs/capability-matrix.md`, `docs/feature-fit-backlog.md`, `docs/production-audit-action-items.md`, `docs/tech-stack.md`, ROMINA reference.
 - Done when: the docs agree on shipped, partial, deferred, provider-gated, and hosted-proof status.
 - SaaS constants focus: tenant context, proof boundary, backward compatibility, release governance.
@@ -166,8 +167,9 @@ Task-specific checks are required only when the surface is touched:
 
 ### LP-015 - Implement Real Provider Sends If Approved
 
-- Priority: P2 conditional.
-- Current state: worker foundation, env-gated SendGrid, Twilio Messaging Service, Web Push adapters, and SendGrid/Twilio webhook reconciliation are implemented locally; hosted credential proof remains pending.
+- Priority: P1 provider proof.
+- Status: Implemented locally 2026-07-16; hosted credential proof pending.
+- Current state: worker foundation, env-gated SendGrid, Twilio Messaging Service, Web Push adapters, suppression/retry/dead-letter handling, and SendGrid/Twilio webhook reconciliation are implemented locally; hosted credential proof remains pending.
 - Seams: provider delivery service, Web Push VAPID, email/SMS provider adapters, provider webhooks, delivery attempts.
 - Done when: approved attempts create real sandbox sends, rejected/suppressed attempts do not send, webhooks update delivery state, retries are idempotent, and hosted proof verifies the configured provider path.
 - SaaS constants focus: provider contract, consent, suppression, retry, webhook replay, noisy-neighbor, billing/cost.

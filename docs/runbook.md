@@ -160,4 +160,4 @@ curl -I http://localhost:8081/
 
 ## Production Readiness Warning
 
-The app is production-hosted, and hosted Supabase/browser proof passed for the current `https://www.leaguepilot.us` deployment on 2026-07-02. Real-family launch still requires preserving the QA and hosted proof gates after env rotation and keeping provider sends disconnected unless explicitly implemented.
+The app is production-hosted, and hosted Supabase/browser proof passed for the current `https://www.leaguepilot.us` deployment on 2026-07-02. Real-family launch still requires preserving the QA and hosted proof gates after env rotation. Provider sends are implemented only through approval, recipient checks, the secret-gated worker, and configured SendGrid/Twilio/Web Push credentials; hosted credential proof remains required before relying on live delivery.

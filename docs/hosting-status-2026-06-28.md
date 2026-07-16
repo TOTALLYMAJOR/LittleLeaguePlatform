@@ -55,7 +55,7 @@
 Hosting and current hosted browser proof are complete for deployment `dpl_EwvgSQY6ws7u7GmSnSAFtu9V9Zfi`, but production readiness is not complete until these separate proof gates are closed:
 
 - Vercel Preview OpenAI env values are intentionally unset until a named non-production preview branch is chosen.
-- Provider sends remain disconnected for launch as draft/internal records only unless a send worker, provider adapters, webhooks, suppression rules, and retry proof are explicitly scoped.
+- Superseded 2026-07-16: provider sends are now connected only through the approval-gated, secret-gated worker with env-gated SendGrid/Twilio/Web Push adapters, suppression rules, retry/dead-letter metadata, and webhook reconciliation. Hosted credential proof remains pending before relying on live delivery.
 - AI Coach Workspace provider rewrites are connected through `/api/coach/ai-workspace` for signed-in assigned coaches/admins only, and output remains draft/review-only with no automatic publish or send.
 
 ## Networking Posture

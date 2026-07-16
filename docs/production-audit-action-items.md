@@ -4,7 +4,7 @@ Audit date: 2026-06-25
 
 ## Verdict
 
-The app is not ready for real-family production launch yet. The core scaffold, route coverage, authenticated mutation boundaries, Supabase-backed slices, deterministic AI Coach Workspace, and provider-safe draft flows are in place. The remaining work is mostly provider-delivery execution if approved, continued hosted proof after env rotation, and intentionally deferred product decisions.
+The app is not ready for real-family production launch yet. The core scaffold, route coverage, authenticated mutation boundaries, Supabase-backed slices, deterministic AI Coach Workspace, provider-safe draft flows, and env-gated provider-send worker path are in place. The remaining work is mostly hosted provider credential proof, continued hosted proof after env rotation, and intentionally deferred product decisions.
 
 ## Validation Run
 
@@ -53,24 +53,24 @@ The app is not ready for real-family production launch yet. The core scaffold, r
    - Remaining action: add hosted credential proof and optional external alert-hook configuration before claiming end-to-end delivery readiness.
 
 6. Finish notification provider execution if real alerts are required.
-   - Current seams: `/api/provider-delivery/review`, `lib/supabase/provider-delivery.ts`, `lib/domain/notifications.ts`.
-   - Action: connect Web Push VAPID execution and chosen email/SMS providers after approval, with suppression and retry evidence.
-   - Done when: approved provider attempts create real sandbox sends and rejected attempts suppress sends with audit logs.
+   - Current seams: `/api/provider-delivery/review`, `/api/internal/notification-send-worker`, `/api/provider-webhooks/sendgrid`, `/api/provider-webhooks/twilio`, `lib/services/notifications/*`, `lib/supabase/provider-delivery.ts`.
+   - Current truth: env-gated SendGrid, Twilio Messaging Service, and Web Push adapters are connected behind the secret-gated worker with suppression, retry, idempotency, and dead-letter metadata. SendGrid/Twilio webhook ingestion reconciles delivery/open/bounce/failure without treating provider acceptance as delivery.
+   - Done when: approved provider attempts create real sandbox sends in the hosted environment, rejected/suppressed attempts do not send, and webhook readback proves the configured provider path.
 
 7. Add browser-level live action tests for key private writes.
-   - Current truth: partially covered on 2026-07-02. Hosted QA browser proof now covers signed-out parent gates, signed-in parent/coach/admin read surfaces, parent RSVP save, snack claim, volunteer claim, notification preference save, coach weekly update draft, Parent Replay publish, and provider-delivery review against Supabase rows. New evidence screenshots include `output/playwright/parent-live-actions-qa-session-live.png`, `output/playwright/coach-weekly-update-qa-session-live.png`, `output/playwright/coach-parent-replay-private-write-live.png`, and `output/playwright/provider-delivery-review-qa-session-live.png`.
-   - Remaining action: add Playwright proofs for media report/moderation, registration/admin approval flows, and team-builder/admin publish flows.
+   - Current truth: partially covered on hosted 2026-07-02 proof and expanded locally on 2026-07-16. QA session proof now includes media report, media moderation, registration approve/reject, signed-out gates, signed-in parent/coach/admin read surfaces, parent RSVP save, snack claim, volunteer claim, notification preference save, coach weekly update draft, Parent Replay publish, and provider-delivery review against Supabase rows.
+   - Remaining action: run the expanded QA session proof on the hosted production deployment and implement the blocked team-builder publish route/service before claiming browser proof for admin team-builder publish.
    - Done when: CI screenshots or traces prove every release-critical signed-in browser write uses real Supabase sessions.
 
-8. Reconcile stale capability-matrix gaps.
-   - Evidence: `docs/capability-matrix.md` still lists some gaps that later implementation covered, including team CRUD, division/season setup, coach assignment, roster lifecycle, tenant isolation, snack/volunteer reminders, caps, cancellation, and approval policies.
-   - Action: update the matrix to separate current shipped truth from remaining hosted/provider proof.
-   - Done when: `docs/capability-matrix.md`, `docs/Features.md`, and `docs/feature-fit-backlog.md` agree.
+8. Keep feature/capability/backlog truth reconciled.
+   - Current truth: `docs/capability-matrix.md`, `docs/Features.md`, `docs/feature-fit-backlog.md`, this audit list, the task board, and the runbook now separate shipped code from hosted-proof, provider-credential, storage-scanning, Stripe, and team-builder-publish gaps.
+   - Action: update these docs in the same slice whenever shipped capability, provider boundaries, hosted proof, or deferred product decisions change.
+   - Done when: docs continue to agree on shipped, partial, deferred, provider-gated, and hosted-proof status.
 
 9. Confirm admin operations are production-scoped on hosted data.
-   - Current seams: `/admin/operations`, `/admin/security`, `/admin/teams`, `/admin/guardian-links`, `/admin/archive`.
-   - Action: run admin-path proof with a real org admin user and verify no cross-org rows appear.
-   - Done when: admin proof screenshots and RLS checks cover every admin route.
+   - Current seams: `/admin/operations`, `/admin/observability`, `/admin/security`, `/admin/teams`, `/admin/guardian-links`, `/admin/archive`.
+   - Action: run admin-path proof with a real org admin user and verify no cross-org rows appear in operations, observability, and support/admin repair surfaces.
+   - Done when: admin proof screenshots and RLS checks cover every admin route and observability reads only expected Supabase audit/attempt/moderation rows.
 
 10. Prove brand profiles across the 20 launch surfaces.
     - Current truth: `/admin/themes` now renders a 20-surface brand launch checklist, test-brand previews, metrics, monitoring events, alerts, coach feedback questions, and acceptance criteria. `team_brand_profiles`, validation runs, asset uploads, and brand monitoring events are modeled in Supabase with coach/admin RLS. `npm run qa:brand-proof` captures hosted browser proof for the checklist and monitoring contract. PWA cache and brand-asset invalidation are versioned through `PWA_CACHE_VERSION`, `PWA_BRAND_ASSET_REVISION`, and `npm run qa:pwa-cache-proof`.

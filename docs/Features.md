@@ -1,6 +1,6 @@
 # Feature Implementation Tracker
 
-Production scaffold decision: feature slices live in the root Next.js app with typed local seed fallbacks and Supabase-backed production paths for auth-scoped reads, writes, audits, provider-safe drafts, and admin operations. External email, SMS, Web Push sends, Stripe payments, AI providers, and native app distribution remain disconnected unless explicitly approved and configured.
+Production scaffold decision: feature slices live in the root Next.js app with typed local seed fallbacks and Supabase-backed production paths for auth-scoped reads, writes, audits, provider-safe drafts, and admin operations. External email, SMS, and Web Push sends run only through approval-gated, env-configured worker adapters; hosted credential proof remains required before relying on live delivery. Stripe payments, broader AI providers, and native app distribution remain disconnected unless explicitly approved and configured.
 
 | Feature | Phase | Status | Implemented routes | Verification | Notes |
 | --- | --- | --- | --- | --- | --- |
@@ -33,7 +33,7 @@ Production scaffold decision: feature slices live in the root Next.js app with t
 | --- | --- | --- |
 | Tier 1 | Team-specific portals, coach practice recap builder, weekly digest, Game Day Calm Mode, field maps | Parent Replay route implements the practice recap builder. Team-specific context, Calm Mode essentials, Game Day question grouping, and field map links are scaffolded through existing team, schedule, RSVP, snack, volunteer, weather draft, and Team Chat data. Weekly digest is represented as a planned parent-facing rollup, not a provider send. |
 | Tier 2 | Coach video library, parent education center, coach-to-parent translation, skill cards, team quests, weather alerts | Parent Replay generates coach video recommendations, parent education notes, parent-friendly translations, skill cards, and team quests. Weather alerts remain approval-gated and no automatic provider send occurs. |
-| Tier 3 | Skill trees, season storybook, memory timeline, volunteer center, AI-generated learning plans | Replay focus areas roll up into skill-tree cues, memory moments, and a team timeline that also includes events, media, coach notes, and volunteer moments. AI-generated learning plans are not connected to an AI provider in this scaffold. |
+| Tier 3 | Skill trees, season storybook, memory timeline, volunteer center, AI-generated learning plans | Replay focus areas roll up into skill-tree cues, memory moments, and a team timeline that also includes events, media, coach notes, and volunteer moments. AI Coach Workspace can request review-only provider rewrites when configured; fully AI-generated learning-plan publishing remains explicitly approval-gated and not autonomous. |
 | Signature | Parent Replay | Implemented as the differentiated coaching loop: after practice, coach selects 2-3 focus areas and the app generates parent-ready activities, translations, healthy aggregate engagement, and a memory artifact. |
 
 ## Original Feature Notes

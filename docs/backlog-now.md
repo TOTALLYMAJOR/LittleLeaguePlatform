@@ -66,7 +66,7 @@ Acceptance:
 
 - Add install prompt UX and offline fallback route.
 - Test manifest/service worker from standalone build, Docker, and `npm run qa:pwa-cache-proof`.
-- Add Web Push subscription storage behind explicit opt-in.
+- Verify Web Push subscription storage behind explicit opt-in in hosted QA.
 - Keep Expo native app as later work unless PWA usage proves insufficient.
 
 Acceptance:
