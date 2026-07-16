@@ -17,6 +17,7 @@ import {
 } from "./feature-panels";
 import { seedState } from "@/lib/domain";
 import type { ParentCoachDashboardData } from "@/lib/supabase/dashboard-data";
+import type { TeamChatData } from "@/lib/supabase/team-chat";
 
 function dashboardAccessState(accessStatus: ParentCoachDashboardData["accessStatus"], message: string): ParentCoachDashboardData {
   return {
@@ -53,7 +54,30 @@ describe("TeamChatClient", () => {
     expect(html).toContain("Reporting UI");
     expect(html).toContain("Retention jobs");
     expect(html).toContain("Media/message policy screens");
+    expect(html).toContain("Report reason");
     expect(html).toContain("No child accounts");
+  });
+
+  it("renders coach/admin report review and retention execution controls", () => {
+    const teamChatData: TeamChatData = {
+      teams: seedState.teams,
+      users: seedState.users,
+      teamMemberships: seedState.teamMemberships,
+      events: seedState.events,
+      channels: seedState.teamChatChannels,
+      messages: seedState.chatMessages,
+      moderationEvents: seedState.chatModerationAuditEvents,
+      reports: []
+    };
+    const html = renderToStaticMarkup(
+      <AppStateProvider>
+        <TeamChatClient teamChatData={teamChatData} />
+      </AppStateProvider>
+    );
+
+    expect(html).toContain("Review reason");
+    expect(html).toContain("Run retention cleanup");
+    expect(html).toContain("No open Team Chat reports");
   });
 });
 

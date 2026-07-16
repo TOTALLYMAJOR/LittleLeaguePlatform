@@ -147,7 +147,7 @@ import type { RegistrationReviewData } from "@/lib/supabase/registration-approva
 import type { SponsorAdminData } from "@/lib/supabase/sponsors";
 import type { TeamPortalData } from "@/lib/supabase/team-portal";
 import type { AdminThemeData, TeamLogoAsset, TeamThemeAudit, TenantThemeDefaults } from "@/lib/supabase/team-branding";
-import type { TeamChatData } from "@/lib/supabase/team-chat";
+import type { TeamChatData, TeamChatReport, TeamChatReportStatus } from "@/lib/supabase/team-chat";
 import type { ParentCoachDashboardData } from "@/lib/supabase/dashboard-data";
 import type { AdminTeamManagementData } from "@/lib/supabase/team-management";
 import type { ScheduleOperationsData } from "@/lib/supabase/schedule-management";
@@ -6033,7 +6033,8 @@ function mapRealtimeTeamChatMessage(row: Record<string, unknown>) {
     deletedAt: row.deleted_at ? String(row.deleted_at) : undefined,
     moderatedAt: row.moderated_at ? String(row.moderated_at) : undefined,
     moderatedByUserId: row.moderated_by_user_id ? String(row.moderated_by_user_id) : undefined,
-    moderationReason: row.moderation_reason ? String(row.moderation_reason) : undefined
+    moderationReason: row.moderation_reason ? String(row.moderation_reason) : undefined,
+    reportedCount: typeof row.reported_count === "number" ? row.reported_count : 0
   };
 }
 
@@ -6042,6 +6043,7 @@ export function TeamChatClient({ teamChatData }: { teamChatData?: TeamChatData |
   const isSupabaseBacked = Boolean(teamChatData?.teams.length);
   const [remoteMessages, setRemoteMessages] = useState(() => teamChatData?.messages ?? []);
   const [remoteModerationEvents, setRemoteModerationEvents] = useState(() => teamChatData?.moderationEvents ?? []);
+  const [remoteReports, setRemoteReports] = useState<TeamChatReport[]>(() => teamChatData?.reports ?? []);
   const chatState = isSupabaseBacked ? {
     ...state,
     teams: teamChatData!.teams,
@@ -6062,6 +6064,10 @@ export function TeamChatClient({ teamChatData }: { teamChatData?: TeamChatData |
   const [announcementPinned, setAnnouncementPinned] = useState(true);
   const [announcementNotice, setAnnouncementNotice] = useState("");
   const [moderationNotice, setModerationNotice] = useState("");
+  const [chatReportReason, setChatReportReason] = useState("Family reported this Team Chat message for coach/admin review.");
+  const [reportNotice, setReportNotice] = useState("");
+  const [reportReviewReason, setReportReviewReason] = useState("Coach/admin reviewed this Team Chat report.");
+  const [retentionNotice, setRetentionNotice] = useState("");
   const [isChatPending, startChatTransition] = useTransition();
   const selectedViewerId = chatState.users.some((user) => user.id === viewerId) ? viewerId : chatState.users[0]?.id ?? viewerId;
   const selectedTeamId = chatState.teams.some((team) => team.id === teamId) ? teamId : chatState.teams[0]?.id ?? teamId;
@@ -6081,6 +6087,8 @@ export function TeamChatClient({ teamChatData }: { teamChatData?: TeamChatData |
     : [];
   const reportingSummary = selectedTeam ? getTeamChatReportingSummary(chatState, selectedTeam.id) : null;
   const retentionJobs = selectedTeam ? getTeamChatRetentionJobs(chatState, selectedTeam.id) : [];
+  const teamReports = view ? remoteReports.filter((report) => report.teamId === view!.team.id) : [];
+  const openTeamReports = teamReports.filter((report) => report.status === "open");
   const policyScreens = getMediaMessagePolicyScreens();
 
   useEffect(() => {
@@ -6170,6 +6178,76 @@ export function TeamChatClient({ teamChatData }: { teamChatData?: TeamChatData |
         }, ...current]);
       }
       setModerationNotice(result?.message ?? "Team Chat moderation could not be saved.");
+    });
+  }
+
+  function reportSupabaseMessage(messageId: string) {
+    if (!view) return;
+    if (!isSupabaseBacked) {
+      setReportNotice("Team Chat reports require a live Supabase session.");
+      return;
+    }
+    startChatTransition(async () => {
+      const response = await authenticatedJsonFetch("/api/team-chat/reports", {
+        messageId,
+        reason: chatReportReason
+      });
+      const result = await response.json().catch(() => null) as {
+        ok?: boolean;
+        message?: string;
+        report?: TeamChatReport;
+        reportedMessage?: typeof remoteMessages[number];
+      } | null;
+      if (result?.ok && result.report) {
+        setRemoteReports((current) => current.some((report) => report.id === result.report!.id) ? current : [result.report!, ...current]);
+      }
+      if (result?.ok && result.reportedMessage) {
+        setRemoteMessages((current) => current.map((item) => item.id === result.reportedMessage!.id ? result.reportedMessage! : item));
+      }
+      setReportNotice(result?.message ?? "Team Chat report could not be saved.");
+    });
+  }
+
+  function reviewSupabaseReport(reportId: string, status: Exclude<TeamChatReportStatus, "open">) {
+    if (!isSupabaseBacked) {
+      setReportNotice("Team Chat report review requires a live Supabase session.");
+      return;
+    }
+    startChatTransition(async () => {
+      const response = await authenticatedJsonFetch("/api/team-chat/reports/review", {
+        reportId,
+        status,
+        reason: reportReviewReason
+      });
+      const result = await response.json().catch(() => null) as {
+        ok?: boolean;
+        message?: string;
+        report?: TeamChatReport;
+      } | null;
+      if (result?.ok && result.report) {
+        setRemoteReports((current) => current.map((report) => report.id === result.report!.id ? result.report! : report));
+      }
+      setReportNotice(result?.message ?? "Team Chat report review could not be saved.");
+    });
+  }
+
+  function runRetentionJob() {
+    if (!view) return;
+    if (!isSupabaseBacked) {
+      setRetentionNotice("Team Chat retention execution requires a live Supabase session.");
+      return;
+    }
+    startChatTransition(async () => {
+      const response = await authenticatedJsonFetch("/api/team-chat/retention/run", {
+        teamId: view!.team.id,
+        retentionCutoff: new Date().toISOString()
+      });
+      const result = await response.json().catch(() => null) as {
+        ok?: boolean;
+        message?: string;
+        purgedCount?: number;
+      } | null;
+      setRetentionNotice(result?.message ?? "Team Chat retention job could not run.");
     });
   }
 
@@ -6409,6 +6487,7 @@ export function TeamChatClient({ teamChatData }: { teamChatData?: TeamChatData |
                         <span>{roleLabel(message.authorRole)}</span>
                         <span>{message.kind === "announcement" ? "Coach Note" : "Team Chat"}</span>
                         {message.eventId ? <span>Game linked</span> : null}
+                        {(message.reportedCount ?? 0) > 0 ? <span>{message.reportedCount} report(s)</span> : null}
                       </div>
                       <p>{message.body}</p>
                       <time>{formatDate(message.createdAt)}</time>
@@ -6463,6 +6542,20 @@ export function TeamChatClient({ teamChatData }: { teamChatData?: TeamChatData |
                               }}
                             >
                               Delete
+                            </button>
+                          </Tooltip>
+                        </div>
+                      ) : null}
+                      {message.moderationStatus === "visible" ? (
+                        <div className="clubhouse-message-actions">
+                          <Tooltip tip="Send this message to coach/admin review.">
+                            <button
+                              className="secondary"
+                              disabled={isChatPending}
+                              type="button"
+                              onClick={() => reportSupabaseMessage(message.id)}
+                            >
+                              Report
                             </button>
                           </Tooltip>
                         </div>
@@ -6555,13 +6648,46 @@ export function TeamChatClient({ teamChatData }: { teamChatData?: TeamChatData |
             <section className="chat-context-card">
               <span className="eyebrow">Reporting UI</span>
               <p><strong>{reportingSummary?.reportableMessages ?? 0}</strong> visible message(s) can be reported.</p>
-              <p className="muted">{reportingSummary?.hiddenMessages ?? 0} hidden, {reportingSummary?.deletedMessages ?? 0} deleted.</p>
+              <p className="muted">{openTeamReports.length} open report(s), {reportingSummary?.hiddenMessages ?? 0} hidden, {reportingSummary?.deletedMessages ?? 0} deleted.</p>
+              <label>
+                Report reason
+                <textarea value={chatReportReason} onChange={(event) => setChatReportReason(event.target.value)} />
+              </label>
+              {reportNotice ? <p className="notice">{reportNotice}</p> : null}
+              {view.access.canModerate ? (
+                <div className="stack compact">
+                  <label>
+                    Review reason
+                    <textarea value={reportReviewReason} onChange={(event) => setReportReviewReason(event.target.value)} />
+                  </label>
+                  {openTeamReports.slice(0, 4).map((report) => {
+                    const reportedMessage = chatState.chatMessages.find((message) => message.id === report.messageId);
+                    const reporter = chatState.users.find((user) => user.id === report.reporterUserId);
+                    return (
+                      <div className="stack compact" key={report.id}>
+                        <p><strong>{reporter?.name ?? "Team member"} reported:</strong> {reportedMessage?.body ?? "Message no longer visible."}</p>
+                        <p className="muted">{report.reason}</p>
+                        <div className="button-row">
+                          <button className="secondary" disabled={isChatPending} onClick={() => reviewSupabaseReport(report.id, "dismissed")}>Dismiss</button>
+                          <button className="secondary" disabled={isChatPending} onClick={() => reviewSupabaseReport(report.id, "reviewed")}>Mark reviewed</button>
+                          <button className="secondary" disabled={isChatPending} onClick={() => reviewSupabaseReport(report.id, "action_taken")}>Action taken</button>
+                        </div>
+                      </div>
+                    );
+                  })}
+                  {!openTeamReports.length ? <p className="muted">No open Team Chat reports.</p> : null}
+                </div>
+              ) : null}
             </section>
             <section className="chat-context-card">
               <span className="eyebrow">Retention jobs</span>
               {retentionJobs.map((job) => (
                 <p key={job.id}><strong>{job.title}</strong><br /><span className="muted">{job.status} · {job.detail}</span></p>
               ))}
+              {view.access.canModerate ? (
+                <button className="secondary" disabled={isChatPending || !isSupabaseBacked} onClick={runRetentionJob}>Run retention cleanup</button>
+              ) : null}
+              {retentionNotice ? <p className="notice">{retentionNotice}</p> : null}
             </section>
             <section className="chat-context-card">
               <span className="eyebrow">Media/message policy screens</span>

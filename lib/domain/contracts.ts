@@ -613,6 +613,7 @@ export interface TeamChatMessage {
   moderatedAt?: string;
   moderatedByUserId?: string;
   moderationReason?: string;
+  reportedCount?: number;
 }
 
 export interface ChatModerationAuditEvent {

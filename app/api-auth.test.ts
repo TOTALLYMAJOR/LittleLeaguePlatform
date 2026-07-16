@@ -37,6 +37,9 @@ const privateMutationRoutes = [
   "app/api/team-chat/messages/route.ts",
   "app/api/team-chat/moderation/route.ts",
   "app/api/team-chat/read-receipts/route.ts",
+  "app/api/team-chat/reports/route.ts",
+  "app/api/team-chat/reports/review/route.ts",
+  "app/api/team-chat/retention/run/route.ts",
   "app/api/volunteer-signups/claim/route.ts",
   "app/api/weather-alerts/draft/route.ts"
 ];

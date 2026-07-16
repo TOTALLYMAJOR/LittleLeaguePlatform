@@ -43,11 +43,13 @@ describe("Supabase RLS policy coverage", () => {
     expect(hardening).toContain("create policy \"users manage own chat reads\"");
     expect(hardening).toContain("create table public.team_chat_reports");
     expect(hardening).toContain("create policy \"team members create chat reports\"");
+    expect(hardening).toContain("create policy \"team managers review chat reports\"");
   });
 
   it("keeps provider/mobile hardening for media moderation, Realtime, and retention", () => {
     expect(provider).toContain("moderation_status");
     expect(provider).toContain("purge_expired_team_chat_messages");
+    expect(provider).toContain("body = '[deleted after retention period]'");
     expect(provider).toContain("alter publication supabase_realtime add table public.team_chat_messages");
   });
 

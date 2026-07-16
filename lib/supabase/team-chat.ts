@@ -10,6 +10,7 @@ export interface TeamChatData {
   channels: TeamChatChannel[];
   messages: TeamChatMessage[];
   moderationEvents: ChatModerationAuditEvent[];
+  reports: TeamChatReport[];
 }
 
 export interface TeamChatMutationResult {
@@ -40,6 +41,33 @@ type MessageRow = {
   moderated_at: string | null;
   moderated_by_user_id: string | null;
   moderation_reason: string | null;
+  reported_count?: number;
+};
+
+export type TeamChatReportStatus = "open" | "reviewed" | "dismissed" | "action_taken";
+
+export interface TeamChatReport {
+  id: string;
+  messageId: string;
+  teamId: string;
+  reporterUserId: string;
+  reason: string;
+  status: TeamChatReportStatus;
+  reviewedByUserId?: string;
+  reviewedAt?: string;
+  createdAt: string;
+}
+
+type ReportRow = {
+  id: string;
+  message_id: string;
+  team_id: string;
+  reporter_user_id: string;
+  reason: string;
+  status: TeamChatReportStatus;
+  reviewed_by_user_id: string | null;
+  reviewed_at: string | null;
+  created_at: string;
 };
 
 function mapTeam(row: {
@@ -88,7 +116,22 @@ export function mapTeamChatMessageRow(row: MessageRow): TeamChatMessage {
     deletedAt: row.deleted_at ?? undefined,
     moderatedAt: row.moderated_at ?? undefined,
     moderatedByUserId: row.moderated_by_user_id ?? undefined,
-    moderationReason: row.moderation_reason ?? undefined
+    moderationReason: row.moderation_reason ?? undefined,
+    reportedCount: row.reported_count ?? 0
+  };
+}
+
+function mapTeamChatReportRow(row: ReportRow): TeamChatReport {
+  return {
+    id: row.id,
+    messageId: row.message_id,
+    teamId: row.team_id,
+    reporterUserId: row.reporter_user_id,
+    reason: row.reason,
+    status: row.status,
+    reviewedByUserId: row.reviewed_by_user_id ?? undefined,
+    reviewedAt: row.reviewed_at ?? undefined,
+    createdAt: row.created_at
   };
 }
 
@@ -100,7 +143,8 @@ function fallbackChatData(): TeamChatData {
     events: seedState.events,
     channels: seedState.teamChatChannels,
     messages: seedState.chatMessages,
-    moderationEvents: seedState.chatModerationAuditEvents
+    moderationEvents: seedState.chatModerationAuditEvents,
+    reports: []
   };
 }
 
@@ -147,10 +191,11 @@ export async function listTeamChatData(): Promise<TeamChatData> {
         team_id: team.id
       }, { onConflict: "team_id" }))), 7000);
 
-    const [channelsResult, messagesResult, moderationResult] = await withSupabaseTimeout(Promise.all([
+    const [channelsResult, messagesResult, moderationResult, reportsResult] = await withSupabaseTimeout(Promise.all([
       supabase.from("team_chat_channels").select("id,organization_id,season_id,team_id,pinned_message_id,created_at,updated_at").order("created_at", { ascending: true }),
-      supabase.from("team_chat_messages").select("id,organization_id,season_id,team_id,channel_id,event_id,author_user_id,author_role,message_kind,announcement_topic,body,pinned,moderation_status,read_by_user_ids,created_at,edited_at,deleted_at,moderated_at,moderated_by_user_id,moderation_reason").order("created_at", { ascending: true }).limit(200),
-      supabase.from("chat_moderation_audit_events").select("id,message_id,channel_id,team_id,actor_user_id,actor_role,action,reason,created_at").order("created_at", { ascending: false }).limit(100)
+      supabase.from("team_chat_messages").select("id,organization_id,season_id,team_id,channel_id,event_id,author_user_id,author_role,message_kind,announcement_topic,body,pinned,moderation_status,read_by_user_ids,created_at,edited_at,deleted_at,moderated_at,moderated_by_user_id,moderation_reason,reported_count").order("created_at", { ascending: true }).limit(200),
+      supabase.from("chat_moderation_audit_events").select("id,message_id,channel_id,team_id,actor_user_id,actor_role,action,reason,created_at").order("created_at", { ascending: false }).limit(100),
+      supabase.from("team_chat_reports").select("id,message_id,team_id,reporter_user_id,reason,status,reviewed_by_user_id,reviewed_at,created_at").order("created_at", { ascending: false }).limit(100)
     ]), 7000);
 
     return {
@@ -205,7 +250,8 @@ export async function listTeamChatData(): Promise<TeamChatData> {
         action: event.action,
         reason: event.reason,
         createdAt: event.created_at
-      }))
+      })),
+      reports: (reportsResult.data ?? []).map(mapTeamChatReportRow)
     };
   } catch {
     return fallbackChatData();
@@ -255,9 +301,10 @@ export async function postSupabaseTeamChatMessage(input: {
       announcement_topic: input.topic ?? null,
       body,
       pinned: Boolean(input.pinned),
+      reported_count: 0,
       read_by_user_ids: [input.authorUserId]
     })
-    .select("id,organization_id,season_id,team_id,channel_id,event_id,author_user_id,author_role,message_kind,announcement_topic,body,pinned,moderation_status,read_by_user_ids,created_at,edited_at,deleted_at,moderated_at,moderated_by_user_id,moderation_reason")
+    .select("id,organization_id,season_id,team_id,channel_id,event_id,author_user_id,author_role,message_kind,announcement_topic,body,pinned,moderation_status,read_by_user_ids,created_at,edited_at,deleted_at,moderated_at,moderated_by_user_id,moderation_reason,reported_count")
     .single(), 7000);
 
   if (error || !data) return { ok: false, message: "Team Chat message could not be saved." };
@@ -297,7 +344,7 @@ export async function moderateSupabaseTeamChatMessage(input: {
       moderation_reason: reason
     })
     .eq("id", input.messageId)
-    .select("id,organization_id,season_id,team_id,channel_id,event_id,author_user_id,author_role,message_kind,announcement_topic,body,pinned,moderation_status,read_by_user_ids,created_at,edited_at,deleted_at,moderated_at,moderated_by_user_id,moderation_reason")
+    .select("id,organization_id,season_id,team_id,channel_id,event_id,author_user_id,author_role,message_kind,announcement_topic,body,pinned,moderation_status,read_by_user_ids,created_at,edited_at,deleted_at,moderated_at,moderated_by_user_id,moderation_reason,reported_count")
     .single();
 
   if (error || !data) return { ok: false, message: "Team Chat moderation could not be saved." };
@@ -313,6 +360,165 @@ export async function moderateSupabaseTeamChatMessage(input: {
   });
 
   return { ok: true, message: "Team Chat moderation saved to Supabase.", moderatedMessage: mapTeamChatMessageRow(data) };
+}
+
+export async function reportSupabaseTeamChatMessage(input: {
+  messageId: string;
+  reporterUserId: string;
+  reason: string;
+}): Promise<{ ok: boolean; message: string; report?: TeamChatReport; reportedMessage?: TeamChatMessage }> {
+  const reason = input.reason.trim();
+  if (!input.messageId || !input.reporterUserId || !reason) {
+    return { ok: false, message: "Team Chat report requires message, reporter, and reason." };
+  }
+
+  const supabase = createSupabaseAdminClient();
+  const { data: message } = await supabase
+    .from("team_chat_messages")
+    .select("id,organization_id,season_id,team_id,channel_id,event_id,author_user_id,author_role,message_kind,announcement_topic,body,pinned,moderation_status,read_by_user_ids,created_at,edited_at,deleted_at,moderated_at,moderated_by_user_id,moderation_reason,reported_count")
+    .eq("id", input.messageId)
+    .single();
+  if (!message) return { ok: false, message: "Team Chat report requires a known message." };
+
+  const access = await actorCanPost(message.team_id, input.reporterUserId);
+  if (!access) return { ok: false, message: "Only assigned team members can report Team Chat messages." };
+
+  const { data: existingReport } = await supabase
+    .from("team_chat_reports")
+    .select("id,message_id,team_id,reporter_user_id,reason,status,reviewed_by_user_id,reviewed_at,created_at")
+    .eq("message_id", input.messageId)
+    .eq("reporter_user_id", input.reporterUserId)
+    .single();
+  if (existingReport) {
+    return {
+      ok: true,
+      message: "Team Chat message was already reported by this user.",
+      report: mapTeamChatReportRow(existingReport),
+      reportedMessage: mapTeamChatMessageRow(message)
+    };
+  }
+
+  const { data: report, error } = await supabase
+    .from("team_chat_reports")
+    .insert({
+      message_id: input.messageId,
+      team_id: message.team_id,
+      reporter_user_id: input.reporterUserId,
+      reason,
+      status: "open"
+    })
+    .select("id,message_id,team_id,reporter_user_id,reason,status,reviewed_by_user_id,reviewed_at,created_at")
+    .single();
+  if (error || !report) return { ok: false, message: "Team Chat report could not be saved." };
+
+  const nextReportedCount = (message.reported_count ?? 0) + 1;
+  const { data: updatedMessage } = await supabase
+    .from("team_chat_messages")
+    .update({ reported_count: nextReportedCount })
+    .eq("id", input.messageId)
+    .select("id,organization_id,season_id,team_id,channel_id,event_id,author_user_id,author_role,message_kind,announcement_topic,body,pinned,moderation_status,read_by_user_ids,created_at,edited_at,deleted_at,moderated_at,moderated_by_user_id,moderation_reason,reported_count")
+    .single();
+
+  await supabase.from("audit_events").insert({
+    organization_id: message.organization_id,
+    actor_user_id: input.reporterUserId,
+    action: "team_chat_message_reported",
+    target_type: "team_chat_message",
+    target_id: input.messageId,
+    summary: reason
+  });
+
+  return {
+    ok: true,
+    message: "Team Chat message reported for coach/admin review.",
+    report: mapTeamChatReportRow(report),
+    reportedMessage: updatedMessage ? mapTeamChatMessageRow(updatedMessage) : mapTeamChatMessageRow({ ...message, reported_count: nextReportedCount })
+  };
+}
+
+export async function reviewSupabaseTeamChatReport(input: {
+  reportId: string;
+  reviewerUserId: string;
+  status: Exclude<TeamChatReportStatus, "open">;
+  reason: string;
+}): Promise<{ ok: boolean; message: string; report?: TeamChatReport }> {
+  const reason = input.reason.trim();
+  if (!input.reportId || !input.reviewerUserId || !reason) {
+    return { ok: false, message: "Team Chat report review requires report, reviewer, and reason." };
+  }
+  if (!["reviewed", "dismissed", "action_taken"].includes(input.status)) {
+    return { ok: false, message: "Unsupported Team Chat report review status." };
+  }
+
+  const supabase = createSupabaseAdminClient();
+  const { data: report } = await supabase
+    .from("team_chat_reports")
+    .select("id,message_id,team_id,reporter_user_id,reason,status,reviewed_by_user_id,reviewed_at,created_at")
+    .eq("id", input.reportId)
+    .single();
+  if (!report) return { ok: false, message: "Team Chat report could not be found." };
+
+  const access = await actorCanPost(report.team_id, input.reviewerUserId);
+  if (!access?.canModerate) return { ok: false, message: "Only assigned coaches and org admins can review Team Chat reports." };
+
+  const reviewedAt = new Date().toISOString();
+  const { data, error } = await supabase
+    .from("team_chat_reports")
+    .update({
+      status: input.status,
+      reviewed_by_user_id: input.reviewerUserId,
+      reviewed_at: reviewedAt
+    })
+    .eq("id", input.reportId)
+    .select("id,message_id,team_id,reporter_user_id,reason,status,reviewed_by_user_id,reviewed_at,created_at")
+    .single();
+  if (error || !data) return { ok: false, message: "Team Chat report review could not be saved." };
+
+  await supabase.from("audit_events").insert({
+    organization_id: access.team.organization_id,
+    actor_user_id: input.reviewerUserId,
+    action: "team_chat_report_reviewed",
+    target_type: "team_chat_report",
+    target_id: input.reportId,
+    summary: `${input.status}: ${reason}`
+  });
+
+  return { ok: true, message: "Team Chat report review saved.", report: mapTeamChatReportRow(data) };
+}
+
+export async function runSupabaseTeamChatRetentionJob(input: {
+  teamId: string;
+  actorUserId: string;
+  retentionCutoff?: string;
+}): Promise<{ ok: boolean; message: string; purgedCount?: number }> {
+  if (!input.teamId || !input.actorUserId) return { ok: false, message: "Team Chat retention requires team and actor." };
+
+  const access = await actorCanPost(input.teamId, input.actorUserId);
+  if (!access?.canModerate) return { ok: false, message: "Only assigned coaches and org admins can run Team Chat retention." };
+
+  const cutoff = input.retentionCutoff ?? new Date().toISOString();
+  const { data, error } = await withSupabaseTimeout((access.supabase as unknown as {
+    rpc(name: string, args: { retention_cutoff: string }): PromiseLike<{ data: number | null; error: { message?: string } | null }>;
+  }).rpc("purge_expired_team_chat_messages", { retention_cutoff: cutoff }), 7000);
+  if (error) return { ok: false, message: "Team Chat retention job could not run." };
+
+  const purgedCount = data ?? 0;
+  await access.supabase.from("audit_events").insert({
+    organization_id: access.team.organization_id,
+    actor_user_id: input.actorUserId,
+    action: "team_chat_retention_run",
+    target_type: "team",
+    target_id: input.teamId,
+    summary: `Team Chat retention ran for cutoff ${cutoff}; ${purgedCount} message(s) purged.`
+  });
+
+  return {
+    ok: true,
+    message: purgedCount
+      ? `Team Chat retention purged ${purgedCount} expired message(s).`
+      : "Team Chat retention ran; no expired messages required deletion.",
+    purgedCount
+  };
 }
 
 export async function markSupabaseTeamChatRead(input: {

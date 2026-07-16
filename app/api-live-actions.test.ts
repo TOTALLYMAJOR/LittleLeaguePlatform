@@ -26,6 +26,9 @@ import { POST as postSnackClaim } from "./api/snack-slots/claim/route";
 import { POST as postVolunteerClaim } from "./api/volunteer-signups/claim/route";
 import { POST as postWeatherDraft } from "./api/weather-alerts/draft/route";
 import { POST as postTeamMembership } from "./api/admin/team-memberships/route";
+import { POST as postTeamChatReport } from "./api/team-chat/reports/route";
+import { POST as postTeamChatReportReview } from "./api/team-chat/reports/review/route";
+import { POST as postTeamChatRetentionRun } from "./api/team-chat/retention/run/route";
 import type { ParentReplayDraft } from "@/lib/domain";
 import { updateTenantThemeDefaults } from "@/lib/supabase/team-branding";
 import { createTeamMembership } from "@/lib/supabase/memberships";
@@ -36,6 +39,7 @@ import { repairGuardianLink } from "@/lib/supabase/guardian-links";
 import { createAdminExport } from "@/lib/supabase/reporting";
 import { listProviderDeliveryRetryQueue, reviewNotificationDelivery } from "@/lib/supabase/provider-delivery";
 import { createMediaUploadIntent, finalizeMediaUpload } from "@/lib/supabase/media-uploads";
+import { reportSupabaseTeamChatMessage, reviewSupabaseTeamChatReport, runSupabaseTeamChatRetentionJob } from "@/lib/supabase/team-chat";
 import {
   claimSnackSlot,
   claimVolunteerRole,
@@ -112,6 +116,12 @@ vi.mock("@/lib/supabase/media-uploads", () => ({
   finalizeMediaUpload: vi.fn()
 }));
 
+vi.mock("@/lib/supabase/team-chat", () => ({
+  reportSupabaseTeamChatMessage: vi.fn(),
+  reviewSupabaseTeamChatReport: vi.fn(),
+  runSupabaseTeamChatRetentionJob: vi.fn()
+}));
+
 vi.mock("@/lib/supabase/public-rate-limit", () => ({
   PUBLIC_RATE_LIMITS: {
     mobileUsageEvents: { routeKey: "mobile-usage-events", limit: 120, windowMs: 60_000 },
@@ -146,6 +156,9 @@ const listProviderDeliveryRetryQueueMock = vi.mocked(listProviderDeliveryRetryQu
 const reviewNotificationDeliveryMock = vi.mocked(reviewNotificationDelivery);
 const createMediaUploadIntentMock = vi.mocked(createMediaUploadIntent);
 const finalizeMediaUploadMock = vi.mocked(finalizeMediaUpload);
+const reportSupabaseTeamChatMessageMock = vi.mocked(reportSupabaseTeamChatMessage);
+const reviewSupabaseTeamChatReportMock = vi.mocked(reviewSupabaseTeamChatReport);
+const runSupabaseTeamChatRetentionJobMock = vi.mocked(runSupabaseTeamChatRetentionJob);
 const applyPublicRateLimitMock = vi.mocked(applyPublicRateLimit);
 
 function jsonRequest(body: unknown) {
@@ -727,6 +740,89 @@ describe("live action API routes", () => {
       mediaItemId: "media-upload-1",
       actorUserId: "user-live-session",
       storagePath: "organizations/org-1/teams/team-1/media/2026-07-16/upload-1.jpg"
+    });
+  });
+
+  it("uses the authenticated team member session for Team Chat reports", async () => {
+    reportSupabaseTeamChatMessageMock.mockResolvedValue({
+      ok: true,
+      message: "Report saved.",
+      report: {
+        id: "report-1",
+        messageId: "message-1",
+        teamId: "team-1",
+        reporterUserId: "user-live-session",
+        reason: "Review this message",
+        status: "open",
+        createdAt: "2026-07-16T12:00:00.000Z"
+      }
+    });
+
+    const response = await postTeamChatReport(jsonRequest({
+      messageId: "message-1",
+      reporterUserId: "client-spoof",
+      reason: "Review this message"
+    }));
+
+    expect(response.status).toBe(201);
+    expect(reportSupabaseTeamChatMessageMock).toHaveBeenCalledWith({
+      messageId: "message-1",
+      reporterUserId: "user-live-session",
+      reason: "Review this message"
+    });
+  });
+
+  it("uses the authenticated coach or admin session for Team Chat report reviews", async () => {
+    reviewSupabaseTeamChatReportMock.mockResolvedValue({
+      ok: true,
+      message: "Report reviewed.",
+      report: {
+        id: "report-1",
+        messageId: "message-1",
+        teamId: "team-1",
+        reporterUserId: "user-parent",
+        reason: "Review this message",
+        status: "dismissed",
+        reviewedByUserId: "user-live-session",
+        reviewedAt: "2026-07-16T12:05:00.000Z",
+        createdAt: "2026-07-16T12:00:00.000Z"
+      }
+    });
+
+    const response = await postTeamChatReportReview(jsonRequest({
+      reportId: "report-1",
+      reviewerUserId: "client-spoof",
+      status: "dismissed",
+      reason: "Reviewed by coach."
+    }));
+
+    expect(response.status).toBe(200);
+    expect(reviewSupabaseTeamChatReportMock).toHaveBeenCalledWith({
+      reportId: "report-1",
+      reviewerUserId: "user-live-session",
+      status: "dismissed",
+      reason: "Reviewed by coach."
+    });
+  });
+
+  it("uses the authenticated coach or admin session for Team Chat retention runs", async () => {
+    runSupabaseTeamChatRetentionJobMock.mockResolvedValue({
+      ok: true,
+      message: "Retention ran.",
+      purgedCount: 0
+    });
+
+    const response = await postTeamChatRetentionRun(jsonRequest({
+      teamId: "team-1",
+      actorUserId: "client-spoof",
+      retentionCutoff: "2026-07-16T12:00:00.000Z"
+    }));
+
+    expect(response.status).toBe(200);
+    expect(runSupabaseTeamChatRetentionJobMock).toHaveBeenCalledWith({
+      teamId: "team-1",
+      actorUserId: "user-live-session",
+      retentionCutoff: "2026-07-16T12:00:00.000Z"
     });
   });
 
