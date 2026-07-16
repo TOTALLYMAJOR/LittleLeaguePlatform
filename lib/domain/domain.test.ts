@@ -249,8 +249,10 @@ describe("media URL validation", () => {
     expect(validateMediaUrl("google_photos", "https://photos.app.goo.gl/demo").ok).toBe(true);
     expect(validateMediaUrl("youtube", "https://www.youtube.com/watch?v=demo").ok).toBe(true);
     expect(validateMediaUrl("youtube", "https://youtu.be/demo").ok).toBe(true);
+    expect(validateMediaUrl("uploaded_image", "supabase-storage://team-media/organizations/org-1/teams/team-1/media/photo.jpg").ok).toBe(true);
     expect(validateMediaUrl("youtube", "http://youtu.be/demo").ok).toBe(false);
     expect(validateMediaUrl("google_photos", "https://example.com/album").ok).toBe(false);
+    expect(validateMediaUrl("uploaded_video", "https://example.com/video.mp4").ok).toBe(false);
   });
 
   it("summarizes approve, reject, upload provider, and reporting state", () => {
@@ -265,6 +267,7 @@ describe("media URL validation", () => {
     expect(reporting.totalReports).toBe(2);
     expect(reporting.pendingReview).toBe(1);
     expect(storage.provider).toBe("not_configured");
+    expect(getUploadStorageProviderStatus(true).detail).toContain("upload intent/finalize");
   });
 
   it("tracks family moderation, retention, role visibility, and consent controls", () => {

@@ -84,9 +84,9 @@ The app is not ready for real-family production launch yet. The core scaffold, r
 
 ## P2 Product Decisions Before Wider Launch
 
-12. Decide whether media uploads are in scope.
-    - Current truth: media intake is link-based with Google Photos/YouTube validation, reporting, and moderation; upload storage provider is not configured.
-    - Action if needed: add Supabase Storage or another private asset provider, upload review policy, file limits, scanning, and deletion/takedown workflow.
+12. Prove media upload storage on hosted infrastructure.
+    - Current truth: media intake supports Google Photos/YouTube links plus Supabase Storage upload intent/finalize APIs for authenticated team members/admins. Upload paths are organization/team scoped, file type/size is validated, metadata rows remain pending moderation, and retention/takedown fields are stored. Automated scanning is not configured yet and hosted bucket proof is still required.
+    - Remaining action: create/prove the hosted `team-media` Supabase Storage bucket or configured replacement, add automated scanning if required by policy, and run browser proof for intent, storage upload, finalize, moderation approval, and parent visibility.
 
 13. Sponsor billing proof foundation is now in scope.
     - Current truth: sponsor records, placements, logo metadata, audits, Stripe Product/Price lookup keys, invoice references, and payment-proof statuses are represented as admin-only readiness records.

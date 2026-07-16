@@ -1426,7 +1426,7 @@ export function ParentDashboardClient({ dashboardData }: { dashboardData?: Paren
             <span className="badge">{filteredMediaFeed.length} item(s)</span>
           </div>
           <div className="toolbar">
-            {(["all", "google_photos", "youtube"] as const).map((filter) => (
+            {(["all", "google_photos", "youtube", "uploaded_image", "uploaded_video"] as const).map((filter) => (
               <button
                 className={mediaTypeFilter === filter ? undefined : "secondary"}
                 key={filter}
@@ -2448,7 +2448,7 @@ export function AdminDashboardClient({ registrationRequests, sponsorData, mediaD
   const [sponsors, setSponsors] = useState<Sponsor[]>(initialSponsors);
   const [mediaItems, setMediaItems] = useState<MediaItem[]>(initialMediaItems);
   const mediaReportingSummary = getMediaReportingSummary(mediaItems);
-  const uploadStorageProvider = getUploadStorageProviderStatus(false);
+  const uploadStorageProvider = mediaData?.uploadStorageProvider ?? { ...getUploadStorageProviderStatus(false), bucket: "team-media" };
   const mediaRetentionPolicy = getMediaRetentionPolicy();
   const parentVisibleMediaCount = mediaItems.filter((item) => canViewMediaByRole(item, "parent")).length;
   const activeSponsors = sponsors.filter((sponsor) => sponsor.status === "active");
@@ -2495,6 +2495,10 @@ export function AdminDashboardClient({ registrationRequests, sponsorData, mediaD
   const [mediaVisibilityDrafts, setMediaVisibilityDrafts] = useState<Record<string, "team" | "organization">>(() => Object.fromEntries(
     initialMediaItems.map((item) => [item.id, item.visibility ?? "team"])
   ));
+  const [mediaUploadTeamId, setMediaUploadTeamId] = useState(mediaTeams[0]?.id ?? "");
+  const [mediaUploadTitle, setMediaUploadTitle] = useState("");
+  const [mediaUploadVisibility, setMediaUploadVisibility] = useState<"team" | "organization">("team");
+  const [mediaUploadFile, setMediaUploadFile] = useState<File | null>(null);
   const [isMediaPending, startMediaTransition] = useTransition();
   const [lineupTeamId, setLineupTeamId] = useState("team-tigers");
   const [draggedPlayerId, setDraggedPlayerId] = useState("");
@@ -2625,6 +2629,76 @@ export function AdminDashboardClient({ registrationRequests, sponsorData, mediaD
       }
 
       setMediaMessage(result?.message ?? "Media moderation could not be saved.");
+    });
+  }
+
+  function submitMediaUpload() {
+    if (!mediaUploadFile) {
+      setMediaMessage("Choose a JPEG, PNG, WebP, or MP4 file before creating an upload intent.");
+      return;
+    }
+
+    setMediaMessage("");
+    startMediaTransition(async () => {
+      const intentResponse = await authenticatedJsonFetch("/api/media/uploads/intent", {
+        teamId: mediaUploadTeamId,
+        title: mediaUploadTitle,
+        fileName: mediaUploadFile.name,
+        mimeType: mediaUploadFile.type,
+        byteSize: mediaUploadFile.size,
+        visibility: mediaUploadVisibility
+      });
+      const intent = await intentResponse.json().catch(() => null) as {
+        ok?: boolean;
+        message?: string;
+        mediaItem?: MediaItem;
+        upload?: {
+          bucket: string;
+          path: string;
+          signedUploadUrl: string;
+          token: string;
+        };
+      } | null;
+
+      if (!intent?.ok || !intent.upload || !intent.mediaItem) {
+        setMediaMessage(intent?.message ?? "Media upload intent could not be created.");
+        return;
+      }
+
+      try {
+        const supabase = createSupabaseBrowserClient();
+        const { error } = await supabase.storage
+          .from(intent.upload.bucket)
+          .uploadToSignedUrl(intent.upload.path, intent.upload.token, mediaUploadFile, { contentType: mediaUploadFile.type });
+        if (error) {
+          setMediaMessage(error.message || "Media file could not be uploaded to Supabase Storage.");
+          return;
+        }
+      } catch {
+        setMediaMessage("Media file could not be uploaded because Supabase Storage is unavailable.");
+        return;
+      }
+
+      const finalizeResponse = await authenticatedJsonFetch("/api/media/uploads/finalize", {
+        mediaItemId: intent.mediaItem.id,
+        storagePath: intent.upload.path
+      });
+      const finalized = await finalizeResponse.json().catch(() => null) as {
+        ok?: boolean;
+        message?: string;
+        mediaItem?: MediaItem;
+      } | null;
+
+      if (finalized?.ok && finalized.mediaItem) {
+        setMediaItems((current) => [finalized.mediaItem!, ...current.filter((item) => item.id !== finalized.mediaItem!.id)]);
+        setMediaVisibilityDrafts((current) => ({
+          ...current,
+          [finalized.mediaItem!.id]: finalized.mediaItem!.visibility ?? "team"
+        }));
+        setMediaUploadTitle("");
+      }
+
+      setMediaMessage(finalized?.message ?? "Media upload could not be finalized.");
     });
   }
 
@@ -2958,6 +3032,35 @@ export function AdminDashboardClient({ registrationRequests, sponsorData, mediaD
             <div className="metric"><span className="muted">Upload storage</span><strong>{uploadStorageProvider.provider}</strong></div>
           </div>
           <p className="muted">{uploadStorageProvider.detail}</p>
+          <p className="muted">Upload bucket: {uploadStorageProvider.bucket}. Automated scanning is not configured in this scaffold, so uploaded files stay pending manual moderation.</p>
+          <div className="stack compact">
+            <h3>Upload team media</h3>
+            <div className="grid two">
+              <label>
+                Team
+                <select value={mediaUploadTeamId} onChange={(event) => setMediaUploadTeamId(event.target.value)}>
+                  {mediaTeams.map((team) => <option key={team.id} value={team.id}>{team.name}</option>)}
+                </select>
+              </label>
+              <label>
+                Visibility after approval
+                <select value={mediaUploadVisibility} onChange={(event) => setMediaUploadVisibility(event.target.value as "team" | "organization")}>
+                  <option value="team">Team only</option>
+                  <option value="organization">Organization</option>
+                </select>
+              </label>
+              <label>
+                Title
+                <input value={mediaUploadTitle} onChange={(event) => setMediaUploadTitle(event.target.value)} placeholder="Opening day dugout photo" />
+              </label>
+              <label>
+                File
+                <input accept="image/jpeg,image/png,image/webp,video/mp4" onChange={(event) => setMediaUploadFile(event.target.files?.[0] ?? null)} type="file" />
+              </label>
+            </div>
+            <button disabled={isMediaPending || !mediaUploadTeamId || !mediaUploadTitle || !mediaUploadFile} onClick={submitMediaUpload}>Create upload intent</button>
+            <p className="muted">Uploads create private Storage objects and pending moderation rows. Families see the media only after approval.</p>
+          </div>
           <p><strong>Role-based media visibility:</strong> {parentVisibleMediaCount} item(s) currently visible to parents.</p>
           <p className="muted">Media retention policy: {mediaRetentionPolicy.seasonMedia}</p>
           {mediaItems.map((item) => {
@@ -2971,6 +3074,9 @@ export function AdminDashboardClient({ registrationRequests, sponsorData, mediaD
                   <strong>{item.title}</strong><br />
                   <span className="muted">{team?.name ?? "Unknown team"} - {item.type.replace("_", " ")} - {status} - {item.reportCount ?? 0} report(s)</span>
                 </p>
+                {item.storagePath ? (
+                  <p className="muted">Storage: {item.storageBucket}/{item.storagePath} - upload {item.uploadStatus ?? "unknown"} - scan {item.scanStatus ?? "unknown"} - retention {item.retentionPolicy ?? "season_archive_window"}.</p>
+                ) : null}
                 <p className="muted">Photo visibility flags: team {visibilityFlags.teamVisible ? "yes" : "no"}, org {visibilityFlags.organizationVisible ? "yes" : "no"}, private album {visibilityFlags.privateAlbumOnly ? "yes" : "no"}.</p>
                 <p className="muted">{takedownRequest.title} - {takedownRequest.status}</p>
                 <label>

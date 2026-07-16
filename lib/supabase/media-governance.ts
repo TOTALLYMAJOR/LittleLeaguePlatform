@@ -1,5 +1,6 @@
-import { seedState, type MediaItem, type Team } from "@/lib/domain";
+import { getUploadStorageProviderStatus, seedState, type MediaItem, type Team } from "@/lib/domain";
 import { createSupabaseAdminClient } from "./admin";
+import { getMediaUploadBucket } from "./media-uploads";
 import { withSupabaseTimeout } from "./timeout";
 
 type UnsafeSupabase = {
@@ -13,6 +14,7 @@ export interface MediaGovernanceData {
   mediaItems: MediaItem[];
   isSupabaseBacked: boolean;
   message: string;
+  uploadStorageProvider: ReturnType<typeof getUploadStorageProviderStatus> & { bucket: string };
 }
 
 function fallbackMediaGovernanceData(message = "Showing local media records until Supabase media rows are available."): MediaGovernanceData {
@@ -20,7 +22,11 @@ function fallbackMediaGovernanceData(message = "Showing local media records unti
     teams: seedState.teams,
     mediaItems: seedState.mediaItems,
     isSupabaseBacked: false,
-    message
+    message,
+    uploadStorageProvider: {
+      ...getUploadStorageProviderStatus(false),
+      bucket: getMediaUploadBucket()
+    }
   };
 }
 
@@ -33,7 +39,7 @@ export async function listMediaGovernanceData(): Promise<MediaGovernanceData> {
     const db = adminDb();
     const [teamsResult, mediaResult] = await withSupabaseTimeout(Promise.all([
       db.from("teams").select("id,organization_id,season_id,division,name,coach_user_id,mascot,primary_color,secondary_color,theme_key").order("division", { ascending: true }),
-      db.from("media_items").select("id,team_id,title,media_type,url,moderation_status,visibility,report_count,created_at").order("created_at", { ascending: false })
+      db.from("media_items").select("id,team_id,title,media_type,url,moderation_status,visibility,report_count,uploaded_by_user_id,storage_bucket,storage_path,mime_type,byte_size,upload_status,scan_status,uploaded_at,takedown_requested_at,takedown_reason,retention_policy,created_at").order("created_at", { ascending: false })
     ]), 7000);
 
     if (teamsResult.error || mediaResult.error) {
@@ -73,6 +79,17 @@ export async function listMediaGovernanceData(): Promise<MediaGovernanceData> {
       moderation_status: MediaItem["moderationStatus"];
       visibility: MediaItem["visibility"] | null;
       report_count: number;
+      uploaded_by_user_id?: string | null;
+      storage_bucket?: string | null;
+      storage_path?: string | null;
+      mime_type?: string | null;
+      byte_size?: number | null;
+      upload_status?: MediaItem["uploadStatus"] | null;
+      scan_status?: MediaItem["scanStatus"] | null;
+      uploaded_at?: string | null;
+      takedown_requested_at?: string | null;
+      takedown_reason?: string | null;
+      retention_policy?: string | null;
       created_at: string;
     }) => ({
       id: item.id,
@@ -83,6 +100,17 @@ export async function listMediaGovernanceData(): Promise<MediaGovernanceData> {
       moderationStatus: item.moderation_status,
       visibility: item.visibility ?? "team",
       reportCount: item.report_count ?? 0,
+      uploadedByUserId: item.uploaded_by_user_id ?? undefined,
+      storageBucket: item.storage_bucket ?? undefined,
+      storagePath: item.storage_path ?? undefined,
+      mimeType: item.mime_type ?? undefined,
+      byteSize: item.byte_size ?? undefined,
+      uploadStatus: item.upload_status ?? undefined,
+      scanStatus: item.scan_status ?? undefined,
+      uploadedAt: item.uploaded_at ?? undefined,
+      takedownRequestedAt: item.takedown_requested_at ?? undefined,
+      takedownReason: item.takedown_reason ?? undefined,
+      retentionPolicy: item.retention_policy ?? undefined,
       createdAt: item.created_at
     }));
 
@@ -90,7 +118,11 @@ export async function listMediaGovernanceData(): Promise<MediaGovernanceData> {
       teams,
       mediaItems,
       isSupabaseBacked: true,
-      message: "Media governance rows, report counts, status, and visibility are loaded from Supabase."
+      message: "Media governance rows, report counts, upload metadata, status, and visibility are loaded from Supabase.",
+      uploadStorageProvider: {
+        ...getUploadStorageProviderStatus(true),
+        bucket: getMediaUploadBucket()
+      }
     };
   } catch {
     return fallbackMediaGovernanceData("Supabase media governance rows could not be loaded.");

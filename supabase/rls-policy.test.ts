@@ -23,6 +23,7 @@ describe("Supabase RLS policy coverage", () => {
   const rsvpCancellations = migration("0016_rsvp_cancellations.sql");
   const sponsorBillingAndTeamBuilder = migration("0017_sponsor_billing_and_team_builder.sql");
   const teamBrandProfilesMonitoring = migration("0018_team_brand_profiles_monitoring.sql");
+  const mediaUploadStoragePipeline = migration("0024_media_upload_storage_pipeline.sql");
   const packageJson = readFileSync(join(process.cwd(), "package.json"), "utf8");
   const rlsProof = readFileSync(join(process.cwd(), "scripts", "verify-rls-boundaries.mjs"), "utf8");
 
@@ -146,5 +147,15 @@ describe("Supabase RLS policy coverage", () => {
     expect(teamBrandProfilesMonitoring).toContain("coaches and admins manage team brand profiles");
     expect(teamBrandProfilesMonitoring).toContain("team members read published brand profiles");
     expect(teamBrandProfilesMonitoring).toContain("public.current_user_can_manage_team(team_id)");
+  });
+
+  it("keeps media uploads private and moderation-gated", () => {
+    expect(mediaUploadStoragePipeline).toContain("'uploaded_image'");
+    expect(mediaUploadStoragePipeline).toContain("'uploaded_video'");
+    expect(mediaUploadStoragePipeline).toContain("storage_bucket text");
+    expect(mediaUploadStoragePipeline).toContain("storage_path text");
+    expect(mediaUploadStoragePipeline).toContain("upload_status in ('external_link', 'intent_created', 'uploaded', 'quarantined', 'removed')");
+    expect(mediaUploadStoragePipeline).toContain("scan_status in ('not_applicable', 'pending', 'passed', 'flagged', 'not_configured')");
+    expect(mediaUploadStoragePipeline).toContain("idx_media_items_storage_object");
   });
 });

@@ -20,6 +20,8 @@ import { POST as postRosterImportAudit } from "./api/admin/roster-imports/audit/
 import { POST as postThemeDefaults } from "./api/admin/theme-defaults/route";
 import { POST as postMediaReport } from "./api/media/report/route";
 import { POST as postMediaModeration } from "./api/media/moderation/route";
+import { POST as postMediaUploadIntent } from "./api/media/uploads/intent/route";
+import { POST as postMediaUploadFinalize } from "./api/media/uploads/finalize/route";
 import { POST as postSnackClaim } from "./api/snack-slots/claim/route";
 import { POST as postVolunteerClaim } from "./api/volunteer-signups/claim/route";
 import { POST as postWeatherDraft } from "./api/weather-alerts/draft/route";
@@ -33,6 +35,7 @@ import { saveScheduleEvent } from "@/lib/supabase/schedule-management";
 import { repairGuardianLink } from "@/lib/supabase/guardian-links";
 import { createAdminExport } from "@/lib/supabase/reporting";
 import { listProviderDeliveryRetryQueue, reviewNotificationDelivery } from "@/lib/supabase/provider-delivery";
+import { createMediaUploadIntent, finalizeMediaUpload } from "@/lib/supabase/media-uploads";
 import {
   claimSnackSlot,
   claimVolunteerRole,
@@ -104,6 +107,11 @@ vi.mock("@/lib/supabase/provider-delivery", () => ({
   reviewNotificationDelivery: vi.fn()
 }));
 
+vi.mock("@/lib/supabase/media-uploads", () => ({
+  createMediaUploadIntent: vi.fn(),
+  finalizeMediaUpload: vi.fn()
+}));
+
 vi.mock("@/lib/supabase/public-rate-limit", () => ({
   PUBLIC_RATE_LIMITS: {
     mobileUsageEvents: { routeKey: "mobile-usage-events", limit: 120, windowMs: 60_000 },
@@ -136,6 +144,8 @@ const repairGuardianLinkMock = vi.mocked(repairGuardianLink);
 const createAdminExportMock = vi.mocked(createAdminExport);
 const listProviderDeliveryRetryQueueMock = vi.mocked(listProviderDeliveryRetryQueue);
 const reviewNotificationDeliveryMock = vi.mocked(reviewNotificationDelivery);
+const createMediaUploadIntentMock = vi.mocked(createMediaUploadIntent);
+const finalizeMediaUploadMock = vi.mocked(finalizeMediaUpload);
 const applyPublicRateLimitMock = vi.mocked(applyPublicRateLimit);
 
 function jsonRequest(body: unknown) {
@@ -644,6 +654,79 @@ describe("live action API routes", () => {
       status: "hidden",
       visibility: "organization",
       reason: "Needs review"
+    });
+  });
+
+  it("uses the authenticated team member session for media upload intents", async () => {
+    createMediaUploadIntentMock.mockResolvedValue({
+      ok: true,
+      message: "Upload intent created.",
+      mediaItem: {
+        id: "media-upload-1",
+        teamId: "team-1",
+        title: "Opening day",
+        type: "uploaded_image",
+        url: "supabase-storage://team-media/organizations/org-1/teams/team-1/media/2026-07-16/upload-1.jpg",
+        moderationStatus: "pending",
+        createdAt: "2026-07-16T12:00:00.000Z"
+      },
+      upload: {
+        bucket: "team-media",
+        path: "organizations/org-1/teams/team-1/media/2026-07-16/upload-1.jpg",
+        signedUploadUrl: "https://storage.example/upload",
+        token: "signed-token",
+        maxBytes: 52_428_800
+      }
+    });
+
+    const response = await postMediaUploadIntent(jsonRequest({
+      teamId: "team-1",
+      actorUserId: "client-spoof",
+      title: "Opening day",
+      fileName: "photo.jpg",
+      mimeType: "image/jpeg",
+      byteSize: 1024,
+      visibility: "team"
+    }));
+
+    expect(response.status).toBe(201);
+    expect(createMediaUploadIntentMock).toHaveBeenCalledWith({
+      teamId: "team-1",
+      actorUserId: "user-live-session",
+      title: "Opening day",
+      fileName: "photo.jpg",
+      mimeType: "image/jpeg",
+      byteSize: 1024,
+      visibility: "team"
+    });
+  });
+
+  it("uses the authenticated team member session for media upload finalization", async () => {
+    finalizeMediaUploadMock.mockResolvedValue({
+      ok: true,
+      message: "Upload finalized.",
+      mediaItem: {
+        id: "media-upload-1",
+        teamId: "team-1",
+        title: "Opening day",
+        type: "uploaded_image",
+        url: "supabase-storage://team-media/organizations/org-1/teams/team-1/media/2026-07-16/upload-1.jpg",
+        moderationStatus: "pending",
+        createdAt: "2026-07-16T12:00:00.000Z"
+      }
+    });
+
+    const response = await postMediaUploadFinalize(jsonRequest({
+      mediaItemId: "media-upload-1",
+      actorUserId: "client-spoof",
+      storagePath: "organizations/org-1/teams/team-1/media/2026-07-16/upload-1.jpg"
+    }));
+
+    expect(response.status).toBe(200);
+    expect(finalizeMediaUploadMock).toHaveBeenCalledWith({
+      mediaItemId: "media-upload-1",
+      actorUserId: "user-live-session",
+      storagePath: "organizations/org-1/teams/team-1/media/2026-07-16/upload-1.jpg"
     });
   });
 

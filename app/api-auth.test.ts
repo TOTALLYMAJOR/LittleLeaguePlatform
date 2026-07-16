@@ -21,6 +21,8 @@ const privateMutationRoutes = [
   "app/api/field-locations/route.ts",
   "app/api/media/moderation/route.ts",
   "app/api/media/report/route.ts",
+  "app/api/media/uploads/finalize/route.ts",
+  "app/api/media/uploads/intent/route.ts",
   "app/api/notification-preferences/route.ts",
   "app/api/notification-preferences/unsubscribe/route.ts",
   "app/api/provider-delivery/batch-review/route.ts",

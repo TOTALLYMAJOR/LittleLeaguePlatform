@@ -297,6 +297,10 @@ describe("AdminDashboardClient", () => {
     expect(html).toContain("Media governance");
     expect(html).toContain("Media reports");
     expect(html).toContain("Upload storage");
+    expect(html).toContain("Upload team media");
+    expect(html).toContain("Create upload intent");
+    expect(html).toContain("Automated scanning is not configured");
+    expect(html).toContain("Families see the media only after approval");
     expect(html).toContain("Approve media");
     expect(html).toContain("Reject media");
     expect(html).toContain("Role-based media visibility");

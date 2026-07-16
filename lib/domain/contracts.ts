@@ -96,7 +96,7 @@ export type GuardianRelationship = (typeof GUARDIAN_RELATIONSHIPS)[number];
 export const GUARDIAN_LINK_STATUSES = ["invited", "active", "removed"] as const;
 export type GuardianLinkStatus = (typeof GUARDIAN_LINK_STATUSES)[number];
 
-export const MEDIA_ITEM_TYPES = ["google_photos", "youtube"] as const;
+export const MEDIA_ITEM_TYPES = ["google_photos", "youtube", "uploaded_image", "uploaded_video"] as const;
 export type MediaItemType = (typeof MEDIA_ITEM_TYPES)[number];
 
 export const MEDIA_MODERATION_STATUSES = ["pending", "approved", "hidden", "rejected", "removed"] as const;
@@ -431,6 +431,17 @@ export interface MediaItem {
   moderationStatus?: MediaModerationStatus;
   visibility?: MediaVisibility;
   reportCount?: number;
+  uploadedByUserId?: string;
+  storageBucket?: string;
+  storagePath?: string;
+  mimeType?: string;
+  byteSize?: number;
+  uploadStatus?: "external_link" | "intent_created" | "uploaded" | "quarantined" | "removed";
+  scanStatus?: "not_applicable" | "pending" | "passed" | "flagged" | "not_configured";
+  uploadedAt?: string;
+  takedownRequestedAt?: string;
+  takedownReason?: string;
+  retentionPolicy?: string;
   createdAt: string;
 }
 

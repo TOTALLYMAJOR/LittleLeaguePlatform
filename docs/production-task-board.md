@@ -203,11 +203,12 @@ Task-specific checks are required only when the surface is touched:
 ### LP-019 - Decide Media Upload Storage Scope
 
 - Priority: P2 product decision.
-- Current state: link-based Google Photos/YouTube media with validation, reporting, and moderation; upload storage provider is not configured.
-- Seams: media governance service, storage provider, `/api/media/*`, brand/media docs.
-- Done when: launch either stays link-based or scopes Supabase Storage/private asset provider with upload review, file limits, scanning, deletion, and takedown policy.
+- Current state: Supabase Storage upload intent/finalize APIs are implemented for authenticated active team members and organization admins. Uploaded JPEG/PNG/WebP/MP4 rows use organization/team-scoped object paths, file size/type validation, pending moderation, upload status, scan status, retention policy, and takedown metadata. Parent/team reads continue to load approved media only.
+- Remaining action: prove the hosted `team-media` bucket or configured replacement, run browser proof for file upload/finalize/approval/parent visibility, and add automated scanning provider proof if required by policy. Current code marks finalized uploads with `scan_status=not_configured` until that provider is connected.
+- Seams: `/api/media/uploads/intent`, `/api/media/uploads/finalize`, `/api/media/moderation`, `lib/supabase/media-uploads.ts`, `lib/supabase/media-governance.ts`, `supabase/migrations/0024_media_upload_storage_pipeline.sql`.
+- Done when: hosted proof shows upload intent, Storage object creation, finalize, moderation approval, and approved-only family visibility against the production Supabase project.
 - SaaS constants focus: file isolation, child privacy, storage paths, retention, support export/delete, abuse control.
-- Validation: docs-only if deferred; storage/provider tests if implemented.
+- Validation: `lib/supabase/media-uploads.test.ts`, route session-spoof tests, hosted browser proof when Storage bucket credentials exist.
 
 ### LP-020 - Decide Sponsor Billing And Stripe Scope
 

@@ -6,6 +6,13 @@ export interface MediaUrlValidation {
 }
 
 export function validateMediaUrl(type: MediaItem["type"], url: string): MediaUrlValidation {
+  if (type === "uploaded_image" || type === "uploaded_video") {
+    if (url.startsWith("supabase-storage://")) {
+      return { ok: true, message: "Private Supabase Storage object; family access stays approval-gated." };
+    }
+    return { ok: false, message: "Uploaded media must reference a private Supabase Storage object." };
+  }
+
   let parsed: URL;
   try {
     parsed = new URL(url);
@@ -50,7 +57,7 @@ export function getUploadStorageProviderStatus(configured = false) {
     configured,
     provider: configured ? "Supabase Storage" : "not_configured",
     detail: configured
-      ? "Upload storage is configured; consent and moderation still apply."
+      ? "Supabase Storage upload intent/finalize APIs are configured; family visibility still requires coach/admin approval."
       : "Upload storage provider is not configured; media intake remains link-based."
   };
 }
