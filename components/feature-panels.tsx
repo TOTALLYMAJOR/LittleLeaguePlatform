@@ -151,6 +151,7 @@ import type { TeamChatData } from "@/lib/supabase/team-chat";
 import type { ParentCoachDashboardData } from "@/lib/supabase/dashboard-data";
 import type { AdminTeamManagementData } from "@/lib/supabase/team-management";
 import type { ScheduleOperationsData } from "@/lib/supabase/schedule-management";
+import type { ProviderDeliveryReviewQueueItem, ProviderDeliveryReviewDecision } from "@/lib/supabase/provider-delivery";
 import {
   AvatarStack,
   BreadcrumbTrail,
@@ -3725,6 +3726,182 @@ export function RegistrationReviewClient({ initialData }: { initialData: Registr
         </article>
       </section>
     </div>
+  );
+}
+
+export function ProviderDeliveryReviewQueueClient({ initialQueue }: { initialQueue: ProviderDeliveryReviewQueueItem[] }) {
+  const [queue, setQueue] = useState(initialQueue);
+  const [selectedIds, setSelectedIds] = useState<string[]>([]);
+  const [channelFilter, setChannelFilter] = useState<"all" | "email" | "sms" | "push">("all");
+  const [approvalFilter, setApprovalFilter] = useState<"pending" | "rejected" | "all">("pending");
+  const [search, setSearch] = useState("");
+  const [suppressionReason, setSuppressionReason] = useState("Reviewed from provider delivery queue.");
+  const [message, setMessage] = useState("");
+  const [isPending, startTransition] = useTransition();
+
+  const filteredQueue = useMemo(() => queue.filter((item) => {
+    const matchesChannel = channelFilter === "all" || item.channel === channelFilter;
+    const matchesApproval = approvalFilter === "all" || item.approvalStatus === approvalFilter;
+    const query = search.trim().toLowerCase();
+    const matchesSearch = !query || [
+      item.title,
+      item.body,
+      item.teamName,
+      item.recipientLabel,
+      item.notificationType,
+      item.provider
+    ].some((value) => value.toLowerCase().includes(query));
+    return matchesChannel && matchesApproval && matchesSearch;
+  }), [approvalFilter, channelFilter, queue, search]);
+
+  const selectedItems = queue.filter((item) => selectedIds.includes(item.notificationId));
+
+  function toggleSelected(notificationId: string) {
+    setSelectedIds((current) => current.includes(notificationId)
+      ? current.filter((item) => item !== notificationId)
+      : [...current, notificationId]);
+  }
+
+  function toggleVisible() {
+    const visibleIds = filteredQueue.map((item) => item.notificationId);
+    const allVisibleSelected = visibleIds.length > 0 && visibleIds.every((id) => selectedIds.includes(id));
+    setSelectedIds((current) => allVisibleSelected
+      ? current.filter((id) => !visibleIds.includes(id))
+      : Array.from(new Set([...current, ...visibleIds])));
+  }
+
+  function reviewSelected(decision: ProviderDeliveryReviewDecision) {
+    if (!selectedItems.length) {
+      setMessage("Select at least one provider delivery item.");
+      return;
+    }
+
+    setMessage("");
+    startTransition(async () => {
+      const response = await authenticatedJsonFetch("/api/provider-delivery/batch-review", {
+        decision,
+        reason: suppressionReason,
+        items: selectedItems.map((item) => ({
+          notificationId: item.notificationId,
+          provider: item.provider
+        }))
+      });
+      const result = await response.json().catch(() => null) as { ok?: boolean; message?: string } | null;
+      setMessage(result?.message ?? "Provider delivery review could not be saved.");
+      if (result?.ok) {
+        const selected = new Set(selectedItems.map((item) => item.notificationId));
+        setQueue((current) => current.map((item) => selected.has(item.notificationId)
+          ? {
+            ...item,
+            approvalStatus: decision,
+            suppressionReasons: decision === "rejected"
+              ? Array.from(new Set([...item.suppressionReasons, suppressionReason]))
+              : item.suppressionReasons,
+            retryContext: decision === "approved"
+              ? { ...item.retryContext, label: "Approved for worker execution" }
+              : { status: "suppressed", label: suppressionReason, retryCount: item.retryContext.retryCount }
+          }
+          : item));
+        setSelectedIds([]);
+      }
+    });
+  }
+
+  return (
+    <section className="card stack" id="provider-delivery-review">
+      <div className="card-header">
+        <div>
+          <span className="eyebrow">Provider delivery review</span>
+          <h2>Actionable queue</h2>
+        </div>
+        <span className="badge warning">{filteredQueue.length} visible</span>
+      </div>
+
+      {message ? <p className={`notice ${message.includes("could not") || message.includes("failed") ? "warning" : "ok"}`}>{message}</p> : null}
+
+      <div className="grid three">
+        <label>
+          Channel
+          <select value={channelFilter} onChange={(event) => setChannelFilter(event.target.value as typeof channelFilter)}>
+            <option value="all">All channels</option>
+            <option value="email">Email</option>
+            <option value="sms">SMS</option>
+            <option value="push">Web Push</option>
+          </select>
+        </label>
+        <label>
+          Review status
+          <select value={approvalFilter} onChange={(event) => setApprovalFilter(event.target.value as typeof approvalFilter)}>
+            <option value="pending">Pending</option>
+            <option value="rejected">Rejected</option>
+            <option value="all">All non-approved</option>
+          </select>
+        </label>
+        <label>
+          Search queue
+          <input value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Team, recipient, type" />
+        </label>
+      </div>
+
+      <label>
+        Suppression reason
+        <textarea value={suppressionReason} onChange={(event) => setSuppressionReason(event.target.value)} />
+      </label>
+
+      <div className="toolbar">
+        <button className="secondary" type="button" onClick={toggleVisible} disabled={!filteredQueue.length}>
+          {filteredQueue.length && filteredQueue.every((item) => selectedIds.includes(item.notificationId)) ? "Clear visible" : "Select visible"}
+        </button>
+        <button type="button" disabled={isPending || !selectedItems.length} onClick={() => reviewSelected("approved")}>Approve selected</button>
+        <button className="secondary" type="button" disabled={isPending || !selectedItems.length || !suppressionReason.trim()} onClick={() => reviewSelected("rejected")}>Reject selected</button>
+        <span className="muted">{selectedItems.length} selected</span>
+      </div>
+
+      {filteredQueue.map((item) => (
+        <div className="feature-tier-item" key={item.notificationId}>
+          <div className="card-header">
+            <label className="toolbar">
+              <input
+                type="checkbox"
+                checked={selectedIds.includes(item.notificationId)}
+                onChange={() => toggleSelected(item.notificationId)}
+              />
+              <span>
+                <strong>{item.title}</strong><br />
+                <span className="muted">{item.teamName} - {item.recipientLabel} - {item.notificationType}</span>
+              </span>
+            </label>
+            <span className={`badge ${item.retryContext.status === "dead_lettered" ? "danger" : item.approvalStatus === "rejected" || item.retryContext.status === "suppressed" ? "warning" : "ok"}`}>{item.approvalStatus}</span>
+          </div>
+          <p>{item.body}</p>
+          <div className="grid three">
+            <div className="metric"><span className="muted">Provider</span><strong>{item.provider}</strong></div>
+            <div className="metric"><span className="muted">Channel</span><strong>{item.channel}</strong></div>
+            <div className="metric"><span className="muted">Retry context</span><strong>{item.retryContext.label}</strong></div>
+          </div>
+          {item.retryContext.nextAttemptAt ? <p className="muted">Next attempt: {formatDate(item.retryContext.nextAttemptAt)}</p> : null}
+          {item.suppressionReasons.length ? (
+            <div>
+              <strong>Suppression reasons</strong>
+              {item.suppressionReasons.map((reason) => <p className="muted" key={reason}>{reason}</p>)}
+            </div>
+          ) : null}
+          <div>
+            <strong>Attempt history</strong>
+            {item.attemptHistory.map((attempt) => (
+              <p className="muted" key={attempt.id}>
+                {attempt.status} - retry {attempt.retryCount} - {formatDate(attempt.attemptedAt)}
+                {attempt.providerStatus ? ` - ${attempt.providerStatus}` : ""}<br />
+                {attempt.reason}
+              </p>
+            ))}
+            {!item.attemptHistory.length ? <p className="muted">No attempt history yet.</p> : null}
+          </div>
+        </div>
+      ))}
+
+      {!filteredQueue.length ? <p className="muted">No provider delivery items match these filters.</p> : null}
+    </section>
   );
 }
 

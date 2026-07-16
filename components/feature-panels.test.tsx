@@ -9,6 +9,7 @@ import {
   ParentDashboardClient,
   ParentRsvpClient,
   ParentReplayClient,
+  ProviderDeliveryReviewQueueClient,
   RegistrationClient,
   ScheduleAlertsClient,
   TeamChatClient,
@@ -402,6 +403,64 @@ describe("AdminThemesClient", () => {
     expect(html).toContain("Coach feedback and acceptance");
     expect(html).toContain("Did the preview match what parents actually saw?");
     expect(html).toContain("A coach can configure one team brand profile.");
+  });
+});
+
+describe("ProviderDeliveryReviewQueueClient", () => {
+  it("renders filters, batch controls, retry context, suppression reasons, and attempt history", () => {
+    const html = renderToStaticMarkup(
+      <ProviderDeliveryReviewQueueClient
+        initialQueue={[{
+          notificationId: "notification-1",
+          organizationId: "org-1",
+          teamId: "team-1",
+          teamName: "Tiny Tigers",
+          recipientUserId: "parent-1",
+          recipientLabel: "Jordan Parent",
+          notificationType: "schedule_changed",
+          title: "Schedule changed",
+          body: "Practice moved to Field 2.",
+          channel: "email",
+          provider: "email",
+          status: "pending",
+          approvalStatus: "pending",
+          createdAt: "2026-06-23T12:00:00.000Z",
+          suppressionReasons: ["SendGrid API key and sender email are missing, so approved attempts stay suppressed."],
+          retryContext: {
+            status: "retrying",
+            label: "Retry 1 scheduled",
+            retryCount: 1,
+            nextAttemptAt: "2026-06-23T12:15:00.000Z"
+          },
+          attemptHistory: [{
+            id: "attempt-1",
+            provider: "email",
+            channel: "email",
+            status: "failed",
+            reason: "Provider retry review required.",
+            retryCount: 1,
+            attemptedAt: "2026-06-23T12:00:00.000Z",
+            nextAttemptAt: "2026-06-23T12:15:00.000Z",
+            providerStatus: "429"
+          }]
+        }]}
+      />
+    );
+
+    expect(html).toContain("Provider delivery review");
+    expect(html).toContain("Actionable queue");
+    expect(html).toContain("Channel");
+    expect(html).toContain("Review status");
+    expect(html).toContain("Search queue");
+    expect(html).toContain("Suppression reason");
+    expect(html).toContain("Approve selected");
+    expect(html).toContain("Reject selected");
+    expect(html).toContain("Retry context");
+    expect(html).toContain("Retry 1 scheduled");
+    expect(html).toContain("Suppression reasons");
+    expect(html).toContain("SendGrid API key");
+    expect(html).toContain("Attempt history");
+    expect(html).toContain("Provider retry review required.");
   });
 });
 

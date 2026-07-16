@@ -8,11 +8,49 @@ import type {
   NotificationPushSubscription
 } from "@/lib/services/notifications/types";
 
-type ProviderDeliveryReviewDecision = "approved" | "rejected";
-type ProviderDeliveryProvider = "email" | "sms" | "web_push";
-type ProviderDeliveryChannel = "push" | "email" | "sms";
+export type ProviderDeliveryReviewDecision = "approved" | "rejected";
+export type ProviderDeliveryProvider = "email" | "sms" | "web_push";
+export type ProviderDeliveryChannel = "push" | "email" | "sms";
 type ProviderDeliveryAttemptStatus = "queued" | "sent" | "failed" | "suppressed";
 const DEFAULT_DELIVERY_MAX_RETRIES = 3;
+
+export interface ProviderDeliveryAttemptHistoryItem {
+  id: string;
+  provider: string;
+  channel: string;
+  status: ProviderDeliveryAttemptStatus;
+  reason: string;
+  retryCount: number;
+  attemptedAt: string;
+  nextAttemptAt?: string;
+  deadLetteredAt?: string;
+  providerStatus?: string;
+}
+
+export interface ProviderDeliveryReviewQueueItem {
+  notificationId: string;
+  organizationId: string;
+  teamId: string;
+  teamName: string;
+  recipientUserId: string;
+  recipientLabel: string;
+  notificationType: string;
+  title: string;
+  body: string;
+  channel: ProviderDeliveryChannel;
+  provider: ProviderDeliveryProvider;
+  status: string;
+  approvalStatus: "pending" | "approved" | "rejected";
+  createdAt: string;
+  suppressionReasons: string[];
+  retryContext: {
+    status: "ready" | "suppressed" | "retrying" | "dead_lettered" | "pending_review";
+    label: string;
+    retryCount: number;
+    nextAttemptAt?: string;
+  };
+  attemptHistory: ProviderDeliveryAttemptHistoryItem[];
+}
 
 type UnsafeSupabase = {
   // Provider approval columns are staged until generated types are refreshed.
@@ -27,6 +65,10 @@ function adminDb() {
 export function providerChannel(provider: ProviderDeliveryProvider): ProviderDeliveryChannel {
   if (provider === "web_push") return "push";
   return provider;
+}
+
+export function providerForChannel(channel: ProviderDeliveryChannel): ProviderDeliveryProvider {
+  return channel === "push" ? "web_push" : channel;
 }
 
 export function getProviderDeliveryReadiness(
@@ -94,6 +136,13 @@ function providerSuppressionMessage(code: string | null, providerReason: string)
   return null;
 }
 
+function providerSuppressionMessageWithReason(code: string | null, providerReason: string, reason?: string) {
+  if (code === "human_rejected" && reason?.trim()) {
+    return `Delivery suppressed by human review: ${reason.trim()}`;
+  }
+  return providerSuppressionMessage(code, providerReason);
+}
+
 async function loadDeliveryPolicyForNotification(db: UnsafeSupabase, notification: {
   recipient_user_id: string;
   organization_id: string;
@@ -153,6 +202,7 @@ export async function reviewNotificationDelivery(input: {
   actorUserId: string;
   decision: ProviderDeliveryReviewDecision;
   provider: ProviderDeliveryProvider;
+  reason?: string;
 }) {
   if (!input.notificationId || !input.actorUserId) return { ok: false, message: "Notification review requires notification and actor." };
 
@@ -202,7 +252,7 @@ export async function reviewNotificationDelivery(input: {
       preferencesAllowed,
       providerConfigured: providerReadiness.configured
     });
-    const suppressionMessage = providerSuppressionMessage(suppressionCode, providerReadiness.reason);
+    const suppressionMessage = providerSuppressionMessageWithReason(suppressionCode, providerReadiness.reason, input.reason);
     const [{ data: updatedNotification }, { data: attempt }] = await withSupabaseTimeout(Promise.all([
       db.from("notifications")
         .update({
@@ -252,7 +302,9 @@ export async function reviewNotificationDelivery(input: {
       action: `provider_delivery_${input.decision}`,
       target_type: "notification",
       target_id: notification.id,
-      summary: `${input.provider} delivery ${input.decision}; attempt status ${attemptStatus}.`
+      summary: input.reason?.trim()
+        ? `${input.provider} delivery ${input.decision}; attempt status ${attemptStatus}. Reason: ${input.reason.trim()}`
+        : `${input.provider} delivery ${input.decision}; attempt status ${attemptStatus}.`
     }), 7000);
 
     return {
@@ -267,6 +319,193 @@ export async function reviewNotificationDelivery(input: {
     };
   } catch {
     return { ok: false, message: "Provider delivery review could not reach Supabase." };
+  }
+}
+
+function queueFallback(): ProviderDeliveryReviewQueueItem[] {
+  return [];
+}
+
+function attemptReason(attempt: {
+  error_message: string | null;
+  error_code: string | null;
+  provider_status: string | null;
+}) {
+  return attempt.error_message ?? attempt.error_code ?? attempt.provider_status ?? "No provider attempt detail recorded.";
+}
+
+function retryContext(attempts: ProviderDeliveryAttemptHistoryItem[], approvalStatus: string) {
+  const latest = attempts[0];
+  if (!latest) {
+    return {
+      status: approvalStatus === "rejected" ? "suppressed" as const : "pending_review" as const,
+      label: approvalStatus === "rejected" ? "Rejected before delivery attempt" : "No delivery attempt yet",
+      retryCount: 0
+    };
+  }
+  if (latest.deadLetteredAt) {
+    return {
+      status: "dead_lettered" as const,
+      label: `Dead-lettered after ${latest.retryCount} retry attempt(s)`,
+      retryCount: latest.retryCount,
+      nextAttemptAt: latest.nextAttemptAt
+    };
+  }
+  if (latest.status === "failed" || (latest.status === "queued" && latest.retryCount > 0)) {
+    return {
+      status: "retrying" as const,
+      label: latest.nextAttemptAt ? `Retry ${latest.retryCount} scheduled` : `Retry ${latest.retryCount} pending review`,
+      retryCount: latest.retryCount,
+      nextAttemptAt: latest.nextAttemptAt
+    };
+  }
+  if (latest.status === "suppressed") {
+    return {
+      status: "suppressed" as const,
+      label: latest.reason,
+      retryCount: latest.retryCount,
+      nextAttemptAt: latest.nextAttemptAt
+    };
+  }
+  return {
+    status: "ready" as const,
+    label: latest.status === "queued" ? "Queued for worker execution" : `Latest attempt ${latest.status}`,
+    retryCount: latest.retryCount,
+    nextAttemptAt: latest.nextAttemptAt
+  };
+}
+
+export async function listProviderDeliveryReviewQueue(): Promise<{
+  ok: boolean;
+  message: string;
+  queue: ProviderDeliveryReviewQueueItem[];
+}> {
+  try {
+    const db = adminDb();
+    const { data: notifications, error } = await withSupabaseTimeout(db
+      .from("notifications")
+      .select("id,organization_id,recipient_user_id,team_id,notification_type,title,body,channel,status,provider_approval_status,created_at")
+      .in("status", ["pending", "failed"])
+      .order("created_at", { ascending: false })
+      .limit(100), 7000) as {
+        data: Array<{
+          id: string;
+          organization_id: string;
+          recipient_user_id: string;
+          team_id: string;
+          notification_type: string;
+          title: string;
+          body: string;
+          channel: ProviderDeliveryChannel;
+          status: string;
+          provider_approval_status: "pending" | "approved" | "rejected" | null;
+          created_at: string;
+        }> | null;
+        error: { message?: string } | null;
+      };
+
+    if (error) return { ok: false, message: "Provider delivery review queue could not be loaded.", queue: queueFallback() };
+
+    const reviewNotifications = (notifications ?? []).filter((notification) => notification.provider_approval_status !== "approved");
+    const notificationIds = reviewNotifications.map((notification) => notification.id);
+    const teamIds = Array.from(new Set(reviewNotifications.map((notification) => notification.team_id)));
+    const recipientIds = Array.from(new Set(reviewNotifications.map((notification) => notification.recipient_user_id)));
+
+    const [
+      { data: attempts },
+      { data: teams },
+      { data: profiles }
+    ] = await withSupabaseTimeout(Promise.all([
+      notificationIds.length
+        ? db
+          .from("notification_delivery_attempts")
+          .select("id,notification_id,provider,channel,status,error_code,error_message,attempted_at,retry_count,next_attempt_at,dead_lettered_at,provider_status")
+          .in("notification_id", notificationIds)
+          .order("attempted_at", { ascending: false })
+        : Promise.resolve({ data: [] }),
+      teamIds.length
+        ? db.from("teams").select("id,name").in("id", teamIds)
+        : Promise.resolve({ data: [] }),
+      recipientIds.length
+        ? db.from("profiles").select("id,display_name,email,phone").in("id", recipientIds)
+        : Promise.resolve({ data: [] })
+    ]), 7000) as [
+      { data: Array<{
+        id: string;
+        notification_id: string;
+        provider: string;
+        channel: string;
+        status: ProviderDeliveryAttemptStatus;
+        error_code: string | null;
+        error_message: string | null;
+        attempted_at: string;
+        retry_count: number | null;
+        next_attempt_at: string | null;
+        dead_lettered_at: string | null;
+        provider_status: string | null;
+      }> | null },
+      { data: Array<{ id: string; name: string }> | null },
+      { data: Array<{ id: string; display_name: string | null; email: string | null; phone: string | null }> | null }
+    ];
+
+    const attemptsByNotificationId = new Map<string, ProviderDeliveryAttemptHistoryItem[]>();
+    for (const attempt of attempts ?? []) {
+      const history = attemptsByNotificationId.get(attempt.notification_id) ?? [];
+      history.push({
+        id: attempt.id,
+        provider: attempt.provider,
+        channel: attempt.channel,
+        status: attempt.status,
+        reason: attemptReason(attempt),
+        retryCount: attempt.retry_count ?? 0,
+        attemptedAt: attempt.attempted_at,
+        nextAttemptAt: attempt.next_attempt_at ?? undefined,
+        deadLetteredAt: attempt.dead_lettered_at ?? undefined,
+        providerStatus: attempt.provider_status ?? undefined
+      });
+      attemptsByNotificationId.set(attempt.notification_id, history);
+    }
+
+    const teamNameById = new Map((teams ?? []).map((team) => [team.id, team.name]));
+    const recipientById = new Map((profiles ?? []).map((profile) => [profile.id, profile]));
+
+    const queue = reviewNotifications.map((notification) => {
+      const provider = providerForChannel(notification.channel);
+      const readiness = getProviderDeliveryReadiness(provider);
+      const recipient = recipientById.get(notification.recipient_user_id);
+      const attemptHistory = attemptsByNotificationId.get(notification.id) ?? [];
+      const suppressionReasons = [
+        readiness.configured ? "" : readiness.reason,
+        notification.provider_approval_status === "rejected" ? "Rejected by delivery review." : ""
+      ].filter(Boolean);
+      return {
+        notificationId: notification.id,
+        organizationId: notification.organization_id,
+        teamId: notification.team_id,
+        teamName: teamNameById.get(notification.team_id) ?? "Team",
+        recipientUserId: notification.recipient_user_id,
+        recipientLabel: recipient?.display_name ?? recipient?.email ?? recipient?.phone ?? notification.recipient_user_id,
+        notificationType: notification.notification_type,
+        title: notification.title,
+        body: notification.body,
+        channel: notification.channel,
+        provider,
+        status: notification.status,
+        approvalStatus: notification.provider_approval_status ?? "pending",
+        createdAt: notification.created_at,
+        suppressionReasons,
+        retryContext: retryContext(attemptHistory, notification.provider_approval_status ?? "pending"),
+        attemptHistory
+      };
+    });
+
+    return {
+      ok: true,
+      message: "Provider delivery review queue loaded with retry context and attempt history.",
+      queue
+    };
+  } catch {
+    return { ok: false, message: "Provider delivery review queue could not reach Supabase.", queue: queueFallback() };
   }
 }
 

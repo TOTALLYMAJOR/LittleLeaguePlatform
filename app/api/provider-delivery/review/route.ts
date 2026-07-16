@@ -26,7 +26,8 @@ export async function POST(request: Request) {
     notificationId: String(body.notificationId ?? ""),
     actorUserId: auth.user.id,
     decision: decision as "approved" | "rejected",
-    provider: provider as "email" | "sms" | "web_push"
+    provider: provider as "email" | "sms" | "web_push",
+    reason: body.reason ? String(body.reason) : undefined
   });
 
   return NextResponse.json(result, { status: result.ok ? 200 : 400 });

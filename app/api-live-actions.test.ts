@@ -5,6 +5,7 @@ import { POST as postNotificationPreference } from "./api/notification-preferenc
 import { POST as postNotificationUnsubscribe } from "./api/notification-preferences/unsubscribe/route";
 import { POST as postMobileUsageEvent } from "./api/mobile-usage-events/route";
 import { POST as postProviderDeliveryReview } from "./api/provider-delivery/review/route";
+import { POST as postProviderDeliveryBatchReview } from "./api/provider-delivery/batch-review/route";
 import { GET as getProviderDeliveryRetryPlan } from "./api/provider-delivery/retry-plan/route";
 import { POST as postParentReplay } from "./api/coach/parent-replay/route";
 import { POST as postWeeklyUpdate } from "./api/coach/weekly-update/route";
@@ -445,7 +446,54 @@ describe("live action API routes", () => {
       notificationId: "notification-1",
       actorUserId: "user-live-session",
       decision: "approved",
-      provider: "email"
+      provider: "email",
+      reason: undefined
+    });
+  });
+
+  it("uses the authenticated coach or admin session for provider delivery batch review", async () => {
+    reviewNotificationDeliveryMock.mockResolvedValue({
+      ok: true,
+      message: "Provider delivery approved.",
+      notification: { id: "notification-1", provider_approval_status: "approved", approved_at: "2026-06-23T12:00:00.000Z" },
+      attempt: {
+        id: "attempt-1",
+        provider: "email",
+        channel: "email",
+        status: "queued",
+        attempted_at: "2026-06-23T12:00:00.000Z",
+        idempotency_key: "notification-1:email",
+        retry_count: 0,
+        next_attempt_at: "2026-06-23T12:00:00.000Z",
+        dead_lettered_at: null
+      }
+    });
+
+    const response = await postProviderDeliveryBatchReview(jsonRequest({
+      actorUserId: "client-spoof",
+      decision: "rejected",
+      reason: "Duplicate coach announcement.",
+      items: [
+        { notificationId: "notification-1", provider: "email" },
+        { notificationId: "notification-2", provider: "sms" }
+      ]
+    }));
+
+    expect(response.status).toBe(200);
+    expect(reviewNotificationDeliveryMock).toHaveBeenCalledTimes(2);
+    expect(reviewNotificationDeliveryMock).toHaveBeenNthCalledWith(1, {
+      notificationId: "notification-1",
+      actorUserId: "user-live-session",
+      decision: "rejected",
+      provider: "email",
+      reason: "Duplicate coach announcement."
+    });
+    expect(reviewNotificationDeliveryMock).toHaveBeenNthCalledWith(2, {
+      notificationId: "notification-2",
+      actorUserId: "user-live-session",
+      decision: "rejected",
+      provider: "sms",
+      reason: "Duplicate coach announcement."
     });
   });
 

@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { ProviderDeliveryReviewQueueClient } from "@/components/feature-panels";
 import { listAdminOperationsData } from "@/lib/supabase/admin-operations";
 
 export const dynamic = "force-dynamic";
@@ -43,6 +44,8 @@ export default async function AdminOperationsPage() {
           ))}
         </article>
       </section>
+
+      <ProviderDeliveryReviewQueueClient initialQueue={data.providerDeliveryQueue} />
 
       <section className="card stack">
         <h2>Audit logs</h2>

@@ -1,6 +1,6 @@
 import { seedState } from "@/lib/domain";
 import { createSupabaseAdminClient } from "./admin";
-import { getProviderDeliveryReadiness } from "./provider-delivery";
+import { getProviderDeliveryReadiness, listProviderDeliveryReviewQueue, providerForChannel, type ProviderDeliveryReviewQueueItem } from "./provider-delivery";
 import { withSupabaseTimeout } from "./timeout";
 
 type UnsafeSupabase = {
@@ -44,6 +44,7 @@ export interface AdminOperationsData {
   settings: AdminOperationSettings;
   providerInventory: AdminProviderInventoryItem[];
   approvalQueues: AdminApprovalQueueItem[];
+  providerDeliveryQueue: ProviderDeliveryReviewQueueItem[];
   auditLogs: AdminAuditLogItem[];
   message: string;
 }
@@ -63,6 +64,31 @@ function notificationProviderStatus(): "configured" | "missing" {
 function fallbackOperationsData(): AdminOperationsData {
   const pendingRegistrations = seedState.registrationRequests.filter((request) => request.status === "pending").length;
   const pendingNotifications = seedState.notifications.filter((notification) => notification.status === "pending").length;
+  const fallbackProviderDeliveryQueue: ProviderDeliveryReviewQueueItem[] = seedState.notifications
+    .filter((notification) => notification.status === "pending")
+    .map((notification) => ({
+      notificationId: notification.id,
+      organizationId: notification.organizationId,
+      teamId: notification.teamId,
+      teamName: seedState.teams.find((team) => team.id === notification.teamId)?.name ?? "Team",
+      recipientUserId: notification.recipientUserId,
+      recipientLabel: seedState.users.find((user) => user.id === notification.recipientUserId)?.name ?? notification.recipientUserId,
+      notificationType: notification.notificationType,
+      title: notification.title,
+      body: notification.body,
+      channel: notification.channel,
+      provider: providerForChannel(notification.channel),
+      status: notification.status,
+      approvalStatus: "pending",
+      createdAt: notification.createdAt,
+      suppressionReasons: [],
+      retryContext: {
+        status: "pending_review",
+        label: "No delivery attempt yet",
+        retryCount: 0
+      },
+      attemptHistory: []
+    }));
 
   return {
     settings: {
@@ -80,9 +106,10 @@ function fallbackOperationsData(): AdminOperationsData {
     ],
     approvalQueues: [
       { queue: "Registration review", count: pendingRegistrations, actionHref: "/admin/registrations", boundary: "Approval creates guardian/team access only after admin review." },
-      { queue: "Provider delivery review", count: pendingNotifications, actionHref: "/admin/security", boundary: "Pending notification records are not external sends." },
+      { queue: "Provider delivery review", count: pendingNotifications, actionHref: "/admin/operations#provider-delivery-review", boundary: "Pending notification records are not external sends." },
       { queue: "Media moderation", count: seedState.mediaItems.filter((item) => item.moderationStatus === "pending").length, actionHref: "/admin", boundary: "Reported media can be hidden while review is pending." }
     ],
+    providerDeliveryQueue: fallbackProviderDeliveryQueue,
     auditLogs: seedState.auditEvents.slice(0, 10).map((event) => ({
       id: event.id,
       action: event.action,
@@ -123,6 +150,7 @@ export async function listAdminOperationsData(): Promise<AdminOperationsData> {
     const organization = organizations?.[0];
     const season = seasons?.[0];
     if (!organization || !season) return fallbackOperationsData();
+    const providerDeliveryQueue = await listProviderDeliveryReviewQueue();
 
     return {
       settings: {
@@ -140,9 +168,10 @@ export async function listAdminOperationsData(): Promise<AdminOperationsData> {
       ],
       approvalQueues: [
         { queue: "Registration review", count: registrationRequests?.length ?? 0, actionHref: "/admin/registrations", boundary: "Approval creates guardian/team access only after admin review." },
-        { queue: "Provider delivery review", count: notifications?.filter((item) => item.provider_approval_status !== "approved").length ?? 0, actionHref: "/admin/security", boundary: "Pending notification records are not external sends." },
+        { queue: "Provider delivery review", count: notifications?.filter((item) => item.provider_approval_status !== "approved").length ?? 0, actionHref: "/admin/operations#provider-delivery-review", boundary: "Pending notification records are not external sends." },
         { queue: "Media moderation", count: mediaItems?.length ?? 0, actionHref: "/admin", boundary: "Reported media can be hidden while review is pending." }
       ],
+      providerDeliveryQueue: providerDeliveryQueue.queue,
       auditLogs: (auditEvents ?? []).map((event) => ({
         id: event.id,
         action: event.action,
