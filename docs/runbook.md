@@ -85,6 +85,12 @@ To verify manually, open GitHub Actions, choose `Supabase QA proof`, run the wor
 
 Latest preserved proof: the manual GitHub `Supabase QA proof` workflow passed on 2026-06-28 at https://github.com/TOTALLYMAJOR/LittleLeaguePlatform/actions/runs/28328007719 after QA migrations through `0019` were applied.
 
+## Production Observability
+
+Open `/admin/observability` after deployment to review auth failures, RLS denials, provider retries, webhook failures, public-intake throttles, admin actions, and media/chat moderation. The page reads Supabase audit rows, delivery attempts, webhook reconciliation rows, public rate-limit buckets, and moderation records first, then falls back to local seed evidence if hosted rows are unavailable.
+
+External hooks are optional and env-gated. Configure `SENTRY_DSN`, `OBSERVABILITY_WEBHOOK_URL`, or `SUPABASE_LOG_DRAIN_URL` only when the corresponding hosted provider is ready. The dashboard itself does not send alerts.
+
 ## Vercel And Supabase Networking
 
 Do not buy or require Vercel Static IP solely for the current Supabase app path. The production app should talk to Supabase through `NEXT_PUBLIC_SUPABASE_URL` over HTTPS, with Supabase Auth and RLS enforcing parent, coach, and admin scope. `SUPABASE_SERVICE_ROLE_KEY` remains server/CI only.

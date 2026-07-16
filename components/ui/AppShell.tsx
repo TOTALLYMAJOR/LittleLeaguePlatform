@@ -27,6 +27,7 @@ const navItems: ShellNavItem[] = [
   { label: "Registration", href: "/registration", short: "RG", group: "League Ops" },
   { label: "Admin Dashboard", href: "/admin", short: "AD", group: "Admin Tools" },
   { label: "Operations", href: "/admin/operations", short: "OP", group: "Admin Tools" },
+  { label: "Observability", href: "/admin/observability", short: "OB", group: "Admin Tools" },
   { label: "Security", href: "/admin/security", short: "SE", group: "Admin Tools" },
   { label: "Themes", href: "/admin/themes", short: "TH", group: "Admin Tools" },
   { label: "Registrations", href: "/admin/registrations", short: "RR", group: "Admin Tools" },

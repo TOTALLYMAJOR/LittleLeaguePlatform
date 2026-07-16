@@ -7,6 +7,7 @@ const appRoutes = [
   "/admin",
   "/admin/archive",
   "/admin/guardian-links",
+  "/admin/observability",
   "/admin/operations",
   "/admin/security",
   "/admin/teams",
@@ -158,6 +159,21 @@ describe("route smoke coverage", () => {
     expect(data).toContain("providerInventory");
     expect(data).toContain("approvalQueues");
     expect(data).toContain("auditLogs");
+  });
+
+  it("keeps the admin observability page tied to Supabase-backed incident signals", () => {
+    const shell = readFileSync(join(process.cwd(), "components", "ui", "AppShell.tsx"), "utf8");
+    const page = readFileSync(join(process.cwd(), "app", "admin", "observability", "page.tsx"), "utf8");
+    const data = readFileSync(join(process.cwd(), "lib", "supabase", "admin-observability.ts"), "utf8");
+
+    expect(shell).toContain("/admin/observability");
+    expect(page).toContain("listAdminObservabilityData");
+    expect(page).toContain("Production observability");
+    expect(data).toContain("notification_delivery_attempts");
+    expect(data).toContain("notification_provider_webhook_events");
+    expect(data).toContain("public_rate_limit_buckets");
+    expect(data).toContain("SENTRY_DSN");
+    expect(data).toContain("OBSERVABILITY_WEBHOOK_URL");
   });
 
   it("keeps admin team setup tied to seasons and divisions", () => {

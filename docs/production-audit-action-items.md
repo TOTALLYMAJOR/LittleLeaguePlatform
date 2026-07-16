@@ -49,8 +49,8 @@ The app is not ready for real-family production launch yet. The core scaffold, r
 ## P1 Production Hardening
 
 5. Provider sends are now explicit production-hardening scope rather than launch-deferred draft records only.
-   - Current truth: notification records, approval review, delivery-attempt logs, retry/dead-letter metadata, env-gated SendGrid/Twilio/Web Push worker adapters, and signed SendGrid/Twilio webhook reconciliation exist.
-   - Remaining action: add hosted credential proof, queue UX upgrades, and production observability before claiming end-to-end delivery readiness.
+   - Current truth: notification records, approval review, delivery-attempt logs, retry/dead-letter metadata, env-gated SendGrid/Twilio/Web Push worker adapters, signed SendGrid/Twilio webhook reconciliation, filterable review queue UX, and `/admin/observability` retry/webhook monitoring exist.
+   - Remaining action: add hosted credential proof and optional external alert-hook configuration before claiming end-to-end delivery readiness.
 
 6. Finish notification provider execution if real alerts are required.
    - Current seams: `/api/provider-delivery/review`, `lib/supabase/provider-delivery.ts`, `lib/domain/notifications.ts`.
@@ -79,8 +79,8 @@ The app is not ready for real-family production launch yet. The core scaffold, r
 
 11. Add rate limits and abuse controls to public intake endpoints.
     - Current public endpoints: `/api/registration-requests` and `/api/mobile-usage-events`.
-    - Current truth: local implementation now uses Supabase-backed durable buckets with memory fallback, `429`, `Retry-After`, and `X-RateLimit-*` headers.
-    - Remaining action: run hosted proof after migration application and add observability for public-intake throttles.
+    - Current truth: local implementation now uses Supabase-backed durable buckets with memory fallback, `429`, `Retry-After`, and `X-RateLimit-*` headers. `/admin/observability` now surfaces buckets that exceed their configured public-intake limits.
+    - Remaining action: run hosted proof after migration application and confirm throttle rows appear in the hosted observability view.
 
 ## P2 Product Decisions Before Wider Launch
 

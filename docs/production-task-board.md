@@ -108,9 +108,9 @@ Task-specific checks are required only when the surface is touched:
 ### LP-009 - Prove Admin Operations Hosted Scope
 
 - Priority: P1 proof.
-- Current state: `/admin/operations` and `/admin/security` have hosted proof; broader admin surfaces need signed-in admin proof.
-- Seams: `/admin/teams`, `/admin/guardian-links`, `/admin/archive`, `/admin/operations`, `/admin/security`.
-- Done when: signed-in QA admin sees only the intended organization data across all admin surfaces and screenshots are preserved.
+- Current state: `/admin/operations`, `/admin/observability`, and `/admin/security` have local route/test coverage; `/admin/operations` and `/admin/security` have hosted proof. Broader admin surfaces need signed-in admin proof.
+- Seams: `/admin/teams`, `/admin/guardian-links`, `/admin/archive`, `/admin/operations`, `/admin/observability`, `/admin/security`.
+- Done when: signed-in QA admin sees only the intended organization data across all admin surfaces, observability reads only expected Supabase audit/attempt/moderation rows, and screenshots are preserved.
 - SaaS constants focus: tenant isolation, support/admin operations, audit logs, observability by tenant.
 - Validation: hosted browser proof and `npm run qa:rls-proof`.
 
