@@ -6,7 +6,7 @@ These tasks should follow after the Backlog Now foundation is in place. They are
 
 - Status: implemented 2026-06-23.
 - Tomorrow.io weather provider adapter creates event/venue forecast drafts.
-- Google Maps field metadata stores map URLs/embed URLs when configured.
+- Google Maps field metadata now stores approved fallback/embed URLs, marker labels, coordinates, and notes; remaining work is hosted key restriction and quota proof.
 - Email/SMS/Web Push delivery is approval-gated through provider review and delivery-attempt logs.
 - Web Push subscription storage, opt-in preferences, PWA usage metrics, and provider approval records are auditable.
 

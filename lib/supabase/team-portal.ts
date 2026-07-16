@@ -1,6 +1,7 @@
 import type {
   GuardianLink,
   LeagueEvent,
+  ManagedVenueMetadata,
   MediaItem,
   ParentInvite,
   ParentReplayHomeActivity,
@@ -29,6 +30,7 @@ export interface TeamPortalData {
   teamMemberships: TeamMembership[];
   users: User[];
   events: LeagueEvent[];
+  fieldLocations: ManagedVenueMetadata[];
   mediaItems: MediaItem[];
   parentReplays: ParentReplayRecord[];
 }
@@ -113,6 +115,7 @@ export async function listTeamPortalData(): Promise<TeamPortalData | null> {
       teamMembershipsResult,
       profilesResult,
       eventsResult,
+      fieldLocationsResult,
       mediaItemsResult,
       parentReplaysResult
     ] = await withSupabaseTimeout(Promise.all([
@@ -146,6 +149,10 @@ export async function listTeamPortalData(): Promise<TeamPortalData | null> {
         .select("id,organization_id,team_id,season_id,title,event_type,starts_at,ends_at,location_name,location_address,status,opponent,created_at,updated_at")
         .order("starts_at", { ascending: true }),
       unsafeSupabase
+        .from("field_locations")
+        .select("id,name,address,latitude,longitude,google_place_id,map_url,map_embed_url,field_label,notes,status")
+        .order("name", { ascending: true }),
+      unsafeSupabase
         .from("media_items")
         .select("id,team_id,title,media_type,url,created_at,moderation_status,report_count")
         .eq("moderation_status", "approved")
@@ -164,6 +171,7 @@ export async function listTeamPortalData(): Promise<TeamPortalData | null> {
       teamMembershipsResult,
       profilesResult,
       eventsResult,
+      fieldLocationsResult,
       mediaItemsResult,
       parentReplaysResult
     ];
@@ -247,6 +255,31 @@ export async function listTeamPortalData(): Promise<TeamPortalData | null> {
         opponent: event.opponent ?? undefined,
         createdAt: event.created_at,
         updatedAt: event.updated_at
+      })),
+      fieldLocations: (fieldLocationsResult.data ?? []).map((field: {
+        id: string;
+        name: string;
+        address: string;
+        latitude: number | null;
+        longitude: number | null;
+        google_place_id: string | null;
+        map_url: string | null;
+        map_embed_url: string | null;
+        field_label: string | null;
+        notes: string | null;
+        status: "active" | "inactive";
+      }) => ({
+        id: field.id,
+        name: field.name,
+        address: field.address,
+        latitude: field.latitude ?? undefined,
+        longitude: field.longitude ?? undefined,
+        googlePlaceId: field.google_place_id ?? undefined,
+        mapUrl: field.map_url ?? undefined,
+        mapEmbedUrl: field.map_embed_url ?? undefined,
+        fieldLabel: field.field_label ?? undefined,
+        notes: field.notes ?? undefined,
+        status: field.status
       })),
       mediaItems: (mediaItemsResult.data ?? []).map((item: {
         id: string;

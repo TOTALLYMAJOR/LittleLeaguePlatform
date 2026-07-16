@@ -14,6 +14,7 @@ import { POST as postAdminTeam } from "./api/admin/teams/route";
 import { POST as postAdminSeason } from "./api/admin/seasons/route";
 import { POST as postAdminRoster } from "./api/admin/rosters/route";
 import { POST as postScheduleEvent } from "./api/schedule/route";
+import { POST as postFieldLocation } from "./api/field-locations/route";
 import { POST as postSupportRequest } from "./api/support-requests/route";
 import { POST as postGuardianRepair } from "./api/admin/guardian-links/repair/route";
 import { POST as postRosterImportAudit } from "./api/admin/roster-imports/audit/route";
@@ -60,7 +61,8 @@ import {
   unclaimSnackSlot,
   unclaimVolunteerRole,
   updateNotificationPreference,
-  updateParentRsvp
+  updateParentRsvp,
+  upsertFieldLocation
 } from "@/lib/supabase/operations";
 import { requireAuthenticatedRouteUser } from "@/lib/supabase/route-auth";
 import { applyPublicRateLimit } from "@/lib/supabase/public-rate-limit";
@@ -75,6 +77,7 @@ vi.mock("@/lib/supabase/operations", () => ({
   createSnackReminderDrafts: vi.fn(),
   createVolunteerReminderDrafts: vi.fn(),
   createWeatherAlertDraft: vi.fn(),
+  listFieldLocations: vi.fn(),
   saveCoachWeeklyUpdate: vi.fn(),
   saveSponsor: vi.fn(),
   moderateMediaItem: vi.fn(),
@@ -85,7 +88,8 @@ vi.mock("@/lib/supabase/operations", () => ({
   unclaimSnackSlot: vi.fn(),
   unclaimVolunteerRole: vi.fn(),
   updateNotificationPreference: vi.fn(),
-  updateParentRsvp: vi.fn()
+  updateParentRsvp: vi.fn(),
+  upsertFieldLocation: vi.fn()
 }));
 
 vi.mock("@/lib/supabase/team-branding", () => ({
@@ -159,6 +163,7 @@ const recordMobileUsageEventMock = vi.mocked(recordMobileUsageEvent);
 const saveParentReplayMock = vi.mocked(saveParentReplay);
 const submitParentSupportRequestMock = vi.mocked(submitParentSupportRequest);
 const updateNotificationPreferenceMock = vi.mocked(updateNotificationPreference);
+const upsertFieldLocationMock = vi.mocked(upsertFieldLocation);
 const updateTenantThemeDefaultsMock = vi.mocked(updateTenantThemeDefaults);
 const createTeamMembershipMock = vi.mocked(createTeamMembership);
 const recordRosterImportAuditMock = vi.mocked(recordRosterImportAudit);
@@ -406,7 +411,12 @@ describe("live action API routes", () => {
       venue: {
         name: "Field 1",
         address: "100 Park Ave",
-        fieldLabel: "North diamond"
+        latitude: 40.7128,
+        longitude: -74.006,
+        mapUrl: "https://www.google.com/maps/search/?api=1&query=Field%201",
+        mapEmbedUrl: "https://www.google.com/maps/embed/v1/place?key=browser-key&q=Field%201",
+        fieldLabel: "North diamond",
+        notes: "Use the north parking lot."
       },
       status: "scheduled"
     }));
@@ -429,13 +439,13 @@ describe("live action API routes", () => {
         id: undefined,
         name: "Field 1",
         address: "100 Park Ave",
-        latitude: undefined,
-        longitude: undefined,
+        latitude: 40.7128,
+        longitude: -74.006,
         googlePlaceId: undefined,
-        mapUrl: undefined,
-        mapEmbedUrl: undefined,
+        mapUrl: "https://www.google.com/maps/search/?api=1&query=Field%201",
+        mapEmbedUrl: "https://www.google.com/maps/embed/v1/place?key=browser-key&q=Field%201",
         fieldLabel: "North diamond",
-        notes: undefined,
+        notes: "Use the north parking lot.",
         status: "active"
       },
       opponent: undefined,
@@ -443,6 +453,46 @@ describe("live action API routes", () => {
       reason: undefined,
       recurrence: undefined,
       recurrenceEditScope: undefined
+    });
+  });
+
+  it("uses the authenticated admin session for field-location metadata management", async () => {
+    upsertFieldLocationMock.mockResolvedValue({
+      ok: true,
+      message: "Field location saved with approved map metadata. No route tracking is enabled.",
+      fieldLocation: { id: "field-1" }
+    });
+
+    const response = await postFieldLocation(jsonRequest({
+      organizationId: "org-1",
+      name: "Field 1",
+      address: "100 Park Ave",
+      latitude: 40.7128,
+      longitude: -74.006,
+      googlePlaceId: "place-1",
+      mapUrl: "https://www.google.com/maps/search/?api=1&query=Field%201",
+      mapEmbedUrl: "https://www.google.com/maps/embed/v1/place?key=browser-key&q=Field%201",
+      fieldLabel: "North diamond",
+      notes: "Use the north parking lot.",
+      status: "active"
+    }));
+    const payload = await response.json();
+
+    expect(response.status).toBe(201);
+    expect(payload.message).toContain("No route tracking");
+    expect(upsertFieldLocationMock).toHaveBeenCalledWith({
+      actorUserId: "user-live-session",
+      organizationId: "org-1",
+      name: "Field 1",
+      address: "100 Park Ave",
+      latitude: 40.7128,
+      longitude: -74.006,
+      googlePlaceId: "place-1",
+      mapUrl: "https://www.google.com/maps/search/?api=1&query=Field%201",
+      mapEmbedUrl: "https://www.google.com/maps/embed/v1/place?key=browser-key&q=Field%201",
+      fieldLabel: "North diamond",
+      notes: "Use the north parking lot.",
+      status: "active"
     });
   });
 

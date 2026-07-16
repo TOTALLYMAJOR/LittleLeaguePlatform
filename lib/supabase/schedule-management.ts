@@ -1,4 +1,4 @@
-import { seedState, type EventStatus, type EventType, type LeagueEvent, type Team } from "@/lib/domain";
+import { seedState, validateVenueMetadata, type EventStatus, type EventType, type LeagueEvent, type Team } from "@/lib/domain";
 import { requireActiveTeamCoachOrOrgAdmin } from "./access-control";
 import { createSupabaseAdminClient } from "./admin";
 import { withSupabaseTimeout } from "./timeout";
@@ -342,6 +342,21 @@ export async function saveScheduleEvent(input: SaveScheduleEventInput) {
     let resolvedFieldLocationId = input.fieldLocationId ?? input.venue?.id ?? "";
     let resolvedLocationName = input.venue?.name?.trim() || locationName;
     let resolvedLocationAddress = input.venue?.address?.trim() || locationAddress;
+    if (input.venue) {
+      const venueValidation = validateVenueMetadata({
+        name: resolvedLocationName,
+        address: resolvedLocationAddress,
+        latitude: input.venue.latitude,
+        longitude: input.venue.longitude,
+        googlePlaceId: input.venue.googlePlaceId,
+        mapUrl: input.venue.mapUrl,
+        mapEmbedUrl: input.venue.mapEmbedUrl,
+        fieldLabel: input.venue.fieldLabel,
+        notes: input.venue.notes,
+        status: input.venue.status
+      });
+      if (!venueValidation.ok) return { ok: false, message: venueValidation.message };
+    }
 
     if (input.venue || !resolvedFieldLocationId) {
       const venue = input.venue ?? {};

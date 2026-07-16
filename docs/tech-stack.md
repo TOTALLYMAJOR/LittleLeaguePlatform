@@ -21,7 +21,7 @@ The first shippable mobile experience should be a responsive PWA from the existi
 | Authorization | Supabase Row Level Security | Required for parent child/team scope, coach assigned-team scope, and org admin scope. |
 | Realtime chat | Supabase Realtime | Best reuse path for current Team Chat domain and channel/message model. |
 | Push notifications | Web Push for PWA; Expo Notifications for native | Start with explicit opt-in Web Push. Use Expo Notifications only if a native app is added. |
-| Maps | Google Maps Platform | Use API-backed embeds/markers later; current app can keep Google Maps links until provider setup. |
+| Maps | Google Maps Platform | Managed venue metadata supports approved embeds, marker labels, coordinates, notes, and fallback links; hosted key restriction and quota proof remain before depending on Maps in production. |
 | Weather | NWS first, Open-Meteo fallback, Tomorrow.io premium adapter | NWS is best free default for U.S. teams. Open-Meteo is useful fallback. Tomorrow.io is optional later for hyperlocal/premium weather. |
 | Media | Google Photos and YouTube links first | Reuse current MVP path. Add validation, moderation, and optional storage only when needed. |
 | Payments/sponsors | Local sponsor records first; Stripe later only if payments are real | Avoid payment complexity until sponsor billing/invoices are in scope. |

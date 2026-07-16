@@ -337,6 +337,9 @@ describe("ScheduleAlertsClient", () => {
     expect(html).toContain("Schedule conflicts");
     expect(html).toContain("Venue records");
     expect(html).toContain("Known locations");
+    expect(html).toContain("Field label");
+    expect(html).toContain("Approved embed URL");
+    expect(html).toContain("Map fallback URL");
     expect(html).toContain("Recurring events");
     expect(html).toContain("Weekly preview");
     expect(html).toContain("Calendar export");
@@ -698,6 +701,7 @@ describe("TeamPortalClient", () => {
     expect(html).toContain("RSVP:");
     expect(html).toContain("Embedded map UI");
     expect(html).toContain("Venue marker management");
+    expect(html).toContain("No route tracking");
     expect(html).toContain("Quota handling");
     expect(html).toContain("Field layout metadata");
     expect(html).toContain("Venue pages");

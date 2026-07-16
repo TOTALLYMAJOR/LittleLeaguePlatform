@@ -1,6 +1,6 @@
-import type { ParentReplayDraft, ParentReplayRecord, PracticeFocusArea } from "@/lib/domain";
+import { validateVenueMetadata, type ParentReplayDraft, type ParentReplayRecord, type PracticeFocusArea } from "@/lib/domain";
 import { getWeatherEventDraft } from "@/lib/services/weather";
-import { requireActiveParentForPlayerEvent, requireActiveTeamCoachOrOrgAdmin } from "./access-control";
+import { requireActiveOrganizationAdmin, requireActiveParentForPlayerEvent, requireActiveTeamCoachOrOrgAdmin } from "./access-control";
 import { createSupabaseAdminClient } from "./admin";
 import { withSupabaseTimeout } from "./timeout";
 
@@ -43,21 +43,51 @@ function googleMapsEmbedUrl(address: string) {
 }
 
 export async function upsertFieldLocation(input: {
+  actorUserId: string;
   organizationId: string;
   name: string;
   address: string;
   latitude?: number;
   longitude?: number;
   googlePlaceId?: string;
+  mapUrl?: string;
+  mapEmbedUrl?: string;
+  fieldLabel?: string;
+  notes?: string;
+  status?: "active" | "inactive";
 }) {
   const name = input.name.trim();
   const address = input.address.trim();
   if (!input.organizationId || !name || !address) {
     return { ok: false, message: "Field location requires organization, name, and address." };
   }
+  if (!input.actorUserId) {
+    return { ok: false, message: "Field location changes require an authenticated organization admin." };
+  }
+  const validation = validateVenueMetadata({
+    name,
+    address,
+    latitude: input.latitude,
+    longitude: input.longitude,
+    googlePlaceId: input.googlePlaceId,
+    mapUrl: input.mapUrl,
+    mapEmbedUrl: input.mapEmbedUrl,
+    fieldLabel: input.fieldLabel,
+    notes: input.notes,
+    status: input.status
+  });
+  if (!validation.ok) return { ok: false, message: validation.message };
 
   try {
     const db = adminDb();
+    const access = await requireActiveOrganizationAdmin({
+      db,
+      organizationId: input.organizationId,
+      userId: input.actorUserId,
+      action: "manage field locations"
+    });
+    if (!access.ok) return { ok: false, message: access.message };
+
     const { data, error } = await runDynamicQuery(db
       .from("field_locations")
       .upsert({
@@ -66,37 +96,54 @@ export async function upsertFieldLocation(input: {
         address,
         latitude: input.latitude ?? null,
         longitude: input.longitude ?? null,
-        google_place_id: input.googlePlaceId ?? null,
-        map_url: googleMapsUrl(address),
-        map_embed_url: googleMapsEmbedUrl(address),
-        status: "active"
+        google_place_id: input.googlePlaceId?.trim() || null,
+        map_url: input.mapUrl?.trim() || googleMapsUrl(address),
+        map_embed_url: input.mapEmbedUrl?.trim() || googleMapsEmbedUrl(address),
+        field_label: input.fieldLabel?.trim() || null,
+        notes: input.notes?.trim() || null,
+        status: input.status ?? "active"
       }, { onConflict: "organization_id,name" })
-      .select("id,name,address,map_url,map_embed_url,status")
+      .select("id,name,address,latitude,longitude,google_place_id,map_url,map_embed_url,field_label,notes,status")
       .single());
 
     if (error || !data) return { ok: false, message: "Field location could not be saved." };
-    return { ok: true, message: "Field location saved with Google Maps metadata.", fieldLocation: data };
+    return { ok: true, message: "Field location saved with approved map metadata. No route tracking is enabled.", fieldLocation: data };
   } catch {
     return { ok: false, message: "Field location could not reach Supabase." };
   }
 }
 
-export async function listFieldLocations(organizationId?: string) {
+export async function listFieldLocations(organizationId?: string, actorUserId?: string) {
+  if (!organizationId) {
+    return { ok: false, message: "Field location list requires an organization.", fieldLocations: [] };
+  }
+  if (!actorUserId) {
+    return { ok: false, message: "Field location list requires an authenticated organization admin.", fieldLocations: [] };
+  }
+
   try {
     const db = adminDb();
+    const access = await requireActiveOrganizationAdmin({
+      db,
+      organizationId,
+      userId: actorUserId,
+      action: "view field locations"
+    });
+    if (!access.ok) return { ok: false, message: access.message, fieldLocations: [] };
+
     let query = db
       .from("field_locations")
-      .select("id,organization_id,name,address,latitude,longitude,google_place_id,map_url,map_embed_url,status,updated_at")
+      .select("id,organization_id,name,address,latitude,longitude,google_place_id,map_url,map_embed_url,field_label,notes,status,updated_at")
       .order("name", { ascending: true });
 
-    if (organizationId) query = query.eq("organization_id", organizationId);
+    query = query.eq("organization_id", organizationId);
 
     const { data, error } = await runDynamicQuery(query);
     if (error) return { ok: false, message: "Field locations could not be loaded.", fieldLocations: [] };
 
     return {
       ok: true,
-      message: "Field locations loaded from Supabase with map fallback metadata.",
+      message: "Field locations loaded from Supabase with approved map metadata and marker labels.",
       fieldLocations: data ?? []
     };
   } catch {

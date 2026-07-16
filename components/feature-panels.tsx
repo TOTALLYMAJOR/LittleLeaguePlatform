@@ -4233,6 +4233,13 @@ export function ScheduleAlertsClient({ scheduleData }: { scheduleData?: Schedule
   const [locationName, setLocationName] = useState(event?.locationName ?? "");
   const [locationAddress, setLocationAddress] = useState(event?.locationAddress ?? "");
   const [fieldLocationId, setFieldLocationId] = useState("");
+  const [venueLatitude, setVenueLatitude] = useState("");
+  const [venueLongitude, setVenueLongitude] = useState("");
+  const [venueMapUrl, setVenueMapUrl] = useState("");
+  const [venueMapEmbedUrl, setVenueMapEmbedUrl] = useState("");
+  const [venueFieldLabel, setVenueFieldLabel] = useState("");
+  const [venueNotes, setVenueNotes] = useState("");
+  const [venueStatus, setVenueStatus] = useState<"active" | "inactive">("active");
   const [status, setStatus] = useState<EventStatus>(event?.status ?? "scheduled");
   const [recurrenceCount, setRecurrenceCount] = useState(1);
   const [recurrenceIntervalWeeks, setRecurrenceIntervalWeeks] = useState(1);
@@ -4278,8 +4285,22 @@ export function ScheduleAlertsClient({ scheduleData }: { scheduleData?: Schedule
     now: NOW
   });
 
+  function applyVenueDraft(field?: (typeof persistedVenueRecords)[number]) {
+    setFieldLocationId(field?.id ?? "");
+    setVenueLatitude(field?.latitude === undefined ? "" : String(field.latitude));
+    setVenueLongitude(field?.longitude === undefined ? "" : String(field.longitude));
+    setVenueMapUrl(field?.mapUrl ?? "");
+    setVenueMapEmbedUrl(field?.mapEmbedUrl ?? "");
+    setVenueFieldLabel(field?.fieldLabel ?? "");
+    setVenueNotes(field?.notes ?? "");
+    setVenueStatus(field?.status ?? "active");
+  }
+
   function selectEvent(nextId: string) {
     const next = scheduleState.events.find((item) => item.id === nextId);
+    const field = next
+      ? persistedVenueRecords.find((item) => item.name === next.locationName && item.address === next.locationAddress)
+      : undefined;
     setEventId(nextId);
     setStartsAt(next?.startsAt ?? "");
     setEndsAt(next?.endsAt ?? "");
@@ -4287,7 +4308,7 @@ export function ScheduleAlertsClient({ scheduleData }: { scheduleData?: Schedule
     setEventType(next?.eventType ?? "practice");
     setLocationName(next?.locationName ?? "");
     setLocationAddress(next?.locationAddress ?? "");
-    setFieldLocationId("");
+    applyVenueDraft(field);
     setStatus(next?.status ?? "scheduled");
     setRecurrenceCount(1);
     setRecurrenceIntervalWeeks(1);
@@ -4312,6 +4333,18 @@ export function ScheduleAlertsClient({ scheduleData }: { scheduleData?: Schedule
         locationName,
         locationAddress,
         fieldLocationId: fieldLocationId || undefined,
+        venue: {
+          id: fieldLocationId || undefined,
+          name: locationName,
+          address: locationAddress,
+          latitude: venueLatitude.trim() ? Number(venueLatitude) : undefined,
+          longitude: venueLongitude.trim() ? Number(venueLongitude) : undefined,
+          mapUrl: venueMapUrl.trim() || undefined,
+          mapEmbedUrl: venueMapEmbedUrl.trim() || undefined,
+          fieldLabel: venueFieldLabel.trim() || undefined,
+          notes: venueNotes.trim() || undefined,
+          status: venueStatus
+        },
         opponent: event.opponent,
         status,
         reason: status === "cancelled" ? "Schedule change entered from the operations screen." : undefined,
@@ -4400,7 +4433,7 @@ export function ScheduleAlertsClient({ scheduleData }: { scheduleData?: Schedule
                 value={fieldLocationId}
                 onChange={(input) => {
                   const field = persistedVenueRecords.find((item) => item.id === input.target.value);
-                  setFieldLocationId(input.target.value);
+                  applyVenueDraft(field);
                   if (field) {
                     setLocationName(field.name);
                     setLocationAddress(field.address);
@@ -4421,6 +4454,39 @@ export function ScheduleAlertsClient({ scheduleData }: { scheduleData?: Schedule
           <label>
             Address
             <input value={locationAddress} onChange={(input) => setLocationAddress(input.target.value)} />
+          </label>
+          <label>
+            Field label
+            <input value={venueFieldLabel} onChange={(input) => setVenueFieldLabel(input.target.value)} placeholder="North diamond" />
+          </label>
+          <label>
+            Venue notes
+            <textarea value={venueNotes} onChange={(input) => setVenueNotes(input.target.value)} rows={3} placeholder="Gate, parking, surface, restroom, or takedown notes" />
+          </label>
+          <div className="grid two">
+            <label>
+              Latitude
+              <input value={venueLatitude} onChange={(input) => setVenueLatitude(input.target.value)} placeholder="40.7128" />
+            </label>
+            <label>
+              Longitude
+              <input value={venueLongitude} onChange={(input) => setVenueLongitude(input.target.value)} placeholder="-74.0060" />
+            </label>
+          </div>
+          <label>
+            Map fallback URL
+            <input value={venueMapUrl} onChange={(input) => setVenueMapUrl(input.target.value)} placeholder="https://www.google.com/maps/..." />
+          </label>
+          <label>
+            Approved embed URL
+            <input value={venueMapEmbedUrl} onChange={(input) => setVenueMapEmbedUrl(input.target.value)} placeholder="https://www.google.com/maps/embed?..." />
+          </label>
+          <label>
+            Venue status
+            <select value={venueStatus} onChange={(input) => setVenueStatus(input.target.value as "active" | "inactive")}>
+              <option value="active">Active</option>
+              <option value="inactive">Inactive</option>
+            </select>
           </label>
           <label>
             Status
@@ -5365,6 +5431,7 @@ export function TeamPortalClient({ teamPortalData }: { teamPortalData?: TeamPort
   const teamMembershipsSource = teamPortalData?.teamMemberships ?? state.teamMemberships;
   const usersSource = teamPortalData?.users.length ? teamPortalData.users : state.users;
   const eventsSource = teamPortalData?.events ?? state.events;
+  const fieldLocationsSource = teamPortalData?.fieldLocations ?? [];
   const mediaItemsSource = teamPortalData?.mediaItems ?? state.mediaItems;
   const parentReplaysSource = teamPortalData?.parentReplays ?? state.parentReplays;
   const isSupabaseBacked = Boolean(teamPortalData?.teams.length);
@@ -5413,10 +5480,10 @@ export function TeamPortalClient({ teamPortalData }: { teamPortalData?: TeamPort
     .sort((left, right) => Date.parse(left.startsAt) - Date.parse(right.startsAt));
   const upcomingGame = teamEvents.find((event) => event.eventType === "game");
   const nextPractice = teamEvents.find((event) => event.eventType === "practice");
-  const embeddedMap = getEmbeddedMapUi(upcomingGame ?? nextPractice);
-  const venueMarkers = getVenueMarkers(teamEvents);
+  const embeddedMap = getEmbeddedMapUi(upcomingGame ?? nextPractice, fieldLocationsSource);
+  const venueMarkers = getVenueMarkers(teamEvents, fieldLocationsSource);
   const mapQuotaStatus = getMapQuotaStatus({ requestsToday: 42, dailyLimit: 100 });
-  const fieldLayout = getFieldLayoutMetadata(upcomingGame ?? nextPractice);
+  const fieldLayout = getFieldLayoutMetadata(upcomingGame ?? nextPractice, fieldLocationsSource);
   const venuePage = getVenuePage(upcomingGame ?? nextPractice);
   const venueAmenityNotes = getVenueAmenityNotes(upcomingGame ?? nextPractice);
   const arrivalInstructions = getArrivalInstructions(upcomingGame ?? nextPractice);
@@ -5991,7 +6058,7 @@ export function TeamPortalClient({ teamPortalData }: { teamPortalData?: TeamPort
               <p><strong>Parking:</strong> Use the main lot near {upcomingGame.locationName}; check urgent alerts before leaving.</p>
               <p><strong>Weather:</strong> {gameWeatherAlert ? `${gameWeatherAlert.headline} - ${gameWeatherAlert.detail}` : "No weather alert drafted."}</p>
               <p><strong>Urgent help:</strong> {gameVolunteerSignups.filter((signup) => signup.status === "open").map((signup) => signup.role).join(", ") || "Covered"}</p>
-              <a href={`https://maps.google.com/?q=${encodeURIComponent(upcomingGame.locationAddress)}`}>Open field map</a>
+              <a href={mapFallback.href}>Open field map</a>
             </>
           ) : <p className="muted">No game scheduled yet.</p>}
           <p className="notice">Calm Mode keeps only essentials visible before the event. Weather and urgent alerts remain approval-gated; no automatic provider send occurs.</p>
@@ -6022,6 +6089,7 @@ export function TeamPortalClient({ teamPortalData }: { teamPortalData?: TeamPort
             <span className={`badge ${embeddedMap.status === "ready" ? "ok" : "warning"}`}>{embeddedMap.status}</span>
           </div>
           {embeddedMap.embedUrl ? <iframe title={embeddedMap.title} src={embeddedMap.embedUrl} loading="lazy" /> : <p className="muted">No event location is ready for map embed.</p>}
+          <p className="muted">{embeddedMap.boundary}</p>
           {embeddedMap.directionsUrl ? <a href={embeddedMap.directionsUrl}>Open directions</a> : null}
         </article>
 
@@ -6034,7 +6102,10 @@ export function TeamPortalClient({ teamPortalData }: { teamPortalData?: TeamPort
             <span className="badge">{venueMarkers.length} marker(s)</span>
           </div>
           {venueMarkers.map((marker) => (
-            <p key={marker.id}><strong>{marker.label}. {marker.title}</strong><br /><span className="muted">{marker.eventTitle} · {marker.address}</span></p>
+            <p key={marker.id}>
+              <strong>{marker.label}. {marker.title}</strong><br />
+              <span className="muted">{marker.eventTitle} · {marker.address} · {marker.metadataStatus}{marker.latitude !== undefined && marker.longitude !== undefined ? ` · ${marker.latitude}, ${marker.longitude}` : ""}</span>
+            </p>
           ))}
           {!venueMarkers.length ? <p className="muted">No venue markers available.</p> : null}
         </article>

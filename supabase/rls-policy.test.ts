@@ -24,6 +24,7 @@ describe("Supabase RLS policy coverage", () => {
   const sponsorBillingAndTeamBuilder = migration("0017_sponsor_billing_and_team_builder.sql");
   const teamBrandProfilesMonitoring = migration("0018_team_brand_profiles_monitoring.sql");
   const teamSeasonParentScheduleLifecycle = migration("0019_team_season_parent_schedule_lifecycle.sql");
+  const scheduleRecurringVenueManagement = migration("0023_schedule_recurring_venue_management.sql");
   const mediaUploadStoragePipeline = migration("0024_media_upload_storage_pipeline.sql");
   const snackVolunteerOperations = migration("0025_snack_volunteer_operations.sql");
   const packageJson = readFileSync(join(process.cwd(), "package.json"), "utf8");
@@ -46,6 +47,14 @@ describe("Supabase RLS policy coverage", () => {
     expect(hardening).toContain("create table public.team_chat_reports");
     expect(hardening).toContain("create policy \"team members create chat reports\"");
     expect(hardening).toContain("create policy \"team managers review chat reports\"");
+  });
+
+  it("keeps managed venue metadata admin-governed", () => {
+    expect(hardening).toContain("organization admins manage field locations");
+    expect(scheduleRecurringVenueManagement).toContain("add column if not exists field_label");
+    expect(scheduleRecurringVenueManagement).toContain("add column if not exists notes");
+    expect(scheduleRecurringVenueManagement).toContain("add column if not exists map_embed_url");
+    expect(scheduleRecurringVenueManagement).toContain("add column if not exists google_place_id");
   });
 
   it("keeps provider/mobile hardening for media moderation, Realtime, and retention", () => {
