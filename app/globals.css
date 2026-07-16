@@ -36,7 +36,7 @@
   --surface-soft:   #f9fbff;
   --surface-strong: #f0f3f7;
   --text:           #172033;
-  --muted:          #667085;
+  --muted:          #5b6678;
   --line:           #d9e0ea;
 
   /* — Brand / Accent — */
@@ -243,7 +243,8 @@ code, .mono {
   flex-shrink: 0;
   width: 42px; height: 42px;
   border-radius: var(--radius);
-  background: linear-gradient(135deg, var(--accent), var(--accent-strong));
+  background-color: var(--accent);
+  background-image: linear-gradient(135deg, var(--accent), var(--accent-strong));
   color: #fff;
   font-weight: 700;
   font-size: var(--text-base);
@@ -295,7 +296,7 @@ code, .mono {
   justify-content: center;
   min-width: 20px; height: 20px;
   border-radius: var(--radius-pill);
-  background: var(--danger);
+  background: #b42318;
   color: #fff;
   font-size: 0.68rem;
   font-weight: 700;
@@ -373,7 +374,7 @@ button.ghost, .button.ghost {
 }
 button.ghost:hover:not(:disabled) { background: var(--accent-soft); }
 
-button.danger, .button.danger { background: var(--danger); }
+button.danger, .button.danger { background: #b42318; }
 button.danger:hover:not(:disabled) { background: #8f1a10; }
 
 button.ok, .button.ok { background: var(--ok); }
@@ -932,8 +933,16 @@ dialog::backdrop { background: rgba(15, 23, 42, 0.5); backdrop-filter: blur(3px)
 .team-color-row { align-items: center; display: flex; flex-wrap: wrap; gap: var(--sp-2); }
 .team-color-row span { border: 1px solid var(--line); border-radius: var(--radius-pill); display: inline-flex; height: 28px; width: 28px; }
 .team-branding-panel { border-color: var(--portal-line); }
-.team-branding-preview { align-items: center; background: linear-gradient(135deg, var(--team-primary), var(--team-secondary)); border-radius: var(--radius); color: #fff; display: flex; gap: var(--sp-3); min-height: 72px; padding: var(--sp-4); }
-.team-branding-preview strong { background: rgba(255,255,255,.2); border: 1px solid rgba(255,255,255,.45); border-radius: var(--radius); padding: 10px var(--sp-3); }
+.team-branding-preview { align-items: center; background-color: var(--team-primary); background-image: linear-gradient(135deg, var(--team-primary), var(--team-secondary)); border-radius: var(--radius); color: #fff; display: flex; gap: var(--sp-3); min-height: 72px; padding: var(--sp-4); }
+.team-branding-preview strong,
+.team-branding-preview span {
+  background: rgba(255,255,255,.94);
+  border: 1px solid rgba(23,32,51,.16);
+  border-radius: var(--radius);
+  color: #172033;
+  padding: 8px var(--sp-3);
+}
+.team-branding-preview strong { font-weight: 900; }
 .hero-team-card { overflow: hidden; background: radial-gradient(circle at top right, rgba(16,185,129,.22), transparent 35%), linear-gradient(135deg, rgba(29,78,216,.09), rgba(255,255,255,.96)); }
 .hero-team-main { display: flex; justify-content: space-between; gap: var(--sp-5); align-items: flex-start; }
 .hero-team-main h3 { font-size: var(--text-3xl); letter-spacing: -0.06em; }
@@ -1493,7 +1502,8 @@ dialog::backdrop { background: rgba(15, 23, 42, 0.5); backdrop-filter: blur(3px)
   width: 44px;
   height: 44px;
   border-radius: var(--radius);
-  background: linear-gradient(135deg, var(--accent), var(--ok));
+  background-color: var(--accent);
+  background-image: linear-gradient(135deg, var(--accent), var(--ok));
   color: #fff;
   font-weight: 900;
   box-shadow: var(--shadow-sm);
@@ -1961,11 +1971,14 @@ dialog::backdrop { background: rgba(15, 23, 42, 0.5); backdrop-filter: blur(3px)
     --text:           #f8fafc;
     --muted:          #b8c4d6;
     --line:           #344054;
-    --accent:         #53b1fd;
+    --accent:         #175cd3;
     --accent-strong:  #84caff;
     --accent-soft:    #0c2a4a;
+    --ok:             #75e0a7;
     --ok-soft:        #053321;
+    --warning:        #fdb022;
     --warning-soft:   #2d1e04;
+    --danger:         #f97066;
     --danger-soft:    #3b1010;
     --shadow-sm:  0 2px 8px  rgba(0, 0, 0, 0.24);
     --shadow:     0 16px 40px rgba(0, 0, 0, 0.32);
@@ -2442,7 +2455,7 @@ caption {
 
 .unread-badge {
   align-items: center;
-  background: var(--danger);
+  background: #b42318;
   border-radius: var(--radius-pill);
   color: #fff;
   display: inline-flex;

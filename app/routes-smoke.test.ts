@@ -176,4 +176,20 @@ describe("route smoke coverage", () => {
     expect(proofScript).toContain("brand_profile_published");
     expect(proofScript).toContain("brand-launch-validation.png");
   });
+
+  it("keeps route-level theme contrast proof wired into QA automation", () => {
+    const packageJson = readFileSync(join(process.cwd(), "package.json"), "utf8");
+    const workflow = readFileSync(join(process.cwd(), ".github", "workflows", "supabase-qa-proof.yml"), "utf8");
+    const proofScript = readFileSync(join(process.cwd(), "scripts", "verify-theme-contrast-proof.mjs"), "utf8");
+    const docs = readFileSync(join(process.cwd(), "docs", "theme-contrast-regression.md"), "utf8");
+
+    expect(packageJson).toContain("\"qa:contrast-proof\"");
+    expect(workflow).toContain("npm run qa:contrast-proof");
+    expect(proofScript).toContain("theme-contrast-");
+    expect(proofScript).toContain("/parent/rsvp");
+    expect(proofScript).toContain("/coach/rsvps");
+    expect(proofScript).toContain("/admin/themes");
+    expect(docs).toContain("4.5:1");
+    expect(docs).toContain("output/playwright/theme-contrast-*.png");
+  });
 });
