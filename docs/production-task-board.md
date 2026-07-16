@@ -53,29 +53,29 @@ Task-specific checks are required only when the surface is touched:
 ### LP-003 - Prove Media Report Browser Write
 
 - Priority: P1 proof.
-- Current state: API/domain coverage exists; hosted browser proof for family media report remains open.
+- Current state: QA session proof coverage added 2026-07-16. The script now signs in as the QA parent, reports a resettable approved media row through `/api/media/report`, verifies `report_count`, pending moderation status, and `media_reported` audit evidence in Supabase, and preserves `output/playwright/media-report-qa-session-live.png`.
 - Seams: `/parent`, `/team-portal`, `/api/media/report`, `lib/supabase/media-governance.ts`.
-- Done when: signed-in QA parent reports approved team media from a parent-visible surface, Supabase reflects report count/status change, and unrelated team media remains invisible.
+- Done when: hosted QA run captures the signed-in parent media-report proof and Supabase readback on the production deployment.
 - SaaS constants focus: tenant isolation, child/media privacy, state transition, audit event, abuse prevention.
-- Validation: focused route/browser proof plus `npm test` if route code changes.
+- Validation: `node --check scripts/verify-qa-session-paths.mjs`; `QA_PROOF_BASE_URL=https://www.leaguepilot.us npm run qa:session-proof` when QA credentials are available.
 
 ### LP-004 - Prove Media Moderation Browser Write
 
 - Priority: P1 proof.
-- Current state: admin/coach hide/restore/remove APIs exist; hosted browser proof is not complete.
+- Current state: QA session proof coverage added 2026-07-16. The script now signs in as the QA admin, hides the QA media row through `/api/media/moderation`, verifies hidden status, organization visibility, reviewer metadata, and `media_hidden` audit evidence, and preserves `output/playwright/media-moderation-qa-session-live.png`.
 - Seams: `/admin`, `/api/media/moderation`, `lib/supabase/media-governance.ts`.
-- Done when: signed-in admin or assigned coach hides/restores/removes a QA media item through browser UI and parent/team reads honor the moderation state.
+- Done when: hosted QA run captures the signed-in admin moderation proof and Supabase readback on the production deployment.
 - SaaS constants focus: tenant isolation, reviewer role, moderation state, auditability, support/admin action risk.
-- Validation: browser proof with Supabase readback; `npm test` if code changes.
+- Validation: `node --check scripts/verify-qa-session-paths.mjs`; `QA_PROOF_BASE_URL=https://www.leaguepilot.us npm run qa:session-proof` when QA credentials are available.
 
 ### LP-005 - Prove Registration Approval Browser Flow
 
 - Priority: P1 proof.
-- Current state: RPC/API flow exists and live approval/rejection was verified earlier; browser-level hosted proof remains open.
-- Seams: `/admin/registrations`, `/api/admin/registrations/*`, `supabase/migrations/0003_registration_approval_workflow.sql`, `0004_fix_registration_approval_digest.sql`.
-- Done when: signed-in QA admin approves and rejects temporary registration requests from the hosted UI, with player/guardian/invite/action rows created or updated correctly.
+- Current state: QA session proof coverage added 2026-07-16. The script now creates disposable pending registration requests, signs in as the QA admin on `/admin/registrations`, approves and rejects through the authenticated review APIs, verifies request state, `registration_approval_actions`, and audit rows, and preserves `output/playwright/registration-approval-qa-session-live.png` plus `output/playwright/registration-rejection-qa-session-live.png`.
+- Seams: `/admin/registrations`, `/api/admin/registration-requests/*`, `supabase/migrations/0003_registration_approval_workflow.sql`, `0004_fix_registration_approval_digest.sql`.
+- Done when: hosted QA run captures signed-in admin approval/rejection proof and Supabase readback on the production deployment.
 - SaaS constants focus: guardian access grant, tenant isolation, actor authorization, lifecycle reversal, audit log, idempotent approval.
-- Validation: hosted Playwright proof with cleanup and Supabase readback.
+- Validation: `node --check scripts/verify-qa-session-paths.mjs`; `QA_PROOF_BASE_URL=https://www.leaguepilot.us npm run qa:session-proof` when QA credentials are available.
 
 ### LP-006 - Harden Guardian Verification Policy
 
@@ -89,9 +89,10 @@ Task-specific checks are required only when the surface is touched:
 ### LP-007 - Prove Team-Builder Admin Publish
 
 - Priority: P1 proof.
-- Current state: preview and admin-only tables exist; browser publish proof remains open.
+- Current state: blocked as of 2026-07-16. Preview and admin-only tables exist, but the current UI explicitly states roster/bracket previews do not publish teams, schedules, seeds, or standings, and no authenticated team-builder publish API/service route exists to exercise.
 - Seams: `/admin`, `/admin/teams`, team-builder domain/service code, `team_build_plans`.
 - Done when: QA admin previews, edits/approves, and publishes a team-build plan through the browser with persisted plan/audit evidence and no cross-org writes.
+- Next action: implement the production team-builder publish route/service with role checks, idempotency, audit rows, and readback before adding hosted browser publish proof.
 - SaaS constants focus: tenant scope, lifecycle state, idempotency, concurrency, audit log, migration compatibility.
 - Validation: browser proof with Supabase readback and `npm run qa:rls-proof` if policies change.
 
