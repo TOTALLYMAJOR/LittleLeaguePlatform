@@ -17,6 +17,7 @@
     "qa:ai-coach-proof": "node scripts/verify-ai-coach-provider-proof.mjs",
     "qa:brand-proof": "node scripts/verify-brand-surface-proof.mjs",
     "qa:contrast-proof": "node scripts/verify-theme-contrast-proof.mjs",
+    "qa:pwa-cache-proof": "node scripts/verify-pwa-cache-proof.mjs",
     "qa:rls-proof": "node scripts/verify-rls-boundaries.mjs",
     "check:skills": "node scripts/check-agent-skills.mjs"
   },

@@ -49,8 +49,13 @@ describe("route smoke coverage", () => {
   it("keeps the PWA offline fallback route wired into the service worker", () => {
     const serviceWorker = readFileSync(join(process.cwd(), "public", "sw.js"), "utf8");
 
+    expect(serviceWorker).toContain("PWA_CACHE_VERSION");
+    expect(serviceWorker).toContain("SHELL_CACHE_NAME");
+    expect(serviceWorker).toContain("RUNTIME_CACHE_NAME");
     expect(serviceWorker).toContain("\"/offline\"");
     expect(serviceWorker).toContain("caches.match(\"/offline\")");
+    expect(serviceWorker).toContain("networkFirstNavigation");
+    expect(serviceWorker).toContain("isBrandAssetUrl");
     expect(serviceWorker).toContain("showNotification");
     expect(serviceWorker).toContain("notificationclick");
   });
@@ -61,12 +66,35 @@ describe("route smoke coverage", () => {
     const manifest = readFileSync(join(process.cwd(), "public", "manifest.webmanifest"), "utf8");
 
     expect(provider).toContain("/api/mobile-usage-events");
+    expect(provider).toContain("versionedPwaAsset(\"/sw.js\", PWA_CACHE_VERSION)");
+    expect(provider).toContain("updateViaCache: \"none\"");
     expect(provider).toContain("install_prompt_shown");
     expect(provider).toContain("standalone_launch");
     expect(layout).toContain("AppShell");
     expect(layout).toContain("apple");
+    expect(layout).toContain("versionedPwaAsset(\"/manifest.webmanifest\", PWA_MANIFEST_REVISION)");
+    expect(manifest).toContain("\"version\": \"2026.07.16.14\"");
     expect(manifest).toContain("/favicons/favicon-option-1-shield.png");
     expect(manifest).toContain("/favicons/favicon-option-4-team-chat.png");
+    expect(manifest).toContain("?v=brand-2026.07.16.14");
+  });
+
+  it("keeps PWA cache and branding invalidation proof wired", () => {
+    const packageJson = readFileSync(join(process.cwd(), "package.json"), "utf8");
+    const contract = readFileSync(join(process.cwd(), "lib", "domain", "pwa-cache.ts"), "utf8");
+    const serviceWorker = readFileSync(join(process.cwd(), "public", "sw.js"), "utf8");
+    const proofScript = readFileSync(join(process.cwd(), "scripts", "verify-pwa-cache-proof.mjs"), "utf8");
+    const docs = readFileSync(join(process.cwd(), "docs", "pwa-cache-invalidation.md"), "utf8");
+
+    expect(packageJson).toContain("\"qa:pwa-cache-proof\"");
+    expect(contract).toContain("PWA_CACHE_VERSION");
+    expect(contract).toContain("PWA_BRAND_ASSET_REVISION");
+    expect(serviceWorker).toContain("CURRENT_CACHES");
+    expect(serviceWorker).toContain("caches.delete");
+    expect(serviceWorker).toContain("event.waitUntil(network)");
+    expect(proofScript).toContain("PWA cache proof passed");
+    expect(docs).toContain("stale-brand avoidance");
+    expect(docs).toContain("Bump `PWA_CACHE_VERSION`");
   });
 
   it("keeps the global app shell wired for accessible navigation and PWA state", () => {

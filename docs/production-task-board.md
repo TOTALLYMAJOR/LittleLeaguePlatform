@@ -189,7 +189,7 @@ Task-specific checks are required only when the surface is touched:
 - Seams: `/admin/themes`, `team_brand_profiles`, brand validation runs, brand monitoring events.
 - Done when: several distinct test brands pass the hosted 20-surface checklist and non-coaches cannot edit branding.
 - SaaS constants focus: tenant configuration, cache invalidation, role authorization, audit/versioning.
-- Validation: `QA_PROOF_BASE_URL=https://www.leaguepilot.us npm run qa:brand-proof` plus browser screenshots.
+- Validation: `QA_PROOF_BASE_URL=https://www.leaguepilot.us npm run qa:brand-proof`, `npm run qa:pwa-cache-proof`, and browser screenshots after a real brand revision bump.
 
 ### LP-018 - Prove Provider-Backed Brand Rendering Boundary
 

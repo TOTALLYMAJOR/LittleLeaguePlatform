@@ -2,6 +2,7 @@
 
 import { createContext, useContext, useEffect, useMemo, useReducer, useState } from "react";
 import { appReducer, seedState, type AppAction, type AppState } from "@/lib/domain";
+import { PWA_CACHE_VERSION, versionedPwaAsset } from "@/lib/domain/pwa-cache";
 
 interface AppStateContextValue {
   state: AppState;
@@ -42,7 +43,10 @@ export function AppStateProvider({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     if (!("serviceWorker" in navigator)) return;
-    navigator.serviceWorker.register("/sw.js").catch(() => undefined);
+    navigator.serviceWorker
+      .register(versionedPwaAsset("/sw.js", PWA_CACHE_VERSION), { updateViaCache: "none" })
+      .then((registration) => registration.update().catch(() => undefined))
+      .catch(() => undefined);
   }, []);
 
   useEffect(() => {
