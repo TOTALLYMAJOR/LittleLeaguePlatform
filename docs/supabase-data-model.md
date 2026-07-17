@@ -55,7 +55,7 @@ npm run supabase:push
 - Guardian authority is explicit through pickup, medical decision, emergency contact, media release, and communication authorization records.
 - Emergency contacts and player health notes are separated from general roster data with stricter access policies.
 - Notification consent is stored per user, channel, notification type, team/org scope, quiet hours, and opt-in/out timestamp.
-- Provider delivery attempts are separated from notification records so queued, sent, failed, and suppressed states are auditable.
+- Provider delivery attempts are separated from notification records so queued, sent, failed, suppressed, retry, idempotency, provider-response, webhook, and dead-letter state are auditable. Execution metadata lives in `0021_notification_delivery_execution.sql`.
 - Scheduling supports recurring series, field inventory, field reservation conflict prevention, cancellation reasons, schedule versions, and change logs.
 - Team chat supports threads, replies, attachments, reactions, reports, read receipts, moderation, and retention timestamps.
 - Parent Replay has reusable templates, deterministic/AI/coach-written source tracking, review timestamps, generated-run evidence, and approved learning plans.

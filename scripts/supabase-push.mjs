@@ -26,13 +26,55 @@ if (!databaseUrl || databaseUrl.includes("[YOUR-PASSWORD]")) {
   process.exit(1);
 }
 
-const result = spawnSync(
-  "npx",
-  ["supabase", "db", "push", "--db-url", databaseUrl, "--include-seed", "--yes", "--workdir", "."],
-  {
-    stdio: "inherit",
+function runSupabase(args) {
+  const result = spawnSync("npx", ["supabase", ...args], {
+    encoding: "utf8",
     shell: process.platform === "win32"
+  });
+
+  if (result.stdout) process.stdout.write(result.stdout);
+  if (result.stderr) process.stderr.write(result.stderr);
+
+  return result;
+}
+
+function localAndRemoteMigrationsAreAligned() {
+  const result = runSupabase(["migration", "list", "--db-url", databaseUrl, "--workdir", "."]);
+  if ((result.status ?? 1) !== 0) return false;
+
+  try {
+    const payload = JSON.parse(result.stdout);
+    return payload.migrations.every(
+      (migration) => migration.local && migration.remote && migration.local === migration.remote
+    );
+  } catch {
+    return false;
   }
-);
+}
+
+const result = runSupabase([
+  "db",
+  "push",
+  "--db-url",
+  databaseUrl,
+  "--include-seed",
+  "--yes",
+  "--workdir",
+  "."
+]);
+
+if ((result.status ?? 1) !== 0) {
+  const output = `${result.stdout}\n${result.stderr}`;
+  const poolerPreparedStatementFailure =
+    output.includes("prepared statement") && output.includes("SQLSTATE 42P05");
+
+  if (poolerPreparedStatementFailure && localAndRemoteMigrationsAreAligned()) {
+    console.warn(
+      "Supabase db push hit a transaction-pooler prepared-statement error, " +
+        "but local and remote migration history are aligned. Treating this as a no-op."
+    );
+    process.exit(0);
+  }
+}
 
 process.exit(result.status ?? 1);

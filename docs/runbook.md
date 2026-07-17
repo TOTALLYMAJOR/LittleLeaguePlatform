@@ -107,6 +107,8 @@ This command uses `SUPABASE_SERVICE_ROLE_KEY` and mutates the configured Supabas
 
 If the target project has not applied the notification delivery execution metadata migration, the seed falls back to base `notification_delivery_attempts` rows and prints a warning. That fallback is acceptable for product demo data, but provider-send worker proof still requires the execution metadata columns to be present.
 
+The configured Supabase project was repaired on 2026-07-16 by renumbering notification delivery execution metadata to `0021_notification_delivery_execution.sql`, applying its idempotent SQL, and marking migration version `0021` applied. If another environment still lacks `idempotency_key`, `next_attempt_at`, `retry_count`, or `dead_lettered_at` on `notification_delivery_attempts`, apply migrations through a reachable direct/session database URL or execute `0021_notification_delivery_execution.sql` and repair migration history before rerunning provider-send proof. In this WSL environment, full `supabase db push` through the transaction pooler can report `prepared statement "lrupsc_1_0" already exists`; `scripts/supabase-push.mjs` now verifies migration history and treats that pooler failure as a no-op only when local and remote versions are aligned.
+
 ## Vercel And Supabase Networking
 
 Do not buy or require Vercel Static IP solely for the current Supabase app path. The production app should talk to Supabase through `NEXT_PUBLIC_SUPABASE_URL` over HTTPS, with Supabase Auth and RLS enforcing parent, coach, and admin scope. `SUPABASE_SERVICE_ROLE_KEY` remains server/CI only.
