@@ -151,6 +151,10 @@ button { cursor: pointer; }
 
 .hidden { display: none !important; }
 :focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
+::selection {
+  background: color-mix(in srgb, var(--accent) 28%, transparent);
+  color: var(--text);
+}
 
 
 /* ─────────────────────────────────────────────────────────────────────────────
@@ -2766,27 +2770,39 @@ dialog::backdrop { background: rgba(15, 23, 42, 0.5); backdrop-filter: blur(3px)
 ───────────────────────────────────────────────────────────────────────────── */
 @media (prefers-color-scheme: dark) {
   :root {
-    --bg:             #101828;
-    --surface:        #182230;
-    --surface-soft:   #131f2e;
-    --surface-strong: #243244;
-    --text:           #f8fafc;
-    --muted:          #b8c4d6;
-    --line:           #344054;
-    --accent:         #53b1fd;
-    --accent-strong:  #84caff;
-    --accent-soft:    #0c2a4a;
-    --ok-soft:        #053321;
-    --warning-soft:   #2d1e04;
-    --danger-soft:    #3b1010;
-    --shadow-sm:  0 2px 8px  rgba(0, 0, 0, 0.24);
-    --shadow:     0 16px 40px rgba(0, 0, 0, 0.32);
-    --shadow-lg:  0 24px 60px rgba(0, 0, 0, 0.42);
+    --bg:             #071423;
+    --surface:        #10233a;
+    --surface-soft:   #0b1a2d;
+    --surface-strong: #183556;
+    --text:           #e8f6ff;
+    --muted:          #b9dcff;
+    --line:           rgba(139, 197, 255, 0.28);
+    --accent:         #58b9ff;
+    --accent-strong:  #f4c95d;
+    --accent-soft:    rgba(88, 185, 255, 0.16);
+    --ok:             #78dfa6;
+    --ok-soft:        rgba(120, 223, 166, 0.15);
+    --warning:        #f4c95d;
+    --warning-soft:   rgba(244, 201, 93, 0.16);
+    --danger:         #ff9b90;
+    --danger-soft:    rgba(255, 155, 144, 0.15);
+    --shadow-sm:  0 2px 8px  rgba(2, 8, 20, 0.32);
+    --shadow:     0 16px 40px rgba(2, 8, 20, 0.42);
+    --shadow-lg:  0 24px 60px rgba(2, 8, 20, 0.52);
+  }
+
+  ::selection {
+    background: rgba(244, 201, 93, 0.36);
+    color: #f4fbff;
   }
 
   input, select, textarea {
-    background: #111927;
+    background: #081525;
+    border-color: rgba(139, 197, 255, 0.3);
     color: var(--text);
+  }
+  input::placeholder, textarea::placeholder {
+    color: rgba(185, 220, 255, 0.68);
   }
 
   .card,
@@ -2807,11 +2823,80 @@ dialog::backdrop { background: rgba(15, 23, 42, 0.5); backdrop-filter: blur(3px)
   .calendar-card,
   .skill-card,
   .check-item {
-    background: var(--surface);
+    background: linear-gradient(180deg, #132a45, var(--surface));
+    border-color: var(--line);
+    color: var(--text);
   }
 
-  .notice { background: #0c2a4a; }
-  .banner { background: #0c2a4a; }
+  .card h1,
+  .card h2,
+  .card h3,
+  .card h4,
+  .card strong,
+  .feature-tier-item strong,
+  .theme-row strong,
+  .event-row strong,
+  .calendar-card strong,
+  .skill-card strong,
+  .check-item strong {
+    color: #f4fbff;
+  }
+
+  .card .muted,
+  .card small,
+  .card label,
+  .feature-tier-item .muted,
+  .theme-row .muted,
+  .event-row .muted,
+  .calendar-card .muted,
+  .skill-card .muted,
+  .check-item .muted {
+    color: var(--muted);
+  }
+
+  .card.metric strong,
+  .card .eyebrow,
+  .card .metric-value {
+    color: var(--warning);
+  }
+
+  button.secondary,
+  .button.secondary,
+  .icon-btn {
+    background: #183556;
+    border-color: rgba(139, 197, 255, 0.3);
+    color: var(--text);
+  }
+  button.secondary:hover:not(:disabled),
+  .icon-btn:hover {
+    background: #20466f;
+  }
+
+  .badge.warning {
+    background: rgba(244, 201, 93, 0.17);
+    color: #ffd978;
+    border: 1px solid rgba(244, 201, 93, 0.32);
+  }
+  .badge.info,
+  .badge.accent {
+    background: rgba(88, 185, 255, 0.17);
+    color: #b9dcff;
+    border: 1px solid rgba(88, 185, 255, 0.32);
+  }
+  .badge.neutral {
+    background: rgba(139, 197, 255, 0.11);
+    color: #cce8ff;
+    border-color: rgba(139, 197, 255, 0.24);
+  }
+
+  .notice {
+    background: #0d2a46;
+    color: var(--text);
+  }
+  .banner {
+    background: #0d2a46;
+    color: var(--text);
+  }
   .season-hero-card {
     background:
       radial-gradient(circle at 88% 12%, color-mix(in srgb, var(--season-sun) 18%, transparent), transparent 28%),

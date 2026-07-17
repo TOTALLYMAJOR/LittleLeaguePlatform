@@ -4275,31 +4275,31 @@ export function RegistrationReviewClient({ initialData }: { initialData: Registr
     setMessage("");
     setBusyRequestId(requestId);
     startTransition(async () => {
-      const response = await fetch(`/api/admin/registration-requests/${requestId}/${action}`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ reviewerUserId, note })
-      });
-      const result = await response.json().catch(() => null) as { ok?: boolean; message?: string } | null;
-      setMessage(result?.message ?? "Registration review failed.");
+      try {
+        const response = await authenticatedJsonFetch(`/api/admin/registration-requests/${requestId}/${action}`, { note });
+        const result = await response.json().catch(() => null) as { ok?: boolean; message?: string } | null;
+        setMessage(result?.message ?? "Registration review failed.");
 
-      if (result?.ok) {
-        const nextStatus = action === "approve" ? "approved" : "rejected";
-        setRequests((current) => current.map((request) => (
-          request.id === requestId
-            ? { ...request, status: nextStatus, reviewedByUserId: reviewerUserId, reviewedAt: new Date().toISOString() }
-            : request
-        )));
-        setActions((current) => [{
-          id: `local-${requestId}-${action}-${Date.now()}`,
-          registrationRequestId: requestId,
-          action: action === "approve" ? "approved" : "rejected",
-          note,
-          createdAt: new Date().toISOString()
-        }, ...current]);
+        if (result?.ok) {
+          const nextStatus = action === "approve" ? "approved" : "rejected";
+          setRequests((current) => current.map((request) => (
+            request.id === requestId
+              ? { ...request, status: nextStatus, reviewedByUserId: reviewerUserId, reviewedAt: new Date().toISOString() }
+              : request
+          )));
+          setActions((current) => [{
+            id: `local-${requestId}-${action}-${Date.now()}`,
+            registrationRequestId: requestId,
+            action: action === "approve" ? "approved" : "rejected",
+            note,
+            createdAt: new Date().toISOString()
+          }, ...current]);
+        }
+      } catch {
+        setMessage("Registration review could not reach the server.");
+      } finally {
+        setBusyRequestId(null);
       }
-
-      setBusyRequestId(null);
     });
   }
 

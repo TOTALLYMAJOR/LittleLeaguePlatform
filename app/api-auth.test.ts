@@ -59,6 +59,18 @@ describe("API mutation auth boundaries", () => {
     expect(file).toContain("createPendingRegistration");
   });
 
+  it("sends the Supabase bearer token when admin registration review buttons call private APIs", () => {
+    const panel = source("components/feature-panels.tsx");
+    const reviewRequest = panel.slice(
+      panel.indexOf("function reviewRequest"),
+      panel.indexOf("const pendingRequests")
+    );
+
+    expect(reviewRequest).toContain("authenticatedJsonFetch");
+    expect(reviewRequest).toContain("/api/admin/registration-requests/${requestId}/${action}");
+    expect(reviewRequest).not.toContain("await fetch(`/api/admin/registration-requests");
+  });
+
   it("keeps anonymous mobile usage measurement open for PWA decision data", () => {
     const file = source("app/api/mobile-usage-events/route.ts");
 
