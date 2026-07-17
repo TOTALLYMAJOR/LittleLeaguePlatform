@@ -635,6 +635,10 @@ describe("RegistrationClient", () => {
     expect(html).toContain("Registration system");
     expect(html).toContain("Submit for review");
     expect(html).toContain("does not create a login");
+    expect(html).toContain("Your submitted request");
+    expect(html).toContain("does not show the registration review queue");
+    expect(html).not.toContain("Pending requests");
+    expect(html).not.toContain("Demo Pending Parent");
   });
 
   it("renders server-backed team options without falling back to seed ids", () => {

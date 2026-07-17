@@ -12,7 +12,6 @@ import {
   communicationTemplates,
   computeAdminHealth,
   computeSeasonPlanningMetrics,
-  createRegistrationRequest,
   defaultTeamCommunicationCopy,
   detectScheduleConflicts,
   evaluateInviteRecovery,
@@ -703,8 +702,10 @@ export function AuthClient() {
           setMessage(error.message);
           return;
         }
-        setMessage("Signed in. Refreshing role-scoped navigation.");
-        window.location.assign("/");
+        setMessage("Signed in. Opening the right dashboard.");
+        const landingResponse = await fetch("/api/auth/session-landing", { cache: "no-store" }).catch(() => null);
+        const landing = await landingResponse?.json().catch(() => null) as { href?: string } | null;
+        window.location.assign(landing?.href ?? "/account");
       } catch (error) {
         setMessage(getSupabaseAuthClientErrorMessage(error));
       }
@@ -4192,12 +4193,11 @@ interface RegistrationClientProps {
 }
 
 export function RegistrationClient({ registrationRequests, teamOptions }: RegistrationClientProps = {}) {
-  const { state, dispatch } = useAppState();
+  const { state } = useAppState();
   const teams = teamOptions?.length
     ? teamOptions
     : state.teams.map((team) => ({ id: team.id, name: team.name, division: team.division }));
-  const [remoteRegistrationRequests, setRemoteRegistrationRequests] = useState(registrationRequests ?? []);
-  const visibleRegistrations = mergeRegistrationRequests(state.registrationRequests, remoteRegistrationRequests);
+  const [submittedRegistrationRequests, setSubmittedRegistrationRequests] = useState(registrationRequests ?? []);
   const [teamId, setTeamId] = useState(teams[0]?.id ?? "team-tigers");
   const [parentName, setParentName] = useState("Casey Morgan");
   const [parentEmail, setParentEmail] = useState("casey@example.com");
@@ -4222,9 +4222,7 @@ export function RegistrationClient({ registrationRequests, teamOptions }: Regist
 
       if (result?.ok) {
         if (result.request) {
-          setRemoteRegistrationRequests((current) => mergeRegistrationRequests([result.request!], current));
-        } else if (state.teams.some((team) => team.id === input.teamId)) {
-          dispatch({ type: "createRegistrationRequest", input });
+          setSubmittedRegistrationRequests((current) => mergeRegistrationRequests([result.request!], current));
         }
         setMessage(result.message ?? "Registration request saved for admin review. No account access was granted.");
         return;
@@ -4252,11 +4250,12 @@ export function RegistrationClient({ registrationRequests, teamOptions }: Regist
           <button onClick={submitRegistration} disabled={isPending}>{isPending ? "Saving..." : "Submit for review"}</button>
         </article>
         <article className="card stack">
-          <h2>Pending requests</h2>
-          {visibleRegistrations.map((request) => (
+          <h2>Your submitted request</h2>
+          <p className="muted">For privacy, the public signup page does not show the registration review queue. League admins review pending requests from the admin dashboard.</p>
+          {submittedRegistrationRequests.map((request) => (
             <p key={request.id}><strong>{request.playerFirstName} {request.playerLastInitial}.</strong><br /><span className="muted">{request.parentName} - {request.status}</span></p>
           ))}
-          {visibleRegistrations.length === 0 ? <p className="muted">No registration requests yet.</p> : null}
+          {submittedRegistrationRequests.length === 0 ? <p className="muted">After submitting, only your just-created request appears here for confirmation.</p> : null}
         </article>
       </section>
     </div>
