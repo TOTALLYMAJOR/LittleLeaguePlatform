@@ -10,6 +10,7 @@ import {
   RegistrationReviewClient,
   ScheduleAlertsClient
 } from "@/components/feature-panels";
+import type { AdminDashboardSurfaceMode } from "@/components/feature-panels";
 import { listAdminOperationsData, type AdminOperationsData } from "@/lib/supabase/admin-operations";
 import { listArchiveVaultData } from "@/lib/supabase/archive-vault";
 import { listGuardianLinkRepairData } from "@/lib/supabase/guardian-links";
@@ -39,7 +40,7 @@ export async function AdminAccessDeniedSurface({ message }: { message?: string }
   );
 }
 
-export async function AdminDashboardSurface() {
+export async function AdminDashboardSurface({ surface = "overview" }: { surface?: AdminDashboardSurfaceMode } = {}) {
   const pageAccess = await requireAdminPageAccess();
   if (!pageAccess.ok) return <AdminAccessDeniedSurface message={pageAccess.message} />;
   const [registrationRequests, sponsorData, mediaData] = await Promise.all([
@@ -47,7 +48,7 @@ export async function AdminDashboardSurface() {
     listSponsorAdminData(),
     listMediaGovernanceData()
   ]);
-  return <AdminDashboardClient registrationRequests={registrationRequests} sponsorData={sponsorData} mediaData={mediaData} />;
+  return <AdminDashboardClient registrationRequests={registrationRequests} sponsorData={sponsorData} mediaData={mediaData} surface={surface} />;
 }
 
 export async function AdminBrandingSurface() {

@@ -2497,10 +2497,29 @@ interface AdminDashboardClientProps {
   registrationRequests?: RegistrationRequest[];
   sponsorData?: SponsorAdminData;
   mediaData?: MediaGovernanceData;
+  surface?: AdminDashboardSurfaceMode;
 }
 
-export function AdminDashboardClient({ registrationRequests, sponsorData, mediaData }: AdminDashboardClientProps = {}) {
+export type AdminDashboardSurfaceMode = "overview" | "media" | "sponsors";
+
+export function AdminDashboardClient({ registrationRequests, sponsorData, mediaData, surface = "overview" }: AdminDashboardClientProps = {}) {
   const { state, dispatch } = useAppState();
+  const showOverview = surface === "overview";
+  const showMedia = surface === "overview" || surface === "media";
+  const showSponsors = surface === "overview" || surface === "sponsors";
+  const focusedSurfaceCopy = surface === "media"
+    ? {
+      eyebrow: "Media review",
+      title: "Review reported media and visibility before families see it.",
+      body: "Moderation keeps reported, hidden, rejected, or removed media out of parent-facing views until a coach or organization admin restores it."
+    }
+    : surface === "sponsors"
+      ? {
+        eyebrow: "Sponsor operations",
+        title: "Manage sponsor records without exposing billing state to families.",
+        body: "Admin sponsor workflows keep placements, logo metadata, and Stripe readiness records separate from child-facing display."
+      }
+      : null;
   const healthCards = computeAdminHealth(state, NOW);
   const adminSuggestions = buildAdminAssistiveSuggestions(state, NOW);
   const visibleRegistrations = registrationRequests ?? state.registrationRequests;
@@ -2736,6 +2755,16 @@ export function AdminDashboardClient({ registrationRequests, sponsorData, mediaD
 
   return (
     <div className="page">
+      {focusedSurfaceCopy ? (
+        <section className="hero">
+          <span className="eyebrow">{focusedSurfaceCopy.eyebrow}</span>
+          <h1>{focusedSurfaceCopy.title}</h1>
+          <p className="lead">{focusedSurfaceCopy.body}</p>
+        </section>
+      ) : null}
+
+      {showOverview ? (
+        <>
       <section className="season-home season-admin-home" aria-labelledby="admin-home-title">
         <div className="season-admin-topgrid">
           <LeagueHealthSummaryCard view={adminSeasonView} />
@@ -2968,8 +2997,12 @@ export function AdminDashboardClient({ registrationRequests, sponsorData, mediaD
           )) : <p className="muted">Every rostered player has a position.</p>}
         </article>
       </section>
+        </>
+      ) : null}
 
-      <section className="grid three">
+      <section className={showOverview ? "grid three" : "grid two admin-focus-grid"}>
+        {showOverview ? (
+          <>
         <article className="card stack">
           <h2>Queued message records</h2>
           <p>{state.notifications.length} local notification records queued across push, email, and SMS channels.</p>
@@ -2985,7 +3018,10 @@ export function AdminDashboardClient({ registrationRequests, sponsorData, mediaD
           ))}
           {visibleRegistrations.length === 0 ? <p className="muted">No registration requests yet.</p> : null}
         </article>
-        <article className="card stack">
+          </>
+        ) : null}
+        {showMedia ? (
+        <article className="card stack admin-focus-card">
           <div className="card-header">
             <div>
               <span className="eyebrow">Visibility and moderation</span>
@@ -3049,7 +3085,9 @@ export function AdminDashboardClient({ registrationRequests, sponsorData, mediaD
           {mediaItems.length === 0 ? <p className="muted">No media links yet.</p> : null}
           <p className="muted">Reported or hidden media is excluded from parent-visible dashboards until it is restored by an assigned coach or organization admin.</p>
         </article>
-        <article className="card stack">
+        ) : null}
+        {showSponsors ? (
+        <article className="card stack admin-focus-card">
           <div className="card-header">
             <div>
               <span className="eyebrow">Sponsor CRUD</span>
@@ -3135,6 +3173,8 @@ export function AdminDashboardClient({ registrationRequests, sponsorData, mediaD
             ))}
           </div>
         </article>
+        ) : null}
+        {showOverview ? (
         <article className="card stack">
           <h2>Readiness</h2>
           {healthCards.slice(0, 4).map((card) => (
@@ -3146,6 +3186,7 @@ export function AdminDashboardClient({ registrationRequests, sponsorData, mediaD
           <p><strong>Privacy filters:</strong> {privacyFilters.length} active filter(s).</p>
           <p className="muted">Engagement and delivery-rate metrics stay out of this home card until they are backed by production reporting.</p>
         </article>
+        ) : null}
       </section>
     </div>
   );

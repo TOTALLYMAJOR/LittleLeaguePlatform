@@ -495,6 +495,34 @@ describe("AdminDashboardClient", () => {
     expect(html).toContain("Engagement and delivery-rate metrics stay out of this home card");
     expect(html).not.toContain("Provider sends live");
   });
+
+  it("renders media review as a focused admin route", () => {
+    const html = renderToStaticMarkup(
+      <AppStateProvider>
+        <AdminDashboardClient surface="media" />
+      </AppStateProvider>
+    );
+
+    expect(html).toContain("Review reported media and visibility before families see it.");
+    expect(html).toContain("Media governance");
+    expect(html).toContain("Hide media");
+    expect(html).not.toContain("Roster maker readiness");
+    expect(html).not.toContain("Sponsor management");
+  });
+
+  it("renders sponsors as a focused admin route", () => {
+    const html = renderToStaticMarkup(
+      <AppStateProvider>
+        <AdminDashboardClient surface="sponsors" />
+      </AppStateProvider>
+    );
+
+    expect(html).toContain("Manage sponsor records without exposing billing state to families.");
+    expect(html).toContain("Sponsor management");
+    expect(html).toContain("Sponsor billing records");
+    expect(html).not.toContain("Roster maker readiness");
+    expect(html).not.toContain("Media governance");
+  });
 });
 
 describe("AdminThemesClient", () => {
