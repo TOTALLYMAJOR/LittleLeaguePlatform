@@ -8,6 +8,7 @@ import {
   getCommandEntries,
   getMobileNavEntries,
   getPrimaryNavEntries,
+  getRouteEntry,
   getRouteParent,
   isRouteActive,
   signedOutShellAccess,
@@ -17,6 +18,70 @@ import {
 import { StatusBadge } from "./primitives";
 
 const groups: RouteTopologyEntry["group"][] = ["Family", "Coach", "League Ops", "Admin Tools", "Switch role", "Support"];
+
+const routeHelpByRole: Record<RouteTopologyEntry["role"], { title: string; body: string; tone: string }> = {
+  public: {
+    title: "Start here",
+    body: "Sign in, sign up, or check the public calendar before private team tools unlock.",
+    tone: "public"
+  },
+  parent: {
+    title: "Family tools",
+    body: "Use this area for the next game, RSVP, messages, photos, and coach-approved practice help.",
+    tone: "family"
+  },
+  coach: {
+    title: "Coach tools",
+    body: "Use this area for attendance, practice recaps, team messages, roster, weather, and planning.",
+    tone: "coach"
+  },
+  admin: {
+    title: "League office",
+    body: "Use this area for registration, team setup, safety review, media review, providers, and audit proof.",
+    tone: "admin"
+  },
+  support: {
+    title: "Account help",
+    body: "Use this area for sign in, account status, invite recovery, and support paths.",
+    tone: "support"
+  },
+  shared: {
+    title: "Shared team surface",
+    body: "This route reuses one private team surface and scopes what appears by your active role.",
+    tone: "shared"
+  },
+  prototype: {
+    title: "Prototype reference",
+    body: "This is the preserved static prototype, not the live production app surface.",
+    tone: "support"
+  }
+};
+
+const routeHelpByHref: Record<string, string> = {
+  "/registration": "Families submit a request here. Admin approval is still required before any private access appears.",
+  "/auth": "Use the role-specific email and password, then the shell will show only the pages that role can open.",
+  "/schedule": "Public calendar view. Private team details still require an approved account role.",
+  "/parent": "Start with the next event card, then answer RSVP or open messages if a coach needs a response.",
+  "/parent/rsvp": "Pick going, maybe, or not going for linked children only.",
+  "/coach": "Start with readiness: RSVP gaps, snack or volunteer needs, weather drafts, and practice follow-up.",
+  "/coach/practice-recaps": "Paste YouTube drill references, pick practice focus areas, and review drafts before anything is published.",
+  "/admin": "Start here to see review queues, registration status, setup gaps, and safety/provider boundaries.",
+  "/admin/registrations": "Approve or reject pending registration requests before families receive private access.",
+  "/admin/media-review": "Review reported media and approve or reject coach drill video sources and videos.",
+  "/admin/teams": "Set up active teams, seasons, divisions, and roster readiness before inviting families.",
+  "/admin/security-audit": "Use this page to confirm role boundaries, RLS proof, and audit evidence."
+};
+
+function getShellContext(pathname: string, access: ClientShellAccess) {
+  const entry = getRouteEntry(pathname);
+  const roleHelp = routeHelpByRole[entry?.role ?? "public"];
+  const title = entry?.label ? `${roleHelp.title}: ${entry.label}` : roleHelp.title;
+  const body = entry?.href && routeHelpByHref[entry.href] ? routeHelpByHref[entry.href] : roleHelp.body;
+  const signInRequired = Boolean(entry?.requiresAuth && !access.signedIn);
+  const badge = signInRequired ? "Sign-in required" : access.signedIn ? "Role scoped" : "Public entry";
+  const badgeVariant = signInRequired ? "warning" : access.signedIn ? "info" : "neutral";
+  return { ...roleHelp, title, body, badge, badgeVariant: badgeVariant as "warning" | "info" | "neutral" };
+}
 
 export function AppShell({ access = signedOutShellAccess, children }: { access?: ClientShellAccess; children: ReactNode }) {
   const pathname = usePathname();
@@ -34,6 +99,8 @@ export function AppShell({ access = signedOutShellAccess, children }: { access?:
   const navItems = useMemo(() => getPrimaryNavEntries(access, pathname), [access, pathname]);
   const commandItems = useMemo(() => getCommandEntries(access, pathname), [access, pathname]);
   const activeMobileItems = useMemo(() => getMobileNavEntries(access, pathname), [access, pathname]);
+  const shellContext = useMemo(() => getShellContext(pathname, access), [access, pathname]);
+  const showMobileTabbar = access.signedIn && (access.canParent || access.canCoach || access.canAdmin) && activeMobileItems.length >= 3;
 
   const filteredNav = useMemo(() => {
     const query = commandQuery.trim().toLowerCase();
@@ -42,10 +109,13 @@ export function AppShell({ access = signedOutShellAccess, children }: { access?:
   }, [commandItems, commandQuery]);
 
   useEffect(() => {
-    setHasHydrated(true);
-    setIsOffline(typeof navigator !== "undefined" ? !navigator.onLine : false);
-    const saved = window.localStorage.getItem("little-league-shell-collapsed");
-    setCollapsed(saved === "true");
+    const frame = window.requestAnimationFrame(() => {
+      setHasHydrated(true);
+      setIsOffline(!navigator.onLine);
+      const saved = window.localStorage.getItem("little-league-shell-collapsed");
+      setCollapsed(saved === "true");
+    });
+    return () => window.cancelAnimationFrame(frame);
   }, []);
 
   useEffect(() => {
@@ -94,9 +164,12 @@ export function AppShell({ access = signedOutShellAccess, children }: { access?:
   }, [commandOpen]);
 
   useEffect(() => {
-    setCommandOpen(false);
-    setCommandQuery("");
-    setCommandIndex(0);
+    const frame = window.requestAnimationFrame(() => {
+      setCommandOpen(false);
+      setCommandQuery("");
+      setCommandIndex(0);
+    });
+    return () => window.cancelAnimationFrame(frame);
   }, [pathname]);
 
   function openCommandRoute(item: RouteTopologyEntry) {
@@ -162,26 +235,35 @@ export function AppShell({ access = signedOutShellAccess, children }: { access?:
         </aside>
 
         <main id="main-content" className="main">
-          <div className="context-bar">
-            <button type="button" className="secondary context-back" onClick={() => (window.history.length > 1 ? router.back() : router.push(getRouteParent(pathname)))}>
-              Back
-            </button>
-            <StatusBadge label="Read-only" variant="neutral" />
+          <div className={`context-bar context-bar-${shellContext.tone}`} aria-label="Current app area">
+            <div className="context-copy">
+              <span className="context-kicker">You are here</span>
+              <strong>{shellContext.title}</strong>
+              <small>{shellContext.body}</small>
+            </div>
+            <div className="context-actions">
+              <button type="button" className="secondary context-back" onClick={() => (window.history.length > 1 ? router.back() : router.push(getRouteParent(pathname)))}>
+                Back
+              </button>
+              <StatusBadge label={shellContext.badge} variant={shellContext.badgeVariant} />
+            </div>
           </div>
           {children}
         </main>
 
-        <nav className="mobile-tabbar" aria-label="Mobile navigation">
-          {activeMobileItems.map((item) => {
-            const active = isRouteActive(pathname, item.href);
-            return (
-              <Link key={item.href} href={item.href} aria-current={active ? "page" : undefined} data-active={active ? "true" : undefined}>
-                <span>{item.short}</span>
-                <small>{item.label.replace("Parent ", "")}</small>
-              </Link>
-            );
-          })}
-        </nav>
+        {showMobileTabbar ? (
+          <nav className="mobile-tabbar" aria-label="Mobile navigation">
+            {activeMobileItems.map((item) => {
+              const active = isRouteActive(pathname, item.href);
+              return (
+                <Link key={item.href} href={item.href} aria-current={active ? "page" : undefined} data-active={active ? "true" : undefined}>
+                  <span>{item.short}</span>
+                  <small>{item.label.replace("Parent ", "")}</small>
+                </Link>
+              );
+            })}
+          </nav>
+        ) : null}
       </div>
 
       {sessionWarningVisible ? (

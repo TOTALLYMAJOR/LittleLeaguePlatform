@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { FeatureTierHubClient } from "@/components/feature-panels";
+import { NextLevelCommandCenter } from "@/components/next-level-command-center";
 import { canAccessRouteEntry, getRouteEntry, type ClientShellAccess } from "@/lib/navigation/route-topology";
 import { getServerShellAccess, toClientShellAccess } from "@/lib/supabase/shell-access";
 
@@ -41,6 +42,27 @@ const operatingSignals = [
   ["Schedule changes", "Alert records can be queued for review without implying a provider send."],
   ["Team identity", "Team colors, mascot, and logo metadata carry across parent, coach, and admin surfaces."],
   ["Safety boundary", "Children do not log in; parent and guardian accounts own child access."]
+] as const;
+
+const signedOutStartCards = [
+  {
+    title: "I already have an account",
+    href: "/auth",
+    action: "Sign in",
+    body: "Use this if your league already gave you a demo or approved account."
+  },
+  {
+    title: "My family needs access",
+    href: "/registration",
+    action: "Request access",
+    body: "Submit a parent request. A league admin still reviews it before private team access opens."
+  },
+  {
+    title: "I just need the calendar",
+    href: "/schedule",
+    action: "Open calendar",
+    body: "See the public schedule first. Private team details require sign-in."
+  }
 ] as const;
 
 const platformLinks = [
@@ -132,6 +154,33 @@ export default async function HomePage() {
   const roleCardsForSession = roleCards.filter((role) => canShowRoleSurface(role.href, access));
   const drawerGroupsForSession = signedIn ? visibleDrawerGroups(access) : [];
   const hasActiveRole = access.canParent || access.canCoach || access.canAdmin;
+  const primaryNextLevelRole = access.canAdmin ? "admin" : access.canCoach ? "coach" : access.canParent ? "parent" : "public";
+  const signedInStartCards = [
+    ...(access.canParent ? [{
+      title: "Parent or guardian",
+      href: "/parent",
+      action: "Parent home",
+      body: "Start with the next event, RSVP, messages, and coach-approved practice help."
+    }] : []),
+    ...(access.canCoach ? [{
+      title: "Coach",
+      href: "/coach/practice-recaps",
+      action: "Coach tools",
+      body: "Start with practice recaps, drill videos, attendance, team messages, and planning."
+    }] : []),
+    ...(access.canAdmin ? [{
+      title: "League admin",
+      href: "/admin",
+      action: "Admin overview",
+      body: "Start with registration review, team setup, safety, media review, and launch readiness."
+    }] : []),
+    ...(!hasActiveRole ? [{
+      title: "Waiting for approval",
+      href: "/registration",
+      action: "Check request path",
+      body: "This account is signed in, but private tools stay hidden until an admin grants an active role."
+    }] : [])
+  ];
 
   return (
     <div className="landing-page">
@@ -148,6 +197,7 @@ export default async function HomePage() {
         </Link>
         <div className="landing-nav-links">
           <Link href="/schedule">Calendar</Link>
+          <a href="#where-to-go">Where to go</a>
           {signedIn && hasActiveRole ? <a href="#roles">Roles</a> : null}
           {signedIn && drawerGroupsForSession.length ? <a href="#platform-map">Team Tools</a> : null}
           {signedIn ? (
@@ -271,6 +321,24 @@ export default async function HomePage() {
         <span><strong>Supabase-backed</strong> where signed-in rows exist.</span>
         <span><strong>Seed fallback</strong> where live rows or auth are unavailable.</span>
         <span><strong>Provider sends</strong> stay approval-gated and disconnected until configured.</span>
+      </section>
+
+      <NextLevelCommandCenter role={primaryNextLevelRole} compact={!signedIn || !hasActiveRole} />
+
+      <section className="landing-section landing-wayfinder" id="where-to-go" aria-labelledby="where-to-go-title">
+        <div className="landing-section-heading">
+          <h2 id="where-to-go-title">Where should I go?</h2>
+          <p>Pick the card that matches what you are trying to do right now. Private pages appear only after the account has that active role.</p>
+        </div>
+        <div className="landing-wayfinder-grid">
+          {(signedIn ? signedInStartCards : signedOutStartCards).map((card) => (
+            <Link className="landing-wayfinder-card" href={card.href} key={card.title}>
+              <span>{card.action}</span>
+              <h3>{card.title}</h3>
+              <p>{card.body}</p>
+            </Link>
+          ))}
+        </div>
       </section>
 
       {signedIn && roleCardsForSession.length ? (

@@ -65,6 +65,8 @@ describe("route smoke coverage", () => {
     expect(page).toContain("Stop chasing families.");
     expect(page).toContain("Run the season from one private team home");
     expect(page).toContain("Practice recaps carry coaching home.");
+    expect(page).toContain("Where should I go?");
+    expect(page).toContain("I already have an account");
     expect(page).toContain("Explore the team tools.");
     expect(page).toContain("Sign in");
     expect(page).toContain("/auth");
@@ -130,6 +132,10 @@ describe("route smoke coverage", () => {
     const css = readFileSync(join(process.cwd(), "app", "globals.css"), "utf8");
 
     expect(shell).toContain("Skip to main content");
+    expect(shell).toContain("You are here");
+    expect(shell).toContain("getShellContext");
+    expect(shell).toContain("Role scoped");
+    expect(shell).toContain("Sign-in required");
     expect(shell).toContain("little-league-shell-collapsed");
     expect(shell).toContain("Route finder");
     expect(shell).toContain("aria-current");

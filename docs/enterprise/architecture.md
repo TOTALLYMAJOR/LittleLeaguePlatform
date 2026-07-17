@@ -6,6 +6,23 @@ Status: draft. This document summarizes current and target architecture while pr
 
 LeaguePilot is a Next.js App Router application backed by Supabase Auth, Postgres, RLS, and service adapters. The app serves admin, coach, and parent/guardian users through role-scoped route families. Domain rules live in `lib/domain/`; Supabase access, route auth, RLS-sensitive adapters, provider-boundary services, and timeout helpers live in `lib/supabase/` and `lib/services/`.
 
+## Navigation And Wayfinding Architecture
+
+The shared shell treats navigation as product infrastructure rather than page-local decoration. `components/ui/AppShell.tsx` consumes route metadata from `lib/navigation/route-topology.ts`, the current session/role access state, and the active pathname to render desktop route groups, a route context panel, access badges, and a signed-in-only mobile tabbar.
+
+```mermaid
+flowchart TB
+  Layout[app/layout.tsx] --> Shell[components/ui/AppShell.tsx]
+  Shell --> Topology[lib/navigation/route-topology.ts]
+  Shell --> Access[Session and role access state]
+  Shell --> Desktop[Desktop navigation groups]
+  Shell --> Context[You are here context panel]
+  Shell --> Mobile[Signed-in mobile tabbar]
+  Home[app/page.tsx] --> Wayfinder[Role wayfinding cards]
+```
+
+Boundary: navigation can explain sign-in and role requirements, but it cannot grant access. Route handlers, Supabase adapters, and RLS remain responsible for protected reads and writes. The mobile tabbar is limited to signed-in users with an active role so public and registration screens keep clear form space and first-action guidance.
+
 ## Current State Architecture
 
 ```mermaid

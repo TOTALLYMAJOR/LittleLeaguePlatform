@@ -117,6 +117,9 @@ import {
   getAccessibilityContrastChecks,
   getPromptEvalHarness,
   getPrivacyFilters,
+  buildNextLevelCommandCenter,
+  buildDrillVideoCollections,
+  getScheduleConflictSummary,
   getInviteAcceptanceRate,
   getAverageInviteToAccountTimeHours,
   getFailedInviteCount,
@@ -219,6 +222,104 @@ describe("runtime transition guards", () => {
       to: "sent",
       actorRole: "admin"
     })).toThrow("queued -> sent by admin");
+  });
+});
+
+describe("next-level command center", () => {
+  it("builds the top 12 role modules with review-safe provider boundaries", () => {
+    const center = buildNextLevelCommandCenter(seedState, {
+      role: "admin",
+      now: NOW
+    });
+
+    expect(center.modules).toHaveLength(12);
+    expect(center.modules.map((module) => module.id)).toEqual([
+      "today_dashboard",
+      "guided_onboarding",
+      "admin_command_center",
+      "registration_review",
+      "coach_practice_planner",
+      "drill_video_collections",
+      "parent_recap_timeline",
+      "family_notification_center",
+      "provider_review",
+      "mobile_pwa_install",
+      "push_preferences",
+      "schedule_conflict_detector"
+    ]);
+    expect(center.providerBoundary).toContain("Provider sends remain human-approved records only");
+    expect(center.today.some((action) => action.href === "/admin/registrations")).toBe(true);
+  });
+
+  it("summarizes drill videos into coach library collections", () => {
+    const collections = buildDrillVideoCollections([
+      {
+        id: "drill-throwing-1",
+        organizationId: seedState.organization.id,
+        provider: "youtube",
+        externalVideoId: "abc12345678",
+        canonicalUrl: "https://www.youtube.com/watch?v=abc12345678",
+        title: "Beginner throwing",
+        thumbnailUrl: "https://img.youtube.com/vi/abc12345678/default.jpg",
+        sport: "baseball",
+        skillCategory: "throwing",
+        ageBand: "6U",
+        difficulty: "beginner",
+        sourceChannel: "Coach Channel",
+        approvalStatus: "approved",
+        embeddable: true,
+        createdAt: NOW,
+        updatedAt: NOW
+      },
+      {
+        id: "drill-throwing-2",
+        organizationId: seedState.organization.id,
+        provider: "youtube",
+        externalVideoId: "def12345678",
+        canonicalUrl: "https://www.youtube.com/watch?v=def12345678",
+        title: "Intermediate throwing",
+        thumbnailUrl: "https://img.youtube.com/vi/def12345678/default.jpg",
+        sport: "baseball",
+        skillCategory: "throwing",
+        ageBand: "6U",
+        difficulty: "intermediate",
+        sourceChannel: "Coach Channel",
+        approvalStatus: "pending",
+        embeddable: true,
+        createdAt: NOW,
+        updatedAt: NOW
+      }
+    ]);
+
+    expect(collections).toHaveLength(1);
+    expect(collections[0]).toMatchObject({
+      label: "baseball / throwing / 6U",
+      count: 2,
+      approvedCount: 1,
+      beginnerCount: 1
+    });
+  });
+
+  it("flags team or venue schedule conflicts for human review", () => {
+    const summary = getScheduleConflictSummary({
+      ...seedState,
+      events: [
+        ...seedState.events,
+        {
+          ...seedState.events[0]!,
+          id: "event-tigers-overlap",
+          title: "Tiny Tigers Extra Practice",
+          startsAt: "2026-04-04T09:30:00.000Z",
+          endsAt: "2026-04-04T10:30:00.000Z",
+          createdAt: NOW,
+          updatedAt: NOW
+        }
+      ]
+    }, NOW);
+
+    expect(summary.total).toBeGreaterThan(0);
+    expect(summary.conflicts[0]?.reasons).toContain("team overlap");
+    expect(summary.conflicts[0]?.reasons).toContain("venue overlap");
   });
 });
 

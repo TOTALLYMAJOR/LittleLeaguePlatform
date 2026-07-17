@@ -18,6 +18,7 @@ This directory turns the existing LeaguePilot docs into an enterprise-ready arti
 | Integration reference architecture | `docs/enterprise/architecture.md`; `docs/enterprise/api-specification.md` | Drafted for Supabase, provider delivery, weather, AI, media, billing, and mobile. |
 | API specifications | `docs/api/openapi.yaml`; `docs/enterprise/api-specification.md` | Initial OpenAPI draft for current route handlers. |
 | Solution overview and module design | `docs/enterprise/architecture.md`; `docs/enterprise/business-capability-model.md` | Drafted. |
+| Navigation and wayfinding UX artifacts | `docs/enterprise/navigation-wayfinding-artifacts.md` | Added for kid-friendly route guidance, screenshot evidence, user journeys, information architecture, and shell design. |
 | Roadmap | `docs/production-task-board.md`; `docs/backlog-now.md`; `docs/backlog-next.md` | Existing execution board and backlog remain canonical. |
 | Governance framework | `docs/enterprise/governance-risk.md`; `docs/codex-rules.md`; `docs/privacy-security.md` | Drafted from current privacy, child safety, and provider rules. |
 | Software development plan | `docs/enterprise/deployment-operations.md`; `docs/runbook.md`; `docs/codex-rules.md` | Initial lifecycle and validation plan drafted. |

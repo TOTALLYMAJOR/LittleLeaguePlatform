@@ -2,6 +2,23 @@
 
 Status: draft. These journeys describe the expected enterprise workflows and the current proof boundaries.
 
+## Journey 0: Find The Right Place To Start
+
+Actors: signed-out adult, pending adult user, approved parent/guardian, assigned coach, organization admin.
+
+```mermaid
+flowchart LR
+  A[User opens app] --> B[Route-aware shell context]
+  B --> C{Current access}
+  C -->|Signed out| D[Sign in, request access, or public schedule]
+  C -->|Parent| E[Parent home, RSVP, messages, schedule, recaps]
+  C -->|Coach| F[Coach home, RSVPs, practice recaps, replay]
+  C -->|Admin| G[Admin overview, registrations, teams, media review]
+  D --> H[Private routes remain gated]
+```
+
+Proof status: browser screenshots exist for desktop homepage, mobile homepage, and mobile registration under `output/playwright/kid-friendly-*.png`. The implementation-aligned UX artifact is `docs/enterprise/navigation-wayfinding-artifacts.md`.
+
 ## Journey 1: Parent Registration To Approved Access
 
 Actors: anonymous parent, organization admin, Supabase Auth/session, audit service.

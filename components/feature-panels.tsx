@@ -182,6 +182,7 @@ import {
   WeatherFieldCard,
   WhatChangedCard
 } from "@/components/season-certainty-cards";
+import { NextLevelCommandCenter } from "@/components/next-level-command-center";
 import {
   AvatarStack,
   BreadcrumbTrail,
@@ -1826,6 +1827,7 @@ export function ParentDashboardClient({ dashboardData }: { dashboardData?: Paren
       {helpMessage ? <p className="notice">{helpMessage}</p> : null}
       {accessGate ?? (
         <>
+      <NextLevelCommandCenter role="parent" state={sourceState} userId={parentUserId} compact />
 
       <CompactDisclosure
         id="more-parent-actions"
@@ -2402,6 +2404,7 @@ export function CoachDashboardClient({ dashboardData }: { dashboardData?: Parent
       {actionMessage ? <p className="notice">{actionMessage}</p> : null}
       {accessGate ?? (
         <>
+      <NextLevelCommandCenter role="coach" state={sourceState} userId={coachId} compact />
 
       <CompactDisclosure
         title="Coach readiness details"
@@ -3449,6 +3452,8 @@ export function AdminDashboardClient({ registrationRequests, sponsorData, mediaD
 
       {showOverview ? (
         <>
+      <NextLevelCommandCenter role="admin" state={state} compact />
+
       <section className="season-home season-admin-home" aria-labelledby="admin-home-title">
         <div className="season-admin-topgrid">
           <LeagueHealthSummaryCard view={adminSeasonView} />
@@ -5558,6 +5563,7 @@ export function ParentReplayClient({ dashboardData, drillVideoData }: { dashboar
           {dashboardData.message}
         </p>
       ) : null}
+      <NextLevelCommandCenter role="coach" state={sourceState} userId={coachUserId} drillVideos={drillVideos} compact />
       <section className="grid two">
         <article className="card stack drill-video-library">
           <div className="card-header">
