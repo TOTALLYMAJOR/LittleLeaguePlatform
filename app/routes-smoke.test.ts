@@ -101,6 +101,7 @@ describe("route smoke coverage", () => {
   it("keeps PWA install and standalone usage measurement wired", () => {
     const provider = readFileSync(join(process.cwd(), "app", "providers.tsx"), "utf8");
     const layout = readFileSync(join(process.cwd(), "app", "layout.tsx"), "utf8");
+    const css = readFileSync(join(process.cwd(), "app", "globals.css"), "utf8");
     const manifest = readFileSync(join(process.cwd(), "public", "manifest.webmanifest"), "utf8");
 
     expect(provider).toContain("/api/mobile-usage-events");
@@ -110,6 +111,10 @@ describe("route smoke coverage", () => {
     expect(provider).toContain("standalone_launch");
     expect(layout).toContain("AppShell");
     expect(layout).toContain("criticalShellCss");
+    expect(layout).toContain("viewportFit");
+    expect(layout).toContain("\"device-width\"");
+    expect(layout).toContain(".sidebar.app-sidebar{display:none}");
+    expect(css).toContain(".sidebar.app-sidebar { display: none; }");
     expect(layout).toContain("apple");
     expect(manifest).toContain("/favicons/favicon-option-1-shield.png");
     expect(manifest).toContain("/favicons/favicon-option-4-team-chat.png");

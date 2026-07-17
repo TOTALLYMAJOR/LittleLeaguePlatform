@@ -3083,7 +3083,7 @@ caption {
 
 @media (max-width: 900px) {
   .app-shell { display: block; }
-  .app-sidebar { display: none; }
+  .sidebar.app-sidebar { display: none; }
   .mobile-tabbar { display: grid; }
   .main { padding-bottom: calc(112px + env(safe-area-inset-bottom)); }
   .context-bar { align-items: center; flex-direction: row; }

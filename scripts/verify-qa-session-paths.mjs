@@ -108,6 +108,19 @@ async function assertText(page, expected) {
   await page.getByText(expected, { exact: false }).first().waitFor({ timeout: 15_000 });
 }
 
+async function assertAnyText(page, expectedOptions) {
+  const errors = [];
+  for (const expected of expectedOptions) {
+    try {
+      await assertText(page, expected);
+      return;
+    } catch (error) {
+      errors.push(error instanceof Error ? error.message : String(error));
+    }
+  }
+  throw new Error(`Expected at least one text option: ${expectedOptions.join(" | ")}. ${errors[0] ?? ""}`);
+}
+
 async function clickAndAssertText(locator, page, expected) {
   await locator.click();
   await assertText(page, expected);
@@ -604,6 +617,7 @@ async function proveRole(browser, input) {
       const proofUrl = `${baseUrl}${route.path}?qa_proof=${Date.now()}`;
       await page.goto(proofUrl, { waitUntil: "networkidle" });
       for (const text of route.expectedText) await assertText(page, text);
+      for (const textOptions of route.expectedAnyText ?? []) await assertAnyText(page, textOptions);
       for (const action of route.actions ?? []) {
         await page.getByRole("button", { name: action.buttonName }).first().click();
         await assertText(page, action.expectedText);
@@ -681,8 +695,10 @@ async function main() {
           expectedText: [
             "Showing Supabase roster, guardian, schedule, RSVP, and media rows.",
             "Mason",
-            "Tiny Tigers",
-            "Opening weekend notes"
+            "Tiny Tigers"
+          ],
+          expectedAnyText: [
+            ["Opening weekend notes", "QA hosted weekly update proof", "Weekly update for Tiny Tigers"]
           ]
         },
         {

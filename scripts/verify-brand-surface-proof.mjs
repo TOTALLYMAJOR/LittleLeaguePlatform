@@ -1,6 +1,32 @@
-import { existsSync, mkdirSync } from "node:fs";
+import { existsSync, mkdirSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import { chromium } from "@playwright/test";
+
+const envFile = ".env.local";
+function parseEnvLine(line) {
+  if (!line || line.trim().startsWith("#")) return null;
+  const separator = line.indexOf("=");
+  if (separator === -1) return null;
+  return [line.slice(0, separator).trim(), line.slice(separator + 1).trim().replace(/^"|"$/g, "")];
+}
+
+function loadLocalEnv() {
+  if (!existsSync(envFile)) return;
+  for (const line of readFileSync(envFile, "utf8").split(/\r?\n/)) {
+    const entry = parseEnvLine(line);
+    if (!entry) continue;
+    const [key, value] = entry;
+    if (key && !(key in process.env)) process.env[key] = value;
+  }
+}
+
+function requireEnv(name) {
+  const value = process.env[name];
+  if (!value || value.includes("[YOUR-")) throw new Error(`${name} is required.`);
+  return value;
+}
+
+loadLocalEnv();
 
 const baseUrl = process.env.QA_PROOF_BASE_URL || "http://127.0.0.1:3020";
 const screenshotDir = "output/playwright";
@@ -62,6 +88,14 @@ function assertIncludes(haystack, needle) {
   }
 }
 
+async function signIn(page, email, password) {
+  await page.goto(`${baseUrl}/auth`, { waitUntil: "networkidle" });
+  await page.getByLabel("Email").fill(email);
+  await page.getByLabel("Password").fill(password);
+  await page.getByRole("button", { name: "Sign in" }).last().click();
+  await page.getByText("Signed in.", { exact: false }).waitFor({ timeout: 15_000 });
+}
+
 async function main() {
   mkdirSync(screenshotDir, { recursive: true });
 
@@ -79,6 +113,7 @@ async function main() {
       }
     });
 
+    await signIn(page, requireEnv("QA_ADMIN_EMAIL"), requireEnv("QA_ADMIN_PASSWORD"));
     await page.goto(`${baseUrl}/admin/themes?qa_brand_proof=${Date.now()}`, { waitUntil: "networkidle" });
     await page.getByRole("heading", { name: "First-class team branding control across every portal." }).waitFor({ timeout: 15_000 });
     const bodyText = await page.locator("body").innerText({ timeout: 15_000 });

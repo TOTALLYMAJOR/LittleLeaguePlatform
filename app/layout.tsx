@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import "./globals.css";
 import { AppShell } from "@/components/ui/AppShell";
 import { getServerShellAccess, toClientShellAccess } from "@/lib/supabase/shell-access";
@@ -17,7 +17,7 @@ body{background:#f6f7f9;color:#172033;font-family:Inter,ui-sans-serif,system-ui,
 .nav{display:grid;gap:2px}
 .nav a{display:flex;align-items:center;gap:8px;min-height:40px;padding:10px 12px;border-radius:8px;color:#667085;text-decoration:none}
 .page{display:grid;gap:24px;max-width:1180px}
-@media (max-width:900px){.shell.app-shell{display:block}.sidebar.app-sidebar{height:auto;min-height:0;padding:12px 16px;box-shadow:0 4px 16px rgba(23,32,51,.08)}.main{padding:20px 16px 112px}.mobile-tabbar{display:grid}}
+@media (max-width:900px){.shell.app-shell{display:block}.sidebar.app-sidebar{display:none}.main{padding:20px 16px 112px}.mobile-tabbar{display:grid}}
 `;
 
 export const metadata: Metadata = {
@@ -36,6 +36,12 @@ export const metadata: Metadata = {
     title: "Little League HQ",
     statusBarStyle: "default"
   }
+};
+
+export const viewport: Viewport = {
+  width: "device-width",
+  initialScale: 1,
+  viewportFit: "cover"
 };
 
 export default async function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
