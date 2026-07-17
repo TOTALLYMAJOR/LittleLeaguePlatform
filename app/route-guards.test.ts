@@ -75,5 +75,6 @@ describe("role route guards and compatibility wrappers", () => {
     expect(coachSurfaces).toContain("scopeTeamChatData");
     expect(coachSurfaces).toContain("scopeTeamPortalData");
     expect(adminSurfaces).toContain("scopeScheduleOperationsData");
+    expect(adminSurfaces).toContain("organizationIds: pageAccess.access.adminOrganizationIds");
   });
 });

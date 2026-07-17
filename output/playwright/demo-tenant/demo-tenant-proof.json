@@ -1,0 +1,112 @@
+{
+  "capturedAt": "2026-07-17T02:30:17.337Z",
+  "baseUrl": "http://localhost:3001",
+  "readback": {
+    "organizationId": "d1000000-0000-4000-8000-000000000001",
+    "organizationName": "LeaguePilot Demo League",
+    "counts": [
+      {
+        "table": "organizations",
+        "count": 1
+      },
+      {
+        "table": "seasons",
+        "count": 1
+      },
+      {
+        "table": "teams",
+        "count": 2
+      },
+      {
+        "table": "players",
+        "count": 5
+      },
+      {
+        "table": "events",
+        "count": 3
+      },
+      {
+        "table": "registration_requests",
+        "count": 2
+      },
+      {
+        "table": "team_chat_messages",
+        "count": 4
+      },
+      {
+        "table": "media_items",
+        "count": 2
+      },
+      {
+        "table": "notifications",
+        "count": 3
+      }
+    ],
+    "deliveryAttempts": [
+      {
+        "id": "e8000000-0000-4000-8000-000000000001",
+        "status": "suppressed",
+        "retryCount": 0,
+        "maxRetries": 0,
+        "deadLettered": false,
+        "providerCall": false
+      },
+      {
+        "id": "e8000000-0000-4000-8000-000000000002",
+        "status": "failed",
+        "retryCount": 3,
+        "maxRetries": 3,
+        "deadLettered": true,
+        "providerCall": false
+      }
+    ],
+    "providerSendsExecuted": 0
+  },
+  "routes": [
+    {
+      "role": "admin",
+      "path": "/admin/health",
+      "screenshots": [
+        "output/playwright/demo-tenant/admin-health-mobile-390.png",
+        "output/playwright/demo-tenant/admin-health-desktop-1440.png"
+      ],
+      "userId": "de1c6495-5742-477e-8398-e45c2b6c9e67"
+    },
+    {
+      "role": "admin",
+      "path": "/admin/teams",
+      "screenshots": [
+        "output/playwright/demo-tenant/admin-teams-mobile-390.png",
+        "output/playwright/demo-tenant/admin-teams-desktop-1440.png"
+      ],
+      "userId": "de1c6495-5742-477e-8398-e45c2b6c9e67"
+    },
+    {
+      "role": "coach",
+      "path": "/coach",
+      "screenshots": [
+        "output/playwright/demo-tenant/coach-home-mobile-390.png",
+        "output/playwright/demo-tenant/coach-home-desktop-1440.png"
+      ],
+      "userId": "08b3183f-2072-4cfb-9664-b3f8ed724535"
+    },
+    {
+      "role": "parent",
+      "path": "/parent",
+      "screenshots": [
+        "output/playwright/demo-tenant/parent-home-mobile-390.png",
+        "output/playwright/demo-tenant/parent-home-desktop-1440.png"
+      ],
+      "userId": "cba03406-e136-4c45-99bf-e62c444477a8"
+    },
+    {
+      "role": "parent",
+      "path": "/parent/messages",
+      "screenshots": [
+        "output/playwright/demo-tenant/parent-messages-mobile-390.png",
+        "output/playwright/demo-tenant/parent-messages-desktop-1440.png"
+      ],
+      "userId": "cba03406-e136-4c45-99bf-e62c444477a8"
+    }
+  ]
+}

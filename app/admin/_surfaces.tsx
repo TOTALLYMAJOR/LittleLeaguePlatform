@@ -226,7 +226,9 @@ export function AdminOperationsView({ data }: { data: AdminOperationsData }) {
 export async function AdminTeamsSurface() {
   const pageAccess = await requireAdminPageAccess();
   if (!pageAccess.ok) return <AdminAccessDeniedSurface message={pageAccess.message} />;
-  const data = await listAdminTeamManagementData();
+  const data = await listAdminTeamManagementData({
+    organizationIds: pageAccess.access.adminOrganizationIds
+  });
 
   return (
     <div className="page">

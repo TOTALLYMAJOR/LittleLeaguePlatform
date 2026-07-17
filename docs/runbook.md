@@ -72,10 +72,11 @@ npm run supabase:qa-users
 npm run qa:rls-proof
 npm run qa:session-proof
 npm run qa:tenant-readiness-proof
+npm run qa:demo-tenant-proof
 npm run qa:brand-proof
 ```
 
-`supabase:qa-users` creates or updates the QA admin, parent, and coach credentials in `.env.local` when they are not already supplied. `qa:rls-proof` signs in through the anon key and verifies parent, coach, and anonymous Row Level Security boundaries. `qa:session-proof` verifies signed-out gates, signed-in browser routes, and parent RSVP/preference/snack/volunteer live actions, then confirms those parent action rows with the QA service-role key before capturing screenshots under `output/playwright/`. `qa:tenant-readiness-proof` signs in as the QA admin, opens `/admin/health` and `/admin/teams`, verifies tenant setup/readiness copy, and captures mobile plus desktop screenshots under `output/playwright/tenant-readiness/`. `qa:brand-proof` verifies the `/admin/themes` brand launch checklist, all 20 target brand surfaces, monitoring events, and alert rules against `QA_PROOF_BASE_URL`, then captures `output/playwright/brand-launch-validation.png`.
+`supabase:qa-users` creates or updates the QA admin, parent, and coach credentials in `.env.local` when they are not already supplied. `qa:rls-proof` signs in through the anon key and verifies parent, coach, and anonymous Row Level Security boundaries. `qa:session-proof` verifies signed-out gates, signed-in browser routes, and parent RSVP/preference/snack/volunteer live actions, then confirms those parent action rows with the QA service-role key before capturing screenshots under `output/playwright/`. `qa:tenant-readiness-proof` signs in as the QA admin, opens `/admin/health` and `/admin/teams`, verifies tenant setup/readiness copy, and captures mobile plus desktop screenshots under `output/playwright/tenant-readiness/`. `qa:demo-tenant-proof` signs in with DEMO admin, coach, and parent credentials, verifies fictional `LeaguePilot Demo League` content across role-scoped routes, confirms demo Supabase row counts and delivery-attempt metadata, writes `output/playwright/demo-tenant/demo-tenant-proof.json`, and captures mobile plus desktop screenshots under `output/playwright/demo-tenant/`. `qa:brand-proof` verifies the `/admin/themes` brand launch checklist, all 20 target brand surfaces, monitoring events, and alert rules against `QA_PROOF_BASE_URL`, then captures `output/playwright/brand-launch-validation.png`.
 
 Hosted tenant-readiness proof must be rerun after deployment before a real organization is invited:
 
@@ -99,11 +100,12 @@ Use this when the product needs a fuller, safer demo tenant than the QA proof ro
 
 ```bash
 DEMO_TENANT_SEED_CONFIRM=load-fictional-data npm run supabase:demo-tenant
+npm run qa:demo-tenant-proof
 ```
 
 The script creates or updates fictional demo auth users and a `LeaguePilot Demo League` tenant with active season/team setup, rostered players, guardian links, schedules, RSVPs, snack and volunteer jobs, chat, media links, registration queue rows, brand profile evidence, sponsor proof records, provider-review drafts, support requests, audit rows, and mobile usage events. Demo credentials are written to `.env.local` keys beginning with `DEMO_`.
 
-This command uses `SUPABASE_SERVICE_ROLE_KEY` and mutates the configured Supabase project, so verify `NEXT_PUBLIC_SUPABASE_URL` before running it. The rows are idempotent and fictional, but they are still real database rows in that project. The demo seed never executes email, SMS, Web Push, Stripe, AI-provider, or storage-provider calls; provider delivery rows remain draft, failed, or suppressed evidence only.
+The seed command uses `SUPABASE_SERVICE_ROLE_KEY` and mutates the configured Supabase project, so verify `NEXT_PUBLIC_SUPABASE_URL` before running it. The rows are idempotent and fictional, but they are still real database rows in that project. The demo proof command also uses the service-role key for readback and requires a reachable app URL, defaulting to `http://localhost:3001` unless `DEMO_TENANT_BASE_URL` or `QA_PROOF_BASE_URL` is set. The demo seed and proof never execute email, SMS, Web Push, Stripe, AI-provider, or storage-provider calls; provider delivery rows remain draft, failed, or suppressed evidence only.
 
 If the target project has not applied the notification delivery execution metadata migration, the seed falls back to base `notification_delivery_attempts` rows and prints a warning. That fallback is acceptable for product demo data, but provider-send worker proof still requires the execution metadata columns to be present.
 

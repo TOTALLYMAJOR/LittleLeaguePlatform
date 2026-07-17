@@ -17,6 +17,7 @@
     "qa:session-proof": "node scripts/verify-qa-session-paths.mjs",
     "qa:season-certainty-proof": "node scripts/capture-season-certainty-proof.mjs",
     "qa:tenant-readiness-proof": "node scripts/capture-tenant-readiness-proof.mjs",
+    "qa:demo-tenant-proof": "node scripts/capture-demo-tenant-proof.mjs",
     "qa:ai-coach-proof": "node scripts/verify-ai-coach-provider-proof.mjs",
     "qa:brand-proof": "node scripts/verify-brand-surface-proof.mjs",
     "qa:rls-proof": "node scripts/verify-rls-boundaries.mjs",

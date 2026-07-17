@@ -182,6 +182,9 @@ describe("route smoke coverage", () => {
     expect(page).toContain("AdminTeamsSurface");
     expect(surfaces).toContain("listAdminTeamManagementData");
     expect(data).toContain("requireActiveOrganizationAdmin");
+    expect(data).toContain("AdminTeamManagementReadOptions");
+    expect(data).toContain("organizationIds");
+    expect(data).toContain("scopedQuery");
     expect(data).toContain("division");
     expect(data).toContain("season_id");
     expect(data).toContain("rosterCount");
@@ -247,5 +250,18 @@ describe("route smoke coverage", () => {
     expect(seedScript).toContain("LeaguePilot Demo League");
     expect(seedScript).toContain("providerSendsExecuted: 0");
     expect(seedScript).toContain("Demo tenant never sends external SMS.");
+  });
+
+  it("keeps fictional demo tenant browser proof wired into QA automation", () => {
+    const packageJson = readFileSync(join(process.cwd(), "package.json"), "utf8");
+    const proofScript = readFileSync(join(process.cwd(), "scripts", "capture-demo-tenant-proof.mjs"), "utf8");
+
+    expect(packageJson).toContain("\"qa:demo-tenant-proof\"");
+    expect(proofScript).toContain("output/playwright/demo-tenant");
+    expect(proofScript).toContain("LeaguePilot Demo League");
+    expect(proofScript).toContain("Riverside Rockets");
+    expect(proofScript).toContain("Northside Waves");
+    expect(proofScript).toContain("providerSendsExecuted: 0");
+    expect(proofScript).toContain("provider_call === true");
   });
 });
