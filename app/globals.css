@@ -2019,6 +2019,10 @@ button.month-calendar-day:hover {
 .parent-replay-preview { background: linear-gradient(180deg, #ffffff, #f7fff4); }
 .replay-activities { align-items: stretch; }
 .replay-activity { background: var(--surface); border: 1px solid var(--replay-line); border-radius: var(--radius); display: grid; gap: var(--sp-2); padding: var(--sp-3); }
+.drill-video-library { border-color: var(--replay-line); }
+.drill-video-embed { display: grid; gap: var(--sp-2); }
+.drill-video-embed iframe { aspect-ratio: 16 / 9; border: 0; border-radius: var(--radius); inline-size: 100%; max-inline-size: 720px; }
+.drill-review-panel { border-top: 1px solid var(--line); margin-top: var(--sp-4); padding-top: var(--sp-4); }
 .rookie-coach-assist { border-color: var(--replay-line); }
 .rookie-assist-form textarea { min-height: 86px; }
 .rookie-assist-preview { align-items: start; }

@@ -24,6 +24,7 @@ describe("Supabase RLS policy coverage", () => {
   const sponsorBillingAndTeamBuilder = migration("0017_sponsor_billing_and_team_builder.sql");
   const teamBrandProfilesMonitoring = migration("0018_team_brand_profiles_monitoring.sql");
   const guardianVerification = migration("0020_guardian_verification_policy.sql");
+  const drillVideoReferences = migration("0022_drill_video_references.sql");
   const packageJson = readFileSync(join(process.cwd(), "package.json"), "utf8");
   const rlsProof = readFileSync(join(process.cwd(), "scripts", "verify-rls-boundaries.mjs"), "utf8");
 
@@ -154,5 +155,19 @@ describe("Supabase RLS policy coverage", () => {
     expect(teamBrandProfilesMonitoring).toContain("coaches and admins manage team brand profiles");
     expect(teamBrandProfilesMonitoring).toContain("team members read published brand profiles");
     expect(teamBrandProfilesMonitoring).toContain("public.current_user_can_manage_team(team_id)");
+  });
+
+  it("keeps drill video references admin-reviewed and coach-planning only", () => {
+    expect(drillVideoReferences).toContain("create table if not exists public.drill_videos");
+    expect(drillVideoReferences).toContain("create table if not exists public.drill_video_sources");
+    expect(drillVideoReferences).toContain("create table if not exists public.drill_video_assignments");
+    expect(drillVideoReferences).toContain("approval_status in ('pending', 'approved', 'rejected', 'retired')");
+    expect(drillVideoReferences).toContain("visible_to_families boolean not null default false check (visible_to_families = false)");
+    expect(drillVideoReferences).toContain("org admins manage drill video sources");
+    expect(drillVideoReferences).toContain("coaches submit drill videos for their organizations");
+    expect(drillVideoReferences).toContain("coaches read approved drill videos");
+    expect(drillVideoReferences).toContain("org admins review drill videos");
+    expect(drillVideoReferences).toContain("coaches manage coach-only drill assignments");
+    expect(drillVideoReferences).toContain("membership.role = 'coach'");
   });
 });

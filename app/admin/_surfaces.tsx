@@ -14,6 +14,7 @@ import type { AdminDashboardSurfaceMode } from "@/components/feature-panels";
 import { listAdminOperationsData, type AdminOperationsData } from "@/lib/supabase/admin-operations";
 import { listArchiveVaultData } from "@/lib/supabase/archive-vault";
 import { listGuardianLinkRepairData } from "@/lib/supabase/guardian-links";
+import { listAdminDrillVideoLibraryData } from "@/lib/supabase/drill-videos";
 import { listMediaGovernanceData } from "@/lib/supabase/media-governance";
 import { listAdminMembershipData } from "@/lib/supabase/memberships";
 import { listRegistrationReviewData } from "@/lib/supabase/registration-approvals";
@@ -43,12 +44,13 @@ export async function AdminAccessDeniedSurface({ message }: { message?: string }
 export async function AdminDashboardSurface({ surface = "overview" }: { surface?: AdminDashboardSurfaceMode } = {}) {
   const pageAccess = await requireAdminPageAccess();
   if (!pageAccess.ok) return <AdminAccessDeniedSurface message={pageAccess.message} />;
-  const [registrationRequests, sponsorData, mediaData] = await Promise.all([
+  const [registrationRequests, sponsorData, mediaData, drillVideoData] = await Promise.all([
     listRegistrationRequests(),
     listSponsorAdminData(),
-    listMediaGovernanceData()
+    listMediaGovernanceData(),
+    listAdminDrillVideoLibraryData({ organizationIds: pageAccess.access.adminOrganizationIds })
   ]);
-  return <AdminDashboardClient registrationRequests={registrationRequests} sponsorData={sponsorData} mediaData={mediaData} surface={surface} />;
+  return <AdminDashboardClient registrationRequests={registrationRequests} sponsorData={sponsorData} mediaData={mediaData} drillVideoData={drillVideoData} surface={surface} />;
 }
 
 export async function AdminBrandingSurface() {

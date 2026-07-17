@@ -43,6 +43,7 @@ npm run supabase:push
 | Guardian safety | `guardian_authorizations`, `emergency_contacts`, `player_health_notes` |
 | Scheduling | `events`, `event_series`, `event_change_logs`, `field_locations`, `field_reservations`, `rsvps`, `snack_schedule_slots`, `volunteer_signups`, `weather_alerts` |
 | Team portal | `announcements`, `media_items`, `sponsors`, `sponsor_packages`, `sponsor_placements`, `sponsor_assets`, `sponsor_billing_records`, `team_brand_profiles`, `team_brand_surface_validation_runs`, `brand_asset_uploads`, `brand_monitoring_events` |
+| Coach planning | `drill_videos`, `drill_video_sources`, `drill_video_assignments` |
 | Parent Replay | `parent_replays`, `parent_replay_templates`, `ai_generation_runs`, `learning_plans` |
 | Team chat | `team_chat_channels`, `team_chat_messages`, `team_chat_threads`, `team_chat_message_reads`, `team_chat_reactions`, `team_chat_attachments`, `team_chat_reports`, `chat_moderation_audit_events` |
 | Notifications | `notifications`, `notification_preferences`, `notification_delivery_attempts`, `push_subscriptions` |
@@ -63,6 +64,7 @@ npm run supabase:push
 - Automatic team-builder plans store preview/edit/approve/publish status, constraints, assignments, warnings, and admin approval evidence.
 - Team brand profiles store published logo/banner URLs, display and short names, fallback avatar labels, primary/secondary/accent/button colors, hero copy, 20-surface validation runs, reviewed asset uploads, and monitoring events.
 - Registration approval actions record the exact steps taken after a request: match existing player, create player, create guardian, create membership, or queue invite.
+- Drill video records store YouTube metadata references, source allowlist state, Made-for-Kids and embeddability flags, admin review state, and coach-only practice-plan assignments. They do not store copied videos, downloaded thumbnails, clips, or parent-facing assignments.
 
 ## Security Shape
 

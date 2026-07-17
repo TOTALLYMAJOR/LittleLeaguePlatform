@@ -7,6 +7,7 @@ import {
   TeamPortalClient
 } from "@/components/feature-panels";
 import { listParentCoachDashboardData } from "@/lib/supabase/dashboard-data";
+import { listCoachDrillVideoLibraryData } from "@/lib/supabase/drill-videos";
 import { scopeScheduleOperationsData, scopeTeamChatData, scopeTeamPortalData } from "@/lib/supabase/route-scopes";
 import { listScheduleOperationsData } from "@/lib/supabase/schedule-management";
 import { requireCoachPageAccess } from "@/lib/supabase/shell-access";
@@ -30,8 +31,16 @@ export async function CoachAttendanceSurface() {
 }
 
 export async function CoachPracticeRecapsSurface() {
-  const dashboardData = await loadCoachDashboardForPage();
-  return <ParentReplayClient dashboardData={dashboardData} />;
+  const pageAccess = await requireCoachPageAccess();
+  if (!pageAccess.ok) return <ParentReplayClient dashboardData={pageAccess.dashboardData} />;
+  const [dashboardData, drillVideoData] = await Promise.all([
+    listParentCoachDashboardData({ viewerUserId: pageAccess.access.userId, surface: "coach" }),
+    listCoachDrillVideoLibraryData({
+      coachTeamIds: pageAccess.access.coachTeamIds,
+      viewerUserId: pageAccess.access.userId
+    })
+  ]);
+  return <ParentReplayClient dashboardData={dashboardData} drillVideoData={drillVideoData} />;
 }
 
 export async function CoachScheduleSurface() {

@@ -19,6 +19,7 @@ import {
   TeamPortalClient
 } from "./feature-panels";
 import { seedState } from "@/lib/domain";
+import type { DrillVideoLibraryData } from "@/lib/supabase/drill-videos";
 import type { ParentCoachDashboardData } from "@/lib/supabase/dashboard-data";
 
 function dashboardAccessState(accessStatus: ParentCoachDashboardData["accessStatus"], message: string): ParentCoachDashboardData {
@@ -31,6 +32,57 @@ function dashboardAccessState(accessStatus: ParentCoachDashboardData["accessStat
     message
   };
 }
+
+const drillVideoLibraryData: DrillVideoLibraryData = {
+  teams: seedState.teams,
+  events: seedState.events.filter((event) => event.eventType === "practice"),
+  drillVideos: [{
+    id: "drill-video-1",
+    organizationId: seedState.organization.id,
+    provider: "youtube",
+    externalVideoId: "dQw4w9WgXcQ",
+    canonicalUrl: "https://www.youtube.com/watch?v=dQw4w9WgXcQ",
+    title: "Approved throwing drill",
+    thumbnailUrl: "https://i.ytimg.com/vi/dQw4w9WgXcQ/hqdefault.jpg",
+    sport: "baseball",
+    skillCategory: "throwing",
+    ageBand: "6U",
+    difficulty: "beginner",
+    sourceChannel: "Coach Channel",
+    sourceChannelId: "channel-1",
+    approvalStatus: "approved",
+    madeForKidsStatus: true,
+    embeddable: true,
+    lastValidatedAt: "2026-07-17T12:00:00.000Z",
+    createdAt: "2026-07-17T12:00:00.000Z",
+    updatedAt: "2026-07-17T12:00:00.000Z"
+  }],
+  sources: [{
+    id: "source-1",
+    organizationId: seedState.organization.id,
+    provider: "youtube",
+    externalChannelId: "channel-1",
+    title: "Coach Channel",
+    approvalStatus: "approved",
+    reviewedBy: "user-admin",
+    reviewedAt: "2026-07-17T12:00:00.000Z",
+    createdAt: "2026-07-17T12:00:00.000Z",
+    updatedAt: "2026-07-17T12:00:00.000Z"
+  }],
+  assignments: [{
+    id: "assignment-1",
+    organizationId: seedState.organization.id,
+    drillVideoId: "drill-video-1",
+    teamId: "team-tigers",
+    assignedByUserId: "user-coach-taylor",
+    usageContext: "practice_plan",
+    visibleToFamilies: false,
+    createdAt: "2026-07-17T12:00:00.000Z"
+  }],
+  isSupabaseBacked: true,
+  providerConfigured: true,
+  message: "Showing Supabase-backed approved drill video references for coach planning."
+};
 
 describe("TeamChatClient", () => {
   it("renders the safe team chat read surface", () => {
@@ -477,7 +529,7 @@ describe("AdminDashboardClient", () => {
   it("renders admin operations, registrations, sponsors, and notifications", () => {
     const html = renderToStaticMarkup(
       <AppStateProvider>
-        <AdminDashboardClient />
+        <AdminDashboardClient drillVideoData={drillVideoLibraryData} />
       </AppStateProvider>
     );
 
@@ -500,6 +552,10 @@ describe("AdminDashboardClient", () => {
     expect(html).toContain("Photo visibility flags");
     expect(html).toContain("Takedown request");
     expect(html).toContain("Team/org visibility");
+    expect(html).toContain("Coach drill videos");
+    expect(html).toContain("Reference review");
+    expect(html).toContain("Approve source");
+    expect(html).toContain("Approve video");
     expect(html).toContain("Hide media");
     expect(html).toContain("Restore media");
     expect(html).toContain("Sponsor management");
@@ -536,12 +592,14 @@ describe("AdminDashboardClient", () => {
   it("renders media review as a focused admin route", () => {
     const html = renderToStaticMarkup(
       <AppStateProvider>
-        <AdminDashboardClient surface="media" />
+        <AdminDashboardClient drillVideoData={drillVideoLibraryData} surface="media" />
       </AppStateProvider>
     );
 
     expect(html).toContain("Review reported media and visibility before families see it.");
     expect(html).toContain("Media governance");
+    expect(html).toContain("Coach drill videos");
+    expect(html).toContain("Reference review");
     expect(html).toContain("Hide media");
     expect(html).not.toContain("Roster maker readiness");
     expect(html).not.toContain("Sponsor management");
@@ -725,6 +783,21 @@ describe("ParentReplayClient", () => {
     expect(html).toContain("Safety Monitor");
     expect(html).toContain("Season Storybook");
     expect(html).toContain("Preview - Edit - Approve - Publish");
+  });
+
+  it("renders coach-only drill video submission, assignment, and privacy-enhanced embeds", () => {
+    const html = renderToStaticMarkup(
+      <AppStateProvider>
+        <ParentReplayClient drillVideoData={drillVideoLibraryData} />
+      </AppStateProvider>
+    );
+
+    expect(html).toContain("Submit a YouTube drill reference");
+    expect(html).toContain("Submit for admin review");
+    expect(html).toContain("Approved club library");
+    expect(html).toContain("Assign to practice planning");
+    expect(html).toContain("https://www.youtube-nocookie.com/embed/dQw4w9WgXcQ");
+    expect(html).toContain("family visible no");
   });
 
   it("uses signed-in Supabase coach scope for Parent Replay and AI workspace requests", () => {

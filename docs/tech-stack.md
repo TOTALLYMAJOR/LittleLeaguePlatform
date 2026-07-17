@@ -23,7 +23,7 @@ The first shippable mobile experience should be a responsive PWA from the existi
 | Push notifications | Web Push for PWA; Expo Notifications for native | Start with explicit opt-in Web Push. Use Expo Notifications only if a native app is added. |
 | Maps | Google Maps Platform | Use API-backed embeds/markers later; current app can keep Google Maps links until provider setup. |
 | Weather | NWS first, Open-Meteo fallback, Tomorrow.io premium adapter | NWS is best free default for U.S. teams. Open-Meteo is useful fallback. Tomorrow.io is optional later for hyperlocal/premium weather. |
-| Media | Google Photos and YouTube links first | Reuse current MVP path. Add validation, moderation, and optional storage only when needed. |
+| Media | Google Photos and YouTube links first | Reuse current MVP path. Drill videos store YouTube metadata references only through server-side Data API validation and official embeds; add upload/storage only when needed. |
 | Payments/sponsors | Local sponsor records first; Stripe later only if payments are real | Avoid payment complexity until sponsor billing/invoices are in scope. |
 | AI | Deterministic first; optional OpenAI Responses API rewrite path | Parent Replay remains deterministic local guidance. AI Coach Workspace can request server-side OpenAI rewrites only for assigned coaches/admins when provider env is configured; all generated learning plans remain draft/reviewed. |
 | Deployment | Vercel or Docker-capable Node host | Current hosted path is Vercel plus Supabase HTTPS APIs. Do not require Vercel Static IP unless direct database IP allowlisting becomes an explicit fixed-egress requirement. Keep Next standalone build working. |

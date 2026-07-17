@@ -110,6 +110,7 @@ import {
   getAccessibilityContrastChecks,
   getPromptEvalHarness,
   getPrivacyFilters,
+  youtubePrivacyEmbedUrl,
   buildAiCoachWorkspaceDrafts,
   generateRookieCoachAssist,
   rookieCoachAgeBandOptions,
@@ -121,6 +122,10 @@ import {
   type AiCoachWorkspaceDraft,
   type ChatAnnouncementTopic,
   type CommunicationTemplate,
+  type DrillVideo,
+  type DrillVideoAssignment,
+  type DrillVideoDifficulty,
+  type DrillVideoSource,
   type EventType,
   type EventStatus,
   type LeagueEvent,
@@ -142,6 +147,7 @@ import {
   type UserRole
 } from "@/lib/domain";
 import { createSupabaseBrowserClient, getSupabaseAuthClientErrorMessage, getSupabaseBrowserConfigStatus, getSupabaseEmailRedirectTo } from "@/lib/supabase/browser";
+import type { DrillVideoLibraryData } from "@/lib/supabase/drill-videos";
 import type { MediaGovernanceData } from "@/lib/supabase/media-governance";
 import type { RegistrationReviewData } from "@/lib/supabase/registration-approvals";
 import type { SponsorAdminData } from "@/lib/supabase/sponsors";
@@ -3121,12 +3127,13 @@ interface AdminDashboardClientProps {
   registrationRequests?: RegistrationRequest[];
   sponsorData?: SponsorAdminData;
   mediaData?: MediaGovernanceData;
+  drillVideoData?: DrillVideoLibraryData;
   surface?: AdminDashboardSurfaceMode;
 }
 
 export type AdminDashboardSurfaceMode = "overview" | "media" | "sponsors";
 
-export function AdminDashboardClient({ registrationRequests, sponsorData, mediaData, surface = "overview" }: AdminDashboardClientProps = {}) {
+export function AdminDashboardClient({ registrationRequests, sponsorData, mediaData, drillVideoData, surface = "overview" }: AdminDashboardClientProps = {}) {
   const { state, dispatch } = useAppState();
   const showOverview = surface === "overview";
   const showMedia = surface === "overview" || surface === "media";
@@ -3135,7 +3142,7 @@ export function AdminDashboardClient({ registrationRequests, sponsorData, mediaD
     ? {
       eyebrow: "Media review",
       title: "Review reported media and visibility before families see it.",
-      body: "Moderation keeps reported, hidden, rejected, or removed media out of parent-facing views until a coach or organization admin restores it."
+      body: "Moderation keeps reported, hidden, rejected, removed, or unapproved drill video references out of family-facing views until staff review is complete."
     }
     : surface === "sponsors"
       ? {
@@ -3150,10 +3157,15 @@ export function AdminDashboardClient({ registrationRequests, sponsorData, mediaD
   const pendingRegistrations = visibleRegistrations.filter((request) => request.status === "pending");
   const sponsorTeams = sponsorData?.teams.length ? sponsorData.teams : state.teams;
   const mediaTeams = mediaData?.teams.length ? mediaData.teams : state.teams;
+  const drillTeams = drillVideoData?.teams.length ? drillVideoData.teams : state.teams;
   const initialSponsors = sponsorData?.sponsors.length ? sponsorData.sponsors : state.sponsors;
   const initialMediaItems = mediaData?.mediaItems.length ? mediaData.mediaItems : state.mediaItems;
+  const initialDrillVideos = drillVideoData?.drillVideos ?? [];
+  const initialDrillSources = drillVideoData?.sources ?? [];
   const [sponsors, setSponsors] = useState<Sponsor[]>(initialSponsors);
   const [mediaItems, setMediaItems] = useState<MediaItem[]>(initialMediaItems);
+  const [drillVideos, setDrillVideos] = useState<DrillVideo[]>(initialDrillVideos);
+  const [drillSources, setDrillSources] = useState<DrillVideoSource[]>(initialDrillSources);
   const mediaReportingSummary = getMediaReportingSummary(mediaItems);
   const uploadStorageProvider = getUploadStorageProviderStatus(false);
   const mediaRetentionPolicy = getMediaRetentionPolicy();
@@ -3180,7 +3192,9 @@ export function AdminDashboardClient({ registrationRequests, sponsorData, mediaD
     return { team, issues };
   }).filter((row) => row.issues.length > 0);
   const pendingSponsorReviews = sponsors.filter((sponsor) => sponsor.status === "pending").length;
-  const pendingReviewCount = pendingRegistrations.length + mediaReportingSummary.pendingReview + pendingSponsorReviews;
+  const pendingDrillReviews = drillVideos.filter((video) => video.approvalStatus === "pending").length +
+    drillSources.filter((source) => source.approvalStatus === "pending").length;
+  const pendingReviewCount = pendingRegistrations.length + mediaReportingSummary.pendingReview + pendingSponsorReviews + pendingDrillReviews;
   const [communicationTeamId, setCommunicationTeamId] = useState("team-tigers");
   const [communicationChannel, setCommunicationChannel] = useState<AdminCommunicationChannel>("email");
   const [communicationTemplate, setCommunicationTemplate] = useState<CommunicationTemplate>("weekly_digest");
@@ -3199,10 +3213,12 @@ export function AdminDashboardClient({ registrationRequests, sponsorData, mediaD
   const [sponsorMessage, setSponsorMessage] = useState(sponsorData?.message ?? "Showing local sponsor records until Supabase sponsor rows are available.");
   const [isSponsorPending, startSponsorTransition] = useTransition();
   const [mediaMessage, setMediaMessage] = useState(mediaData?.message ?? "Showing local media records until Supabase media rows are available.");
+  const [drillVideoMessage, setDrillVideoMessage] = useState(drillVideoData?.message ?? "Showing local drill video review shell until Supabase drill video rows are available.");
   const [mediaVisibilityDrafts, setMediaVisibilityDrafts] = useState<Record<string, "team" | "organization">>(() => Object.fromEntries(
     initialMediaItems.map((item) => [item.id, item.visibility ?? "team"])
   ));
   const [isMediaPending, startMediaTransition] = useTransition();
+  const [isDrillReviewPending, startDrillReviewTransition] = useTransition();
   const [lineupTeamId, setLineupTeamId] = useState("team-tigers");
   const [draggedPlayerId, setDraggedPlayerId] = useState("");
   const [targetRosterSize, setTargetRosterSize] = useState(10);
@@ -3340,6 +3356,50 @@ export function AdminDashboardClient({ registrationRequests, sponsorData, mediaD
       }
 
       setMediaMessage(result?.message ?? "Media moderation could not be saved.");
+    });
+  }
+
+  function reviewDrillSource(source: DrillVideoSource, status: "approved" | "blocked") {
+    setDrillVideoMessage("");
+    startDrillReviewTransition(async () => {
+      const response = await authenticatedJsonFetch("/api/admin/drill-video-sources/review", {
+        sourceId: source.id,
+        status,
+        reviewNotes: status === "approved" ? "Approved for club drill video library." : "Blocked from club drill video library."
+      });
+      const result = await response.json().catch(() => null) as {
+        ok?: boolean;
+        message?: string;
+        source?: DrillVideoSource;
+      } | null;
+
+      if (result?.ok && result.source) {
+        setDrillSources((current) => current.map((item) => item.id === source.id ? result.source! : item));
+      }
+
+      setDrillVideoMessage(result?.message ?? "Drill video source review could not be saved.");
+    });
+  }
+
+  function reviewDrillVideo(video: DrillVideo, status: "approved" | "rejected" | "retired") {
+    setDrillVideoMessage("");
+    startDrillReviewTransition(async () => {
+      const response = await authenticatedJsonFetch("/api/admin/drill-videos/review", {
+        drillVideoId: video.id,
+        status,
+        reviewNotes: status === "approved" ? "Approved for coach planning library." : "Not approved for coach planning library."
+      });
+      const result = await response.json().catch(() => null) as {
+        ok?: boolean;
+        message?: string;
+        drillVideo?: DrillVideo;
+      } | null;
+
+      if (result?.ok && result.drillVideo) {
+        setDrillVideos((current) => current.map((item) => item.id === video.id ? result.drillVideo! : item));
+      }
+
+      setDrillVideoMessage(result?.message ?? "Drill video review could not be saved.");
     });
   }
 
@@ -3705,10 +3765,56 @@ export function AdminDashboardClient({ registrationRequests, sponsorData, mediaD
                 </div>
               </div>
             );
-          })}
-          {mediaItems.length === 0 ? <p className="muted">No media links yet.</p> : null}
-          <p className="muted">Reported or hidden media is excluded from parent-visible dashboards until it is restored by an assigned coach or organization admin.</p>
-        </article>
+	          })}
+	          {mediaItems.length === 0 ? <p className="muted">No media links yet.</p> : null}
+	          <div className="stack compact drill-review-panel">
+	            <div className="card-header">
+	              <div>
+	                <span className="eyebrow">Coach drill videos</span>
+	                <h3>Reference review</h3>
+	              </div>
+	              <span className={`badge ${drillVideoData?.providerConfigured ? "ok" : "warning"}`}>YouTube metadata {drillVideoData?.providerConfigured ? "configured" : "missing"}</span>
+	            </div>
+	            <p className="notice">{drillVideoMessage}</p>
+	            <div className="grid three">
+	              <div className="metric"><span className="muted">Pending videos</span><strong>{drillVideos.filter((video) => video.approvalStatus === "pending").length}</strong></div>
+	              <div className="metric"><span className="muted">Allowlisted sources</span><strong>{drillSources.filter((source) => source.approvalStatus === "approved").length}</strong></div>
+	              <div className="metric"><span className="muted">Assignments</span><strong>{drillVideoData?.assignments.length ?? 0}</strong></div>
+	            </div>
+	            <p className="muted">Approval requires validated YouTube metadata, embeddability, and an approved source channel. Videos stay coach-planning only in this version.</p>
+	            {drillSources.map((source) => (
+	              <div className="stack compact" key={source.id}>
+	                <p><strong>{source.title}</strong><br /><span className="muted">YouTube channel {source.externalChannelId} - {source.approvalStatus}</span></p>
+	                <div className="button-row">
+	                  <button className="secondary" disabled={isDrillReviewPending} onClick={() => reviewDrillSource(source, "approved")}>Approve source</button>
+	                  <button className="secondary" disabled={isDrillReviewPending} onClick={() => reviewDrillSource(source, "blocked")}>Block source</button>
+	                </div>
+	              </div>
+	            ))}
+	            {drillSources.length === 0 ? <p className="muted">No YouTube drill video sources are waiting for review.</p> : null}
+	            {drillVideos.map((video) => {
+	              const source = drillSources.find((item) => item.externalChannelId === video.sourceChannelId);
+	              const teamNames = drillTeams.filter((team) => team.organizationId === video.organizationId).map((team) => team.name).slice(0, 3);
+	              return (
+	                <div className="stack compact" key={video.id}>
+	                  <p>
+	                    <strong>{video.title}</strong><br />
+	                    <span className="muted">{video.sport} - {video.skillCategory} - {video.ageBand} - {video.difficulty} - {video.approvalStatus}</span>
+	                  </p>
+	                  <p className="muted">Source: {video.sourceChannel ?? "Unknown channel"} ({source?.approvalStatus ?? "not reviewed"}) - teams: {teamNames.join(", ") || "organization library"}</p>
+	                  <p className="muted">Made for Kids: {video.madeForKidsStatus === undefined ? "unknown" : video.madeForKidsStatus ? "yes" : "no"} - embeddable: {video.embeddable ? "yes" : "no"} - last validated {video.lastValidatedAt ? formatDate(video.lastValidatedAt) : "not validated"}</p>
+	                  <div className="button-row">
+	                    <button className="secondary" disabled={isDrillReviewPending} onClick={() => reviewDrillVideo(video, "approved")}>Approve video</button>
+	                    <button className="secondary" disabled={isDrillReviewPending} onClick={() => reviewDrillVideo(video, "rejected")}>Reject video</button>
+	                    <button className="secondary" disabled={isDrillReviewPending} onClick={() => reviewDrillVideo(video, "retired")}>Retire video</button>
+	                  </div>
+	                </div>
+	              );
+	            })}
+	            {drillVideos.length === 0 ? <p className="muted">No drill video references have been submitted yet.</p> : null}
+	          </div>
+	          <p className="muted">Reported or hidden media is excluded from parent-visible dashboards until it is restored by an assigned coach or organization admin.</p>
+	        </article>
         ) : null}
         {showSponsors ? (
         <article className="card stack admin-focus-card">
@@ -5192,9 +5298,13 @@ export function ScheduleAlertsClient({ scheduleData, mode = "operations" }: { sc
   );
 }
 
-export function ParentReplayClient({ dashboardData }: { dashboardData?: ParentCoachDashboardData | null } = {}) {
+export function ParentReplayClient({ dashboardData, drillVideoData }: { dashboardData?: ParentCoachDashboardData | null; drillVideoData?: DrillVideoLibraryData | null } = {}) {
   const { state, dispatch } = useAppState();
   const sourceState = dashboardData?.accessStatus === "live" ? dashboardData.state : state;
+  const drillTeams = drillVideoData?.teams.length ? drillVideoData.teams : sourceState.teams;
+  const drillEvents = drillVideoData?.events ?? sourceState.events.filter((event) => event.eventType === "practice");
+  const initialDrillVideos = drillVideoData?.drillVideos ?? [];
+  const initialDrillAssignments = drillVideoData?.assignments ?? [];
   const initialTeamId = sourceState.teams[0]?.id ?? "team-tigers";
   const initialCoachUserId = dashboardData?.accessStatus === "live"
     ? dashboardData.coachUserId || sourceState.users[0]?.id || "user-coach-taylor"
@@ -5212,11 +5322,28 @@ export function ParentReplayClient({ dashboardData }: { dashboardData?: ParentCo
   const [sidelineResetVisible, setSidelineResetVisible] = useState(false);
   const [message, setMessage] = useState("");
   const [savedReplays, setSavedReplays] = useState<ParentReplayRecord[]>([]);
+  const [drillVideoUrl, setDrillVideoUrl] = useState("");
+  const [drillVideoSport, setDrillVideoSport] = useState("baseball");
+  const [drillVideoSkillCategory, setDrillVideoSkillCategory] = useState("throwing");
+  const [drillVideoAgeBand, setDrillVideoAgeBand] = useState("6U");
+  const [drillVideoDifficulty, setDrillVideoDifficulty] = useState<DrillVideoDifficulty>("beginner");
+  const [drillVideoCoachInstructions, setDrillVideoCoachInstructions] = useState("");
+  const [drillVideoSafetyNotes, setDrillVideoSafetyNotes] = useState("");
+  const [drillVideos, setDrillVideos] = useState<DrillVideo[]>(initialDrillVideos);
+  const [drillAssignments, setDrillAssignments] = useState<DrillVideoAssignment[]>(initialDrillAssignments);
+  const [drillVideoMessage, setDrillVideoMessage] = useState(drillVideoData?.message ?? "Showing local drill video shell until Supabase drill library rows are available.");
+  const [selectedDrillVideoId, setSelectedDrillVideoId] = useState(initialDrillVideos.find((video) => video.approvalStatus === "approved")?.id ?? "");
+  const [selectedDrillEventId, setSelectedDrillEventId] = useState("");
   const [aiProviderMessage, setAiProviderMessage] = useState("");
   const [aiProviderDrafts, setAiProviderDrafts] = useState<Record<string, AiCoachWorkspaceDraft>>({});
   const [isReplayPending, startReplayTransition] = useTransition();
+  const [isDrillVideoPending, startDrillVideoTransition] = useTransition();
   const [isAiProviderPending, startAiProviderTransition] = useTransition();
   const selectedTeam = sourceState.teams.find((team) => team.id === teamId);
+  const approvedDrillVideos = drillVideos.filter((video) => video.approvalStatus === "approved");
+  const selectedDrillVideo = approvedDrillVideos.find((video) => video.id === selectedDrillVideoId) ?? approvedDrillVideos[0];
+  const teamDrillAssignments = drillAssignments.filter((assignment) => assignment.teamId === teamId);
+  const teamPracticeEvents = drillEvents.filter((event) => event.teamId === teamId);
   const accessGate = privateAccessGate(dashboardData, "coach");
   const draft = useMemo(() => {
     const previewFocusAreas: PracticeFocusArea[] = focusAreas.length ? focusAreas : ["teamwork"];
@@ -5277,6 +5404,68 @@ export function ParentReplayClient({ dashboardData }: { dashboardData?: ParentCo
   function showSidelineReset() {
     setSidelineResetVisible(true);
     setMessage("Chaos Button loaded a 90-second reset locally. Coach still chooses whether to use or share it.");
+  }
+
+  function submitDrillVideo() {
+    setDrillVideoMessage("");
+    startDrillVideoTransition(async () => {
+      const response = await authenticatedJsonFetch("/api/coach/drill-videos", {
+        teamId,
+        provider: "youtube",
+        url: drillVideoUrl,
+        sport: drillVideoSport,
+        skillCategory: drillVideoSkillCategory,
+        ageBand: drillVideoAgeBand,
+        difficulty: drillVideoDifficulty,
+        coachInstructions: drillVideoCoachInstructions || undefined,
+        safetyNotes: drillVideoSafetyNotes || undefined
+      });
+      const result = await response.json().catch(() => null) as {
+        ok?: boolean;
+        message?: string;
+        drillVideo?: DrillVideo;
+      } | null;
+
+      if (result?.ok && result.drillVideo) {
+        setDrillVideos((current) => current.some((video) => video.id === result.drillVideo!.id)
+          ? current.map((video) => video.id === result.drillVideo!.id ? result.drillVideo! : video)
+          : [result.drillVideo!, ...current]);
+        setDrillVideoUrl("");
+      }
+
+      setDrillVideoMessage(result?.message ?? "Drill video reference could not be submitted.");
+    });
+  }
+
+  function assignDrillVideo() {
+    if (!selectedDrillVideo) {
+      setDrillVideoMessage("Choose an approved drill video before assigning it.");
+      return;
+    }
+
+    setDrillVideoMessage("");
+    startDrillVideoTransition(async () => {
+      const response = await authenticatedJsonFetch("/api/coach/drill-video-assignments", {
+        drillVideoId: selectedDrillVideo.id,
+        teamId,
+        eventId: selectedDrillEventId || undefined,
+        usageContext: "practice_plan",
+        notes: "Coach planning assignment only; family-facing embeds remain disabled."
+      });
+      const result = await response.json().catch(() => null) as {
+        ok?: boolean;
+        message?: string;
+        assignment?: DrillVideoAssignment;
+      } | null;
+
+      if (result?.ok && result.assignment) {
+        setDrillAssignments((current) => current.some((assignment) => assignment.id === result.assignment!.id)
+          ? current.map((assignment) => assignment.id === result.assignment!.id ? result.assignment! : assignment)
+          : [result.assignment!, ...current]);
+      }
+
+      setDrillVideoMessage(result?.message ?? "Drill video assignment could not be saved.");
+    });
   }
 
   function queueParentReplay() {
@@ -5369,6 +5558,113 @@ export function ParentReplayClient({ dashboardData }: { dashboardData?: ParentCo
           {dashboardData.message}
         </p>
       ) : null}
+      <section className="grid two">
+        <article className="card stack drill-video-library">
+          <div className="card-header">
+            <div>
+              <span className="eyebrow">Coach drill videos</span>
+              <h2>Submit a YouTube drill reference</h2>
+            </div>
+            <span className={`badge ${drillVideoData?.providerConfigured ? "ok" : "warning"}`}>Metadata {drillVideoData?.providerConfigured ? "ready" : "missing"}</span>
+          </div>
+          <p className="notice">{drillVideoMessage}</p>
+          <div className="grid two">
+            <label>
+              Team
+              <select value={teamId} onChange={(event) => setTeamId(event.target.value)}>
+                {drillTeams.map((team) => <option key={team.id} value={team.id}>{team.name} - {team.division}</option>)}
+              </select>
+            </label>
+            <label>
+              YouTube URL
+              <input value={drillVideoUrl} onChange={(event) => setDrillVideoUrl(event.target.value)} placeholder="https://www.youtube.com/watch?v=..." />
+            </label>
+            <label>
+              Sport
+              <input value={drillVideoSport} onChange={(event) => setDrillVideoSport(event.target.value)} />
+            </label>
+            <label>
+              Skill
+              <input value={drillVideoSkillCategory} onChange={(event) => setDrillVideoSkillCategory(event.target.value)} />
+            </label>
+            <label>
+              Age band
+              <input value={drillVideoAgeBand} onChange={(event) => setDrillVideoAgeBand(event.target.value)} />
+            </label>
+            <label>
+              Difficulty
+              <select value={drillVideoDifficulty} onChange={(event) => setDrillVideoDifficulty(event.target.value as DrillVideoDifficulty)}>
+                <option value="beginner">Beginner</option>
+                <option value="intermediate">Intermediate</option>
+                <option value="advanced">Advanced</option>
+              </select>
+            </label>
+          </div>
+          <label>
+            Coach instructions
+            <textarea value={drillVideoCoachInstructions} onChange={(event) => setDrillVideoCoachInstructions(event.target.value)} />
+          </label>
+          <label>
+            Safety notes
+            <textarea value={drillVideoSafetyNotes} onChange={(event) => setDrillVideoSafetyNotes(event.target.value)} />
+          </label>
+          <button type="button" disabled={isDrillVideoPending || !drillVideoUrl.trim()} onClick={submitDrillVideo}>Submit for admin review</button>
+          <p className="muted">The app stores metadata and IDs only. YouTube content remains embedded from the official player after admin approval.</p>
+        </article>
+
+        <article className="card stack drill-video-library">
+          <div className="card-header">
+            <div>
+              <span className="eyebrow">Approved club library</span>
+              <h2>Assign to practice planning</h2>
+            </div>
+            <span className="badge">{approvedDrillVideos.length} approved</span>
+          </div>
+          <div className="grid two">
+            <label>
+              Drill video
+              <select value={selectedDrillVideo?.id ?? ""} onChange={(event) => setSelectedDrillVideoId(event.target.value)}>
+                {approvedDrillVideos.map((video) => <option key={video.id} value={video.id}>{video.title}</option>)}
+              </select>
+            </label>
+            <label>
+              Practice
+              <select value={selectedDrillEventId} onChange={(event) => setSelectedDrillEventId(event.target.value)}>
+                <option value="">Team planning only</option>
+                {teamPracticeEvents.map((event) => <option key={event.id} value={event.id}>{event.title} - {formatDate(event.startsAt)}</option>)}
+              </select>
+            </label>
+          </div>
+          <button type="button" disabled={isDrillVideoPending || !selectedDrillVideo} onClick={assignDrillVideo}>Assign drill video</button>
+          {selectedDrillVideo ? (
+            <div className="drill-video-embed">
+              <iframe
+                allow="accelerometer; encrypted-media; gyroscope; picture-in-picture; web-share"
+                allowFullScreen
+                loading="lazy"
+                referrerPolicy="strict-origin-when-cross-origin"
+                src={youtubePrivacyEmbedUrl(selectedDrillVideo.externalVideoId)}
+                title={`${selectedDrillVideo.title} drill video`}
+              />
+              <p className="muted">{selectedDrillVideo.sourceChannel ?? "YouTube"} - {selectedDrillVideo.skillCategory} - Made for Kids {selectedDrillVideo.madeForKidsStatus === undefined ? "unknown" : selectedDrillVideo.madeForKidsStatus ? "yes" : "no"}</p>
+            </div>
+          ) : <p className="muted">No approved drill videos are available yet.</p>}
+          <div className="stack compact">
+            <h3>Coach-only assignments</h3>
+            {teamDrillAssignments.map((assignment) => {
+              const video = drillVideos.find((item) => item.id === assignment.drillVideoId);
+              const event = drillEvents.find((item) => item.id === assignment.eventId);
+              return (
+                <p key={assignment.id}>
+                  <strong>{video?.title ?? "Drill video"}</strong><br />
+                  <span className="muted">{event?.title ?? "Team planning"} - family visible {assignment.visibleToFamilies ? "yes" : "no"}</span>
+                </p>
+              );
+            })}
+            {teamDrillAssignments.length === 0 ? <p className="muted">No drill videos are assigned to this team yet.</p> : null}
+          </div>
+        </article>
+      </section>
 
       <section className="grid one">
         <article className="card stack rookie-coach-assist">

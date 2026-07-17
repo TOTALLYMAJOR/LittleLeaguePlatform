@@ -5,6 +5,7 @@ export * from "./invites";
 export * from "./health";
 export * from "./parent-dashboard";
 export * from "./media";
+export * from "./drill-videos";
 export * from "./rsvp";
 export * from "./schedule";
 export * from "./season-planning";
