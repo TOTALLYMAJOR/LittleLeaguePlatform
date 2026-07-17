@@ -148,6 +148,7 @@ import type { SponsorAdminData } from "@/lib/supabase/sponsors";
 import type { TeamPortalData } from "@/lib/supabase/team-portal";
 import type { AdminThemeData, TeamLogoAsset, TeamThemeAudit, TenantThemeDefaults } from "@/lib/supabase/team-branding";
 import type { TeamChatData } from "@/lib/supabase/team-chat";
+import type { TenantReadinessData, TenantReadinessCheckStatus } from "@/lib/supabase/tenant-readiness";
 import type { ParentCoachDashboardData } from "@/lib/supabase/dashboard-data";
 import type { AdminTeamManagementData } from "@/lib/supabase/team-management";
 import type { ScheduleOperationsData } from "@/lib/supabase/schedule-management";
@@ -953,17 +954,80 @@ export function AdminInvitesClient() {
   );
 }
 
-export function AdminHealthClient() {
+function tenantReadinessStatusClass(status: TenantReadinessCheckStatus) {
+  if (status === "ready") return "ok";
+  if (status === "blocked") return "danger";
+  return "warning";
+}
+
+export function AdminHealthClient({ tenantReadinessData }: { tenantReadinessData?: TenantReadinessData | null } = {}) {
   const { state } = useAppState();
   const cards = computeAdminHealth(state, NOW);
+  const readyTenantCount = tenantReadinessData?.tenants.filter((tenant) => tenant.readyToInviteFamilies).length ?? 0;
+  const tenantBlockerCount = tenantReadinessData?.tenants.reduce((total, tenant) => total + tenant.blockingCount, 0) ?? 0;
 
   return (
     <div className="page">
       <section className="hero">
         <span className="eyebrow">Admin health dashboard</span>
         <h1>Launch readiness issues before parents complain.</h1>
-        <p className="lead">Health cards are computed from the typed local adapter and update after import, invite, RSVP, and schedule actions.</p>
+        <p className="lead">Health cards combine local workflow checks with tenant setup readiness from Supabase for the signed-in organization admin.</p>
       </section>
+
+      {tenantReadinessData ? (
+        <>
+          <p className={`notice ${tenantReadinessData.source === "supabase" ? "" : "warning"}`.trim()}>{tenantReadinessData.message}</p>
+          <section className="grid three">
+            <article className="card metric">
+              <span className="muted">Tenants visible</span>
+              <strong>{tenantReadinessData.tenants.length}</strong>
+            </article>
+            <article className="card metric">
+              <span className="muted">Ready to invite</span>
+              <strong>{readyTenantCount}</strong>
+            </article>
+            <article className="card metric">
+              <span className="muted">Blocking setup gaps</span>
+              <strong>{tenantBlockerCount}</strong>
+            </article>
+          </section>
+
+          <section className="grid two" aria-label="Tenant setup readiness">
+            {tenantReadinessData.tenants.map((tenant) => (
+              <article className="card stack" key={tenant.organizationId}>
+                <div className="card-header">
+                  <div>
+                    <span className="eyebrow">{tenant.activeSeasonName ?? "No active season"}</span>
+                    <h2>{tenant.organizationName}</h2>
+                  </div>
+                  <span className={`badge ${tenant.readiness === "ready_to_invite" ? "ok" : tenant.readiness === "blocked" ? "danger" : "warning"}`}>
+                    {tenant.readiness === "ready_to_invite" ? "ready to invite" : tenant.readiness === "blocked" ? "blocked" : "needs setup"}
+                  </span>
+                </div>
+                <div className="grid three compact-grid">
+                  <p><strong>{tenant.activeTeamCount}</strong><br /><span className="muted">team(s)</span></p>
+                  <p><strong>{tenant.rosteredPlayerCount}</strong><br /><span className="muted">player(s)</span></p>
+                  <p><strong>{tenant.scheduledEventCount}</strong><br /><span className="muted">event(s)</span></p>
+                </div>
+                {tenant.checks.map((item) => (
+                  <p key={item.id}>
+                    <span className={`badge ${tenantReadinessStatusClass(item.status)}`}>{item.status.replace("_", " ")}</span>{" "}
+                    <strong>{item.label}</strong><br />
+                    <span className="muted">{item.detail}</span><br />
+                    <a href={item.actionHref}>{item.actionLabel}</a>
+                  </p>
+                ))}
+              </article>
+            ))}
+            {!tenantReadinessData.tenants.length ? (
+              <article className="card stack">
+                <h2>No tenant scope loaded.</h2>
+                <p className="muted">Sign in as an active organization admin and confirm Supabase access before inviting families.</p>
+              </article>
+            ) : null}
+          </section>
+        </>
+      ) : null}
 
       <section className="grid three">
         {cards.map((card) => (

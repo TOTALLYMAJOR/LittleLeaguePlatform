@@ -3,6 +3,7 @@ import { describe, expect, it } from "vitest";
 import { AppStateProvider } from "@/app/providers";
 import {
   AdminDashboardClient,
+  AdminHealthClient,
   AdminThemesClient,
   AccountClient,
   AuthClient,
@@ -110,6 +111,50 @@ describe("AccountClient", () => {
 
     expect(html).toContain("Organization memberships");
     expect(html).toContain("Team memberships");
+  });
+});
+
+describe("AdminHealthClient", () => {
+  it("renders tenant readiness data from the admin server surface", () => {
+    const html = renderToStaticMarkup(
+      <AppStateProvider>
+        <AdminHealthClient
+          tenantReadinessData={{
+            source: "supabase",
+            message: "Tenant readiness is computed from Supabase rows.",
+            tenants: [{
+              organizationId: "org-a",
+              organizationName: "League A",
+              activeSeasonId: "season-a",
+              activeSeasonName: "Spring 2026",
+              readiness: "ready_to_invite",
+              readyToInviteFamilies: true,
+              blockingCount: 0,
+              attentionCount: 0,
+              activeTeamCount: 1,
+              rosteredPlayerCount: 12,
+              activeCoachTeamCount: 1,
+              activeGuardianLinkCount: 8,
+              pendingRegistrationCount: 0,
+              scheduledEventCount: 4,
+              checks: [{
+                id: "active-season",
+                label: "Active season",
+                status: "ready",
+                detail: "Spring 2026 is active.",
+                actionHref: "/admin/teams",
+                actionLabel: "Set season"
+              }]
+            }]
+          }}
+        />
+      </AppStateProvider>
+    );
+
+    expect(html).toContain("Tenant readiness is computed from Supabase rows.");
+    expect(html).toContain("League A");
+    expect(html).toContain("ready to invite");
+    expect(html).toContain("Active season");
   });
 });
 

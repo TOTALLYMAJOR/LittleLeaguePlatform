@@ -22,6 +22,7 @@ import { listScheduleOperationsData } from "@/lib/supabase/schedule-management";
 import { buildSecurityProofDashboard } from "@/lib/supabase/security-proof";
 import { requireAdminPageAccess } from "@/lib/supabase/shell-access";
 import { listSponsorAdminData } from "@/lib/supabase/sponsors";
+import { listTenantReadinessData } from "@/lib/supabase/tenant-readiness";
 import { listAdminThemeData } from "@/lib/supabase/team-branding";
 import { listAdminTeamManagementData } from "@/lib/supabase/team-management";
 
@@ -288,7 +289,10 @@ export async function AdminInvitesSurface() {
 export async function AdminHealthSurface() {
   const pageAccess = await requireAdminPageAccess();
   if (!pageAccess.ok) return <AdminAccessDeniedSurface message={pageAccess.message} />;
-  return <AdminHealthClient />;
+  const tenantReadinessData = await listTenantReadinessData({
+    organizationIds: pageAccess.access.adminOrganizationIds
+  });
+  return <AdminHealthClient tenantReadinessData={tenantReadinessData} />;
 }
 
 export async function AdminScheduleVenuesSurface() {
