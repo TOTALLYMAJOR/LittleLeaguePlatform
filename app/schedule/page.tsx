@@ -5,5 +5,5 @@ export const dynamic = "force-dynamic";
 
 export default async function SchedulePage() {
   const scheduleData = await listScheduleOperationsData();
-  return <ScheduleAlertsClient scheduleData={scheduleData} />;
+  return <ScheduleAlertsClient scheduleData={scheduleData} mode="readonly" />;
 }

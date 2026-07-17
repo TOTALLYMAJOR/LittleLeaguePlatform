@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it } from "vitest";
-import { getSupabaseAuthClientErrorMessage, getSupabaseBrowserConfigStatus } from "./browser";
+import { getSupabaseAuthClientErrorMessage, getSupabaseBrowserConfigStatus, getSupabaseEmailRedirectTo } from "./browser";
 
 const originalUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
 const originalAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
@@ -40,5 +40,11 @@ describe("Supabase browser auth config", () => {
     expect(getSupabaseAuthClientErrorMessage(new Error("Failed to fetch"))).toBe(
       "Supabase Auth could not be reached from this browser. Check the Supabase project URL, network access, and allowed auth origin."
     );
+  });
+
+  it("builds hosted email redirects from the browser origin instead of local env defaults", () => {
+    process.env.NEXT_PUBLIC_APP_URL = "http://localhost:3000";
+
+    expect(getSupabaseEmailRedirectTo("/auth", "https://leaguepilot.us")).toBe("https://leaguepilot.us/auth");
   });
 });

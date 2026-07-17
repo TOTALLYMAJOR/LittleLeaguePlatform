@@ -1,5 +1,9 @@
 import Link from "next/link";
 import { FeatureTierHubClient } from "@/components/feature-panels";
+import { canAccessRouteEntry, getRouteEntry, type ClientShellAccess } from "@/lib/navigation/route-topology";
+import { getServerShellAccess, toClientShellAccess } from "@/lib/supabase/shell-access";
+
+export const dynamic = "force-dynamic";
 
 const roleCards = [
   {
@@ -86,7 +90,49 @@ const platformDrawerGroups = [
   }
 ] as const;
 
-export default function HomePage() {
+function canShowRoleSurface(href: string, access: ClientShellAccess) {
+  const entry = getRouteEntry(href);
+  if (!entry || !canAccessRouteEntry(entry, access)) return false;
+  if (entry.role === "parent") return access.canParent;
+  if (entry.role === "coach") return access.canCoach;
+  if (entry.role === "admin") return access.canAdmin;
+  return false;
+}
+
+function canShowLandingTool(href: string, access: ClientShellAccess) {
+  if (href === "/schedule") return true;
+  if (href === "/registration") return access.signedIn && !access.canParent && !access.canCoach && !access.canAdmin;
+
+  const entry = getRouteEntry(href);
+  if (!entry || !canAccessRouteEntry(entry, access)) return false;
+  if (entry.role === "parent") return access.canParent;
+  if (entry.role === "coach") return access.canCoach;
+  if (entry.role === "admin") return access.canAdmin;
+  if (entry.role === "shared") return access.canParent || access.canCoach || access.canAdmin;
+  if (entry.role === "support") return href === "/account";
+  return false;
+}
+
+function visibleDrawerGroups(access: ClientShellAccess) {
+  return platformDrawerGroups
+    .map((group) => {
+      const links = group.links.filter(([, href]) => canShowLandingTool(href, access));
+      return {
+        ...group,
+        links,
+        label: `${links.length} ${links.length === 1 ? "surface" : "surfaces"}`
+      };
+    })
+    .filter((group) => group.links.length > 0);
+}
+
+export default async function HomePage() {
+  const access = toClientShellAccess(await getServerShellAccess());
+  const signedIn = access.signedIn;
+  const roleCardsForSession = roleCards.filter((role) => canShowRoleSurface(role.href, access));
+  const drawerGroupsForSession = signedIn ? visibleDrawerGroups(access) : [];
+  const hasActiveRole = access.canParent || access.canCoach || access.canAdmin;
+
   return (
     <div className="landing-page">
       <div className="landing-soccer-ambient" aria-hidden="true">
@@ -101,10 +147,17 @@ export default function HomePage() {
           </span>
         </Link>
         <div className="landing-nav-links">
-          <a href="#roles">Roles</a>
-          <a href="#replay-loop">Practice Recaps</a>
-          <a href="#platform-map">Team Tools</a>
-          <Link className="landing-sign-in" href="/auth">Sign in</Link>
+          <Link href="/schedule">Calendar</Link>
+          {signedIn && hasActiveRole ? <a href="#roles">Roles</a> : null}
+          {signedIn && drawerGroupsForSession.length ? <a href="#platform-map">Team Tools</a> : null}
+          {signedIn ? (
+            <Link className="landing-sign-in" href="/account">Account</Link>
+          ) : (
+            <>
+              <Link href="/registration">Sign up</Link>
+              <Link className="landing-sign-in" href="/auth">Sign in</Link>
+            </>
+          )}
         </div>
       </nav>
 
@@ -116,47 +169,101 @@ export default function HomePage() {
             Run the season from one private team home: schedules, RSVPs, coach updates, and practice recaps.
           </p>
           <div className="landing-actions">
-            <Link className="button lg" href="/auth">Sign in</Link>
-            <Link className="button secondary lg" href="/parent">Parent view</Link>
-            <Link className="button secondary lg" href="/coach/practice-recaps">Coach updates</Link>
+            {signedIn ? (
+              <>
+                {roleCardsForSession.map((role) => (
+                  <Link className="button lg" href={role.href} key={role.title}>{role.action}</Link>
+                ))}
+                {!roleCardsForSession.length ? <Link className="button lg" href="/account">Check account</Link> : null}
+                {!roleCardsForSession.length ? <Link className="button secondary lg" href="/registration">Submit registration</Link> : null}
+                <Link className="button secondary lg" href="/schedule">Calendar</Link>
+              </>
+            ) : (
+              <>
+                <Link className="button lg" href="/auth">Sign in</Link>
+                <Link className="button secondary lg" href="/registration">Sign up</Link>
+                <Link className="button secondary lg" href="/schedule">Calendar</Link>
+              </>
+            )}
           </div>
         </div>
 
         <aside className="landing-season-board" aria-label="Season control preview">
-          <div className="landing-board-header">
-            <div>
-              <span className="badge info">Role-scoped path</span>
-              <h2>Saturday operations</h2>
-            </div>
-            <span className="landing-board-time">8:40 AM</span>
-          </div>
+          {signedIn ? (
+            <>
+              <div className="landing-board-header">
+                <div>
+                  <span className="badge info">Role-scoped path</span>
+                  <h2>Saturday operations</h2>
+                </div>
+                <span className="landing-board-time">8:40 AM</span>
+              </div>
 
-          <div className="landing-feature-visual">
-            <div className="landing-replay-mark" aria-hidden="true" />
-            <div className="landing-signal-path" aria-hidden="true">
-              <span />
-              <span />
-              <span />
-              <span />
-            </div>
-          </div>
+              <div className="landing-feature-visual">
+                <div className="landing-replay-mark" aria-hidden="true" />
+                <div className="landing-signal-path" aria-hidden="true">
+                  <span />
+                  <span />
+                  <span />
+                  <span />
+                </div>
+              </div>
 
-          <div className="landing-board-card">
-            <span className="muted">Next game</span>
-            <strong>Riverside 6U vs Hawks</strong>
-            <div className="landing-mini-grid">
-              <span>RSVP 11 / 14</span>
-              <span>Snack gap 1</span>
-              <span>Field 3</span>
-              <span>Replay draft</span>
-            </div>
-          </div>
+              <div className="landing-board-card">
+                <span className="muted">Next game</span>
+                <strong>Riverside 6U vs Hawks</strong>
+                <div className="landing-mini-grid">
+                  <span>RSVP 11 / 14</span>
+                  <span>Snack gap 1</span>
+                  <span>Field 3</span>
+                  <span>Replay draft</span>
+                </div>
+              </div>
 
-          <div className="landing-phone-card">
-            <span className="badge warning">Draft, not sent</span>
-            <h3>Coach update</h3>
-            <p>Arrive 20 minutes early. Bring water. Practice focus: first touch and spacing.</p>
-          </div>
+              <div className="landing-phone-card">
+                <span className="badge warning">Draft, not sent</span>
+                <h3>Coach update</h3>
+                <p>Arrive 20 minutes early. Bring water. Practice focus: first touch and spacing.</p>
+              </div>
+            </>
+          ) : (
+            <>
+              <div className="landing-board-header">
+                <div>
+                  <span className="badge info">Public entry</span>
+                  <h2>Access starts here</h2>
+                </div>
+                <span className="landing-board-time">Read-only</span>
+              </div>
+
+              <div className="landing-feature-visual">
+                <div className="landing-replay-mark" aria-hidden="true" />
+                <div className="landing-signal-path" aria-hidden="true">
+                  <span />
+                  <span />
+                  <span />
+                  <span />
+                </div>
+              </div>
+
+              <div className="landing-board-card">
+                <span className="muted">Available before sign-in</span>
+                <strong>Calendar</strong>
+                <div className="landing-mini-grid">
+                  <span>Read-only</span>
+                  <span>No team portal</span>
+                  <span>No chat</span>
+                  <span>No admin tools</span>
+                </div>
+              </div>
+
+              <div className="landing-phone-card">
+                <span className="badge warning">Private by default</span>
+                <h3>Sign in or sign up</h3>
+                <p>Team tools appear only after the account has an active approved role.</p>
+              </div>
+            </>
+          )}
         </aside>
       </section>
 
@@ -166,107 +273,123 @@ export default function HomePage() {
         <span><strong>Provider sends</strong> stay approval-gated and disconnected until configured.</span>
       </section>
 
-      <section className="landing-section" id="roles" aria-labelledby="roles-title">
-        <div className="landing-section-heading">
-          <h2 id="roles-title">Three jobs for a ready Saturday.</h2>
-          <p>Parents need clarity, coaches need coverage, admins need proof before the league depends on a workflow.</p>
-        </div>
-        <div className="landing-role-grid">
-          {roleCards.map((role) => (
-            <Link className="landing-role-card" href={role.href} key={role.title}>
-              <span className="badge neutral">{role.proof}</span>
-              <h3>{role.title}</h3>
-              <p>{role.body}</p>
-              <strong>{role.action}</strong>
-            </Link>
-          ))}
-        </div>
-      </section>
+      {signedIn && roleCardsForSession.length ? (
+        <section className="landing-section" id="roles" aria-labelledby="roles-title">
+          <div className="landing-section-heading">
+            <h2 id="roles-title">Three jobs for a ready Saturday.</h2>
+            <p>Only active Supabase relationships appear here: guardian links, coach memberships, and organization admin memberships.</p>
+          </div>
+          <div className="landing-role-grid">
+            {roleCardsForSession.map((role) => (
+              <Link className="landing-role-card" href={role.href} key={role.title}>
+                <span className="badge neutral">{role.proof}</span>
+                <h3>{role.title}</h3>
+                <p>{role.body}</p>
+                <strong>{role.action}</strong>
+              </Link>
+            ))}
+          </div>
+        </section>
+      ) : null}
 
-      <section className="landing-replay-section" id="replay-loop" aria-labelledby="replay-title">
-        <div className="landing-section-heading">
-          <h2 id="replay-title">Practice recaps carry coaching home.</h2>
-          <p>Practice does not end at the field. Coaches turn what happened into simple family activities without automatic publish or external sends.</p>
-        </div>
-        <div className="landing-replay-grid">
-          {replaySteps.map(([title, body], index) => (
-            <article className="landing-replay-step" key={title}>
-              <span>{String(index + 1).padStart(2, "0")}</span>
-              <h3>{title}</h3>
-              <p>{body}</p>
-            </article>
-          ))}
-        </div>
-      </section>
+      {signedIn && !hasActiveRole ? (
+        <section className="notice landing-boundary">
+          <strong>Account pending:</strong> the session is signed in, but private dashboards stay hidden until an admin approves a guardian link, coach membership, or organization admin membership.
+        </section>
+      ) : null}
 
-      <section className="landing-ops-section" aria-labelledby="ops-title">
-        <div className="landing-section-heading">
-          <h2 id="ops-title">The useful parts of the season stay connected.</h2>
-          <p>RSVPs, schedules, weather drafts, snacks, volunteers, team chat, registration, and audit proof share one role-aware surface model.</p>
-        </div>
-        <div className="landing-signal-grid">
-          {operatingSignals.map(([title, body]) => (
-            <article className="card stack" key={title}>
-              <span className="status-dot ok" aria-hidden="true" />
-              <h3>{title}</h3>
-              <p className="muted">{body}</p>
-            </article>
-          ))}
-        </div>
-      </section>
+      {signedIn && hasActiveRole ? (
+        <>
+          <section className="landing-replay-section" id="replay-loop" aria-labelledby="replay-title">
+            <div className="landing-section-heading">
+              <h2 id="replay-title">Practice recaps carry coaching home.</h2>
+              <p>Practice does not end at the field. Coaches turn what happened into simple family activities without automatic publish or external sends.</p>
+            </div>
+            <div className="landing-replay-grid">
+              {replaySteps.map(([title, body], index) => (
+                <article className="landing-replay-step" key={title}>
+                  <span>{String(index + 1).padStart(2, "0")}</span>
+                  <h3>{title}</h3>
+                  <p>{body}</p>
+                </article>
+              ))}
+            </div>
+          </section>
 
-      <section className="landing-section" id="platform-map" aria-labelledby="platform-map-title">
-        <div className="landing-section-heading">
-          <h2 id="platform-map-title">Explore the team tools.</h2>
-          <p>Open only the route family you need. The full surface map stays available without taking over the page.</p>
-        </div>
-        <div className="landing-drawer-stack">
-          {platformDrawerGroups.map((group, index) => (
-            <details className="landing-glass-drawer" key={group.title} open={index === 0}>
-              <summary>
-                <span>
-                  <strong>{group.title}</strong>
-                  <small>{group.body}</small>
-                </span>
-                <em>{group.label}</em>
-              </summary>
-              <div className="landing-drawer-panel">
-                {group.links.map(([title, href, body]) => (
-                  <Link className="landing-tool-link" href={href} key={`${group.title}-${href}`}>
-                    <span>
-                      <strong>{title}</strong>
-                      <small>{body}</small>
-                    </span>
-                  </Link>
-                ))}
-              </div>
-            </details>
-          ))}
-        </div>
-      </section>
+          <section className="landing-ops-section" aria-labelledby="ops-title">
+            <div className="landing-section-heading">
+              <h2 id="ops-title">The useful parts of the season stay connected.</h2>
+              <p>RSVPs, schedules, weather drafts, snacks, volunteers, team chat, registration, and audit proof share one role-aware surface model.</p>
+            </div>
+            <div className="landing-signal-grid">
+              {operatingSignals.map(([title, body]) => (
+                <article className="card stack" key={title}>
+                  <span className="status-dot ok" aria-hidden="true" />
+                  <h3>{title}</h3>
+                  <p className="muted">{body}</p>
+                </article>
+              ))}
+            </div>
+          </section>
+        </>
+      ) : null}
+
+      {signedIn && drawerGroupsForSession.length ? (
+        <section className="landing-section" id="platform-map" aria-labelledby="platform-map-title">
+          <div className="landing-section-heading">
+            <h2 id="platform-map-title">Explore the team tools.</h2>
+            <p>Only route families backed by this signed-in account&apos;s active access records are listed.</p>
+          </div>
+          <div className="landing-drawer-stack">
+            {drawerGroupsForSession.map((group, index) => (
+              <details className="landing-glass-drawer" key={group.title} open={index === 0}>
+                <summary>
+                  <span>
+                    <strong>{group.title}</strong>
+                    <small>{group.body}</small>
+                  </span>
+                  <em>{group.label}</em>
+                </summary>
+                <div className="landing-drawer-panel">
+                  {group.links.map(([title, href, body]) => (
+                    <Link className="landing-tool-link" href={href} key={`${group.title}-${href}`}>
+                      <span>
+                        <strong>{title}</strong>
+                        <small>{body}</small>
+                      </span>
+                    </Link>
+                  ))}
+                </div>
+              </details>
+            ))}
+          </div>
+        </section>
+      ) : null}
 
       <section className="notice landing-boundary">
         <strong>Production boundary:</strong> this app uses Supabase-backed paths when signed-in rows and roles exist, typed seed fallbacks when live context is unavailable, and no external email, SMS, push, Stripe, AI-provider, or native-app delivery unless explicitly approved and configured.
       </section>
 
-      <section className="landing-section" aria-labelledby="feature-tier-title">
-        <div className="landing-section-heading">
-          <h2 id="feature-tier-title">Feature inventory.</h2>
-          <p>Open this drawer only when you want the detailed scaffold ledger, provider boundaries, and feature tiers.</p>
-        </div>
-        <details className="landing-glass-drawer landing-feature-drawer">
-          <summary>
-            <span>
-              <strong>Current scaffold inventory</strong>
-              <small>Detailed tiers, implementation labels, planned boundaries, and signature feature status.</small>
-            </span>
-            <em>Open ledger</em>
-          </summary>
-          <div className="landing-drawer-panel landing-feature-panel">
-            <FeatureTierHubClient />
+      {access.canAdmin ? (
+        <section className="landing-section" aria-labelledby="feature-tier-title">
+          <div className="landing-section-heading">
+            <h2 id="feature-tier-title">Feature inventory.</h2>
+            <p>Open this drawer only when you want the detailed scaffold ledger, provider boundaries, and feature tiers.</p>
           </div>
-        </details>
-      </section>
+          <details className="landing-glass-drawer landing-feature-drawer">
+            <summary>
+              <span>
+                <strong>Current scaffold inventory</strong>
+                <small>Detailed tiers, implementation labels, planned boundaries, and signature feature status.</small>
+              </span>
+              <em>Open ledger</em>
+            </summary>
+            <div className="landing-drawer-panel landing-feature-panel">
+              <FeatureTierHubClient />
+            </div>
+          </details>
+        </section>
+      ) : null}
     </div>
   );
 }

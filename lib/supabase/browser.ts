@@ -42,6 +42,17 @@ export function getSupabaseAuthClientErrorMessage(error: unknown) {
   return message || "Supabase Auth could not complete the request from this app environment.";
 }
 
+export function getSupabaseEmailRedirectTo(path = "/auth", origin = getBrowserOrigin()) {
+  const fallbackOrigin = process.env.NEXT_PUBLIC_APP_URL?.trim() || "http://localhost:3000";
+  const baseOrigin = origin?.trim() || fallbackOrigin;
+
+  try {
+    return new URL(path, baseOrigin).toString();
+  } catch {
+    return new URL(path, fallbackOrigin).toString();
+  }
+}
+
 export function createSupabaseBrowserClient() {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
   const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
@@ -50,4 +61,9 @@ export function createSupabaseBrowserClient() {
   }
   assertSupabaseAnonKey("NEXT_PUBLIC_SUPABASE_ANON_KEY", anonKey);
   return createBrowserClient<Database>(url, anonKey);
+}
+
+function getBrowserOrigin() {
+  if (typeof window === "undefined") return undefined;
+  return window.location.origin;
 }

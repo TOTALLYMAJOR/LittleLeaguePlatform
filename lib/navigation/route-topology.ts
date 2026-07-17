@@ -7,7 +7,7 @@ export type RouteLifecycle =
   | "prototype"
   | "deprecated-hidden";
 
-export type AllowedRouteRole = "signed_out" | "parent" | "coach" | "admin";
+export type AllowedRouteRole = "signed_out" | "signed_in" | "parent" | "coach" | "admin";
 
 export interface RouteTopologyEntry {
   href: string;
@@ -51,11 +51,12 @@ export const signedOutShellAccess: ClientShellAccess = {
 };
 
 export const routeTopology = [
-  route("/", "Home", "HM", "public", "Family", ["signed_out", "parent", "coach", "admin"], true, true, true, false, 1),
-  route("/registration", "Registration", "RG", "public", "League Ops", ["signed_out", "parent", "coach", "admin"], true, true, true, false),
-  route("/auth", "Sign in", "AU", "support", "Support", ["signed_out", "parent", "coach", "admin"], true, true, true, false, 4),
-  route("/account", "Account", "AC", "support", "Support", ["parent", "coach", "admin"], true, true, true, true, 5),
-  route("/invite/recover", "Recover Invite", "RI", "support", "Support", ["signed_out", "parent", "coach", "admin"], true, true, true, false),
+  route("/", "Home", "HM", "public", "Family", ["signed_out", "signed_in"], false, false, false, false, 1),
+  route("/registration", "Sign up", "SU", "public", "League Ops", ["signed_out", "signed_in"], true, true, true, false),
+  route("/schedule", "Calendar", "CL", "public", "Family", ["signed_out", "signed_in"], true, true, true, false, 3),
+  route("/auth", "Sign in", "AU", "support", "Support", ["signed_out"], true, true, true, false, 4),
+  route("/account", "Account", "AC", "support", "Support", ["signed_in"], true, true, true, true, 5),
+  route("/invite/recover", "Recover Invite", "RI", "support", "Support", ["signed_in"], false, false, true, true),
   route("/invite/expired", "Expired Invite", "EX", "support", "Support", ["signed_out", "parent", "coach", "admin"], false, false, false, false),
   route("/offline", "Offline", "OF", "support", "Support", ["signed_out", "parent", "coach", "admin"], false, false, false, false),
 
@@ -105,7 +106,6 @@ export const routeTopology = [
   compatibility("/admin/security", "Security", "SE", "admin", "Admin Tools", "/admin/security-audit", ["admin"], true),
   compatibility("/admin/archive", "Archive", "AR", "admin", "Admin Tools", "/admin/reports-archive", ["admin"], true),
 
-  shared("/schedule", "Schedule", "SC", "/parent/schedule"),
   shared("/team-chat", "Team Chat", "CH", "/parent/messages"),
   shared("/team-portal", "Team Portal", "TP", "/parent/family-access"),
   {
@@ -191,11 +191,11 @@ function shared(href: string, label: string, short: string, canonicalHref: strin
     role: "shared",
     lifecycle: "shared-implementation",
     canonicalHref,
-    allowedRoles: ["signed_out", "parent", "coach", "admin"],
+    allowedRoles: ["parent", "coach", "admin"],
     navVisible: false,
     commandVisible: false,
     searchable: false,
-    requiresAuth: false
+    requiresAuth: true
   };
 }
 
@@ -224,7 +224,8 @@ export function isRouteActive(pathname: string, href: string) {
 
 export function canAccessRouteEntry(entry: RouteTopologyEntry, access: ClientShellAccess): boolean {
   const roleAllowed = entry.allowedRoles.some((role) => {
-    if (role === "signed_out") return !entry.requiresAuth || !access.signedIn;
+    if (role === "signed_out") return !access.signedIn;
+    if (role === "signed_in") return access.signedIn;
     if (role === "parent") return access.canParent;
     if (role === "coach") return access.canCoach;
     if (role === "admin") return access.canAdmin;

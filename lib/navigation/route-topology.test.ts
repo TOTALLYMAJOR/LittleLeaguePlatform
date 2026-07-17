@@ -25,6 +25,15 @@ const parent: ClientShellAccess = {
   roleSwitchLinks: [{ href: "/parent", label: "Parent Home", role: "parent" }]
 };
 
+const signedInPending: ClientShellAccess = {
+  signedIn: true,
+  userId: "user-pending",
+  canParent: false,
+  canCoach: false,
+  canAdmin: false,
+  roleSwitchLinks: []
+};
+
 const coach: ClientShellAccess = {
   signedIn: true,
   userId: "user-coach",
@@ -60,12 +69,22 @@ function hrefs(entries: Array<{ href: string }>) {
 }
 
 describe("route topology", () => {
-  it("shows signed-out users only public and support routes", () => {
+  it("shows signed-out users only signup, calendar, and sign-in routes", () => {
     const nav = hrefs(getPrimaryNavEntries(signedOut, "/"));
 
-    expect(nav).toContain("/");
-    expect(nav).toContain("/registration");
-    expect(nav).toContain("/auth");
+    expect(nav).toEqual(["/registration", "/schedule", "/auth"]);
+    expect(nav).not.toContain("/parent");
+    expect(nav).not.toContain("/coach");
+    expect(nav).not.toContain("/admin");
+    expect(nav).not.toContain("/team-portal");
+    expect(nav).not.toContain("/invite/recover");
+  });
+
+  it("shows signed-in pending users account, registration, and calendar without private role IA", () => {
+    const nav = hrefs(getPrimaryNavEntries(signedInPending, "/"));
+
+    expect(nav).toEqual(["/registration", "/schedule", "/account"]);
+    expect(nav).not.toContain("/auth");
     expect(nav).not.toContain("/parent");
     expect(nav).not.toContain("/coach");
     expect(nav).not.toContain("/admin");
@@ -145,5 +164,15 @@ describe("route topology", () => {
 
     expect(getRouteEntry("/prototype/index.html")?.noindex).toBe(true);
     expect(routeTopology.every((entry) => entry.lifecycle !== "compatibility" || entry.canonicalHref)).toBe(true);
+  });
+
+  it("keeps shared team routes behind active role access", () => {
+    const teamPortal = getRouteEntry("/team-portal");
+    const teamChat = getRouteEntry("/team-chat");
+
+    expect(teamPortal?.requiresAuth).toBe(true);
+    expect(teamPortal?.allowedRoles).toEqual(["parent", "coach", "admin"]);
+    expect(teamChat?.requiresAuth).toBe(true);
+    expect(teamChat?.allowedRoles).toEqual(["parent", "coach", "admin"]);
   });
 });

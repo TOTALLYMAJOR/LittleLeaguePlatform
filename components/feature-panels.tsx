@@ -142,7 +142,7 @@ import {
   type Team,
   type UserRole
 } from "@/lib/domain";
-import { createSupabaseBrowserClient, getSupabaseAuthClientErrorMessage, getSupabaseBrowserConfigStatus } from "@/lib/supabase/browser";
+import { createSupabaseBrowserClient, getSupabaseAuthClientErrorMessage, getSupabaseBrowserConfigStatus, getSupabaseEmailRedirectTo } from "@/lib/supabase/browser";
 import type { MediaGovernanceData } from "@/lib/supabase/media-governance";
 import type { RegistrationReviewData } from "@/lib/supabase/registration-approvals";
 import type { SponsorAdminData } from "@/lib/supabase/sponsors";
@@ -681,6 +681,7 @@ export function AuthClient() {
             email,
             password,
             options: {
+              emailRedirectTo: getSupabaseEmailRedirectTo(),
               data: {
                 display_name: displayName,
                 default_role: defaultRole
@@ -698,7 +699,12 @@ export function AuthClient() {
         }
 
         const { error } = await supabase.auth.signInWithPassword({ email, password });
-        setMessage(error ? error.message : "Signed in. Role-scoped dashboards can now use Supabase session state.");
+        if (error) {
+          setMessage(error.message);
+          return;
+        }
+        setMessage("Signed in. Refreshing role-scoped navigation.");
+        window.location.assign("/");
       } catch (error) {
         setMessage(getSupabaseAuthClientErrorMessage(error));
       }
@@ -4557,6 +4563,105 @@ export function ScheduleAlertsClient({ scheduleData, mode = "operations" }: { sc
         if (preview.ok) dispatch({ type: "applyScheduleChange", input });
       }
     });
+  }
+
+  if (isReadonly) {
+    const upcomingEvents = scheduleState.events
+      .filter((item) => item.status === "scheduled")
+      .sort((left, right) => Date.parse(left.startsAt) - Date.parse(right.startsAt))
+      .slice(0, 8);
+
+    return (
+      <div className="page">
+        <section className="hero">
+          <span className="eyebrow">Public calendar</span>
+          <h1>View the league schedule without opening private team tools.</h1>
+          <p className="lead">Calendar details stay read-only here. RSVPs, team chat, media, and coach updates unlock only after the signed-in account has an active approved role.</p>
+        </section>
+
+        <p className={`notice ${scheduleData?.isSupabaseBacked ? "ok" : "warning"}`}>
+          {scheduleData?.message ?? "Showing local schedule fallback until Supabase schedule rows are available."}
+        </p>
+        {message ? <p className="notice">{message}</p> : null}
+
+        <section className="grid two">
+          <article className="card stack">
+            <h2>Calendar event</h2>
+            <label>
+              Event
+              <select value={eventId} onChange={(input) => selectEvent(input.target.value)}>
+                {scheduleState.events.map((item) => <option key={item.id} value={item.id}>{item.title}</option>)}
+              </select>
+            </label>
+            {event ? (
+              <>
+                <p><strong>{event.title}</strong></p>
+                <p className="muted">{eventTeam?.name ?? "Team"} · {event.eventType.replace("_", " ")}</p>
+                <p>{formatDate(event.startsAt)} to {formatDate(event.endsAt)}</p>
+                <p className="muted">{event.locationName} · {event.locationAddress}</p>
+              </>
+            ) : <p className="muted">No event is available.</p>}
+          </article>
+
+          <article className="card stack">
+            <div className="card-header">
+              <div>
+                <span className="eyebrow">Upcoming</span>
+                <h2>Next events</h2>
+              </div>
+              <span className="badge">{upcomingEvents.length} event(s)</span>
+            </div>
+            {upcomingEvents.map((item) => {
+              const teamName = scheduleState.teams.find((teamItem) => teamItem.id === item.teamId)?.name ?? "Team";
+              return (
+                <p key={item.id}>
+                  <strong>{item.title}</strong><br />
+                  <span className="muted">{teamName} · {formatDate(item.startsAt)} · {item.locationName}</span>
+                </p>
+              );
+            })}
+            {!upcomingEvents.length ? <p className="muted">No scheduled events are available.</p> : null}
+          </article>
+        </section>
+
+        <section className="grid two">
+          <article className="card stack">
+            <div className="card-header">
+              <div>
+                <span className="eyebrow">Locations</span>
+                <h2>Known fields</h2>
+              </div>
+              <span className="badge">{venueRecords.length + persistedVenueRecords.length} venue(s)</span>
+            </div>
+            {venueRecords.slice(0, 6).map((venue) => (
+              <p key={`${venue.name}-${venue.address}`}>
+                <strong>{venue.name}</strong><br />
+                <span className="muted">{venue.address} · {venue.eventCount} event(s)</span>
+              </p>
+            ))}
+            {persistedVenueRecords.slice(0, 6).map((venue) => (
+              <p key={venue.id}>
+                <strong>{venue.name}</strong><br />
+                <span className="muted">{venue.address} · {venue.status}</span>
+              </p>
+            ))}
+            {!venueRecords.length && !persistedVenueRecords.length ? <p className="muted">No venue records are available yet.</p> : null}
+          </article>
+
+          <article className="card stack">
+            <div className="card-header">
+              <div>
+                <span className="eyebrow">Calendar file</span>
+                <h2>ICS preview</h2>
+              </div>
+              <span className="badge ok">{eventTeam?.name ?? "Team"}</span>
+            </div>
+            <pre>{calendarExport.split("\n").slice(0, 8).join("\n")}</pre>
+            <p className="muted">Calendar exports stay preview-only here. Authenticated team calendars use the private schedule export endpoint.</p>
+          </article>
+        </section>
+      </div>
+    );
   }
 
   return (

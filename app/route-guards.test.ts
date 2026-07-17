@@ -77,4 +77,18 @@ describe("role route guards and compatibility wrappers", () => {
     expect(adminSurfaces).toContain("scopeScheduleOperationsData");
     expect(adminSurfaces).toContain("organizationIds: pageAccess.access.adminOrganizationIds");
   });
+
+  it("guards shared team portal and chat routes before loading private shared data", () => {
+    const teamPortalPage = source("app/team-portal/page.tsx");
+    const teamChatPage = source("app/team-chat/page.tsx");
+
+    expect(teamPortalPage).toContain("getServerShellAccess");
+    expect(teamPortalPage).toContain("resolveTeamPortalScope");
+    expect(teamPortalPage).toContain("scopeTeamPortalData");
+    expect(teamPortalPage).toContain("No accepted parent-team access is active yet.");
+    expect(teamChatPage).toContain("getServerShellAccess");
+    expect(teamChatPage).toContain("resolveTeamChatTeamIds");
+    expect(teamChatPage).toContain("scopeTeamChatData");
+    expect(teamChatPage).toContain("Team chat access is not active yet.");
+  });
 });
