@@ -90,7 +90,12 @@ describe("route smoke coverage", () => {
     const serviceWorker = readFileSync(join(process.cwd(), "public", "sw.js"), "utf8");
 
     expect(serviceWorker).toContain("\"/offline\"");
-    expect(serviceWorker).toContain("caches.match(\"/offline\")");
+    expect(serviceWorker).toContain("caches.match(OFFLINE_URL)");
+    expect(serviceWorker).toContain("event.request.mode === \"navigate\"");
+    expect(serviceWorker).toContain("networkFirstNavigation");
+    expect(serviceWorker).not.toContain("\"/parent\"");
+    expect(serviceWorker).not.toContain("\"/coach\"");
+    expect(serviceWorker).not.toContain("\"/admin\"");
   });
 
   it("keeps PWA install and standalone usage measurement wired", () => {
@@ -99,9 +104,12 @@ describe("route smoke coverage", () => {
     const manifest = readFileSync(join(process.cwd(), "public", "manifest.webmanifest"), "utf8");
 
     expect(provider).toContain("/api/mobile-usage-events");
+    expect(provider).toContain("process.env.NODE_ENV !== \"production\"");
+    expect(provider).toContain("registration.unregister()");
     expect(provider).toContain("install_prompt_shown");
     expect(provider).toContain("standalone_launch");
     expect(layout).toContain("AppShell");
+    expect(layout).toContain("criticalShellCss");
     expect(layout).toContain("apple");
     expect(manifest).toContain("/favicons/favicon-option-1-shield.png");
     expect(manifest).toContain("/favicons/favicon-option-4-team-chat.png");

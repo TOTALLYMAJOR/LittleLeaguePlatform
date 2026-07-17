@@ -3,6 +3,23 @@ import "./globals.css";
 import { AppShell } from "@/components/ui/AppShell";
 import { getServerShellAccess, toClientShellAccess } from "@/lib/supabase/shell-access";
 
+const criticalShellCss = `
+html,body{margin:0;min-height:100%}
+body{background:#f6f7f9;color:#172033;font-family:Inter,ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",Helvetica,Arial,sans-serif;line-height:1.55}
+*,*::before,*::after{box-sizing:border-box}
+.shell.app-shell{display:grid;grid-template-columns:minmax(260px,280px) minmax(0,1fr);min-height:100vh}
+.main{min-width:0;padding:32px}
+.sidebar.app-sidebar{position:sticky;top:0;display:flex;flex-direction:column;gap:12px;height:100vh;overflow-y:auto;border-right:1px solid #d9e0ea;background:#fff;padding:22px}
+.sidebar-topline,.brand{display:flex;align-items:center;gap:12px}
+.sidebar-topline{justify-content:space-between}
+.brand{text-decoration:none;color:inherit}
+.brand-mark{display:grid;place-items:center;flex-shrink:0;width:42px;height:42px;border-radius:8px;background:#1570ef;color:#fff;font-weight:700}
+.nav{display:grid;gap:2px}
+.nav a{display:flex;align-items:center;gap:8px;min-height:40px;padding:10px 12px;border-radius:8px;color:#667085;text-decoration:none}
+.page{display:grid;gap:24px;max-width:1180px}
+@media (max-width:900px){.shell.app-shell{display:block}.sidebar.app-sidebar{height:auto;min-height:0;padding:12px 16px;box-shadow:0 4px 16px rgba(23,32,51,.08)}.main{padding:20px 16px 112px}.mobile-tabbar{display:grid}}
+`;
+
 export const metadata: Metadata = {
   title: "Little League HQ",
   description: "Production scaffold for a private youth sports operations platform.",
@@ -26,6 +43,9 @@ export default async function RootLayout({ children }: Readonly<{ children: Reac
 
   return (
     <html lang="en">
+      <head>
+        <style id="critical-shell-css" dangerouslySetInnerHTML={{ __html: criticalShellCss }} />
+      </head>
       <body>
         <AppShell access={shellAccess}>{children}</AppShell>
       </body>
