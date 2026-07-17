@@ -17,9 +17,10 @@ Demo seed:
 
 ```text
 supabase/seed.sql
+scripts/bootstrap-demo-tenant.mjs
 ```
 
-The migrations have been applied to the configured Supabase project through the IPv4/session pooler. They create tables, indexes, update triggers, helper authorization functions, registration review RPCs, and initial Row Level Security policies. The seed file adds a demo organization, active season, and teams with UUID IDs so public registration has valid team choices.
+The migrations have been applied to the configured Supabase project through the IPv4/session pooler. They create tables, indexes, update triggers, helper authorization functions, registration review RPCs, and initial Row Level Security policies. `supabase/seed.sql` adds a minimal demo organization, active season, and teams with UUID IDs so public registration has valid team choices. `scripts/bootstrap-demo-tenant.mjs` is the richer fictional product-demo seed: it creates demo auth users and populated tenant rows for admin, coach, and parent workflows while keeping provider sends and payment collection disconnected.
 
 From this WSL environment, Supabase's direct database URL requires IPv6 and may not connect. Keep using the project's IPv4 transaction pooler URL in:
 
@@ -88,6 +89,16 @@ lib/supabase/
 - `admin.ts` creates a server-only service-role client for backend jobs and seeding.
 - `database.types.ts` captures the first typed subset of the schema used by app routes.
 - `team-portal.ts` loads the `/team-portal` snapshot from Supabase: teams, branding, players, guardian links, invites, memberships, schedules, media, and Parent Replay records.
+
+## Demo Tenant Boundary
+
+Run the product-demo seed only with explicit confirmation:
+
+```bash
+DEMO_TENANT_SEED_CONFIRM=load-fictional-data npm run supabase:demo-tenant
+```
+
+The seed is idempotent and writes fixed fictional UUIDs under `LeaguePilot Demo League`. It is meant to make local, QA, preview, or intentionally selected hosted environments feel fully populated for product review. It does not prove production readiness, provider delivery, Stripe payments, media storage, AI-provider output, or hosted browser proof.
 
 ## Next Implementation Step
 

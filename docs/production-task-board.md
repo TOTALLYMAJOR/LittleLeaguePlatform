@@ -176,7 +176,7 @@ Task-specific checks are required only when the surface is touched:
 ### LP-015 - Implement Real Provider Sends If Approved
 
 - Priority: P2 conditional.
-- Current state: intentionally disconnected.
+- Current state: intentionally disconnected. The fictional demo tenant seed passed on 2026-07-16 with provider sends at zero, but the configured Supabase project schema cache did not expose newer `notification_delivery_attempts` execution metadata columns such as `idempotency_key` and `dead_lettered_at`; the seed fell back to base delivery-attempt rows. Apply/verify the notification delivery execution migration before any provider-send worker proof.
 - Seams: provider delivery service, Web Push VAPID, email/SMS provider adapters, provider webhooks, delivery attempts.
 - Done when: approved attempts create real sandbox sends, rejected/suppressed attempts do not send, webhooks update delivery state, and retries are idempotent.
 - SaaS constants focus: provider contract, consent, suppression, retry, webhook replay, noisy-neighbor, billing/cost.

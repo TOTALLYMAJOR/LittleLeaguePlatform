@@ -236,4 +236,16 @@ describe("route smoke coverage", () => {
     expect(proofScript).toContain("Tenant setup guide");
     expect(proofScript).toContain("Notification boundary");
   });
+
+  it("keeps the fictional demo tenant seed guarded and provider-safe", () => {
+    const packageJson = readFileSync(join(process.cwd(), "package.json"), "utf8");
+    const seedScript = readFileSync(join(process.cwd(), "scripts", "bootstrap-demo-tenant.mjs"), "utf8");
+
+    expect(packageJson).toContain("\"supabase:demo-tenant\"");
+    expect(seedScript).toContain("DEMO_TENANT_SEED_CONFIRM");
+    expect(seedScript).toContain("load-fictional-data");
+    expect(seedScript).toContain("LeaguePilot Demo League");
+    expect(seedScript).toContain("providerSendsExecuted: 0");
+    expect(seedScript).toContain("Demo tenant never sends external SMS.");
+  });
 });
