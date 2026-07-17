@@ -34,9 +34,9 @@ Task-specific checks are required only when the surface is touched:
 ### Active Goal - Tenant Onboarding Readiness Lane
 
 - Priority: P0 tenant readiness.
-- Current state: Slice 1 is implemented. `/admin/health` now loads tenant readiness from Supabase rows scoped to the signed-in organization admin and shows whether each organization has an active season, active teams, coach coverage, rostered players, family access path, scheduled events, and a provider-send boundary before inviting families.
-- Next slices: improve empty-tenant setup guidance/actions, add browser proof for the tenant readiness checklist, then document any hosted/provider blockers.
-- Seams: `/admin/health`, `lib/supabase/tenant-readiness.ts`, `components/feature-panels.tsx`, `app/admin/_surfaces.tsx`.
+- Current state: Slices 1 and 2 are implemented. `/admin/health` now loads tenant readiness from Supabase rows scoped to the signed-in organization admin and shows whether each organization has an active season, active teams, coach coverage, rostered players, family access path, scheduled events, and a provider-send boundary before inviting families. `/admin/teams` now gives admins a tenant setup guide, new season/team/player reset actions, and explicit empty-state blocking copy.
+- Next slices: add browser proof for the tenant readiness checklist, then document any hosted/provider blockers.
+- Seams: `/admin/health`, `/admin/teams`, `lib/supabase/tenant-readiness.ts`, `components/feature-panels.tsx`, `app/admin/_surfaces.tsx`.
 - SaaS constants focus: tenant context, tenant propagation, isolation proof, actor authorization, failure semantics, public-family invite boundary.
 - Validation: `lib/supabase/tenant-readiness.test.ts`; `components/feature-panels.test.tsx`; `app/route-guards.test.ts`; `npm run typecheck`; `git diff --check`.
 

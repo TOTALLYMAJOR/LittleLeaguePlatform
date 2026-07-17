@@ -4,6 +4,7 @@ import { AppStateProvider } from "@/app/providers";
 import {
   AdminDashboardClient,
   AdminHealthClient,
+  AdminTeamManagementClient,
   AdminThemesClient,
   AccountClient,
   AuthClient,
@@ -155,6 +156,32 @@ describe("AdminHealthClient", () => {
     expect(html).toContain("League A");
     expect(html).toContain("ready to invite");
     expect(html).toContain("Active season");
+  });
+});
+
+describe("AdminTeamManagementClient", () => {
+  it("guides an empty tenant through season, team, and roster setup", () => {
+    const html = renderToStaticMarkup(
+      <AdminTeamManagementClient
+        data={{
+          organizationId: "org-a",
+          teams: [],
+          players: [],
+          coaches: [],
+          seasons: [],
+          divisions: [],
+          message: "No Supabase team setup rows yet."
+        }}
+      />
+    );
+
+    expect(html).toContain("Tenant setup guide");
+    expect(html).toContain("Get this organization ready before inviting families.");
+    expect(html).toContain("Create an active season first.");
+    expect(html).toContain("Create an active team before adding rostered players.");
+    expect(html).toContain("Start new season");
+    expect(html).toContain("Start new team");
+    expect(html).toContain("Start new player");
   });
 });
 

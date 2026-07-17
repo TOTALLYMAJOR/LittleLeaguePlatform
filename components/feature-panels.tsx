@@ -2153,6 +2153,49 @@ export function AdminTeamManagementClient({ data }: { data: AdminTeamManagementD
   const selectedRosterSeason = seasons.find((season) => season.id === playerDraft.seasonId);
   const teamSeasonArchived = selectedTeamSeason?.status === "archived";
   const rosterSeasonArchived = selectedRosterSeason?.status === "archived";
+  const activeSeasons = seasons.filter((season) => season.status === "active");
+  const activeSeasonId = activeSeasons[0]?.id ?? seasons[0]?.id ?? "";
+  const activeTeams = teams.filter((team) => team.status === "active" && team.seasonStatus === "active");
+  const activeRosteredPlayers = players.filter((player) => player.rosterStatus === "active");
+  const coachCoveredTeams = activeTeams.filter((team) => Boolean(team.coachUserId));
+
+  function startNewSeason() {
+    setSeasonDraft({
+      seasonId: "",
+      name: "Spring 2026",
+      startsAt: "2026-03-01T00:00:00.000Z",
+      endsAt: "2026-06-30T23:59:59.000Z",
+      status: "active"
+    });
+  }
+
+  function startNewTeam() {
+    setTeamDraft({
+      teamId: "",
+      seasonId: activeSeasonId,
+      name: "New Team",
+      division: data.divisions[0] ?? "6U",
+      mascot: "Team",
+      themeKey: "baseball",
+      primaryColor: "#1d4ed8",
+      secondaryColor: "#f97316",
+      coachUserId: "",
+      status: "active"
+    });
+  }
+
+  function startNewPlayer() {
+    const team = activeTeams[0] ?? teams[0];
+    setPlayerDraft({
+      playerId: "",
+      teamId: team?.id ?? "",
+      seasonId: team?.seasonId ?? activeSeasonId,
+      firstName: "Player",
+      lastInitial: "A",
+      jersey: "",
+      rosterStatus: "active"
+    });
+  }
 
   function selectTeam(teamId: string) {
     const team = teams.find((item) => item.id === teamId);
@@ -2303,6 +2346,43 @@ export function AdminTeamManagementClient({ data }: { data: AdminTeamManagementD
     <>
       {message ? <p className="notice">{message}</p> : null}
 
+      <section className="card stack">
+        <div className="card-header">
+          <div>
+            <span className="eyebrow">Tenant setup guide</span>
+            <h2>Get this organization ready before inviting families.</h2>
+          </div>
+          <span className={`badge ${activeSeasons.length && activeTeams.length && activeRosteredPlayers.length ? "ok" : "warning"}`}>
+            {activeSeasons.length && activeTeams.length && activeRosteredPlayers.length ? "setup started" : "needs setup"}
+          </span>
+        </div>
+        <div className="grid three">
+          <p><strong>{activeSeasons.length}</strong><br /><span className="muted">active season(s)</span></p>
+          <p><strong>{activeTeams.length}</strong><br /><span className="muted">active team(s)</span></p>
+          <p><strong>{coachCoveredTeams.length}</strong><br /><span className="muted">coach-covered team(s)</span></p>
+          <p><strong>{activeRosteredPlayers.length}</strong><br /><span className="muted">active player(s)</span></p>
+          <p><strong>{data.coaches.length}</strong><br /><span className="muted">coach/admin profile(s)</span></p>
+        </div>
+        <div className="grid three">
+          <p>
+            <span className={`badge ${activeSeasons.length ? "ok" : "warning"}`}>{activeSeasons.length ? "ready" : "next"}</span>{" "}
+            <strong>1. Create an active season</strong><br />
+            <span className="muted">Every tenant needs one active season before teams, rosters, and schedules are useful.</span>
+          </p>
+          <p>
+            <span className={`badge ${activeTeams.length ? "ok" : "warning"}`}>{activeTeams.length ? "ready" : "next"}</span>{" "}
+            <strong>2. Add teams and coaches</strong><br />
+            <span className="muted">{activeSeasons.length ? "Create teams, then assign coach profiles or memberships." : "Create an active season first."}</span>
+          </p>
+          <p>
+            <span className={`badge ${activeRosteredPlayers.length ? "ok" : "warning"}`}>{activeRosteredPlayers.length ? "ready" : "next"}</span>{" "}
+            <strong>3. Add rostered players</strong><br />
+            <span className="muted">{activeTeams.length ? "Roster players before registration approval or parent invites." : "Add at least one active team first."}</span>
+          </p>
+        </div>
+        <p className="muted">After these basics are in place, use registration review or guardian-link repair to grant family access. Children still do not log in.</p>
+      </section>
+
       <section className="grid three">
         <article className="card stack">
           <div className="card-header">
@@ -2312,6 +2392,7 @@ export function AdminTeamManagementClient({ data }: { data: AdminTeamManagementD
             </div>
             <span className="badge">{seasons.length} season(s)</span>
           </div>
+          <button className="secondary" disabled={isPending} onClick={startNewSeason}>Start new season</button>
           <label>Existing season<select value={seasonDraft.seasonId} onChange={(event) => {
             const season = seasons.find((item) => item.id === event.target.value);
             setSeasonDraft({
@@ -2343,6 +2424,8 @@ export function AdminTeamManagementClient({ data }: { data: AdminTeamManagementD
             </div>
             <span className={`badge ${teamSeasonArchived ? "warning" : "ok"}`}>{teamSeasonArchived ? "Read-only" : "Editable"}</span>
           </div>
+          <button className="secondary" disabled={isPending || !activeSeasonId} onClick={startNewTeam}>Start new team</button>
+          {!activeSeasonId ? <p className="notice warning">Create an active season before adding teams.</p> : null}
           <label>Team<select value={teamDraft.teamId} onChange={(event) => selectTeam(event.target.value)}>
             <option value="">New team</option>
             {teams.map((team) => <option key={team.id} value={team.id}>{team.name}</option>)}
@@ -2359,7 +2442,7 @@ export function AdminTeamManagementClient({ data }: { data: AdminTeamManagementD
             <option value="active">Active</option>
             <option value="archived">Archived</option>
           </select></label>
-          <button disabled={isPending || teamSeasonArchived || !teamDraft.name.trim()} onClick={saveTeam}>Save team</button>
+          <button disabled={isPending || teamSeasonArchived || !teamDraft.seasonId || !teamDraft.name.trim()} onClick={saveTeam}>Save team</button>
         </article>
 
         <article className="card stack">
@@ -2370,6 +2453,8 @@ export function AdminTeamManagementClient({ data }: { data: AdminTeamManagementD
             </div>
             <span className={`badge ${rosterSeasonArchived ? "warning" : "ok"}`}>{rosterSeasonArchived ? "Read-only" : "Editable"}</span>
           </div>
+          <button className="secondary" disabled={isPending || !activeTeams.length} onClick={startNewPlayer}>Start new player</button>
+          {!activeTeams.length ? <p className="notice warning">Create an active team before adding rostered players.</p> : null}
           <label>Player<select value={playerDraft.playerId} onChange={(event) => selectPlayer(event.target.value)}>
             <option value="">New player</option>
             {players.map((player) => <option key={player.id} value={player.id}>{player.firstName} {player.lastInitial}.</option>)}
@@ -2386,7 +2471,7 @@ export function AdminTeamManagementClient({ data }: { data: AdminTeamManagementD
             <option value="inactive">Inactive</option>
             <option value="archived">Archived</option>
           </select></label>
-          <button disabled={isPending || rosterSeasonArchived || !playerDraft.firstName.trim()} onClick={saveRosterPlayer}>Save roster player</button>
+          <button disabled={isPending || rosterSeasonArchived || !playerDraft.teamId || !playerDraft.firstName.trim() || !playerDraft.lastInitial.trim()} onClick={saveRosterPlayer}>Save roster player</button>
         </article>
       </section>
 
