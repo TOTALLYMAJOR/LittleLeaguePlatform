@@ -22,6 +22,8 @@ The app is not ready for real-family production launch yet. The core scaffold, r
 - `npm test` passed on 2026-07-01: 18 files, 174 tests.
 - `npm run build` passed on 2026-07-02 and generated 47 static pages with dynamic private routes. The known Next SWC lockfile warning still appears during Vercel deploy builds even after local lockfile repair attempts, but local `npm run typecheck` and `npm run build` pass.
 - `QA_PROOF_BASE_URL=https://www.leaguepilot.us npm run qa:session-proof` passed again on 2026-07-02 against deployment `dpl_ERncYiyZE3BXSz8TJHzKHsu7DPGZ`. The run added hosted browser proof that a signed-in QA coach saves a weekly update, Supabase persists the announcement plus pending `team_broadcast` notification draft, and no provider delivery attempt is created.
+- `npm run qa:tenant-readiness-proof` passed locally on 2026-07-16 against `http://localhost:3001`, proving signed-in QA admin access to `/admin/health` and `/admin/teams` with screenshots under `output/playwright/tenant-readiness/`. Hosted tenant-readiness proof remains open until the latest branch is deployed and rerun with `QA_PROOF_BASE_URL=https://www.leaguepilot.us`.
+- Tenant-readiness release validation on 2026-07-16 passed `git diff --check`, `npm test` (29 files, 231 tests), `npm run typecheck`, `npm run build`, and `npm audit` with 0 vulnerabilities.
 - Original audit worktree had only untracked local editor config; check current worktree state before release packaging.
 
 ## P0 Launch Blockers
@@ -43,7 +45,7 @@ The app is not ready for real-family production launch yet. The core scaffold, r
 
 4. Run hosted production smoke against the deployed URL, not only local build.
    - Evidence: hosted proof passed on 2026-07-01 against `https://www.leaguepilot.us`, covering `/`, `/auth`, `/registration`, `/parent`, `/parent/rsvp`, `/coach`, `/coach/parent-replay`, `/team-chat`, `/admin`, `/admin/operations`, `/admin/security`, and `/offline`.
-   - Current status: covered for deployment `dpl_D8kTCkYhtrn6VA7VXrJAwM9kbYmf`.
+   - Current status: covered for deployment `dpl_D8kTCkYhtrn6VA7VXrJAwM9kbYmf`; the newer tenant-readiness admin flow is locally proven but not yet covered by hosted proof.
    - Repeat when: production aliases, auth cookies, Supabase env values, role routing, or private route shells change.
 
 ## P1 Production Hardening
