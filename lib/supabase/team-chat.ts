@@ -1,5 +1,6 @@
 import { seedState, type ChatModerationAction, type ChatModerationAuditEvent, type ChatMessageKind, type LeagueEvent, type Team, type TeamChatChannel, type TeamChatMessage, type TeamMembership, type User, type UserRole } from "@/lib/domain";
 import { createSupabaseAdminClient } from "./admin";
+import { orderCurrentTeamsFirst, type TeamLifecycleRow } from "./team-lifecycle";
 import { withSupabaseTimeout } from "./timeout";
 
 export interface TeamChatData {
@@ -42,7 +43,7 @@ type MessageRow = {
   moderation_reason: string | null;
 };
 
-function mapTeam(row: {
+type TeamChatTeamRow = TeamLifecycleRow & {
   id: string;
   organization_id: string;
   season_id: string;
@@ -53,7 +54,70 @@ function mapTeam(row: {
   primary_color: string;
   secondary_color: string;
   theme_key: Team["themeKey"];
-}): Team {
+};
+
+type ProfileRow = {
+  id: string;
+  default_role: UserRole;
+  display_name: string;
+  email: string;
+  phone: string | null;
+};
+
+type TeamMembershipRow = {
+  id: string;
+  team_id: string;
+  user_id: string;
+  role: TeamMembership["role"];
+  status: TeamMembership["status"];
+};
+
+type EventRow = {
+  id: string;
+  organization_id: string;
+  team_id: string;
+  season_id: string;
+  title: string;
+  event_type: LeagueEvent["eventType"];
+  starts_at: string;
+  ends_at: string;
+  location_name: string | null;
+  location_address: string | null;
+  status: LeagueEvent["status"];
+  opponent: string | null;
+  created_at: string;
+  updated_at: string;
+};
+
+type ChannelRow = {
+  id: string;
+  organization_id: string;
+  season_id: string;
+  team_id: string;
+  pinned_message_id: string | null;
+  created_at: string;
+  updated_at: string;
+};
+
+type ModerationRow = {
+  id: string;
+  message_id: string;
+  channel_id: string;
+  team_id: string;
+  actor_user_id: string;
+  actor_role: UserRole;
+  action: ChatModerationAction;
+  reason: string;
+  created_at: string;
+};
+
+type UnsafeSupabase = {
+  // Team lifecycle columns are newer than the generated DB types in this repo.
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  from(table: string): any;
+};
+
+function mapTeam(row: TeamChatTeamRow): Team {
   return {
     id: row.id,
     organizationId: row.organization_id,
@@ -126,9 +190,9 @@ async function actorCanPost(teamId: string, actorUserId: string) {
 
 export async function listTeamChatData(): Promise<TeamChatData> {
   try {
-    const supabase = createSupabaseAdminClient();
+    const supabase = createSupabaseAdminClient() as unknown as UnsafeSupabase;
     const [teamsResult, profilesResult, membershipsResult, eventsResult] = await withSupabaseTimeout(Promise.all([
-      supabase.from("teams").select("id,organization_id,season_id,division,name,coach_user_id,mascot,primary_color,secondary_color,theme_key").order("division", { ascending: true }).order("name", { ascending: true }),
+      supabase.from("teams").select("id,organization_id,season_id,division,name,coach_user_id,mascot,primary_color,secondary_color,theme_key,status,seasons(status)").order("division", { ascending: true }).order("name", { ascending: true }),
       supabase.from("profiles").select("id,display_name,email,phone,default_role").order("display_name", { ascending: true }),
       supabase.from("team_memberships").select("id,team_id,user_id,role,status").order("created_at", { ascending: false }),
       supabase.from("events").select("id,organization_id,team_id,season_id,title,event_type,starts_at,ends_at,location_name,location_address,status,opponent,created_at,updated_at").order("starts_at", { ascending: true })
@@ -138,7 +202,7 @@ export async function listTeamChatData(): Promise<TeamChatData> {
       return fallbackChatData();
     }
 
-    const teams = teamsResult.data.map(mapTeam);
+    const teams = orderCurrentTeamsFirst((teamsResult.data ?? []) as TeamChatTeamRow[]).map(mapTeam);
     await withSupabaseTimeout(Promise.all(teams.map((team) => supabase
       .from("team_chat_channels")
       .upsert({
@@ -155,21 +219,21 @@ export async function listTeamChatData(): Promise<TeamChatData> {
 
     return {
       teams,
-      users: (profilesResult.data ?? []).map((profile) => ({
+      users: ((profilesResult.data ?? []) as ProfileRow[]).map((profile) => ({
         id: profile.id,
         role: profile.default_role,
         name: profile.display_name,
         email: profile.email,
         phone: profile.phone ?? undefined
       })),
-      teamMemberships: (membershipsResult.data ?? []).map((membership) => ({
+      teamMemberships: ((membershipsResult.data ?? []) as TeamMembershipRow[]).map((membership) => ({
         id: membership.id,
         teamId: membership.team_id,
         userId: membership.user_id,
         role: membership.role,
         status: membership.status
       })),
-      events: (eventsResult.data ?? []).map((event) => ({
+      events: ((eventsResult.data ?? []) as EventRow[]).map((event) => ({
         id: event.id,
         organizationId: event.organization_id,
         teamId: event.team_id,
@@ -185,7 +249,7 @@ export async function listTeamChatData(): Promise<TeamChatData> {
         createdAt: event.created_at,
         updatedAt: event.updated_at
       })),
-      channels: (channelsResult.data ?? []).map((channel) => ({
+      channels: ((channelsResult.data ?? []) as ChannelRow[]).map((channel) => ({
         id: channel.id,
         organizationId: channel.organization_id,
         seasonId: channel.season_id,
@@ -195,7 +259,7 @@ export async function listTeamChatData(): Promise<TeamChatData> {
         updatedAt: channel.updated_at
       })),
       messages: (messagesResult.data ?? []).map(mapTeamChatMessageRow),
-      moderationEvents: (moderationResult.data ?? []).map((event) => ({
+      moderationEvents: ((moderationResult.data ?? []) as ModerationRow[]).map((event) => ({
         id: event.id,
         messageId: event.message_id,
         channelId: event.channel_id,

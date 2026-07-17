@@ -12,6 +12,7 @@ import {
   publishBalancedTeamBuild,
   createScheduleEvent,
   createRegistrationRequest,
+  validateRegistrationRequestInput,
   createParentReplay,
   defaultTeamCommunicationCopy,
   detectScheduleConflicts,
@@ -1365,6 +1366,22 @@ describe("team portal branding", () => {
 });
 
 describe("registration system", () => {
+  it("validates server-backed registration teams without requiring seed team ids", () => {
+    const result = validateRegistrationRequestInput({
+      teamId: "supabase-team-uuid",
+      parentName: "Taylor Parent",
+      parentEmail: "Taylor@Example.com",
+      playerFirstName: "Parker",
+      playerLastInitial: "parent",
+      now: NOW
+    }, ["supabase-team-uuid"]);
+
+    expect(result.ok).toBe(true);
+    expect(result.normalized?.parentEmail).toBe("taylor@example.com");
+    expect(result.normalized?.playerLastInitial).toBe("P");
+    expect(result.message).toContain("No account access was granted");
+  });
+
   it("queues parent registration requests for admin review without granting access", () => {
     const result = createRegistrationRequest(seedState, {
       teamId: "team-tigers",

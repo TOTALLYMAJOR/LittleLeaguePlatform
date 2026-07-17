@@ -16,20 +16,53 @@ export interface RegistrationMutationResult {
   request?: RegistrationRequest;
 }
 
+export interface RegistrationInputValidation {
+  ok: boolean;
+  message: string;
+  normalized?: {
+    teamId: string;
+    parentName: string;
+    parentEmail: string;
+    playerFirstName: string;
+    playerLastInitial: string;
+  };
+}
+
+export function validateRegistrationRequestInput(
+  input: CreateRegistrationRequestInput,
+  knownTeamIds: Iterable<string>
+): RegistrationInputValidation {
+  const normalized = {
+    teamId: input.teamId.trim(),
+    parentName: input.parentName.trim(),
+    parentEmail: input.parentEmail.trim().toLowerCase(),
+    playerFirstName: input.playerFirstName.trim(),
+    playerLastInitial: input.playerLastInitial.trim().slice(0, 1).toUpperCase()
+  };
+  const knownTeams = new Set(knownTeamIds);
+
+  if (!knownTeams.has(normalized.teamId)) {
+    return { ok: false, message: "Registration requires a known team." };
+  }
+  if (!normalized.parentName || !normalized.playerFirstName || !normalized.playerLastInitial) {
+    return { ok: false, message: "Parent name, player first name, and player last initial are required." };
+  }
+  if (!normalized.parentEmail.includes("@")) {
+    return { ok: false, message: "Enter a valid parent email." };
+  }
+
+  return {
+    ok: true,
+    message: "Registration request queued for admin review. No account access was granted.",
+    normalized
+  };
+}
+
 export function createRegistrationRequest(state: AppState, input: CreateRegistrationRequestInput): RegistrationMutationResult {
   const team = state.teams.find((item) => item.id === input.teamId);
-  const parentName = input.parentName.trim();
-  const parentEmail = input.parentEmail.trim().toLowerCase();
-  const playerFirstName = input.playerFirstName.trim();
-  const playerLastInitial = input.playerLastInitial.trim().slice(0, 1).toUpperCase();
-
-  if (!team) return { ok: false, message: "Registration requires a known team.", state };
-  if (!parentName || !playerFirstName || !playerLastInitial) {
-    return { ok: false, message: "Parent name, player first name, and player last initial are required.", state };
-  }
-  if (!parentEmail.includes("@")) {
-    return { ok: false, message: "Enter a valid parent email.", state };
-  }
+  const validation = validateRegistrationRequestInput(input, state.teams.map((item) => item.id));
+  if (!validation.ok || !validation.normalized || !team) return { ok: false, message: validation.message, state };
+  const { parentName, parentEmail, playerFirstName, playerLastInitial } = validation.normalized;
 
   const request: RegistrationRequest = {
     id: `registration-${Date.parse(input.now)}-${state.registrationRequests.length + 1}`,

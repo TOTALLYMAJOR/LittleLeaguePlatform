@@ -1,5 +1,6 @@
 import { seedState, type RegistrationRequest } from "@/lib/domain";
 import { createSupabaseAdminClient } from "./admin";
+import { isCurrentTeamRow, selectCurrentTeamsOrAll, type TeamLifecycleRow } from "./team-lifecycle";
 import { withSupabaseTimeout } from "./timeout";
 
 export interface PublicRegistrationInput {
@@ -22,6 +23,40 @@ export interface RegistrationServiceResult {
   request?: RegistrationRequest;
 }
 
+type RegistrationTeamRow = TeamLifecycleRow & {
+  id: string;
+  name: string;
+  division: string;
+};
+
+type RegistrationTeamAccessRow = TeamLifecycleRow & {
+  id: string;
+  organization_id: string;
+  season_id: string;
+};
+
+type RegistrationRequestRow = {
+  id: string;
+  organization_id: string;
+  season_id: string;
+  team_id: string;
+  parent_name: string;
+  parent_email: string;
+  player_first_name: string;
+  player_last_initial: string;
+  status: "pending" | "approved" | "rejected";
+  created_at: string;
+  reviewed_at: string | null;
+  reviewed_by_user_id: string | null;
+};
+
+type UnsafeSupabase = {
+  // Lifecycle columns landed after generated database types; keep this adapter
+  // dynamic until the generated types are refreshed.
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  from(table: string): any;
+};
+
 function normalizeRegistrationInput(input: PublicRegistrationInput) {
   return {
     teamId: input.teamId.trim(),
@@ -41,20 +76,7 @@ function validateRegistrationInput(input: ReturnType<typeof normalizeRegistratio
   return null;
 }
 
-function mapRegistrationRow(row: {
-  id: string;
-  organization_id: string;
-  season_id: string;
-  team_id: string;
-  parent_name: string;
-  parent_email: string;
-  player_first_name: string;
-  player_last_initial: string;
-  status: "pending" | "approved" | "rejected";
-  created_at: string;
-  reviewed_at: string | null;
-  reviewed_by_user_id: string | null;
-}): RegistrationRequest {
+function mapRegistrationRow(row: RegistrationRequestRow): RegistrationRequest {
   return {
     id: row.id,
     organizationId: row.organization_id,
@@ -81,15 +103,15 @@ function fallbackTeamOptions(): RegistrationTeamOption[] {
 
 export async function listRegistrationTeamOptions(): Promise<RegistrationTeamOption[]> {
   try {
-    const supabase = createSupabaseAdminClient();
+    const supabase = createSupabaseAdminClient() as unknown as UnsafeSupabase;
     const { data, error } = await withSupabaseTimeout(supabase
       .from("teams")
-      .select("id,name,division")
+      .select("id,name,division,status,seasons(status)")
       .order("division", { ascending: true })
-      .order("name", { ascending: true }));
+      .order("name", { ascending: true })) as { data: RegistrationTeamRow[] | null; error: unknown };
 
     if (error || !data?.length) return fallbackTeamOptions();
-    return data.map((team) => ({
+    return selectCurrentTeamsOrAll(data as RegistrationTeamRow[]).map((team) => ({
       id: team.id,
       name: team.name,
       division: team.division
@@ -120,15 +142,18 @@ export async function createPendingRegistration(input: PublicRegistrationInput):
   if (validationMessage) return { ok: false, message: validationMessage };
 
   try {
-    const supabase = createSupabaseAdminClient();
+    const supabase = createSupabaseAdminClient() as unknown as UnsafeSupabase;
     const { data: team, error: teamError } = await withSupabaseTimeout(supabase
       .from("teams")
-      .select("id,organization_id,season_id")
+      .select("id,organization_id,season_id,status,seasons(status)")
       .eq("id", normalized.teamId)
-      .single(), 7000);
+      .single(), 7000) as { data: RegistrationTeamAccessRow | null; error: unknown };
 
     if (teamError || !team) {
       return { ok: false, message: "Registration requires a known team." };
+    }
+    if (!isCurrentTeamRow(team)) {
+      return { ok: false, message: "Registration is open for active teams only." };
     }
 
     const { data, error } = await withSupabaseTimeout(supabase
@@ -144,7 +169,7 @@ export async function createPendingRegistration(input: PublicRegistrationInput):
         status: "pending"
       })
       .select("id,organization_id,season_id,team_id,parent_name,parent_email,player_first_name,player_last_initial,status,created_at,reviewed_at,reviewed_by_user_id")
-      .single(), 7000);
+      .single(), 7000) as { data: RegistrationRequestRow | null; error: unknown };
 
     if (error || !data) {
       return { ok: false, message: "Registration could not be saved. Please try again." };

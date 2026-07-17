@@ -68,6 +68,7 @@ import {
   sampleRosterCsv,
   setRsvp,
   updateTeamPortalBranding,
+  validateRegistrationRequestInput,
   validateMediaUrl,
   approveMediaItem,
   rejectMediaItem,
@@ -3583,7 +3584,8 @@ export function RegistrationClient({ registrationRequests, teamOptions }: Regist
   const teams = teamOptions?.length
     ? teamOptions
     : state.teams.map((team) => ({ id: team.id, name: team.name, division: team.division }));
-  const visibleRegistrations = mergeRegistrationRequests(state.registrationRequests, registrationRequests ?? []);
+  const [remoteRegistrationRequests, setRemoteRegistrationRequests] = useState(registrationRequests ?? []);
+  const visibleRegistrations = mergeRegistrationRequests(state.registrationRequests, remoteRegistrationRequests);
   const [teamId, setTeamId] = useState(teams[0]?.id ?? "team-tigers");
   const [parentName, setParentName] = useState("Casey Morgan");
   const [parentEmail, setParentEmail] = useState("casey@example.com");
@@ -3594,7 +3596,7 @@ export function RegistrationClient({ registrationRequests, teamOptions }: Regist
 
   function submitRegistration() {
     const input = { teamId, parentName, parentEmail, playerFirstName, playerLastInitial, now: new Date().toISOString() };
-    const preview = createRegistrationRequest(state, input);
+    const preview = validateRegistrationRequestInput(input, teams.map((team) => team.id));
     setMessage(preview.message);
     if (!preview.ok) return;
 
@@ -3604,10 +3606,14 @@ export function RegistrationClient({ registrationRequests, teamOptions }: Regist
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(input)
       });
-      const result = await response.json().catch(() => null) as { ok?: boolean; message?: string } | null;
+      const result = await response.json().catch(() => null) as { ok?: boolean; message?: string; request?: RegistrationRequest } | null;
 
       if (result?.ok) {
-        dispatch({ type: "createRegistrationRequest", input });
+        if (result.request) {
+          setRemoteRegistrationRequests((current) => mergeRegistrationRequests([result.request!], current));
+        } else if (state.teams.some((team) => team.id === input.teamId)) {
+          dispatch({ type: "createRegistrationRequest", input });
+        }
         setMessage(result.message ?? "Registration request saved for admin review. No account access was granted.");
         return;
       }

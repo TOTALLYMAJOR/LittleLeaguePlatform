@@ -578,6 +578,20 @@ describe("RegistrationClient", () => {
     expect(html).toContain("Submit for review");
     expect(html).toContain("does not create a login");
   });
+
+  it("renders server-backed team options without falling back to seed ids", () => {
+    const html = renderToStaticMarkup(
+      <AppStateProvider>
+        <RegistrationClient
+          registrationRequests={[]}
+          teamOptions={[{ id: "supabase-team-uuid", name: "Launch Lions", division: "6U" }]}
+        />
+      </AppStateProvider>
+    );
+
+    expect(html).toContain("Launch Lions (6U)");
+    expect(html).not.toContain("Tiny Tigers (6U)");
+  });
 });
 
 describe("ParentReplayClient", () => {
