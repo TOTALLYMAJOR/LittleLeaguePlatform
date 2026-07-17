@@ -224,4 +224,16 @@ describe("route smoke coverage", () => {
     expect(proofScript).toContain("brand_profile_published");
     expect(proofScript).toContain("brand-launch-validation.png");
   });
+
+  it("keeps tenant readiness browser proof wired into QA automation", () => {
+    const packageJson = readFileSync(join(process.cwd(), "package.json"), "utf8");
+    const proofScript = readFileSync(join(process.cwd(), "scripts", "capture-tenant-readiness-proof.mjs"), "utf8");
+
+    expect(packageJson).toContain("\"qa:tenant-readiness-proof\"");
+    expect(proofScript).toContain("/admin/health");
+    expect(proofScript).toContain("/admin/teams");
+    expect(proofScript).toContain("output/playwright/tenant-readiness");
+    expect(proofScript).toContain("Tenant setup guide");
+    expect(proofScript).toContain("Notification boundary");
+  });
 });
