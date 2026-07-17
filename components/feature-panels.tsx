@@ -222,6 +222,128 @@ function formatDate(value: string) {
   });
 }
 
+function formatCalendarMonth(value?: string) {
+  const date = value ? new Date(value) : new Date();
+  return date.toLocaleDateString("en-US", { month: "long", year: "numeric" });
+}
+
+function getDateKey(value: string | Date) {
+  const date = value instanceof Date ? value : new Date(value);
+  return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`;
+}
+
+function buildCalendarDays(events: LeagueEvent[], selectedEventId: string) {
+  const sortedEvents = [...events].sort((left, right) => Date.parse(left.startsAt) - Date.parse(right.startsAt));
+  const selectedEvent = sortedEvents.find((item) => item.id === selectedEventId) ?? sortedEvents[0];
+  const anchor = selectedEvent ? new Date(selectedEvent.startsAt) : new Date();
+  const monthStart = new Date(anchor.getFullYear(), anchor.getMonth(), 1);
+  const gridStart = new Date(monthStart);
+  gridStart.setDate(monthStart.getDate() - monthStart.getDay());
+  const monthEnd = new Date(anchor.getFullYear(), anchor.getMonth() + 1, 0);
+  const gridEnd = new Date(monthEnd);
+  gridEnd.setDate(monthEnd.getDate() + (6 - monthEnd.getDay()));
+
+  const eventsByDay = new Map<string, LeagueEvent[]>();
+  sortedEvents.forEach((event) => {
+    const key = getDateKey(event.startsAt);
+    eventsByDay.set(key, [...(eventsByDay.get(key) ?? []), event]);
+  });
+
+  const days: Array<{
+    key: string;
+    day: number;
+    inMonth: boolean;
+    events: LeagueEvent[];
+  }> = [];
+  for (const cursor = new Date(gridStart); cursor <= gridEnd; cursor.setDate(cursor.getDate() + 1)) {
+    const day = new Date(cursor);
+    days.push({
+      key: getDateKey(day),
+      day: day.getDate(),
+      inMonth: day.getMonth() === anchor.getMonth(),
+      events: eventsByDay.get(getDateKey(day)) ?? []
+    });
+  }
+
+  return {
+    monthLabel: formatCalendarMonth(anchor.toISOString()),
+    days
+  };
+}
+
+function getDefaultScheduleEventId(events: LeagueEvent[]) {
+  const nowMs = Date.parse(NOW);
+  const sortedEvents = [...events].sort((left, right) => Date.parse(left.startsAt) - Date.parse(right.startsAt));
+  return sortedEvents.find((event) => event.status === "scheduled" && Date.parse(event.startsAt) >= nowMs)?.id
+    ?? sortedEvents.find((event) => event.status === "scheduled")?.id
+    ?? sortedEvents[0]?.id
+    ?? "";
+}
+
+function ScheduleMonthCalendar({
+  events,
+  teams,
+  selectedEventId,
+  onSelectEvent
+}: {
+  events: LeagueEvent[];
+  teams: Team[];
+  selectedEventId: string;
+  onSelectEvent: (eventId: string) => void;
+}) {
+  const calendar = useMemo(() => buildCalendarDays(events, selectedEventId), [events, selectedEventId]);
+  const teamNameById = useMemo(() => new Map(teams.map((team) => [team.id, team.name])), [teams]);
+
+  return (
+    <article className="card stack calendar-month-card">
+      <div className="card-header">
+        <div>
+          <span className="eyebrow">Calendar</span>
+          <h2>{calendar.monthLabel}</h2>
+        </div>
+        <span className="badge warning">{events.length} event(s)</span>
+      </div>
+      <div className="month-calendar" role="grid" aria-label={`${calendar.monthLabel} schedule`}>
+        {["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"].map((day) => (
+          <span className="month-calendar-head" role="columnheader" key={day}>{day}</span>
+        ))}
+        {calendar.days.map((day) => {
+          const firstEvent = day.events[0];
+          const isSelectedDay = day.events.some((item) => item.id === selectedEventId);
+          const content = (
+            <>
+              <span className="month-calendar-date">{day.day}</span>
+              {day.events.slice(0, 2).map((item) => (
+                <span className="month-calendar-event" key={item.id}>
+                  {item.title}
+                  <small>{teamNameById.get(item.teamId) ?? "Team"}</small>
+                </span>
+              ))}
+              {day.events.length > 2 ? <span className="month-calendar-more">+{day.events.length - 2} more</span> : null}
+            </>
+          );
+
+          return firstEvent ? (
+            <button
+              aria-pressed={isSelectedDay}
+              className={`month-calendar-day has-event${day.inMonth ? "" : " outside-month"}`}
+              key={day.key}
+              onClick={() => onSelectEvent(firstEvent.id)}
+              type="button"
+            >
+              {content}
+            </button>
+          ) : (
+            <span className={`month-calendar-day${day.inMonth ? "" : " outside-month"}`} key={day.key} role="gridcell">
+              {content}
+            </span>
+          );
+        })}
+      </div>
+    </article>
+  );
+}
+
 function formatShortDay(value?: string) {
   if (!value) return "No date set";
   return new Date(value).toLocaleDateString("en-US", {
@@ -4443,8 +4565,9 @@ export function ScheduleAlertsClient({ scheduleData, mode = "operations" }: { sc
     }
     : state;
   const isReadonly = mode === "readonly";
-  const [eventId, setEventId] = useState(scheduleState.events[0]?.id ?? "");
-  const event = scheduleState.events.find((item) => item.id === eventId) ?? scheduleState.events[0];
+  const defaultEventId = getDefaultScheduleEventId(scheduleState.events);
+  const [eventId, setEventId] = useState(defaultEventId);
+  const event = scheduleState.events.find((item) => item.id === eventId) ?? scheduleState.events.find((item) => item.id === defaultEventId) ?? scheduleState.events[0];
   const [startsAt, setStartsAt] = useState(event?.startsAt ?? "");
   const [endsAt, setEndsAt] = useState(event?.endsAt ?? "");
   const [title, setTitle] = useState(event?.title ?? "");
@@ -4584,24 +4707,37 @@ export function ScheduleAlertsClient({ scheduleData, mode = "operations" }: { sc
         {message ? <p className="notice">{message}</p> : null}
 
         <section className="grid two">
+          <ScheduleMonthCalendar
+            events={scheduleState.events}
+            onSelectEvent={selectEvent}
+            selectedEventId={event?.id ?? eventId}
+            teams={scheduleState.teams}
+          />
           <article className="card stack">
-            <h2>Calendar event</h2>
+            <div className="card-header">
+              <div>
+                <span className="eyebrow">Selected event</span>
+                <h2>{event?.title ?? "Calendar event"}</h2>
+              </div>
+              <span className={`badge ${event?.status === "cancelled" ? "danger" : event?.status === "completed" ? "ok" : "warning"}`}>{event?.status ?? "pending"}</span>
+            </div>
             <label>
-              Event
+              Jump to event
               <select value={eventId} onChange={(input) => selectEvent(input.target.value)}>
                 {scheduleState.events.map((item) => <option key={item.id} value={item.id}>{item.title}</option>)}
               </select>
             </label>
             {event ? (
               <>
-                <p><strong>{event.title}</strong></p>
-                <p className="muted">{eventTeam?.name ?? "Team"} · {event.eventType.replace("_", " ")}</p>
+                <p><strong>{eventTeam?.name ?? "Team"}</strong> · {event.eventType.replace("_", " ")}</p>
                 <p>{formatDate(event.startsAt)} to {formatDate(event.endsAt)}</p>
                 <p className="muted">{event.locationName} · {event.locationAddress}</p>
               </>
             ) : <p className="muted">No event is available.</p>}
           </article>
+        </section>
 
+        <section className="grid two">
           <article className="card stack">
             <div className="card-header">
               <div>
@@ -4621,9 +4757,7 @@ export function ScheduleAlertsClient({ scheduleData, mode = "operations" }: { sc
             })}
             {!upcomingEvents.length ? <p className="muted">No scheduled events are available.</p> : null}
           </article>
-        </section>
 
-        <section className="grid two">
           <article className="card stack">
             <div className="card-header">
               <div>
@@ -4646,7 +4780,9 @@ export function ScheduleAlertsClient({ scheduleData, mode = "operations" }: { sc
             ))}
             {!venueRecords.length && !persistedVenueRecords.length ? <p className="muted">No venue records are available yet.</p> : null}
           </article>
+        </section>
 
+        <section className="grid one">
           <article className="card stack">
             <div className="card-header">
               <div>
@@ -4675,6 +4811,12 @@ export function ScheduleAlertsClient({ scheduleData, mode = "operations" }: { sc
         {scheduleData?.message ?? "Showing local schedule fallback until Supabase schedule rows are available."}
       </p>
       {message ? <p className="notice">{message}</p> : null}
+      <ScheduleMonthCalendar
+        events={scheduleState.events}
+        onSelectEvent={selectEvent}
+        selectedEventId={event?.id ?? eventId}
+        teams={scheduleState.teams}
+      />
       <section className="grid two">
         <article className="card stack">
           <h2>{isReadonly ? "Event details" : "Edit event"}</h2>

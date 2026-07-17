@@ -416,6 +416,19 @@ describe("ParentRsvpClient", () => {
 });
 
 describe("ScheduleAlertsClient", () => {
+  it("puts a real month calendar on the public read-only schedule", () => {
+    const html = renderToStaticMarkup(
+      <AppStateProvider>
+        <ScheduleAlertsClient mode="readonly" />
+      </AppStateProvider>
+    );
+
+    expect(html).toContain("Public calendar");
+    expect(html).toContain("April 2026");
+    expect(html).toContain("Tiny Tigers vs Rookie Rockets");
+    expect(html).toContain("Jump to event");
+  });
+
   it("renders schedule change impact preview before queueing alerts", () => {
     const html = renderToStaticMarkup(
       <AppStateProvider>
