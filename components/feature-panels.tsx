@@ -340,6 +340,21 @@ function CompactDisclosure({
   );
 }
 
+type GameDayChecklistItem = {
+  id: string;
+  label: string;
+  detail: string;
+  checked: boolean;
+};
+
+type GameDayPlanItem = {
+  id: string;
+  label: string;
+  detail: string;
+  href?: string;
+  actionLabel?: string;
+};
+
 function ParentGameDayCalmCard({
   eventTitle,
   eventMeta,
@@ -353,7 +368,14 @@ function ParentGameDayCalmCard({
   helpCopy,
   coachCopy,
   primaryHref,
-  primaryLabel
+  primaryLabel,
+  arrivalPlan,
+  packList,
+  fieldPlan,
+  playerPlan,
+  copyStatus,
+  onCopyPlan,
+  onTogglePackItem
 }: {
   eventTitle: string;
   eventMeta: string;
@@ -368,6 +390,13 @@ function ParentGameDayCalmCard({
   coachCopy: string;
   primaryHref: string;
   primaryLabel: string;
+  arrivalPlan: GameDayPlanItem[];
+  packList: GameDayChecklistItem[];
+  fieldPlan: GameDayPlanItem[];
+  playerPlan: GameDayPlanItem[];
+  copyStatus: string;
+  onCopyPlan: () => void;
+  onTogglePackItem: (id: string) => void;
 }) {
   return (
     <article className="card stack game-day-calm-card">
@@ -391,10 +420,79 @@ function ParentGameDayCalmCard({
         <p><strong>Weather</strong><span>{weatherCopy}</span></p>
         <p><strong>Family help</strong><span>{helpCopy}</span></p>
       </div>
+      <div className="game-day-deep-grid">
+        <section className="game-day-panel" aria-label="Arrival timeline">
+          <h3>Arrival timeline</h3>
+          <div className="game-day-arrival-list">
+            {arrivalPlan.map((item) => (
+              <p key={item.id}>
+                <span>{item.label}</span>
+                <strong>{item.detail}</strong>
+              </p>
+            ))}
+          </div>
+        </section>
+        <section className="game-day-panel" aria-label="Pack check">
+          <h3>Pack check</h3>
+          <div className="game-day-checklist">
+            {packList.map((item) => (
+              <label className="game-day-check-row" key={item.id}>
+                <input
+                  type="checkbox"
+                  checked={item.checked}
+                  onChange={() => onTogglePackItem(item.id)}
+                />
+                <span>
+                  <strong>{item.label}</strong>
+                  <small>{item.detail}</small>
+                </span>
+              </label>
+            ))}
+          </div>
+        </section>
+        <section className="game-day-panel" aria-label="Field plan">
+          <h3>Field plan</h3>
+          <div className="game-day-field-list">
+            {fieldPlan.map((item) => (
+              <p key={item.id}>
+                <span>
+                  <strong>{item.label}</strong>
+                  <small>{item.detail}</small>
+                </span>
+                {item.href ? <a href={item.href} target="_blank" rel="noreferrer">{item.actionLabel ?? "Open"}</a> : null}
+              </p>
+            ))}
+          </div>
+        </section>
+        <section className="game-day-panel" aria-label="Player readiness">
+          <h3>Player readiness</h3>
+          <div className="game-day-field-list">
+            {playerPlan.map((item) => (
+              <p key={item.id}>
+                <span>
+                  <strong>{item.label}</strong>
+                  <small>{item.detail}</small>
+                </span>
+              </p>
+            ))}
+          </div>
+        </section>
+      </div>
       <p className="notice ok"><strong>Last coach signal:</strong> {coachCopy}</p>
-      <a className="button season-primary-action" href={primaryHref}>{primaryLabel}</a>
+      <div className="game-day-copy-row">
+        <a className="button season-primary-action" href={primaryHref}>{primaryLabel}</a>
+        <button className="secondary" type="button" onClick={onCopyPlan}>Copy game plan</button>
+      </div>
+      <p className="muted" aria-live="polite">{copyStatus || "Local checklist only. It does not save attendance or send alerts."}</p>
     </article>
   );
+}
+
+function formatEventOffsetTime(value: string, minutesOffset: number) {
+  return new Date(Date.parse(value) + minutesOffset * 60 * 1000).toLocaleTimeString("en-US", {
+    hour: "numeric",
+    minute: "2-digit"
+  });
 }
 
 function CoachCommandCard({
@@ -1194,6 +1292,8 @@ export function AdminHealthClient({ tenantReadinessData }: { tenantReadinessData
 export function ParentDashboardClient({ dashboardData }: { dashboardData?: ParentCoachDashboardData | null } = {}) {
   const { state } = useAppState();
   const [helpMessage, setHelpMessage] = useState("");
+  const [checkedGameDayItems, setCheckedGameDayItems] = useState<Record<string, boolean>>({});
+  const [gameDayCopyStatus, setGameDayCopyStatus] = useState("");
   const [scheduleTypeFilter, setScheduleTypeFilter] = useState<"all" | EventType>("all");
   const [mediaTypeFilter, setMediaTypeFilter] = useState<"all" | MediaItem["type"]>("all");
   const [supportTopic, setSupportTopic] = useState("schedule");
@@ -1277,6 +1377,112 @@ export function ParentDashboardClient({ dashboardData }: { dashboardData?: Paren
   const parentHelpCopy = parentHelpCount
     ? `${openSnackSlots.length} snack and ${openVolunteerSignups.length} volunteer opening(s).`
     : "Snacks and volunteers look covered.";
+  const venueAmenities = getVenueAmenityNotes(nextParentEvent);
+  const fieldLayout = getFieldLayoutMetadata(nextParentEvent);
+  const gameDayArrivalPlan: GameDayPlanItem[] = nextParentEvent
+    ? [
+      { id: "leave", label: "Leave by", detail: formatEventOffsetTime(nextParentEvent.startsAt, -45) },
+      { id: "arrive", label: "Arrive by", detail: formatEventOffsetTime(nextParentEvent.startsAt, -20) },
+      { id: "warmup", label: "Warm-up", detail: formatEventOffsetTime(nextParentEvent.startsAt, -10) },
+      { id: "start", label: "Start", detail: formatShortTime(nextParentEvent.startsAt) }
+    ]
+    : [
+      { id: "leave", label: "Leave by", detail: "Pending" },
+      { id: "arrive", label: "Arrive by", detail: "Pending" },
+      { id: "warmup", label: "Warm-up", detail: "Pending" },
+      { id: "start", label: "Start", detail: "Pending" }
+    ];
+  const gameDayPackDefaults: Record<string, boolean> = {
+    uniform: false,
+    water: false,
+    gear: false,
+    familyHelp: parentHelpCount === 0
+  };
+  const gameDayPackItems: GameDayChecklistItem[] = [
+    {
+      id: "uniform",
+      label: "Uniform",
+      detail: primaryPlayer ? `${teamName} jersey #${primaryPlayer.jersey}` : `${teamName} uniform`,
+      checked: checkedGameDayItems.uniform ?? gameDayPackDefaults.uniform
+    },
+    {
+      id: "water",
+      label: "Water",
+      detail: "Bottle filled before leaving.",
+      checked: checkedGameDayItems.water ?? gameDayPackDefaults.water
+    },
+    {
+      id: "gear",
+      label: "Gear",
+      detail: "Glove, cleats, hat, and age-group safety gear.",
+      checked: checkedGameDayItems.gear ?? gameDayPackDefaults.gear
+    },
+    {
+      id: "familyHelp",
+      label: "Family help",
+      detail: parentHelpCopy,
+      checked: checkedGameDayItems.familyHelp ?? gameDayPackDefaults.familyHelp
+    }
+  ];
+  const gameDayFieldPlan: GameDayPlanItem[] = [
+    {
+      id: "field",
+      label: "Field",
+      detail: nextParentEvent ? `${nextParentEvent.locationName}, ${nextParentEvent.locationAddress}` : "Location pending"
+    },
+    {
+      id: "parking",
+      label: "Parking",
+      detail: venueAmenities.parking
+    },
+    {
+      id: "meet",
+      label: "Meet",
+      detail: `${fieldLayout.entrance}; warm up at ${fieldLayout.warmupArea}.`
+    },
+    {
+      id: "map",
+      label: "Map",
+      detail: directionsUrl ? "Open directions before leaving." : "Directions appear after the location is set.",
+      href: directionsUrl || undefined,
+      actionLabel: "Directions"
+    }
+  ];
+  const playerName = primaryPlayer ? `${primaryPlayer.firstName} ${primaryPlayer.lastInitial}.` : "Linked player";
+  const gameDayPlayerPlan: GameDayPlanItem[] = [
+    {
+      id: "player",
+      label: playerName,
+      detail: primaryPlayer ? `Jersey #${primaryPlayer.jersey}, ${teamDivision}` : teamDivision
+    },
+    {
+      id: "rsvp",
+      label: "RSVP",
+      detail: nextParentRsvpCopy
+    },
+    {
+      id: "weather",
+      label: "Weather",
+      detail: parentWeatherCopy
+    },
+    {
+      id: "help",
+      label: "Help",
+      detail: parentHelpCopy
+    }
+  ];
+  const gameDayPlanText = [
+    `${nextParentEvent?.title ?? "Next event"} - ${nextParentEvent ? `${formatShortDay(nextParentEvent.startsAt)} at ${formatShortTime(nextParentEvent.startsAt)}` : "schedule pending"}`,
+    `Team: ${teamName}`,
+    `Leave by: ${gameDayArrivalPlan[0]?.detail ?? "Pending"}`,
+    `Arrive by: ${gameDayArrivalPlan[1]?.detail ?? "Pending"}`,
+    `Field: ${gameDayFieldPlan[0]?.detail ?? "Location pending"}`,
+    `Meet: ${getArrivalInstructions(nextParentEvent)}`,
+    `RSVP: ${nextParentRsvpCopy}`,
+    `Weather: ${parentWeatherCopy}`,
+    `Family help: ${parentHelpCopy}`,
+    "Local checklist only. It does not save attendance or send alerts."
+  ].join("\n");
   const pendingParentActions = [
     ...(firstMissingRsvp ? [{
       id: "missing-rsvp",
@@ -1394,6 +1600,26 @@ export function ParentDashboardClient({ dashboardData }: { dashboardData?: Paren
     });
   }
 
+  function toggleGameDayPackItem(id: string) {
+    setCheckedGameDayItems((current) => ({
+      ...current,
+      [id]: !(current[id] ?? gameDayPackDefaults[id] ?? false)
+    }));
+  }
+
+  async function copyGameDayPlan() {
+    try {
+      if (typeof navigator !== "undefined" && navigator.clipboard?.writeText) {
+        await navigator.clipboard.writeText(gameDayPlanText);
+        setGameDayCopyStatus("Game day plan copied locally.");
+        return;
+      }
+      setGameDayCopyStatus("Copy is not available in this browser. Use the visible plan above.");
+    } catch {
+      setGameDayCopyStatus("Copy was blocked by the browser. Use the visible plan above.");
+    }
+  }
+
   function submitSupportRequest() {
     if (!supportDetail.trim()) {
       setHelpMessage("Add a short support request before submitting.");
@@ -1435,6 +1661,13 @@ export function ParentDashboardClient({ dashboardData }: { dashboardData?: Paren
               coachCopy={latestChangeCopy}
               primaryHref={parentPrimaryAction.href}
               primaryLabel={parentPrimaryAction.label}
+              arrivalPlan={gameDayArrivalPlan}
+              packList={gameDayPackItems}
+              fieldPlan={gameDayFieldPlan}
+              playerPlan={gameDayPlayerPlan}
+              copyStatus={gameDayCopyStatus}
+              onCopyPlan={copyGameDayPlan}
+              onTogglePackItem={toggleGameDayPackItem}
             />
             <CompactDisclosure
               title="More event context"

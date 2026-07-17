@@ -300,6 +300,15 @@ describe("ParentDashboardClient", () => {
     expect(html).toContain("Tiny Tigers vs Rookie Rockets");
     expect(html).toContain("What do I need to know before the next event?");
     expect(html).toContain("Game Day Calm Mode");
+    expect(html).toContain("Arrival timeline");
+    expect(html).toContain("Leave by");
+    expect(html).toContain("Pack check");
+    expect(html).toContain("Uniform");
+    expect(html).toContain("Field plan");
+    expect(html).toContain("Parking");
+    expect(html).toContain("Player readiness");
+    expect(html).toContain("Copy game plan");
+    expect(html).toContain("Local checklist only. It does not save attendance or send alerts.");
     expect(html).toContain("More event context");
     expect(html).toContain("What you need to do");
     expect(html).toContain("Coach added");
