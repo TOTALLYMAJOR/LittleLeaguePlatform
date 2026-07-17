@@ -59,9 +59,39 @@ const platformLinks = [
   ["Team Chat", "/team-chat", "Give assigned parents and coaches a safe, private space for coach notes and game-day questions."]
 ] as const;
 
+const platformDrawerGroups = [
+  {
+    title: "Parent game-day tools",
+    body: "The short path for families: what is next, where to go, who needs an RSVP, and what coach approved.",
+    label: "5 surfaces",
+    links: platformLinks.filter(([title]) => ["Parent home", "One-tap RSVP", "Team-specific portal", "Team Chat", "Schedule change alerts"].includes(title))
+  },
+  {
+    title: "Coach workflow tools",
+    body: "The coaching layer: attendance, practice recaps, weather drafts, family coverage, and team communication.",
+    label: "4 surfaces",
+    links: platformLinks.filter(([title]) => ["Coach home", "Practice Recaps", "Team Chat", "Team-specific portal"].includes(title))
+  },
+  {
+    title: "League operations tools",
+    body: "The admin layer for setup, registration, imports, invites, reporting, and readiness checks.",
+    label: "7 surfaces",
+    links: platformLinks.filter(([title]) => ["Admin overview", "Registration system", "CSV duplicate detection", "Smart invite recovery", "Admin health", "Team setup", "Reports & Archive"].includes(title))
+  },
+  {
+    title: "Safety and proof tools",
+    body: "The controls that keep access, audit evidence, provider boundaries, and family links reviewable.",
+    label: "4 surfaces",
+    links: platformLinks.filter(([title]) => ["Review & Safety", "Family Access", "Admin operations", "Schedule change alerts"].includes(title))
+  }
+] as const;
+
 export default function HomePage() {
   return (
     <div className="landing-page">
+      <div className="landing-soccer-ambient" aria-hidden="true">
+        <span className="landing-soccer-ball" />
+      </div>
       <nav className="landing-nav" aria-label="Landing navigation">
         <Link className="landing-brand" href="/">
           <span className="landing-brand-mark" aria-hidden="true">LP</span>
@@ -74,6 +104,7 @@ export default function HomePage() {
           <a href="#roles">Roles</a>
           <a href="#replay-loop">Practice Recaps</a>
           <a href="#platform-map">Team Tools</a>
+          <Link className="landing-sign-in" href="/auth">Sign in</Link>
         </div>
       </nav>
 
@@ -85,8 +116,9 @@ export default function HomePage() {
             Run the season from one private team home: schedules, RSVPs, coach updates, and practice recaps.
           </p>
           <div className="landing-actions">
-            <Link className="button lg" href="/coach/practice-recaps">Coach updates</Link>
+            <Link className="button lg" href="/auth">Sign in</Link>
             <Link className="button secondary lg" href="/parent">Parent view</Link>
+            <Link className="button secondary lg" href="/coach/practice-recaps">Coach updates</Link>
           </div>
         </div>
 
@@ -186,14 +218,29 @@ export default function HomePage() {
       <section className="landing-section" id="platform-map" aria-labelledby="platform-map-title">
         <div className="landing-section-heading">
           <h2 id="platform-map-title">Explore the team tools.</h2>
-          <p>The product surface list stays here for builders and reviewers, below the family-facing story.</p>
+          <p>Open only the route family you need. The full surface map stays available without taking over the page.</p>
         </div>
-        <div className="grid three">
-          {platformLinks.map(([title, href, body]) => (
-            <Link className="card stack" href={href} key={href}>
-              <h3>{title}</h3>
-              <p className="muted">{body}</p>
-            </Link>
+        <div className="landing-drawer-stack">
+          {platformDrawerGroups.map((group, index) => (
+            <details className="landing-glass-drawer" key={group.title} open={index === 0}>
+              <summary>
+                <span>
+                  <strong>{group.title}</strong>
+                  <small>{group.body}</small>
+                </span>
+                <em>{group.label}</em>
+              </summary>
+              <div className="landing-drawer-panel">
+                {group.links.map(([title, href, body]) => (
+                  <Link className="landing-tool-link" href={href} key={`${group.title}-${href}`}>
+                    <span>
+                      <strong>{title}</strong>
+                      <small>{body}</small>
+                    </span>
+                  </Link>
+                ))}
+              </div>
+            </details>
           ))}
         </div>
       </section>
@@ -205,9 +252,20 @@ export default function HomePage() {
       <section className="landing-section" aria-labelledby="feature-tier-title">
         <div className="landing-section-heading">
           <h2 id="feature-tier-title">Feature inventory.</h2>
-          <p>Use this lower workspace to inspect the current scaffold, provider boundaries, and feature inventory.</p>
+          <p>Open this drawer only when you want the detailed scaffold ledger, provider boundaries, and feature tiers.</p>
         </div>
-        <FeatureTierHubClient />
+        <details className="landing-glass-drawer landing-feature-drawer">
+          <summary>
+            <span>
+              <strong>Current scaffold inventory</strong>
+              <small>Detailed tiers, implementation labels, planned boundaries, and signature feature status.</small>
+            </span>
+            <em>Open ledger</em>
+          </summary>
+          <div className="landing-drawer-panel landing-feature-panel">
+            <FeatureTierHubClient />
+          </div>
+        </details>
       </section>
     </div>
   );

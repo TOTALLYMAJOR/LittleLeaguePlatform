@@ -66,6 +66,11 @@ describe("route smoke coverage", () => {
     expect(page).toContain("Run the season from one private team home");
     expect(page).toContain("Practice recaps carry coaching home.");
     expect(page).toContain("Explore the team tools.");
+    expect(page).toContain("Sign in");
+    expect(page).toContain("/auth");
+    expect(page).toContain("landing-soccer-ambient");
+    expect(page).toContain("Parent game-day tools");
+    expect(page).toContain("Current scaffold inventory");
     expect(page).toContain("Supabase-backed paths when signed-in rows and roles exist");
     expect(page).toContain("no external email, SMS, push, Stripe, AI-provider, or native-app delivery");
     expect(page).toContain("/coach/practice-recaps");
