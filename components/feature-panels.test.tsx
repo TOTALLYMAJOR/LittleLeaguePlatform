@@ -195,10 +195,18 @@ describe("CoachDashboardClient", () => {
 
     expect(html).toContain("Coach Home");
     expect(html).toContain("Is the next event ready?");
+    expect(html).toContain("Coach Command View");
+    expect(html).toContain("Next 15 Minutes");
+    expect(html).toContain("Nudge RSVP drafts");
+    expect(html).toContain("More coach context");
     expect(html).toContain("Attendance");
     expect(html).toContain("No reply");
     expect(html).toContain("Needs attention");
     expect(html).toContain("Nudge missing replies");
+    expect(html).toContain("Coach readiness details");
+    expect(html).toContain("Weather policy details");
+    expect(html).toContain("Family response details");
+    expect(html).toContain("Drafts and team help");
     expect(html).toContain("Coach notes");
     expect(html).toContain("Coach setup");
     expect(html).toContain("Team setup checklist");
@@ -291,6 +299,8 @@ describe("ParentDashboardClient", () => {
     expect(html).toContain("Tiny Tigers");
     expect(html).toContain("Tiny Tigers vs Rookie Rockets");
     expect(html).toContain("What do I need to know before the next event?");
+    expect(html).toContain("Game Day Calm Mode");
+    expect(html).toContain("More event context");
     expect(html).toContain("What you need to do");
     expect(html).toContain("Coach added");
     expect(html).toContain("From your coach");
@@ -298,7 +308,12 @@ describe("ParentDashboardClient", () => {
     expect(html).toContain("Your family&#x27;s info is private to your team");
     expect(html).toContain("RSVP now");
     expect(html).toContain("Schedule alerts");
+    expect(html).toContain("Needs action");
     expect(html).toContain("All pending items");
+    expect(html).toContain("Family snapshot");
+    expect(html).toContain("Media and privacy");
+    expect(html).toContain("Calendar and team media");
+    expect(html).toContain("Family logistics");
     expect(html).toContain("Family calendar");
     expect(html).toContain("Family calendar");
     expect(html).toContain("Team media");
@@ -558,6 +573,10 @@ describe("AdminThemesClient", () => {
     expect(html).toContain("Logo assets");
     expect(html).toContain("Theme editor");
     expect(html).toContain("Customization editor");
+    expect(html).toContain("Element visibility");
+    expect(html).toContain("Mascot mark");
+    expect(html).toContain("Mobile header");
+    expect(html).toContain("Game Day band");
     expect(html).toContain("All team themes");
     expect(html).toContain("Theme audit");
     expect(html).toContain("Save as tenant defaults");
@@ -566,6 +585,8 @@ describe("AdminThemesClient", () => {
     expect(html).toContain("Logo asset review");
     expect(html).toContain("Queue logo metadata for customization");
     expect(html).toContain("HTTPS logo URL");
+    expect(html).toContain("Upload mascot artwork for preview");
+    expect(html).toContain("Local preview only");
     expect(html).toContain("Queue logo review");
     expect(html).toContain("Sponsor logos stay in sponsor records");
     expect(html).toContain("No logo assets queued yet");

@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState, useTransition, type CSSProperties } from "react";
+import { useEffect, useMemo, useState, useTransition, type CSSProperties, type ChangeEvent, type ReactNode } from "react";
 import { useAppState } from "@/app/providers";
 import {
   NOW,
@@ -306,6 +306,151 @@ function privateAccessGate(
         <p className="muted">{surface === "coach" ? "A user account is not enough; the coach route requires an active coach team membership." : "Signup proves identity only; team or guardian records grant access."}</p>
       </article>
     </section>
+  );
+}
+
+function CompactDisclosure({
+  id,
+  title,
+  summary,
+  badge,
+  defaultOpen = false,
+  children
+}: {
+  id?: string;
+  title: string;
+  summary: string;
+  badge?: string;
+  defaultOpen?: boolean;
+  children: ReactNode;
+}) {
+  return (
+    <details className="compact-disclosure" id={id} open={defaultOpen}>
+      <summary>
+        <span>
+          <strong>{title}</strong>
+          <small>{summary}</small>
+        </span>
+        {badge ? <em>{badge}</em> : null}
+      </summary>
+      <div className="compact-disclosure-body">
+        {children}
+      </div>
+    </details>
+  );
+}
+
+function ParentGameDayCalmCard({
+  eventTitle,
+  eventMeta,
+  teamLabel,
+  teamInitials,
+  badge,
+  location,
+  directionsUrl,
+  rsvpCopy,
+  weatherCopy,
+  helpCopy,
+  coachCopy,
+  primaryHref,
+  primaryLabel
+}: {
+  eventTitle: string;
+  eventMeta: string;
+  teamLabel: string;
+  teamInitials: string;
+  badge: string;
+  location: string;
+  directionsUrl?: string;
+  rsvpCopy: string;
+  weatherCopy: string;
+  helpCopy: string;
+  coachCopy: string;
+  primaryHref: string;
+  primaryLabel: string;
+}) {
+  return (
+    <article className="card stack game-day-calm-card">
+      <div className="card-header">
+        <div>
+          <span className="eyebrow">Game Day Calm Mode</span>
+          <h2>{eventTitle}</h2>
+        </div>
+        <span className="badge ok">{badge}</span>
+      </div>
+      <div className="game-day-calm-hero">
+        <span className="team-mark" aria-hidden="true">{teamInitials}</span>
+        <div>
+          <strong>{teamLabel}</strong>
+          <p className="muted">{eventMeta}</p>
+        </div>
+      </div>
+      <div className="calm-mode-grid">
+        <p><strong>Where</strong><span>{location}</span>{directionsUrl ? <a href={directionsUrl} target="_blank" rel="noreferrer">Directions</a> : null}</p>
+        <p><strong>RSVP</strong><span>{rsvpCopy}</span></p>
+        <p><strong>Weather</strong><span>{weatherCopy}</span></p>
+        <p><strong>Family help</strong><span>{helpCopy}</span></p>
+      </div>
+      <p className="notice ok"><strong>Last coach signal:</strong> {coachCopy}</p>
+      <a className="button season-primary-action" href={primaryHref}>{primaryLabel}</a>
+    </article>
+  );
+}
+
+function CoachCommandCard({
+  eventTitle,
+  eventMeta,
+  missingRsvpCount,
+  snackCount,
+  volunteerCount,
+  weatherReviewCount,
+  reviewCount,
+  isPending,
+  canDraftWeather,
+  onNudgeRsvp,
+  onDraftWeather,
+  onSaveWeeklyUpdate
+}: {
+  eventTitle: string;
+  eventMeta: string;
+  missingRsvpCount: number;
+  snackCount: number;
+  volunteerCount: number;
+  weatherReviewCount: number;
+  reviewCount: number;
+  isPending: boolean;
+  canDraftWeather: boolean;
+  onNudgeRsvp: () => void;
+  onDraftWeather: () => void;
+  onSaveWeeklyUpdate: () => void;
+}) {
+  return (
+    <article className="card stack coach-command-card">
+      <div className="card-header">
+        <div>
+          <span className="eyebrow">Coach Command View</span>
+          <h2>Next 15 Minutes</h2>
+        </div>
+        <span className={`badge ${reviewCount ? "warning" : "ok"}`}>{reviewCount ? `${reviewCount} to review` : "ready"}</span>
+      </div>
+      <div className="coach-command-event">
+        <strong>{eventTitle}</strong>
+        <span>{eventMeta}</span>
+      </div>
+      <div className="coach-command-grid">
+        <p><strong>{missingRsvpCount}</strong><span>missing RSVPs</span></p>
+        <p><strong>{snackCount}</strong><span>snack gaps</span></p>
+        <p><strong>{volunteerCount}</strong><span>volunteer gaps</span></p>
+        <p><strong>{weatherReviewCount}</strong><span>weather drafts</span></p>
+      </div>
+      <div className="coach-command-actions">
+        <button className="secondary" disabled={isPending || missingRsvpCount === 0} onClick={onNudgeRsvp}>Nudge RSVP drafts</button>
+        <button className="secondary" disabled={isPending || !canDraftWeather} onClick={onDraftWeather}>Draft weather alert</button>
+        <button disabled={isPending} onClick={onSaveWeeklyUpdate}>Save weekly update</button>
+        <a className="button secondary" href="/coach/practice-recaps">Create recap</a>
+      </div>
+      <p className="muted">Actions create drafts or reviewed rows only. Provider delivery remains approval-gated.</p>
+    </article>
   );
 }
 
@@ -1121,6 +1266,17 @@ export function ParentDashboardClient({ dashboardData }: { dashboardData?: Paren
   }
   const latestMediaItem = mediaFeed[0];
   const firstMissingRsvp = nextParentRsvp ?? dashboard.rsvpNeeded[0];
+  const parentPrimaryAction = firstMissingRsvp
+    ? { href: "/parent/rsvp", label: "RSVP now" }
+    : directionsUrl
+      ? { href: directionsUrl, label: "Directions" }
+      : { href: "/parent/schedule", label: "View schedule" };
+  const parentWeatherCopy = nextWeatherAlert
+    ? `${nextWeatherAlert.headline}: ${nextWeatherAlert.detail}`
+    : "No weather alert is waiting for this event.";
+  const parentHelpCopy = parentHelpCount
+    ? `${openSnackSlots.length} snack and ${openVolunteerSignups.length} volunteer opening(s).`
+    : "Snacks and volunteers look covered.";
   const pendingParentActions = [
     ...(firstMissingRsvp ? [{
       id: "missing-rsvp",
@@ -1265,12 +1421,33 @@ export function ParentDashboardClient({ dashboardData }: { dashboardData?: Paren
         <NextEventCard view={parentSeasonView} />
         {accessGate ? null : (
           <>
-            <ActionChecklist actions={parentSeasonView.actions} />
-            <WhatChangedCard changes={parentSeasonView.changes} />
-            <CoachUpdateCard view={parentSeasonView} />
-            <MessagesSummaryCard unreadCount={parentSeasonView.messages.unreadCount} href={parentSeasonView.messages.href} />
-            <PhotosSummaryCard count={parentSeasonView.photos.newApprovedCount} latestTitle={parentSeasonView.photos.latestTitle} href="#team-media" />
-            <PrivacyIndicator href="/parent/settings" />
+            <ParentGameDayCalmCard
+              eventTitle={nextParentEvent?.title ?? "No upcoming event"}
+              eventMeta={nextParentEvent ? `${formatShortDay(nextParentEvent.startsAt)} at ${formatShortTime(nextParentEvent.startsAt)}` : "Schedule pending"}
+              teamLabel={`${teamName} - ${teamDivision}`}
+              teamInitials={teamInitials}
+              badge={nextEventBadge}
+              location={nextParentEvent ? `${nextParentEvent.locationName}${nextParentEvent.locationAddress ? `, ${nextParentEvent.locationAddress}` : ""}` : "Location pending"}
+              directionsUrl={directionsUrl}
+              rsvpCopy={nextParentRsvpCopy}
+              weatherCopy={parentWeatherCopy}
+              helpCopy={parentHelpCopy}
+              coachCopy={latestChangeCopy}
+              primaryHref={parentPrimaryAction.href}
+              primaryLabel={parentPrimaryAction.label}
+            />
+            <CompactDisclosure
+              title="More event context"
+              summary="Tasks, changes, coach update, messages, photos, and privacy."
+              badge={`${parentSeasonView.actions.length} item(s)`}
+            >
+              <ActionChecklist actions={parentSeasonView.actions} />
+              <WhatChangedCard changes={parentSeasonView.changes} />
+              <CoachUpdateCard view={parentSeasonView} />
+              <MessagesSummaryCard unreadCount={parentSeasonView.messages.unreadCount} href={parentSeasonView.messages.href} />
+              <PhotosSummaryCard count={parentSeasonView.photos.newApprovedCount} latestTitle={parentSeasonView.photos.latestTitle} href="#team-media" />
+              <PrivacyIndicator href="/parent/settings" />
+            </CompactDisclosure>
           </>
         )}
       </section>
@@ -1282,7 +1459,13 @@ export function ParentDashboardClient({ dashboardData }: { dashboardData?: Paren
       {accessGate ?? (
         <>
 
-      <section className="card stack" id="more-parent-actions">
+      <CompactDisclosure
+        id="more-parent-actions"
+        title="Needs action"
+        summary="Open family tasks without showing the full operations feed."
+        badge={`${actionChecklist.filter((item) => !item.done).length} open`}
+        defaultOpen
+      >
         <div className="card-header">
             <div>
               <span className="eyebrow">More family tasks</span>
@@ -1297,66 +1480,77 @@ export function ParentDashboardClient({ dashboardData }: { dashboardData?: Paren
             <span className="muted">{item.detail}</span>
           </p>
         ))}
-      </section>
+      </CompactDisclosure>
 
-      <section className="grid two">
-        <article className="card stack">
-          <h2>My Child</h2>
-          {dashboard.children.map(({ player, team }) => (
-            <div key={player.id}>
-              <strong>{player.firstName} {player.lastInitial}.</strong>
-              <p className="muted">{team.name} · Jersey {player.jersey}</p>
-            </div>
-          ))}
-          <span className="badge ok">{dashboard.completionStatus}</span>
-        </article>
-
-        <article className="card stack">
-          <h2>Coach updates</h2>
-          {dashboard.latestAnnouncement ? (
-            <>
-              <strong>{dashboard.latestAnnouncement.title}</strong>
-              <p>{dashboard.latestAnnouncement.body}</p>
-              <p className="muted">{dashboard.latestAnnouncement.teamName} · {formatDate(dashboard.latestAnnouncement.createdAt)}</p>
-            </>
-          ) : <p className="muted">No announcements yet.</p>}
-        </article>
-      </section>
-
-      <section className="grid three">
-        <article className="card stack">
-          <h2>Upcoming Schedule</h2>
-          {dashboard.nextEvents.map((event) => (
-            <p key={event.id}><strong>{event.title}</strong><br /><span className="muted">{formatDate(event.startsAt)} · {event.locationName}</span></p>
-          ))}
-        </article>
-        <article className="card stack">
-          <h2>RSVP Needed</h2>
-          {dashboard.rsvpNeeded.length ? dashboard.rsvpNeeded.map(({ event, player }) => (
-            <p key={`${event.id}-${player.id}`}>{player.firstName} {player.lastInitial}. · {event.title}</p>
-          )) : <p className="muted">No RSVP needed right now.</p>}
-        </article>
-        <article className="card stack" id="team-media">
-          <h2>Recent Media</h2>
-          {dashboard.recentMedia.map((item) => {
-            const validation = validateMediaUrl(item.type, item.url);
-            return (
-              <div className="stack compact" key={item.id}>
-                <p><strong>{item.title}</strong><br /><span className="muted">{item.type.replace("_", " ")} · {validation.message}</span></p>
-                <button
-                  className="secondary"
-                  disabled={isHelpPending}
-                  onClick={() => claimFamilyHelp("/api/media/report", { mediaItemId: item.id, reason: "Family reported this media link for review." })}
-                >
-                  Report media
-                </button>
+      <CompactDisclosure
+        title="Family snapshot"
+        summary="Child, coach update, schedule, RSVP, and recent media details."
+        badge={`${dashboard.children.length} child link(s)`}
+      >
+        <section className="grid two">
+          <article className="card stack">
+            <h2>My Child</h2>
+            {dashboard.children.map(({ player, team }) => (
+              <div key={player.id}>
+                <strong>{player.firstName} {player.lastInitial}.</strong>
+                <p className="muted">{team.name} - Jersey {player.jersey}</p>
               </div>
-            );
-          })}
-          {!dashboard.recentMedia.length ? <p className="muted">No media links yet.</p> : null}
-        </article>
-      </section>
+            ))}
+            <span className="badge ok">{dashboard.completionStatus}</span>
+          </article>
 
+          <article className="card stack">
+            <h2>Coach updates</h2>
+            {dashboard.latestAnnouncement ? (
+              <>
+                <strong>{dashboard.latestAnnouncement.title}</strong>
+                <p>{dashboard.latestAnnouncement.body}</p>
+                <p className="muted">{dashboard.latestAnnouncement.teamName} - {formatDate(dashboard.latestAnnouncement.createdAt)}</p>
+              </>
+            ) : <p className="muted">No announcements yet.</p>}
+          </article>
+        </section>
+
+        <section className="grid three">
+          <article className="card stack">
+            <h2>Upcoming Schedule</h2>
+            {dashboard.nextEvents.map((event) => (
+              <p key={event.id}><strong>{event.title}</strong><br /><span className="muted">{formatDate(event.startsAt)} - {event.locationName}</span></p>
+            ))}
+          </article>
+          <article className="card stack">
+            <h2>RSVP Needed</h2>
+            {dashboard.rsvpNeeded.length ? dashboard.rsvpNeeded.map(({ event, player }) => (
+              <p key={`${event.id}-${player.id}`}>{player.firstName} {player.lastInitial}. - {event.title}</p>
+            )) : <p className="muted">No RSVP needed right now.</p>}
+          </article>
+          <article className="card stack" id="team-media">
+            <h2>Recent Media</h2>
+            {dashboard.recentMedia.map((item) => {
+              const validation = validateMediaUrl(item.type, item.url);
+              return (
+                <div className="stack compact" key={item.id}>
+                  <p><strong>{item.title}</strong><br /><span className="muted">{item.type.replace("_", " ")} - {validation.message}</span></p>
+                  <button
+                    className="secondary"
+                    disabled={isHelpPending}
+                    onClick={() => claimFamilyHelp("/api/media/report", { mediaItemId: item.id, reason: "Family reported this media link for review." })}
+                  >
+                    Report media
+                  </button>
+                </div>
+              );
+            })}
+            {!dashboard.recentMedia.length ? <p className="muted">No media links yet.</p> : null}
+          </article>
+        </section>
+      </CompactDisclosure>
+
+      <CompactDisclosure
+        title="Media and privacy"
+        summary="Moderation, consent controls, and approved media links."
+        badge={`${familyModerationQueue.length} review`}
+      >
       <section className="grid two">
         <article className="card stack">
           <div className="card-header">
@@ -1382,7 +1576,13 @@ export function ParentDashboardClient({ dashboardData }: { dashboardData?: Paren
           ))}
         </article>
       </section>
+      </CompactDisclosure>
 
+      <CompactDisclosure
+        title="Calendar and team media"
+        summary="Full family calendar and filterable team media feed."
+        badge={`${filteredParentEvents.length} event(s)`}
+      >
       <section className="grid two">
         <article className="card stack">
           <div className="card-header">
@@ -1406,8 +1606,8 @@ export function ParentDashboardClient({ dashboardData }: { dashboardData?: Paren
           {filteredParentEvents.map((event) => (
             <p key={event.id}>
               <span className="badge">{event.eventType.replace("_", " ")}</span>{" "}
-              <strong>{event.title}</strong><br />
-              <span className="muted">{formatDate(event.startsAt)} · Arrive {formatArrivalTime(event.startsAt)} · {event.locationName}</span>
+                <strong>{event.title}</strong><br />
+              <span className="muted">{formatDate(event.startsAt)} - Arrive {formatArrivalTime(event.startsAt)} - {event.locationName}</span>
             </p>
           ))}
           {!filteredParentEvents.length ? <p className="muted">No family events match this filter.</p> : null}
@@ -1450,7 +1650,14 @@ export function ParentDashboardClient({ dashboardData }: { dashboardData?: Paren
           {!filteredMediaFeed.length ? <p className="muted">No media links match this filter.</p> : null}
         </article>
       </section>
+      </CompactDisclosure>
 
+      <CompactDisclosure
+        title="Family logistics"
+        summary="Snack openings, volunteer roles, and notification preferences."
+        badge={`${parentHelpCount} open`}
+        defaultOpen={parentHelpCount > 0}
+      >
       <section className="grid two" id="family-help">
         <article className="card stack">
           <div className="card-header">
@@ -1542,7 +1749,13 @@ export function ParentDashboardClient({ dashboardData }: { dashboardData?: Paren
           <p className="notice">Urgent alerts can still be drafted for review, but production sending must honor quiet hours and fallback settings.</p>
         </article>
       </section>
+      </CompactDisclosure>
 
+      <CompactDisclosure
+        title="Support"
+        summary="Ask league staff for help when family access or team details need review."
+        badge={dashboardData?.isSupabaseBacked ? "persisted" : "preview"}
+      >
       <section className="grid two">
         <article className="card stack">
           <div className="card-header">
@@ -1576,6 +1789,7 @@ export function ParentDashboardClient({ dashboardData }: { dashboardData?: Paren
           <p className="muted">Staff should see team, child, RSVP, and notification context before replying.</p>
         </article>
       </section>
+      </CompactDisclosure>
         </>
       )}
     </div>
@@ -1775,19 +1989,42 @@ export function CoachDashboardClient({ dashboardData }: { dashboardData?: Parent
   function draftRsvpReminder(parentName: string, noResponse: number) {
     setActionMessage(`RSVP reminder draft queued for ${parentName}: ${noResponse} missing response(s). Provider sending remains approval-gated.`);
   }
+  const firstRsvpReminder = rsvpReminderQueue[0];
 
   return (
     <div className="page">
       <section className="season-home season-coach-home" aria-label="Coach home">
         <EventReadinessCard view={coachSeasonView} />
         {accessGate ? null : (
-          <div className="season-card-grid">
-            <AttendanceRosterCard view={coachSeasonView} />
-            <WhatChangedCard changes={coachSeasonView.changes} title="Recent changes" href="/coach/schedule" />
-            <WeatherFieldCard view={coachSeasonView} />
-            <DraftsToReviewCard view={coachSeasonView} />
-            <PracticeRecapCard view={coachSeasonView} />
-          </div>
+          <>
+            <CoachCommandCard
+              eventTitle={nextCoachEvent?.title ?? "No scheduled event"}
+              eventMeta={nextCoachEvent ? `${formatShortDay(nextCoachEvent.startsAt)} at ${formatShortTime(nextCoachEvent.startsAt)} - ${nextCoachEvent.locationName}` : "Schedule pending"}
+              missingRsvpCount={nextCoachSummary?.noResponse ?? 0}
+              snackCount={snackNeeds.length}
+              volunteerCount={volunteerNeeds.length}
+              weatherReviewCount={weatherApprovalQueue.length}
+              reviewCount={coachReviewCount}
+              isPending={isActionPending}
+              canDraftWeather={Boolean(nextAssignedEvent)}
+              onNudgeRsvp={() => draftRsvpReminder(firstRsvpReminder?.parentUser?.name ?? "linked family", firstRsvpReminder?.noResponse ?? nextCoachSummary?.noResponse ?? 0)}
+              onDraftWeather={() => nextAssignedEvent ? runCoachAction("/api/weather-alerts/draft", { eventId: nextAssignedEvent.id }) : undefined}
+              onSaveWeeklyUpdate={saveWeeklyUpdate}
+            />
+            <CompactDisclosure
+              title="More coach context"
+              summary="Attendance, recent changes, fields, drafts, and practice recaps."
+              badge={`${coachReviewCount} review`}
+            >
+              <div className="season-card-grid">
+                <AttendanceRosterCard view={coachSeasonView} />
+                <WhatChangedCard changes={coachSeasonView.changes} title="Recent changes" href="/coach/schedule" />
+                <WeatherFieldCard view={coachSeasonView} />
+                <DraftsToReviewCard view={coachSeasonView} />
+                <PracticeRecapCard view={coachSeasonView} />
+              </div>
+            </CompactDisclosure>
+          </>
         )}
       </section>
 
@@ -1798,6 +2035,12 @@ export function CoachDashboardClient({ dashboardData }: { dashboardData?: Parent
       {accessGate ?? (
         <>
 
+      <CompactDisclosure
+        title="Coach readiness details"
+        summary="Assigned teams, setup checks, attendance, weather, and assistive suggestions."
+        badge={`${coachReviewCount} review`}
+        defaultOpen
+      >
       <section className="grid three">
         <article className="card metric"><span className="muted">Assigned teams</span><strong>{teams.length}</strong></article>
         <article className="card metric"><span className="muted">Open volunteer roles</span><strong>{volunteerNeeds.length}</strong></article>
@@ -1856,7 +2099,13 @@ export function CoachDashboardClient({ dashboardData }: { dashboardData?: Parent
           {!weatherAlerts.length ? <p className="muted">No weather alerts drafted for assigned teams.</p> : null}
         </article>
       </section>
+      </CompactDisclosure>
 
+      <CompactDisclosure
+        title="Weather policy details"
+        summary="Thresholds, field closure drafts, escalation rules, and provider retry proof."
+        badge={`${weatherApprovalQueue.length} draft(s)`}
+      >
       <section className="grid two">
         <article className="card stack">
           <div className="card-header">
@@ -2010,7 +2259,13 @@ export function CoachDashboardClient({ dashboardData }: { dashboardData?: Parent
           <p className="muted">Thresholds create coach/admin review prompts only; parent weather delivery remains deferred.</p>
         </article>
       </section>
+      </CompactDisclosure>
 
+      <CompactDisclosure
+        title="Family response details"
+        summary="RSVP reliability patterns and no-response reminder drafts."
+        badge={`${rsvpReminderQueue.length} queued`}
+      >
       <section className="grid two">
         <article className="card stack">
           <div className="card-header">
@@ -2053,7 +2308,13 @@ export function CoachDashboardClient({ dashboardData }: { dashboardData?: Parent
           <p className="muted">Provider sending remains approval-gated. Queueing here is a coach draft status only; email, SMS, and push delivery stay behind provider approval rules.</p>
         </article>
       </section>
+      </CompactDisclosure>
 
+      <CompactDisclosure
+        title="Drafts and team help"
+        summary="Weekly update draft, practice recap, snack, and volunteer controls."
+        badge="drafts"
+      >
       <section className="grid two">
         <article className="card stack">
           <div className="card-header">
@@ -2110,6 +2371,7 @@ export function CoachDashboardClient({ dashboardData }: { dashboardData?: Parent
           ))}
         </article>
       </section>
+      </CompactDisclosure>
         </>
       )}
     </div>
@@ -3201,6 +3463,13 @@ export function AdminThemesClient({ initialData }: { initialData: AdminThemeData
   const [logoTeamId, setLogoTeamId] = useState(initialData.teams[0]?.id ?? "");
   const [logoUrl, setLogoUrl] = useState("");
   const [logoPolicyNotes, setLogoPolicyNotes] = useState("Pending logo asset review.");
+  const [mascotPreviewDataUrl, setMascotPreviewDataUrl] = useState("");
+  const [mascotUploadLabel, setMascotUploadLabel] = useState("");
+  const [previewElements, setPreviewElements] = useState({
+    mascotMark: true,
+    mobileHeader: true,
+    gameDayBand: true
+  });
   const [actorUserId, setActorUserId] = useState(initialData.users.find((user) => user.role === "admin")?.id ?? initialData.users[0]?.id ?? "");
   const [drafts, setDrafts] = useState<Record<string, Pick<Team, "mascot" | "primaryColor" | "secondaryColor" | "themeKey">>>({});
   const [message, setMessage] = useState("");
@@ -3336,6 +3605,36 @@ export function AdminThemesClient({ initialData }: { initialData: AdminThemeData
     });
   }
 
+  function previewMascotUpload(event: ChangeEvent<HTMLInputElement>) {
+    const file = event.target.files?.[0];
+    if (!file) return;
+    if (!file.type.startsWith("image/")) {
+      setMessage("Mascot upload preview requires an image file.");
+      return;
+    }
+    if (file.size > 2 * 1024 * 1024) {
+      setMessage("Mascot upload preview is limited to 2 MB until storage policy is configured.");
+      return;
+    }
+
+    const reader = new FileReader();
+    reader.onload = () => {
+      const result = typeof reader.result === "string" ? reader.result : "";
+      setMascotPreviewDataUrl(result);
+      setMascotUploadLabel(`${file.name} (${Math.max(1, Math.round(file.size / 1024))} KB)`);
+      setLogoPolicyNotes(`Mascot art preview selected: ${file.name}. Storage provider required before binary persistence.`);
+      setMessage("Mascot artwork is previewed locally. Queue an HTTPS asset URL after storage review.");
+    };
+    reader.readAsDataURL(file);
+  }
+
+  function togglePreviewElement(key: keyof typeof previewElements) {
+    setPreviewElements((current) => ({
+      ...current,
+      [key]: !current[key]
+    }));
+  }
+
   return (
     <div className="page admin-themes-page">
       <section className="hero">
@@ -3411,6 +3710,21 @@ export function AdminThemesClient({ initialData }: { initialData: AdminThemeData
                 Mascot
                 <input value={draft.mascot} onChange={(event) => updateDraft("mascot", event.target.value)} />
               </label>
+              <fieldset className="brand-element-fieldset">
+                <legend>Element visibility</legend>
+                <label className="checkbox-row">
+                  <input type="checkbox" checked={previewElements.mascotMark} onChange={() => togglePreviewElement("mascotMark")} />
+                  Mascot mark
+                </label>
+                <label className="checkbox-row">
+                  <input type="checkbox" checked={previewElements.mobileHeader} onChange={() => togglePreviewElement("mobileHeader")} />
+                  Mobile header
+                </label>
+                <label className="checkbox-row">
+                  <input type="checkbox" checked={previewElements.gameDayBand} onChange={() => togglePreviewElement("gameDayBand")} />
+                  Game Day band
+                </label>
+              </fieldset>
               <label>
                 Primary color
                 <input type="color" value={draft.primaryColor} onChange={(event) => updateDraft("primaryColor", event.target.value)} />
@@ -3428,15 +3742,28 @@ export function AdminThemesClient({ initialData }: { initialData: AdminThemeData
         {team && draft ? (
           <article className="card stack">
             <span className="eyebrow">Preview</span>
-            <div className="team-branding-preview" style={teamBrandStyle(draft.primaryColor, draft.secondaryColor)}>
-              <strong>{draft.mascot}</strong>
+            <div className="team-branding-preview brand-studio-preview" style={teamBrandStyle(draft.primaryColor, draft.secondaryColor)}>
+              {previewElements.mascotMark ? (
+                <strong className="mascot-preview-mark">
+                  {mascotPreviewDataUrl ? <img src={mascotPreviewDataUrl} alt="" /> : draft.mascot.slice(0, 2)}
+                </strong>
+              ) : null}
               <span>{team.name} portal</span>
             </div>
-            <div className="team-branding-preview mobile-preview" style={teamBrandStyle(draft.primaryColor, draft.secondaryColor)}>
-              <strong>{draft.mascot.slice(0, 1)}</strong>
-              <span>{team.name} mobile</span>
-            </div>
+            {previewElements.mobileHeader ? (
+              <div className="team-branding-preview mobile-preview brand-mobile-preview" style={teamBrandStyle(draft.primaryColor, draft.secondaryColor)}>
+                <strong>{mascotPreviewDataUrl ? <img src={mascotPreviewDataUrl} alt="" /> : draft.mascot.slice(0, 1)}</strong>
+                <span>{team.name} mobile</span>
+              </div>
+            ) : null}
+            {previewElements.gameDayBand ? (
+              <div className="brand-game-day-band" style={teamBrandStyle(draft.primaryColor, draft.secondaryColor)}>
+                <strong>Game Day Calm Mode</strong>
+                <span>{draft.mascot} identity, field status, RSVP, and coach update preview.</span>
+              </div>
+            ) : null}
             <p className="muted">Contrast ratio: {selectedContrast?.ratio.toFixed(2)}. Use Pass for text-heavy portal headers.</p>
+            {mascotUploadLabel ? <p className="notice ok">Mascot upload preview: {mascotUploadLabel}</p> : null}
             <div className="notice">
               <strong>Tenant defaults:</strong> {getProgramThemePreset(tenantDefaults.themeKey).label} - {tenantDefaults.mascot} - logo {tenantDefaults.logoStatus.replace("_", " ")}
             </div>
@@ -3469,6 +3796,11 @@ export function AdminThemesClient({ initialData }: { initialData: AdminThemeData
             <label>
               HTTPS logo URL
               <input type="url" value={logoUrl} onChange={(event) => setLogoUrl(event.target.value)} placeholder="https://assets.example.com/logo.png" />
+            </label>
+            <label>
+              Upload mascot artwork for preview
+              <input type="file" accept="image/png,image/jpeg,image/webp,image/svg+xml" onChange={previewMascotUpload} />
+              <span className="field-hint">Local preview only. Persistence still requires reviewed storage or an HTTPS asset URL.</span>
             </label>
             <label>
               Policy notes
