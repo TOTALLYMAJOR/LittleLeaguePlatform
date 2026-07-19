@@ -9,6 +9,8 @@ import { GET as getProviderDeliveryRetryPlan } from "./api/provider-delivery/ret
 import { POST as postParentReplay } from "./api/coach/parent-replay/route";
 import { POST as postWeeklyUpdate } from "./api/coach/weekly-update/route";
 import { POST as postSponsorSave } from "./api/admin/sponsors/route";
+import { GET as getAdminRevenueSummary } from "./api/admin/revenue-summary/route";
+import { GET as getFamilyWallet } from "./api/parent/family-wallet/route";
 import { POST as postAdminTeam } from "./api/admin/teams/route";
 import { POST as postAdminSeason } from "./api/admin/seasons/route";
 import { POST as postAdminRoster } from "./api/admin/rosters/route";
@@ -23,7 +25,10 @@ import { POST as postSnackClaim } from "./api/snack-slots/claim/route";
 import { POST as postVolunteerClaim } from "./api/volunteer-signups/claim/route";
 import { POST as postWeatherDraft } from "./api/weather-alerts/draft/route";
 import { POST as postTeamMembership } from "./api/admin/team-memberships/route";
-import type { ParentReplayDraft } from "@/lib/domain";
+import { seedState, type ParentReplayDraft } from "@/lib/domain";
+import { createSupabaseAdminClient } from "@/lib/supabase/admin";
+import { requireActiveOrganizationAdmin } from "@/lib/supabase/access-control";
+import { listParentCoachDashboardData } from "@/lib/supabase/dashboard-data";
 import { updateTenantThemeDefaults } from "@/lib/supabase/team-branding";
 import { createTeamMembership } from "@/lib/supabase/memberships";
 import { recordRosterImportAudit } from "@/lib/supabase/roster-imports";
@@ -32,6 +37,7 @@ import { saveScheduleEvent } from "@/lib/supabase/schedule-management";
 import { repairGuardianLink } from "@/lib/supabase/guardian-links";
 import { createAdminExport } from "@/lib/supabase/reporting";
 import { listProviderDeliveryRetryQueue, reviewNotificationDelivery } from "@/lib/supabase/provider-delivery";
+import { listSponsorAdminData } from "@/lib/supabase/sponsors";
 import {
   claimSnackSlot,
   claimVolunteerRole,
@@ -50,6 +56,22 @@ import { requireAuthenticatedRouteUser } from "@/lib/supabase/route-auth";
 
 vi.mock("@/lib/supabase/route-auth", () => ({
   requireAuthenticatedRouteUser: vi.fn()
+}));
+
+vi.mock("@/lib/supabase/admin", () => ({
+  createSupabaseAdminClient: vi.fn()
+}));
+
+vi.mock("@/lib/supabase/access-control", () => ({
+  requireActiveOrganizationAdmin: vi.fn()
+}));
+
+vi.mock("@/lib/supabase/dashboard-data", () => ({
+  listParentCoachDashboardData: vi.fn()
+}));
+
+vi.mock("@/lib/supabase/sponsors", () => ({
+  listSponsorAdminData: vi.fn()
 }));
 
 vi.mock("@/lib/supabase/operations", () => ({
@@ -103,6 +125,10 @@ vi.mock("@/lib/supabase/provider-delivery", () => ({
 }));
 
 const authMock = vi.mocked(requireAuthenticatedRouteUser);
+const createSupabaseAdminClientMock = vi.mocked(createSupabaseAdminClient);
+const requireActiveOrganizationAdminMock = vi.mocked(requireActiveOrganizationAdmin);
+const listParentCoachDashboardDataMock = vi.mocked(listParentCoachDashboardData);
+const listSponsorAdminDataMock = vi.mocked(listSponsorAdminData);
 const updateParentRsvpMock = vi.mocked(updateParentRsvp);
 const claimSnackSlotMock = vi.mocked(claimSnackSlot);
 const claimVolunteerRoleMock = vi.mocked(claimVolunteerRole);
@@ -138,10 +164,40 @@ function jsonRequest(body: unknown) {
   });
 }
 
+function getRequest() {
+  return new Request("http://localhost/api/test", {
+    method: "GET",
+    headers: {
+      authorization: "Bearer live-session"
+    }
+  });
+}
+
 describe("live action API routes", () => {
   beforeEach(() => {
     vi.resetAllMocks();
     authMock.mockResolvedValue({ ok: true, user: { id: "user-live-session", email: "parent@example.com" } });
+    createSupabaseAdminClientMock.mockReturnValue({ from: vi.fn() } as unknown as ReturnType<typeof createSupabaseAdminClient>);
+    requireActiveOrganizationAdminMock.mockResolvedValue({ ok: true, message: "Access allowed.", organizationId: seedState.organization.id });
+    listParentCoachDashboardDataMock.mockResolvedValue({
+      state: {
+        ...seedState,
+        guardianLinks: seedState.guardianLinks.map((link) => ({ ...link, parentUserId: link.parentUserId === "user-parent-jordan" ? "user-live-session" : link.parentUserId }))
+      },
+      parentUserId: "user-live-session",
+      coachUserId: "",
+      isSupabaseBacked: true,
+      accessStatus: "live",
+      message: "Showing Supabase roster, guardian, schedule, RSVP, and media rows."
+    });
+    listSponsorAdminDataMock.mockResolvedValue({
+      organizationId: seedState.organization.id,
+      teams: seedState.teams,
+      users: seedState.users,
+      sponsors: seedState.sponsors,
+      isSupabaseBacked: true,
+      message: "Sponsor records, placements, and logo assets are loaded from Supabase."
+    });
   });
 
   it("uses the authenticated parent session for RSVP writes", async () => {
@@ -578,6 +634,36 @@ describe("live action API routes", () => {
       placementKey: "team_portal",
       logoUrl: "https://sponsor.example/logo.png"
     });
+  });
+
+  it("returns parent wallet reads scoped to the authenticated guardian session", async () => {
+    const response = await getFamilyWallet(getRequest());
+    const payload = await response.json();
+
+    expect(response.status).toBe(200);
+    expect(listParentCoachDashboardDataMock).toHaveBeenCalledWith({
+      viewerUserId: "user-live-session",
+      surface: "parent"
+    });
+    expect(payload.wallet.parentUserId).toBe("user-live-session");
+    expect(payload.wallet.items.map((item: { kind: string }) => item.kind)).toContain("registration_fee");
+    expect(payload.message).toContain("signed-in guardian");
+  });
+
+  it("returns admin-only revenue summaries after organization admin access", async () => {
+    const response = await getAdminRevenueSummary(getRequest());
+    const payload = await response.json();
+
+    expect(response.status).toBe(200);
+    expect(requireActiveOrganizationAdminMock).toHaveBeenCalledWith({
+      db: expect.anything(),
+      organizationId: seedState.organization.id,
+      userId: "user-live-session",
+      action: "view league revenue"
+    });
+    expect(payload.revenueSummary.sponsorInvoiceCents).toBeGreaterThan(0);
+    expect(payload.sponsorOpportunities.map((item: { need: string }) => item.need)).toContain("scholarships");
+    expect(payload.message).toContain("webhook-proof gated");
   });
 
   it("uses the authenticated admin session for tenant theme defaults", async () => {

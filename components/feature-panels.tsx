@@ -104,6 +104,15 @@ import {
   getEmailSponsorPlacement,
   getBannerSponsorPlacement,
   buildSponsorBillingProofs,
+  buildFamilyWalletSummary,
+  buildLeagueRevenueSummary,
+  buildLocalBusinessTeamPage,
+  buildSponsorOpportunities,
+  buildVolunteerMarketplace,
+  buildEquipmentExchange,
+  buildWeatherSafetyDecisionAssistant,
+  buildSponsorSafeMediaGallery,
+  buildFamilyAvailabilityIntelligence,
   previewBalancedTeamBuild,
   getTouchTargetQa,
   getOfflineStateSummary,
@@ -227,6 +236,10 @@ function formatDate(value: string) {
     hour: "numeric",
     minute: "2-digit"
   });
+}
+
+function formatCents(value: number) {
+  return `$${(value / 100).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 }
 
 function formatCalendarMonth(value?: string) {
@@ -756,6 +769,66 @@ function themeQaStatus(primaryColor: string, secondaryColor: string) {
   };
 }
 
+type TenantEnvironmentSurfaceId = "app" | "portal" | "mobile" | "communications" | "commerce" | "governance";
+
+interface TenantEnvironmentSurface {
+  id: TenantEnvironmentSurfaceId;
+  label: string;
+  status: string;
+  detail: string;
+}
+
+const tenantEnvironmentSurfaces: TenantEnvironmentSurface[] = [
+  {
+    id: "app",
+    label: "App shell",
+    status: "Menus and labels",
+    detail: "League navigation, role home labels, and dashboard accents."
+  },
+  {
+    id: "portal",
+    label: "Team portals",
+    status: "Family-facing",
+    detail: "Roster, schedule, RSVP, media, chat, and Parent Replay surfaces."
+  },
+  {
+    id: "mobile",
+    label: "Mobile view",
+    status: "Small-screen QA",
+    detail: "Header, quick action bar, badges, and contrast-critical touch targets."
+  },
+  {
+    id: "communications",
+    label: "Messages",
+    status: "Provider-gated",
+    detail: "Invite, digest, reminder, and push identity previews before delivery."
+  },
+  {
+    id: "commerce",
+    label: "Sponsor docs",
+    status: "Admin-only proof",
+    detail: "Sponsor invoice references, receipts, and public placement separation."
+  },
+  {
+    id: "governance",
+    label: "Safety rules",
+    status: "Human review",
+    detail: "Logo review, child-privacy defaults, audit trail, and fallback rendering."
+  }
+];
+
+const tenantAppMenuPreview = ["Home", "Schedule", "RSVP", "Messages", "Photos"];
+
+function initialsFromName(value: string) {
+  return value
+    .split(/\s+/)
+    .filter(Boolean)
+    .map((part) => part[0])
+    .join("")
+    .slice(0, 3)
+    .toUpperCase();
+}
+
 async function authenticatedJsonFetch(url: string, payload: unknown) {
   const headers: Record<string, string> = { "Content-Type": "application/json" };
   try {
@@ -785,6 +858,8 @@ function mergeRegistrationRequests(localRequests: RegistrationRequest[], serverR
 }
 
 export function AuthClient() {
+  type SocialAuthProvider = "google" | "facebook";
+
   const [mode, setMode] = useState<"sign-in" | "sign-up">("sign-in");
   const [displayName, setDisplayName] = useState("Coach Taylor");
   const [email, setEmail] = useState("coach.taylor@example.com");
@@ -793,6 +868,30 @@ export function AuthClient() {
   const [message, setMessage] = useState("");
   const [isPending, startTransition] = useTransition();
   const authConfigStatus = getSupabaseBrowserConfigStatus();
+
+  useEffect(() => {
+    if (!authConfigStatus.ok) return;
+
+    let cancelled = false;
+    async function routeExistingSession() {
+      try {
+        const supabase = createSupabaseBrowserClient();
+        const { data, error } = await supabase.auth.getSession();
+        if (cancelled || error || !data.session) return;
+        setMessage("Signed in. Opening the right dashboard.");
+        const landingResponse = await fetch("/api/auth/session-landing", { cache: "no-store" }).catch(() => null);
+        const landing = await landingResponse?.json().catch(() => null) as { href?: string } | null;
+        if (!cancelled) window.location.assign(landing?.href ?? "/account");
+      } catch {
+        // Keep the form usable if session inspection is unavailable.
+      }
+    }
+
+    void routeExistingSession();
+    return () => {
+      cancelled = true;
+    };
+  }, [authConfigStatus.ok]);
 
   function submitAuth() {
     setMessage("");
@@ -841,6 +940,35 @@ export function AuthClient() {
     });
   }
 
+  function submitSocialAuth(provider: SocialAuthProvider) {
+    setMessage("");
+    if (!authConfigStatus.ok) {
+      setMessage(authConfigStatus.message ?? "Supabase Auth is not configured for this app environment.");
+      return;
+    }
+
+    startTransition(async () => {
+      try {
+        const supabase = createSupabaseBrowserClient();
+        const { error } = await supabase.auth.signInWithOAuth({
+          provider,
+          options: {
+            redirectTo: getSupabaseEmailRedirectTo("/auth/callback")
+          }
+        });
+
+        if (error) {
+          setMessage(getSupabaseAuthClientErrorMessage(error));
+          return;
+        }
+
+        setMessage(`Opening ${provider === "google" ? "Google" : "Facebook"} sign in.`);
+      } catch (error) {
+        setMessage(getSupabaseAuthClientErrorMessage(error));
+      }
+    });
+  }
+
   return (
     <div className="page">
       <section className="hero">
@@ -875,6 +1003,14 @@ export function AuthClient() {
           <label>Email<input type="email" value={email} onChange={(event) => setEmail(event.target.value)} /></label>
           <label>Password<input type="password" value={password} onChange={(event) => setPassword(event.target.value)} /></label>
           <button onClick={submitAuth} disabled={!authConfigStatus.ok || isPending || password.length < 6}>{isPending ? "Working..." : mode === "sign-up" ? "Create account" : "Sign in"}</button>
+
+          <div className="auth-provider-panel" aria-label="Social sign in providers">
+            <p className="muted">Google and Facebook SSO use Supabase OAuth. Provider accounts prove identity only; private team access still requires approved membership rows.</p>
+            <div className="auth-provider-actions">
+              <button type="button" className="secondary" onClick={() => submitSocialAuth("google")} disabled={!authConfigStatus.ok || isPending}>Continue with Google</button>
+              <button type="button" className="secondary" onClick={() => submitSocialAuth("facebook")} disabled={!authConfigStatus.ok || isPending}>Continue with Facebook</button>
+            </div>
+          </div>
         </article>
 
         <article className="card stack">
@@ -1439,6 +1575,7 @@ export function ParentDashboardClient({ dashboardData }: { dashboardData?: Paren
   const parentUserId = dashboardData?.parentUserId ?? "user-parent-jordan";
   const parentUser = sourceState.users.find((user) => user.id === parentUserId);
   const dashboard = getParentDashboard(sourceState, parentUserId, NOW);
+  const familyWallet = buildFamilyWalletSummary(sourceState, parentUserId);
   const accessGate = privateAccessGate(dashboardData, "parent");
   const parentTeamIds = new Set(dashboard.children.map(({ team }) => team.id));
   const primaryTeamId = dashboard.children[0]?.team.id;
@@ -1459,6 +1596,9 @@ export function ParentDashboardClient({ dashboardData }: { dashboardData?: Paren
   const primaryFamilyRow = dashboard.children[0];
   const primaryTeam = primaryFamilyRow?.team;
   const primaryPlayer = primaryFamilyRow?.player;
+  const parentVolunteerMarketplace = primaryTeamId ? buildVolunteerMarketplace(sourceState, primaryTeamId) : [];
+  const parentEquipmentExchange = primaryTeamId ? buildEquipmentExchange(sourceState, primaryTeamId, "parent") : [];
+  const parentAvailabilityIntelligence = primaryTeamId ? buildFamilyAvailabilityIntelligence(sourceState, primaryTeamId, NOW) : undefined;
   const teamName = primaryTeam?.name ?? "Team home";
   const teamDivision = primaryTeam?.division ?? "Division pending";
   const teamInitials = teamName
@@ -1853,6 +1993,46 @@ export function ParentDashboardClient({ dashboardData }: { dashboardData?: Paren
       </CompactDisclosure>
 
       <CompactDisclosure
+        title="Family Wallet"
+        summary="Registration fees, team dues, credits, discounts, and unpaid balances."
+        badge={formatCents(familyWallet.netDueCents)}
+      >
+        <section className="grid two">
+          <div className="stack compact">
+            <div className="card-header">
+              <div>
+                <span className="eyebrow">Family Wallet For Youth Sports</span>
+                <h2>Balance overview</h2>
+              </div>
+              <span className="badge warning">Proof-gated</span>
+            </div>
+            <div className="grid three">
+              <div className="metric"><span className="muted">Unpaid</span><strong>{formatCents(familyWallet.unpaidCents)}</strong></div>
+              <div className="metric"><span className="muted">Credits</span><strong>{formatCents(familyWallet.creditsCents)}</strong></div>
+              <div className="metric"><span className="muted">Net due</span><strong>{formatCents(familyWallet.netDueCents)}</strong></div>
+            </div>
+            <p className="notice">{familyWallet.proofBoundary}</p>
+          </div>
+          <div className="stack compact">
+            <div className="card-header">
+              <div>
+                <span className="eyebrow">Wallet items</span>
+                <h2>Family charges and support</h2>
+              </div>
+              <span className="badge">{familyWallet.items.length} item(s)</span>
+            </div>
+            {familyWallet.items.slice(0, 5).map((item) => (
+              <p key={item.id}>
+                <strong>{item.label}</strong><br />
+                <span className="muted">{item.direction === "credit" ? "Credit" : "Charge"} {formatCents(item.amountCents)} - {item.proofState.replaceAll("_", " ")}. {item.note}</span>
+              </p>
+            ))}
+            {!familyWallet.items.length ? <p className="muted">No wallet items are visible until a parent account has active guardian links.</p> : null}
+          </div>
+        </section>
+      </CompactDisclosure>
+
+      <CompactDisclosure
         title="Family snapshot"
         summary="Child, coach update, schedule, RSVP, and recent media details."
         badge={`${dashboard.children.length} child link(s)`}
@@ -2028,6 +2208,64 @@ export function ParentDashboardClient({ dashboardData }: { dashboardData?: Paren
         badge={`${parentHelpCount} open`}
         defaultOpen={parentHelpCount > 0}
       >
+      <section className="grid two">
+        <div className="stack compact">
+          <div className="card-header">
+            <div>
+              <span className="eyebrow">One-Tap Volunteer Marketplace</span>
+              <h2>Team help board</h2>
+            </div>
+            <span className="badge">{parentVolunteerMarketplace.filter((job) => job.actionStatus === "claimable").length} claimable</span>
+          </div>
+          {parentVolunteerMarketplace.slice(0, 7).map((job) => (
+            <div className="stack compact" key={job.id}>
+              <p><strong>{job.title}</strong><br /><span className="muted">{job.category.replace("_", " ")} - {job.detail} {job.reminderBoundary}</span></p>
+              <button
+                className="secondary"
+                disabled={isHelpPending || job.actionStatus !== "claimable" || !job.claimEndpoint || !job.claimPayload}
+                onClick={() => job.claimEndpoint && job.claimPayload ? claimFamilyHelp(job.claimEndpoint, job.claimPayload) : undefined}
+              >
+                {job.actionLabel}
+              </button>
+            </div>
+          ))}
+        </div>
+        <div className="stack compact">
+          <div className="card-header">
+            <div>
+              <span className="eyebrow">Equipment Exchange</span>
+              <h2>Moderated gear board</h2>
+            </div>
+            <span className="badge">{parentEquipmentExchange.length} visible</span>
+          </div>
+          {parentEquipmentExchange.map((listing) => (
+            <p key={listing.id}>
+              <strong>{listing.title}</strong><br />
+              <span className="muted">{listing.kind} - {listing.sizeOrAge} - {listing.condition}. {listing.detail}</span>
+            </p>
+          ))}
+          {!parentEquipmentExchange.length ? <p className="muted">No approved gear listings are visible for this team yet.</p> : null}
+          <p className="notice">Gear exchange listings are moderated and do not expose parent contact details publicly.</p>
+        </div>
+      </section>
+
+      {parentAvailabilityIntelligence ? (
+        <section className="grid one">
+          <div className="stack compact">
+            <div className="card-header">
+              <div>
+                <span className="eyebrow">Family Availability Intelligence</span>
+                <h2>{parentAvailabilityIntelligence.eventTitle}</h2>
+              </div>
+              <span className={`badge ${parentAvailabilityIntelligence.signal === "ready" ? "ok" : "warning"}`}>{parentAvailabilityIntelligence.signal.replace("_", " ")}</span>
+            </div>
+            <p>{parentAvailabilityIntelligence.summary}</p>
+            <p className="muted">Response rate {parentAvailabilityIntelligence.responseRate}%; schedule conflicts {parentAvailabilityIntelligence.scheduleConflictCount}.</p>
+            <p className="notice">{parentAvailabilityIntelligence.boundary}</p>
+          </div>
+        </section>
+      ) : null}
+
       <section className="grid two" id="family-help">
         <article className="card stack">
           <div className="card-header">
@@ -3180,6 +3418,15 @@ export function AdminDashboardClient({ registrationRequests, sponsorData, mediaD
   const emailSponsorPlacement = getEmailSponsorPlacement(sponsors);
   const bannerSponsorPlacement = getBannerSponsorPlacement(sponsors);
   const sponsorBillingProofs = buildSponsorBillingProofs(sponsors);
+  const moneySponsorsState = useMemo(() => ({ ...state, sponsors }), [sponsors, state]);
+  const leagueRevenueSummary = useMemo(() => buildLeagueRevenueSummary(moneySponsorsState), [moneySponsorsState]);
+  const sponsorOpportunities = useMemo(() => buildSponsorOpportunities(moneySponsorsState), [moneySponsorsState]);
+  const adminCommunityTeamId = state.teams[0]?.id ?? sponsorTeams[0]?.id ?? "";
+  const adminVolunteerMarketplace = adminCommunityTeamId ? buildVolunteerMarketplace(state, adminCommunityTeamId) : [];
+  const adminEquipmentExchange = adminCommunityTeamId ? buildEquipmentExchange(state, adminCommunityTeamId, "admin") : [];
+  const adminWeatherSafety = adminCommunityTeamId ? buildWeatherSafetyDecisionAssistant(state, adminCommunityTeamId, NOW) : undefined;
+  const adminSponsorSafeGallery = adminCommunityTeamId ? buildSponsorSafeMediaGallery(moneySponsorsState, adminCommunityTeamId) : undefined;
+  const adminAvailabilityIntelligence = adminCommunityTeamId ? buildFamilyAvailabilityIntelligence(state, adminCommunityTeamId, NOW) : undefined;
   const touchTargetQa = getTouchTargetQa();
   const offlineStateSummary = getOfflineStateSummary();
   const contrastChecks = getAccessibilityContrastChecks();
@@ -3772,6 +4019,34 @@ export function AdminDashboardClient({ registrationRequests, sponsorData, mediaD
             );
 	          })}
 	          {mediaItems.length === 0 ? <p className="muted">No media links yet.</p> : null}
+	          <section className="grid two">
+	            <div className="stack compact">
+	              <div className="card-header">
+	                <div>
+	                  <span className="eyebrow">Sponsor-Safe Media Gallery</span>
+	                  <h3>Approved recap framing</h3>
+	                </div>
+	                <span className="badge">{adminSponsorSafeGallery?.approvedItems.length ?? 0} approved</span>
+	              </div>
+	              {(adminSponsorSafeGallery?.approvedItems ?? []).slice(0, 3).map((item) => (
+	                <p key={item.id}><strong>{item.recapLabel}</strong><br /><span className="muted">{item.sponsorFrame}. {item.safeCaption}</span></p>
+	              ))}
+	              <p className="notice">{adminSponsorSafeGallery?.boundary ?? "Sponsor-safe gallery needs a team before recap framing can render."}</p>
+	            </div>
+	            <div className="stack compact">
+	              <div className="card-header">
+	                <div>
+	                  <span className="eyebrow">Equipment Exchange</span>
+	                  <h3>Moderation queue</h3>
+	                </div>
+	                <span className="badge warning">{adminEquipmentExchange.filter((listing) => listing.moderationLabel === "admin_review").length} review</span>
+	              </div>
+	              {adminEquipmentExchange.map((listing) => (
+	                <p key={listing.id}><strong>{listing.title}</strong><br /><span className="muted">{listing.kind} - {listing.sizeOrAge} - {listing.moderationLabel.replace("_", " ")}. {listing.detail}</span></p>
+	              ))}
+	              <p className="notice">Equipment listings are team-scoped, moderated, and do not publish parent contact details.</p>
+	            </div>
+	          </section>
 	          <div className="stack compact drill-review-panel">
 	            <div className="card-header">
 	              <div>
@@ -3833,6 +4108,40 @@ export function AdminDashboardClient({ registrationRequests, sponsorData, mediaD
           <p className="notice">{sponsorMessage}</p>
           <p><strong>Public display policy:</strong> {sponsorDisplayPolicy.status} - {sponsorDisplayPolicy.detail}</p>
           <p className="muted">Schedule sponsor placement: {scheduleSponsorPlacement.length}; media gallery sponsor placement: {mediaGallerySponsorPlacement.length}; email sponsor placement: {emailSponsorPlacement.length}; banner sponsor placement: {bannerSponsorPlacement.length}.</p>
+          <section className="grid two">
+            <div className="stack compact">
+              <div className="card-header">
+                <div>
+                  <span className="eyebrow">League Revenue Dashboard</span>
+                  <h3>Season funding proof</h3>
+                </div>
+                <span className="badge warning">Admin-only</span>
+              </div>
+              <div className="grid three">
+                <div className="metric"><span className="muted">Registration</span><strong>{formatCents(leagueRevenueSummary.registrationFeeCents)}</strong></div>
+                <div className="metric"><span className="muted">Sponsor invoices</span><strong>{formatCents(leagueRevenueSummary.sponsorInvoiceCents)}</strong></div>
+                <div className="metric"><span className="muted">Unpaid families</span><strong>{formatCents(leagueRevenueSummary.unpaidFamilyBalanceCents)}</strong></div>
+              </div>
+              <p className="muted">Active sponsors {leagueRevenueSummary.activeSponsorCount}; pending sponsors {leagueRevenueSummary.pendingSponsorCount}; scholarship support {formatCents(leagueRevenueSummary.scholarshipCreditCents)}.</p>
+              <p className="notice">{leagueRevenueSummary.proofBoundary}</p>
+            </div>
+            <div className="stack compact">
+              <div className="card-header">
+                <div>
+                  <span className="eyebrow">Community Sponsor Matchmaker</span>
+                  <h3>Suggested sponsor opportunities</h3>
+                </div>
+                <span className="badge">{sponsorOpportunities.length} lead(s)</span>
+              </div>
+              {sponsorOpportunities.slice(0, 4).map((opportunity) => (
+                <p key={opportunity.id}>
+                  <strong>{opportunity.title}</strong><br />
+                  <span className="muted">{opportunity.need.replace("_", " ")} - {formatCents(opportunity.targetAmountCents)} target - {opportunity.status}. {opportunity.sponsorFit}. {opportunity.evidence}</span>
+                </p>
+              ))}
+              <p className="notice">Sponsor suggestions are leads for admin review. They are not contracts, public placements, provider sends, or payment claims.</p>
+            </div>
+          </section>
           <div className="grid two">
             <label>
               Sponsor record
@@ -3919,6 +4228,25 @@ export function AdminDashboardClient({ registrationRequests, sponsorData, mediaD
           <p><strong>Offline label:</strong> {offlineStateSummary.status}. {offlineStateSummary.detail}</p>
           <p><strong>Contrast checks:</strong> {contrastChecks.length} reviewed surface(s).</p>
           <p><strong>Privacy filters:</strong> {privacyFilters.length} active filter(s).</p>
+          {adminWeatherSafety ? (
+            <div className="stack compact">
+              <h3>Weather + Safety Decision Assistant</h3>
+              <p><strong>{adminWeatherSafety.eventTitle}</strong> - {adminWeatherSafety.recommendation.replaceAll("_", " ")}</p>
+              {adminWeatherSafety.conditions.map((condition) => (
+                <p key={condition.label}><span className={`badge ${condition.status === "ok" ? "ok" : "warning"}`}>{condition.status}</span> <strong>{condition.label}</strong> <span className="muted">{condition.value}</span></p>
+              ))}
+              <p className="muted">{adminWeatherSafety.fieldClosureDraft}</p>
+              <p className="notice">{adminWeatherSafety.boundary}</p>
+            </div>
+          ) : null}
+          {adminAvailabilityIntelligence ? (
+            <div className="stack compact">
+              <h3>Family Availability Intelligence</h3>
+              <p>{adminAvailabilityIntelligence.teamName}: {adminAvailabilityIntelligence.summary}</p>
+              <p className="muted">Response rate {adminAvailabilityIntelligence.responseRate}%; volunteer marketplace {adminVolunteerMarketplace.filter((job) => job.actionStatus === "claimable").length} claimable role(s).</p>
+              <p className="notice">{adminAvailabilityIntelligence.boundary}</p>
+            </div>
+          ) : null}
           <p className="muted">Engagement and delivery-rate metrics stay out of this home card until they are backed by production reporting.</p>
         </article>
         ) : null}
@@ -3943,6 +4271,7 @@ export function AdminThemesClient({ initialData }: { initialData: AdminThemeData
     mobileHeader: true,
     gameDayBand: true
   });
+  const [activeEnvironmentSurface, setActiveEnvironmentSurface] = useState<TenantEnvironmentSurfaceId>("app");
   const [actorUserId, setActorUserId] = useState(initialData.users.find((user) => user.role === "admin")?.id ?? initialData.users[0]?.id ?? "");
   const [drafts, setDrafts] = useState<Record<string, Pick<Team, "mascot" | "primaryColor" | "secondaryColor" | "themeKey">>>({});
   const [message, setMessage] = useState("");
@@ -3966,6 +4295,11 @@ export function AdminThemesClient({ initialData }: { initialData: AdminThemeData
   const approvedLogoAssets = logoAssets.filter((asset) => asset.status === "approved").length;
   const themeQaPassCount = teams.filter((item) => themeQaStatus(item.primaryColor, item.secondaryColor).className === "ok").length;
   const logoTargetTeam = teams.find((item) => item.id === logoTeamId);
+  const environmentSurface = tenantEnvironmentSurfaces.find((surface) => surface.id === activeEnvironmentSurface) ?? tenantEnvironmentSurfaces[0]!;
+  const activePreset = draft ? getProgramThemePreset(draft.themeKey) : null;
+  const teamInitials = team ? initialsFromName(team.name) : "LP";
+  const selectedThemeQa = draft ? themeQaStatus(draft.primaryColor, draft.secondaryColor) : null;
+  const coveredBrandSurfaces = brandLaunchValidation.surfaceChecks.filter((check) => check.status === "covered").length;
 
   function updateDraft(field: "mascot" | "primaryColor" | "secondaryColor" | "themeKey", value: string) {
     if (!team || !draft) return;
@@ -4108,6 +4442,109 @@ export function AdminThemesClient({ initialData }: { initialData: AdminThemeData
     }));
   }
 
+  function renderEnvironmentPreview() {
+    if (!team || !draft || !activePreset) {
+      return <p className="muted">No team records are available for tenant environment preview.</p>;
+    }
+
+    if (activeEnvironmentSurface === "portal") {
+      return (
+        <div className="tenant-preview-portal" style={teamBrandStyle(draft.primaryColor, draft.secondaryColor)}>
+          <div className="tenant-preview-hero">
+            <strong>{team.name}</strong>
+            <span>{draft.mascot} families see schedule, RSVP, roster, photos, messages, and Parent Replay under one published brand.</span>
+          </div>
+          <div className="tenant-preview-card-grid">
+            <span>Next game</span>
+            <span>Coach note</span>
+            <span>Roster</span>
+            <span>Photos</span>
+          </div>
+        </div>
+      );
+    }
+
+    if (activeEnvironmentSurface === "mobile") {
+      return (
+        <div className="tenant-preview-phone" style={teamBrandStyle(draft.primaryColor, draft.secondaryColor)}>
+          <div className="tenant-preview-phone-top">
+            <strong>{teamInitials}</strong>
+            <span>{team.name}</span>
+          </div>
+          <div className="tenant-preview-phone-action">RSVP for Saturday</div>
+          <div className="tenant-preview-phone-list">
+            <span>Arrive 20 min early</span>
+            <span>Field 2 updated</span>
+            <span>{selectedThemeQa?.mobileLabel ?? "Mobile QA pending"}</span>
+          </div>
+        </div>
+      );
+    }
+
+    if (activeEnvironmentSurface === "communications") {
+      return (
+        <div className="tenant-preview-document" style={teamBrandStyle(draft.primaryColor, draft.secondaryColor)}>
+          <div className="tenant-preview-document-header">
+            <strong>{team.name} weekly digest</strong>
+            <span>{teamInitials}</span>
+          </div>
+          <p>Game reminder, RSVP status, coach note, and portal link preview use the same team tokens.</p>
+          <p className="muted">Email, SMS, and push sends stay provider-gated until review approval and delivery logs exist.</p>
+        </div>
+      );
+    }
+
+    if (activeEnvironmentSurface === "commerce") {
+      return (
+        <div className="tenant-preview-document" style={teamBrandStyle(draft.primaryColor, draft.secondaryColor)}>
+          <div className="tenant-preview-document-header">
+            <strong>Sponsor invoice preview</strong>
+            <span>{teamInitials}</span>
+          </div>
+          <div className="tenant-preview-line"><span>Placement</span><strong>Team portal</strong></div>
+          <div className="tenant-preview-line"><span>Receipt reference</span><strong>Admin-only</strong></div>
+          <p className="muted">Sponsor billing proof stays separate from child-facing sponsor display and registration flows.</p>
+        </div>
+      );
+    }
+
+    if (activeEnvironmentSurface === "governance") {
+      return (
+        <div className="tenant-preview-governance">
+          <p><strong>Write boundary:</strong> Admin theme saves and logo queue requests use verified Supabase sessions.</p>
+          <p><strong>Provider boundary:</strong> Binary storage, email rendering, push identity, and public cache invalidation require separate proof.</p>
+          <p><strong>Child privacy:</strong> Player names, guardian access, media visibility, and direct messaging stay role-scoped.</p>
+        </div>
+      );
+    }
+
+    return (
+      <div className="tenant-preview-app" style={teamBrandStyle(draft.primaryColor, draft.secondaryColor)}>
+        <aside className="tenant-preview-nav">
+          <strong>{teamInitials}</strong>
+          {tenantAppMenuPreview.map((item) => (
+            <span key={item} className={item === "Home" ? "active" : undefined}>{item}</span>
+          ))}
+        </aside>
+        <main className="tenant-preview-main">
+          <div className="tenant-preview-topbar">
+            <strong>{team.name}</strong>
+            <span>{activePreset.label}</span>
+          </div>
+          <div className="tenant-preview-banner">
+            <strong>{draft.mascot} Game Day</strong>
+            <span>{activePreset.fieldLabel}, RSVP, schedule, and coach update preview.</span>
+          </div>
+          <div className="tenant-preview-card-grid">
+            <span>Schedule</span>
+            <span>Roster</span>
+            <span>Messages</span>
+          </div>
+        </main>
+      </div>
+    );
+  }
+
   return (
     <div className="page admin-themes-page">
       <section className="hero">
@@ -4140,6 +4577,46 @@ export function AdminThemesClient({ initialData }: { initialData: AdminThemeData
           <h2>Launch proof</h2>
           <p className="muted">20 target brand surfaces, monitoring events, alert rules, and coach feedback checks.</p>
         </article>
+      </section>
+
+      <section className="card stack tenant-environment-studio" aria-label="Tenant environment studio">
+        <div className="card-header">
+          <div>
+            <span className="eyebrow">Tenant environment studio</span>
+            <h2>One control surface for every branded tenant touchpoint.</h2>
+          </div>
+          <span className="badge ok">{coveredBrandSurfaces} / {brandLaunchValidation.surfaceChecks.length} surfaces mapped</span>
+        </div>
+        <p className="muted">Select an environment area to preview how team identity, menu labels, portal copy, logo fallback, messages, sponsor documents, and safety rules fit together before saving.</p>
+        <div className="tenant-studio-layout">
+          <div className="tenant-surface-rail" aria-label="Tenant customization surfaces">
+            {tenantEnvironmentSurfaces.map((surface) => (
+              <button
+                type="button"
+                key={surface.id}
+                className={`tenant-surface-button ${activeEnvironmentSurface === surface.id ? "active" : ""}`}
+                aria-pressed={activeEnvironmentSurface === surface.id}
+                onClick={() => setActiveEnvironmentSurface(surface.id)}
+              >
+                <strong>{surface.label}</strong>
+                <span>{surface.status}</span>
+                <em>{surface.detail}</em>
+              </button>
+            ))}
+          </div>
+          <div className="tenant-live-preview" aria-label={`${environmentSurface.label} preview`}>
+            <div className="tenant-live-preview-header">
+              <div>
+                <strong>{environmentSurface.label}</strong>
+                <span>{environmentSurface.detail}</span>
+              </div>
+              <span className={`badge ${selectedThemeQa?.className ?? "neutral"}`}>
+                {selectedThemeQa?.label ?? "Theme QA pending"}
+              </span>
+            </div>
+            {renderEnvironmentPreview()}
+          </div>
+        </div>
       </section>
 
       <section className="grid two">
@@ -6190,6 +6667,12 @@ export function TeamPortalClient({ teamPortalData, audience = "shared" }: { team
   const media = mediaItemsSource.filter((item) => item.teamId === team.id);
   const privateTeamAlbum = getPrivateTeamAlbum(mediaItemsSource, team.id);
   const teamPortalSponsors = getTeamPortalSponsorPlacement(portalState.sponsors, team.id);
+  const localBusinessTeamPage = buildLocalBusinessTeamPage(portalState, team.id);
+  const teamVolunteerMarketplace = buildVolunteerMarketplace(portalState, team.id);
+  const teamEquipmentExchange = buildEquipmentExchange(portalState, team.id, audience === "admin" ? "admin" : "parent");
+  const teamWeatherSafety = buildWeatherSafetyDecisionAssistant(portalState, team.id, NOW);
+  const teamSponsorSafeGallery = buildSponsorSafeMediaGallery(portalState, team.id);
+  const teamAvailabilityIntelligence = buildFamilyAvailabilityIntelligence(portalState, team.id, NOW);
   const firstPlayerConsent = getPerPlayerMediaConsent(players[0]?.id ?? "player-pending", players.slice(0, 1).map((player) => player.id));
   const parentSubmittedMoments = getParentSubmittedMoments(portalState, team.id);
   const volunteerMoments = getVolunteerMoments(portalState, team.id);
@@ -6715,17 +7198,101 @@ export function TeamPortalClient({ teamPortalData, audience = "shared" }: { team
         </article>
       </section>
 
+      <section className="grid two">
+        <article className="card stack">
+          <div className="card-header">
+            <div>
+              <span className="eyebrow">One-Tap Volunteer Marketplace</span>
+              <h2>Snack, score, field, carpool, and backup jobs</h2>
+            </div>
+            <span className="badge">{teamVolunteerMarketplace.filter((job) => job.actionStatus === "claimable").length} claimable</span>
+          </div>
+          {teamVolunteerMarketplace.slice(0, 7).map((job) => (
+            <p key={job.id}><strong>{job.title}</strong><br /><span className="muted">{job.category.replace("_", " ")} - {job.actionStatus.replace("_", " ")}. {job.detail}</span></p>
+          ))}
+          <p className="notice">Parent claims use authenticated snack and volunteer APIs; marketplace reminders remain provider-gated.</p>
+        </article>
+
+        <article className="card stack">
+          <div className="card-header">
+            <div>
+              <span className="eyebrow">Equipment Exchange</span>
+              <h2>Moderated gear listings</h2>
+            </div>
+            <span className="badge">{teamEquipmentExchange.length} listing(s)</span>
+          </div>
+          {teamEquipmentExchange.map((listing) => (
+            <p key={listing.id}><strong>{listing.title}</strong><br /><span className="muted">{listing.kind} - {listing.sizeOrAge} - {listing.condition}. {listing.detail}</span></p>
+          ))}
+          <p className="notice">Gear listings do not expose parent contacts publicly and safety-sensitive items require staff review.</p>
+        </article>
+      </section>
+
+      <section className="grid two">
+        <article className="card stack">
+          <div className="card-header">
+            <div>
+              <span className="eyebrow">Weather + Safety Decision Assistant</span>
+              <h2>{teamWeatherSafety.eventTitle}</h2>
+            </div>
+            <span className={`badge ${teamWeatherSafety.recommendation === "monitor" ? "ok" : "warning"}`}>{teamWeatherSafety.recommendation.replaceAll("_", " ")}</span>
+          </div>
+          {teamWeatherSafety.conditions.map((condition) => (
+            <p key={condition.label}><strong>{condition.label}</strong><br /><span className="muted">{condition.value} - {condition.status}</span></p>
+          ))}
+          <p className="muted">{teamWeatherSafety.fieldClosureDraft}</p>
+          <p className="notice">{teamWeatherSafety.boundary}</p>
+        </article>
+
+        <article className="card stack">
+          <div className="card-header">
+            <div>
+              <span className="eyebrow">Family Availability Intelligence</span>
+              <h2>{teamAvailabilityIntelligence.eventTitle}</h2>
+            </div>
+            <span className={`badge ${teamAvailabilityIntelligence.signal === "ready" ? "ok" : "warning"}`}>{teamAvailabilityIntelligence.signal.replace("_", " ")}</span>
+          </div>
+          <p>{teamAvailabilityIntelligence.summary}</p>
+          <p className="muted">Response rate {teamAvailabilityIntelligence.responseRate}%; schedule conflicts {teamAvailabilityIntelligence.scheduleConflictCount}.</p>
+          <p className="notice">{teamAvailabilityIntelligence.boundary}</p>
+        </article>
+      </section>
+
       <section className="grid one">
         <article className="card stack">
           <div className="card-header">
             <div>
-              <span className="eyebrow">Team Portal sponsor placement</span>
-              <h2>Team sponsor slots</h2>
+              <span className="eyebrow">Sponsor-Safe Media Gallery</span>
+              <h2>Approved recap pages</h2>
             </div>
-            <span className="badge">{teamPortalSponsors.length} sponsor(s)</span>
+            <span className="badge">{teamSponsorSafeGallery.approvedItems.length} approved</span>
           </div>
-          {teamPortalSponsors.map((sponsor) => <p key={sponsor.id}><strong>{sponsor.name}</strong><br /><span className="muted">{sponsor.url}</span></p>)}
+          {teamSponsorSafeGallery.approvedItems.map((item) => (
+            <p key={item.id}><strong>{item.recapLabel}</strong><br /><span className="muted">{item.sponsorFrame}. {item.safeCaption}</span></p>
+          ))}
+          {!teamSponsorSafeGallery.approvedItems.length ? <p className="muted">No approved media is ready for sponsor-safe recap framing.</p> : null}
+          <p className="notice">{teamSponsorSafeGallery.boundary}</p>
+        </article>
+      </section>
+
+      <section className="grid one">
+        <article className="card stack">
+          <div className="card-header">
+            <div>
+              <span className="eyebrow">Local Business Team Pages</span>
+              <h2>{localBusinessTeamPage.teamName} community sponsors</h2>
+            </div>
+            <span className="badge">{localBusinessTeamPage.sponsors.length} sponsor(s)</span>
+          </div>
+          <p className="muted">Team Portal sponsor placement: {localBusinessTeamPage.acknowledgement}</p>
+          {localBusinessTeamPage.sponsors.map((sponsor) => (
+            <p key={sponsor.sponsorId}>
+              <strong>{sponsor.name}</strong><br />
+              <span className="muted">{sponsor.offerText} {sponsor.url} - {sponsor.reviewStatus.replace("_", " ")}.</span>
+            </p>
+          ))}
           {!teamPortalSponsors.length ? <p className="muted">No active team portal sponsors are placed for this team.</p> : null}
+          <p className="notice">{localBusinessTeamPage.privacyBoundary}</p>
         </article>
       </section>
 

@@ -232,7 +232,7 @@ export const seedState: AppState = {
   ],
   sponsors: [
     { id: "sponsor-league-clinic", organizationId: "org-little-league", name: "Community Sports Clinic", level: "league", url: "https://example.com/clinic", status: "active" },
-    { id: "sponsor-tigers-pizza", organizationId: "org-little-league", name: "Corner Pizza", level: "team", teamId: "team-tigers", url: "https://example.com/pizza", status: "active" }
+    { id: "sponsor-tigers-pizza", organizationId: "org-little-league", name: "Corner Pizza", level: "team", teamId: "team-tigers", url: "https://example.com/pizza", status: "active", placementKey: "team_portal" }
   ],
   weatherAlerts: [
     {

@@ -107,6 +107,15 @@ import {
   getEmailSponsorPlacement,
   getBannerSponsorPlacement,
   buildSponsorBillingProofs,
+  buildFamilyWalletSummary,
+  buildLeagueRevenueSummary,
+  buildLocalBusinessTeamPage,
+  buildSponsorOpportunities,
+  buildVolunteerMarketplace,
+  buildEquipmentExchange,
+  buildWeatherSafetyDecisionAssistant,
+  buildSponsorSafeMediaGallery,
+  buildFamilyAvailabilityIntelligence,
   buildBrandLaunchValidation,
   buildTeamBrandProfile,
   validateBrandProfile,
@@ -867,6 +876,60 @@ describe("sponsor placement", () => {
     expect(getCacheInvalidationPolicy().strategy).toBe("stale_while_revalidate");
     expect(getManualDarkToggleState(true).label).toBe("Dark mode on");
     expect(getAccessibilityContrastChecks()).toHaveLength(3);
+  });
+
+  it("builds proof-safe family wallet, revenue, sponsor match, and local business page models", () => {
+    const wallet = buildFamilyWalletSummary(seedState, "user-parent-jordan");
+    expect(wallet.items.map((item) => item.kind)).toContain("registration_fee");
+    expect(wallet.items.map((item) => item.kind)).toContain("sponsor_discount");
+    expect(wallet.netDueCents).toBeGreaterThan(0);
+    expect(wallet.proofBoundary).toContain("webhook-confirmed proof");
+
+    const opportunities = buildSponsorOpportunities(seedState);
+    expect(opportunities.map((opportunity) => opportunity.need)).toContain("scholarships");
+    expect(opportunities[0]?.status).toBe("suggested");
+    expect(opportunities.map((opportunity) => opportunity.sponsorFit).join(" ")).toContain("Local");
+
+    const revenue = buildLeagueRevenueSummary(seedState);
+    expect(revenue.sponsorInvoiceCents).toBeGreaterThan(0);
+    expect(revenue.unpaidFamilyBalanceCents).toBeGreaterThan(0);
+    expect(revenue.proofBoundary).toContain("not settlement");
+
+    const localBusinessPage = buildLocalBusinessTeamPage(seedState, "team-tigers");
+    expect(localBusinessPage.sponsors.map((sponsor) => sponsor.name)).toContain("Corner Pizza");
+    expect(localBusinessPage.privacyBoundary).toContain("do not expose child profiles");
+  });
+
+  it("builds follow-on community, safety, media, and availability surfaces without privacy leakage", () => {
+    const marketplace = buildVolunteerMarketplace(seedState, "team-tigers");
+    expect(marketplace.map((job) => job.category)).toContain("snack_duty");
+    expect(marketplace.map((job) => job.category)).toContain("scorekeeper");
+    expect(marketplace.map((job) => job.category)).toContain("field_prep");
+    expect(marketplace.map((job) => job.category)).toContain("fundraising");
+    expect(marketplace.map((job) => job.category)).toContain("carpool");
+    expect(marketplace.map((job) => job.category)).toContain("team_parent");
+    expect(marketplace.map((job) => job.category)).toContain("backup_volunteer");
+    expect(marketplace.find((job) => job.actionStatus === "claimable")?.claimEndpoint).toMatch(/claim/);
+
+    const parentEquipment = buildEquipmentExchange(seedState, "team-tigers", "parent");
+    expect(parentEquipment.every((listing) => listing.moderationLabel === "family_visible")).toBe(true);
+    expect(parentEquipment.map((listing) => listing.detail).join(" ")).toContain("no child name or parent contact");
+    const adminEquipment = buildEquipmentExchange(seedState, "team-tigers", "admin");
+    expect(adminEquipment.map((listing) => listing.moderationLabel)).toContain("admin_review");
+
+    const safetyDecision = buildWeatherSafetyDecisionAssistant(seedState, "team-tigers", NOW);
+    expect(safetyDecision.conditions.map((condition) => condition.label)).toEqual(["Heat", "Lightning", "Air quality", "Rain"]);
+    expect(safetyDecision.fieldClosureDraft).toContain("Coach/admin approval is required");
+    expect(safetyDecision.boundary).toContain("Staff approval");
+
+    const gallery = buildSponsorSafeMediaGallery(seedState, "team-tigers");
+    expect(gallery.approvedItems.map((item) => item.title)).toContain("Opening Day Album");
+    expect(gallery.approvedItems[0]?.safeCaption).toContain("no child profile");
+    expect(gallery.boundary).toContain("do not target children");
+
+    const availability = buildFamilyAvailabilityIntelligence(seedState, "team-tigers", NOW);
+    expect(availability.missingRsvpCount).toBeGreaterThan(0);
+    expect(availability.boundary).toContain("never ranks");
   });
 });
 
