@@ -81,4 +81,16 @@ describe("API mutation auth boundaries", () => {
     expect(file).not.toContain("requireAuthenticatedRouteUser");
     expect(file).toContain("recordMobileUsageEvent");
   });
+
+  it("keeps OAuth callback scoped to Supabase code exchange and auth landing", () => {
+    const callback = source("app/auth/callback/route.ts");
+    const panel = source("components/feature-panels.tsx");
+
+    expect(callback).toContain("exchangeCodeForSession");
+    expect(callback).toContain("/auth?oauth=complete");
+    expect(panel).toContain("signInWithOAuth");
+    expect(panel).toContain("provider,");
+    expect(panel).toContain("getSupabaseEmailRedirectTo(\"/auth/callback\")");
+    expect(panel).toContain("/api/auth/session-landing");
+  });
 });

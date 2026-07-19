@@ -1,4 +1,4 @@
-const CACHE_NAME = "little-league-hq-shell-v3";
+const CACHE_NAME = "little-league-hq-shell-v4";
 const OFFLINE_URL = "/offline";
 const STATIC_CACHE_PREFIXES = [
   "/_next/static/",
@@ -10,7 +10,7 @@ const STATIC_CACHE_URLS = [
 ];
 
 self.addEventListener("install", (event) => {
-  event.waitUntil(caches.open(CACHE_NAME).then((cache) => cache.addAll(STATIC_CACHE_URLS)));
+  event.waitUntil(precacheStaticShell());
   self.skipWaiting();
 });
 
@@ -29,10 +29,24 @@ function isStaticRequest(request) {
 
 async function networkFirstNavigation(request) {
   try {
-    return await fetch(request);
+    const response = await fetch(request);
+    const url = new URL(request.url);
+    if (response.ok && url.origin === self.location.origin && url.pathname === OFFLINE_URL) {
+      const cache = await caches.open(CACHE_NAME);
+      await cache.put(OFFLINE_URL, response.clone());
+    }
+    return response;
   } catch {
     return await caches.match(OFFLINE_URL);
   }
+}
+
+async function precacheStaticShell() {
+  const cache = await caches.open(CACHE_NAME);
+  await Promise.all(STATIC_CACHE_URLS.map(async (url) => {
+    const response = await fetch(url, { cache: "reload" });
+    if (response.ok) await cache.put(url, response);
+  }));
 }
 
 async function cacheFirstStatic(request) {

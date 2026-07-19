@@ -216,6 +216,18 @@ code, .mono {
 .split-panel-detail { padding: var(--sp-5); overflow-y: auto; }
 
 .segmented { display: grid; gap: var(--sp-2); grid-template-columns: repeat(2, minmax(0,1fr)); }
+.auth-provider-panel {
+  border-top: 1px solid var(--line);
+  display: grid;
+  gap: var(--sp-3);
+  margin-top: var(--sp-2);
+  padding-top: var(--sp-3);
+}
+.auth-provider-actions {
+  display: grid;
+  gap: var(--sp-2);
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
 
 
 /* ─────────────────────────────────────────────────────────────────────────────
@@ -2234,6 +2246,222 @@ button.month-calendar-day:hover {
 .admin-focus-card { grid-column: 1 / -1; }
 .workbench-module { align-content: start; border-top: 4px solid var(--line); min-height: 170px; }
 .workbench-module.active { border-top-color: var(--accent); }
+.tenant-environment-studio { gap: var(--sp-4); }
+.tenant-studio-layout { align-items: stretch; display: grid; gap: var(--sp-4); grid-template-columns: minmax(220px, 0.78fr) minmax(0, 1.35fr); }
+.tenant-surface-rail { align-content: start; display: grid; gap: var(--sp-2); }
+.tenant-surface-button {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  color: var(--text);
+  display: grid;
+  gap: 4px;
+  min-width: 0;
+  padding: var(--sp-3);
+  text-align: left;
+  width: 100%;
+}
+.tenant-surface-button.active {
+  background: color-mix(in srgb, var(--accent) 10%, var(--surface));
+  border-color: color-mix(in srgb, var(--accent) 46%, var(--line));
+}
+.tenant-surface-button strong,
+.tenant-surface-button span,
+.tenant-surface-button em {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+.tenant-surface-button span {
+  color: var(--accent);
+  font-size: var(--text-xs);
+  font-weight: 900;
+  text-transform: uppercase;
+}
+.tenant-surface-button em {
+  color: var(--muted);
+  font-size: var(--text-sm);
+  font-style: normal;
+  line-height: 1.45;
+}
+.tenant-live-preview {
+  border: 1px solid var(--line);
+  border-radius: var(--radius-lg);
+  display: grid;
+  gap: var(--sp-3);
+  min-width: 0;
+  padding: var(--sp-3);
+}
+.tenant-live-preview-header {
+  align-items: flex-start;
+  display: flex;
+  gap: var(--sp-3);
+  justify-content: space-between;
+}
+.tenant-live-preview-header div {
+  display: grid;
+  gap: 4px;
+  min-width: 0;
+}
+.tenant-live-preview-header span:not(.badge) {
+  color: var(--muted);
+  font-size: var(--text-sm);
+}
+.tenant-preview-app {
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  display: grid;
+  grid-template-columns: minmax(96px, 0.42fr) minmax(0, 1fr);
+  min-height: 320px;
+  overflow: hidden;
+}
+.tenant-preview-nav {
+  background: color-mix(in srgb, var(--team-primary) 12%, var(--surface));
+  border-right: 1px solid var(--line);
+  display: grid;
+  gap: var(--sp-2);
+  padding: var(--sp-3);
+}
+.tenant-preview-nav strong {
+  align-items: center;
+  background: var(--team-primary);
+  border-radius: var(--radius);
+  color: white;
+  display: inline-flex;
+  height: 42px;
+  justify-content: center;
+  width: 42px;
+}
+.tenant-preview-nav span {
+  border-radius: var(--radius-sm);
+  color: var(--muted);
+  font-size: var(--text-sm);
+  font-weight: 800;
+  padding: 7px 8px;
+}
+.tenant-preview-nav span.active {
+  background: color-mix(in srgb, var(--team-secondary) 30%, var(--surface));
+  color: var(--text);
+}
+.tenant-preview-main {
+  display: grid;
+  gap: var(--sp-3);
+  min-width: 0;
+  padding: var(--sp-3);
+}
+.tenant-preview-topbar,
+.tenant-preview-document-header,
+.tenant-preview-phone-top {
+  align-items: center;
+  display: flex;
+  gap: var(--sp-2);
+  justify-content: space-between;
+  min-width: 0;
+}
+.tenant-preview-topbar span,
+.tenant-preview-document-header span {
+  background: color-mix(in srgb, var(--team-secondary) 34%, var(--surface));
+  border-radius: var(--radius-pill);
+  font-size: var(--text-xs);
+  font-weight: 900;
+  padding: 6px 9px;
+}
+.tenant-preview-banner,
+.tenant-preview-hero {
+  background: linear-gradient(135deg, var(--team-primary), color-mix(in srgb, var(--team-secondary) 70%, var(--team-primary)));
+  border-radius: var(--radius);
+  color: white;
+  display: grid;
+  gap: 5px;
+  padding: var(--sp-4);
+}
+.tenant-preview-banner span,
+.tenant-preview-hero span {
+  color: rgba(255, 255, 255, 0.86);
+  font-size: var(--text-sm);
+}
+.tenant-preview-card-grid {
+  display: grid;
+  gap: var(--sp-2);
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+.tenant-preview-card-grid span {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  font-size: var(--text-sm);
+  font-weight: 900;
+  padding: var(--sp-3);
+}
+.tenant-preview-portal,
+.tenant-preview-document,
+.tenant-preview-governance {
+  display: grid;
+  gap: var(--sp-3);
+  min-width: 0;
+}
+.tenant-preview-portal .tenant-preview-card-grid {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+.tenant-preview-phone {
+  background: color-mix(in srgb, var(--team-primary) 8%, var(--surface));
+  border: 1px solid var(--line);
+  border-radius: 28px;
+  display: grid;
+  gap: var(--sp-3);
+  margin-inline: auto;
+  max-width: 330px;
+  min-height: 360px;
+  padding: var(--sp-4);
+}
+.tenant-preview-phone-top strong {
+  align-items: center;
+  background: var(--team-primary);
+  border-radius: var(--radius);
+  color: white;
+  display: inline-flex;
+  height: 44px;
+  justify-content: center;
+  width: 44px;
+}
+.tenant-preview-phone-top span {
+  font-weight: 900;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.tenant-preview-phone-action {
+  background: var(--team-primary);
+  border-radius: var(--radius);
+  color: white;
+  font-weight: 900;
+  padding: var(--sp-3);
+  text-align: center;
+}
+.tenant-preview-phone-list {
+  display: grid;
+  gap: var(--sp-2);
+}
+.tenant-preview-phone-list span,
+.tenant-preview-governance p,
+.tenant-preview-line {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  padding: var(--sp-3);
+}
+.tenant-preview-document {
+  border: 1px solid var(--line);
+  border-left: 6px solid var(--team-primary);
+  border-radius: var(--radius);
+  padding: var(--sp-4);
+}
+.tenant-preview-line {
+  align-items: center;
+  display: flex;
+  gap: var(--sp-2);
+  justify-content: space-between;
+}
 .admin-logo-workbench textarea { min-height: 96px; }
 .logo-asset-row { border: 1px solid var(--line); border-radius: var(--radius); display: grid; gap: 5px; padding: var(--sp-3); }
 .theme-row { align-items: center; background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); color: var(--text); display: grid; gap: var(--sp-2); grid-template-columns: 18px 18px minmax(140px, 1fr) minmax(160px, auto); justify-items: start; padding: var(--sp-2); text-align: left; width: 100%; }
@@ -3276,6 +3504,8 @@ button.month-calendar-day:hover {
 @media (max-width: 1100px) {
   .roadmap-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .admin-workbench-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .tenant-studio-layout { grid-template-columns: 1fr; }
+  .tenant-surface-rail { grid-template-columns: repeat(3, minmax(0, 1fr)); }
   .grid.four    { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .masonry      { columns: 2; }
   .split-panel  { grid-template-columns: 260px minmax(0, 1fr); }
@@ -3528,6 +3758,24 @@ button.month-calendar-day:hover {
   .landing-phone-card { width: 100%; }
   .landing-replay-section { padding: var(--sp-4); }
   .admin-workbench-grid { grid-template-columns: 1fr; }
+  .tenant-surface-rail,
+  .tenant-preview-app,
+  .tenant-preview-card-grid,
+  .tenant-preview-portal .tenant-preview-card-grid {
+    grid-template-columns: 1fr;
+  }
+  .tenant-preview-nav {
+    border-bottom: 1px solid var(--line);
+    border-right: 0;
+  }
+  .tenant-live-preview-header,
+  .tenant-preview-topbar,
+  .tenant-preview-document-header,
+  .tenant-preview-phone-top,
+  .tenant-preview-line {
+    align-items: flex-start;
+    flex-direction: column;
+  }
   .theme-row { grid-template-columns: 18px 18px minmax(0, 1fr); }
   .theme-row > span:nth-of-type(3) { grid-column: 3 / -1; }
   .masonry { columns: 1; }
@@ -3551,7 +3799,8 @@ button.month-calendar-day:hover {
 
   .toast-region { bottom: var(--sp-4); right: var(--sp-2); left: var(--sp-2); width: auto; }
 
-  .segmented { grid-template-columns: 1fr; }
+  .segmented,
+  .auth-provider-actions { grid-template-columns: 1fr; }
 }
 
 /* ── ≤ 480px ── */

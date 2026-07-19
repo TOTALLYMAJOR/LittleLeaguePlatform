@@ -182,4 +182,14 @@ curl -I http://localhost:8081/
 
 The app is production-hosted, and hosted Supabase/browser proof passed for the current `https://www.leaguepilot.us` deployment on 2026-07-02. Real-family launch still requires preserving the QA and hosted proof gates after env rotation and keeping provider sends disconnected unless explicitly implemented.
 
+Google and Facebook SSO use Supabase OAuth through `/auth/callback`. Hosted production requires the Google and Facebook auth providers to be enabled in the Supabase project and the allowed redirect URLs to include `https://www.leaguepilot.us/auth/callback`, `https://leaguepilot.us/auth/callback`, and the intended local/preview callback URLs. OAuth identity does not grant role access by itself; parent, coach, and admin surfaces still depend on approved membership and guardian-link rows.
+
+To configure Supabase Auth through the Management API, set `SUPABASE_ACCESS_TOKEN` or `SUPABASE_MANAGEMENT_TOKEN`, `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`, `FACEBOOK_CLIENT_ID` or `FACEBOOK_APP_ID`, and `FACEBOOK_CLIENT_SECRET` or `FACEBOOK_APP_SECRET`, then run:
+
+```bash
+npm run supabase:oauth -- --apply
+```
+
+The script derives the project ref from `SUPABASE_PROJECT_REF` or `NEXT_PUBLIC_SUPABASE_URL`, preserves existing redirect allow-list entries, adds the LeaguePilot callback URLs, and enables the Google/Facebook providers without printing secrets. The Google and Facebook developer consoles must also use the Supabase provider callback URL: `https://<project-ref>.supabase.co/auth/v1/callback`.
+
 For tenant onboarding, do not rely on anonymous raw signup emails as the only admin path until Supabase Auth SMTP/quota limits are configured and proven. Use existing admin accounts, QA/admin-created users, invite records, or the reviewed registration-approval flow for tenant setup. Live email/SMS/Web Push notifications remain draft/internal records until a provider-send worker, provider adapters, webhooks, suppression, retries, and hosted proof are implemented.

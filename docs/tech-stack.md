@@ -1,8 +1,10 @@
 # Tech Stack
 
-This file tracks the intended production stack for Little League HQ. The current app is a root Next.js scaffold with Supabase-backed production paths for several authenticated parent, coach, and admin workflows, plus typed seed fallback where live rows or auth context are unavailable. Production work should keep moving capabilities behind real auth, persistence, policies, and provider adapters without describing fallback state as production truth.
+This file tracks the intended production stack for LeaguePilot, the public app at `https://www.leaguepilot.us`. The current app is a root Next.js scaffold with Supabase-backed production paths for several authenticated parent, coach, and admin workflows, plus typed seed fallback where live rows or auth context are unavailable. Production work should keep moving capabilities behind real auth, persistence, policies, and provider adapters without describing fallback state as production truth.
 
 ## Direction
+
+Use `LeaguePilot` for public product naming and `leaguepilot.us` as the public production app surface. Legacy Little League HQ wording is historical/internal unless a specific existing artifact still depends on it.
 
 Build mobile-first.
 

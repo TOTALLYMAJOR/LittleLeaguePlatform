@@ -47,4 +47,10 @@ describe("Supabase browser auth config", () => {
 
     expect(getSupabaseEmailRedirectTo("/auth", "https://leaguepilot.us")).toBe("https://leaguepilot.us/auth");
   });
+
+  it("builds hosted OAuth callback redirects from the browser origin", () => {
+    process.env.NEXT_PUBLIC_APP_URL = "http://localhost:3000";
+
+    expect(getSupabaseEmailRedirectTo("/auth/callback", "https://leaguepilot.us")).toBe("https://leaguepilot.us/auth/callback");
+  });
 });

@@ -2,6 +2,8 @@
 
 ## Production Deployment
 
+- Public app identity: `LeaguePilot`
+- Public production domain: `https://www.leaguepilot.us`
 - Platform: Vercel
 - Project: `mbmapps/youth-sports-platform-mvp-v3`
 - Deployment id: `dpl_EwvgSQY6ws7u7GmSnSAFtu9V9Zfi`
@@ -29,6 +31,13 @@
 - `QA_PROOF_BASE_URL=https://www.leaguepilot.us npm run qa:ai-coach-proof` passed and captured `output/playwright/ai-coach-provider-rewrite-qa-session-live.png`.
 - AI provider output remained draft/review-only; no publish or provider send occurred.
 
+## 2026-07-18 Preview And Tenant-Readiness Proof Update
+
+- Preview deployment `dpl_92Dkgrw4up3KHYBVpFdNZnxgwWs7` built successfully at `https://youth-sports-platform-mvp-v3-cho7oxn3s-mbmapps.vercel.app`, including the `/auth/callback` route.
+- Preview browser proof is blocked by Vercel Authentication because no local `VERCEL_AUTOMATION_BYPASS_SECRET` or equivalent bypass token is configured.
+- Production tenant-readiness proof passed against `https://www.leaguepilot.us` with `QA_PROOF_BASE_URL=https://www.leaguepilot.us npm run qa:tenant-readiness-proof`, capturing `/admin/health` and `/admin/teams` mobile plus desktop screenshots under `output/playwright/tenant-readiness/`.
+- This production proof verifies the current public deployment, not the protected preview deployment.
+
 ## Verified During Deployment
 
 - `npm run build` passed locally before deployment.
@@ -54,6 +63,8 @@
 
 Hosting and current hosted browser proof are complete for deployment `dpl_EwvgSQY6ws7u7GmSnSAFtu9V9Zfi`, but production readiness is not complete until these separate proof gates are closed:
 
+- `leaguepilot.us` should stay the next public app surface for LeaguePilot, but public copy must not imply live provider sends, settled payments, native app distribution, or unrestricted media upload storage until those implementation and hosted/provider proof gates exist.
+- The latest preview deployment cannot be browser-proven until either Vercel Authentication is bypassed for QA automation or the deployment is explicitly promoted to Production.
 - Vercel Preview OpenAI env values are intentionally unset until a named non-production preview branch is chosen.
 - Provider sends remain disconnected for launch as draft/internal records only unless a send worker, provider adapters, webhooks, suppression rules, and retry proof are explicitly scoped.
 - AI Coach Workspace provider rewrites are connected through `/api/coach/ai-workspace` for signed-in assigned coaches/admins only, and output remains draft/review-only with no automatic publish or send.

@@ -1,11 +1,14 @@
-# Little League HQ / LeaguePilot
+# LeaguePilot
 
-LeaguePilot is a private youth sports operations app for league admins, coaches, and parent/guardian accounts. The current repo is a root-level Next.js App Router + TypeScript app with Supabase-backed production paths for several authenticated workflows and typed seed fallbacks where live rows or auth context are unavailable.
+LeaguePilot is the public app and product identity for this youth sports operations platform. The production public domain is `https://www.leaguepilot.us`, with `https://leaguepilot.us` kept as the apex alias.
+
+The app is private software for league admins, coaches, and parent/guardian accounts. The current repo is a root-level Next.js App Router + TypeScript app with Supabase-backed production paths for several authenticated workflows and typed seed fallbacks where live rows or auth context are unavailable.
 
 The original static MVP prototype remains available under `public/prototype/` and can be viewed at `/prototype/index.html`.
 
 ## Current Product Truth
 
+- Public-facing copy should use `LeaguePilot` as the app name. Treat legacy `Little League HQ` wording as historical/internal prototype language unless a specific doc or migration still needs it.
 - Children do not log in. Parent/guardian accounts own child access.
 - Player display names stay privacy-preserving outside admin-only contexts.
 - Parent, coach, and admin routes use role-aware shells and scoped server data.

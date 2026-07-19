@@ -100,6 +100,8 @@ describe("route smoke coverage", () => {
     expect(serviceWorker).toContain("caches.match(OFFLINE_URL)");
     expect(serviceWorker).toContain("event.request.mode === \"navigate\"");
     expect(serviceWorker).toContain("networkFirstNavigation");
+    expect(serviceWorker).toContain("precacheStaticShell");
+    expect(serviceWorker).toContain("cache: \"reload\"");
     expect(serviceWorker).not.toContain("\"/parent\"");
     expect(serviceWorker).not.toContain("\"/coach\"");
     expect(serviceWorker).not.toContain("\"/admin\"");
@@ -114,6 +116,8 @@ describe("route smoke coverage", () => {
     expect(provider).toContain("/api/mobile-usage-events");
     expect(provider).toContain("process.env.NODE_ENV !== \"production\"");
     expect(provider).toContain("registration.unregister()");
+    expect(provider).toContain("little-league-hq-shell-");
+    expect(provider).toContain("caches.delete");
     expect(provider).toContain("install_prompt_shown");
     expect(provider).toContain("standalone_launch");
     expect(layout).toContain("AppShell");
