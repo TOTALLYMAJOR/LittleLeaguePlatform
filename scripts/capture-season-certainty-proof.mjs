@@ -5,7 +5,7 @@ import { createClient } from "@supabase/supabase-js";
 
 const envFile = ".env.local";
 const baseUrl = process.env.SEASON_CERTAINTY_BASE_URL || process.env.QA_PROOF_BASE_URL || "http://localhost:3001";
-const screenshotDir = "output/playwright/season-certainty";
+const screenshotDir = process.env.SEASON_CERTAINTY_SCREENSHOT_DIR || "output/playwright/season-certainty";
 const routeSpecs = [
   {
     role: "parent",

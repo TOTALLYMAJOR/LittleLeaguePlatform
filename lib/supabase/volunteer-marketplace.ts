@@ -25,15 +25,17 @@ async function requireVolunteerTeamAccess(db: UnsafeSupabase, input: {
 }) {
   const signup = await run<{
     id: string;
-    organization_id: string;
     team_id: string;
     assigned_user_id: string | null;
     status: string;
+    teams: { organization_id: string } | Array<{ organization_id: string }> | null;
   }>(db.from("volunteer_signups")
-    .select("id,organization_id,team_id,assigned_user_id,status")
+    .select("id,team_id,assigned_user_id,status,teams!inner(organization_id)")
     .eq("id", input.signupId)
     .maybeSingle());
   if (signup.error || !signup.data) return { ok: false as const, message: "Volunteer role was not found." };
+  const team = Array.isArray(signup.data.teams) ? signup.data.teams[0] : signup.data.teams;
+  if (!team?.organization_id) return { ok: false as const, message: "Volunteer role team context was not found." };
   const [guardian, teamMember, orgMember] = await Promise.all([
     run<Array<{ id: string }>>(db.from("player_guardians")
       .select("id,players!inner(team_id)")
@@ -49,7 +51,7 @@ async function requireVolunteerTeamAccess(db: UnsafeSupabase, input: {
       .limit(1)),
     run<Array<{ id: string }>>(db.from("organization_memberships")
       .select("id")
-      .eq("organization_id", signup.data.organization_id)
+      .eq("organization_id", team.organization_id)
       .eq("user_id", input.userId)
       .eq("status", "active")
       .limit(1))
@@ -57,7 +59,13 @@ async function requireVolunteerTeamAccess(db: UnsafeSupabase, input: {
   if (!guardian.data?.length && !teamMember.data?.length && !orgMember.data?.length) {
     return { ok: false as const, message: "Volunteer actions require approved access to this team." };
   }
-  return { ok: true as const, signup: signup.data };
+  return {
+    ok: true as const,
+    signup: {
+      ...signup.data,
+      organization_id: team.organization_id
+    }
+  };
 }
 
 export async function claimVolunteerRoleSafely(input: {

@@ -100,12 +100,17 @@ async function signIn(page, email, password) {
   await page.goto(`${baseUrl}/auth`, { waitUntil: "networkidle" });
   await page.getByLabel("Email").fill(email);
   await page.getByLabel("Password").fill(password);
+  const landingPage = page.waitForURL(
+    (url) => url.pathname !== "/auth",
+    { timeout: 15_000, waitUntil: "networkidle" }
+  );
   await page.getByRole("button", { name: "Sign in" }).last().click();
   await page.getByText("Signed in.", { exact: false }).waitFor({ timeout: 15_000 });
+  await landingPage;
 }
 
 async function assertText(page, expected) {
-  await page.getByText(expected, { exact: false }).first().waitFor({ timeout: 15_000 });
+  await page.getByText(expected, { exact: false }).filter({ visible: true }).first().waitFor({ timeout: 15_000 });
 }
 
 async function assertAnyText(page, expectedOptions) {
@@ -459,6 +464,7 @@ async function proveCoachWeeklyUpdateWrite(browser, supabase) {
   try {
     await signIn(page, requireEnv("QA_COACH_EMAIL"), requireEnv("QA_COACH_PASSWORD"));
     await page.goto(`${baseUrl}/coach?qa_weekly_update=${proofId}`, { waitUntil: "networkidle" });
+    await page.locator("summary").filter({ hasText: "Drafts and team help" }).click();
     await assertText(page, "Coach weekly update builder");
     await assertText(page, "Saving creates an announcement and pending notification drafts only");
     await page.locator("textarea").first().fill(body);
@@ -546,9 +552,31 @@ async function proveCoachProviderPrivateWrites(browser, supabase) {
     if (replayResult.status !== 201 || !replayResult.body?.ok || !replayResult.body.parentReplay?.id) {
       throw new Error(`Parent Replay browser API proof failed: ${replayResult.body?.message ?? replayResult.status}`);
     }
+    const parentReplayId = replayResult.body.parentReplay.id;
+
+    const earlyPublishResult = await authenticatedBrowserPost(coachPage, "/api/coach/parent-replay/publish", {
+      parentReplayId
+    });
+    if (earlyPublishResult.status !== 409 || earlyPublishResult.body?.code !== "approval_required") {
+      throw new Error("Parent Replay browser proof did not block publication before human approval.");
+    }
+
+    const approvalResult = await authenticatedBrowserPost(coachPage, "/api/coach/parent-replay/approve", {
+      parentReplayId
+    });
+    if (approvalResult.status !== 200 || !approvalResult.body?.ok) {
+      throw new Error(`Parent Replay approval browser proof failed: ${approvalResult.body?.message ?? approvalResult.status}`);
+    }
+
+    const publishResult = await authenticatedBrowserPost(coachPage, "/api/coach/parent-replay/publish", {
+      parentReplayId
+    });
+    if (publishResult.status !== 200 || !publishResult.body?.ok) {
+      throw new Error(`Parent Replay publication browser proof failed: ${publishResult.body?.message ?? publishResult.status}`);
+    }
 
     notificationId = await assertParentReplayPublishRows(supabase, {
-      parentReplayId: replayResult.body.parentReplay.id,
+      parentReplayId,
       coachUserId: coach.id,
       parentUserId: parent.id,
       proofStartedAt
@@ -647,13 +675,13 @@ async function proveParentLiveActions(browser, supabase) {
     await signIn(page, requireEnv("QA_PARENT_EMAIL"), requireEnv("QA_PARENT_PASSWORD"));
 
     await page.goto(`${baseUrl}/parent/rsvp?qa_parent_action=${Date.now()}`, { waitUntil: "networkidle" });
-    await assertText(page, "RSVP rows and button payloads are loaded from Supabase.");
-    await clickAndAssertText(page.getByRole("button", { name: "Going" }).first(), page, "RSVP saved to Supabase.");
+    await assertText(page, "RSVP details are current for your approved family access.");
+    await clickAndAssertText(page.getByRole("button", { name: "Going" }).first(), page, "RSVP saved to current team records.");
 
     await page.goto(`${baseUrl}/parent?qa_parent_action=${Date.now()}`, { waitUntil: "networkidle" });
-    await assertText(page, "Showing Supabase roster, guardian, schedule, RSVP, and media rows.");
+    await assertText(page, "Team details are current and scoped to your approved family access.");
     await clickAndAssertText(page.getByRole("button", { name: "Claim snack slot" }).first(), page, "Snack slot saved to Supabase.");
-    await clickAndAssertText(page.getByRole("button", { name: "Claim volunteer role" }).first(), page, "Volunteer role saved to Supabase.");
+    await clickAndAssertText(page.getByRole("button", { name: "Claim volunteer role" }).first(), page, "Volunteer role assigned to your account.");
     await clickAndAssertText(
       page.locator("div.stack.compact").filter({ hasText: "PUSH" }).first().getByRole("button", { name: "Off" }),
       page,
@@ -693,8 +721,8 @@ async function main() {
           path: "/parent",
           screenshot: "parent-qa-session-live.png",
           expectedText: [
-            "Showing Supabase roster, guardian, schedule, RSVP, and media rows.",
-            "Mason",
+            "Team details are current and scoped to your approved family access.",
+            "Next event confirmed",
             "Tiny Tigers"
           ],
           expectedAnyText: [
@@ -705,9 +733,9 @@ async function main() {
           path: "/parent/rsvp",
           screenshot: "parent-rsvp-qa-session-live.png",
           expectedText: [
-            "RSVP rows and button payloads are loaded from Supabase.",
+            "RSVP details are current for your approved family access.",
             "Tiny Tigers vs Rookie Rockets",
-            "Going"
+            "Parents answer attendance for linked children only."
           ]
         }
       ]
@@ -724,10 +752,10 @@ async function main() {
           path: "/coach",
           screenshot: "coach-qa-session-live.png",
           expectedText: [
-            "Showing Supabase team membership, roster, RSVP, weather, snack, and volunteer rows.",
+            "Team details are current and scoped to your approved coach assignment.",
             "Tiny Tigers",
-            "Light rain watch",
-            "Field setup"
+            "weather drafts",
+            "Field Mode"
           ]
         }
       ]
