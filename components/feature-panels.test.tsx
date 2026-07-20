@@ -103,8 +103,8 @@ describe("TeamChatClient", () => {
     expect(html).toContain("Context rail");
     expect(html).toContain("Coach Broadcast Mode");
     expect(html).toContain("Read by");
-    expect(html).toContain("Seed fallback");
-    expect(html).toContain("Provider disconnected");
+    expect(html).toContain("Preview only");
+    expect(html).toContain("Delivery disconnected");
     expect(html).toContain("Reporting UI");
     expect(html).toContain("Retention jobs");
     expect(html).toContain("Media/message policy screens");
@@ -138,7 +138,7 @@ describe("TeamChatClient", () => {
 });
 
 describe("AuthClient", () => {
-  it("renders an explicit Supabase browser env message when auth cannot be configured", () => {
+  it("keeps provider implementation detail out of the signed-out access screen", () => {
     const originalUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
     const originalAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 
@@ -148,13 +148,13 @@ describe("AuthClient", () => {
 
       const html = renderToStaticMarkup(<AuthClient />);
 
-      expect(html).toContain("Supabase Auth is not configured for this app environment");
-      expect(html).toContain("NEXT_PUBLIC_SUPABASE_URL");
-      expect(html).toContain("NEXT_PUBLIC_SUPABASE_ANON_KEY");
-      expect(html).toContain("Google and Facebook SSO use Supabase OAuth");
+      expect(html).toContain("Sign-in services are not connected in this environment");
+      expect(html).toContain("Sign in to your approved LeaguePilot role");
       expect(html).toContain("Continue with Google");
       expect(html).toContain("Continue with Facebook");
-      expect(html).toContain("Provider accounts prove identity only");
+      expect(html).toContain("Private team access still requires league approval");
+      expect(html).not.toContain("Supabase");
+      expect(html).not.toContain("NEXT_PUBLIC_");
     } finally {
       process.env.NEXT_PUBLIC_SUPABASE_URL = originalUrl;
       process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY = originalAnonKey;
@@ -249,15 +249,14 @@ describe("CoachDashboardClient", () => {
       </AppStateProvider>
     );
 
-    expect(html).toContain("Coach Home");
-    expect(html).toContain("Is the next event ready?");
-    expect(html).toContain("Coach Command View");
-    expect(html).toContain("Next 15 Minutes");
-    expect(html).toContain("Nudge RSVP drafts");
+    expect(html).toContain("items need attention");
+    expect(html).toContain("Your 15-minute sideline check");
+    expect(html).toContain("Next event");
+    expect(html).toContain("Draft RSVP nudge");
+    expect(html).toContain("These actions save drafts for review");
     expect(html).toContain("More coach context");
     expect(html).toContain("Attendance");
     expect(html).toContain("No reply");
-    expect(html).toContain("Needs attention");
     expect(html).toContain("Nudge missing replies");
     expect(html).toContain("Coach readiness details");
     expect(html).toContain("Weather policy details");
@@ -291,7 +290,7 @@ describe("CoachDashboardClient", () => {
     expect(html).toContain("pending notification drafts");
     expect(html).toContain("RSVP reminder queue");
     expect(html).toContain("Queue RSVP reminder draft");
-    expect(html).toContain("Provider sending remains approval-gated");
+    expect(html).toContain("This saves a coach draft only");
     expect(html).toContain("Drafts stay Preview, Edit, Approve, Publish");
     expect(html).not.toMatch(/blame|shame|lazy/i);
   });
@@ -340,7 +339,7 @@ describe("CoachRsvpsClient", () => {
 
     expect(html).toContain("Attendance summaries for assigned teams");
     expect(html).toContain("Tiny Tigers");
-    expect(html).toContain("Scoped coach rows.");
+    expect(html).toContain("Attendance is current for your assigned teams.");
   });
 });
 
@@ -354,8 +353,10 @@ describe("ParentDashboardClient", () => {
 
     expect(html).toContain("Tiny Tigers");
     expect(html).toContain("Tiny Tigers vs Rookie Rockets");
-    expect(html).toContain("What do I need to know before the next event?");
-    expect(html).toContain("Game Day Calm Mode");
+    expect(html).toContain("RSVP needed");
+    expect(html).toContain("This week");
+    expect(html).toContain("Is Mason going?");
+    expect(html).toContain("Choose on the RSVP screen.");
     expect(html).toContain("Arrival timeline");
     expect(html).toContain("Leave by");
     expect(html).toContain("Pack check");
@@ -375,10 +376,9 @@ describe("ParentDashboardClient", () => {
     expect(html).toContain("Schedule alerts");
     expect(html).toContain("Needs action");
     expect(html).toContain("All pending items");
-    expect(html).toContain("Family Wallet");
-    expect(html).toContain("Family Wallet For Youth Sports");
-    expect(html).toContain("Balance overview");
-    expect(html).toContain("webhook-confirmed proof");
+    expect(html).toContain("Family Balance Summary");
+    expect(html).toContain("Family finance evidence");
+    expect(html).toContain("never infers");
     expect(html).toContain("Family snapshot");
     expect(html).toContain("Media and privacy");
     expect(html).toContain("Calendar and team media");
@@ -396,7 +396,7 @@ describe("ParentDashboardClient", () => {
     expect(html).toContain("PUSH");
     expect(html).toContain("EMAIL");
     expect(html).toContain("SMS");
-    expect(html).toContain("Provider sends still require opt-in");
+    expect(html).toContain("Messages still require opt-in");
     expect(html).toContain("Snack openings");
     expect(html).toContain("Volunteer openings");
     expect(html).toContain("One-Tap Volunteer Marketplace");
@@ -482,6 +482,61 @@ describe("ParentRsvpClient", () => {
 });
 
 describe("ScheduleAlertsClient", () => {
+  it("renders the parent schedule as grouped event cards with the real RSVP entry point", () => {
+    const html = renderToStaticMarkup(
+      <AppStateProvider>
+        <ScheduleAlertsClient mode="parent" />
+      </AppStateProvider>
+    );
+
+    expect(html).toContain("Family schedule");
+    expect(html).toContain("No events today");
+    expect(html).toContain("This week");
+    expect(html).toContain("Week ribbon");
+    expect(html).toContain("Tiny Tigers vs Rookie Rockets");
+    expect(html).toContain("Is Mason going?");
+    expect(html).toContain("parent-rsvp-glow");
+    expect(html).toContain("RSVP now");
+    expect(html).toContain("Game-day sheet");
+    expect(html).toContain("Family-only RSVP details");
+    expect(html).not.toContain("Watch now");
+  });
+
+  it("renders the coach calendar as a sideline timeline and readiness matrix", () => {
+    const html = renderToStaticMarkup(
+      <AppStateProvider>
+        <ScheduleAlertsClient mode="coach" />
+      </AppStateProvider>
+    );
+
+    expect(html).toContain("Coach schedule");
+    expect(html).toContain("Now, next, later");
+    expect(html).toContain("Readiness matrix");
+    expect(html).toContain("What needs attention before arrival");
+    expect(html).toContain("No response");
+    expect(html).toContain("Help gaps");
+    expect(html).toContain("Weather");
+    expect(html).toContain("Queue schedule alert records");
+  });
+
+  it("renders the admin calendar with a selected-event inspector and change lens", () => {
+    const html = renderToStaticMarkup(
+      <AppStateProvider>
+        <ScheduleAlertsClient mode="admin" />
+      </AppStateProvider>
+    );
+
+    expect(html).toContain("League schedule control room");
+    expect(html).toContain("Selected event");
+    expect(html).toContain("Change lens");
+    expect(html).toContain("Original and proposed truth");
+    expect(html).toContain("Original");
+    expect(html).toContain("Proposed");
+    expect(html).toContain("Proposed start");
+    expect(html).toContain("Review impact and save");
+    expect(html).toContain("does not execute provider delivery");
+  });
+
   it("puts a real month calendar on the public read-only schedule", () => {
     const html = renderToStaticMarkup(
       <AppStateProvider>
@@ -547,8 +602,10 @@ describe("AdminDashboardClient", () => {
       </AppStateProvider>
     );
 
-    expect(html).toContain("Overview");
-    expect(html).toContain("Which teams need help before families complain?");
+    expect(html).toContain("What is blocking launch?");
+    expect(html).toContain("Launch blockers need administrator action.");
+    expect(html).toContain("Current admin context");
+    expect(html).toContain("League admin");
     expect(html).toContain("Teams needing help");
     expect(html).toContain("Pending reviews");
     expect(html).toContain("Team status");
@@ -874,7 +931,7 @@ describe("ParentReplayClient", () => {
       </AppStateProvider>
     );
 
-    expect(html).toContain("Showing Supabase team membership");
+    expect(html).toContain("Team and coach access are current for this replay");
     expect(html).toContain("Supabase Tigers");
     expect(html).toContain(supabaseTeamId);
     expect(html).toContain("Request AI rewrite");

@@ -46,13 +46,16 @@ export async function CoachPracticeRecapsSurface() {
 export async function CoachScheduleSurface() {
   const pageAccess = await requireCoachPageAccess();
   if (!pageAccess.ok) return <CoachDashboardClient dashboardData={pageAccess.dashboardData} />;
-  const scheduleData = await listScheduleOperationsData();
+  const [scheduleData, dashboardData] = await Promise.all([
+    listScheduleOperationsData(),
+    listParentCoachDashboardData({ viewerUserId: pageAccess.access.userId, surface: "coach" })
+  ]);
   const scopedScheduleData = scopeScheduleOperationsData(
     scheduleData,
     pageAccess.access.coachTeamIds,
     "Showing schedule rows scoped to the signed-in coach's active teams."
   );
-  return <ScheduleAlertsClient scheduleData={scopedScheduleData} />;
+  return <ScheduleAlertsClient scheduleData={scopedScheduleData} dashboardData={dashboardData} mode="coach" />;
 }
 
 export async function CoachMessagesSurface() {

@@ -17,6 +17,12 @@ export default defineConfig({
   test: {
     environment: "node",
     globals: true,
-    include: ["lib/**/*.test.ts", "components/**/*.test.tsx", "app/**/*.test.ts", "supabase/**/*.test.ts"]
+    include: [
+      "lib/**/*.test.ts",
+      "components/**/*.test.tsx",
+      "app/**/*.test.ts",
+      "supabase/**/*.test.ts",
+      "tools/**/*.test.mjs"
+    ]
   }
 });

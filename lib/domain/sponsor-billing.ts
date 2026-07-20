@@ -28,7 +28,8 @@ export interface SponsorBillingInput {
 const billingWorkflow: SponsorBillingProof["workflow"] = ["Draft", "Review", "Invoice", "Record payment proof"];
 
 function defaultAmountCents(sponsor: Sponsor) {
-  return sponsor.level === "league" ? 25000 : 7500;
+  void sponsor;
+  return 0;
 }
 
 function lookupKeyFor(sponsor: Sponsor) {
@@ -38,7 +39,7 @@ function lookupKeyFor(sponsor: Sponsor) {
 export function buildSponsorBillingProof(sponsor: Sponsor, input: SponsorBillingInput = {}): SponsorBillingProof {
   const amountCents = input.amountCents && input.amountCents > 0 ? input.amountCents : defaultAmountCents(sponsor);
   const billingStatus = input.billingStatus ?? "draft";
-  const invoiceReference = input.invoiceReference ?? `draft-invoice-${sponsor.id}`;
+  const invoiceReference = input.invoiceReference ?? "not-issued";
 
   return {
     sponsorId: sponsor.id,
@@ -62,7 +63,7 @@ export function buildSponsorBillingProof(sponsor: Sponsor, input: SponsorBilling
       "Use server-side Stripe calls only with environment-managed restricted keys; never expose Stripe secret keys to the browser.",
       "Record invoice and payment proof before activating paid sponsor billing claims."
     ],
-    auditSummary: `${sponsor.name} billing proof is ${billingStatus}; product ${lookupKeyFor(sponsor)} and invoice ${invoiceReference} are separated from public placement.`
+    auditSummary: `${sponsor.name} billing status is ${billingStatus}; no amount is inferred when billing evidence is absent. Product ${lookupKeyFor(sponsor)} and invoice ${invoiceReference} are separated from public placement.`
   };
 }
 

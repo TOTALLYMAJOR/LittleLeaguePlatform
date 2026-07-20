@@ -47,9 +47,56 @@ export function ActionRow({ action }: { action: SeasonActionItem }) {
       <span>
         <strong>{action.label}</strong>
         <small>{action.description}</small>
+        {action.ranking ? (
+          <span className="season-priority-evidence">
+            <b>{action.ranking.band} priority, score {action.ranking.score}</b>
+            <small>{action.ranking.reasons.slice(0, 3).join(" | ")}</small>
+          </span>
+        ) : null}
       </span>
       <em>{action.cta}</em>
     </a>
+  );
+}
+
+export function OperationalTruthBand({ truth }: { truth: ParentSeasonCertaintyView["operationalTruth"] }) {
+  const state: SeasonCardState = truth.tone === "ready"
+    ? "ready"
+    : truth.tone === "blocked"
+      ? "urgent"
+      : truth.tone === "unknown"
+        ? "offline_stale"
+        : "needs_attention";
+  const symbol = truth.tone === "ready" ? "✓" : truth.tone === "blocked" ? "×" : "!";
+
+  return (
+    <section className={`operational-truth-band state-${state}`} aria-label="Operational truth">
+      <div className="operational-truth-summary">
+        <span aria-hidden="true">{symbol}</span>
+        <div>
+          <strong>{truth.summary}</strong>
+          <small>{truth.criticalExceptions.length
+            ? `${truth.criticalExceptions.length} critical evidence lane${truth.criticalExceptions.length === 1 ? "" : "s"} need attention.`
+            : "All critical evidence lanes shown here are supported and current."}</small>
+        </div>
+        <StatusBadge state={state} label={truth.tone === "unknown" ? "Needs verification" : truth.tone} />
+      </div>
+      <details>
+        <summary>Evidence and exceptions</summary>
+        <ul>
+          {truth.evidence.map((lane) => (
+            <li key={`${lane.category}-${lane.label}`}>
+              <span aria-hidden="true">{lane.satisfied === true && !lane.freshness?.stale ? "✓" : lane.satisfied === false ? "×" : "!"}</span>
+              <span>
+                <strong>{lane.label}</strong>
+                <small>{lane.category} | {lane.source}{lane.freshness ? ` | ${lane.freshness.label}` : ""}</small>
+                {(lane.satisfied !== true || lane.freshness?.stale) && lane.recoveryAction ? <em>{lane.recoveryAction}</em> : null}
+              </span>
+            </li>
+          ))}
+        </ul>
+      </details>
+    </section>
   );
 }
 
@@ -136,6 +183,7 @@ export function NextEventCard({ view }: { view: ParentSeasonCertaintyView }) {
 
   return (
     <SeasonCard state={state} className="next-event-card">
+      <OperationalTruthBand truth={view.operationalTruth} />
       <div className="season-card-topline">
         <StatusBadge state={view.nextEvent.status === "changed" ? "needs_attention" : state} label={view.nextEvent.statusLabel} />
         <span className="season-mini-label">{view.nextEvent.type}</span>
@@ -265,6 +313,7 @@ export function EventReadinessCard({ view }: { view: CoachSeasonCertaintyView })
   const primaryAction = view.actions[0];
   return (
     <SeasonCard state={view.readiness.overallState === "ready" ? "ready" : "needs_attention"} className="event-readiness-card">
+      <OperationalTruthBand truth={view.operationalTruth} />
       <div className="season-card-topline">
         <StatusBadge state={view.readiness.overallState === "ready" ? "ready" : "needs_attention"} label={view.readiness.overallLabel} />
         <span className="season-mini-label">{view.team.name}</span>
@@ -345,8 +394,9 @@ export function PracticeRecapCard({ view }: { view: CoachSeasonCertaintyView }) 
 export function LeagueHealthSummaryCard({ view }: { view: AdminSeasonCertaintyView }) {
   return (
     <SeasonCard state={view.health.teamsNeedingHelp ? "needs_attention" : "ready"} className="league-health-card">
-      <p className="season-page-kicker">Overview - {view.organizationName}</p>
-      <h1 id="admin-home-title">Which teams need help before families complain?</h1>
+      <OperationalTruthBand truth={view.operationalTruth} />
+      <p className="season-page-kicker">League operations - {view.organizationName}</p>
+      <h1 id="admin-home-title">What is blocking launch?</h1>
       <div className="season-count-grid league-health-grid">
         <Metric label="Teams needing help" value={view.health.teamsNeedingHelp} />
         <Metric label="Low RSVP teams" value={view.health.lowRsvpTeams} />

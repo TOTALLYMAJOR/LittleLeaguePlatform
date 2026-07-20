@@ -58,6 +58,14 @@ docker compose down
 | `AI_COACH_PROVIDER_ENABLED` | Server | Enables AI provider rewrite route only when true. |
 | `OPENAI_API_KEY` | Server only | Never `NEXT_PUBLIC_*`; review-only output. |
 | `OPENAI_AI_COACH_MODEL` | Server | Model selection for AI Coach provider. |
+| `OFFLINE_WRITES_ENABLED` | Server | Offline replay kill switch; organization flag must also be true. |
+| `NEXT_PUBLIC_OFFLINE_WRITES_ENABLED` | Browser | Allows the approved device outbox UI; never replaces server authorization. |
+| `PROVIDER_SENDS_ENABLED` | Server | Provider execution kill switch; organization flag, human approval, consent, and allowlist still apply. |
+| `PROVIDER_QA_RECIPIENT_ALLOWLIST` | Server | Comma-separated sandbox recipients; never expose to the browser. |
+| `MEDIA_UPLOADS_ENABLED` | Server | Private upload kill switch; organization flag and scan-adapter readiness still apply. |
+| `MEDIA_SCAN_ADAPTER_READY` | Server | Explicit production scanner readiness declaration. |
+| `PAYMENTS_ENABLED` | Server | Stripe execution kill switch; organization flag and connected-account readiness still apply. |
+| `IMPACT_PREVIEW_SECRET` | Server | HMAC secret for expiring high-impact action previews. |
 | QA user credentials | QA CI/local only | Keep separate from production identities. |
 
 ## Day-2 Operations
@@ -67,7 +75,9 @@ docker compose down
 | Health check | Hosted route smoke and `/admin/operations` screenshots. | Formal uptime monitor and alert routing. |
 | Auth/RLS proof | `npm run qa:rls-proof`. | Scheduled proof after migrations/env rotations. |
 | Browser proof | `QA_PROOF_BASE_URL=<url> npm run qa:session-proof`. | Coverage for remaining media, registration, team-builder admin writes. |
-| Provider proof | Provider rows, AI proof, brand proof. | Live provider send sandbox proof if sends are approved. |
+| Provider proof | Provider rows, AI proof, brand proof. | Allowlisted SendGrid/Twilio/Web Push sandbox plus verified webhook proof if sends are approved. |
+| Payment proof | Local Stripe adapter and signed webhook tests. | Connected-account test-mode Checkout, replay, refund/dispute ownership, and hosted proof. |
+| Media proof | Local quarantine/consent/release policy. | Private storage RLS, production scanner, retention deletion, and family-visibility proof. |
 | Backups | Supabase project backups/provider controls. | Document restore drill and RPO/RTO. |
 | Incident response | Runbook common issues. | Dedicated incident template and escalation contacts. |
 | Audit review | Admin/security surfaces and audit rows. | Dashboard/alerting for suspicious admin/provider actions. |

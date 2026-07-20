@@ -1,0 +1,17 @@
+import { NextResponse } from "next/server";
+import { requireAuthenticatedRouteUser } from "@/lib/supabase/route-auth";
+import { approvePrivateMediaFamilyRelease } from "@/lib/supabase/private-media";
+
+export async function POST(request: Request) {
+  const auth = await requireAuthenticatedRouteUser(request);
+  if (!auth.ok || !auth.user) return NextResponse.json({ ok: false, message: auth.message }, { status: 401 });
+  const body = await request.json().catch(() => null);
+  if (!body) return NextResponse.json({ ok: false, message: "Media family-release evidence is required." }, { status: 400 });
+  const result = await approvePrivateMediaFamilyRelease({
+    mediaItemId: String(body.mediaItemId ?? ""),
+    actorUserId: auth.user.id,
+    playerIds: Array.isArray(body.playerIds) ? body.playerIds.map(String) : [],
+    consentBasis: String(body.consentBasis ?? "")
+  });
+  return NextResponse.json(result, { status: result.ok ? 200 : 400 });
+}

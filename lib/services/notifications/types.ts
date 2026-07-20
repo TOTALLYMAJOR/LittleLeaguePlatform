@@ -7,6 +7,8 @@ export interface NotificationDeliveryRecipient {
   email?: string | null;
   phone?: string | null;
   pushEndpoint?: string | null;
+  pushP256dh?: string | null;
+  pushAuth?: string | null;
 }
 
 export interface NotificationDeliveryPayload {
@@ -15,6 +17,7 @@ export interface NotificationDeliveryPayload {
   provider: NotificationDeliveryProvider;
   channel: NotificationDeliveryChannel;
   organizationId: string;
+  organizationProviderSendsEnabled?: boolean;
   teamId: string;
   title: string;
   body: string;

@@ -10,6 +10,7 @@ import {
   getPrimaryNavEntries,
   getRouteEntry,
   getRouteParent,
+  canAccessRouteEntry,
   isRouteActive,
   signedOutShellAccess,
   type ClientShellAccess,
@@ -17,7 +18,24 @@ import {
 } from "@/lib/navigation/route-topology";
 import { StatusBadge } from "./primitives";
 
-const groups: RouteTopologyEntry["group"][] = ["Family", "Coach", "League Ops", "Admin Tools", "Switch role", "Support"];
+const groups: RouteTopologyEntry["group"][] = [
+  "Family",
+  "Command",
+  "Calendar",
+  "Team",
+  "Communication",
+  "Replay",
+  "Tools",
+  "Launch",
+  "Operations",
+  "Trust & Safety",
+  "Business",
+  "Configuration",
+  "League Ops",
+  "Admin Tools",
+  "Switch role",
+  "Support"
+];
 
 const routeHelpByRole: Record<RouteTopologyEntry["role"], { title: string; body: string; tone: string }> = {
   public: {
@@ -69,11 +87,20 @@ const routeHelpByHref: Record<string, string> = {
   "/admin/registrations": "Approve or reject pending registration requests before families receive private access.",
   "/admin/media-review": "Review reported media and approve or reject coach drill video sources and videos.",
   "/admin/teams": "Set up active teams, seasons, divisions, and roster readiness before inviting families.",
-  "/admin/security-audit": "Use this page to confirm role boundaries, RLS proof, and audit evidence."
+  "/admin/security-audit": "Use this page to confirm role boundaries, access-policy proof, and audit evidence."
 };
 
 function getShellContext(pathname: string, access: ClientShellAccess) {
   const entry = getRouteEntry(pathname);
+  if (entry && !canAccessRouteEntry(entry, access)) {
+    return {
+      title: "Access not available",
+      body: "This account does not have access to the requested area. Private labels and navigation remain hidden.",
+      tone: "support",
+      badge: "Permission denied",
+      badgeVariant: "warning" as const
+    };
+  }
   const roleHelp = routeHelpByRole[entry?.role ?? "public"];
   const title = entry?.label ? `${roleHelp.title}: ${entry.label}` : roleHelp.title;
   const body = entry?.href && routeHelpByHref[entry.href] ? routeHelpByHref[entry.href] : roleHelp.body;
@@ -93,6 +120,7 @@ export function AppShell({ access = signedOutShellAccess, children }: { access?:
   const [commandIndex, setCommandIndex] = useState(0);
   const [isOffline, setIsOffline] = useState(false);
   const [sessionWarningVisible, setSessionWarningVisible] = useState(false);
+  const [roleSwitchPending, setRoleSwitchPending] = useState<RouteTopologyEntry | null>(null);
   const previousFocus = useRef<HTMLElement | null>(null);
   const commandDialogRef = useRef<HTMLDialogElement>(null);
   const commandInputRef = useRef<HTMLInputElement>(null);
@@ -100,6 +128,8 @@ export function AppShell({ access = signedOutShellAccess, children }: { access?:
   const commandItems = useMemo(() => getCommandEntries(access, pathname), [access, pathname]);
   const activeMobileItems = useMemo(() => getMobileNavEntries(access, pathname), [access, pathname]);
   const shellContext = useMemo(() => getShellContext(pathname, access), [access, pathname]);
+  const activeRouteRole = getRouteEntry(pathname)?.role;
+  const activeContext = access.contexts?.find((context) => context.role === activeRouteRole);
   const showMobileTabbar = access.signedIn && (access.canParent || access.canCoach || access.canAdmin) && activeMobileItems.length >= 3;
 
   const filteredNav = useMemo(() => {
@@ -173,26 +203,90 @@ export function AppShell({ access = signedOutShellAccess, children }: { access?:
   }, [pathname]);
 
   function openCommandRoute(item: RouteTopologyEntry) {
+    if (item.group === "Switch role") {
+      switchRole(item);
+      return;
+    }
     setCommandOpen(false);
     router.push(item.href);
   }
 
+  function switchRole(item: RouteTopologyEntry) {
+    setRoleSwitchPending(item);
+    setCommandOpen(false);
+    setCommandQuery("");
+    for (const key of Object.keys(window.sessionStorage)) {
+      if (key.startsWith("leaguepilot-context:")) window.sessionStorage.removeItem(key);
+    }
+    window.dispatchEvent(new CustomEvent("leaguepilot:context-reset", {
+      detail: { nextRole: item.role, nextHref: item.href }
+    }));
+    window.location.assign(item.href);
+  }
+
+  if (!access.signedIn) {
+    return (
+      <AppStateProvider key="signed-out">
+        <a className="skip-link" href="#main-content">Skip to main content</a>
+        {isOffline ? (
+          <div className="offline-banner" role="status" aria-live="assertive">
+            You are offline. Saved pages may still be available, but current team details need a connection.
+          </div>
+        ) : null}
+        <div className="public-app-shell">
+          <header className="public-header">
+            <Link href="/" className="public-brand" aria-label="LeaguePilot home">
+              <span className="public-brand-mark">LP</span>
+              <span className="public-brand-copy">
+                <strong>LeaguePilot</strong>
+                <small>Private youth sports operations</small>
+              </span>
+            </Link>
+            <nav className="public-nav" aria-label="Public navigation">
+              <Link href="/schedule">Calendar</Link>
+              <Link href="/registration">Sign up</Link>
+              <Link className="button" href="/auth">Sign in</Link>
+            </nav>
+          </header>
+          <main id="main-content" className="public-main">{children}</main>
+        </div>
+        <div id="live-region" aria-live="polite" aria-atomic="true">
+          {isOffline ? "Offline mode active" : "Route ready"}
+        </div>
+      </AppStateProvider>
+    );
+  }
+
   return (
-    <AppStateProvider>
+    <AppStateProvider key={activeContext?.contextKey ?? "signed-in-unresolved"}>
       <a className="skip-link" href="#main-content">Skip to main content</a>
       {isOffline ? (
         <div className="offline-banner" role="status" aria-live="assertive">
-          You are offline. Some features may be unavailable until Supabase reconnects.
+          You are offline. Current team details may be unavailable until the connection returns.
         </div>
       ) : null}
       <div className={`shell app-shell${collapsed ? " sidebar-collapsed" : ""}`}>
         <aside className="sidebar app-sidebar" aria-label="Primary">
+          <div className="sidebar-video-backdrop" aria-hidden="true">
+            <video
+              autoPlay
+              loop
+              muted
+              playsInline
+              preload="metadata"
+              poster="/images/leaguepilot-game-day-parent.png"
+              tabIndex={-1}
+            >
+              <source src="/videos/leaguepilot-sidebar-loop.webm" type="video/webm" />
+            </video>
+            <span />
+          </div>
           <div className="sidebar-topline">
-            <Link href="/" className="brand" aria-label="Little League HQ home">
-              <span className="brand-mark">LL</span>
+            <Link href="/" className="brand" aria-label="LeaguePilot home">
+              <span className="brand-mark">LP</span>
               <span className="brand-copy">
-                <strong>Little League HQ</strong>
-                <small>Private season operations</small>
+                <strong>LeaguePilot</strong>
+                <small>Little League HQ demo</small>
               </span>
             </Link>
             <button
@@ -207,11 +301,6 @@ export function AppShell({ access = signedOutShellAccess, children }: { access?:
             </button>
           </div>
 
-          <button type="button" className="command-launch" onClick={() => setCommandOpen(true)}>
-            <span>Search routes</span>
-            <kbd>Ctrl K</kbd>
-          </button>
-
           <nav className="nav" id="app-primary-nav" aria-label="Main navigation">
             {groups.map((group) => {
               const items = navItems.filter((item) => item.group === group);
@@ -222,7 +311,17 @@ export function AppShell({ access = signedOutShellAccess, children }: { access?:
                   {items.map((item) => {
                     const active = isRouteActive(pathname, item.href);
                     return (
-                      <Link key={item.href} href={item.href} data-active={active ? "true" : undefined} aria-current={active ? "page" : undefined} title={item.label}>
+                      <Link
+                        key={item.href}
+                        href={item.href}
+                        data-active={active ? "true" : undefined}
+                        aria-current={active ? "page" : undefined}
+                        title={item.label}
+                        onClick={item.group === "Switch role" ? (event) => {
+                          event.preventDefault();
+                          switchRole(item);
+                        } : undefined}
+                      >
                         <span className="nav-icon" aria-hidden="true">{item.short}</span>
                         <span className="nav-label">{item.label}</span>
                       </Link>
@@ -248,6 +347,22 @@ export function AppShell({ access = signedOutShellAccess, children }: { access?:
               <StatusBadge label={shellContext.badge} variant={shellContext.badgeVariant} />
             </div>
           </div>
+          {activeContext ? (
+            <div className="verified-context-bar" aria-label="Verified role and organization context">
+              <span><small>Role</small><strong>{activeContext.role}</strong></span>
+              <span><small>Organization</small><strong>{activeContext.organizationName}</strong></span>
+              <span><small>Season</small><strong>{activeContext.seasonName}</strong></span>
+              {activeContext.teamName ? <span><small>Team</small><strong>{activeContext.teamName}</strong></span> : null}
+              <span className={activeContext.readOnly ? "state-readonly" : "state-current"}>
+                <small>Access</small>
+                <strong>{activeContext.readOnly ? "Archived, read-only" : "Current, role scoped"}</strong>
+              </span>
+            </div>
+          ) : (
+            <div className="verified-context-bar context-unavailable" role="status">
+              <span><small>Context</small><strong>No verified context for this route</strong></span>
+            </div>
+          )}
           {children}
         </main>
 
@@ -274,6 +389,16 @@ export function AppShell({ access = signedOutShellAccess, children }: { access?:
         </aside>
       ) : null}
 
+      {roleSwitchPending ? (
+        <div className="role-switch-transition" role="status" aria-live="assertive">
+          <span className="role-switch-spinner" aria-hidden="true" />
+          <div>
+            <strong>Switching to {roleSwitchPending.role} view</strong>
+            <small>Prior role data is being cleared. Access will be checked again by the server.</small>
+          </div>
+        </div>
+      ) : null}
+
       <div id="live-region" aria-live="polite" aria-atomic="true">
         {isOffline ? "Offline mode active" : "Route ready"}
       </div>
@@ -292,15 +417,15 @@ export function AppShell({ access = signedOutShellAccess, children }: { access?:
       >
         <div className="dialog-header">
           <div>
-            <span className="eyebrow">Route finder</span>
-            <h2 id="route-finder-title">Open a route</h2>
+            <span className="eyebrow">Quick navigation</span>
+            <h2 id="route-finder-title">Go to a page</h2>
           </div>
           <button type="button" className="dialog-close" aria-label="Close route finder" onClick={() => setCommandOpen(false)}>
             x
           </button>
         </div>
         <label>
-          Search routes
+          Search pages
           <input
             ref={commandInputRef}
             value={commandQuery}
@@ -322,7 +447,7 @@ export function AppShell({ access = signedOutShellAccess, children }: { access?:
                 openCommandRoute(filteredNav[commandIndex]);
               }
             }}
-            placeholder="Type schedule, messages, branding, or safety"
+            placeholder="Type schedule, messages, teams, or safety"
           />
         </label>
         <div className="command-results" role="listbox" aria-label="Route results">
@@ -339,7 +464,7 @@ export function AppShell({ access = signedOutShellAccess, children }: { access?:
               <span className="nav-icon" aria-hidden="true">{item.short}</span>
               <span>
                 <strong>{item.label}</strong>
-                <small>{item.group} · {item.href}</small>
+                <small>{item.group} - {item.href}</small>
               </span>
             </button>
           ))}

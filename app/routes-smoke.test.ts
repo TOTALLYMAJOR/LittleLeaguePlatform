@@ -63,23 +63,21 @@ describe("route smoke coverage", () => {
     const page = readFileSync(join(process.cwd(), "app", "page.tsx"), "utf8");
 
     expect(page).toContain("Stop chasing families.");
-    expect(page).toContain("Run the season from one private team home");
-    expect(page).toContain("Practice recaps carry coaching home.");
-    expect(page).toContain("Where should I go?");
-    expect(page).toContain("I already have an account");
-    expect(page).toContain("Explore the team tools.");
+    expect(page).toContain("One season. Three clear views.");
+    expect(page).toContain("Parent Replay carries practice home.");
+    expect(page).toContain("Private by default");
+    expect(page).toContain("Start with the right door.");
     expect(page).toContain("Sign in");
     expect(page).toContain("/auth");
     expect(page).toContain("landing-soccer-ambient");
-    expect(page).toContain("Parent game-day tools");
-    expect(page).toContain("Current scaffold inventory");
-    expect(page).toContain("Supabase-backed paths when signed-in rows and roles exist");
-    expect(page).toContain("no external email, SMS, push, Stripe, AI-provider, or native-app delivery");
+    expect(page).toContain("/images/leaguepilot-game-day-parent.png");
+    expect(page).toContain("External messages are not connected or sent from this preview.");
+    expect(page).toContain("Little League HQ is the demo organization");
     expect(page).toContain("/coach/practice-recaps");
-    expect(page).toContain("/admin/security-audit");
     expect(page).not.toContain("/prototype/index.html");
-    expect(page).not.toContain("session-only local state");
-    expect(page).not.toContain("does not persist production data");
+    expect(page).not.toContain("Supabase");
+    expect(page).not.toContain("seed fallback");
+    expect(page).not.toContain("Current scaffold inventory");
   });
 
   it("keeps the static prototype available but hidden from indexable IA", () => {
@@ -141,7 +139,7 @@ describe("route smoke coverage", () => {
     expect(shell).toContain("Role scoped");
     expect(shell).toContain("Sign-in required");
     expect(shell).toContain("little-league-shell-collapsed");
-    expect(shell).toContain("Route finder");
+    expect(shell).toContain("Quick navigation");
     expect(shell).toContain("aria-current");
     expect(shell).toContain("mobile-tabbar");
     expect(shell).toContain("offline");
@@ -149,7 +147,12 @@ describe("route smoke coverage", () => {
     expect(shell).toContain("live-region");
     expect(shell).toContain("showModal");
     expect(shell).toContain("previousFocus.current?.focus");
+    expect(shell).toContain("leaguepilot-sidebar-loop.webm");
+    expect(shell).toContain("autoPlay");
+    expect(shell).toContain("playsInline");
     expect(css).toContain(".mobile-tabbar");
+    expect(css).toContain(".sidebar-video-backdrop");
+    expect(css).toContain(".parent-rsvp-glow");
     expect(css).toContain("@media print");
     expect(css).toContain("@media (forced-colors: active)");
   });

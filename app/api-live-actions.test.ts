@@ -40,7 +40,6 @@ import { listProviderDeliveryRetryQueue, reviewNotificationDelivery } from "@/li
 import { listSponsorAdminData } from "@/lib/supabase/sponsors";
 import {
   claimSnackSlot,
-  claimVolunteerRole,
   createWeatherAlertDraft,
   saveCoachWeeklyUpdate,
   saveSponsor,
@@ -53,6 +52,8 @@ import {
   updateParentRsvp
 } from "@/lib/supabase/operations";
 import { requireAuthenticatedRouteUser } from "@/lib/supabase/route-auth";
+import { claimVolunteerRoleSafely } from "@/lib/supabase/volunteer-marketplace";
+import { listFamilyBalanceSummary } from "@/lib/supabase/family-balance";
 
 vi.mock("@/lib/supabase/route-auth", () => ({
   requireAuthenticatedRouteUser: vi.fn()
@@ -76,7 +77,6 @@ vi.mock("@/lib/supabase/sponsors", () => ({
 
 vi.mock("@/lib/supabase/operations", () => ({
   claimSnackSlot: vi.fn(),
-  claimVolunteerRole: vi.fn(),
   createWeatherAlertDraft: vi.fn(),
   saveCoachWeeklyUpdate: vi.fn(),
   saveSponsor: vi.fn(),
@@ -87,6 +87,14 @@ vi.mock("@/lib/supabase/operations", () => ({
   submitParentSupportRequest: vi.fn(),
   updateNotificationPreference: vi.fn(),
   updateParentRsvp: vi.fn()
+}));
+
+vi.mock("@/lib/supabase/volunteer-marketplace", () => ({
+  claimVolunteerRoleSafely: vi.fn()
+}));
+
+vi.mock("@/lib/supabase/family-balance", () => ({
+  listFamilyBalanceSummary: vi.fn()
 }));
 
 vi.mock("@/lib/supabase/team-branding", () => ({
@@ -131,7 +139,8 @@ const listParentCoachDashboardDataMock = vi.mocked(listParentCoachDashboardData)
 const listSponsorAdminDataMock = vi.mocked(listSponsorAdminData);
 const updateParentRsvpMock = vi.mocked(updateParentRsvp);
 const claimSnackSlotMock = vi.mocked(claimSnackSlot);
-const claimVolunteerRoleMock = vi.mocked(claimVolunteerRole);
+const claimVolunteerRoleMock = vi.mocked(claimVolunteerRoleSafely);
+const listFamilyBalanceSummaryMock = vi.mocked(listFamilyBalanceSummary);
 const createWeatherAlertDraftMock = vi.mocked(createWeatherAlertDraft);
 const saveCoachWeeklyUpdateMock = vi.mocked(saveCoachWeeklyUpdate);
 const saveSponsorMock = vi.mocked(saveSponsor);
@@ -153,12 +162,13 @@ const createAdminExportMock = vi.mocked(createAdminExport);
 const listProviderDeliveryRetryQueueMock = vi.mocked(listProviderDeliveryRetryQueue);
 const reviewNotificationDeliveryMock = vi.mocked(reviewNotificationDelivery);
 
-function jsonRequest(body: unknown) {
+function jsonRequest(body: unknown, headers?: Record<string, string>) {
   return new Request("http://localhost/api/test", {
     method: "POST",
     headers: {
       authorization: "Bearer live-session",
-      "content-type": "application/json"
+      "content-type": "application/json",
+      ...headers
     },
     body: JSON.stringify(body)
   });
@@ -198,6 +208,14 @@ describe("live action API routes", () => {
       isSupabaseBacked: true,
       message: "Sponsor records, placements, and logo assets are loaded from Supabase."
     });
+    listFamilyBalanceSummaryMock.mockResolvedValue({
+      ok: true,
+      message: "No evidence-backed family obligations are recorded.",
+      items: [],
+      totalDueCents: 0,
+      confirmedCents: 0,
+      proofBoundary: "Only verified records can confirm payment."
+    });
   });
 
   it("uses the authenticated parent session for RSVP writes", async () => {
@@ -207,8 +225,10 @@ describe("live action API routes", () => {
       eventId: "event-1",
       playerId: "player-1",
       response: "going",
+      expectedLockVersion: 2,
+      expectedScheduleVersion: 4,
       parentUserId: "client-spoof"
-    }));
+    }, { "idempotency-key": "rsvp-action-1" }));
     const payload = await response.json();
 
     expect(response.status).toBe(200);
@@ -218,8 +238,30 @@ describe("live action API routes", () => {
       playerId: "player-1",
       parentUserId: "user-live-session",
       response: "going",
-      note: undefined
+      note: undefined,
+      expectedLockVersion: 2,
+      expectedScheduleVersion: 4,
+      clientActionId: "rsvp-action-1"
     });
+  });
+
+  it("returns a conflict when the schedule changed before RSVP save", async () => {
+    updateParentRsvpMock.mockResolvedValue({
+      ok: false,
+      code: "schedule_changed",
+      message: "The event changed after this RSVP was opened."
+    });
+
+    const response = await postRsvp(jsonRequest({
+      eventId: "event-1",
+      playerId: "player-1",
+      response: "going",
+      expectedLockVersion: 0,
+      expectedScheduleVersion: 3
+    }, { "idempotency-key": "rsvp-action-stale" }));
+
+    expect(response.status).toBe(409);
+    expect((await response.json()).code).toBe("schedule_changed");
   });
 
   it("uses the authenticated parent session for snack claims", async () => {
@@ -260,12 +302,16 @@ describe("live action API routes", () => {
   it("uses the authenticated user session for volunteer claims", async () => {
     claimVolunteerRoleMock.mockResolvedValue({ ok: true, message: "Volunteer saved.", signup: { id: "volunteer-1" } });
 
-    const response = await postVolunteerClaim(jsonRequest({ signupId: "volunteer-1", userId: "client-spoof" }));
+    const response = await postVolunteerClaim(jsonRequest(
+      { signupId: "volunteer-1", userId: "client-spoof" },
+      { "idempotency-key": "volunteer-action-1" }
+    ));
 
     expect(response.status).toBe(200);
     expect(claimVolunteerRoleMock).toHaveBeenCalledWith({
       signupId: "volunteer-1",
-      userId: "user-live-session"
+      userId: "user-live-session",
+      actionId: "volunteer-action-1"
     });
   });
 
@@ -636,18 +682,14 @@ describe("live action API routes", () => {
     });
   });
 
-  it("returns parent wallet reads scoped to the authenticated guardian session", async () => {
+  it("returns Family Balance Summary reads scoped to the authenticated guardian session", async () => {
     const response = await getFamilyWallet(getRequest());
     const payload = await response.json();
 
     expect(response.status).toBe(200);
-    expect(listParentCoachDashboardDataMock).toHaveBeenCalledWith({
-      viewerUserId: "user-live-session",
-      surface: "parent"
-    });
-    expect(payload.wallet.parentUserId).toBe("user-live-session");
-    expect(payload.wallet.items.map((item: { kind: string }) => item.kind)).toContain("registration_fee");
-    expect(payload.message).toContain("signed-in guardian");
+    expect(listFamilyBalanceSummaryMock).toHaveBeenCalledWith("user-live-session");
+    expect(payload.balance.ok).toBe(true);
+    expect(payload.deprecated).toBe(true);
   });
 
   it("returns admin-only revenue summaries after organization admin access", async () => {
@@ -661,7 +703,7 @@ describe("live action API routes", () => {
       userId: "user-live-session",
       action: "view league revenue"
     });
-    expect(payload.revenueSummary.sponsorInvoiceCents).toBeGreaterThan(0);
+    expect(payload.revenueSummary.sponsorInvoiceCents).toBe(0);
     expect(payload.sponsorOpportunities.map((item: { need: string }) => item.need)).toContain("scholarships");
     expect(payload.message).toContain("webhook-proof gated");
   });

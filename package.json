@@ -22,15 +22,24 @@
     "qa:brand-proof": "node scripts/verify-brand-surface-proof.mjs",
     "qa:rls-proof": "node scripts/verify-rls-boundaries.mjs",
     "check:skills": "node scripts/check-agent-skills.mjs",
-    "supabase:oauth": "node scripts/configure-supabase-oauth.mjs"
+    "supabase:oauth": "node scripts/configure-supabase-oauth.mjs",
+    "codex:spec": "node tools/prompt-api/cli.mjs spec",
+    "codex:debug": "node tools/prompt-api/cli.mjs debug"
   },
   "dependencies": {
+    "@sendgrid/mail": "^8.1.6",
     "@supabase/ssr": "^0.12.0",
     "@supabase/supabase-js": "^2.108.2",
     "motion": "^12.42.2",
     "next": "^16.2.9",
+    "openai": "^6.48.0",
     "react": "^19.2.7",
-    "react-dom": "^19.2.7"
+    "react-dom": "^19.2.7",
+    "sharp": "^0.35.3",
+    "stripe": "^22.3.2",
+    "twilio": "^6.0.2",
+    "web-push": "^3.6.7",
+    "zod": "^4.4.3"
   },
   "overrides": {
     "esbuild": "0.27.2",
@@ -41,6 +50,7 @@
     "@types/node": "^24.10.1",
     "@types/react": "^19.2.7",
     "@types/react-dom": "^19.2.3",
+    "@types/web-push": "^3.6.4",
     "eslint": "^9.39.2",
     "eslint-config-next": "^16.2.9",
     "typescript": "^5.9.3",

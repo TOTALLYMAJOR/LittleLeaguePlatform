@@ -1,4 +1,6 @@
+import { createHash } from "node:crypto";
 import type { ParentReplayDraft, ParentReplayRecord, PracticeFocusArea } from "@/lib/domain";
+import { featureGateDecision } from "@/lib/services/feature-gates";
 import { getWeatherEventDraft } from "@/lib/services/weather";
 import { requireActiveParentForPlayerEvent, requireActiveTeamCoachOrOrgAdmin } from "./access-control";
 import { createSupabaseAdminClient } from "./admin";
@@ -9,6 +11,8 @@ type UnsafeSupabase = {
   // a narrow dynamic boundary until the generated Supabase types are refreshed.
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   from(table: string): any;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  rpc(name: string, input: Record<string, unknown>): any;
 };
 
 type MobileUsageEventType =
@@ -311,7 +315,7 @@ export async function saveParentReplay(input: {
       db,
       teamId: input.teamId,
       userId: input.actorUserId,
-      action: "publish Parent Replay"
+      action: "save a Parent Replay draft"
     });
     if (!access.ok || !access.team) return { ok: false, message: access.message };
     const team = access.team as {
@@ -356,11 +360,25 @@ export async function saveParentReplay(input: {
         team_quest: input.draft.teamQuest,
         skill_cards: input.draft.skillCards,
         parent_education: input.draft.parentEducation,
-        status: "queued",
+        status: "draft",
         generation_source: "deterministic",
-        reviewed_by_user_id: input.actorUserId,
-        reviewed_at: now,
-        published_at: now,
+        reviewed_by_user_id: null,
+        reviewed_at: null,
+        approved_by_user_id: null,
+        approved_at: null,
+        published_at: null,
+        source_manifest_json: input.focusAreas.map((area) => ({
+          sourceType: "coach_selected_focus",
+          sourceId: area,
+          included: true,
+          observedAt: now
+        })),
+        source_hash: createHash("sha256").update(JSON.stringify({
+          teamId: input.teamId,
+          focusAreas: input.focusAreas,
+          generatedAt: input.draft.generatedAt
+        })).digest("hex"),
+        source_observed_at: now,
         generated_at: input.draft.generatedAt
       })
       .select("id,organization_id,season_id,team_id,coach_user_id,focus_areas,title,summary,home_activities,coach_video,parent_tip,team_quest,skill_cards,parent_education,status,generated_at,created_at")
@@ -368,38 +386,15 @@ export async function saveParentReplay(input: {
 
     if (replayError || !replay) return { ok: false, message: "Parent Replay could not be saved." };
 
-    const { data: guardianRows } = await runDynamicQuery<Array<{ parent_user_id: string | null }>>(db
-      .from("player_guardians")
-      .select("parent_user_id,players!inner(team_id)")
-      .eq("status", "active")
-      .eq("players.team_id", input.teamId)
-      .not("parent_user_id", "is", null));
-
-    const recipientIds = Array.from(new Set((guardianRows ?? []).map((row) => row.parent_user_id).filter(Boolean))) as string[];
-    const notificationRows = recipientIds.map((recipientUserId) => ({
-      organization_id: team.organization_id,
-      recipient_user_id: recipientUserId,
-      team_id: input.teamId,
-      notification_type: "parent_replay_ready",
-      title: "Parent Replay is ready",
-      body: `${team.name} has a coach-approved Parent Replay ready for families.`,
-      channel: "email",
-      status: "pending"
-    }));
-
-    const notificationsResult = notificationRows.length
-      ? await runDynamicQuery(db.from("notifications").insert(notificationRows).select("id"))
-      : { data: [], error: null };
-
     await runDynamicQuery(db
       .from("audit_events")
       .insert({
         organization_id: team.organization_id,
         actor_user_id: input.actorUserId,
-        action: "parent_replay_published",
+        action: "parent_replay_draft_saved",
         target_type: "parent_replay",
         target_id: replay.id,
-        summary: `Parent Replay published for ${team.name} with ${input.focusAreas.length} focus areas.`
+        summary: `Parent Replay draft saved for ${team.name} with ${input.focusAreas.length} focus areas.`
       }));
 
     const parentReplay: ParentReplayRecord = {
@@ -425,23 +420,164 @@ export async function saveParentReplay(input: {
       createdAt: replay.created_at
     };
 
-    if (notificationsResult.error) {
-      return {
-        ok: true,
-        message: "Parent Replay saved, but notification drafts could not be queued.",
-        parentReplay,
-        notificationCount: 0
-      };
-    }
-
     return {
       ok: true,
-      message: `Parent Replay saved with ${notificationRows.length} pending parent notification draft(s). No provider send occurred.`,
+      message: "Parent Replay draft saved. It is not approved, published, or sent.",
       parentReplay,
-      notificationCount: notificationRows.length
+      notificationCount: 0
     };
   } catch {
     return { ok: false, message: "Parent Replay could not reach Supabase." };
+  }
+}
+
+export async function approveParentReplay(input: {
+  parentReplayId: string;
+  actorUserId: string;
+}) {
+  if (!input.parentReplayId || !input.actorUserId) {
+    return { ok: false, message: "Parent Replay approval requires replay and reviewer." };
+  }
+  try {
+    const db = adminDb();
+    const { data: replay, error } = await runDynamicQuery<{
+      id: string;
+      organization_id: string;
+      season_id: string;
+      team_id: string;
+      approved_at: string | null;
+      published_at: string | null;
+    }>(db.from("parent_replays")
+      .select("id,organization_id,season_id,team_id,approved_at,published_at")
+      .eq("id", input.parentReplayId)
+      .maybeSingle());
+    if (error || !replay) return { ok: false, message: "Parent Replay draft was not found." };
+    const access = await requireActiveTeamCoachOrOrgAdmin({
+      db,
+      teamId: replay.team_id,
+      userId: input.actorUserId,
+      action: "approve Parent Replay"
+    });
+    if (!access.ok) return { ok: false, message: access.message };
+    if (replay.published_at) {
+      return { ok: false, message: "Published Parent Replay records cannot be re-approved." };
+    }
+    if (replay.approved_at) {
+      return { ok: true, message: "Parent Replay was already approved and remains unpublished.", approvedAt: replay.approved_at };
+    }
+    const now = new Date().toISOString();
+    const { data: updated, error: updateError } = await runDynamicQuery(db.from("parent_replays")
+      .update({
+        approved_at: now,
+        approved_by_user_id: input.actorUserId,
+        reviewed_at: now,
+        reviewed_by_user_id: input.actorUserId
+      })
+      .eq("id", replay.id)
+      .is("published_at", null)
+      .select("id,approved_at,published_at,status")
+      .single());
+    if (updateError || !updated) return { ok: false, message: "Parent Replay approval could not be saved." };
+    await runDynamicQuery(db.from("audit_events").insert({
+      organization_id: replay.organization_id,
+      actor_user_id: input.actorUserId,
+      action: "parent_replay_approved",
+      target_type: "parent_replay",
+      target_id: replay.id,
+      summary: "Parent Replay approved after human review. It remains unpublished."
+    }));
+    return { ok: true, message: "Parent Replay approved. Families still cannot see it until publish.", parentReplay: updated };
+  } catch {
+    return { ok: false, message: "Parent Replay approval could not reach team records." };
+  }
+}
+
+export async function publishParentReplay(input: {
+  parentReplayId: string;
+  actorUserId: string;
+}) {
+  if (!input.parentReplayId || !input.actorUserId) {
+    return { ok: false, message: "Parent Replay publish requires replay and reviewer." };
+  }
+  try {
+    const db = adminDb();
+    const { data: replay, error } = await runDynamicQuery<{
+      id: string;
+      organization_id: string;
+      season_id: string;
+      team_id: string;
+      title: string;
+      approved_at: string | null;
+      published_at: string | null;
+      teams: { name: string } | null;
+    }>(db.from("parent_replays")
+      .select("id,organization_id,season_id,team_id,title,approved_at,published_at,teams(name)")
+      .eq("id", input.parentReplayId)
+      .maybeSingle());
+    if (error || !replay) return { ok: false, message: "Parent Replay draft was not found." };
+    const access = await requireActiveTeamCoachOrOrgAdmin({
+      db,
+      teamId: replay.team_id,
+      userId: input.actorUserId,
+      action: "publish Parent Replay"
+    });
+    if (!access.ok) return { ok: false, message: access.message };
+    if (!replay.approved_at) {
+      return { ok: false, code: "approval_required", message: "Human approval is required before Parent Replay can be published." };
+    }
+    if (replay.published_at) {
+      return { ok: true, message: "Parent Replay was already published. No duplicate notification drafts were created.", publishedAt: replay.published_at };
+    }
+    const now = new Date().toISOString();
+    const { data: published, error: publishError } = await runDynamicQuery(db.from("parent_replays")
+      .update({ status: "queued", published_at: now })
+      .eq("id", replay.id)
+      .not("approved_at", "is", null)
+      .is("published_at", null)
+      .select("id,status,approved_at,published_at")
+      .single());
+    if (publishError || !published) return { ok: false, message: "Parent Replay publish could not be saved." };
+
+    const { data: guardianRows } = await runDynamicQuery<Array<{ parent_user_id: string | null }>>(db
+      .from("player_guardians")
+      .select("parent_user_id,players!inner(team_id)")
+      .eq("status", "active")
+      .eq("players.team_id", replay.team_id)
+      .not("parent_user_id", "is", null));
+    const recipientIds = Array.from(new Set((guardianRows ?? [])
+      .map((row) => row.parent_user_id)
+      .filter(Boolean))) as string[];
+    const notificationRows = recipientIds.map((recipientUserId) => ({
+      organization_id: replay.organization_id,
+      recipient_user_id: recipientUserId,
+      team_id: replay.team_id,
+      notification_type: "parent_replay_ready",
+      title: "Parent Replay is ready",
+      body: `${replay.teams?.name ?? "Your team"} has a coach-approved Parent Replay ready in LeaguePilot.`,
+      channel: "email",
+      status: "pending"
+    }));
+    const notificationsResult = notificationRows.length
+      ? await runDynamicQuery(db.from("notifications").insert(notificationRows).select("id"))
+      : { data: [], error: null };
+    await runDynamicQuery(db.from("audit_events").insert({
+      organization_id: replay.organization_id,
+      actor_user_id: input.actorUserId,
+      action: "parent_replay_published",
+      target_type: "parent_replay",
+      target_id: replay.id,
+      summary: `Parent Replay published with ${notificationRows.length} in-app notification draft(s).`
+    }));
+    return {
+      ok: true,
+      message: notificationsResult.error
+        ? "Parent Replay published, but notification drafts require admin recovery. No provider send occurred."
+        : `Parent Replay published with ${notificationRows.length} notification draft(s). No provider send occurred.`,
+      parentReplay: published,
+      notificationCount: notificationsResult.error ? 0 : notificationRows.length
+    };
+  } catch {
+    return { ok: false, message: "Parent Replay publish could not reach team records." };
   }
 }
 
@@ -451,9 +587,13 @@ export async function updateParentRsvp(input: {
   parentUserId: string;
   response: "going" | "not_going" | "maybe" | "cancelled";
   note?: string;
+  expectedLockVersion: number;
+  expectedScheduleVersion: number;
+  clientActionId: string;
+  offlineReplay?: boolean;
 }) {
-  if (!input.eventId || !input.playerId || !input.parentUserId) {
-    return { ok: false, message: "RSVP requires event, player, and parent." };
+  if (!input.eventId || !input.playerId || !input.parentUserId || !input.clientActionId) {
+    return { ok: false, code: "invalid_request", message: "RSVP requires event, player, parent, and action receipt." };
   }
   try {
     const db = adminDb();
@@ -464,49 +604,63 @@ export async function updateParentRsvp(input: {
       eventId: input.eventId
     });
     if (!access.ok) return { ok: false, message: access.message };
-
-    const { data: previousRsvp } = await runDynamicQuery<{ id: string; response: "going" | "not_going" | "maybe" | "cancelled" }>(db
-      .from("rsvps")
-      .select("id,response")
-      .eq("event_id", input.eventId)
-      .eq("player_id", input.playerId)
-      .maybeSingle());
-    const respondedAt = new Date().toISOString();
-    const { data, error } = await runDynamicQuery(db
-      .from("rsvps")
-      .upsert({
-        event_id: input.eventId,
-        player_id: input.playerId,
-        parent_user_id: input.parentUserId,
-        response: input.response,
-        note: input.note ?? null,
-        responded_at: respondedAt
-      }, { onConflict: "event_id,player_id" })
-      .select("id,event_id,player_id,parent_user_id,response,note,responded_at")
-      .single());
-    if (error || !data) return { ok: false, message: "RSVP could not be saved." };
-
-    const historyResult = await runDynamicQuery(db
-      .from("rsvp_change_logs")
-      .insert({
-        event_id: input.eventId,
-        player_id: input.playerId,
-        parent_user_id: input.parentUserId,
-        previous_response: previousRsvp?.response ?? null,
-        next_response: input.response,
-        note: input.note ?? null,
-        created_at: respondedAt
-      })
-      .select("id")
-      .single());
-
-    if (historyResult.error) {
-      return { ok: false, message: "RSVP saved, but RSVP history could not be recorded.", rsvp: data };
+    if (input.offlineReplay) {
+      const { data: event } = await runDynamicQuery<{ organization_id: string }>(db
+        .from("events")
+        .select("organization_id")
+        .eq("id", input.eventId)
+        .single());
+      const organizationResult = event?.organization_id
+        ? await runDynamicQuery<{ offline_writes_enabled: boolean }>(db
+          .from("organizations")
+          .select("offline_writes_enabled")
+          .eq("id", event.organization_id)
+          .single())
+        : { data: null, error: null };
+      const gate = featureGateDecision({
+        feature: "offline_writes",
+        organizationEnabled: organizationResult.data?.offline_writes_enabled
+      });
+      if (!gate.enabled) {
+        return {
+          ok: false,
+          code: "offline_disabled",
+          message: "This saved device action must be retried online because offline writes are disabled."
+        };
+      }
     }
 
-    return { ok: true, message: "RSVP saved to Supabase.", rsvp: data };
+    const payloadHash = createHash("sha256")
+      .update(JSON.stringify({
+        eventId: input.eventId,
+        playerId: input.playerId,
+        response: input.response,
+        note: input.note ?? null,
+        expectedLockVersion: input.expectedLockVersion,
+        expectedScheduleVersion: input.expectedScheduleVersion
+      }))
+      .digest("hex");
+    const { data, error } = await runDynamicQuery<Record<string, unknown>>(db.rpc(
+      "save_parent_rsvp_with_versions",
+      {
+        p_event_id: input.eventId,
+        p_player_id: input.playerId,
+        p_parent_user_id: input.parentUserId,
+        p_response: input.response,
+        p_note: input.note ?? null,
+        p_expected_lock_version: input.expectedLockVersion,
+        p_expected_schedule_version: input.expectedScheduleVersion,
+        p_client_action_id: input.clientActionId,
+        p_context_key: `parent:${input.eventId}:${input.playerId}`,
+        p_payload_hash: payloadHash
+      }
+    ));
+    if (error || !data) {
+      return { ok: false, code: "unavailable", message: "RSVP could not be saved." };
+    }
+    return data;
   } catch {
-    return { ok: false, message: "RSVP could not reach Supabase." };
+    return { ok: false, code: "unavailable", message: "RSVP could not reach team records." };
   }
 }
 
@@ -618,9 +772,14 @@ export async function moderateMediaItem(input: {
       organization_id: string;
       team_id: string;
       title: string;
+      private_object_path: string | null;
+      scan_completed_at: string | null;
+      family_release_approved_at: string | null;
+      moderation_status: string;
+      visibility: string;
     }>(db
       .from("media_items")
-      .select("id,organization_id,team_id,title")
+      .select("id,organization_id,team_id,title,private_object_path,scan_completed_at,family_release_approved_at,moderation_status,visibility")
       .eq("id", input.mediaItemId)
       .single());
 
@@ -646,6 +805,13 @@ export async function moderateMediaItem(input: {
     if (!teamMemberships?.length && !adminMemberships?.length) {
       return { ok: false, message: "Only assigned coaches or org admins can moderate media." };
     }
+    if (input.status === "approved" && mediaItem.private_object_path
+      && (!mediaItem.scan_completed_at || !mediaItem.family_release_approved_at)) {
+      return {
+        ok: false,
+        message: "Uploaded media cannot be approved until verified scan and family-release evidence are complete."
+      };
+    }
 
     const now = new Date().toISOString();
     const updatePayload = {
@@ -665,6 +831,24 @@ export async function moderateMediaItem(input: {
       .select("id,title,moderation_status,visibility,reviewed_at")
       .single());
     if (error || !data) return { ok: false, message: "Media item could not be moderated. Make sure migration 0005 is applied." };
+
+    await runDynamicQuery(db.from("media_review_history").insert({
+      media_item_id: mediaItem.id,
+      reviewer_user_id: input.reviewerUserId,
+      previous_values_json: {
+        moderationStatus: mediaItem.moderation_status,
+        visibility: mediaItem.visibility
+      },
+      next_values_json: {
+        moderationStatus: input.status,
+        visibility: input.visibility ?? mediaItem.visibility
+      },
+      reason: reason ?? `Media set to ${input.status}.`,
+      consent_evidence_json: {
+        scanCompletedAt: mediaItem.scan_completed_at,
+        familyReleaseApprovedAt: mediaItem.family_release_approved_at
+      }
+    }));
 
     await runDynamicQuery(db
       .from("audit_events")

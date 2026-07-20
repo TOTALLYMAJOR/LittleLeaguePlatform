@@ -140,16 +140,16 @@ describe("route topology", () => {
     expect(hrefs(getMobileNavEntries(parent, "/parent"))).toEqual([
       "/parent",
       "/parent/schedule",
-      "/parent/rsvp",
       "/parent/messages",
-      "/parent/photos"
+      "/parent/family-access",
+      "/parent/settings"
     ]);
     expect(hrefs(getMobileNavEntries(coach, "/coach"))).toEqual([
       "/coach",
-      "/coach/schedule",
       "/coach/attendance",
+      "/coach/practice-recaps",
       "/coach/messages",
-      "/coach/practice-recaps"
+      "/coach/roster"
     ]);
   });
 

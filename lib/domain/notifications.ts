@@ -164,6 +164,54 @@ export function smsUrgencyAllowed(input: { notificationType: NotificationPrefere
   return input.urgent && ["event_cancelled", "weather_alert"].includes(input.notificationType);
 }
 
+export function effectiveNotificationDecision(input: {
+  legalOrSafetyRequired: boolean;
+  organizationMarksUrgent: boolean;
+  organizationAllowsQuietHoursBypass: boolean;
+  channelConsent: boolean;
+  isWithinQuietHours: boolean;
+  digestOnly: boolean;
+  fallbackAvailable: boolean;
+}) {
+  if (!input.channelConsent) {
+    return {
+      allowed: false,
+      reason: input.fallbackAvailable
+        ? "This channel is not consented. Use the approved fallback route."
+        : "This channel is not consented and no approved fallback is available.",
+      quietHoursBypassed: false,
+      fallbackRequired: input.fallbackAvailable
+    };
+  }
+  const urgentSafetyBypass = input.legalOrSafetyRequired
+    && input.organizationMarksUrgent
+    && input.organizationAllowsQuietHoursBypass;
+  if (input.isWithinQuietHours && !urgentSafetyBypass) {
+    return {
+      allowed: false,
+      reason: "Quiet hours are active. Delivery should wait or use an approved urgent policy.",
+      quietHoursBypassed: false,
+      fallbackRequired: false
+    };
+  }
+  if (input.digestOnly && !urgentSafetyBypass) {
+    return {
+      allowed: false,
+      reason: "This update is held for the user's next digest.",
+      quietHoursBypassed: false,
+      fallbackRequired: false
+    };
+  }
+  return {
+    allowed: true,
+    reason: urgentSafetyBypass
+      ? "Urgent safety policy and channel consent allow delivery during quiet hours."
+      : "Effective notification preferences allow this delivery.",
+    quietHoursBypassed: urgentSafetyBypass && input.isWithinQuietHours,
+    fallbackRequired: false
+  };
+}
+
 export function getAlertOpenRateTracking(state: AppState) {
   const sentOrRead = state.notifications.filter((notification) => notification.status === "sent" || notification.status === "read");
   const read = sentOrRead.filter((notification) => notification.status === "read");

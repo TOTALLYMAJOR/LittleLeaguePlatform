@@ -2,6 +2,7 @@
 
 import { createContext, useContext, useEffect, useMemo, useReducer, useState } from "react";
 import { appReducer, seedState, type AppAction, type AppState } from "@/lib/domain";
+import { clearPrivateGameDayData } from "@/lib/offline/game-day-outbox";
 
 interface AppStateContextValue {
   state: AppState;
@@ -59,6 +60,31 @@ export function AppStateProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   useEffect(() => {
+    function onContextReset() {
+      // Context-scoped screens remount immediately. The outbox remains keyed and
+      // hidden so a temporary role switch does not discard an unsynced response.
+    }
+    function onSignOut() {
+      void clearPrivateGameDayData();
+      for (let index = localStorage.length - 1; index >= 0; index -= 1) {
+        const key = localStorage.key(index);
+        if (key?.startsWith("leaguepilot-context:")) localStorage.removeItem(key);
+      }
+      if ("caches" in window) {
+        void caches.keys().then((keys) => Promise.all(keys
+          .filter((key) => key.startsWith("leaguepilot-private-"))
+          .map((key) => caches.delete(key))));
+      }
+    }
+    window.addEventListener("leaguepilot:context-reset", onContextReset);
+    window.addEventListener("leaguepilot:sign-out", onSignOut);
+    return () => {
+      window.removeEventListener("leaguepilot:context-reset", onContextReset);
+      window.removeEventListener("leaguepilot:sign-out", onSignOut);
+    };
+  }, []);
+
+  useEffect(() => {
     const standalone = window.matchMedia("(display-mode: standalone)").matches || (navigator as Navigator & { standalone?: boolean }).standalone === true;
     if (standalone) recordMobileUsageEvent("standalone_launch");
 
@@ -94,8 +120,8 @@ export function AppStateProvider({ children }: { children: React.ReactNode }) {
     <AppStateContext.Provider value={value}>
       {children}
       {installPrompt && !isInstalled ? (
-        <aside className="install-prompt" aria-label="Install Little League HQ">
-          <span>Install Little League HQ for faster parent and coach access.</span>
+        <aside className="install-prompt" aria-label="Install LeaguePilot">
+          <span>Install LeaguePilot for faster parent and coach access.</span>
           <button type="button" onClick={installApp}>Install</button>
           <button type="button" className="secondary" onClick={() => {
             recordMobileUsageEvent("install_prompt_dismissed", { source: "inline_prompt" });

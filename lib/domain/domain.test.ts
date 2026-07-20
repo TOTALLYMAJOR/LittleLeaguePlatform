@@ -65,6 +65,7 @@ import {
   queueTeamCommunication,
   applyNotificationUnsubscribe,
   recipientAllowsNotification,
+  effectiveNotificationDecision,
   smsUrgencyAllowed,
   sampleRosterCsv,
   seedState,
@@ -735,6 +736,38 @@ describe("schedule changes and admin health", () => {
     expect(getAlertOpenRateTracking(telemetryState).openRate).toBe(50);
   });
 
+  it("applies consent, quiet hours, urgency policy, and digest preferences in precedence order", () => {
+    expect(effectiveNotificationDecision({
+      legalOrSafetyRequired: true,
+      organizationMarksUrgent: true,
+      organizationAllowsQuietHoursBypass: true,
+      channelConsent: false,
+      isWithinQuietHours: true,
+      digestOnly: false,
+      fallbackAvailable: true
+    })).toMatchObject({ allowed: false, fallbackRequired: true });
+
+    expect(effectiveNotificationDecision({
+      legalOrSafetyRequired: true,
+      organizationMarksUrgent: true,
+      organizationAllowsQuietHoursBypass: true,
+      channelConsent: true,
+      isWithinQuietHours: true,
+      digestOnly: true,
+      fallbackAvailable: false
+    })).toMatchObject({ allowed: true, quietHoursBypassed: true });
+
+    expect(effectiveNotificationDecision({
+      legalOrSafetyRequired: false,
+      organizationMarksUrgent: false,
+      organizationAllowsQuietHoursBypass: false,
+      channelConsent: true,
+      isWithinQuietHours: true,
+      digestOnly: false,
+      fallbackAvailable: false
+    })).toMatchObject({ allowed: false, quietHoursBypassed: false });
+  });
+
   it("computes launch readiness card counts", () => {
     const cards = computeAdminHealth(seedState, NOW);
     const missingCoaches = cards.find((card) => card.id === "missing-coaches");
@@ -881,9 +914,9 @@ describe("sponsor placement", () => {
   it("builds proof-safe family wallet, revenue, sponsor match, and local business page models", () => {
     const wallet = buildFamilyWalletSummary(seedState, "user-parent-jordan");
     expect(wallet.items.map((item) => item.kind)).toContain("registration_fee");
-    expect(wallet.items.map((item) => item.kind)).toContain("sponsor_discount");
-    expect(wallet.netDueCents).toBeGreaterThan(0);
-    expect(wallet.proofBoundary).toContain("webhook-confirmed proof");
+    expect(wallet.items.map((item) => item.kind)).not.toContain("sponsor_discount");
+    expect(wallet.netDueCents).toBe(0);
+    expect(wallet.proofBoundary).toContain("never infers");
 
     const opportunities = buildSponsorOpportunities(seedState);
     expect(opportunities.map((opportunity) => opportunity.need)).toContain("scholarships");
@@ -891,8 +924,9 @@ describe("sponsor placement", () => {
     expect(opportunities.map((opportunity) => opportunity.sponsorFit).join(" ")).toContain("Local");
 
     const revenue = buildLeagueRevenueSummary(seedState);
-    expect(revenue.sponsorInvoiceCents).toBeGreaterThan(0);
-    expect(revenue.unpaidFamilyBalanceCents).toBeGreaterThan(0);
+    expect(revenue.sponsorInvoiceCents).toBe(0);
+    expect(revenue.registrationFeeCents).toBe(0);
+    expect(revenue.unpaidFamilyBalanceCents).toBe(0);
     expect(revenue.proofBoundary).toContain("not settlement");
 
     const localBusinessPage = buildLocalBusinessTeamPage(seedState, "team-tigers");

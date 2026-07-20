@@ -309,7 +309,7 @@ export async function AdminScheduleVenuesSurface() {
     pageAccess.access.adminTeamIds,
     "Showing schedule and venue rows scoped to the signed-in admin's organizations."
   );
-  return <ScheduleAlertsClient scheduleData={scopedScheduleData} />;
+  return <ScheduleAlertsClient scheduleData={scopedScheduleData} mode="admin" />;
 }
 
 export async function AdminMessageDeliveryReviewSurface() {

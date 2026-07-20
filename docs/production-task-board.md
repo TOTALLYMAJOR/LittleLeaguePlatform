@@ -31,6 +31,17 @@ Task-specific checks are required only when the surface is touched:
 
 ## Current 20-Item Plate
 
+### Active Goal - Operational-Truth Hardening and Gated Enhancements
+
+- Priority: P0 authority, privacy, and game-day reliability.
+- Status: Local implementation is present in the current dirty worktree. Provider sends, family-visible uploaded media, and payment collection remain disabled by default. Migration `0023`, RLS, provider sandbox, hosted, recovery, and operational proof are not implied by local source or unit tests.
+- Current state: authenticated context is server-derived; operational summaries use independent evidence/freshness lanes; RSVP and attendance use idempotency plus record/schedule versions; Parent Replay separates draft/approval/publication; provider acceptance/delivery/read/acknowledgment are independent; media is quarantined until scan/consent/release; Family Balance uses payment evidence instead of inferred seed charges; admin archive requires a recomputed impact preview and audit.
+- Feature gates: offline replay needs `NEXT_PUBLIC_OFFLINE_WRITES_ENABLED`, `OFFLINE_WRITES_ENABLED`, and `organizations.offline_writes_enabled`. Provider sends, media uploads, and payments each need their server kill switch plus organization flag. Media additionally needs a proven scan adapter; payment confirmation additionally needs a verified Stripe webhook.
+- Rollback: disable the environment switch or organization flag. Existing records remain; the affected surface returns to online-only, draft-only, quarantine/proof-only, or link-only behavior without deleting evidence.
+- Proof queue: apply `0023` in a non-production project; run unit/typecheck/build/audit; execute RLS and cross-role browser proofs; run concurrency and offline conflict journeys; then promote provider/media/payment slices individually through allowlisted sandbox and hosted proof.
+- Prompt workflow: `docs/prompt-evolution-timeline.md` and `tools/prompt-api/` encode the four-system prompt patterns. `npm run codex:spec` and `npm run codex:debug` print prompts only.
+- Validation: `npm run check:skills`; `npm run typecheck`; `npm test`; `npm run build`; `npm audit`; `npm run qa:rls-proof`; role-browser screenshots at 375, 390, 768, and 1440.
+
 ### Active Goal - Tenant Onboarding Readiness Lane
 
 - Priority: P0 tenant readiness.

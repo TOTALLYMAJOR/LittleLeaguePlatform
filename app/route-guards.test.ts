@@ -45,8 +45,8 @@ describe("role route guards and compatibility wrappers", () => {
 
     expect(panel).toContain("ParentReplayClient");
     expect(panel).toContain("Preview");
-    expect(panel).toContain("Coach approval");
-    expect(panel).toContain("without sending real provider messages");
+    expect(panel).toContain("Approval is required before publish");
+    expect(panel).toContain("Publishing creates in-app notification drafts only. External delivery still requires separate approval and provider evidence.");
     expect(panel).toContain("/api/coach/ai-workspace");
   });
 

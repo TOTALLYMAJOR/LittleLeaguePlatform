@@ -8,12 +8,29 @@ export type RouteLifecycle =
   | "deprecated-hidden";
 
 export type AllowedRouteRole = "signed_out" | "signed_in" | "parent" | "coach" | "admin";
+export type RouteNavigationGroup =
+  | "Family"
+  | "Command"
+  | "Calendar"
+  | "Team"
+  | "Communication"
+  | "Replay"
+  | "Tools"
+  | "Launch"
+  | "Operations"
+  | "Trust & Safety"
+  | "Business"
+  | "Configuration"
+  | "League Ops"
+  | "Admin Tools"
+  | "Support"
+  | "Switch role";
 
 export interface RouteTopologyEntry {
   href: string;
   label: string;
   short: string;
-  group: "Family" | "Coach" | "League Ops" | "Admin Tools" | "Support" | "Switch role";
+  group: RouteNavigationGroup;
   role: RouteRole;
   lifecycle: RouteLifecycle;
   canonicalHref?: string;
@@ -40,6 +57,7 @@ export interface ClientShellAccess {
   canCoach: boolean;
   canAdmin: boolean;
   roleSwitchLinks: RoleSwitchLink[];
+  contexts?: import("@/lib/operational-truth").ActiveContext[];
 }
 
 export const signedOutShellAccess: ClientShellAccess = {
@@ -69,38 +87,38 @@ export const routeTopology = [
   route("/parent/family-access", "Family Access", "FA", "parent", "Family", ["parent"], true, true, true, true),
   route("/parent/settings", "Settings", "ST", "parent", "Family", ["parent"], true, true, true, true),
 
-  route("/coach", "Home", "HM", "coach", "Coach", ["coach"], true, true, true, true, 1),
-  route("/coach/schedule", "Schedule", "SC", "coach", "Coach", ["coach"], true, true, true, true, 2),
-  route("/coach/attendance", "Attendance", "AT", "coach", "Coach", ["coach"], true, true, true, true, 3),
-  route("/coach/messages", "Messages", "MS", "coach", "Coach", ["coach"], true, true, true, true, 4),
-  route("/coach/practice-recaps", "Practice Recaps", "PR", "coach", "Coach", ["coach"], true, true, true, true, 5),
-  route("/coach/roster", "Roster", "RO", "coach", "Coach", ["coach"], true, true, true, true),
-  route("/coach/snacks-volunteers", "Snacks & Volunteers", "SV", "coach", "Coach", ["coach"], true, true, true, true),
-  route("/coach/weather-fields", "Weather & Fields", "WF", "coach", "Coach", ["coach"], true, true, true, true),
-  route("/coach/drafts", "Drafts to Review", "DR", "coach", "Coach", ["coach"], true, true, true, true),
-  route("/coach/settings", "Settings", "ST", "coach", "Coach", ["coach"], true, true, true, true),
-  compatibility("/coach/rsvps", "Coach RSVPs", "CR", "coach", "Coach", "/coach/attendance", ["coach"], true),
-  compatibility("/coach/parent-replay", "Parent Replay", "PR", "coach", "Coach", "/coach/practice-recaps", ["coach"], true),
+  route("/coach", "Home", "HM", "coach", "Command", ["coach"], true, true, true, true, 1),
+  route("/coach/schedule", "Schedule", "SC", "coach", "Calendar", ["coach"], true, true, true, true, 2),
+  route("/coach/attendance", "Attendance", "AT", "coach", "Team", ["coach"], true, true, true, true, 3),
+  route("/coach/messages", "Messages", "MS", "coach", "Communication", ["coach"], true, true, true, true, 4),
+  route("/coach/practice-recaps", "Practice Recaps", "PR", "coach", "Replay", ["coach"], true, true, true, true, 5),
+  route("/coach/roster", "Roster", "RO", "coach", "Team", ["coach"], true, true, true, true),
+  route("/coach/snacks-volunteers", "Snacks & Volunteers", "SV", "coach", "Team", ["coach"], true, true, true, true),
+  route("/coach/weather-fields", "Weather & Fields", "WF", "coach", "Tools", ["coach"], true, true, true, true),
+  route("/coach/drafts", "Drafts to Review", "DR", "coach", "Communication", ["coach"], true, true, true, true),
+  route("/coach/settings", "Settings", "ST", "coach", "Tools", ["coach"], true, true, true, true),
+  compatibility("/coach/rsvps", "Coach RSVPs", "CR", "coach", "Team", "/coach/attendance", ["coach"], true),
+  compatibility("/coach/parent-replay", "Parent Replay", "PR", "coach", "Replay", "/coach/practice-recaps", ["coach"], true),
 
-  route("/admin", "Overview", "OV", "admin", "Admin Tools", ["admin"], true, true, true, true, 1, true),
-  route("/admin/registrations", "Registrations", "RR", "admin", "Admin Tools", ["admin"], true, true, true, true, 2, true),
-  route("/admin/teams", "Teams", "TM", "admin", "Admin Tools", ["admin"], true, true, true, true, 3, true),
-  route("/admin/family-access", "Family Access", "FA", "admin", "Admin Tools", ["admin"], true, true, true, true, 4, true),
-  route("/admin/schedule-venues", "Schedule & Venues", "SV", "admin", "Admin Tools", ["admin"], true, true, true, true, 5, true),
-  route("/admin/communications", "Communications", "CM", "admin", "Admin Tools", ["admin"], true, true, true, true, undefined, true),
-  route("/admin/safety-weather", "Safety & Weather", "SW", "admin", "Admin Tools", ["admin"], true, true, true, true, undefined, true),
-  route("/admin/media-review", "Media Review", "MR", "admin", "Admin Tools", ["admin"], true, true, true, true, undefined, true),
-  route("/admin/sponsors", "Sponsors", "SP", "admin", "Admin Tools", ["admin"], true, true, true, true, undefined, true),
-  route("/admin/branding", "Branding", "BR", "admin", "Admin Tools", ["admin"], true, true, true, true, undefined, true),
-  route("/admin/reports-archive", "Reports & Archive", "AR", "admin", "Admin Tools", ["admin"], true, true, true, true, undefined, true),
-  route("/admin/security-audit", "Security & Audit", "SA", "admin", "Admin Tools", ["admin"], true, true, true, true, undefined, true),
-  route("/admin/message-delivery-review", "Message Delivery Review", "MD", "admin", "Admin Tools", ["admin"], true, true, true, true, undefined, true),
-  route("/admin/settings", "Settings", "ST", "admin", "Admin Tools", ["admin"], true, true, true, true, undefined, true),
-  route("/admin/operations", "Operations", "OP", "admin", "Admin Tools", ["admin"], true, true, true, true, undefined, true),
-  route("/admin/imports", "Imports", "IM", "admin", "Admin Tools", ["admin"], true, true, true, true, undefined, true),
-  route("/admin/invites", "Invites", "IN", "admin", "Admin Tools", ["admin"], true, true, true, true, undefined, true),
-  route("/admin/memberships", "Memberships", "MB", "admin", "Admin Tools", ["admin"], true, true, true, true, undefined, true),
-  route("/admin/health", "Health", "HL", "admin", "Admin Tools", ["admin"], true, true, true, true, undefined, true),
+  route("/admin", "Overview", "OV", "admin", "Launch", ["admin"], true, true, true, true, 1, true),
+  route("/admin/registrations", "Registrations", "RR", "admin", "Launch", ["admin"], true, true, true, true, 2, true),
+  route("/admin/teams", "Teams", "TM", "admin", "Launch", ["admin"], true, true, true, true, 3, true),
+  route("/admin/family-access", "Family Access", "FA", "admin", "Launch", ["admin"], true, true, true, true, 4, true),
+  route("/admin/schedule-venues", "Schedule & Venues", "SV", "admin", "Operations", ["admin"], true, true, true, true, 5, true),
+  route("/admin/communications", "Communications", "CM", "admin", "Communication", ["admin"], true, true, true, true, undefined, true),
+  route("/admin/safety-weather", "Safety & Weather", "SW", "admin", "Trust & Safety", ["admin"], true, true, true, true, undefined, true),
+  route("/admin/media-review", "Media Review", "MR", "admin", "Trust & Safety", ["admin"], true, true, true, true, undefined, true),
+  route("/admin/sponsors", "Sponsors", "SP", "admin", "Business", ["admin"], true, true, true, true, undefined, true),
+  route("/admin/branding", "Branding", "BR", "admin", "Configuration", ["admin"], true, true, true, true, undefined, true),
+  route("/admin/reports-archive", "Reports & Archive", "AR", "admin", "Configuration", ["admin"], true, true, true, true, undefined, true),
+  route("/admin/security-audit", "Security & Audit", "SA", "admin", "Trust & Safety", ["admin"], true, true, true, true, undefined, true),
+  route("/admin/message-delivery-review", "Message Delivery Review", "MD", "admin", "Communication", ["admin"], true, true, true, true, undefined, true),
+  route("/admin/settings", "Settings", "ST", "admin", "Configuration", ["admin"], true, true, true, true, undefined, true),
+  route("/admin/operations", "Operations", "OP", "admin", "Operations", ["admin"], true, true, true, true, undefined, true),
+  route("/admin/imports", "Imports", "IM", "admin", "Operations", ["admin"], true, true, true, true, undefined, true),
+  route("/admin/invites", "Invites", "IN", "admin", "Launch", ["admin"], true, true, true, true, undefined, true),
+  route("/admin/memberships", "Memberships", "MB", "admin", "Launch", ["admin"], true, true, true, true, undefined, true),
+  route("/admin/health", "Health", "HL", "admin", "Launch", ["admin"], true, true, true, true, undefined, true),
   compatibility("/admin/guardian-links", "Guardian Links", "GL", "admin", "Admin Tools", "/admin/family-access", ["admin"], true),
   compatibility("/admin/themes", "Themes", "TH", "admin", "Admin Tools", "/admin/branding", ["admin"], true),
   compatibility("/admin/security", "Security", "SE", "admin", "Admin Tools", "/admin/security-audit", ["admin"], true),
@@ -265,6 +283,33 @@ export function getCommandEntries(access: ClientShellAccess, pathname: string): 
 export function getMobileNavEntries(access: ClientShellAccess, pathname: string): RouteTopologyEntry[] {
   const activeRole = getActiveRouteRole(pathname);
   const role = activeRole === "shared" || activeRole === "prototype" ? "public" : activeRole;
+  const roleMobileHrefs: Partial<Record<RouteRole, string[]>> = {
+    parent: ["/parent", "/parent/schedule", "/parent/messages", "/parent/family-access", "/parent/settings"],
+    coach: ["/coach", "/coach/attendance", "/coach/practice-recaps", "/coach/messages", "/coach/roster"],
+    admin: ["/admin", "/admin/registrations", "/admin/teams", "/admin/message-delivery-review", "/admin/security-audit"]
+  };
+  const roleMobileLabels: Record<string, string> = {
+    "/parent": "Today",
+    "/parent/family-access": "Team",
+    "/parent/settings": "More",
+    "/coach": "Today",
+    "/coach/attendance": "RSVPs",
+    "/coach/practice-recaps": "Replay",
+    "/coach/roster": "Team",
+    "/admin": "Dashboard",
+    "/admin/message-delivery-review": "Providers",
+    "/admin/security-audit": "Security"
+  };
+  const preferredHrefs = roleMobileHrefs[role];
+  if (preferredHrefs) {
+    return preferredHrefs
+      .map((href) => routeTopology.find((entry) => entry.href === href))
+      .filter((entry): entry is RouteTopologyEntry => Boolean(entry && canAccessRouteEntry(entry, access)))
+      .map((entry) => ({
+        ...entry,
+        label: roleMobileLabels[entry.href] ?? entry.label
+      }));
+  }
   const primaryEntries = getPrimaryNavEntries(access, pathname);
   const roleEntries = primaryEntries.filter((entry) => (
     entry.role === role ||

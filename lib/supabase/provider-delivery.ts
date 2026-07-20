@@ -2,6 +2,7 @@ import { createSupabaseAdminClient } from "./admin";
 import { withSupabaseTimeout } from "./timeout";
 import { buildNotificationIdempotencyKey } from "@/lib/services/notifications/worker";
 import type { NotificationDeliveryOutcome, NotificationDeliveryPayload } from "@/lib/services/notifications/types";
+import { featureGateDecision } from "@/lib/services/feature-gates";
 
 type ProviderDeliveryReviewDecision = "approved" | "rejected";
 type ProviderDeliveryProvider = "email" | "sms" | "web_push";
@@ -160,17 +161,32 @@ export async function reviewNotificationDelivery(input: {
     const now = new Date().toISOString();
     const preferencesAllowed = await recipientAllowsProviderDelivery(db, notification);
     const providerReadiness = getProviderDeliveryReadiness(input.provider);
+    const { data: organization } = await withSupabaseTimeout(db
+      .from("organizations")
+      .select("id,provider_sends_enabled")
+      .eq("id", notification.organization_id)
+      .maybeSingle(), 7000) as {
+        data: { id: string; provider_sends_enabled: boolean } | null;
+      };
+    const providerGate = featureGateDecision({
+      feature: "provider_sends",
+      organizationEnabled: organization?.provider_sends_enabled
+    });
+    const providerConfigured = providerReadiness.configured && providerGate.enabled;
     const attemptStatus = providerAttemptStatus({
       decision: input.decision,
       preferencesAllowed,
-      providerConfigured: providerReadiness.configured
+      providerConfigured
     });
     const suppressionCode = providerSuppressionCode({
       decision: input.decision,
       preferencesAllowed,
-      providerConfigured: providerReadiness.configured
+      providerConfigured
     });
-    const suppressionMessage = providerSuppressionMessage(suppressionCode, providerReadiness.reason);
+    const suppressionMessage = providerSuppressionMessage(
+      suppressionCode,
+      providerReadiness.configured ? providerGate.reason : providerReadiness.reason
+    );
     const [{ data: updatedNotification }, { data: attempt }] = await withSupabaseTimeout(Promise.all([
       db.from("notifications")
         .update({
@@ -194,6 +210,7 @@ export async function reviewNotificationDelivery(input: {
           next_attempt_at: now,
           retry_count: 0,
           max_retries: DEFAULT_DELIVERY_MAX_RETRIES,
+          approved_at: input.decision === "approved" ? now : null,
           error_code: suppressionCode,
           error_message: suppressionMessage
         })
@@ -254,27 +271,36 @@ async function loadRecipientForNotification(db: UnsafeSupabase, notification: No
   const [{ data: profile }, { data: subscriptions }] = await withSupabaseTimeout(Promise.all([
     db.from("profiles").select("id,email,phone").eq("id", notification.recipient_user_id).maybeSingle(),
     db.from("push_subscriptions")
-      .select("endpoint")
+      .select("endpoint,p256dh,auth_secret")
       .eq("user_id", notification.recipient_user_id)
       .eq("enabled", true)
       .order("updated_at", { ascending: false })
       .limit(1)
   ]), 7000) as [
     { data: { id: string; email: string | null; phone: string | null } | null },
-    { data: Array<{ endpoint: string }> | null }
+    { data: Array<{ endpoint: string; p256dh: string; auth_secret: string }> | null }
   ];
 
   return {
     userId: notification.recipient_user_id,
     email: profile?.email ?? null,
     phone: profile?.phone ?? null,
-    pushEndpoint: subscriptions?.[0]?.endpoint ?? null
+    pushEndpoint: subscriptions?.[0]?.endpoint ?? null,
+    pushP256dh: subscriptions?.[0]?.p256dh ?? null,
+    pushAuth: subscriptions?.[0]?.auth_secret ?? null
   };
 }
 
 async function mapAttemptPayload(db: UnsafeSupabase, attempt: DeliveryAttemptRow): Promise<NotificationDeliveryPayload | null> {
   if (!attempt.notifications) return null;
   const notification = attempt.notifications;
+  const { data: organization } = await withSupabaseTimeout(db
+    .from("organizations")
+    .select("provider_sends_enabled")
+    .eq("id", notification.organization_id)
+    .maybeSingle(), 7000) as {
+      data: { provider_sends_enabled: boolean } | null;
+    };
   const retryCount = attempt.retry_count ?? 0;
   const maxRetries = attempt.max_retries ?? DEFAULT_DELIVERY_MAX_RETRIES;
   return {
@@ -283,6 +309,7 @@ async function mapAttemptPayload(db: UnsafeSupabase, attempt: DeliveryAttemptRow
     provider: attempt.provider,
     channel: attempt.channel,
     organizationId: notification.organization_id,
+    organizationProviderSendsEnabled: organization?.provider_sends_enabled === true,
     teamId: notification.team_id,
     title: notification.title,
     body: notification.body,
@@ -362,6 +389,7 @@ export async function recordNotificationDeliveryOutcome(outcome: NotificationDel
       next_attempt_at: outcome.nextAttemptAt ?? new Date().toISOString(),
       dead_lettered_at: outcome.deadLetteredAt ?? null,
       provider_response_json: outcome.providerResponse ?? {},
+      provider_accepted_at: outcome.status === "sent" ? new Date().toISOString() : null,
       locked_at: null,
       locked_by: null
     };
@@ -384,7 +412,13 @@ export async function recordNotificationDeliveryOutcome(outcome: NotificationDel
       await withSupabaseTimeout(db.from("notifications").update({ status: "failed" }).eq("id", attempt.notification_id), 7000);
     }
 
-    return { ok: true, message: "Notification delivery outcome recorded.", attempt };
+    return {
+      ok: true,
+      message: outcome.status === "sent"
+        ? "Provider acceptance recorded. Verified delivery still requires provider webhook evidence."
+        : "Notification delivery attempt outcome recorded.",
+      attempt
+    };
   } catch {
     return { ok: false, message: "Notification delivery outcome could not reach Supabase." };
   }

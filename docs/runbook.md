@@ -143,6 +143,43 @@ The proof signs in as the QA coach, opens `/coach/parent-replay`, requests an AI
 
 Current Vercel state: Production and Development have the AI Coach provider variables configured. Preview is intentionally out of launch scope until a named non-production preview branch target is chosen.
 
+## Operational-Truth Feature Gates
+
+Apply `supabase/migrations/0023_operational_truth_hardening.sql` to a non-production project before enabling any new persistence path. Local compilation does not prove the migration, RLS, storage policy, provider webhook, or connected-account behavior.
+
+Every gated capability requires its environment switch and the matching organization column:
+
+| Capability | Environment switch | Organization column | Additional requirement |
+| --- | --- | --- | --- |
+| Offline replay | `OFFLINE_WRITES_ENABLED`; client UI also uses `NEXT_PUBLIC_OFFLINE_WRITES_ENABLED` | `offline_writes_enabled` | Session-derived context, idempotency receipt, current record and schedule versions. |
+| Email/SMS/Web Push | `PROVIDER_SENDS_ENABLED` | `provider_sends_enabled` | Human approval, consent/preference evaluation, QA recipient allowlist, provider credentials, verified webhook handling. |
+| Private media | `MEDIA_UPLOADS_ENABLED` | `media_uploads_enabled` | `MEDIA_SCAN_ADAPTER_READY=true`, private Storage/RLS, clean scan evidence, consent, human family release. |
+| Stripe | `PAYMENTS_ENABLED` | `payments_enabled` | Connect Standard account readiness, restricted server key, signed webhook, replay-safe event record. |
+
+High-impact archive previews also require server-only `IMPACT_PREVIEW_SECRET`. Disabling a gate returns the feature to online-only, draft/proof-only, quarantine-only, or link-only behavior without deleting records.
+
+Provider-specific server variables are read only by their adapters:
+
+- SendGrid: `SENDGRID_API_KEY`, `SENDGRID_FROM_EMAIL`, and webhook verification key.
+- Twilio: account/auth credentials and `TWILIO_MESSAGING_SERVICE_SID`.
+- Web Push: VAPID subject/public/private keys.
+- Stripe: restricted/test server key and endpoint webhook secret.
+- Media scanner: `MEDIA_SCAN_ENDPOINT`, `MEDIA_SCAN_TOKEN`, and `MEDIA_SCAN_PROVIDER`.
+- Internal notification worker: `NOTIFICATION_WORKER_TOKEN`.
+
+Keep production execution disabled until sandbox/allowlist tests, duplicate-webhook tests, failure/retry behavior, RLS, hosted configuration, cost controls, and monitoring are proven. Provider acceptance is not delivery; Checkout return is not payment confirmation; upload completion is not family release.
+
+## Prompt Workflow Companion
+
+Generate a reviewable implementation or debugging prompt without invoking Codex:
+
+```bash
+npm run codex:spec -- --system LeaguePilot --goal "Describe the bounded goal" --proofLevel local
+npm run codex:debug -- --system LeaguePilot --symptom "Describe current behavior" --expected "Describe expected behavior"
+```
+
+System profiles for LeaguePilot, QuietPilot, Little Legend Studios, and Champion Coach OS live under `tools/prompt-api/`. Matching VS Code tasks are available under `Codex: Generate implementation spec` and `Codex: Generate debugging brief`. These commands print only; they do not edit a repository, call a provider, or execute Codex.
+
 ## Common Issues
 
 ### Port 8081 Is Already In Use

@@ -1,6 +1,5 @@
 import { NextResponse } from "next/server";
-import { buildFamilyWalletSummary } from "@/lib/domain";
-import { listParentCoachDashboardData } from "@/lib/supabase/dashboard-data";
+import { listFamilyBalanceSummary } from "@/lib/supabase/family-balance";
 import { requireAuthenticatedRouteUser } from "@/lib/supabase/route-auth";
 
 export async function GET(request: Request) {
@@ -9,19 +8,12 @@ export async function GET(request: Request) {
     return NextResponse.json({ ok: false, message: auth.message }, { status: 401 });
   }
 
-  const data = await listParentCoachDashboardData({
-    viewerUserId: auth.user.id,
-    surface: "parent"
-  });
-
-  if (data.accessStatus !== "live") {
-    return NextResponse.json({ ok: false, message: data.message }, { status: 403 });
-  }
-
+  const balance = await listFamilyBalanceSummary(auth.user.id);
   return NextResponse.json({
-    ok: true,
-    message: "Family wallet reads are scoped to the signed-in guardian's linked players.",
-    wallet: buildFamilyWalletSummary(data.state, auth.user.id),
-    isSupabaseBacked: data.isSupabaseBacked
-  });
+    ...balance,
+    message: `${balance.message} This legacy URL now delegates to Family Balance Summary.`,
+    balance,
+    wallet: balance,
+    deprecated: true
+  }, { status: balance.ok ? 200 : 503 });
 }

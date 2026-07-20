@@ -40,5 +40,8 @@ export async function POST(request: Request) {
     draft: body.draft
   });
 
-  return NextResponse.json(result, { status: result.ok ? 201 : 400 });
+  return NextResponse.json({
+    ...result,
+    compatibility: "This route now saves a draft only. Approval and publication are separate operations."
+  }, { status: result.ok ? 201 : 400 });
 }

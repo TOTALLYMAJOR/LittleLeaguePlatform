@@ -1,0 +1,75 @@
+{
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "label": "Codex: Generate implementation spec",
+      "type": "shell",
+      "command": "npm run codex:spec -- --system \"${input:codexSystem}\" --goal \"${input:codexGoal}\" --proofLevel \"${input:codexProofLevel}\"",
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "problemMatcher": [],
+      "presentation": {
+        "reveal": "always",
+        "panel": "new",
+        "clear": true
+      }
+    },
+    {
+      "label": "Codex: Generate debugging brief",
+      "type": "shell",
+      "command": "npm run codex:debug -- --system \"${input:codexSystem}\" --symptom \"${input:codexSymptom}\" --expected \"${input:codexExpected}\"",
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "problemMatcher": [],
+      "presentation": {
+        "reveal": "always",
+        "panel": "new",
+        "clear": true
+      }
+    }
+  ],
+  "inputs": [
+    {
+      "id": "codexSystem",
+      "type": "pickString",
+      "description": "Product system",
+      "options": [
+        "LeaguePilot",
+        "QuietPilot",
+        "Little Legend Studios",
+        "Champion Coach OS"
+      ],
+      "default": "LeaguePilot"
+    },
+    {
+      "id": "codexGoal",
+      "type": "promptString",
+      "description": "Implementation goal"
+    },
+    {
+      "id": "codexProofLevel",
+      "type": "pickString",
+      "description": "Required proof level",
+      "options": [
+        "local",
+        "browser",
+        "provider-sandbox",
+        "hosted",
+        "operational"
+      ],
+      "default": "local"
+    },
+    {
+      "id": "codexSymptom",
+      "type": "promptString",
+      "description": "Observed symptom"
+    },
+    {
+      "id": "codexExpected",
+      "type": "promptString",
+      "description": "Expected behavior"
+    }
+  ]
+}

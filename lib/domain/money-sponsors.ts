@@ -70,9 +70,6 @@ export interface LeagueRevenueSummary {
   proofBoundary: string;
 }
 
-const registrationFeeCents = 12500;
-const teamDueCents = 3500;
-
 function activePlayersForParent(state: AppState, parentUserId: string) {
   const linkedPlayerIds = new Set(state.guardianLinks
     .filter((link) => link.parentUserId === parentUserId && link.status === "active")
@@ -95,63 +92,20 @@ function sponsorDiscountForTeam(sponsors: Sponsor[], teamId: string): Sponsor | 
 
 export function buildFamilyWalletSummary(state: AppState, parentUserId: string): FamilyWalletSummary {
   const players = activePlayersForParent(state, parentUserId);
-  const items = players.flatMap((player): FamilyWalletItem[] => {
+  const items = players.map((player): FamilyWalletItem => {
     const team = teamForPlayer(state, player);
     const teamId = team?.id ?? player.teamId;
-    const sponsor = sponsorDiscountForTeam(state.sponsors, teamId);
-    const baseItems: FamilyWalletItem[] = [
-      {
-        id: `wallet-registration-${player.id}`,
-        kind: "registration_fee",
-        label: `${player.firstName} ${player.lastInitial}. registration`,
-        playerId: player.id,
-        teamId,
-        amountCents: registrationFeeCents,
-        direction: "charge",
-        proofState: "invoice_ready",
-        note: "Registration balance is a league receivable until payment proof is recorded."
-      },
-      {
-        id: `wallet-team-due-${player.id}`,
-        kind: "team_due",
-        label: `${team?.name ?? "Team"} team dues`,
-        playerId: player.id,
-        teamId,
-        amountCents: teamDueCents,
-        direction: "charge",
-        proofState: "pending",
-        note: "Team dues stay unpaid until an admin records proof or a future Stripe webhook confirms settlement."
-      },
-      {
-        id: `wallet-scholarship-${player.id}`,
-        kind: "scholarship_credit",
-        label: `${team?.division ?? "League"} scholarship support`,
-        playerId: player.id,
-        teamId,
-        amountCents: 2500,
-        direction: "credit",
-        proofState: "paid_proof_recorded",
-        note: "Scholarship credit is admin-reviewed support, not a sponsor ad impression."
-      }
-    ];
-
-    if (!sponsor) return baseItems;
-
-    return [
-      ...baseItems,
-      {
-        id: `wallet-discount-${player.id}-${sponsor.id}`,
-        kind: "sponsor_discount",
-        label: `${sponsor.name} family offer`,
-        playerId: player.id,
-        teamId,
-        amountCents: 1000,
-        direction: "credit",
-        proofState: "offered",
-        sponsorId: sponsor.id,
-        note: "Discount is visible as an adult-facing offer only; redemption still requires proof."
-      }
-    ];
+    return {
+      id: `balance-unavailable-${player.id}`,
+      kind: "registration_fee",
+      label: `${player.firstName} ${player.lastInitial}. fee status`,
+      playerId: player.id,
+      teamId,
+      amountCents: 0,
+      direction: "charge",
+      proofState: "pending",
+      note: "Status unavailable in preview data. No charge, credit, paid status, or settlement is inferred."
+    };
   });
 
   const unpaidCents = items
@@ -167,9 +121,11 @@ export function buildFamilyWalletSummary(state: AppState, parentUserId: string):
     unpaidCents,
     creditsCents,
     netDueCents: Math.max(0, unpaidCents - creditsCents),
-    proofBoundary: "Wallet balances are operational records. Stripe settlement can only be marked paid after webhook-confirmed proof."
+    proofBoundary: "Family Balance Summary shows evidence-backed obligations only. Preview data never infers charges, credits, paid status, or settlement."
   };
 }
+
+export const buildFamilyBalanceSummary = buildFamilyWalletSummary;
 
 export function buildSponsorOpportunities(state: AppState): SponsorOpportunity[] {
   const openSnackTeams = new Set(state.snackScheduleSlots.filter((slot) => slot.status === "open").map((slot) => slot.teamId));
@@ -238,8 +194,8 @@ export function buildLeagueRevenueSummary(state: AppState): LeagueRevenueSummary
   return {
     organizationId: state.organization.id,
     seasonId: state.activeSeason.id,
-    registrationFeeCents: activePlayers.length * registrationFeeCents,
-    teamDueCents: activePlayers.length * teamDueCents,
+    registrationFeeCents: 0,
+    teamDueCents: 0,
     sponsorInvoiceCents: billingProofs.reduce((total, proof) => total + proof.amountCents, 0),
     unpaidFamilyBalanceCents: walletSummaries.reduce((total, wallet) => total + wallet.netDueCents, 0),
     scholarshipCreditCents: walletSummaries.reduce((total, wallet) => (
@@ -250,7 +206,7 @@ export function buildLeagueRevenueSummary(state: AppState): LeagueRevenueSummary
     activeSponsorCount: state.sponsors.filter((sponsor) => sponsor.status === "active").length,
     pendingSponsorCount: state.sponsors.filter((sponsor) => sponsor.status === "pending").length,
     renewalRiskCount: state.sponsors.filter((sponsor) => sponsor.status === "expired" || sponsor.status === "pending").length,
-    proofBoundary: "Revenue dashboard separates receivables, sponsor invoice readiness, and payment proof. Browser return or public placement is not settlement."
+    proofBoundary: `Revenue dashboard separates receivables, sponsor invoice readiness, and payment proof. ${activePlayers.length} player record(s) exist, but no fee amount is inferred. Browser return or public placement is not settlement.`
   };
 }
 

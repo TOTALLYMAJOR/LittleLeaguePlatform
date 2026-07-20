@@ -32,13 +32,16 @@ export async function ParentRsvpSurface() {
 export async function ParentScheduleSurface() {
   const pageAccess = await requireParentPageAccess();
   if (!pageAccess.ok) return <ParentDashboardClient dashboardData={pageAccess.dashboardData} />;
-  const scheduleData = await listScheduleOperationsData();
+  const [scheduleData, dashboardData] = await Promise.all([
+    listScheduleOperationsData(),
+    listParentCoachDashboardData({ viewerUserId: pageAccess.access.userId, surface: "parent" })
+  ]);
   const scopedScheduleData = scopeScheduleOperationsData(
     scheduleData,
     pageAccess.access.parentTeamIds,
     "Showing schedule rows scoped to the signed-in parent's linked teams."
   );
-  return <ScheduleAlertsClient scheduleData={scopedScheduleData} mode="readonly" />;
+  return <ScheduleAlertsClient scheduleData={scopedScheduleData} dashboardData={dashboardData} mode="parent" />;
 }
 
 export async function ParentMessagesSurface() {

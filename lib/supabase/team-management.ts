@@ -1,6 +1,7 @@
 import { seedState, type ProgramThemeKey } from "@/lib/domain";
 import { requireActiveOrganizationAdmin } from "./access-control";
 import { createSupabaseAdminClient } from "./admin";
+import { verifySeasonArchiveImpactPreview } from "./impact-preview";
 import { withSupabaseTimeout } from "./timeout";
 
 type UnsafeSupabase = {
@@ -73,6 +74,9 @@ export interface SaveAdminSeasonInput {
   startsAt: string;
   endsAt: string;
   status?: "active" | "archived";
+  archiveReason?: string;
+  previewHash?: string;
+  previewExpiresAt?: string;
 }
 
 export interface SaveRosterPlayerInput {
@@ -279,6 +283,20 @@ export async function saveAdminSeason(input: SaveAdminSeasonInput) {
       action: "manage organization seasons"
     });
     if (!access.ok) return { ok: false, message: access.message };
+    let archiveImpact:
+      | Awaited<ReturnType<typeof verifySeasonArchiveImpactPreview>>
+      | undefined;
+    if (input.status === "archived") {
+      archiveImpact = await verifySeasonArchiveImpactPreview({
+        organizationId: input.organizationId,
+        seasonId: input.seasonId ?? "",
+        actorUserId: input.actorUserId,
+        reason: input.archiveReason ?? "",
+        previewHash: input.previewHash ?? "",
+        previewExpiresAt: input.previewExpiresAt ?? "",
+      });
+      if (!archiveImpact.ok) return { ok: false, message: archiveImpact.message };
+    }
 
     const archivedAt = input.status === "archived" ? new Date().toISOString() : null;
     const { data: season, error } = await withSupabaseTimeout(db
@@ -306,7 +324,9 @@ export async function saveAdminSeason(input: SaveAdminSeasonInput) {
       action: input.status === "archived" ? "season_archived" : input.seasonId ? "season_updated" : "season_created",
       target_type: "season",
       target_id: season.id,
-      summary: `${season.name} saved with ${season.status} lifecycle status.`
+      summary: input.status === "archived" && archiveImpact?.ok
+        ? `${season.name} archived after impact preview for ${archiveImpact.preview.affectedCount} records. Reason: ${input.archiveReason?.trim()}`
+        : `${season.name} saved with ${season.status} lifecycle status.`
     }), 7000);
 
     return { ok: true, message: "Season setup saved by an active organization admin.", season };

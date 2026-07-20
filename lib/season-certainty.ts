@@ -9,6 +9,15 @@ import type {
   Sponsor,
   Team
 } from "@/lib/domain";
+import {
+  buildActionPriority,
+  compareActionPriority,
+  createDataFreshness,
+  rollupOperationalTruth,
+  type ActionPriority,
+  type OperationalTruth,
+  type TruthEvidence
+} from "@/lib/operational-truth";
 
 export type SeasonCertaintyRole = "parent" | "coach" | "admin";
 export type SeasonCardState =
@@ -79,6 +88,7 @@ export interface CoachAttendanceSnapshot {
 export interface TeamReadinessSnapshot {
   overallState: ReadinessState;
   overallLabel: string;
+  operationalTruth: OperationalTruth;
   snackCoverage: SeasonCardState;
   volunteerCoverage: SeasonCardState;
   weatherStatus: SeasonCardState;
@@ -109,6 +119,7 @@ export interface SeasonActionItem {
   href: string;
   priority: "primary" | "secondary" | "urgent";
   permissionState: SeasonCardState;
+  ranking?: ActionPriority;
 }
 
 export interface SeasonFreshness {
@@ -128,6 +139,7 @@ export interface ParentSeasonCertaintyView {
     summary: string;
   };
   readiness: TeamReadinessSnapshot;
+  operationalTruth: OperationalTruth;
   changes: SeasonChangeItem[];
   actions: SeasonActionItem[];
   coachUpdate?: {
@@ -155,6 +167,7 @@ export interface CoachSeasonCertaintyView {
   nextEvent: NextEventCertainty;
   attendance: CoachAttendanceSnapshot;
   readiness: TeamReadinessSnapshot;
+  operationalTruth: OperationalTruth;
   changes: SeasonChangeItem[];
   actions: SeasonActionItem[];
   weather: {
@@ -204,6 +217,7 @@ export interface AdminSeasonCertaintyView {
     setupGaps: number;
     securityAuditStatus: SeasonCardState;
   };
+  operationalTruth: OperationalTruth;
   pendingQueues: SeasonActionItem[];
   teamRows: AdminTeamStatusRow[];
   registrationQueue: {
@@ -278,7 +292,12 @@ export function buildParentSeasonCertaintyView(input: {
     guardianIssues: children.length ? 0 : 1,
     mediaReview: 0,
     providerReview: 0,
-    aiDrafts: 0
+    aiDrafts: 0,
+    hasEvent: Boolean(nextEvent),
+    venueAvailable: Boolean(nextEvent?.locationName && nextEvent?.locationAddress && nextEvent.locationAddress !== "Address TBD"),
+    weatherEvidenceAvailable: Boolean(weatherAlert),
+    isLive: input.isSupabaseBacked,
+    now: input.now
   });
   const actions = buildParentActions({
     missingRsvps,
@@ -312,6 +331,7 @@ export function buildParentSeasonCertaintyView(input: {
         : "RSVPs are answered for linked children."
     },
     readiness,
+    operationalTruth: readiness.operationalTruth,
     changes: changes.sort((left, right) => severityRank(right.severity) - severityRank(left.severity)).slice(0, 4),
     actions: actions.slice(0, 4),
     coachUpdate: latestAnnouncement ? {
@@ -374,7 +394,12 @@ export function buildCoachSeasonCertaintyView(input: {
     guardianIssues: 0,
     mediaReview: input.state.mediaItems.filter((item) => assignedTeamIds.has(item.teamId) && item.moderationStatus === "pending").length,
     providerReview: input.state.notifications.filter((notification) => assignedTeamIds.has(notification.teamId) && notification.status === "pending").length,
-    aiDrafts: draftCount
+    aiDrafts: draftCount,
+    hasEvent: Boolean(nextEvent),
+    venueAvailable: Boolean(nextEvent?.locationName && nextEvent?.locationAddress && nextEvent.locationAddress !== "Address TBD"),
+    weatherEvidenceAvailable: Boolean(nextWeather),
+    isLive: input.isSupabaseBacked,
+    now: input.now
   });
   const actions = buildCoachActions({
     noReply: attendance.noReply,
@@ -396,6 +421,7 @@ export function buildCoachSeasonCertaintyView(input: {
     nextEvent: buildNextEventCertainty(nextEvent, input.now, input.isSupabaseBacked),
     attendance,
     readiness,
+    operationalTruth: readiness.operationalTruth,
     changes,
     actions,
     weather: {
@@ -444,7 +470,39 @@ export function buildAdminSeasonCertaintyView(input: {
     queueAction("branding", "Branding issues", pendingSponsors, "/admin/branding"),
     queueAction("reports-archive", "Reports/archive tasks", 0, "/admin/reports-archive"),
     queueAction("security-audit", "Security & Audit", 0, "/admin/security-audit")
-  ];
+  ].sort((left, right) => compareActionPriority(
+    { id: left.id, createdAt: input.now, priority: left.ranking! },
+    { id: right.id, createdAt: input.now, priority: right.ranking! }
+  ));
+  const adminFreshness = buildFreshness(false, input.now);
+  const operationalTruth = rollupOperationalTruth({
+    positiveSummary: "Launch evidence is current and no critical blockers are recorded.",
+    failedSummary: "Launch blockers need administrator action.",
+    verificationSummary: "Launch readiness needs verification.",
+    evidence: [
+      evidenceLane("record", "Active teams and season records are available", teams.length > 0, true, "organization records", input.now),
+      evidenceLane("approval", "Family access and setup blockers are cleared", brokenFamilyAccess + setupGaps === 0, true, "membership and team records", input.now),
+      evidenceLane("publication", "Registration and review queues are clear", pendingRegistrations + mediaReview === 0, false, "review queues", input.now),
+      evidenceLane("delivery", "Provider delivery review is clear", messageDeliveryReview === 0, false, "notification records", input.now),
+      {
+        category: "freshness",
+        label: adminFreshness.label,
+        evidenceAvailable: false,
+        satisfied: null,
+        critical: true,
+        source: "admin client read model",
+        observedAt: input.now,
+        freshness: createDataFreshness({
+          source: "fallback",
+          observedAt: input.now,
+          expiresAfterMs: 5 * 60 * 1000,
+          now: input.now
+        }),
+        recoveryAction: "Refresh from the signed-in organization data service."
+      }
+    ],
+    now: input.now
+  });
 
   return {
     viewer: {
@@ -467,6 +525,7 @@ export function buildAdminSeasonCertaintyView(input: {
       setupGaps,
       securityAuditStatus: "ready"
     },
+    operationalTruth,
     pendingQueues,
     teamRows: rows,
     registrationQueue: {
@@ -478,7 +537,7 @@ export function buildAdminSeasonCertaintyView(input: {
       detail: "RLS proof, archived-season locks, and provider boundary checks remain review surfaces.",
       href: "/admin/security-audit"
     },
-    freshness: buildFreshness(false, input.now)
+    freshness: adminFreshness
   };
 }
 
@@ -579,6 +638,11 @@ function buildReadinessSnapshot(input: {
   mediaReview: number;
   providerReview: number;
   aiDrafts: number;
+  hasEvent: boolean;
+  venueAvailable: boolean;
+  weatherEvidenceAvailable: boolean;
+  isLive: boolean;
+  now: string;
 }): TeamReadinessSnapshot {
   const attentionCount = [
     input.snackOpen,
@@ -591,20 +655,68 @@ function buildReadinessSnapshot(input: {
     input.providerReview,
     input.aiDrafts
   ].reduce((total, value) => total + Number(value), 0);
-  const overallState: ReadinessState = attentionCount === 0 ? "ready" : input.guardianIssues > 0 ? "blocked" : "needs_attention";
+  const freshness = createDataFreshness({
+    source: input.isLive ? "live" : "fallback",
+    observedAt: input.now,
+    expiresAfterMs: 5 * 60 * 1000,
+    now: input.now
+  });
+  const operationalTruth = rollupOperationalTruth({
+    positiveSummary: "The next event is supported by current operational evidence.",
+    failedSummary: "The next event has a critical blocker.",
+    verificationSummary: "The next event needs verification.",
+    evidence: [
+      evidenceLane("record", "Upcoming event record is available", input.hasEvent, true, "event record", input.now),
+      evidenceLane("approval", "Family or coach access is active", input.guardianIssues === 0, true, "access records", input.now),
+      evidenceLane("publication", "Venue instructions are available", input.venueAvailable, true, "event location", input.now),
+      {
+        ...evidenceLane("record", "Weather evidence is available", input.weatherEvidenceAvailable, true, "weather review record", input.now),
+        satisfied: input.weatherEvidenceAvailable ? input.weatherReview === 0 : null,
+        recoveryAction: "Refresh weather and review field conditions."
+      },
+      {
+        category: "freshness",
+        label: freshness.label,
+        evidenceAvailable: input.isLive,
+        satisfied: freshness.stale ? null : true,
+        critical: true,
+        source: input.isLive ? "live scoped rows" : "fallback preview",
+        observedAt: input.now,
+        freshness,
+        recoveryAction: input.isLive ? "Refresh current team records." : "Sign in and load current team records."
+      },
+      evidenceLane("delivery", "Provider review queue is clear", input.providerReview === 0, false, "notification review records", input.now),
+      evidenceLane("acknowledgment", "AI drafts are reviewed", input.aiDrafts === 0, false, "review records", input.now)
+    ],
+    now: input.now
+  });
+  const overallState: ReadinessState = operationalTruth.tone === "ready"
+    ? attentionCount === 0 ? "ready" : "needs_attention"
+    : operationalTruth.tone === "blocked"
+      ? "blocked"
+      : operationalTruth.tone === "unknown"
+        ? "unknown"
+        : "needs_attention";
   return {
     overallState,
-    overallLabel: overallState === "ready" ? "Ready" : overallState === "blocked" ? "Blocked" : "Needs attention",
+    overallLabel: overallState === "ready"
+      ? "Ready"
+      : overallState === "blocked"
+        ? "Blocked"
+        : overallState === "unknown"
+          ? "Needs verification"
+          : "Needs attention",
+    operationalTruth,
     snackCoverage: input.snackOpen ? "needs_attention" : "ready",
     volunteerCoverage: input.volunteerOpen ? "needs_attention" : "ready",
-    weatherStatus: input.weatherReview ? "needs_attention" : "ready",
-    fieldStatus: input.fieldNeedsReview ? "needs_attention" : "ready",
+    weatherStatus: !input.weatherEvidenceAvailable ? "offline_stale" : input.weatherReview ? "needs_attention" : "ready",
+    fieldStatus: !input.venueAvailable ? "offline_stale" : input.fieldNeedsReview ? "needs_attention" : "ready",
     coachUpdateStatus: input.coachUpdateMissing ? "needs_attention" : "ready",
     guardianAccessStatus: input.guardianIssues ? "urgent" : "ready",
     mediaReviewStatus: input.mediaReview ? "needs_attention" : "ready",
     providerReviewStatus: input.providerReview ? "needs_attention" : "ready",
     aiDraftReviewStatus: input.aiDrafts ? "needs_attention" : "ready",
-    summary: attentionCount ? `${attentionCount} item${attentionCount === 1 ? "" : "s"} need review before the next event.` : "The next event looks ready from the available records."
+    summary: operationalTruth.summary
   };
 }
 
@@ -625,7 +737,8 @@ function buildParentActions(input: {
       cta: "Check access",
       href: "/parent/family-access",
       priority: "urgent",
-      permissionState: "needs_attention"
+      permissionState: "needs_attention",
+      ranking: actionRanking("critical", "blocking", "admin", "parent")
     });
   }
   if (input.missingRsvps.length) {
@@ -636,7 +749,8 @@ function buildParentActions(input: {
       cta: "RSVP now",
       href: "/parent/rsvp",
       priority: "primary",
-      permissionState: "ready"
+      permissionState: "ready",
+      ranking: actionRanking("none", "blocking", "self", "parent", input.nextEvent?.startsAt)
     });
   }
   if (input.nextEvent && isEventChanged(input.nextEvent)) {
@@ -647,7 +761,8 @@ function buildParentActions(input: {
       cta: "Review change",
       href: "/parent/schedule",
       priority: "primary",
-      permissionState: "ready"
+      permissionState: "ready",
+      ranking: actionRanking("attention", "limited", "self", "parent", input.nextEvent.startsAt)
     });
   }
   if (input.openSnackSlots) {
@@ -658,7 +773,8 @@ function buildParentActions(input: {
       cta: "View snacks",
       href: "#family-help",
       priority: "secondary",
-      permissionState: "ready"
+      permissionState: "ready",
+      ranking: actionRanking("none", "limited", "self", "parent", input.nextEvent?.startsAt)
     });
   }
   if (input.openVolunteerRoles) {
@@ -669,7 +785,8 @@ function buildParentActions(input: {
       cta: "Sign up",
       href: "#family-help",
       priority: "secondary",
-      permissionState: "ready"
+      permissionState: "ready",
+      ranking: actionRanking("none", "limited", "self", "parent", input.nextEvent?.startsAt)
     });
   }
   if (!input.hasNotificationPreference) {
@@ -680,7 +797,8 @@ function buildParentActions(input: {
       cta: "Set up",
       href: "#schedule-alerts",
       priority: "secondary",
-      permissionState: "ready"
+      permissionState: "ready",
+      ranking: actionRanking("none", "none", "self", "parent")
     });
   }
   return actions;
@@ -700,7 +818,8 @@ function buildCoachActions(input: {
       cta: "Nudge missing replies",
       href: "/coach/attendance",
       priority: "primary",
-      permissionState: "ready"
+      permissionState: "ready",
+      ranking: actionRanking("none", "blocking", "coach", "coach", input.nextEvent?.startsAt)
     }];
   }
   if (input.weatherReview > 0) {
@@ -711,7 +830,8 @@ function buildCoachActions(input: {
       cta: "Review field status",
       href: "/coach/weather-fields",
       priority: "primary",
-      permissionState: "ready"
+      permissionState: "ready",
+      ranking: actionRanking("attention", "blocking", "coach", "coach", input.nextEvent?.startsAt)
     }];
   }
   if (input.helpCoverageOpen > 0) {
@@ -722,7 +842,8 @@ function buildCoachActions(input: {
       cta: "Review coverage",
       href: "/coach/snacks-volunteers",
       priority: "secondary",
-      permissionState: "ready"
+      permissionState: "ready",
+      ranking: actionRanking("none", "limited", "coach", "coach", input.nextEvent?.startsAt)
     }];
   }
   return [{
@@ -732,7 +853,8 @@ function buildCoachActions(input: {
     cta: "Create update",
     href: "/coach/drafts",
     priority: "secondary",
-    permissionState: "ready"
+    permissionState: "ready",
+    ranking: actionRanking("none", "none", "coach", "coach", input.nextEvent?.startsAt)
   }];
 }
 
@@ -785,7 +907,8 @@ function buildAdminTeamStatusRow(state: AppState, team: Team, now: string): Admi
       cta: status === "blocked" ? "Fix setup" : "Review",
       href: status === "blocked" ? "/admin/teams" : "/admin/operations",
       priority: status === "blocked" ? "urgent" : "secondary",
-      permissionState: "ready"
+      permissionState: "ready",
+      ranking: actionRanking(status === "blocked" ? "attention" : "none", status === "blocked" ? "blocking" : "limited", "admin", "admin", nextEvent?.startsAt)
     }
   };
 }
@@ -798,8 +921,51 @@ function queueAction(id: string, label: string, count: number, href: string): Se
     cta: "Open",
     href,
     priority: count > 0 ? "primary" : "secondary",
-    permissionState: count > 0 ? "needs_attention" : "empty"
+    permissionState: count > 0 ? "needs_attention" : "empty",
+    ranking: actionRanking(
+      ["family-access", "weather-fields"].includes(id) && count > 0 ? "attention" : "none",
+      count > 0 ? "blocking" : "none",
+      "admin",
+      "admin"
+    )
   };
+}
+
+function evidenceLane(
+  category: TruthEvidence["category"],
+  label: string,
+  satisfied: boolean,
+  critical: boolean,
+  source: string,
+  observedAt: string
+): TruthEvidence {
+  return {
+    category,
+    label,
+    evidenceAvailable: true,
+    satisfied,
+    critical,
+    source,
+    observedAt
+  };
+}
+
+function actionRanking(
+  safetySeverity: "none" | "attention" | "critical",
+  dependencyImpact: "none" | "limited" | "blocking",
+  authorityRequirement: "self" | "coach" | "admin",
+  requiredRole: "parent" | "coach" | "admin",
+  eventStartsAt?: string
+) {
+  return buildActionPriority({
+    safetySeverity,
+    eventStartsAt,
+    dependencyImpact,
+    authorityRequirement,
+    createdAt: eventStartsAt ?? "2026-01-01T00:00:00.000Z",
+    requiredRole,
+    now: eventStartsAt ? new Date(Date.parse(eventStartsAt) - 48 * 60 * 60 * 1000).toISOString() : "2026-07-19T00:00:00.000Z"
+  });
 }
 
 function buildFreshness(isLive: boolean, now: string): SeasonFreshness {

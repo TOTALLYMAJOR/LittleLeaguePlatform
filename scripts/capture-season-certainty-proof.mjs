@@ -12,7 +12,19 @@ const routeSpecs = [
     path: "/parent",
     credentialKeys: ["QA_PARENT_EMAIL", "QA_PARENT_PASSWORD"],
     readyTexts: [
-      "What do I need to know before the next event?",
+      "RSVP needed",
+      "Next event confirmed",
+      "Sign in to see your family home.",
+      "Family access is not active yet."
+    ]
+  },
+  {
+    role: "parent-schedule",
+    path: "/parent/schedule",
+    credentialKeys: ["QA_PARENT_EMAIL", "QA_PARENT_PASSWORD"],
+    readyTexts: [
+      "Family schedule",
+      "RSVP needed",
       "Sign in to see your family home.",
       "Family access is not active yet."
     ]
@@ -22,9 +34,31 @@ const routeSpecs = [
     path: "/coach",
     credentialKeys: ["QA_COACH_EMAIL", "QA_COACH_PASSWORD"],
     readyTexts: [
-      "Is the next event ready?",
+      "items need attention",
+      "Next event ready",
       "Sign in to see coach readiness.",
       "No active coach team is assigned."
+    ]
+  },
+  {
+    role: "coach-schedule",
+    path: "/coach/schedule",
+    credentialKeys: ["QA_COACH_EMAIL", "QA_COACH_PASSWORD"],
+    readyTexts: [
+      "Now, next, later",
+      "Readiness matrix",
+      "Sign in to see coach readiness.",
+      "No active coach team is assigned."
+    ]
+  },
+  {
+    role: "parent-replay",
+    path: "/coach/practice-recaps",
+    credentialKeys: ["QA_COACH_EMAIL", "QA_COACH_PASSWORD"],
+    readyTexts: [
+      "Draft awaiting approval",
+      "Parent Replay turns every practice",
+      "No active coach membership is assigned"
     ]
   },
   {
@@ -32,7 +66,17 @@ const routeSpecs = [
     path: "/admin",
     credentialKeys: ["QA_ADMIN_EMAIL", "QA_ADMIN_PASSWORD"],
     readyTexts: [
-      "Which teams need help before families complain?",
+      "What is blocking launch?",
+      "Organization admin access is required"
+    ]
+  },
+  {
+    role: "admin-schedule",
+    path: "/admin/schedule-venues",
+    credentialKeys: ["QA_ADMIN_EMAIL", "QA_ADMIN_PASSWORD"],
+    readyTexts: [
+      "League schedule control room",
+      "Change lens",
       "Organization admin access is required"
     ]
   }
@@ -105,16 +149,14 @@ async function signIn(page, [emailKey, passwordKey]) {
 }
 
 async function waitForAnyText(page, texts) {
-  for (const text of texts) {
-    const locator = page.getByText(text, { exact: false }).first();
-    try {
-      await locator.waitFor({ timeout: 8_000 });
+  try {
+    return await Promise.any(texts.map(async (text) => {
+      await page.getByText(text, { exact: false }).first().waitFor({ timeout: 12_000 });
       return text;
-    } catch {
-      // Try the next known state.
-    }
+    }));
+  } catch {
+    throw new Error(`None of the expected route texts rendered: ${texts.join(" | ")}`);
   }
-  throw new Error(`None of the expected route texts rendered: ${texts.join(" | ")}`);
 }
 
 function normalizeText(value) {
@@ -153,6 +195,7 @@ async function captureRoute(browser, routeSpec) {
       await page.setViewportSize({ width, height });
       await page.goto(`${baseUrl}${routeSpec.path}?season_certainty_proof=${Date.now()}-${width}`, { waitUntil: "domcontentloaded" });
       proof.matchedText = await waitForAnyText(page, routeSpec.readyTexts);
+      await page.evaluate(() => window.scrollTo(0, 0));
       if (name === "mobile-375") {
         proof.firstViewportText = normalizeText(await page.locator("body").innerText({ timeout: 15_000 }));
       }
@@ -160,6 +203,38 @@ async function captureRoute(browser, routeSpec) {
         path: join(screenshotDir, `${routeSpec.role}-${name}.png`)
       });
       console.log(`captured ${routeSpec.role}-${name}.png`);
+      if (routeSpec.role === "parent-schedule" && name === "mobile-390") {
+        const sheetTrigger = page.getByRole("button", { name: "Game-day sheet" }).first();
+        if (await sheetTrigger.count()) {
+          await sheetTrigger.click();
+          const sheet = page.getByText("Game-day command sheet", { exact: true }).first();
+          try {
+            await sheet.waitFor({ timeout: 8_000 });
+            await sheet.scrollIntoViewIfNeeded();
+            await page.screenshot({
+              path: join(screenshotDir, "parent-schedule-sheet-mobile-390.png")
+            });
+            console.log("captured parent-schedule-sheet-mobile-390.png");
+          } catch {
+            console.log("skipped optional parent schedule sheet capture because the sheet did not open in this access state");
+          }
+        }
+      }
+      if (routeSpec.role === "admin-schedule" && name === "desktop-1440") {
+        const proposedLocation = page.getByLabel("Proposed location").first();
+        if (await proposedLocation.count()) {
+          await proposedLocation.fill("Field 2");
+          try {
+            await page.getByText("1 changed", { exact: true }).first().waitFor({ timeout: 8_000 });
+            await page.screenshot({
+              path: join(screenshotDir, "admin-schedule-change-lens-desktop-1440.png")
+            });
+            console.log("captured admin-schedule-change-lens-desktop-1440.png");
+          } catch {
+            console.log("skipped optional admin change-lens capture because editable schedule data is unavailable in this access state");
+          }
+        }
+      }
     }
   } finally {
     await context.close();
@@ -180,7 +255,12 @@ async function main() {
 
   try {
     const proofs = [];
-    for (const routeSpec of routeSpecs) {
+    const requestedRole = process.env.SEASON_CERTAINTY_ROLE;
+    const selectedRouteSpecs = requestedRole
+      ? routeSpecs.filter((routeSpec) => routeSpec.role === requestedRole)
+      : routeSpecs;
+    if (!selectedRouteSpecs.length) throw new Error(`Unknown SEASON_CERTAINTY_ROLE: ${requestedRole}`);
+    for (const routeSpec of selectedRouteSpecs) {
       proofs.push(await captureRoute(browser, routeSpec));
     }
 
