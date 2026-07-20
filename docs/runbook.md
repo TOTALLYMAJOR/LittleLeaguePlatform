@@ -74,9 +74,20 @@ npm run qa:session-proof
 npm run qa:tenant-readiness-proof
 npm run qa:demo-tenant-proof
 npm run qa:brand-proof
+npm run qa:coordination-proof
 ```
 
-`supabase:qa-users` creates or updates the QA admin, parent, and coach credentials in `.env.local` when they are not already supplied. `qa:rls-proof` signs in through the anon key and verifies parent, coach, and anonymous Row Level Security boundaries. `qa:session-proof` verifies signed-out gates, signed-in browser routes, and parent RSVP/preference/snack/volunteer live actions, then confirms those parent action rows with the QA service-role key before capturing screenshots under `output/playwright/`. `qa:tenant-readiness-proof` signs in as the QA admin, opens `/admin/health` and `/admin/teams`, verifies tenant setup/readiness copy, and captures mobile plus desktop screenshots under `output/playwright/tenant-readiness/`. `qa:demo-tenant-proof` signs in with DEMO admin, coach, and parent credentials, verifies fictional `LeaguePilot Demo League` content across role-scoped routes, confirms demo Supabase row counts and delivery-attempt metadata, writes `output/playwright/demo-tenant/demo-tenant-proof.json`, and captures mobile plus desktop screenshots under `output/playwright/demo-tenant/`. `qa:brand-proof` verifies the `/admin/themes` brand launch checklist, all 20 target brand surfaces, monitoring events, and alert rules against `QA_PROOF_BASE_URL`, then captures `output/playwright/brand-launch-validation.png`.
+Migration `0024_coordination_loops.sql` adds the Season Launch commit/rollback RPCs, practice-run receipts, family caregiver handoffs, Game-Day Resolution receipts/RPC, and atomic notification acknowledgment. Before promotion, apply all migrations to a disposable empty PostgreSQL/Supabase database, then verify:
+
+- a reviewed roster import can commit and safely roll back provenance-created rows;
+- a completed practice receipt can be linked once to Parent Replay;
+- a guardian handoff is limited to the linked player and same-team event;
+- monitor/confirm/delay/cancel decisions require coach/admin authority and an action receipt;
+- acknowledgment requires the intended recipient plus an existing delivery-attempt record.
+
+The local empty-database migration and transactional workflow smoke proves SQL installation and behavior only. It does not replace real-session RLS, hosted route, provider sandbox, webhook, or production deployment proof.
+
+`supabase:qa-users` creates or updates the QA admin, parent, and coach credentials in `.env.local` when they are not already supplied. `qa:rls-proof` signs in through the anon key and verifies parent, coach, and anonymous Row Level Security boundaries. `qa:session-proof` verifies signed-out gates, signed-in browser routes, and parent RSVP/preference/snack/volunteer live actions, then confirms those parent action rows with the QA service-role key before capturing screenshots under `output/playwright/`. `qa:tenant-readiness-proof` signs in as the QA admin, opens `/admin/health` and `/admin/teams`, verifies tenant setup/readiness copy, and captures mobile plus desktop screenshots under `output/playwright/tenant-readiness/`. `qa:demo-tenant-proof` signs in with DEMO admin, coach, and parent credentials, verifies fictional `LeaguePilot Demo League` content across role-scoped routes, confirms demo Supabase row counts and delivery-attempt metadata, writes `output/playwright/demo-tenant/demo-tenant-proof.json`, and captures mobile plus desktop screenshots under `output/playwright/demo-tenant/`. `qa:brand-proof` verifies the `/admin/themes` brand launch checklist, all 20 target brand surfaces, monitoring events, and alert rules against `QA_PROOF_BASE_URL`, then captures `output/playwright/brand-launch-validation.png`. `qa:coordination-proof` signs in as QA admin, coach, and parent, verifies all five coordination workbenches at 1440px and 390px, fails on document overflow, and writes screenshots plus `coordination-proof.json` under `output/playwright/coordination-loops/`.
 
 Hosted tenant-readiness proof must be rerun after deployment before a real organization is invited:
 

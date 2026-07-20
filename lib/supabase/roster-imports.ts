@@ -31,6 +31,15 @@ export async function recordRosterImportAudit(input: {
     });
     if (!access.ok) return { ok: false, message: access.message };
 
+    const { data: teamRows } = await withSupabaseTimeout(db
+      .from("teams")
+      .select("id,name")
+      .eq("organization_id", input.organizationId)
+      .eq("season_id", input.seasonId), 7000) as {
+        data: Array<{ id: string; name: string }> | null;
+      };
+    const teamIdByName = new Map((teamRows ?? []).map((team) => [team.name.trim().toLowerCase(), team.id]));
+
     const { data: rosterImport, error } = await withSupabaseTimeout(db
       .from("roster_imports")
       .insert({
@@ -64,7 +73,10 @@ export async function recordRosterImportAudit(input: {
       roster_import_id: rosterImport.id,
       row_number: row.rowNumber,
       raw_data: row.raw,
-      normalized_data: row.normalized,
+      normalized_data: {
+        ...row.normalized,
+        teamId: teamIdByName.get(row.normalized.teamName.trim().toLowerCase()) ?? ""
+      },
       status: row.status,
       issue_codes: row.issues.map((issue) => issue.code)
     }));
@@ -85,7 +97,7 @@ export async function recordRosterImportAudit(input: {
 
     return {
       ok: true,
-      message: "Roster import audit saved. No roster records, guardian links, invites, or provider sends were created.",
+      message: "Roster import validated and staged for explicit approval. No roster records, guardian links, invites, or provider sends were created.",
       rosterImport
     };
   } catch {

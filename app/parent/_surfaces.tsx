@@ -6,7 +6,13 @@ import {
   TeamChatClient,
   TeamPortalClient
 } from "@/components/feature-panels";
+import {
+  FamilyFlightPlanClient,
+  ParentNotificationReceiptsClient
+} from "@/components/coordination-workbenches";
 import { listParentCoachDashboardData } from "@/lib/supabase/dashboard-data";
+import { listParentFamilyHandoffs } from "@/lib/supabase/family-flight-plan";
+import { listParentNotificationReceipts } from "@/lib/supabase/notification-receipts";
 import { scopeScheduleOperationsData, scopeTeamChatData, scopeTeamPortalData } from "@/lib/supabase/route-scopes";
 import { listScheduleOperationsData } from "@/lib/supabase/schedule-management";
 import { requireParentPageAccess } from "@/lib/supabase/shell-access";
@@ -20,8 +26,30 @@ export async function loadParentDashboardForPage() {
 }
 
 export async function ParentHomeSurface() {
-  const dashboardData = await loadParentDashboardForPage();
-  return <ParentDashboardClient dashboardData={dashboardData} />;
+  const pageAccess = await requireParentPageAccess();
+  if (!pageAccess.ok || !pageAccess.access.userId) {
+    return <ParentDashboardClient dashboardData={pageAccess.dashboardData} />;
+  }
+  const [dashboardData, notificationData, handoffData] = await Promise.all([
+    listParentCoachDashboardData({ viewerUserId: pageAccess.access.userId, surface: "parent" }),
+    listParentNotificationReceipts({ parentUserId: pageAccess.access.userId }),
+    listParentFamilyHandoffs({ parentUserId: pageAccess.access.userId })
+  ]);
+  return (
+    <>
+      <FamilyFlightPlanClient
+        state={dashboardData.state}
+        parentUserId={pageAccess.access.userId}
+        initialHandoffs={handoffData.handoffs}
+        message={handoffData.message}
+      />
+      <ParentDashboardClient dashboardData={dashboardData} />
+      <ParentNotificationReceiptsClient
+        initialReceipts={notificationData.receipts}
+        message={notificationData.message}
+      />
+    </>
+  );
 }
 
 export async function ParentRsvpSurface() {

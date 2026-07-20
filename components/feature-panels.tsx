@@ -170,6 +170,7 @@ import type { AdminThemeData, TeamLogoAsset, TeamThemeAudit, TenantThemeDefaults
 import type { TeamChatData } from "@/lib/supabase/team-chat";
 import type { TenantReadinessData, TenantReadinessCheckStatus } from "@/lib/supabase/tenant-readiness";
 import type { ParentCoachDashboardData } from "@/lib/supabase/dashboard-data";
+import type { PracticeRunReceipt } from "@/lib/supabase/practice-runs";
 import type { AdminTeamManagementData } from "@/lib/supabase/team-management";
 import type { ScheduleOperationsData } from "@/lib/supabase/schedule-management";
 import {
@@ -6942,7 +6943,15 @@ export function ScheduleAlertsClient({
   );
 }
 
-export function ParentReplayClient({ dashboardData, drillVideoData }: { dashboardData?: ParentCoachDashboardData | null; drillVideoData?: DrillVideoLibraryData | null } = {}) {
+export function ParentReplayClient({
+  dashboardData,
+  drillVideoData,
+  practiceRunReceipts = []
+}: {
+  dashboardData?: ParentCoachDashboardData | null;
+  drillVideoData?: DrillVideoLibraryData | null;
+  practiceRunReceipts?: PracticeRunReceipt[];
+} = {}) {
   const { state, dispatch } = useAppState();
   const sourceState = dashboardData?.accessStatus === "live" ? dashboardData.state : state;
   const drillTeams = drillVideoData?.teams.length ? drillVideoData.teams : sourceState.teams;
@@ -6968,6 +6977,10 @@ export function ParentReplayClient({ dashboardData, drillVideoData }: { dashboar
   const [savedReplays, setSavedReplays] = useState<ParentReplayRecord[]>([]);
   const [activeReplayId, setActiveReplayId] = useState("");
   const [replayCheckpoint, setReplayCheckpoint] = useState<"draft" | "approved" | "published">("draft");
+  const [selectedPracticeRunId, setSelectedPracticeRunId] = useState(
+    practiceRunReceipts.find((receipt) => receipt.completedAt && !receipt.parentReplayId)?.id ?? ""
+  );
+  const [linkedPracticeRunId, setLinkedPracticeRunId] = useState("");
   const [drillVideoUrl, setDrillVideoUrl] = useState("");
   const [drillVideoSport, setDrillVideoSport] = useState("baseball");
   const [drillVideoSkillCategory, setDrillVideoSkillCategory] = useState("throwing");
@@ -7002,6 +7015,12 @@ export function ParentReplayClient({ dashboardData, drillVideoData }: { dashboar
   const selectedDrillVideo = approvedDrillVideos.find((video) => video.id === selectedDrillVideoId) ?? approvedDrillVideos[0];
   const teamDrillAssignments = drillAssignments.filter((assignment) => assignment.teamId === teamId);
   const teamPracticeEvents = drillEvents.filter((event) => event.teamId === teamId);
+  const completedPracticeRuns = practiceRunReceipts.filter((receipt) => (
+    receipt.teamId === teamId &&
+    receipt.completedAt &&
+    !receipt.parentReplayId &&
+    receipt.id !== linkedPracticeRunId
+  ));
   const accessGate = privateAccessGate(dashboardData, "coach");
   const draft = useMemo(() => {
     const previewFocusAreas: PracticeFocusArea[] = focusAreas.length ? focusAreas : ["teamwork"];
@@ -7134,7 +7153,8 @@ export function ParentReplayClient({ dashboardData, drillVideoData }: { dashboar
         teamId,
         coachUserId,
         focusAreas,
-        draft
+        draft,
+        practiceRunId: selectedPracticeRunId || undefined
       });
       const result = await response.json().catch(() => null) as {
         ok?: boolean;
@@ -7146,6 +7166,7 @@ export function ParentReplayClient({ dashboardData, drillVideoData }: { dashboar
         setSavedReplays((current) => [result.parentReplay!, ...current]);
         setActiveReplayId(result.parentReplay.id);
         setReplayCheckpoint("draft");
+        if (selectedPracticeRunId) setLinkedPracticeRunId(selectedPracticeRunId);
       } else if (response.status === 401) {
         const input = { teamId, coachUserId, focusAreas, now: new Date().toISOString() };
         dispatch({ type: "createParentReplay", input });
@@ -7567,6 +7588,17 @@ export function ParentReplayClient({ dashboardData, drillVideoData }: { dashboar
                 ))}
               </select>
             </label>
+            <label>
+              Completed practice evidence
+              <select value={selectedPracticeRunId} onChange={(event) => setSelectedPracticeRunId(event.target.value)}>
+                <option value="">Coach-selected focus only</option>
+                {completedPracticeRuns.map((receipt) => (
+                  <option key={receipt.id} value={receipt.id}>
+                    {receipt.plan.title} - {formatDate(receipt.completedAt!)}
+                  </option>
+                ))}
+              </select>
+            </label>
           </div>
 
           <div className="replay-checklist" aria-label="Practice focus areas">
@@ -7583,6 +7615,11 @@ export function ParentReplayClient({ dashboardData, drillVideoData }: { dashboar
           </div>
 
           <p className="muted">Choose 2-3 focus areas so the family replay stays short enough to use tonight.</p>
+          <p className="muted">
+            {selectedPracticeRunId
+              ? "This draft will cite a completed practice-run receipt and its coach observations."
+              : "No practice-run receipt is selected; the draft will cite coach-selected focus only."}
+          </p>
 
           <button
             disabled={!canQueueReplay || isReplayPending}

@@ -6,8 +6,14 @@ import {
   TeamChatClient,
   TeamPortalClient
 } from "@/components/feature-panels";
+import {
+  CoachPracticeReplayWorkbench,
+  GameDayResolutionRoomClient
+} from "@/components/coordination-workbenches";
 import { listParentCoachDashboardData } from "@/lib/supabase/dashboard-data";
 import { listCoachDrillVideoLibraryData } from "@/lib/supabase/drill-videos";
+import { listGameDayResolutionReviews } from "@/lib/supabase/game-day-resolution";
+import { listPracticeRunReceipts } from "@/lib/supabase/practice-runs";
 import { scopeScheduleOperationsData, scopeTeamChatData, scopeTeamPortalData } from "@/lib/supabase/route-scopes";
 import { listScheduleOperationsData } from "@/lib/supabase/schedule-management";
 import { requireCoachPageAccess } from "@/lib/supabase/shell-access";
@@ -33,29 +39,48 @@ export async function CoachAttendanceSurface() {
 export async function CoachPracticeRecapsSurface() {
   const pageAccess = await requireCoachPageAccess();
   if (!pageAccess.ok) return <ParentReplayClient dashboardData={pageAccess.dashboardData} />;
-  const [dashboardData, drillVideoData] = await Promise.all([
+  const [dashboardData, drillVideoData, practiceRunData] = await Promise.all([
     listParentCoachDashboardData({ viewerUserId: pageAccess.access.userId, surface: "coach" }),
     listCoachDrillVideoLibraryData({
       coachTeamIds: pageAccess.access.coachTeamIds,
       viewerUserId: pageAccess.access.userId
-    })
+    }),
+    listPracticeRunReceipts({ teamIds: pageAccess.access.coachTeamIds })
   ]);
-  return <ParentReplayClient dashboardData={dashboardData} drillVideoData={drillVideoData} />;
+  return (
+    <CoachPracticeReplayWorkbench
+      state={dashboardData.state}
+      initialReceipts={practiceRunData.receipts}
+      dashboardData={dashboardData}
+      drillVideoData={drillVideoData}
+    />
+  );
 }
 
 export async function CoachScheduleSurface() {
   const pageAccess = await requireCoachPageAccess();
   if (!pageAccess.ok) return <CoachDashboardClient dashboardData={pageAccess.dashboardData} />;
-  const [scheduleData, dashboardData] = await Promise.all([
+  const [scheduleData, dashboardData, resolutionData] = await Promise.all([
     listScheduleOperationsData(),
-    listParentCoachDashboardData({ viewerUserId: pageAccess.access.userId, surface: "coach" })
+    listParentCoachDashboardData({ viewerUserId: pageAccess.access.userId, surface: "coach" }),
+    listGameDayResolutionReviews({ teamIds: pageAccess.access.coachTeamIds })
   ]);
   const scopedScheduleData = scopeScheduleOperationsData(
     scheduleData,
     pageAccess.access.coachTeamIds,
     "Showing schedule rows scoped to the signed-in coach's active teams."
   );
-  return <ScheduleAlertsClient scheduleData={scopedScheduleData} dashboardData={dashboardData} mode="coach" />;
+  return (
+    <>
+      <GameDayResolutionRoomClient
+        state={dashboardData.state}
+        initialReviews={resolutionData.reviews}
+        mode="coach"
+        message={resolutionData.message}
+      />
+      <ScheduleAlertsClient scheduleData={scopedScheduleData} dashboardData={dashboardData} mode="coach" />
+    </>
+  );
 }
 
 export async function CoachMessagesSurface() {

@@ -1,11 +1,15 @@
 import Link from "next/link";
 import {
+  AdminDeliveryReviewClient,
+  GameDayResolutionRoomClient,
+  SeasonLaunchWizardClient
+} from "@/components/coordination-workbenches";
+import {
   AdminDashboardClient,
   AdminHealthClient,
   AdminInvitesClient,
   AdminTeamManagementClient,
   AdminThemesClient,
-  ImportsClient,
   MembershipAdminClient,
   RegistrationReviewClient,
   ScheduleAlertsClient
@@ -19,7 +23,13 @@ import { listMediaGovernanceData } from "@/lib/supabase/media-governance";
 import { listAdminMembershipData } from "@/lib/supabase/memberships";
 import { listRegistrationReviewData } from "@/lib/supabase/registration-approvals";
 import { listRegistrationRequests } from "@/lib/supabase/registrations";
+import {
+  listGameDayResolutionEvidence,
+  listGameDayResolutionReviews
+} from "@/lib/supabase/game-day-resolution";
+import { listOrganizationNotificationReceipts } from "@/lib/supabase/notification-receipts";
 import { scopeScheduleOperationsData } from "@/lib/supabase/route-scopes";
+import { listSeasonLaunchData } from "@/lib/supabase/season-launch";
 import { listScheduleOperationsData } from "@/lib/supabase/schedule-management";
 import { buildSecurityProofDashboard } from "@/lib/supabase/security-proof";
 import { requireAdminPageAccess } from "@/lib/supabase/shell-access";
@@ -27,6 +37,7 @@ import { listSponsorAdminData } from "@/lib/supabase/sponsors";
 import { listTenantReadinessData } from "@/lib/supabase/tenant-readiness";
 import { listAdminThemeData } from "@/lib/supabase/team-branding";
 import { listAdminTeamManagementData } from "@/lib/supabase/team-management";
+import { seedState } from "@/lib/domain";
 
 export async function AdminAccessDeniedSurface({ message }: { message?: string } = {}) {
   return (
@@ -282,7 +293,10 @@ export async function AdminMembershipsSurface() {
 export async function AdminImportsSurface() {
   const pageAccess = await requireAdminPageAccess();
   if (!pageAccess.ok) return <AdminAccessDeniedSurface message={pageAccess.message} />;
-  return <ImportsClient />;
+  const data = await listSeasonLaunchData({
+    organizationIds: pageAccess.access.adminOrganizationIds
+  });
+  return <SeasonLaunchWizardClient data={data} />;
 }
 
 export async function AdminInvitesSurface() {
@@ -303,27 +317,48 @@ export async function AdminHealthSurface() {
 export async function AdminScheduleVenuesSurface() {
   const pageAccess = await requireAdminPageAccess();
   if (!pageAccess.ok) return <AdminAccessDeniedSurface message={pageAccess.message} />;
-  const scheduleData = await listScheduleOperationsData();
+  const [scheduleData, resolutionData, resolutionEvidence] = await Promise.all([
+    listScheduleOperationsData(),
+    listGameDayResolutionReviews({ teamIds: pageAccess.access.adminTeamIds }),
+    listGameDayResolutionEvidence({ teamIds: pageAccess.access.adminTeamIds })
+  ]);
   const scopedScheduleData = scopeScheduleOperationsData(
     scheduleData,
     pageAccess.access.adminTeamIds,
     "Showing schedule and venue rows scoped to the signed-in admin's organizations."
   );
-  return <ScheduleAlertsClient scheduleData={scopedScheduleData} mode="admin" />;
+  const resolutionState = {
+    ...seedState,
+    organization: {
+      ...seedState.organization,
+      id: scopedScheduleData.organizationId
+    },
+    teams: scopedScheduleData.teams,
+    events: scopedScheduleData.events,
+    players: resolutionEvidence.evidence.players,
+    rsvps: resolutionEvidence.evidence.rsvps,
+    weatherAlerts: resolutionEvidence.evidence.weatherAlerts
+  };
+  return (
+    <>
+      <GameDayResolutionRoomClient
+        state={resolutionState}
+        initialReviews={resolutionData.reviews}
+        mode="admin"
+        message={resolutionData.ok && resolutionEvidence.ok
+          ? "Game-day decision receipts and live team evidence are ready for review."
+          : `${resolutionData.message} ${resolutionEvidence.message}`}
+      />
+      <ScheduleAlertsClient scheduleData={scopedScheduleData} mode="admin" />
+    </>
+  );
 }
 
 export async function AdminMessageDeliveryReviewSurface() {
   const pageAccess = await requireAdminPageAccess();
   if (!pageAccess.ok) return <AdminAccessDeniedSurface message={pageAccess.message} />;
-  const data = await listAdminOperationsData();
-  return (
-    <div className="page">
-      <section className="hero">
-        <span className="eyebrow">Message delivery review</span>
-        <h1>Review notification records without external provider sends.</h1>
-        <p className="lead">Provider approval remains record-only. Email, SMS, and Web Push adapters are still disconnected unless a separate send slice is approved.</p>
-      </section>
-      <AdminOperationsView data={data} />
-    </div>
-  );
+  const data = await listOrganizationNotificationReceipts({
+    organizationIds: pageAccess.access.adminOrganizationIds
+  });
+  return <AdminDeliveryReviewClient initialReceipts={data.receipts} message={data.message} />;
 }

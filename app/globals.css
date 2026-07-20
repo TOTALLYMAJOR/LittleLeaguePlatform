@@ -3311,6 +3311,226 @@ button.month-calendar-day:hover {
   }
 }
 
+/* ─────────────────────────────────────────────────────────────────────────────
+   §32  Coordination loops: launch, receipts, practice, family, game day
+───────────────────────────────────────────────────────────────────────────── */
+.coordination-workbench {
+  --coord-accent: #214b3b;
+}
+
+.coordination-workbench .compact-hero {
+  padding-block: clamp(24px, 4vw, 44px);
+}
+
+.coordination-workbench .compact-hero h1 {
+  max-width: 22ch;
+}
+
+.coordination-workbench .badge {
+  white-space: nowrap;
+}
+
+.coordination-workbench .button-row,
+.coordination-workbench .pill-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  align-items: center;
+}
+
+.coordination-workbench .button-row > *,
+.coordination-workbench .pill-row > * {
+  width: auto;
+}
+
+.evidence-rail {
+  display: grid;
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+  gap: 0;
+  padding: 0;
+  margin: 8px 0;
+  list-style: none;
+}
+
+.evidence-rail li {
+  position: relative;
+  display: grid;
+  align-content: start;
+  gap: 4px;
+  min-width: 0;
+  padding: 24px 8px 0 0;
+  color: var(--muted);
+  border-top: 2px solid var(--line);
+}
+
+.evidence-rail li > span {
+  position: absolute;
+  top: -7px;
+  left: 0;
+  width: 12px;
+  height: 12px;
+  border: 2px solid var(--line);
+  border-radius: 50%;
+  background: var(--surface);
+}
+
+.evidence-rail li.proved {
+  color: var(--text);
+  border-color: var(--ok);
+}
+
+.evidence-rail li.proved > span {
+  border-color: var(--ok);
+  background: var(--ok);
+  box-shadow: 0 0 0 3px var(--ok-soft);
+}
+
+.evidence-rail strong {
+  overflow-wrap: anywhere;
+  font-size: var(--text-sm);
+}
+
+.evidence-rail small {
+  overflow-wrap: anywhere;
+  font-size: var(--text-xs);
+  line-height: 1.35;
+}
+
+.launch-gates {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.launch-gate {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: 4px 10px;
+  align-items: center;
+  color: var(--text);
+  text-decoration: none;
+}
+
+.launch-gate > span {
+  display: grid;
+  width: 30px;
+  height: 30px;
+  place-items: center;
+  grid-row: span 2;
+  color: var(--warning);
+  border-radius: 50%;
+  background: var(--warning-soft);
+  font-weight: 800;
+}
+
+.launch-gate.ready > span {
+  color: var(--ok);
+  background: var(--ok-soft);
+}
+
+.launch-gate small {
+  color: var(--muted);
+}
+
+.practice-run-loop {
+  display: grid;
+  gap: 18px;
+}
+
+.practice-blocks {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.practice-blocks p {
+  margin: 0;
+  padding: 12px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  background: var(--surface-soft);
+}
+
+.flight-timeline {
+  position: relative;
+  display: grid;
+  gap: 12px;
+  padding-left: 18px;
+}
+
+.flight-timeline::before {
+  position: absolute;
+  top: 16px;
+  bottom: 16px;
+  left: 4px;
+  width: 2px;
+  content: "";
+  background: var(--line);
+}
+
+.flight-leg {
+  position: relative;
+  display: grid;
+  grid-template-columns: 150px minmax(0, 1fr);
+  gap: 18px;
+  align-items: start;
+}
+
+.flight-leg::before {
+  position: absolute;
+  top: 22px;
+  left: -20px;
+  width: 10px;
+  height: 10px;
+  content: "";
+  border: 2px solid var(--surface);
+  border-radius: 50%;
+  background: var(--coord-accent);
+  box-shadow: 0 0 0 2px var(--coord-accent);
+}
+
+.flight-leg time {
+  color: var(--muted);
+  font-size: var(--text-sm);
+  font-weight: 700;
+}
+
+.resolution-room .notice .badge {
+  margin-top: 6px;
+}
+
+@media (max-width: 900px) {
+  .launch-gates {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .evidence-rail {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    row-gap: 24px;
+  }
+}
+
+@media (max-width: 620px) {
+  .launch-gates,
+  .practice-blocks {
+    grid-template-columns: 1fr;
+  }
+
+  .evidence-rail {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .flight-leg {
+    grid-template-columns: 1fr;
+    gap: 6px;
+  }
+
+  .coordination-workbench .button-row > *,
+  .coordination-workbench .pill-row > * {
+    width: 100%;
+  }
+}
+
 
 /* ─────────────────────────────────────────────────────────────────────────────
    §27  INSTALL PROMPT & PWA

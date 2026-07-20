@@ -304,6 +304,7 @@ export async function saveParentReplay(input: {
   actorUserId: string;
   focusAreas: PracticeFocusArea[];
   draft: ParentReplayDraft;
+  practiceRunId?: string;
 }) {
   if (!input.teamId || !input.actorUserId || input.focusAreas.length < 2 || input.focusAreas.length > 3) {
     return { ok: false, message: "Parent Replay requires a team, coach approval, and 2-3 focus areas." };
@@ -324,6 +325,31 @@ export async function saveParentReplay(input: {
       season_id: string;
       name: string;
     };
+    const practiceRunResult = input.practiceRunId
+      ? await runDynamicQuery<{
+        id: string;
+        team_id: string;
+        coach_user_id: string;
+        completed_at: string | null;
+        observations_json: Record<string, unknown>;
+        parent_replay_id: string | null;
+      }>(db
+        .from("practice_run_receipts")
+        .select("id,team_id,coach_user_id,completed_at,observations_json,parent_replay_id")
+        .eq("id", input.practiceRunId)
+        .maybeSingle())
+      : { data: null, error: null };
+    if (input.practiceRunId && (
+      practiceRunResult.error ||
+      !practiceRunResult.data ||
+      practiceRunResult.data.team_id !== input.teamId ||
+      !practiceRunResult.data.completed_at
+    )) {
+      return { ok: false, message: "Parent Replay can only attach to a completed practice-run receipt for this team." };
+    }
+    if (practiceRunResult.data?.parent_replay_id) {
+      return { ok: false, message: "This practice-run receipt is already linked to a Parent Replay." };
+    }
 
     const now = new Date().toISOString();
     const { data: replay, error: replayError } = await runDynamicQuery<{
@@ -367,12 +393,20 @@ export async function saveParentReplay(input: {
         approved_by_user_id: null,
         approved_at: null,
         published_at: null,
-        source_manifest_json: input.focusAreas.map((area) => ({
-          sourceType: "coach_selected_focus",
-          sourceId: area,
-          included: true,
-          observedAt: now
-        })),
+        source_manifest_json: [
+          ...input.focusAreas.map((area) => ({
+            sourceType: "coach_selected_focus",
+            sourceId: area,
+            included: true,
+            observedAt: now
+          })),
+          ...(practiceRunResult.data ? [{
+            sourceType: "completed_practice_run",
+            sourceId: practiceRunResult.data.id,
+            included: true,
+            observedAt: practiceRunResult.data.completed_at
+          }] : [])
+        ],
         source_hash: createHash("sha256").update(JSON.stringify({
           teamId: input.teamId,
           focusAreas: input.focusAreas,
@@ -386,6 +420,20 @@ export async function saveParentReplay(input: {
 
     if (replayError || !replay) return { ok: false, message: "Parent Replay could not be saved." };
 
+    if (practiceRunResult.data) {
+      const linked = await runDynamicQuery(db
+        .from("practice_run_receipts")
+        .update({ parent_replay_id: replay.id })
+        .eq("id", practiceRunResult.data.id)
+        .is("parent_replay_id", null)
+        .select("id")
+        .single());
+      if (linked.error || !linked.data) {
+        await runDynamicQuery(db.from("parent_replays").delete().eq("id", replay.id));
+        return { ok: false, message: "Parent Replay could not be linked to its practice-run evidence." };
+      }
+    }
+
     await runDynamicQuery(db
       .from("audit_events")
       .insert({
@@ -394,7 +442,7 @@ export async function saveParentReplay(input: {
         action: "parent_replay_draft_saved",
         target_type: "parent_replay",
         target_id: replay.id,
-        summary: `Parent Replay draft saved for ${team.name} with ${input.focusAreas.length} focus areas.`
+        summary: `Parent Replay draft saved for ${team.name} with ${input.focusAreas.length} focus areas${practiceRunResult.data ? " and a completed practice-run receipt" : ""}.`
       }));
 
     const parentReplay: ParentReplayRecord = {

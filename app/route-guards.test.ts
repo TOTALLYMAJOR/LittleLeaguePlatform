@@ -50,14 +50,17 @@ describe("role route guards and compatibility wrappers", () => {
     expect(panel).toContain("/api/coach/ai-workspace");
   });
 
-  it("keeps message delivery review provider-safe and send-disconnected", () => {
+  it("keeps message delivery review provider-safe and evidence-separated", () => {
     const page = source("app/admin/message-delivery-review/page.tsx");
     const surfaces = source("app/admin/_surfaces.tsx");
+    const workbench = source("components/coordination-workbenches.tsx");
     const providerReview = source("app/api/provider-delivery/review/route.ts");
 
     expect(page).toContain("AdminMessageDeliveryReviewSurface");
-    expect(surfaces).toContain("without external provider sends");
-    expect(surfaces).toContain("adapters are still disconnected");
+    expect(surfaces).toContain("listOrganizationNotificationReceipts");
+    expect(surfaces).toContain("AdminDeliveryReviewClient");
+    expect(workbench).toContain("A queued attempt is not called sent");
+    expect(workbench).toContain("provider acceptance is not called delivery");
     expect(providerReview).not.toContain("fetch(");
   });
 

@@ -25,6 +25,7 @@ describe("Supabase RLS policy coverage", () => {
   const teamBrandProfilesMonitoring = migration("0018_team_brand_profiles_monitoring.sql");
   const guardianVerification = migration("0020_guardian_verification_policy.sql");
   const drillVideoReferences = migration("0022_drill_video_references.sql");
+  const coordinationLoops = migration("0024_coordination_loops.sql");
   const packageJson = readFileSync(join(process.cwd(), "package.json"), "utf8");
   const rlsProof = readFileSync(join(process.cwd(), "scripts", "verify-rls-boundaries.mjs"), "utf8");
 
@@ -169,5 +170,19 @@ describe("Supabase RLS policy coverage", () => {
     expect(drillVideoReferences).toContain("org admins review drill videos");
     expect(drillVideoReferences).toContain("coaches manage coach-only drill assignments");
     expect(drillVideoReferences).toContain("membership.role = 'coach'");
+  });
+
+  it("keeps all five coordination loops role-scoped and human-reviewed", () => {
+    expect(coordinationLoops).toContain("create table if not exists public.practice_run_receipts");
+    expect(coordinationLoops).toContain("coaches and admins manage practice run receipts");
+    expect(coordinationLoops).toContain("create table if not exists public.family_event_handoffs");
+    expect(coordinationLoops).toContain("guardian.parent_user_id = auth.uid()");
+    expect(coordinationLoops).toContain("create table if not exists public.game_day_resolution_reviews");
+    expect(coordinationLoops).toContain("p_decision not in ('monitor', 'confirm_on_time', 'delay', 'cancel')");
+    expect(coordinationLoops).toContain("Only assigned coaches or organization admins can resolve a game-day event.");
+    expect(coordinationLoops).toContain("create or replace function public.commit_roster_import");
+    expect(coordinationLoops).toContain("create or replace function public.rollback_roster_import");
+    expect(coordinationLoops).toContain("'providerSendsExecuted', 0");
+    expect(coordinationLoops).toContain("grant execute on function public.apply_game_day_resolution");
   });
 });

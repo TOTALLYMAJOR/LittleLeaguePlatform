@@ -1,0 +1,203 @@
+{
+  "generatedAt": "2026-07-20T20:20:59.462Z",
+  "baseUrl": "http://127.0.0.1:3010",
+  "proofBoundary": "Local signed-in route rendering and responsive browser evidence. Provider delivery and hosted migration proof remain separate.",
+  "scenarios": [
+    {
+      "scenario": "admin-season-launch",
+      "role": "admin",
+      "path": "/admin/imports",
+      "viewport": "1440x1000",
+      "headingVerified": true,
+      "semanticChecks": [
+        "Validate the source file, review warnings",
+        "communications as separate launch gates"
+      ],
+      "documentOverflow": false,
+      "consoleErrors": [],
+      "screenshotPath": "output/playwright/coordination-loops/admin-season-launch-desktop.png"
+    },
+    {
+      "scenario": "admin-delivery-evidence",
+      "role": "admin",
+      "path": "/admin/message-delivery-review",
+      "viewport": "1440x1000",
+      "headingVerified": true,
+      "semanticChecks": [
+        "A queued attempt is not called sent",
+        "Delivery proved",
+        "Acknowledged",
+        "all",
+        "pending",
+        "failed",
+        "proved"
+      ],
+      "documentOverflow": false,
+      "consoleErrors": [],
+      "screenshotPath": "output/playwright/coordination-loops/admin-delivery-evidence-desktop.png"
+    },
+    {
+      "scenario": "admin-game-day-resolution",
+      "role": "admin",
+      "path": "/admin/schedule-venues",
+      "viewport": "1440x1000",
+      "headingVerified": true,
+      "semanticChecks": [
+        "Weather evidence informs the room",
+        "Provider sends: 0",
+        "Recent resolution receipts",
+        "Save reviewed resolution"
+      ],
+      "documentOverflow": false,
+      "consoleErrors": [],
+      "screenshotPath": "output/playwright/coordination-loops/admin-game-day-resolution-desktop.png"
+    },
+    {
+      "scenario": "coach-practice-replay-loop",
+      "role": "coach",
+      "path": "/coach/practice-recaps",
+      "viewport": "1440x1000",
+      "headingVerified": true,
+      "semanticChecks": [
+        "Plan, run, and observations stay coach-only",
+        "Coach observations",
+        "Completion does not publish anything",
+        "Save reviewed plan",
+        "Start practice",
+        "Complete and unlock Replay seed"
+      ],
+      "documentOverflow": false,
+      "consoleErrors": [],
+      "screenshotPath": "output/playwright/coordination-loops/coach-practice-replay-loop-desktop.png"
+    },
+    {
+      "scenario": "coach-game-day-resolution",
+      "role": "coach",
+      "path": "/coach/schedule",
+      "viewport": "1440x1000",
+      "headingVerified": true,
+      "semanticChecks": [
+        "Weather evidence informs the room",
+        "Provider sends: 0",
+        "Recent resolution receipts",
+        "Save reviewed resolution"
+      ],
+      "documentOverflow": false,
+      "consoleErrors": [],
+      "screenshotPath": "output/playwright/coordination-loops/coach-game-day-resolution-desktop.png"
+    },
+    {
+      "scenario": "parent-family-flight-plan",
+      "role": "parent",
+      "path": "/parent",
+      "viewport": "1440x1000",
+      "headingVerified": true,
+      "semanticChecks": [
+        "Children still do not log in",
+        "caregiver labels do not grant app access",
+        "honest delivery evidence"
+      ],
+      "documentOverflow": false,
+      "consoleErrors": [],
+      "screenshotPath": "output/playwright/coordination-loops/parent-family-flight-plan-desktop.png"
+    },
+    {
+      "scenario": "admin-season-launch",
+      "role": "admin",
+      "path": "/admin/imports",
+      "viewport": "390x844",
+      "headingVerified": true,
+      "semanticChecks": [
+        "Validate the source file, review warnings",
+        "communications as separate launch gates"
+      ],
+      "documentOverflow": false,
+      "consoleErrors": [],
+      "screenshotPath": "output/playwright/coordination-loops/admin-season-launch-mobile.png"
+    },
+    {
+      "scenario": "admin-delivery-evidence",
+      "role": "admin",
+      "path": "/admin/message-delivery-review",
+      "viewport": "390x844",
+      "headingVerified": true,
+      "semanticChecks": [
+        "A queued attempt is not called sent",
+        "Delivery proved",
+        "Acknowledged",
+        "all",
+        "pending",
+        "failed",
+        "proved"
+      ],
+      "documentOverflow": false,
+      "consoleErrors": [],
+      "screenshotPath": "output/playwright/coordination-loops/admin-delivery-evidence-mobile.png"
+    },
+    {
+      "scenario": "admin-game-day-resolution",
+      "role": "admin",
+      "path": "/admin/schedule-venues",
+      "viewport": "390x844",
+      "headingVerified": true,
+      "semanticChecks": [
+        "Weather evidence informs the room",
+        "Provider sends: 0",
+        "Recent resolution receipts",
+        "Save reviewed resolution"
+      ],
+      "documentOverflow": false,
+      "consoleErrors": [],
+      "screenshotPath": "output/playwright/coordination-loops/admin-game-day-resolution-mobile.png"
+    },
+    {
+      "scenario": "coach-practice-replay-loop",
+      "role": "coach",
+      "path": "/coach/practice-recaps",
+      "viewport": "390x844",
+      "headingVerified": true,
+      "semanticChecks": [
+        "Plan, run, and observations stay coach-only",
+        "Coach observations",
+        "Completion does not publish anything",
+        "Save reviewed plan",
+        "Start practice",
+        "Complete and unlock Replay seed"
+      ],
+      "documentOverflow": false,
+      "consoleErrors": [],
+      "screenshotPath": "output/playwright/coordination-loops/coach-practice-replay-loop-mobile.png"
+    },
+    {
+      "scenario": "coach-game-day-resolution",
+      "role": "coach",
+      "path": "/coach/schedule",
+      "viewport": "390x844",
+      "headingVerified": true,
+      "semanticChecks": [
+        "Weather evidence informs the room",
+        "Provider sends: 0",
+        "Recent resolution receipts",
+        "Save reviewed resolution"
+      ],
+      "documentOverflow": false,
+      "consoleErrors": [],
+      "screenshotPath": "output/playwright/coordination-loops/coach-game-day-resolution-mobile.png"
+    },
+    {
+      "scenario": "parent-family-flight-plan",
+      "role": "parent",
+      "path": "/parent",
+      "viewport": "390x844",
+      "headingVerified": true,
+      "semanticChecks": [
+        "Children still do not log in",
+        "caregiver labels do not grant app access",
+        "honest delivery evidence"
+      ],
+      "documentOverflow": false,
+      "consoleErrors": [],
+      "screenshotPath": "output/playwright/coordination-loops/parent-family-flight-plan-mobile.png"
+    }
+  ]
+}

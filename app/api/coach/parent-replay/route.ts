@@ -37,7 +37,8 @@ export async function POST(request: Request) {
     teamId: String(body.teamId ?? ""),
     actorUserId: auth.user.id,
     focusAreas: requestedFocusAreas as PracticeFocusArea[],
-    draft: body.draft
+    draft: body.draft,
+    practiceRunId: body.practiceRunId ? String(body.practiceRunId) : undefined
   });
 
   return NextResponse.json({

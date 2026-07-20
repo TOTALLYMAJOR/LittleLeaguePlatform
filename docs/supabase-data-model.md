@@ -11,6 +11,8 @@ supabase/migrations/0001_core_schema.sql
 supabase/migrations/0002_platform_hardening.sql
 supabase/migrations/0003_registration_approval_workflow.sql
 supabase/migrations/0004_fix_registration_approval_digest.sql
+...
+supabase/migrations/0024_coordination_loops.sql
 ```
 
 Demo seed:
@@ -20,7 +22,7 @@ supabase/seed.sql
 scripts/bootstrap-demo-tenant.mjs
 ```
 
-The migrations have been applied to the configured Supabase project through the IPv4/session pooler. They create tables, indexes, update triggers, helper authorization functions, registration review RPCs, and initial Row Level Security policies. `supabase/seed.sql` adds a minimal demo organization, active season, and teams with UUID IDs so public registration has valid team choices. `scripts/bootstrap-demo-tenant.mjs` is the richer fictional product-demo seed: it creates demo auth users and populated tenant rows for admin, coach, and parent workflows while keeping provider sends and payment collection disconnected.
+The configured Supabase project has a previously verified migration baseline, but migration `0024` still requires an explicitly selected QA/preview target before it is pushed. Locally, migrations `0001` through `0024` install together in an empty PostgreSQL database, and transaction/RLS smoke checks cover the new coordination loops. That local evidence does not prove hosted migration state, provider behavior, or production deployment. `supabase/seed.sql` adds a minimal demo organization, active season, and teams with UUID IDs so public registration has valid team choices. `scripts/bootstrap-demo-tenant.mjs` is the richer fictional product-demo seed: it creates demo auth users and populated tenant rows for admin, coach, and parent workflows while keeping provider sends and payment collection disconnected.
 
 From this WSL environment, Supabase's direct database URL requires IPv6 and may not connect. Keep using the project's IPv4 transaction pooler URL in:
 
@@ -41,12 +43,13 @@ npm run supabase:push
 | Identity and access | `profiles`, `organizations`, `organization_memberships`, `team_memberships` |
 | League structure | `seasons`, `teams`, `players`, `player_guardians`, `parent_invites` |
 | Guardian safety | `guardian_authorizations`, `emergency_contacts`, `player_health_notes` |
-| Scheduling | `events`, `event_series`, `event_change_logs`, `field_locations`, `field_reservations`, `rsvps`, `snack_schedule_slots`, `volunteer_signups`, `weather_alerts` |
+| Scheduling | `events`, `event_series`, `event_change_logs`, `field_locations`, `field_reservations`, `rsvps`, `snack_schedule_slots`, `volunteer_signups`, `weather_alerts`, `game_day_resolution_reviews` |
 | Team portal | `announcements`, `media_items`, `sponsors`, `sponsor_packages`, `sponsor_placements`, `sponsor_assets`, `sponsor_billing_records`, `team_brand_profiles`, `team_brand_surface_validation_runs`, `brand_asset_uploads`, `brand_monitoring_events` |
 | Coach planning | `drill_videos`, `drill_video_sources`, `drill_video_assignments` |
-| Parent Replay | `parent_replays`, `parent_replay_templates`, `ai_generation_runs`, `learning_plans` |
+| Parent Replay | `practice_run_receipts`, `parent_replays`, `parent_replay_templates`, `ai_generation_runs`, `learning_plans` |
 | Team chat | `team_chat_channels`, `team_chat_messages`, `team_chat_threads`, `team_chat_message_reads`, `team_chat_reactions`, `team_chat_attachments`, `team_chat_reports`, `chat_moderation_audit_events` |
 | Notifications | `notifications`, `notification_preferences`, `notification_delivery_attempts`, `push_subscriptions` |
+| Family coordination | `family_event_handoffs` |
 | Admin operations | `registration_requests`, `registration_approval_actions`, `roster_imports`, `roster_import_rows`, `team_build_plans`, `audit_events` |
 
 ## Hardening Additions
@@ -65,6 +68,11 @@ npm run supabase:push
 - Team brand profiles store published logo/banner URLs, display and short names, fallback avatar labels, primary/secondary/accent/button colors, hero copy, 20-surface validation runs, reviewed asset uploads, and monitoring events.
 - Registration approval actions record the exact steps taken after a request: match existing player, create player, create guardian, create membership, or queue invite.
 - Drill video records store YouTube metadata references, source allowlist state, Made-for-Kids and embeddability flags, admin review state, and coach-only practice-plan assignments. They do not store copied videos, downloaded thumbnails, clips, or parent-facing assignments.
+- Season Launch commit and rollback execute as admin-only atomic RPCs. Provenance is retained on imported players, guardian links, memberships, and invites; rollback stops once downstream family, attendance, safety, learning, media-consent, RSVP, or handoff activity exists.
+- Practice completion is an auditable receipt separate from planning, start, Parent Replay approval, and publication. A completed receipt may be linked to one same-team Replay only.
+- Caregiver handoffs are guardian-owned coordination records for one linked player and event. They do not create a profile, invite, membership, or access grant.
+- Game-day monitor, confirm, delay, and cancel decisions require assigned coach/admin review. Delay/cancel changes, evidence, audit/change logs, and notification drafts are committed together; no provider send occurs in the RPC.
+- Explicit notification acknowledgment is recipient-scoped and requires an existing delivery attempt. It does not infer provider acceptance, delivery, or read evidence.
 
 ## Security Shape
 
@@ -102,6 +110,6 @@ DEMO_TENANT_SEED_CONFIRM=load-fictional-data npm run supabase:demo-tenant
 
 The seed is idempotent and writes fixed fictional UUIDs under `LeaguePilot Demo League`. It is meant to make local, QA, preview, or intentionally selected hosted environments feel fully populated for product review. It does not prove production readiness, provider delivery, Stripe payments, media storage, AI-provider output, or hosted browser proof.
 
-## Next Implementation Step
+## Coordination Loop Promotion
 
-Move one route at a time from local reducer state to Supabase-backed reads/writes. Registration requests, registration approval, Team Portal reads, team branding/theme writes, and Team Chat persistence now have live Supabase paths. The next hardened workflow should run hosted browser QA against several published brand profiles and connect provider-backed email/push rendering only after monitoring and fallback proof are in place.
+Apply migration `0024` only to an explicitly selected disposable QA/preview project, then run signed-in admin, coach, and guardian journeys with database readback. Provider sandbox evidence is a separate gate: notification drafts, approval, provider acceptance, verified delivery/failure, read, and acknowledgment must remain independent proof lanes.
