@@ -249,6 +249,14 @@ describe("CoachDashboardClient", () => {
       </AppStateProvider>
     );
 
+    expect(html).toContain("Coach announcements");
+    expect(html).toContain("Pause coach announcements");
+    expect(html).toContain("Game-day radar");
+    expect(html).toContain("People");
+    expect(html).toContain("Place");
+    expect(html).toContain("Plan");
+    expect(html).toContain("Action queue");
+    expect(html).not.toContain("<img");
     expect(html).toContain("items need attention");
     expect(html).toContain("Your 15-minute sideline check");
     expect(html).toContain("Next event");
@@ -351,6 +359,13 @@ describe("ParentDashboardClient", () => {
       </AppStateProvider>
     );
 
+    expect(html).toContain("Coach announcements");
+    expect(html).toContain("Pause coach announcements");
+    expect(html).toContain("Season story");
+    expect(html).toContain("Family view");
+    expect(html).toContain("Schedule and coach updates only. Team media is not shown in this story.");
+    expect(html).toContain("Open full game-day plan");
+    expect(html).not.toContain("<img");
     expect(html).toContain("Tiny Tigers");
     expect(html).toContain("Tiny Tigers vs Rookie Rockets");
     expect(html).toContain("RSVP needed");
@@ -614,15 +629,17 @@ describe("AdminDashboardClient", () => {
     expect(html).toContain("Suggested reviews");
     expect(html).toContain("Registration queue");
     expect(html).toContain("Media governance");
-    expect(html).toContain("Media reports");
+    expect(html).toContain("Family reports");
     expect(html).toContain("Upload storage");
+    expect(html).toContain("Link-based only");
     expect(html).toContain("Approve media");
     expect(html).toContain("Reject media");
     expect(html).toContain("Role-based media visibility");
-    expect(html).toContain("Media retention policy");
-    expect(html).toContain("Photo visibility flags");
-    expect(html).toContain("Takedown request");
+    expect(html).toContain("Retention:");
+    expect(html).toContain("Family visibility");
+    expect(html).toContain("Review request");
     expect(html).toContain("Team/org visibility");
+    expect(html).toContain("Open source link");
     expect(html).toContain("Coach drill videos");
     expect(html).toContain("Reference review");
     expect(html).toContain("Sponsor-Safe Media Gallery");
@@ -693,6 +710,14 @@ describe("AdminDashboardClient", () => {
     );
 
     expect(html).toContain("Manage sponsor records without exposing billing state to families.");
+    expect(html).toContain("Community proof");
+    expect(html).toContain("Sponsor evidence ledger");
+    expect(html).toContain("Community evidence receipt");
+    expect(html).toContain("Player data");
+    expect(html).toContain("Not included");
+    expect(html).toContain("does not prove payment");
+    expect(html).toContain("Open sponsor record");
+    expect(html).not.toContain("<img");
     expect(html).toContain("Sponsor management");
     expect(html).toContain("Sponsor billing records");
     expect(html).toContain("League Revenue Dashboard");

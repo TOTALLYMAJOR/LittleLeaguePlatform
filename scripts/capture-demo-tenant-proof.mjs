@@ -42,13 +42,25 @@ const routeSpecs = [
     ]
   },
   {
+    role: "admin",
+    name: "admin-sponsors",
+    path: "/admin/sponsors",
+    requiredTexts: [
+      "Sponsor evidence ledger",
+      "Community evidence receipt",
+      "Player data",
+      "Not included"
+    ]
+  },
+  {
     role: "coach",
     name: "coach-home",
     path: "/coach",
     requiredTexts: [
       "Riverside Rockets",
-      "Riverside Rockets vs Northside Waves",
-      "Demo heat watch"
+      "Coach announcements",
+      "Game-day radar",
+      "People"
     ]
   },
   {
@@ -58,8 +70,9 @@ const routeSpecs = [
     requiredTexts: [
       "Riverside Rockets",
       "Mason T.",
-      "Avery P.",
-      "Opening practice album"
+      "Season story",
+      "Family view",
+      "Team media is not shown in this story"
     ]
   },
   {
@@ -205,11 +218,11 @@ async function captureRoute(browser, routeSpec) {
     for (const [viewportName, width, height] of viewportSpecs) {
       await page.setViewportSize({ width, height });
       await page.goto(`${baseUrl}${routeSpec.path}?demo_tenant_proof=${Date.now()}-${width}`, { waitUntil: "domcontentloaded" });
-      await assertRequiredTexts(page, routeSpec.requiredTexts);
       const screenshotPath = join(screenshotDir, `${routeSpec.name}-${viewportName}.png`);
       await page.screenshot({ path: screenshotPath, fullPage: true });
       result.screenshots.push(screenshotPath);
       console.log(`captured ${routeSpec.name}-${viewportName}.png`);
+      await assertRequiredTexts(page, routeSpec.requiredTexts);
     }
   } finally {
     await context.close();
@@ -289,7 +302,12 @@ async function main() {
 
   try {
     const routes = [];
-    for (const routeSpec of routeSpecs) {
+    const requestedRoute = process.env.DEMO_TENANT_ROUTE;
+    const selectedRouteSpecs = requestedRoute
+      ? routeSpecs.filter((routeSpec) => routeSpec.name === requestedRoute)
+      : routeSpecs;
+    if (!selectedRouteSpecs.length) throw new Error(`Unknown DEMO_TENANT_ROUTE: ${requestedRoute}`);
+    for (const routeSpec of selectedRouteSpecs) {
       routes.push(await captureRoute(browser, routeSpec));
     }
 

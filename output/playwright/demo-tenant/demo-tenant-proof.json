@@ -1,6 +1,6 @@
 {
-  "capturedAt": "2026-07-17T07:14:19.897Z",
-  "baseUrl": "http://localhost:3030",
+  "capturedAt": "2026-07-21T08:21:26.856Z",
+  "baseUrl": "http://127.0.0.1:3020",
   "readback": {
     "organizationId": "d1000000-0000-4000-8000-000000000001",
     "organizationName": "LeaguePilot Demo League",
@@ -15,11 +15,11 @@
       },
       {
         "table": "teams",
-        "count": 2
+        "count": 3
       },
       {
         "table": "players",
-        "count": 5
+        "count": 6
       },
       {
         "table": "events",
@@ -27,7 +27,7 @@
       },
       {
         "table": "registration_requests",
-        "count": 2
+        "count": 3
       },
       {
         "table": "team_chat_messages",
@@ -39,7 +39,7 @@
       },
       {
         "table": "notifications",
-        "count": 3
+        "count": 4
       }
     ],
     "deliveryAttempts": [
@@ -78,6 +78,15 @@
       "screenshots": [
         "output/playwright/demo-tenant/admin-teams-mobile-390.png",
         "output/playwright/demo-tenant/admin-teams-desktop-1440.png"
+      ],
+      "userId": "de1c6495-5742-477e-8398-e45c2b6c9e67"
+    },
+    {
+      "role": "admin",
+      "path": "/admin/sponsors",
+      "screenshots": [
+        "output/playwright/demo-tenant/admin-sponsors-mobile-390.png",
+        "output/playwright/demo-tenant/admin-sponsors-desktop-1440.png"
       ],
       "userId": "de1c6495-5742-477e-8398-e45c2b6c9e67"
     },

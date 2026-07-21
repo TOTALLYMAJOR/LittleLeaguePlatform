@@ -9,6 +9,11 @@ type UnsafeSupabase = {
   storage: ReturnType<typeof createSupabaseAdminClient>["storage"];
 };
 
+type DashboardQueryResult<T> = {
+  data: T[] | null;
+  error: { message?: string } | null;
+};
+
 export interface ParentCoachDashboardData {
   state: AppState;
   parentUserId: string;
@@ -25,6 +30,18 @@ export interface ParentCoachDashboardReadOptions {
 
 function adminDb() {
   return createSupabaseAdminClient() as unknown as UnsafeSupabase;
+}
+
+function isMissingColumnError(error: { message?: string } | null | undefined) {
+  return Boolean(error?.message && /column .* does not exist|could not find .* column/i.test(error.message));
+}
+
+async function readWithSchemaFallback<T>(
+  primary: () => PromiseLike<DashboardQueryResult<T>>,
+  fallback: () => PromiseLike<DashboardQueryResult<T>>
+): Promise<DashboardQueryResult<T>> {
+  const result = await primary();
+  return isMissingColumnError(result.error) ? fallback() : result;
 }
 
 function emptyDashboardState(): AppState {
@@ -214,9 +231,15 @@ export async function listParentCoachDashboardData(options: ParentCoachDashboard
       db.from("player_guardians").select("id,player_id,parent_user_id,parent_invite_id,relationship,status").order("created_at", { ascending: false }),
       db.from("parent_invites").select("id,organization_id,team_id,player_id,email,phone,invite_token_hash,status,delivery_status,sent_count,resend_timestamps,last_sent_at,expires_at,accepted_at,created_at,updated_at").order("created_at", { ascending: false }),
       db.from("events").select("id,organization_id,team_id,season_id,title,event_type,starts_at,ends_at,location_name,location_address,status,opponent,schedule_version,created_at,updated_at").order("starts_at", { ascending: true }),
-      db.from("rsvps").select("id,event_id,player_id,parent_user_id,response,note,responded_at,confirmed_schedule_version,lock_version,last_updated_by_user_id,client_action_id,created_at,updated_at").order("responded_at", { ascending: false }),
+      readWithSchemaFallback(
+        () => db.from("rsvps").select("id,event_id,player_id,parent_user_id,response,note,responded_at,confirmed_schedule_version,lock_version,last_updated_by_user_id,client_action_id,created_at,updated_at").order("responded_at", { ascending: false }),
+        () => db.from("rsvps").select("id,event_id,player_id,parent_user_id,response,note,responded_at,created_at,updated_at").order("responded_at", { ascending: false })
+      ),
       db.from("announcements").select("id,team_id,author_user_id,title,body,created_at").order("created_at", { ascending: false }),
-      db.from("media_items").select("id,team_id,title,media_type,url,created_at,moderation_status,report_count,private_object_path,scan_completed_at,family_release_approved_at").eq("moderation_status", "approved").order("created_at", { ascending: false }),
+      readWithSchemaFallback(
+        () => db.from("media_items").select("id,team_id,title,media_type,url,created_at,moderation_status,report_count,private_object_path,scan_completed_at,family_release_approved_at").eq("moderation_status", "approved").order("created_at", { ascending: false }),
+        () => db.from("media_items").select("id,team_id,title,media_type,url,created_at,moderation_status,report_count").eq("moderation_status", "approved").order("created_at", { ascending: false })
+      ),
       db.from("notification_preferences").select("id,user_id,organization_id,team_id,channel,notification_type,enabled,quiet_hours_start,quiet_hours_end,timezone,opted_in_at,opted_out_at").order("updated_at", { ascending: false }),
       db.from("snack_schedule_slots").select("id,team_id,event_id,assigned_parent_user_id,item,status").order("created_at", { ascending: true }),
       db.from("volunteer_signups").select("id,team_id,event_id,role,assigned_user_id,status").order("created_at", { ascending: true }),
@@ -374,7 +397,7 @@ export async function listParentCoachDashboardData(options: ParentCoachDashboard
       createdAt: event.created_at,
       updatedAt: event.updated_at
     }));
-    const rsvps: Rsvp[] = (rsvpsResult.data ?? []).map((rsvp: {
+    const rsvps: Rsvp[] = ((rsvpsResult.data ?? []) as Array<{
       id: string;
       event_id: string;
       player_id: string;
@@ -382,13 +405,13 @@ export async function listParentCoachDashboardData(options: ParentCoachDashboard
       response: Rsvp["response"];
       note: string | null;
       responded_at: string;
-      confirmed_schedule_version: number | null;
-      lock_version: number | null;
-      last_updated_by_user_id: string | null;
-      client_action_id: string | null;
+      confirmed_schedule_version?: number | null;
+      lock_version?: number | null;
+      last_updated_by_user_id?: string | null;
+      client_action_id?: string | null;
       created_at: string;
       updated_at: string;
-    }) => ({
+    }>).map((rsvp) => ({
       id: rsvp.id,
       eventId: rsvp.event_id,
       playerId: rsvp.player_id,
@@ -418,11 +441,7 @@ export async function listParentCoachDashboardData(options: ParentCoachDashboard
       body: announcement.body,
       createdAt: announcement.created_at
     }));
-    const mediaItems: MediaItem[] = (await Promise.all((mediaResult.data ?? []).filter((item: {
-      private_object_path: string | null;
-      scan_completed_at: string | null;
-      family_release_approved_at: string | null;
-    }) => !item.private_object_path || Boolean(item.scan_completed_at && item.family_release_approved_at)).map(async (item: {
+    const mediaItems: MediaItem[] = (await Promise.all(((mediaResult.data ?? []) as Array<{
       id: string;
       team_id: string;
       title: string;
@@ -430,11 +449,11 @@ export async function listParentCoachDashboardData(options: ParentCoachDashboard
       url: string;
       moderation_status: MediaItem["moderationStatus"];
       report_count: number;
-      private_object_path: string | null;
-      scan_completed_at: string | null;
-      family_release_approved_at: string | null;
+      private_object_path?: string | null;
+      scan_completed_at?: string | null;
+      family_release_approved_at?: string | null;
       created_at: string;
-    }) => {
+    }>).filter((item) => !item.private_object_path || Boolean(item.scan_completed_at && item.family_release_approved_at)).map(async (item) => {
       const signed = item.private_object_path
         ? await db.storage.from("leaguepilot-private-media").createSignedUrl(item.private_object_path, 300)
         : null;

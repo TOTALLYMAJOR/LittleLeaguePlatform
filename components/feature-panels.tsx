@@ -74,8 +74,6 @@ import {
   updateTeamPortalBranding,
   validateRegistrationRequestInput,
   validateMediaUrl,
-  approveMediaItem,
-  rejectMediaItem,
   getMediaReportingSummary,
   getUploadStorageProviderStatus,
   getFamilyFacingModerationQueue,
@@ -85,7 +83,6 @@ import {
   getPerPlayerMediaConsent,
   getPhotoVisibilityFlags,
   getPrivateTeamAlbum,
-  createMediaTakedownRequest,
   getParentSubmittedMoments,
   getVolunteerMoments,
   exportSeasonMemories,
@@ -197,6 +194,14 @@ import {
   WeatherFieldCard,
   WhatChangedCard
 } from "@/components/season-certainty-cards";
+import {
+  CoachAnnouncementTicker,
+  CoachGameDayRadar,
+  ParentSeasonStory,
+  SponsorCommunityProofLedger,
+  type ParentSeasonStoryEntry,
+  type SponsorProofLedgerRow
+} from "@/components/role-dashboard-experiences";
 import {
   AvatarStack,
   BreadcrumbTrail,
@@ -705,67 +710,6 @@ function formatEventOffsetTime(value: string, minutesOffset: number) {
   });
 }
 
-function CoachCommandCard({
-  eventTitle,
-  eventMeta,
-  missingRsvpCount,
-  snackCount,
-  volunteerCount,
-  weatherReviewCount,
-  reviewCount,
-  isPending,
-  canDraftWeather,
-  onNudgeRsvp,
-  onDraftWeather,
-  onSaveWeeklyUpdate
-}: {
-  eventTitle: string;
-  eventMeta: string;
-  missingRsvpCount: number;
-  snackCount: number;
-  volunteerCount: number;
-  weatherReviewCount: number;
-  reviewCount: number;
-  isPending: boolean;
-  canDraftWeather: boolean;
-  onNudgeRsvp: () => void;
-  onDraftWeather: () => void;
-  onSaveWeeklyUpdate: () => void;
-}) {
-  return (
-    <article className="card stack coach-command-card">
-      <div className="certainty-band certainty-band-coach">
-        <span className="certainty-band-icon" aria-hidden="true">{reviewCount ? "!" : "✓"}</span>
-        <span>
-          <strong>{reviewCount ? `${reviewCount} items need attention` : "Next event ready"}</strong>
-          <small>Your 15-minute sideline check for attendance, weather, and family help.</small>
-        </span>
-        <span className={`season-status ${reviewCount ? "state-needs_attention" : "state-ready"}`}>{reviewCount ? "Review now" : "Ready"}</span>
-      </div>
-      <div className="coach-command-event">
-        <span>
-          <small>Next event</small>
-          <strong>{eventTitle}</strong>
-        </span>
-        <span>{eventMeta}</span>
-      </div>
-      <div className="coach-command-grid">
-        <p><strong>{missingRsvpCount}</strong><span>missing RSVPs</span></p>
-        <p><strong>{snackCount}</strong><span>snack gaps</span></p>
-        <p><strong>{volunteerCount}</strong><span>volunteer gaps</span></p>
-        <p><strong>{weatherReviewCount}</strong><span>weather drafts</span></p>
-      </div>
-      <div className="coach-command-actions">
-        <button className="secondary" disabled={isPending || missingRsvpCount === 0} onClick={onNudgeRsvp}>Draft RSVP nudge</button>
-        <button className="secondary" disabled={isPending || !canDraftWeather} onClick={onDraftWeather}>Draft weather alert</button>
-        <button disabled={isPending} onClick={onSaveWeeklyUpdate}>Save weekly update</button>
-        <a className="button secondary" href="/coach/practice-recaps">Create recap</a>
-      </div>
-      <p className="muted">These actions save drafts for review. They do not send external messages.</p>
-    </article>
-  );
-}
-
 function formatArrivalTime(value: string) {
   return new Date(Date.parse(value) - 20 * 60 * 1000).toLocaleTimeString("en-US", {
     hour: "numeric",
@@ -922,6 +866,39 @@ async function authenticatedJsonFetch(url: string, payload: unknown, extraHeader
     headers,
     body: JSON.stringify(payload)
   });
+}
+
+function mediaReviewPriority(item: MediaItem) {
+  if (item.moderationStatus === "pending") return 0;
+  if ((item.reportCount ?? 0) > 0) return 1;
+  if (item.moderationStatus === "hidden") return 2;
+  if (item.moderationStatus === "rejected" || item.moderationStatus === "removed") return 3;
+  return 4;
+}
+
+function getMediaReviewCopy(item: MediaItem) {
+  const reports = item.reportCount ?? 0;
+  if (item.moderationStatus === "pending" && reports > 0) {
+    return `Review request: ${reports} family report(s); staff approval is required before family visibility changes.`;
+  }
+  if (item.moderationStatus === "pending") {
+    return "Review request: pending staff approval before this appears to families.";
+  }
+  if (reports > 0) {
+    return `Review request: ${reports} family report(s); content remains under staff review.`;
+  }
+  return "Review request: none open.";
+}
+
+function getMediaVisibilityCopy(item: MediaItem) {
+  const visibilityFlags = getPhotoVisibilityFlags(item);
+  const familyVisible = canViewMediaByRole(item, "parent");
+  if (familyVisible && visibilityFlags.organizationVisible) return "Visible to eligible organization views.";
+  if (familyVisible && visibilityFlags.teamVisible) return "Visible to linked team parents.";
+  if (item.moderationStatus === "removed") return "Removed from coach/admin and family-facing surfaces.";
+  if (item.moderationStatus === "rejected") return "Rejected and excluded from family-facing views.";
+  if (visibilityFlags.privateAlbumOnly) return "Hidden from families while review is open.";
+  return "Not family-facing under the current role policy.";
 }
 
 function mergeRegistrationRequests(localRequests: RegistrationRequest[], serverRequests: RegistrationRequest[]) {
@@ -1710,6 +1687,46 @@ export function ParentDashboardClient({ dashboardData }: { dashboardData?: Paren
   const latestChangeCopy = dashboard.latestAnnouncement
     ? `${dashboard.latestAnnouncement.title}: ${dashboard.latestAnnouncement.body}`
     : "No coach update has been posted yet.";
+  const parentCoachAnnouncements = sourceState.announcements
+    .filter((announcement) => parentTeamIds.has(announcement.teamId))
+    .sort((left, right) => new Date(right.createdAt).getTime() - new Date(left.createdAt).getTime())
+    .slice(0, 3);
+  const parentAnnouncementItems = parentCoachAnnouncements.map((announcement) => ({
+    id: announcement.id,
+    title: announcement.title,
+    body: announcement.body,
+    teamName: sourceState.teams.find((team) => team.id === announcement.teamId)?.name
+  }));
+  const parentSeasonStoryEntries: ParentSeasonStoryEntry[] = [
+    ...parentCoachAnnouncements.map((announcement) => ({
+      id: announcement.id,
+      dateLabel: new Date(announcement.createdAt).toLocaleDateString("en-US", { month: "short", day: "numeric" }),
+      title: announcement.title,
+      detail: announcement.body,
+      meta: "Coach update",
+      tone: "coach" as const,
+      sortAt: new Date(announcement.createdAt).getTime()
+    })),
+    ...allParentEvents.slice(0, 3).map((event, index) => ({
+      id: event.id,
+      dateLabel: new Date(event.startsAt).toLocaleDateString("en-US", { month: "short", day: "numeric" }),
+      title: event.title,
+      detail: `${formatShortTime(event.startsAt)} at ${event.locationName}`,
+      meta: event.eventType.replaceAll("_", " "),
+      tone: index === 0 ? "next" as const : "event" as const,
+      sortAt: new Date(event.startsAt).getTime()
+    }))
+  ]
+    .sort((left, right) => left.sortAt - right.sortAt)
+    .slice(0, 4)
+    .map((entry) => ({
+      id: entry.id,
+      dateLabel: entry.dateLabel,
+      title: entry.title,
+      detail: entry.detail,
+      meta: entry.meta,
+      tone: entry.tone
+    }));
   const parentChanges = dashboard.latestAnnouncement
     ? [`Coach posted ${dashboard.latestAnnouncement.title} (${formatDate(dashboard.latestAnnouncement.createdAt)})`]
     : [];
@@ -2006,32 +2023,54 @@ export function ParentDashboardClient({ dashboardData }: { dashboardData?: Paren
       <section className="season-certainty-home parent-certainty-home" aria-label="Parent home">
         {accessGate ? <NextEventCard view={parentSeasonView} /> : (
           <>
-            <ParentGameDayCalmCard
-              eventTitle={nextParentEvent?.title ?? "No upcoming event"}
-              eventMeta={nextParentEvent ? `${formatShortDay(nextParentEvent.startsAt)} at ${formatShortTime(nextParentEvent.startsAt)}` : "Schedule pending"}
-              eventStartsAt={nextParentEvent?.startsAt}
-              eventKind={(nextParentEvent?.eventType ?? "event").replaceAll("_", " ")}
-              teamLabel={`${teamName} - ${teamDivision}`}
-              teamInitials={teamInitials}
-              badge={nextEventBadge}
-              location={nextParentEvent ? `${nextParentEvent.locationName}${nextParentEvent.locationAddress ? `, ${nextParentEvent.locationAddress}` : ""}` : "Location pending"}
-              directionsUrl={directionsUrl}
+            <CoachAnnouncementTicker announcements={parentAnnouncementItems} />
+            <ParentSeasonStory
+              seasonName={sourceState.activeSeason.name}
+              teamName={teamName}
+              childLabel={playerName}
+              entries={parentSeasonStoryEntries}
+              nextEventTitle={nextParentEvent?.title ?? "No upcoming event"}
+              nextEventMeta={nextParentEvent ? `${formatShortDay(nextParentEvent.startsAt)} at ${formatShortTime(nextParentEvent.startsAt)}` : "Schedule pending"}
+              location={nextParentEvent?.locationName ?? "Location pending"}
               rsvpCopy={nextParentRsvpCopy}
-              rsvpRequired={Boolean(nextParentRsvp)}
-              playerLabel={nextParentRsvp?.player.firstName ?? primaryPlayer?.firstName ?? "your player"}
               weatherCopy={parentWeatherCopy}
-              helpCopy={parentHelpCopy}
-              coachCopy={latestChangeCopy}
+              familyHelpCopy={parentHelpCopy}
               primaryHref={parentPrimaryAction.href}
               primaryLabel={parentPrimaryAction.label}
-              arrivalPlan={gameDayArrivalPlan}
-              packList={gameDayPackItems}
-              fieldPlan={gameDayFieldPlan}
-              playerPlan={gameDayPlayerPlan}
-              copyStatus={gameDayCopyStatus}
-              onCopyPlan={copyGameDayPlan}
-              onTogglePackItem={toggleGameDayPackItem}
             />
+            <CompactDisclosure
+              id="parent-game-day-plan"
+              title="Game-day plan"
+              summary="Arrival, field, pack, player, and local checklist details."
+              badge={nextEventBadge}
+            >
+              <ParentGameDayCalmCard
+                eventTitle={nextParentEvent?.title ?? "No upcoming event"}
+                eventMeta={nextParentEvent ? `${formatShortDay(nextParentEvent.startsAt)} at ${formatShortTime(nextParentEvent.startsAt)}` : "Schedule pending"}
+                eventStartsAt={nextParentEvent?.startsAt}
+                eventKind={(nextParentEvent?.eventType ?? "event").replaceAll("_", " ")}
+                teamLabel={`${teamName} - ${teamDivision}`}
+                teamInitials={teamInitials}
+                badge={nextEventBadge}
+                location={nextParentEvent ? `${nextParentEvent.locationName}${nextParentEvent.locationAddress ? `, ${nextParentEvent.locationAddress}` : ""}` : "Location pending"}
+                directionsUrl={directionsUrl}
+                rsvpCopy={nextParentRsvpCopy}
+                rsvpRequired={Boolean(nextParentRsvp)}
+                playerLabel={nextParentRsvp?.player.firstName ?? primaryPlayer?.firstName ?? "your player"}
+                weatherCopy={parentWeatherCopy}
+                helpCopy={parentHelpCopy}
+                coachCopy={latestChangeCopy}
+                primaryHref={parentPrimaryAction.href}
+                primaryLabel={parentPrimaryAction.label}
+                arrivalPlan={gameDayArrivalPlan}
+                packList={gameDayPackItems}
+                fieldPlan={gameDayFieldPlan}
+                playerPlan={gameDayPlayerPlan}
+                copyStatus={gameDayCopyStatus}
+                onCopyPlan={copyGameDayPlan}
+                onTogglePackItem={toggleGameDayPackItem}
+              />
+            </CompactDisclosure>
             <CompactDisclosure
               title="More event context"
               summary="Tasks, changes, coach update, messages, photos, and privacy."
@@ -2728,6 +2767,24 @@ export function CoachDashboardClient({ dashboardData }: { dashboardData?: Parent
     weatherApprovalQueue.length ? `${weatherApprovalQueue.length} weather draft${weatherApprovalQueue.length === 1 ? "" : "s"} need review.` : "No weather draft needs review.",
     snackNeeds.length || volunteerNeeds.length ? `${snackNeeds.length + volunteerNeeds.length} snack or volunteer item${snackNeeds.length + volunteerNeeds.length === 1 ? "" : "s"} open.` : "Family help coverage looks set."
   ];
+  const coachAnnouncements = sourceState.announcements
+    .filter((announcement) => teamIds.has(announcement.teamId))
+    .sort((left, right) => new Date(right.createdAt).getTime() - new Date(left.createdAt).getTime())
+    .slice(0, 3)
+    .map((announcement) => ({
+      id: announcement.id,
+      title: announcement.title,
+      body: announcement.body,
+      teamName: sourceState.teams.find((team) => team.id === announcement.teamId)?.name
+    }));
+  const coachRosterCount = nextCoachSummary?.totalPlayers ?? fieldPlayers.length;
+  const respondedRsvpCount = Math.max(0, coachRosterCount - (nextCoachSummary?.noResponse ?? coachRosterCount));
+  const assignedCoachCount = sourceState.teamMemberships.filter((membership) => (
+    membership.teamId === primaryCoachTeam?.id && membership.role === "coach" && membership.status === "active"
+  )).length;
+  const nextCoachWeatherAlert = weatherAlerts.find((alert) => alert.eventId === nextCoachEvent?.id);
+  const coachWeatherSummary = nextCoachWeatherAlert?.headline
+    ?? (weatherApprovalQueue.length ? "Review needed" : "No draft");
   const coachOnboardingSteps = [
     { label: "Active coach membership", done: teams.length > 0, detail: teams.map((team) => team.name).join(", ") || "No assigned teams." },
     { label: "Review attendance snapshot", done: summaries.length > 0, detail: `${summaries.length} upcoming assigned event(s).` },
@@ -2933,14 +2990,21 @@ export function CoachDashboardClient({ dashboardData }: { dashboardData?: Parent
       <section className="season-home season-coach-home" aria-label="Coach home">
         {accessGate ? <EventReadinessCard view={coachSeasonView} /> : (
           <>
-            <CoachCommandCard
+            <CoachAnnouncementTicker announcements={coachAnnouncements} />
+            <CoachGameDayRadar
+              teamName={primaryCoachTeam?.name ?? "Assigned team"}
               eventTitle={nextCoachEvent?.title ?? "No scheduled event"}
-              eventMeta={nextCoachEvent ? `${formatShortDay(nextCoachEvent.startsAt)} at ${formatShortTime(nextCoachEvent.startsAt)} - ${nextCoachEvent.locationName}` : "Schedule pending"}
+              eventMeta={nextCoachEvent ? `${formatShortDay(nextCoachEvent.startsAt)} at ${formatShortTime(nextCoachEvent.startsAt)}` : "Schedule pending"}
+              location={nextCoachEvent?.locationName ?? "Location pending"}
+              respondedRsvpCount={respondedRsvpCount}
+              rosterCount={coachRosterCount}
+              coachCount={assignedCoachCount}
               missingRsvpCount={nextCoachSummary?.noResponse ?? 0}
               snackCount={snackNeeds.length}
               volunteerCount={volunteerNeeds.length}
               weatherReviewCount={weatherApprovalQueue.length}
               reviewCount={coachReviewCount}
+              weatherSummary={coachWeatherSummary}
               isPending={isActionPending}
               canDraftWeather={Boolean(nextAssignedEvent)}
               onNudgeRsvp={() => draftRsvpReminder(firstRsvpReminder?.parentUser?.name ?? "linked family", firstRsvpReminder?.noResponse ?? nextCoachSummary?.noResponse ?? 0)}
@@ -3859,6 +3923,7 @@ export function AdminDashboardClient({ registrationRequests, sponsorData, mediaD
   const [drillVideos, setDrillVideos] = useState<DrillVideo[]>(initialDrillVideos);
   const [drillSources, setDrillSources] = useState<DrillVideoSource[]>(initialDrillSources);
   const mediaReportingSummary = getMediaReportingSummary(mediaItems);
+  const mediaReviewQueue = [...mediaItems].sort((first, second) => mediaReviewPriority(first) - mediaReviewPriority(second));
   const uploadStorageProvider = getUploadStorageProviderStatus(false);
   const mediaRetentionPolicy = getMediaRetentionPolicy();
   const parentVisibleMediaCount = mediaItems.filter((item) => canViewMediaByRole(item, "parent")).length;
@@ -3869,6 +3934,28 @@ export function AdminDashboardClient({ registrationRequests, sponsorData, mediaD
   const emailSponsorPlacement = getEmailSponsorPlacement(sponsors);
   const bannerSponsorPlacement = getBannerSponsorPlacement(sponsors);
   const sponsorBillingProofs = buildSponsorBillingProofs(sponsors);
+  const sponsorProofRows: SponsorProofLedgerRow[] = sponsors.map((sponsor) => {
+    const billingProof = sponsorBillingProofs.find((proof) => proof.sponsorId === sponsor.id);
+    const placementLabel = sponsor.status === "active" && sponsor.placementKey
+      ? sponsor.placementKey.replaceAll("_", " ")
+      : "Not public";
+    const billingLabel = billingProof
+      ? billingProof.invoiceReference === "not-issued"
+        ? `${billingProof.billingStatus.replaceAll("_", " ")}; no invoice issued`
+        : `${billingProof.paymentProofStatus.replaceAll("_", " ")}; invoice referenced`
+      : "No billing record";
+
+    return {
+      id: sponsor.id,
+      name: sponsor.name,
+      level: sponsor.level === "team" ? "Team sponsor" : "League sponsor",
+      status: sponsor.status,
+      placementLabel,
+      billingLabel,
+      logoLabel: sponsor.logoUrl ? "On file" : "Not attached",
+      evidenceCount: 1 + Number(Boolean(sponsor.placementKey)) + Number(Boolean(sponsor.logoUrl))
+    };
+  });
   const moneySponsorsState = useMemo(() => ({ ...state, sponsors }), [sponsors, state]);
   const leagueRevenueSummary = useMemo(() => buildLeagueRevenueSummary(moneySponsorsState), [moneySponsorsState]);
   const sponsorOpportunities = useMemo(() => buildSponsorOpportunities(moneySponsorsState), [moneySponsorsState]);
@@ -4141,7 +4228,7 @@ export function AdminDashboardClient({ registrationRequests, sponsorData, mediaD
   return (
     <div className="page">
       {focusedSurfaceCopy ? (
-        <section className="hero">
+        <section className="hero admin-focus-hero">
           <span className="eyebrow">{focusedSurfaceCopy.eyebrow}</span>
           <h1>{focusedSurfaceCopy.title}</h1>
           <p className="lead">{focusedSurfaceCopy.body}</p>
@@ -4417,7 +4504,7 @@ export function AdminDashboardClient({ registrationRequests, sponsorData, mediaD
           </>
         ) : null}
         {showMedia ? (
-        <article className="card stack admin-focus-card">
+        <article className="card stack admin-focus-card media-review-card">
           <div className="card-header">
             <div>
               <span className="eyebrow">Visibility and moderation</span>
@@ -4426,58 +4513,71 @@ export function AdminDashboardClient({ registrationRequests, sponsorData, mediaD
             <span className="badge warning">Coach/Admin</span>
           </div>
           <p className="notice">{mediaMessage}</p>
-          <div className="grid three">
-            <div className="metric"><span className="muted">Media reports</span><strong>{mediaReportingSummary.totalReports}</strong></div>
+          <div className="grid three media-review-summary">
+            <div className="metric"><span className="muted">Family reports</span><strong>{mediaReportingSummary.totalReports}</strong></div>
             <div className="metric"><span className="muted">Pending review</span><strong>{mediaReportingSummary.pendingReview}</strong></div>
-            <div className="metric"><span className="muted">Upload storage</span><strong>{uploadStorageProvider.provider}</strong></div>
+            <div className="metric"><span className="muted">Upload storage</span><strong>{uploadStorageProvider.configured ? uploadStorageProvider.provider : "Link-based only"}</strong></div>
           </div>
-          <p className="muted">{uploadStorageProvider.detail}</p>
-          <p><strong>Role-based media visibility:</strong> {parentVisibleMediaCount} item(s) currently visible to parents.</p>
-          <p className="muted">Media retention policy: {mediaRetentionPolicy.seasonMedia}</p>
-          {mediaItems.map((item) => {
+          <div className="media-review-policy">
+            <p><strong>Role-based media visibility:</strong> {parentVisibleMediaCount} item(s) currently visible to parents.</p>
+            <p className="muted">{uploadStorageProvider.configured ? uploadStorageProvider.detail : "Upload storage is not connected; staff are reviewing Google Photos and YouTube links only."}</p>
+            <p className="muted">Retention: {mediaRetentionPolicy.seasonMedia}</p>
+          </div>
+          <div className="media-review-list" aria-label="Media moderation queue">
+          {mediaReviewQueue.map((item) => {
             const team = mediaTeams.find((candidate) => candidate.id === item.teamId);
             const status = item.moderationStatus ?? "approved";
-            const visibilityFlags = getPhotoVisibilityFlags(item);
-            const takedownRequest = createMediaTakedownRequest(item, "Family requested media review.");
+            const visibility = mediaVisibilityDrafts[item.id] ?? item.visibility ?? "team";
+            const needsReview = item.moderationStatus === "pending" || (item.reportCount ?? 0) > 0;
             return (
-              <div className="stack compact" key={item.id}>
-                <p>
-                  <strong>{item.title}</strong><br />
-                  <span className="muted">{team?.name ?? "Unknown team"} - {item.type.replace("_", " ")} - {status} - {item.reportCount ?? 0} report(s)</span>
-                </p>
-                <p className="muted">Photo visibility flags: team {visibilityFlags.teamVisible ? "yes" : "no"}, org {visibilityFlags.organizationVisible ? "yes" : "no"}, private album {visibilityFlags.privateAlbumOnly ? "yes" : "no"}.</p>
-                <p className="muted">{takedownRequest.title} - {takedownRequest.status}</p>
-                <label>
-                  Team/org visibility
-                  <select
-                    value={mediaVisibilityDrafts[item.id] ?? item.visibility ?? "team"}
-                    onChange={(event) => setMediaVisibilityDrafts((current) => ({
-                      ...current,
-                      [item.id]: event.target.value as "team" | "organization"
-                    }))}
-                  >
-                    <option value="team">Team only</option>
-                    <option value="organization">Organization</option>
-                  </select>
-                </label>
-                <div className="button-row">
-                  <button className="secondary" disabled={isMediaPending} onClick={() => {
-                    const approved = approveMediaItem(item);
-                    setMediaItems((current) => current.map((candidate) => candidate.id === item.id ? approved : candidate));
-                    setMediaMessage(`${item.title} approved for ${mediaVisibilityDrafts[item.id] ?? item.visibility ?? "team"} visibility.`);
-                  }}>Approve media</button>
-                  <button className="secondary" disabled={isMediaPending} onClick={() => {
-                    const rejected = rejectMediaItem(item);
-                    setMediaItems((current) => current.map((candidate) => candidate.id === item.id ? rejected.item : candidate));
-                    setMediaMessage(rejected.auditSummary);
-                  }}>Reject media</button>
-                  <button className="secondary" disabled={isMediaPending} onClick={() => runMediaModeration(item, "hidden", "Hidden pending coach/admin review.")}>Hide media</button>
-                  <button className="secondary" disabled={isMediaPending} onClick={() => runMediaModeration(item, "approved", "Restored after review.")}>Restore media</button>
-                  <button className="secondary" disabled={isMediaPending} onClick={() => runMediaModeration(item, "removed", "Removed by coach/admin moderation.")}>Remove media</button>
+              <div className="media-review-item" data-review={needsReview ? "pending" : status} key={item.id}>
+                <div className="media-review-item-header">
+                  <div>
+                    <span className="eyebrow">{team?.name ?? "Unknown team"} / {item.type.replace("_", " ")}</span>
+                    <h3>{item.title}</h3>
+                  </div>
+                  <span className={needsReview ? "badge warning" : "badge"}>{needsReview ? "Needs review" : status}</span>
+                </div>
+                <div className="media-review-meta">
+                  <span className="chip">Visibility: {visibility === "team" ? "Team only" : "Organization"}</span>
+                  <span className="chip">Reports: {item.reportCount ?? 0}</span>
+                  <span className="chip">Status: {status}</span>
+                </div>
+                <div className="media-review-copy">
+                  <p><strong>Family visibility:</strong> {getMediaVisibilityCopy({ ...item, visibility })}</p>
+                  <p className="muted">{getMediaReviewCopy(item)}</p>
+                </div>
+                <div className="media-review-controls">
+                  <label>
+                    Team/org visibility
+                    <select
+                      value={visibility}
+                      onChange={(event) => setMediaVisibilityDrafts((current) => ({
+                        ...current,
+                        [item.id]: event.target.value as "team" | "organization"
+                      }))}
+                    >
+                      <option value="team">Team only</option>
+                      <option value="organization">Organization</option>
+                    </select>
+                  </label>
+                  <div className="button-row media-review-actions">
+                    <button className="secondary" disabled={isMediaPending} onClick={() => runMediaModeration(item, "approved", `Approved for ${visibility} visibility.`)}>Approve media</button>
+                    <button className="secondary" disabled={isMediaPending} onClick={() => runMediaModeration(item, "rejected", "Rejected by coach/admin review.")}>Reject media</button>
+                    <button className="secondary" disabled={isMediaPending} onClick={() => runMediaModeration(item, "hidden", "Hidden pending coach/admin review.")}>Hide media</button>
+                    <button className="secondary" disabled={isMediaPending} onClick={() => runMediaModeration(item, "approved", "Restored after review.")}>Restore media</button>
+                    <button className="secondary" disabled={isMediaPending} onClick={() => {
+                      if (window.confirm(`Remove ${item.title} from media access?`)) {
+                        runMediaModeration(item, "removed", "Removed by coach/admin moderation.");
+                      }
+                    }}>Remove media</button>
+                    <a className="secondary" href={item.url} target="_blank" rel="noreferrer">Open source link</a>
+                  </div>
                 </div>
               </div>
             );
 	          })}
+          </div>
 	          {mediaItems.length === 0 ? <p className="muted">No media links yet.</p> : null}
 	          <section className="grid two">
 	            <div className="stack compact">
@@ -4557,7 +4657,16 @@ export function AdminDashboardClient({ registrationRequests, sponsorData, mediaD
 	        </article>
         ) : null}
         {showSponsors ? (
-        <article className="card stack admin-focus-card">
+        <>
+        {surface === "sponsors" ? (
+          <SponsorCommunityProofLedger
+            rows={sponsorProofRows}
+            selectedSponsorId={sponsorId === "new" ? sponsorProofRows[0]?.id ?? "" : sponsorId}
+            publicRecapCount={adminSponsorSafeGallery?.approvedItems.length ?? 0}
+            onSelectSponsor={selectSponsor}
+          />
+        ) : null}
+        <article className="card stack admin-focus-card" id="sponsor-record-editor">
           <div className="card-header">
             <div>
               <span className="eyebrow">Sponsor CRUD</span>
@@ -4677,6 +4786,7 @@ export function AdminDashboardClient({ registrationRequests, sponsorData, mediaD
             ))}
           </div>
         </article>
+        </>
         ) : null}
         {showOverview ? (
         <article className="card stack">

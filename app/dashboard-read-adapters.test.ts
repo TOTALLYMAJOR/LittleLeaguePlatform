@@ -47,6 +47,9 @@ describe("parent and coach dashboard Supabase reads", () => {
     expect(adapter).toContain("viewerUserId");
     expect(adapter).toContain("scopeParentState");
     expect(adapter).toContain("scopeCoachState");
+    expect(adapter).toContain("readWithSchemaFallback");
+    expect(adapter).toContain("confirmed_schedule_version,lock_version,last_updated_by_user_id,client_action_id");
+    expect(adapter).toContain("private_object_path,scan_completed_at,family_release_approved_at");
     expect(adapter).toContain("snackScheduleSlots: state.snackScheduleSlots.filter((slot) => teamIds.has(slot.teamId))");
     expect(adapter).toContain("volunteerSignups: state.volunteerSignups.filter((signup) => teamIds.has(signup.teamId))");
   });
