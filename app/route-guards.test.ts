@@ -50,6 +50,21 @@ describe("role route guards and compatibility wrappers", () => {
     expect(panel).toContain("/api/coach/ai-workspace");
   });
 
+  it("keeps practice safety controls coach-scoped and provider-free", () => {
+    const surfaces = source("app/coach/_surfaces.tsx");
+    const workbench = source("components/coordination-workbenches.tsx");
+    const contacts = source("lib/supabase/coach-injury-contacts.ts");
+
+    expect(surfaces).toContain("requireCoachPageAccess");
+    expect(surfaces).toContain("listCoachInjuryContacts");
+    expect(contacts).toContain("requireActiveTeamCoachOrOrgAdmin");
+    expect(contacts).toContain('action: "read injury contact details"');
+    expect(workbench).toContain("Water break timer");
+    expect(workbench).toContain("Numbers stay hidden on screen until a coach intentionally reveals them");
+    expect(workbench).toContain('href={`tel:${contact.phone}`}');
+    expect(workbench).toContain("LeaguePilot does not place or confirm the call");
+  });
+
   it("keeps message delivery review provider-safe and evidence-separated", () => {
     const page = source("app/admin/message-delivery-review/page.tsx");
     const surfaces = source("app/admin/_surfaces.tsx");

@@ -11,6 +11,7 @@ import {
   GameDayResolutionRoomClient
 } from "@/components/coordination-workbenches";
 import { listParentCoachDashboardData } from "@/lib/supabase/dashboard-data";
+import { listCoachInjuryContacts } from "@/lib/supabase/coach-injury-contacts";
 import { listCoachDrillVideoLibraryData } from "@/lib/supabase/drill-videos";
 import { listGameDayResolutionReviews } from "@/lib/supabase/game-day-resolution";
 import { listPracticeRunReceipts } from "@/lib/supabase/practice-runs";
@@ -39,18 +40,24 @@ export async function CoachAttendanceSurface() {
 export async function CoachPracticeRecapsSurface() {
   const pageAccess = await requireCoachPageAccess();
   if (!pageAccess.ok) return <ParentReplayClient dashboardData={pageAccess.dashboardData} />;
-  const [dashboardData, drillVideoData, practiceRunData] = await Promise.all([
+  const [dashboardData, drillVideoData, practiceRunData, injuryContactData] = await Promise.all([
     listParentCoachDashboardData({ viewerUserId: pageAccess.access.userId, surface: "coach" }),
     listCoachDrillVideoLibraryData({
       coachTeamIds: pageAccess.access.coachTeamIds,
       viewerUserId: pageAccess.access.userId
     }),
-    listPracticeRunReceipts({ teamIds: pageAccess.access.coachTeamIds })
+    listPracticeRunReceipts({ teamIds: pageAccess.access.coachTeamIds }),
+    listCoachInjuryContacts({
+      actorUserId: pageAccess.access.userId ?? "",
+      teamIds: pageAccess.access.coachTeamIds
+    })
   ]);
   return (
     <CoachPracticeReplayWorkbench
       state={dashboardData.state}
       initialReceipts={practiceRunData.receipts}
+      injuryContacts={injuryContactData.contacts}
+      injuryContactMessage={injuryContactData.message}
       dashboardData={dashboardData}
       drillVideoData={drillVideoData}
     />

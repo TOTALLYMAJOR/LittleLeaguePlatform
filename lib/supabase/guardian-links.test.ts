@@ -47,7 +47,7 @@ describe("guardian repair verification boundary", () => {
       if (table === "players")
         data = { id: "player-1", team_id: "team-1", organization_id: "org-1" };
       if (table === "profiles") data = { id: "coach-1", default_role: "coach" };
-      const builder: Record<string, any> = {};
+      const builder: Record<string, unknown> = {};
       builder.select = () => builder;
       builder.eq = () => builder;
       builder.single = () => builder;

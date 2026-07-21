@@ -3451,6 +3451,90 @@ button.month-calendar-day:hover {
   background: var(--surface-soft);
 }
 
+.practice-safety-timer {
+  display: grid;
+  grid-template-columns: minmax(220px, 0.7fr) minmax(360px, 1.3fr);
+  gap: 22px;
+  align-items: center;
+  padding: 18px 20px;
+  border: 1px solid color-mix(in srgb, var(--accent) 35%, var(--line));
+  border-radius: var(--radius-md);
+  background: color-mix(in srgb, var(--accent-soft) 42%, var(--surface));
+}
+
+.practice-safety-timer.due {
+  border-color: var(--warning);
+  background: var(--warning-soft);
+}
+
+.practice-timer-display {
+  display: block;
+  margin-block: 4px;
+  color: var(--text);
+  font-size: clamp(2.3rem, 5vw, 4.2rem);
+  font-variant-numeric: tabular-nums;
+  line-height: 1;
+  letter-spacing: -0.05em;
+}
+
+.practice-timer-controls {
+  display: grid;
+  justify-items: end;
+  gap: 12px;
+}
+
+.coach-injury-panel {
+  display: grid;
+  gap: 16px;
+  padding: 20px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-md);
+  background: var(--surface);
+}
+
+.injury-contact-layout {
+  display: grid;
+  grid-template-columns: minmax(220px, 0.7fr) minmax(0, 1.3fr);
+  gap: 18px;
+  align-items: start;
+}
+
+.injury-contact-results {
+  display: grid;
+  gap: 10px;
+  min-height: 116px;
+}
+
+.injury-contact-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 16px;
+  align-items: center;
+  padding: 14px;
+  border-left: 3px solid var(--warning);
+  border-radius: var(--radius-sm);
+  background: var(--surface-soft);
+}
+
+.injury-contact-row > div {
+  display: grid;
+  gap: 3px;
+}
+
+.injury-contact-row span,
+.injury-contact-row small {
+  color: var(--muted);
+  font-size: var(--text-sm);
+}
+
+.injury-contact-row .ok-text {
+  color: var(--ok);
+}
+
+.injury-call-button {
+  white-space: nowrap;
+}
+
 .flight-timeline {
   position: relative;
   display: grid;
@@ -3508,6 +3592,15 @@ button.month-calendar-day:hover {
     grid-template-columns: repeat(3, minmax(0, 1fr));
     row-gap: 24px;
   }
+
+  .practice-safety-timer,
+  .injury-contact-layout {
+    grid-template-columns: 1fr;
+  }
+
+  .practice-timer-controls {
+    justify-items: start;
+  }
 }
 
 @media (max-width: 620px) {
@@ -3523,6 +3616,19 @@ button.month-calendar-day:hover {
   .flight-leg {
     grid-template-columns: 1fr;
     gap: 6px;
+  }
+
+  .injury-contact-row {
+    grid-template-columns: 1fr;
+  }
+
+  .coach-injury-panel .card-header {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .injury-call-button {
+    width: 100%;
   }
 
   .coordination-workbench .button-row > *,

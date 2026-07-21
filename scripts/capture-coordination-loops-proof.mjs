@@ -74,8 +74,8 @@ const scenarios = [
     role: "coach",
     path: "/coach/practice-recaps",
     heading: "Capture what actually happened before writing the family recap.",
-    textChecks: ["Plan, run, and observations stay coach-only", "Coach observations", "Completion does not publish anything"],
-    buttonChecks: ["Save reviewed plan", "Start practice", "Complete and unlock Replay seed"]
+    textChecks: ["Plan, run, and observations stay coach-only", "Coach observations", "Completion does not publish anything", "Water break timer", "Quick-call a parent or emergency contact", "LeaguePilot does not place or confirm the call"],
+    buttonChecks: ["Save reviewed plan", "Start practice", "Complete and unlock Replay seed", "Start timer"]
   },
   {
     id: "coach-game-day-resolution",
@@ -138,13 +138,58 @@ try {
         await heading.waitFor({ state: "visible", timeout: 20_000 });
         const bodyText = await page.locator("body").innerText();
         for (const expectedText of scenario.textChecks) {
-          if (!bodyText.includes(expectedText)) {
+          if (!bodyText.toLocaleLowerCase().includes(expectedText.toLocaleLowerCase())) {
             throw new Error(`${scenario.id} is missing expected workflow copy: ${expectedText}`);
           }
         }
         for (const buttonName of scenario.buttonChecks) {
           await page.getByRole("button", { name: buttonName, exact: true }).first().waitFor({ state: "attached", timeout: 20_000 });
         }
+        const interactionChecks = [];
+        const detailScreenshotPaths = [];
+        if (scenario.id === "coach-practice-replay-loop") {
+          const startTimer = page.getByRole("button", { name: "Start timer", exact: true });
+          const pauseTimer = page.getByRole("button", { name: "Pause", exact: true });
+          await startTimer.click();
+          await page.getByText("Timer running. It recovers from the target time if this tab sleeps.", { exact: true }).waitFor();
+          if (await pauseTimer.isDisabled()) throw new Error("Water break timer did not enter its running state.");
+          await pauseTimer.click();
+          await page.getByText("Water break timer paused.", { exact: true }).waitFor();
+          interactionChecks.push("Water break timer starts and pauses");
+          if (viewport.id === "mobile") {
+            const timerScreenshotPath = `${outputDir}/coach-water-break-timer-mobile.png`;
+            await page.locator(".practice-safety-timer").screenshot({ path: timerScreenshotPath });
+            detailScreenshotPaths.push(timerScreenshotPath);
+          }
+
+          const revealContacts = page.getByRole("button", { name: "Show injury contacts", exact: true });
+          if (await revealContacts.count()) {
+            await revealContacts.click();
+            const injuryPanel = page.locator(".coach-injury-panel");
+            if (await injuryPanel.locator('a[href^="tel:"]').count() === 0) {
+              throw new Error("Injury contacts were revealed without a device-dialer link.");
+            }
+            if (viewport.id === "mobile") {
+              const contactScreenshotPath = `${outputDir}/coach-injury-quick-call-mobile.png`;
+              await page.locator(".injury-contact-row").first().screenshot({ path: contactScreenshotPath });
+              detailScreenshotPaths.push(contactScreenshotPath);
+            }
+            await page.getByRole("button", { name: "Hide injury contacts", exact: true }).click();
+            if (await injuryPanel.locator('a[href^="tel:"]').count() !== 0) {
+              throw new Error("Hiding injury contacts left a device-dialer link on screen.");
+            }
+            await page.getByRole("button", { name: "Show injury contacts", exact: true }).click();
+            interactionChecks.push("Coach reveal exposes a scoped device-dialer link and hide removes it");
+          } else {
+            await page.getByText("No callable contact is recorded for the assigned roster.", { exact: false }).waitFor();
+            interactionChecks.push("Missing injury contact data shows the safe empty state");
+          }
+        }
+        await page.evaluate(() => {
+          if (document.activeElement instanceof HTMLElement) document.activeElement.blur();
+        });
+        const screenshotPath = `${outputDir}/${scenario.id}-${viewport.id}.png`;
+        await page.screenshot({ path: screenshotPath, fullPage: viewport.fullPage });
         const overflow = await page.evaluate(() => ({
           documentOverflow: document.documentElement.scrollWidth > document.documentElement.clientWidth,
           scrollWidth: document.documentElement.scrollWidth,
@@ -156,8 +201,6 @@ try {
         if (consoleErrors.length) {
           throw new Error(`${scenario.id} logged browser errors at ${viewport.width}px: ${consoleErrors.join(" | ")}`);
         }
-        const screenshotPath = `${outputDir}/${scenario.id}-${viewport.id}.png`;
-        await page.screenshot({ path: screenshotPath, fullPage: viewport.fullPage });
         report.push({
           scenario: scenario.id,
           role,
@@ -165,6 +208,8 @@ try {
           viewport: `${viewport.width}x${viewport.height}`,
           headingVerified: true,
           semanticChecks: [...scenario.textChecks, ...scenario.buttonChecks],
+          interactionChecks,
+          detailScreenshotPaths,
           documentOverflow: false,
           consoleErrors: [...consoleErrors],
           screenshotPath

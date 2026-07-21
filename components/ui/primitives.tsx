@@ -777,12 +777,12 @@ export function LoadingButton({ loading }: { loading: boolean }) {
 export function NumberCounter({ value }: { value: number }) {
   const [display, setDisplay] = useState(value);
   useEffect(() => {
+    let frame = 0;
     const reduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
     if (reduced) {
-      setDisplay(value);
-      return;
+      frame = requestAnimationFrame(() => setDisplay(value));
+      return () => cancelAnimationFrame(frame);
     }
-    let frame = 0;
     const start = performance.now();
     const animate = (now: number) => {
       const progress = Math.min(1, (now - start) / 500);

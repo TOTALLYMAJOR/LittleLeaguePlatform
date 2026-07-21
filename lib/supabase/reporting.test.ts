@@ -89,7 +89,7 @@ function queryFor(table: string) {
   let rows = [...(datasets[table] ?? [])];
   const filters: Array<{ kind: string; column: string; value: unknown }> = [];
   let result: { data: Row[] | null; error: null } = { data: rows, error: null };
-  const builder: Record<string, any> = {};
+  const builder: Record<string, unknown> = {};
 
   builder.select = vi.fn(() => builder);
   builder.eq = vi.fn((column: string, value: unknown) => {

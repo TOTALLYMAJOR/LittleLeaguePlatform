@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-07-20T20:20:59.462Z",
+  "generatedAt": "2026-07-20T22:02:06.025Z",
   "baseUrl": "http://127.0.0.1:3010",
   "proofBoundary": "Local signed-in route rendering and responsive browser evidence. Provider delivery and hosted migration proof remain separate.",
   "scenarios": [
@@ -13,6 +13,8 @@
         "Validate the source file, review warnings",
         "communications as separate launch gates"
       ],
+      "interactionChecks": [],
+      "detailScreenshotPaths": [],
       "documentOverflow": false,
       "consoleErrors": [],
       "screenshotPath": "output/playwright/coordination-loops/admin-season-launch-desktop.png"
@@ -32,6 +34,8 @@
         "failed",
         "proved"
       ],
+      "interactionChecks": [],
+      "detailScreenshotPaths": [],
       "documentOverflow": false,
       "consoleErrors": [],
       "screenshotPath": "output/playwright/coordination-loops/admin-delivery-evidence-desktop.png"
@@ -48,6 +52,8 @@
         "Recent resolution receipts",
         "Save reviewed resolution"
       ],
+      "interactionChecks": [],
+      "detailScreenshotPaths": [],
       "documentOverflow": false,
       "consoleErrors": [],
       "screenshotPath": "output/playwright/coordination-loops/admin-game-day-resolution-desktop.png"
@@ -62,10 +68,19 @@
         "Plan, run, and observations stay coach-only",
         "Coach observations",
         "Completion does not publish anything",
+        "Water break timer",
+        "Quick-call a parent or emergency contact",
+        "LeaguePilot does not place or confirm the call",
         "Save reviewed plan",
         "Start practice",
-        "Complete and unlock Replay seed"
+        "Complete and unlock Replay seed",
+        "Start timer"
       ],
+      "interactionChecks": [
+        "Water break timer starts and pauses",
+        "Coach reveal exposes a scoped device-dialer link"
+      ],
+      "detailScreenshotPaths": [],
       "documentOverflow": false,
       "consoleErrors": [],
       "screenshotPath": "output/playwright/coordination-loops/coach-practice-replay-loop-desktop.png"
@@ -82,6 +97,8 @@
         "Recent resolution receipts",
         "Save reviewed resolution"
       ],
+      "interactionChecks": [],
+      "detailScreenshotPaths": [],
       "documentOverflow": false,
       "consoleErrors": [],
       "screenshotPath": "output/playwright/coordination-loops/coach-game-day-resolution-desktop.png"
@@ -97,6 +114,8 @@
         "caregiver labels do not grant app access",
         "honest delivery evidence"
       ],
+      "interactionChecks": [],
+      "detailScreenshotPaths": [],
       "documentOverflow": false,
       "consoleErrors": [],
       "screenshotPath": "output/playwright/coordination-loops/parent-family-flight-plan-desktop.png"
@@ -111,6 +130,8 @@
         "Validate the source file, review warnings",
         "communications as separate launch gates"
       ],
+      "interactionChecks": [],
+      "detailScreenshotPaths": [],
       "documentOverflow": false,
       "consoleErrors": [],
       "screenshotPath": "output/playwright/coordination-loops/admin-season-launch-mobile.png"
@@ -130,6 +151,8 @@
         "failed",
         "proved"
       ],
+      "interactionChecks": [],
+      "detailScreenshotPaths": [],
       "documentOverflow": false,
       "consoleErrors": [],
       "screenshotPath": "output/playwright/coordination-loops/admin-delivery-evidence-mobile.png"
@@ -146,6 +169,8 @@
         "Recent resolution receipts",
         "Save reviewed resolution"
       ],
+      "interactionChecks": [],
+      "detailScreenshotPaths": [],
       "documentOverflow": false,
       "consoleErrors": [],
       "screenshotPath": "output/playwright/coordination-loops/admin-game-day-resolution-mobile.png"
@@ -160,9 +185,21 @@
         "Plan, run, and observations stay coach-only",
         "Coach observations",
         "Completion does not publish anything",
+        "Water break timer",
+        "Quick-call a parent or emergency contact",
+        "LeaguePilot does not place or confirm the call",
         "Save reviewed plan",
         "Start practice",
-        "Complete and unlock Replay seed"
+        "Complete and unlock Replay seed",
+        "Start timer"
+      ],
+      "interactionChecks": [
+        "Water break timer starts and pauses",
+        "Coach reveal exposes a scoped device-dialer link"
+      ],
+      "detailScreenshotPaths": [
+        "output/playwright/coordination-loops/coach-water-break-timer-mobile.png",
+        "output/playwright/coordination-loops/coach-injury-quick-call-mobile.png"
       ],
       "documentOverflow": false,
       "consoleErrors": [],
@@ -180,6 +217,8 @@
         "Recent resolution receipts",
         "Save reviewed resolution"
       ],
+      "interactionChecks": [],
+      "detailScreenshotPaths": [],
       "documentOverflow": false,
       "consoleErrors": [],
       "screenshotPath": "output/playwright/coordination-loops/coach-game-day-resolution-mobile.png"
@@ -195,6 +234,8 @@
         "caregiver labels do not grant app access",
         "honest delivery evidence"
       ],
+      "interactionChecks": [],
+      "detailScreenshotPaths": [],
       "documentOverflow": false,
       "consoleErrors": [],
       "screenshotPath": "output/playwright/coordination-loops/parent-family-flight-plan-mobile.png"

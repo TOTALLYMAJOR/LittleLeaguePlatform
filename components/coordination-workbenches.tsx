@@ -1,12 +1,13 @@
 "use client";
 
-import { useMemo, useState, useTransition } from "react";
+import { useEffect, useMemo, useState, useTransition } from "react";
 import { useAppState } from "@/app/providers";
 import { ParentReplayClient } from "@/components/feature-panels";
 import type { AppState, LeagueEvent, RosterImportAnalysis } from "@/lib/domain";
 import { analyzeRosterCsv, sampleRosterCsv } from "@/lib/domain";
 import { createSupabaseBrowserClient } from "@/lib/supabase/browser";
 import type { FamilyEventHandoff } from "@/lib/supabase/family-flight-plan";
+import type { CoachInjuryContact } from "@/lib/supabase/coach-injury-contacts";
 import type { GameDayDecision, GameDayResolutionReview } from "@/lib/supabase/game-day-resolution";
 import type { NotificationReceipt } from "@/lib/supabase/notification-receipts";
 import type {
@@ -18,6 +19,11 @@ import type { SeasonLaunchData, SeasonLaunchImport } from "@/lib/supabase/season
 import type { ParentCoachDashboardData } from "@/lib/supabase/dashboard-data";
 import type { DrillVideoLibraryData } from "@/lib/supabase/drill-videos";
 import { familyEventGear, findFamilyFlightConflicts } from "@/lib/services/family-flight-plan";
+import {
+  formatWaterBreakCountdown,
+  remainingWaterBreakSeconds,
+  waterBreakMinutePresets
+} from "@/lib/services/practice-safety";
 
 async function authenticatedJsonFetch(url: string, payload: unknown, extraHeaders?: Record<string, string>) {
   const headers: Record<string, string> = { "Content-Type": "application/json", ...extraHeaders };
@@ -539,21 +545,183 @@ export function PracticeRunLoopClient({ state, initialReceipts, onReceiptsChange
   );
 }
 
+function WaterBreakTimer() {
+  const [selectedMinutes, setSelectedMinutes] = useState<number>(5);
+  const [remainingSeconds, setRemainingSeconds] = useState(5 * 60);
+  const [endsAt, setEndsAt] = useState<number | null>(null);
+  const [status, setStatus] = useState("Choose an interval, then start the next hydration reminder.");
+  const running = endsAt !== null;
+
+  useEffect(() => {
+    if (!endsAt) return;
+    const timer = window.setInterval(() => {
+      const next = remainingWaterBreakSeconds(endsAt, Date.now());
+      setRemainingSeconds(next);
+      if (next === 0) {
+        window.clearInterval(timer);
+        setEndsAt(null);
+        setStatus("Water break due now. Pause activity and confirm every player has water.");
+        if ("vibrate" in navigator) navigator.vibrate([180, 100, 180]);
+      }
+    }, 500);
+    return () => window.clearInterval(timer);
+  }, [endsAt]);
+
+  function choosePreset(minutes: number) {
+    setSelectedMinutes(minutes);
+    setRemainingSeconds(minutes * 60);
+    setEndsAt(null);
+    setStatus(`${minutes}-minute water break reminder selected.`);
+  }
+
+  function start() {
+    const seconds = remainingSeconds || selectedMinutes * 60;
+    setRemainingSeconds(seconds);
+    setEndsAt(Date.now() + seconds * 1000);
+    setStatus("Timer running. It recovers from the target time if this tab sleeps.");
+  }
+
+  function pause() {
+    if (!endsAt) return;
+    setRemainingSeconds(remainingWaterBreakSeconds(endsAt, Date.now()));
+    setEndsAt(null);
+    setStatus("Water break timer paused.");
+  }
+
+  function reset() {
+    setRemainingSeconds(selectedMinutes * 60);
+    setEndsAt(null);
+    setStatus("Water break timer reset.");
+  }
+
+  return (
+    <section className={`practice-safety-timer ${remainingSeconds === 0 ? "due" : ""}`} aria-label="Water break timer">
+      <div>
+        <span className="eyebrow">Water break timer</span>
+        <strong
+          className="practice-timer-display"
+          role="timer"
+          aria-label={`${formatWaterBreakCountdown(remainingSeconds)} remaining`}
+        >
+          {formatWaterBreakCountdown(remainingSeconds)}
+        </strong>
+        <p className="muted" aria-live="polite">{status}</p>
+      </div>
+      <div className="practice-timer-controls">
+        <div className="pill-row" aria-label="Water break interval">
+          {waterBreakMinutePresets.map((minutes) => (
+            <button
+              className={selectedMinutes === minutes ? "" : "secondary"}
+              key={minutes}
+              type="button"
+              onClick={() => choosePreset(minutes)}
+            >
+              {minutes} min
+            </button>
+          ))}
+        </div>
+        <div className="button-row">
+          <button type="button" disabled={running} onClick={start}>{remainingSeconds === 0 ? "Start again" : "Start timer"}</button>
+          <button type="button" className="secondary" disabled={!running} onClick={pause}>Pause</button>
+          <button type="button" className="secondary" onClick={reset}>Reset</button>
+        </div>
+      </div>
+    </section>
+  );
+}
+
+function medicalDecisionCopy(status: CoachInjuryContact["medicalDecisionStatus"]) {
+  if (status === "approved") return "Medical decision approved";
+  if (status === "denied") return "Medical decision not authorized";
+  return "Medical decision authority not recorded";
+}
+
+export function CoachInjuryCallPanel({ contacts, message }: {
+  contacts: CoachInjuryContact[];
+  message: string;
+}) {
+  const players = Array.from(new Map(contacts.map((contact) => [contact.playerId, {
+    id: contact.playerId,
+    name: contact.playerName,
+    teamName: contact.teamName
+  }])).values());
+  const [playerId, setPlayerId] = useState(players[0]?.id ?? "");
+  const [revealed, setRevealed] = useState(false);
+  const selectedContacts = contacts.filter((contact) => contact.playerId === playerId);
+
+  return (
+    <section className="coach-injury-panel" aria-label="Injury contact quick call">
+      <div className="card-header">
+        <div>
+          <span className="eyebrow">Injury contact</span>
+          <h2>Quick-call a parent or emergency contact.</h2>
+        </div>
+        <span className="badge warning">Coach-only safety data</span>
+      </div>
+      <p className="notice warning"><strong>For life-threatening symptoms, contact local emergency services first.</strong> This tool opens the device dialer. LeaguePilot does not place or confirm the call.</p>
+      <p className="muted">{message}</p>
+      {players.length ? (
+        <div className="injury-contact-layout">
+          <div className="stack">
+            <label>
+              Injured player
+              <select value={playerId} onChange={(event) => {
+                setPlayerId(event.target.value);
+                setRevealed(false);
+              }}>
+                {players.map((player) => <option key={player.id} value={player.id}>{player.name} - {player.teamName}</option>)}
+              </select>
+            </label>
+            <button type="button" onClick={() => setRevealed((current) => !current)} aria-expanded={revealed}>
+              {revealed ? "Hide injury contacts" : "Show injury contacts"}
+            </button>
+            <p className="muted">Numbers stay hidden on screen until a coach intentionally reveals them for the selected player.</p>
+          </div>
+          <div className="injury-contact-results" aria-live="polite">
+            {revealed ? selectedContacts.map((contact) => {
+              return (
+                <article className="injury-contact-row" key={contact.id}>
+                  <div>
+                    <strong>{contact.contactName}</strong>
+                    <span>{contact.relationship.replaceAll("_", " ")} · {contact.kind === "guardian" ? "parent/guardian" : `emergency priority ${contact.priority}`}</span>
+                    <small className={contact.medicalDecisionStatus === "approved" ? "ok-text" : "muted"}>{medicalDecisionCopy(contact.medicalDecisionStatus)}</small>
+                  </div>
+                  <a className="button injury-call-button" href={`tel:${contact.phone}`} aria-label={`Call ${contact.contactName} for ${contact.playerName}`}>
+                    {contact.kind === "guardian" ? "Call parent" : "Call emergency contact"}
+                  </a>
+                </article>
+              );
+            }) : <p className="muted">Select the player and reveal contacts only when injury coordination is needed.</p>}
+          </div>
+        </div>
+      ) : <p className="notice">No callable contact is recorded for the assigned roster. Ask an administrator to verify guardian and emergency-contact records before practice.</p>}
+    </section>
+  );
+}
+
 export function CoachPracticeReplayWorkbench({
   state,
   initialReceipts,
+  injuryContacts,
+  injuryContactMessage,
   dashboardData,
   drillVideoData
 }: {
   state: AppState;
   initialReceipts: PracticeRunReceipt[];
+  injuryContacts: CoachInjuryContact[];
+  injuryContactMessage: string;
   dashboardData?: ParentCoachDashboardData | null;
   drillVideoData?: DrillVideoLibraryData | null;
 }) {
   const [receipts, setReceipts] = useState(initialReceipts);
   return (
     <>
-      <div className="page coordination-workbench"><PracticeRunLoopClient state={state} initialReceipts={initialReceipts} onReceiptsChange={setReceipts} /></div>
+      <div className="page coordination-workbench">
+        <PracticeRunLoopClient state={state} initialReceipts={initialReceipts} onReceiptsChange={setReceipts} />
+        <WaterBreakTimer />
+        <CoachInjuryCallPanel contacts={injuryContacts} message={injuryContactMessage} />
+      </div>
       <ParentReplayClient dashboardData={dashboardData} drillVideoData={drillVideoData} practiceRunReceipts={receipts} />
     </>
   );

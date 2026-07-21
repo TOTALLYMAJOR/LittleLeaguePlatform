@@ -161,6 +161,8 @@ async function main() {
     parentMembership: "66666666-6666-4666-8666-666666666662",
     archivedCoachMembership: "66666666-6666-4666-8666-666666666663",
     guardian: "77777777-7777-4777-8777-777777777771",
+    guardianMedicalAuthorization: "77777777-7777-4777-8777-777777777772",
+    emergencyContact: "77777777-7777-4777-8777-777777777773",
     announcement: "88888888-8888-4888-8888-888888888881",
     mediaAlbum: "99999999-9999-4999-8999-999999999991",
     mediaVideo: "99999999-9999-4999-8999-999999999992",
@@ -181,6 +183,7 @@ async function main() {
     id: parent.id,
     display_name: "QA Parent Jordan",
     email: requireEnv("QA_PARENT_EMAIL"),
+    phone: "+1 202-555-0101",
     default_role: "parent"
   });
   await upsertOrThrow(supabase, "profiles", {
@@ -307,6 +310,27 @@ async function main() {
     parent_user_id: parent.id,
     relationship: "father",
     status: "active"
+  });
+  await upsertOrThrow(supabase, "guardian_authorizations", {
+    id: ids.guardianMedicalAuthorization,
+    player_guardian_id: ids.guardian,
+    player_id: ids.playerMason,
+    parent_user_id: parent.id,
+    authorization_type: "medical_decision",
+    allowed: true,
+    note: "Fictional QA authorization for coach safety proof.",
+    reviewed_by_user_id: admin.id
+  }, { onConflict: "player_guardian_id,authorization_type" });
+  await upsertOrThrow(supabase, "emergency_contacts", {
+    id: ids.emergencyContact,
+    player_id: ids.playerMason,
+    name: "QA Backup Contact",
+    phone: "+1 202-555-0102",
+    relationship: "Aunt",
+    priority: 1,
+    can_pickup: true,
+    note: "Fictional QA contact for coach safety proof.",
+    created_by_user_id: parent.id
   });
   await upsertOrThrow(supabase, "events", {
     id: ids.game,
