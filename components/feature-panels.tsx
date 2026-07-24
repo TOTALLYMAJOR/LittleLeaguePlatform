@@ -20,7 +20,6 @@ import {
   computeSeasonPlanningMetrics,
   defaultTeamCommunicationCopy,
   detectScheduleConflicts,
-  evaluateInviteRecovery,
   getCoachRsvpReliability,
   getCoachRsvpSummaries,
   getParentDashboard,
@@ -1477,68 +1476,6 @@ export function ImportsClient() {
             </tbody>
           </table>
         </div>
-      </section>
-    </div>
-  );
-}
-
-export function InviteRecoveryClient() {
-  const { state, dispatch } = useAppState();
-  const [identifier, setIdentifier] = useState("sam@example.com");
-  const [submitted, setSubmitted] = useState<string | null>(null);
-  const result = submitted ? evaluateInviteRecovery(state, submitted, NOW) : null;
-
-  return (
-    <div className="page">
-      <section className="hero">
-        <span className="eyebrow">Smart invite recovery</span>
-        <h1>Recover parent invites without exposing raw tokens.</h1>
-        <p className="lead">Parents can enter an email or phone. The system checks whether the invite exists, is expired, was already accepted, and is within resend limits.</p>
-      </section>
-
-      <section className="grid two">
-        <article className="card stack">
-          <h2>Resend invite</h2>
-          <label>
-            Parent email or phone
-            <input value={identifier} onChange={(event) => setIdentifier(event.target.value)} />
-          </label>
-          <button
-            onClick={() => {
-              setSubmitted(identifier);
-              const evaluation = evaluateInviteRecovery(state, identifier, NOW);
-              if (evaluation.canResend) {
-                dispatch({ type: "recoverInvite", identifier, now: new Date().toISOString() });
-              }
-            }}
-          >
-            Request recovery
-          </button>
-          <p className="muted">Try sam@example.com, pat@example.com, jordan@example.com, limit@example.com, or 555-0000.</p>
-        </article>
-
-        <article className="card stack">
-          <div className="card-header">
-            <h2>Recovery result</h2>
-            {result ? <span className={`badge ${statusClass(result.code)}`}>{result.code}</span> : null}
-          </div>
-          {result ? (
-            <>
-              <h3>{result.title}</h3>
-              <p>{result.message}</p>
-              {result.invite ? (
-                <ul className="list">
-                  <li>Status: {result.invite.status}</li>
-                  <li>Sent count: {result.invite.sentCount}</li>
-                  <li>Expires: {formatDate(result.invite.expiresAt)}</li>
-                  <li>Token storage: hashed only</li>
-                </ul>
-              ) : null}
-            </>
-          ) : (
-            <p className="muted">Submit an email or phone to run recovery checks.</p>
-          )}
-        </article>
       </section>
     </div>
   );
@@ -5613,7 +5550,7 @@ export function RegistrationClient({
           <p className="notice">Privacy promise: children do not create LeaguePilot accounts. Other families cannot see your request or its status.</p>
           <h3>Your request receipt</h3>
           {submittedRegistrationRequests.map((request) => (
-            <p key={request.id}><strong>{request.playerFirstName} {request.playerLastInitial}.</strong><br /><span className="muted">{request.parentName} - {request.status}<br />Reference: {request.id}</span></p>
+            <p key={request.id}><strong>{request.playerFirstName} {request.playerLastInitial}.</strong><br /><span className="muted">{request.parentName} - {request.status}<br />Reference: {request.id}</span><br /><a href={`/access/status?reference=${encodeURIComponent(request.id)}`}>Check request status</a></p>
           ))}
           {submittedRegistrationRequests.length === 0 ? <p className="muted">After you send the form, only your request receipt appears here. The private review queue stays hidden.</p> : null}
         </article>

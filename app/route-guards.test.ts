@@ -27,6 +27,22 @@ describe("role route guards and compatibility wrappers", () => {
     expect(service).toContain("selectCurrentTeamsOrAll");
   });
 
+  it("keeps public status and recovery checks server-scoped, rate-limited, and privacy-minimized", () => {
+    const statusRoute = source("app/api/registration-requests/status/route.ts");
+    const recoveryRoute = source("app/api/invites/recover/route.ts");
+    const service = source("lib/supabase/access-activation.ts");
+
+    expect(statusRoute).toContain('checkPublicIntakeRateLimit("registration_status"');
+    expect(recoveryRoute).toContain('checkPublicIntakeRateLimit("invite_recovery"');
+    expect(statusRoute).toContain("findFamilyAccessStatus");
+    expect(recoveryRoute).toContain("requestInvitationRecovery");
+    expect(service).toContain("PUBLIC_ORGANIZATION_ID");
+    expect(service).toContain('.eq("parent_email", email)');
+    expect(service).not.toContain("invite_token_hash");
+    expect(service).toContain("No provider message was sent");
+    expect(service).not.toContain("seedState");
+  });
+
   it("uses one shared active-admin guard before admin data loaders", () => {
     const surfaces = source("app/admin/_surfaces.tsx");
 

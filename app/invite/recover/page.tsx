@@ -1,4 +1,4 @@
-import { InviteRecoveryClient } from "@/components/feature-panels";
+import { InviteRecoveryClient } from "@/components/access-activation";
 
 export default function InviteRecoveryPage() {
   return <InviteRecoveryClient />;

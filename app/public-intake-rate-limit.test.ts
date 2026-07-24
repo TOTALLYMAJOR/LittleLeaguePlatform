@@ -1,8 +1,11 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { POST as postRegistration } from "./api/registration-requests/route";
+import { POST as postRegistrationStatus } from "./api/registration-requests/status/route";
+import { POST as postInviteRecovery } from "./api/invites/recover/route";
 import { POST as postMobileUsageEvent } from "./api/mobile-usage-events/route";
 import { createPendingRegistration } from "@/lib/supabase/registrations";
 import { recordMobileUsageEvent } from "@/lib/supabase/operations";
+import { findFamilyAccessStatus, requestInvitationRecovery } from "@/lib/supabase/access-activation";
 import { resetPublicIntakeRateLimits } from "@/lib/public-intake/rate-limit";
 
 vi.mock("@/lib/supabase/registrations", () => ({
@@ -13,8 +16,15 @@ vi.mock("@/lib/supabase/operations", () => ({
   recordMobileUsageEvent: vi.fn(),
 }));
 
+vi.mock("@/lib/supabase/access-activation", () => ({
+  findFamilyAccessStatus: vi.fn(),
+  requestInvitationRecovery: vi.fn(),
+}));
+
 const createPendingRegistrationMock = vi.mocked(createPendingRegistration);
 const recordMobileUsageEventMock = vi.mocked(recordMobileUsageEvent);
+const findFamilyAccessStatusMock = vi.mocked(findFamilyAccessStatus);
+const requestInvitationRecoveryMock = vi.mocked(requestInvitationRecovery);
 
 function jsonRequest(path: string, body: unknown, ip = "203.0.113.10") {
   return new Request(`http://localhost${path}`, {
@@ -38,6 +48,14 @@ describe("public intake abuse controls", () => {
     recordMobileUsageEventMock.mockResolvedValue({
       ok: true,
       message: "Mobile usage event recorded.",
+    });
+    findFamilyAccessStatusMock.mockResolvedValue({
+      ok: true,
+      message: "League review in progress",
+    });
+    requestInvitationRecoveryMock.mockResolvedValue({
+      ok: true,
+      message: "If an invitation matches, the league will review it.",
     });
   });
 
@@ -92,6 +110,30 @@ describe("public intake abuse controls", () => {
     expect(response.headers.get("X-RateLimit-Remaining")).toBe("0");
     expect(response.headers.get("Retry-After")).toBeTruthy();
     expect(createPendingRegistrationMock).toHaveBeenCalledTimes(5);
+  });
+
+  it("rate-limits access status without returning private data from the route itself", async () => {
+    const response = await postRegistrationStatus(
+      jsonRequest("/api/registration-requests/status", {
+        reference: "10000000-0000-4000-8000-000000000001",
+        email: "parent@example.com",
+      }),
+    );
+    expect(response.status).toBe(200);
+    expect(response.headers.get("X-RateLimit-Limit")).toBe("8");
+    expect(findFamilyAccessStatusMock).toHaveBeenCalledWith({
+      reference: "10000000-0000-4000-8000-000000000001",
+      email: "parent@example.com",
+    });
+  });
+
+  it("keeps invitation recovery enumeration-safe and provider-free", async () => {
+    const response = await postInviteRecovery(
+      jsonRequest("/api/invites/recover", { email: "parent@example.com" }),
+    );
+    expect(response.status).toBe(202);
+    expect(response.headers.get("X-RateLimit-Limit")).toBe("5");
+    expect(requestInvitationRecoveryMock).toHaveBeenCalledWith({ email: "parent@example.com" });
   });
 
   it("allows mobile telemetry under its higher legitimate-use budget", async () => {
