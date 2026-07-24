@@ -244,9 +244,9 @@ export function AppShell({ access = signedOutShellAccess, children }: { access?:
               </span>
             </Link>
             <nav className="public-nav" aria-label="Public navigation">
-              <Link href="/schedule">Calendar</Link>
-              <Link href="/registration">Sign up</Link>
-              <Link className="button" href="/auth">Sign in</Link>
+              <Link href="/schedule">Schedule</Link>
+              <Link className="button" href="/registration">Request Team Access</Link>
+              <Link className="button secondary" href="/auth">Sign in</Link>
             </nav>
           </header>
           <main id="main-content" className="public-main">{children}</main>

@@ -8,6 +8,7 @@ export * from "./media";
 export * from "./drill-videos";
 export * from "./rsvp";
 export * from "./schedule";
+export * from "./public-calendar";
 export * from "./season-planning";
 export * from "./chat";
 export * from "./communications";

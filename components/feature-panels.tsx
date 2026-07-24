@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState, useTransition, type CSSProperties, type ChangeEvent, type ReactNode } from "react";
-import { useAppState } from "@/app/providers";
+import { markLeaguePilotValueExperienced, useAppState } from "@/app/providers";
 import {
   queueOfflineGameDayAction,
   syncContextOutbox,
@@ -12,6 +12,7 @@ import {
   analyzeRosterCsv,
   applyScheduleChange,
   buildAdminAssistiveSuggestions,
+  buildPublicEventCalendarActions,
   buildCoachAssistiveSuggestions,
   canUpdateTeamPortalBranding,
   communicationTemplates,
@@ -67,6 +68,7 @@ import {
   previewTeamCommunication,
   previewScheduleChangeImpact,
   previewRecurringEvents,
+  publicArrivalLabel,
   programThemePresets,
   roleLabel,
   sampleRosterCsv,
@@ -310,6 +312,127 @@ function getDefaultScheduleEventId(events: LeagueEvent[]) {
     ?? "";
 }
 
+function publicEventDateParts(value: string) {
+  const date = new Date(value);
+  return {
+    date: date.toLocaleDateString("en-US", { weekday: "short", month: "short", day: "numeric" }),
+    time: date.toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" })
+  };
+}
+
+function PublicScheduleAgenda({
+  event,
+  events,
+  onSelectEvent,
+  teams
+}: {
+  event?: LeagueEvent;
+  events: LeagueEvent[];
+  onSelectEvent: (eventId: string) => void;
+  teams: Team[];
+}) {
+  const teamNameById = useMemo(() => new Map(teams.map((team) => [team.id, team.name])), [teams]);
+  const sortedEvents = useMemo(
+    () => [...events].sort((left, right) => Date.parse(left.startsAt) - Date.parse(right.startsAt)),
+    [events]
+  );
+  const selectedTeamName = event ? teamNameById.get(event.teamId) ?? "Team" : "Team";
+  const selectedActions = event ? buildPublicEventCalendarActions(event, selectedTeamName) : null;
+  const directionsUrl = event
+    ? `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent([event.locationName, event.locationAddress].filter(Boolean).join(", "))}`
+    : "";
+
+  function chooseEvent(eventId: string) {
+    onSelectEvent(eventId);
+  }
+
+  return (
+    <section className="public-agenda-layout" aria-label="Public league schedule">
+      <div className="public-agenda-list">
+        <header>
+          <div>
+            <span className="eyebrow">Agenda</span>
+            <h2>League events</h2>
+          </div>
+          <span className="badge">{sortedEvents.length} event(s)</span>
+        </header>
+        {sortedEvents.length ? sortedEvents.map((item) => {
+          const dateParts = publicEventDateParts(item.startsAt);
+          const teamName = teamNameById.get(item.teamId) ?? "Team";
+          return (
+            <article className={`public-agenda-row${item.id === event?.id ? " selected" : ""}`} key={item.id}>
+              <time dateTime={item.startsAt}>
+                <strong>{dateParts.date}</strong>
+                <span>{dateParts.time}</span>
+              </time>
+              <div className="public-agenda-primary">
+                <span>{teamName}</span>
+                <h3>{item.title}</h3>
+                <p>{item.eventType.replace(/_/g, " ")}{item.opponent ? ` against ${item.opponent}` : ""}</p>
+              </div>
+              <dl>
+                <div><dt>Arrival</dt><dd>{publicArrivalLabel(item)}</dd></div>
+                <div><dt>Venue</dt><dd>{item.locationAddress || "Not published"}</dd></div>
+                <div><dt>Field</dt><dd>{item.locationName || "Not published"}</dd></div>
+              </dl>
+              <div className="public-agenda-action">
+                <span className={`season-status state-${item.status === "cancelled" ? "error" : item.status === "completed" ? "ready" : "needs_attention"}`}>{item.status}</span>
+                <button
+                  aria-current={item.id === event?.id ? "true" : undefined}
+                  className="secondary"
+                  data-analytics-event="public_schedule_event_opened"
+                  onClick={() => chooseEvent(item.id)}
+                  type="button"
+                >
+                  View event
+                </button>
+              </div>
+            </article>
+          );
+        }) : <p className="notice">No public events are available yet. Check again after the league publishes its schedule.</p>}
+      </div>
+
+      <aside className="public-event-passport" aria-labelledby="public-event-passport-title">
+        {event && selectedActions ? (
+          <>
+            <div className="public-event-passport-heading">
+              <div>
+                <span className="eyebrow">Event details</span>
+                <h2 id="public-event-passport-title">{event.title}</h2>
+              </div>
+              <span className={`season-status state-${event.status === "cancelled" ? "error" : event.status === "completed" ? "ready" : "needs_attention"}`}>{event.status}</span>
+            </div>
+            <dl className="public-event-facts">
+              <div><dt>Team</dt><dd>{selectedTeamName}</dd></div>
+              <div><dt>Activity</dt><dd>{event.eventType.replace(/_/g, " ")}</dd></div>
+              <div><dt>Date and time</dt><dd>{publicEventDateParts(event.startsAt).date}, {publicEventDateParts(event.startsAt).time}</dd></div>
+              <div><dt>Arrival time</dt><dd>{publicArrivalLabel(event)}</dd></div>
+              <div><dt>Opponent</dt><dd>{event.opponent ?? "Not applicable"}</dd></div>
+              <div><dt>Venue</dt><dd>{event.locationAddress || "Not published"}</dd></div>
+              <div><dt>Field</dt><dd>{event.locationName || "Not published"}</dd></div>
+            </dl>
+            {event.status === "cancelled" ? (
+              <p className="notice danger">This event is cancelled. Do not rely on a saved calendar copy for current status.</p>
+            ) : (
+              <p className="notice">Arrival guidance has not been published for this event. Confirm current details before leaving.</p>
+            )}
+            <div className="public-calendar-actions" aria-label="Add this event to a calendar">
+              <a data-analytics-event="calendar_add_apple" download={selectedActions.fileName} href={selectedActions.appleUrl}>Apple Calendar</a>
+              <a data-analytics-event="calendar_add_google" href={selectedActions.googleUrl} rel="noreferrer" target="_blank">Google Calendar</a>
+              <a data-analytics-event="calendar_add_outlook" href={selectedActions.outlookUrl} rel="noreferrer" target="_blank">Outlook</a>
+              <a data-analytics-event="calendar_download" download={selectedActions.fileName} href={selectedActions.downloadUrl}>Download calendar</a>
+            </div>
+            <a className="button secondary" href={directionsUrl} rel="noreferrer" target="_blank">Open directions</a>
+            <small>Saved calendar copies do not update official LeaguePilot schedule truth.</small>
+          </>
+        ) : (
+          <p className="notice">Choose an event to see its public details.</p>
+        )}
+      </aside>
+    </section>
+  );
+}
+
 function ScheduleMonthCalendar({
   events,
   teams,
@@ -389,19 +512,6 @@ function formatShortTime(value?: string) {
     hour: "numeric",
     minute: "2-digit"
   });
-}
-
-function formatLongEventDate(value?: string) {
-  if (!value) return "Date and time pending";
-  const eventDate = new Date(value);
-  return `${eventDate.toLocaleDateString("en-US", {
-    weekday: "long",
-    month: "long",
-    day: "numeric"
-  })} at ${eventDate.toLocaleTimeString("en-US", {
-    hour: "numeric",
-    minute: "2-digit"
-  })}`;
 }
 
 function statusClass(status: string) {
@@ -913,11 +1023,8 @@ function mergeRegistrationRequests(localRequests: RegistrationRequest[], serverR
 export function AuthClient() {
   type SocialAuthProvider = "google" | "facebook";
 
-  const [mode, setMode] = useState<"sign-in" | "sign-up">("sign-in");
-  const [displayName, setDisplayName] = useState("Coach Taylor");
-  const [email, setEmail] = useState("coach.taylor@example.com");
+  const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [defaultRole, setDefaultRole] = useState<"admin" | "coach" | "parent">("coach");
   const [message, setMessage] = useState("");
   const [isPending, startTransition] = useTransition();
   const authConfigStatus = getSupabaseBrowserConfigStatus();
@@ -956,28 +1063,6 @@ export function AuthClient() {
     startTransition(async () => {
       try {
         const supabase = createSupabaseBrowserClient();
-        if (mode === "sign-up") {
-          const { error } = await supabase.auth.signUp({
-            email,
-            password,
-            options: {
-              emailRedirectTo: getSupabaseEmailRedirectTo(),
-              data: {
-                display_name: displayName,
-                default_role: defaultRole
-              }
-            }
-          });
-
-          if (error) {
-            setMessage(error.message);
-            return;
-          }
-
-          setMessage("Account request submitted. Check your email if confirmation is required, then wait for league role approval.");
-          return;
-        }
-
         const { error } = await supabase.auth.signInWithPassword({ email, password });
         if (error) {
           setMessage(error.message);
@@ -1027,9 +1112,9 @@ export function AuthClient() {
   return (
     <div className="page">
       <section className="hero">
-        <span className="eyebrow">Private access</span>
-        <h1>Sign in to your approved LeaguePilot role.</h1>
-        <p className="lead">Your account confirms who you are. League approval controls which private team pages you can open.</p>
+        <span className="eyebrow">Existing members</span>
+        <h1>Sign in to your LeaguePilot account.</h1>
+        <p className="lead">Use the email connected to your approved parent, coach, or league role.</p>
       </section>
 
       {!authConfigStatus.ok ? <p className="notice warning">Sign-in services are not connected in this environment.</p> : null}
@@ -1037,27 +1122,9 @@ export function AuthClient() {
 
       <section className="grid two">
         <article className="card stack">
-          <div className="segmented" aria-label="Authentication mode">
-            <button className={mode === "sign-in" ? undefined : "secondary"} onClick={() => setMode("sign-in")}>Sign in</button>
-            <button className={mode === "sign-up" ? undefined : "secondary"} onClick={() => setMode("sign-up")}>Sign up</button>
-          </div>
-
-          {mode === "sign-up" ? (
-            <>
-              <label>Display name<input value={displayName} onChange={(event) => setDisplayName(event.target.value)} /></label>
-              <label>Starting role
-                <select value={defaultRole} onChange={(event) => setDefaultRole(event.target.value as "admin" | "coach" | "parent")}>
-                  <option value="coach">Coach</option>
-                  <option value="parent">Parent</option>
-                  <option value="admin">Admin</option>
-                </select>
-              </label>
-            </>
-          ) : null}
-
-          <label>Email<input type="email" value={email} onChange={(event) => setEmail(event.target.value)} /></label>
-          <label>Password<input type="password" value={password} onChange={(event) => setPassword(event.target.value)} /></label>
-          <button onClick={submitAuth} disabled={!authConfigStatus.ok || isPending || password.length < 6}>{isPending ? "Working..." : mode === "sign-up" ? "Create account" : "Sign in"}</button>
+          <label>Email<input autoComplete="email" type="email" value={email} onChange={(event) => setEmail(event.target.value)} /></label>
+          <label>Password<input autoComplete="current-password" type="password" value={password} onChange={(event) => setPassword(event.target.value)} /></label>
+          <button onClick={submitAuth} disabled={!authConfigStatus.ok || isPending || password.length < 6}>{isPending ? "Signing in..." : "Sign in"}</button>
 
           <div className="auth-provider-panel" aria-label="Social sign in providers">
             <p className="muted">Google and Facebook confirm identity only. Private team access still requires league approval.</p>
@@ -1069,10 +1136,10 @@ export function AuthClient() {
         </article>
 
         <article className="card stack">
-          <h2>How private access works</h2>
-          <p>Signing in confirms identity. An approved league role opens private team details.</p>
-          <p>Parents manage child access through guardian links. Children do not log in.</p>
-          <p>Admin and coach tools appear only after their role is approved.</p>
+          <h2>Need access to a team?</h2>
+          <p>Tell us which child and team you are connected to. A league administrator checks the match before private details appear.</p>
+          <a className="button secondary" href="/registration">Request Team Access</a>
+          <p className="muted">Children do not create accounts. Signing in confirms identity, but it never grants team access by itself.</p>
         </article>
       </section>
     </div>
@@ -2646,6 +2713,7 @@ export function ParentRsvpClient({ dashboardData }: { dashboardData?: ParentCoac
           : `Another guardian updated this RSVP${result?.currentResponse ? ` to ${result.currentResponse.replace("_", " ")}` : ""}. Review it before retrying.`);
       }
       if (!result?.ok) return;
+      markLeaguePilotValueExperienced("parent_rsvp_confirmed");
 
       const input = { eventId, playerId, parentUserId, response, now: new Date().toISOString() };
       const preview = setRsvp(displayState, input);
@@ -5469,20 +5537,25 @@ export function AdminThemesClient({ initialData }: { initialData: AdminThemeData
 
 interface RegistrationClientProps {
   registrationRequests?: RegistrationRequest[];
+  reviewWindow?: string;
   teamOptions?: RegistrationTeamOption[];
 }
 
-export function RegistrationClient({ registrationRequests, teamOptions }: RegistrationClientProps = {}) {
+export function RegistrationClient({
+  registrationRequests,
+  reviewWindow = "within two business days",
+  teamOptions
+}: RegistrationClientProps = {}) {
   const { state } = useAppState();
   const teams = teamOptions?.length
     ? teamOptions
     : state.teams.map((team) => ({ id: team.id, name: team.name, division: team.division }));
   const [submittedRegistrationRequests, setSubmittedRegistrationRequests] = useState(registrationRequests ?? []);
-  const [teamId, setTeamId] = useState(teams[0]?.id ?? "team-tigers");
-  const [parentName, setParentName] = useState("Casey Morgan");
-  const [parentEmail, setParentEmail] = useState("casey@example.com");
-  const [playerFirstName, setPlayerFirstName] = useState("Mia");
-  const [playerLastInitial, setPlayerLastInitial] = useState("M");
+  const [teamId, setTeamId] = useState("");
+  const [parentName, setParentName] = useState("");
+  const [parentEmail, setParentEmail] = useState("");
+  const [playerFirstName, setPlayerFirstName] = useState("");
+  const [playerLastInitial, setPlayerLastInitial] = useState("");
   const [message, setMessage] = useState("");
   const [isPending, startTransition] = useTransition();
 
@@ -5504,7 +5577,7 @@ export function RegistrationClient({ registrationRequests, teamOptions }: Regist
         if (result.request) {
           setSubmittedRegistrationRequests((current) => mergeRegistrationRequests([result.request!], current));
         }
-        setMessage(result.message ?? "Registration request saved for admin review. No account access was granted.");
+        setMessage(result.message ?? "Your request was received. A league administrator will review the match before private team details appear.");
         return;
       }
 
@@ -5515,27 +5588,34 @@ export function RegistrationClient({ registrationRequests, teamOptions }: Regist
   return (
     <div className="page">
       <section className="hero">
-        <span className="eyebrow">Registration system</span>
-        <h1>Parent self-registration request with admin review before access.</h1>
-        <p className="lead">This form creates a pending local registration request only. It does not create a login, invite token, or guardian-child access grant.</p>
+        <span className="eyebrow">Request Team Access</span>
+        <h1>Connect your family to the right team.</h1>
+        <p className="lead">Share only what the league needs to check your connection. Private team details stay hidden during review.</p>
       </section>
       {message ? <p className="notice">{message}</p> : null}
       <section className="grid two">
         <article className="card stack">
-          <label>Team<select value={teamId} onChange={(event) => setTeamId(event.target.value)}>{teams.map((team) => <option key={team.id} value={team.id}>{team.name} ({team.division})</option>)}</select></label>
-          <label>Parent name<input value={parentName} onChange={(event) => setParentName(event.target.value)} /></label>
-          <label>Parent email<input value={parentEmail} onChange={(event) => setParentEmail(event.target.value)} /></label>
-          <label>Player first name<input value={playerFirstName} onChange={(event) => setPlayerFirstName(event.target.value)} /></label>
-          <label>Player last initial<input value={playerLastInitial} onChange={(event) => setPlayerLastInitial(event.target.value)} maxLength={1} /></label>
-          <button onClick={submitRegistration} disabled={isPending}>{isPending ? "Saving..." : "Submit for review"}</button>
+          <label>Team<select value={teamId} onChange={(event) => setTeamId(event.target.value)}><option value="">Choose a team</option>{teams.map((team) => <option key={team.id} value={team.id}>{team.name} ({team.division})</option>)}</select></label>
+          <label>Your name<input autoComplete="name" value={parentName} onChange={(event) => setParentName(event.target.value)} /></label>
+          <label>Your email<input autoComplete="email" type="email" value={parentEmail} onChange={(event) => setParentEmail(event.target.value)} /></label>
+          <label>Child&apos;s first name<input autoComplete="off" value={playerFirstName} onChange={(event) => setPlayerFirstName(event.target.value)} /></label>
+          <label>Child&apos;s last initial<input autoComplete="off" value={playerLastInitial} onChange={(event) => setPlayerLastInitial(event.target.value)} maxLength={1} /></label>
+          <button onClick={submitRegistration} disabled={isPending}>{isPending ? "Sending request..." : "Request Team Access"}</button>
+          <p className="muted">This request does not open private team information. It gives the league enough detail to review the match.</p>
         </article>
-        <article className="card stack">
-          <h2>Your submitted request</h2>
-          <p className="muted">For privacy, the public signup page does not show the registration review queue. League admins review pending requests from the admin dashboard.</p>
+        <article className="card stack access-review-timeline">
+          <h2>What happens next</h2>
+          <ol>
+            <li><strong>We receive your request</strong><span>You will see a confirmation here. Keep the reference if you contact league support.</span></li>
+            <li><strong>The league checks the match</strong><span>An administrator compares your details with current registration or roster records. The usual review target is {reviewWindow}.</span></li>
+            <li><strong>You receive the next step</strong><span>The league sends an invitation, asks for more information, or explains how to resolve the request safely.</span></li>
+          </ol>
+          <p className="notice">Privacy promise: children do not create LeaguePilot accounts. Other families cannot see your request or its status.</p>
+          <h3>Your request receipt</h3>
           {submittedRegistrationRequests.map((request) => (
-            <p key={request.id}><strong>{request.playerFirstName} {request.playerLastInitial}.</strong><br /><span className="muted">{request.parentName} - {request.status}</span></p>
+            <p key={request.id}><strong>{request.playerFirstName} {request.playerLastInitial}.</strong><br /><span className="muted">{request.parentName} - {request.status}<br />Reference: {request.id}</span></p>
           ))}
-          {submittedRegistrationRequests.length === 0 ? <p className="muted">After submitting, only your just-created request appears here for confirmation.</p> : null}
+          {submittedRegistrationRequests.length === 0 ? <p className="muted">After you send the form, only your request receipt appears here. The private review queue stays hidden.</p> : null}
         </article>
       </section>
     </div>
@@ -6506,114 +6586,35 @@ export function ScheduleAlertsClient({
   }
 
   if (isReadonly) {
-    const upcomingEvents = scheduleState.events
-      .filter((item) => item.status === "scheduled")
-      .sort((left, right) => Date.parse(left.startsAt) - Date.parse(right.startsAt))
-      .slice(0, 8);
-
     return (
-      <div className="page">
+      <div className="page public-schedule-page">
         <section className="hero">
-          <span className="eyebrow">Public calendar</span>
-          <h1>View the league schedule without opening private team tools.</h1>
-          <p className="lead">Calendar details stay read-only here. RSVPs, team chat, media, and coach updates unlock only after the signed-in account has an active approved role.</p>
+          <span className="eyebrow">Public schedule</span>
+          <h1>Know when and where the league plays.</h1>
+          <p className="lead">See published event details without signing in. Private responses, conversations, and child information stay protected.</p>
         </section>
 
         <p className={`notice ${scheduleData?.isSupabaseBacked ? "ok" : "warning"}`}>
           {scheduleData?.isSupabaseBacked
-            ? "Calendar details are current."
-            : "Calendar preview is shown while the live schedule is unavailable."}
+            ? "Showing the current published schedule."
+            : "Live schedule data is temporarily unavailable. These example rows are clearly separated from official league updates."}
         </p>
         {message ? <p className="notice">{message}</p> : null}
 
-        <section className="grid two">
-          <ScheduleMonthCalendar
-            events={scheduleState.events}
-            onSelectEvent={selectEvent}
-            selectedEventId={event?.id ?? eventId}
-            teams={scheduleState.teams}
-          />
-          <article className="card stack">
-            <div className="card-header">
-              <div>
-                <span className="eyebrow">Selected event</span>
-                <h2>{event?.title ?? "Calendar event"}</h2>
-              </div>
-              <span className={`badge ${event?.status === "cancelled" ? "danger" : event?.status === "completed" ? "ok" : "warning"}`}>{event?.status ?? "pending"}</span>
-            </div>
-            <label>
-              Jump to event
-              <select value={eventId} onChange={(input) => selectEvent(input.target.value)}>
-                {scheduleState.events.map((item) => <option key={item.id} value={item.id}>{item.title}</option>)}
-              </select>
-            </label>
-            {event ? (
-              <>
-                <p><strong>{eventTeam?.name ?? "Team"}</strong> · {event.eventType.replace("_", " ")}</p>
-                <p>{formatDate(event.startsAt)} to {formatDate(event.endsAt)}</p>
-                <p className="muted">{event.locationName} · {event.locationAddress}</p>
-              </>
-            ) : <p className="muted">No event is available.</p>}
-          </article>
-        </section>
+        <PublicScheduleAgenda
+          event={event}
+          events={scheduleState.events}
+          onSelectEvent={selectEvent}
+          teams={scheduleState.teams}
+        />
 
-        <section className="grid two">
-          <article className="card stack">
-            <div className="card-header">
-              <div>
-                <span className="eyebrow">Upcoming</span>
-                <h2>Next events</h2>
-              </div>
-              <span className="badge">{upcomingEvents.length} event(s)</span>
-            </div>
-            {upcomingEvents.map((item) => {
-              const teamName = scheduleState.teams.find((teamItem) => teamItem.id === item.teamId)?.name ?? "Team";
-              return (
-                <p key={item.id}>
-                  <strong>{item.title}</strong><br />
-                  <span className="muted">{teamName} · {formatDate(item.startsAt)} · {item.locationName}</span>
-                </p>
-              );
-            })}
-            {!upcomingEvents.length ? <p className="muted">No scheduled events are available.</p> : null}
-          </article>
-
-          <article className="card stack">
-            <div className="card-header">
-              <div>
-                <span className="eyebrow">Locations</span>
-                <h2>Known fields</h2>
-              </div>
-              <span className="badge">{venueRecords.length + persistedVenueRecords.length} venue(s)</span>
-            </div>
-            {venueRecords.slice(0, 6).map((venue) => (
-              <p key={`${venue.name}-${venue.address}`}>
-                <strong>{venue.name}</strong><br />
-                <span className="muted">{venue.address} · {venue.eventCount} event(s)</span>
-              </p>
-            ))}
-            {persistedVenueRecords.slice(0, 6).map((venue) => (
-              <p key={venue.id}>
-                <strong>{venue.name}</strong><br />
-                <span className="muted">{venue.address} · {venue.status}</span>
-              </p>
-            ))}
-            {!venueRecords.length && !persistedVenueRecords.length ? <p className="muted">No venue records are available yet.</p> : null}
-          </article>
-        </section>
-
-        <section className="grid one">
-          <article className="card stack">
-            <div className="card-header">
-              <div>
-                <span className="eyebrow">Calendar file</span>
-                <h2>ICS preview</h2>
-              </div>
-              <span className="badge ok">{eventTeam?.name ?? "Team"}</span>
-            </div>
-            <pre>{calendarExport.split("\n").slice(0, 8).join("\n")}</pre>
-            <p className="muted">Calendar exports stay preview-only here. Authenticated team calendars use the private schedule export endpoint.</p>
-          </article>
+        <section className="public-schedule-trust" aria-label="Schedule privacy and access">
+          <div>
+            <h2>Need private team details?</h2>
+            <p>Request access so the league can verify your family connection. Public schedule browsing never exposes rosters, attendance, transportation, or family conversations.</p>
+          </div>
+          <a className="button" href="/registration">Request Team Access</a>
+          <a className="button secondary" href="/auth">Sign in</a>
         </section>
       </div>
     );

@@ -149,10 +149,14 @@ describe("AuthClient", () => {
       const html = renderToStaticMarkup(<AuthClient />);
 
       expect(html).toContain("Sign-in services are not connected in this environment");
-      expect(html).toContain("Sign in to your approved LeaguePilot role");
+      expect(html).toContain("Sign in to your LeaguePilot account");
       expect(html).toContain("Continue with Google");
       expect(html).toContain("Continue with Facebook");
       expect(html).toContain("Private team access still requires league approval");
+      expect(html).toContain("Request Team Access");
+      expect(html).not.toContain("Create account");
+      expect(html).not.toContain("Coach Taylor");
+      expect(html).not.toContain("coach.taylor@example.com");
       expect(html).not.toContain("Supabase");
       expect(html).not.toContain("NEXT_PUBLIC_");
     } finally {
@@ -552,17 +556,27 @@ describe("ScheduleAlertsClient", () => {
     expect(html).toContain("does not execute provider delivery");
   });
 
-  it("puts a real month calendar on the public read-only schedule", () => {
+  it("renders an agenda-first public schedule with provider calendar actions", () => {
     const html = renderToStaticMarkup(
       <AppStateProvider>
         <ScheduleAlertsClient mode="readonly" />
       </AppStateProvider>
     );
 
-    expect(html).toContain("Public calendar");
-    expect(html).toContain("April 2026");
+    expect(html).toContain("Public schedule");
+    expect(html).toContain("League events");
     expect(html).toContain("Tiny Tigers vs Rookie Rockets");
-    expect(html).toContain("Jump to event");
+    expect(html).toContain("Arrival");
+    expect(html).toContain("Not published");
+    expect(html).toContain("Opponent");
+    expect(html).toContain("Venue");
+    expect(html).toContain("Field");
+    expect(html).toContain("Apple Calendar");
+    expect(html).toContain("Google Calendar");
+    expect(html).toContain("Outlook");
+    expect(html).toContain("Download calendar");
+    expect(html).not.toContain("ICS preview");
+    expect(html).not.toContain("BEGIN:VCALENDAR");
   });
 
   it("renders schedule change impact preview before queueing alerts", () => {
@@ -817,20 +831,25 @@ describe("AdminThemesClient", () => {
 });
 
 describe("RegistrationClient", () => {
-  it("renders self-registration with admin review boundary", () => {
+  it("renders an empty access request with a family-readable review timeline", () => {
     const html = renderToStaticMarkup(
       <AppStateProvider>
         <RegistrationClient />
       </AppStateProvider>
     );
 
-    expect(html).toContain("Registration system");
-    expect(html).toContain("Submit for review");
-    expect(html).toContain("does not create a login");
-    expect(html).toContain("Your submitted request");
-    expect(html).toContain("does not show the registration review queue");
+    expect(html).toContain("Request Team Access");
+    expect(html).toContain("What happens next");
+    expect(html).toContain("The league checks the match");
+    expect(html).toContain("Privacy promise");
+    expect(html).toContain("Your request receipt");
+    expect(html).toContain("Choose a team");
     expect(html).not.toContain("Pending requests");
     expect(html).not.toContain("Demo Pending Parent");
+    expect(html).not.toContain("Casey Morgan");
+    expect(html).not.toContain("casey@example.com");
+    expect(html).not.toContain("invite token");
+    expect(html).not.toContain("access grant");
   });
 
   it("renders server-backed team options without falling back to seed ids", () => {

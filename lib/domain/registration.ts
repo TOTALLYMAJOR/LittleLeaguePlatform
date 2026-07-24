@@ -42,18 +42,18 @@ export function validateRegistrationRequestInput(
   const knownTeams = new Set(knownTeamIds);
 
   if (!knownTeams.has(normalized.teamId)) {
-    return { ok: false, message: "Registration requires a known team." };
+    return { ok: false, message: "Choose the team your child is connected to." };
   }
   if (!normalized.parentName || !normalized.playerFirstName || !normalized.playerLastInitial) {
-    return { ok: false, message: "Parent name, player first name, and player last initial are required." };
+    return { ok: false, message: "Enter your name, your child’s first name, and your child’s last initial." };
   }
   if (!normalized.parentEmail.includes("@")) {
-    return { ok: false, message: "Enter a valid parent email." };
+    return { ok: false, message: "Enter a valid email address." };
   }
 
   return {
     ok: true,
-    message: "Registration request queued for admin review. No account access was granted.",
+    message: "Your request is ready for league review. Private team details remain protected.",
     normalized
   };
 }
@@ -79,7 +79,7 @@ export function createRegistrationRequest(state: AppState, input: CreateRegistra
 
   return {
     ok: true,
-    message: "Registration request queued for admin review. No account access was granted.",
+    message: "Your request is ready for league review. Private team details remain protected.",
     request,
     state: {
       ...state,

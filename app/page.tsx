@@ -49,12 +49,12 @@ export default async function HomePage() {
         ? "/admin"
         : access.signedIn
           ? "/account"
-          : "/auth";
+          : "/registration";
   const primaryLabel = access.canParent || access.canCoach || access.canAdmin
     ? "Open my home"
     : access.signedIn
       ? "Check access"
-      : "Sign in";
+      : "Request Team Access";
 
   return (
     <div className="landing-page">
@@ -69,7 +69,7 @@ export default async function HomePage() {
           <p>Schedules, RSVPs, coach updates, and Parent Replay in one calm, role-aware home.</p>
           <div className="landing-actions">
             <Link className="button lg" href={primaryHref}>{primaryLabel}</Link>
-            {!access.signedIn ? <Link className="button secondary lg" href="/registration">Request access</Link> : null}
+            {!access.signedIn ? <Link className="button secondary lg" href="/auth">Sign in</Link> : null}
           </div>
         </div>
 
@@ -139,11 +139,19 @@ export default async function HomePage() {
           <span className="landing-kicker">Signature feature</span>
           <h2 id="replay-title">Parent Replay carries practice home.</h2>
           <p>Coaches turn today&apos;s focus into simple family activities without automatic publishing or sending.</p>
-          <Link className="button" href={access.canCoach ? "/coach/practice-recaps" : "/auth"}>
-            {access.canCoach ? "Build a replay" : "See how access works"}
+          <Link className="button" href={access.canCoach ? "/coach/practice-recaps" : "/registration"}>
+            {access.canCoach ? "Build a replay" : "Request Team Access"}
           </Link>
         </div>
         <div className="landing-replay-workflow">
+          <div className="landing-replay-example">
+            <span>Example Parent Replay</span>
+            <h3>Tiny Tigers practiced soft hands and brave first tries.</h3>
+            <p>Today the team learned to watch the ball into the glove, reset after a miss, and cheer for the next attempt.</p>
+            <strong>Try it together</strong>
+            <p>Use a rolled-up pair of socks for five gentle tosses. Ask which catch felt easiest and celebrate the answer.</p>
+            <small>Coach approved example. No child photos, private notes, or automatic posting.</small>
+          </div>
           {replaySteps.map(([title, body], index) => (
             <article key={title}>
               <span>{index + 1}</span>
@@ -207,7 +215,7 @@ export default async function HomePage() {
 
       <footer className="landing-footer">
         <strong>LeaguePilot</strong>
-        <span>Little League HQ is the demo organization shown in sample data.</span>
+        <span>Private by default. Children do not create accounts.</span>
       </footer>
     </div>
   );

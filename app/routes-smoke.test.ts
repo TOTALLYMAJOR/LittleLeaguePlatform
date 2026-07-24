@@ -68,11 +68,15 @@ describe("route smoke coverage", () => {
     expect(page).toContain("Private by default");
     expect(page).toContain("Start with the right door.");
     expect(page).toContain("Sign in");
+    expect(page).toContain("Request Team Access");
     expect(page).toContain("/auth");
     expect(page).toContain("landing-soccer-ambient");
     expect(page).toContain("/images/leaguepilot-game-day-parent.png");
     expect(page).toContain("External messages are not connected or sent from this preview.");
-    expect(page).toContain("Little League HQ is the demo organization");
+    expect(page).toContain("Example Parent Replay");
+    expect(page).toContain("Try it together");
+    expect(page).toContain("Children do not create accounts");
+    expect(page).not.toContain("Little League HQ is the demo organization");
     expect(page).toContain("/coach/practice-recaps");
     expect(page).not.toContain("/prototype/index.html");
     expect(page).not.toContain("Supabase");
@@ -107,6 +111,8 @@ describe("route smoke coverage", () => {
 
   it("keeps PWA install and standalone usage measurement wired", () => {
     const provider = readFileSync(join(process.cwd(), "app", "providers.tsx"), "utf8");
+    const featurePanels = readFileSync(join(process.cwd(), "components", "feature-panels.tsx"), "utf8");
+    const communicationRoom = readFileSync(join(process.cwd(), "components", "communication-room.tsx"), "utf8");
     const layout = readFileSync(join(process.cwd(), "app", "layout.tsx"), "utf8");
     const css = readFileSync(join(process.cwd(), "app", "globals.css"), "utf8");
     const manifest = readFileSync(join(process.cwd(), "public", "manifest.webmanifest"), "utf8");
@@ -117,6 +123,12 @@ describe("route smoke coverage", () => {
     expect(provider).toContain("little-league-hq-shell-");
     expect(provider).toContain("caches.delete");
     expect(provider).toContain("install_prompt_shown");
+    expect(provider).toContain("leaguepilot:value-experienced");
+    expect(provider).toContain("hasExperiencedValue");
+    expect(provider).toContain("valueGate: true");
+    expect(featurePanels).toContain("parent_rsvp_confirmed");
+    expect(communicationRoom).toContain("critical_message_acknowledged");
+    expect(featurePanels).not.toContain("markLeaguePilotValueExperienced(\"public_schedule_event_opened\")");
     expect(provider).toContain("standalone_launch");
     expect(layout).toContain("AppShell");
     expect(layout).toContain("criticalShellCss");

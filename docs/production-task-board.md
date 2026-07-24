@@ -47,12 +47,12 @@ Task-specific checks are required only when the surface is touched:
 - Priority: P0 public trust, family access, and five-second logistics clarity.
 - Governing contract: `docs/family-experience-blueprint.md` and the approved Figma frames linked from that document.
 - Commit policy: implement, validate, and commit one coherent slice at a time. If an external provider, hosted environment, production promotion, or missing product authority blocks a slice, record the exact blocker and continue to the next safe slice.
-- Current completed slice: Communication Room local implementation, responsive proof, isolated Supabase QA record proof, privileged RPC hardening, and provider-suppressed acknowledgment evidence.
-- Current next slice: Phase 0 public trust corrections.
+- Current completed slices: Communication Room local implementation, responsive proof, isolated Supabase QA record proof, privileged RPC hardening, provider-suppressed acknowledgment evidence, and Phase 0 public trust corrections with responsive browser proof.
+- Current next slice: Phase 1 access and activation.
 
 | Family phase | Current status | Remaining outcome |
 | --- | --- | --- |
-| Phase 0 - Public trust corrections | Approved design/spec; implementation queued | Access-first public CTA and copy, empty production forms, agenda-first schedule, calendar-provider actions, value-gated install prompt, tangible Parent Replay preview, responsive/accessibility proof. |
+| Phase 0 - Public trust corrections | Local implementation and 320/390/768/1440 browser proof complete; hosted proof pending | Configure `PUBLIC_ORGANIZATION_ID` and `PUBLIC_ACCESS_REVIEW_WINDOW` in the target environment, deploy, and repeat `npm run qa:public-family-proof` against the hosted URL. Public routes now use access-first CTAs, empty production forms, an agenda-first schedule, provider calendar actions, signed-in-value-gated installation, and a tangible privacy-safe Parent Replay preview. |
 | Phase 1 - Access and activation | Existing registration/admin foundations; journey completion queued | Request receipt and timeline, verification status, invitation lifecycle, first-sign-in language/notification setup, additional guardian invitation. |
 | Phase 2 - Family Mission Control | Local dashboard, RSVP, schedule, Family Flight Plan, and Communication Room foundations | Five-second Event Passport, coherent multi-child conflict handling, offline/reconnect truth, production-hosted proof. |
 | Phase 3 - Responsibility and temporary care | Caregiver handoff coordination record exists; authority workflow queued | Transportation offer and dual acceptance, outbound/return responsibility, time-bound caregiver access, restriction-aware expiry and revocation. |

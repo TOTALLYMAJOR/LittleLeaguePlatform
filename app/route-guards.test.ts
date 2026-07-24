@@ -7,6 +7,26 @@ function source(path: string) {
 }
 
 describe("role route guards and compatibility wrappers", () => {
+  it("keeps the public schedule on an organization-scoped active-team loader", () => {
+    const page = source("app/schedule/page.tsx");
+    const service = source("lib/supabase/schedule-management.ts");
+
+    expect(page).toContain("listPublicScheduleOperationsData");
+    expect(page).not.toContain("listScheduleOperationsData");
+    expect(service).toContain("PUBLIC_ORGANIZATION_ID");
+    expect(service).toContain('.eq("organization_id", organization.id)');
+    expect(service).toContain("filter(isCurrentTeamRow)");
+    expect(service).toContain('.in("team_id", currentTeamIds)');
+  });
+
+  it("keeps public team-access choices in the same canonical organization", () => {
+    const service = source("lib/supabase/registrations.ts");
+
+    expect(service).toContain("PUBLIC_ORGANIZATION_ID");
+    expect(service).toContain('.eq("organization_id", organizationId)');
+    expect(service).toContain("selectCurrentTeamsOrAll");
+  });
+
   it("uses one shared active-admin guard before admin data loaders", () => {
     const surfaces = source("app/admin/_surfaces.tsx");
 

@@ -68,11 +68,11 @@ function normalizeRegistrationInput(input: PublicRegistrationInput) {
 }
 
 function validateRegistrationInput(input: ReturnType<typeof normalizeRegistrationInput>) {
-  if (!input.teamId) return "Registration requires a team.";
+  if (!input.teamId) return "Choose the team your child is connected to.";
   if (!input.parentName || !input.playerFirstName || !input.playerLastInitial) {
-    return "Parent name, player first name, and player last initial are required.";
+    return "Enter your name, your child’s first name, and your child’s last initial.";
   }
-  if (!input.parentEmail.includes("@")) return "Enter a valid parent email.";
+  if (!input.parentEmail.includes("@")) return "Enter a valid email address.";
   return null;
 }
 
@@ -104,9 +104,23 @@ function fallbackTeamOptions(): RegistrationTeamOption[] {
 export async function listRegistrationTeamOptions(): Promise<RegistrationTeamOption[]> {
   try {
     const supabase = createSupabaseAdminClient() as unknown as UnsafeSupabase;
+    const configuredOrganizationId = (
+      process.env.PUBLIC_ORGANIZATION_ID
+      ?? process.env.PUBLIC_SCHEDULE_ORGANIZATION_ID
+    )?.trim();
+    let organizationQuery = supabase.from("organizations").select("id,created_at");
+    organizationQuery = configuredOrganizationId
+      ? organizationQuery.eq("id", configuredOrganizationId)
+      : organizationQuery.order("created_at", { ascending: true });
+    const { data: organizations } = await withSupabaseTimeout(organizationQuery.limit(1)) as {
+      data: Array<{ id: string; created_at: string }> | null;
+    };
+    const organizationId = organizations?.[0]?.id;
+    if (!organizationId) return fallbackTeamOptions();
     const { data, error } = await withSupabaseTimeout(supabase
       .from("teams")
       .select("id,name,division,status,seasons(status)")
+      .eq("organization_id", organizationId)
       .order("division", { ascending: true })
       .order("name", { ascending: true })) as { data: RegistrationTeamRow[] | null; error: unknown };
 
@@ -150,10 +164,10 @@ export async function createPendingRegistration(input: PublicRegistrationInput):
       .single(), 7000) as { data: RegistrationTeamAccessRow | null; error: unknown };
 
     if (teamError || !team) {
-      return { ok: false, message: "Registration requires a known team." };
+      return { ok: false, message: "We could not find that team. Choose another team or contact the league." };
     }
     if (!isCurrentTeamRow(team)) {
-      return { ok: false, message: "Registration is open for active teams only." };
+      return { ok: false, message: "That team is not accepting access requests right now. Contact the league for help." };
     }
 
     const { data, error } = await withSupabaseTimeout(supabase
@@ -172,16 +186,16 @@ export async function createPendingRegistration(input: PublicRegistrationInput):
       .single(), 7000) as { data: RegistrationRequestRow | null; error: unknown };
 
     if (error || !data) {
-      return { ok: false, message: "Registration could not be saved. Please try again." };
+      return { ok: false, message: "We could not send your request right now. Your entries are still here so you can try again." };
     }
 
     return {
       ok: true,
-      message: "Registration request saved for admin review. No account access was granted.",
+      message: "Your request was received. A league administrator will review the match before private team details appear.",
       request: mapRegistrationRow(data)
     };
   } catch {
-    return { ok: false, message: "Registration could not reach the server. Please try again." };
+    return { ok: false, message: "We could not send your request right now. Check your connection and try again." };
   }
 }
 

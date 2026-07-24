@@ -1,6 +1,7 @@
 import { seedState, type EventStatus, type EventType, type LeagueEvent, type Team } from "@/lib/domain";
 import { requireActiveTeamCoachOrOrgAdmin } from "./access-control";
 import { createSupabaseAdminClient } from "./admin";
+import { isCurrentTeamRow, type TeamLifecycleRow } from "./team-lifecycle";
 import { withSupabaseTimeout } from "./timeout";
 
 type UnsafeSupabase = {
@@ -155,6 +156,108 @@ export async function listScheduleOperationsData(): Promise<ScheduleOperationsDa
       isSupabaseBacked: true,
       message: "Showing Supabase schedule, venue, and calendar records.",
       teams: teams.map((team) => ({
+        id: team.id,
+        organizationId: team.organization_id,
+        seasonId: team.season_id,
+        division: team.division,
+        name: team.name,
+        coachUserId: team.coach_user_id ?? undefined,
+        mascot: team.mascot,
+        primaryColor: team.primary_color,
+        secondaryColor: team.secondary_color,
+        themeKey: team.theme_key
+      })),
+      events: (events ?? []).map(mapEvent),
+      fieldLocations: (fieldLocations ?? []).map((field) => ({
+        id: field.id,
+        organizationId: field.organization_id,
+        name: field.name,
+        address: field.address,
+        mapUrl: field.map_url ?? undefined,
+        mapEmbedUrl: field.map_embed_url ?? undefined,
+        status: field.status
+      }))
+    };
+  } catch {
+    return fallbackScheduleOperationsData();
+  }
+}
+
+export async function listPublicScheduleOperationsData(): Promise<ScheduleOperationsData> {
+  try {
+    const db = adminDb();
+    const configuredOrganizationId = (
+      process.env.PUBLIC_ORGANIZATION_ID
+      ?? process.env.PUBLIC_SCHEDULE_ORGANIZATION_ID
+    )?.trim();
+    let organizationQuery = db.from("organizations").select("id,name,created_at");
+    organizationQuery = configuredOrganizationId
+      ? organizationQuery.eq("id", configuredOrganizationId)
+      : organizationQuery.order("created_at", { ascending: true });
+    const { data: organizations } = await withSupabaseTimeout(organizationQuery.limit(1), 7000) as {
+      data: Array<{ id: string; name: string; created_at: string }> | null;
+    };
+    const organization = organizations?.[0];
+    if (!organization) return fallbackScheduleOperationsData();
+
+    const [{ data: teamRows }, { data: fieldLocations }] = await withSupabaseTimeout(Promise.all([
+      db
+        .from("teams")
+        .select("id,organization_id,season_id,division,name,coach_user_id,mascot,primary_color,secondary_color,theme_key,status,seasons(status)")
+        .eq("organization_id", organization.id)
+        .order("division", { ascending: true })
+        .order("name", { ascending: true }),
+      db
+        .from("field_locations")
+        .select("id,organization_id,name,address,map_url,map_embed_url,status")
+        .eq("organization_id", organization.id)
+        .eq("status", "active")
+        .order("name", { ascending: true })
+    ]), 7000) as [
+      {
+        data: Array<{
+          id: string;
+          organization_id: string;
+          season_id: string;
+          division: string;
+          name: string;
+          coach_user_id: string | null;
+          mascot: string;
+          primary_color: string;
+          secondary_color: string;
+          theme_key: Team["themeKey"];
+          status: "active" | "archived";
+          seasons: TeamLifecycleRow["seasons"];
+        }> | null;
+      },
+      {
+        data: Array<{
+          id: string;
+          organization_id: string;
+          name: string;
+          address: string;
+          map_url: string | null;
+          map_embed_url: string | null;
+          status: "active" | "inactive";
+        }> | null;
+      }
+    ];
+    const currentTeams = (teamRows ?? []).filter(isCurrentTeamRow);
+    const currentTeamIds = currentTeams.map((team) => team.id);
+    const { data: events } = currentTeamIds.length
+      ? await withSupabaseTimeout(db
+        .from("events")
+        .select("id,organization_id,team_id,season_id,title,event_type,starts_at,ends_at,location_name,location_address,opponent,status,created_at,updated_at")
+        .eq("organization_id", organization.id)
+        .in("team_id", currentTeamIds)
+        .order("starts_at", { ascending: true }), 7000) as { data: Array<Parameters<typeof mapEvent>[0]> | null }
+      : { data: [] as Array<Parameters<typeof mapEvent>[0]> };
+
+    return {
+      organizationId: organization.id,
+      isSupabaseBacked: true,
+      message: "Showing the current public schedule for one league organization.",
+      teams: currentTeams.map((team) => ({
         id: team.id,
         organizationId: team.organization_id,
         seasonId: team.season_id,

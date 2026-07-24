@@ -1577,7 +1577,7 @@ describe("registration system", () => {
     expect(result.ok).toBe(true);
     expect(result.normalized?.parentEmail).toBe("taylor@example.com");
     expect(result.normalized?.playerLastInitial).toBe("P");
-    expect(result.message).toContain("No account access was granted");
+    expect(result.message).toContain("Private team details remain protected");
   });
 
   it("queues parent registration requests for admin review without granting access", () => {
@@ -1593,7 +1593,7 @@ describe("registration system", () => {
     expect(result.ok).toBe(true);
     expect(result.request?.status).toBe("pending");
     expect(result.state.registrationRequests).toHaveLength(seedState.registrationRequests.length + 1);
-    expect(result.message).toContain("No account access was granted");
+    expect(result.message).toContain("Private team details remain protected");
   });
 
   it("rejects invalid registration emails", () => {
@@ -1607,6 +1607,6 @@ describe("registration system", () => {
     });
 
     expect(result.ok).toBe(false);
-    expect(result.message).toContain("valid parent email");
+    expect(result.message).toContain("valid email address");
   });
 });

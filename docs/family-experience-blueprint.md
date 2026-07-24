@@ -73,6 +73,19 @@ Combined UX and screenshot-based accessibility audit of the signed-out home, pub
 
 Screenshots and DOM snapshots can reveal hierarchy, reflow, labels, clipping, and likely target-size or contrast risks. They cannot prove keyboard order, screen-reader output, zoom at 200-400%, high-contrast behavior, live-region announcements, cognitive comprehension, provider email accessibility, or full WCAG conformance. Those require implementation-level and assistive-technology testing.
 
+### Phase 0 implementation evidence, 2026-07-24
+
+The local production scaffold now corrects the audited public surfaces without changing official schedules, guardian authority, attendance, transportation, or provider-send truth:
+
+- `Request Team Access` is primary and Sign In remains secondary.
+- Public schedule uses an agenda plus event-detail layout and provider-specific calendar actions. Unpublished arrival guidance remains visibly unresolved rather than inferred.
+- Registration and sign-in fields start empty. Family copy explains the league review sequence, configured timing, privacy protection, and next step.
+- Public schedule and team choices are scoped to one canonical organization and exclude archived teams.
+- Installation remains ineligible after public browsing and becomes eligible only after a signed-in RSVP confirmation or critical-message acknowledgment.
+- Parent Replay includes a concrete at-home activity and explicit coach-approval and child-privacy boundaries.
+
+`npm run qa:public-family-proof` preserves screenshots and a machine-readable report under `output/playwright/public-family-phase0/`. The local matrix passes at 320, 390, 768, and 1440 pixels with no document overflow, no visible family implementation copy, no prefilled identity, no cross-organization or archived-team option, and no tested interactive control below 44 pixels. This is local browser evidence, not hosted deployment, moderated family comprehension, screen-reader, forced-colors, or production-provider proof.
+
 ## 3. Experience architecture: the six-stage family cycle
 
 | Stage | Family goal | Primary surfaces | Exit condition |
@@ -1089,4 +1102,4 @@ The design is accepted only when all of the following are demonstrated:
 
 ## 20. Immediate prioritized action
 
-Implement Phase 0 as one coherent public-trust slice, beginning with the agenda-first public schedule and access-first CTA/copy. These corrections remove the clearest acquisition, privacy, and mobile usability failures before deeper family coordination work begins.
+Proceed to Phase 1 as one coherent access-and-activation slice: preserve the new request receipt, add visible verification status and invitation lifecycle, then complete first-sign-in language/notification setup and the additional-guardian invitation boundary. Hosted Phase 0 proof remains a separate deployment gate.

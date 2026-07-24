@@ -6,6 +6,7 @@ import type { ParentCoachDashboardData } from "@/lib/supabase/dashboard-data";
 import type { NotificationReceipt } from "@/lib/supabase/notification-receipts";
 import type { TeamChatData } from "@/lib/supabase/team-chat";
 import { createSupabaseBrowserClient } from "@/lib/supabase/browser";
+import { markLeaguePilotValueExperienced } from "@/app/providers";
 
 type CommunicationLane = "critical" | "updates" | "conversation";
 
@@ -272,6 +273,7 @@ export function CommunicationRoom({
             evidence: { ...item.evidence, acknowledgedAt }
           } : item));
           setStatusMessage("Receipt confirmed. This does not record attendance, agreement, or completion.");
+          markLeaguePilotValueExperienced("critical_message_acknowledged");
         } else {
           setStatusMessage(result?.message ?? "We could not confirm your receipt. Please try again.");
         }
