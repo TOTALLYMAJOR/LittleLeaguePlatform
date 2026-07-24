@@ -1,7 +1,7 @@
 import { seedState, type EventStatus, type EventType, type LeagueEvent, type Team } from "@/lib/domain";
 import { requireActiveTeamCoachOrOrgAdmin } from "./access-control";
 import { createSupabaseAdminClient } from "./admin";
-import { isCurrentTeamRow, type TeamLifecycleRow } from "./team-lifecycle";
+import { getTeamSeasonStatus, isCurrentTeamRow, type TeamLifecycleRow } from "./team-lifecycle";
 import { withSupabaseTimeout } from "./timeout";
 
 type UnsafeSupabase = {
@@ -74,6 +74,7 @@ function mapEvent(row: {
   location_address: string | null;
   opponent: string | null;
   status: EventStatus;
+  schedule_version?: number | null;
   created_at: string;
   updated_at: string;
 }): LeagueEvent {
@@ -90,6 +91,7 @@ function mapEvent(row: {
     locationAddress: row.location_address ?? "",
     opponent: row.opponent ?? undefined,
     status: row.status,
+    scheduleVersion: row.schedule_version ?? 1,
     createdAt: row.created_at,
     updatedAt: row.updated_at
   };
@@ -138,12 +140,12 @@ export async function listScheduleOperationsData(): Promise<ScheduleOperationsDa
       { data: fieldLocations }
     ] = await withSupabaseTimeout(Promise.all([
       db.from("organizations").select("id,name").limit(1),
-      db.from("teams").select("id,organization_id,season_id,division,name,coach_user_id,mascot,primary_color,secondary_color,theme_key").order("division", { ascending: true }).order("name", { ascending: true }),
-      db.from("events").select("id,organization_id,team_id,season_id,title,event_type,starts_at,ends_at,location_name,location_address,opponent,status,created_at,updated_at").order("starts_at", { ascending: true }),
+      db.from("teams").select("id,organization_id,season_id,division,name,coach_user_id,mascot,primary_color,secondary_color,theme_key,status,seasons(status)").order("division", { ascending: true }).order("name", { ascending: true }),
+      db.from("events").select("*").order("starts_at", { ascending: true }),
       db.from("field_locations").select("id,organization_id,name,address,map_url,map_embed_url,status").order("name", { ascending: true })
     ]), 7000) as [
       { data: Array<{ id: string; name: string }> | null },
-      { data: Array<{ id: string; organization_id: string; season_id: string; division: string; name: string; coach_user_id: string | null; mascot: string; primary_color: string; secondary_color: string; theme_key: Team["themeKey"] }> | null },
+      { data: Array<{ id: string; organization_id: string; season_id: string; division: string; name: string; coach_user_id: string | null; mascot: string; primary_color: string; secondary_color: string; theme_key: Team["themeKey"]; status: "active" | "archived"; seasons: TeamLifecycleRow["seasons"] }> | null },
       { data: Array<Parameters<typeof mapEvent>[0]> | null },
       { data: Array<{ id: string; organization_id: string; name: string; address: string; map_url: string | null; map_embed_url: string | null; status: "active" | "inactive" }> | null }
     ];
@@ -165,7 +167,9 @@ export async function listScheduleOperationsData(): Promise<ScheduleOperationsDa
         mascot: team.mascot,
         primaryColor: team.primary_color,
         secondaryColor: team.secondary_color,
-        themeKey: team.theme_key
+        themeKey: team.theme_key,
+        status: team.status,
+        seasonStatus: getTeamSeasonStatus(team)
       })),
       events: (events ?? []).map(mapEvent),
       fieldLocations: (fieldLocations ?? []).map((field) => ({
@@ -247,7 +251,7 @@ export async function listPublicScheduleOperationsData(): Promise<ScheduleOperat
     const { data: events } = currentTeamIds.length
       ? await withSupabaseTimeout(db
         .from("events")
-        .select("id,organization_id,team_id,season_id,title,event_type,starts_at,ends_at,location_name,location_address,opponent,status,created_at,updated_at")
+        .select("*")
         .eq("organization_id", organization.id)
         .in("team_id", currentTeamIds)
         .order("starts_at", { ascending: true }), 7000) as { data: Array<Parameters<typeof mapEvent>[0]> | null }
@@ -267,7 +271,9 @@ export async function listPublicScheduleOperationsData(): Promise<ScheduleOperat
         mascot: team.mascot,
         primaryColor: team.primary_color,
         secondaryColor: team.secondary_color,
-        themeKey: team.theme_key
+        themeKey: team.theme_key,
+        status: team.status,
+        seasonStatus: getTeamSeasonStatus(team)
       })),
       events: (events ?? []).map(mapEvent),
       fieldLocations: (fieldLocations ?? []).map((field) => ({

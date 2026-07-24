@@ -336,6 +336,8 @@ export interface Team {
   primaryColor: string;
   secondaryColor: string;
   themeKey: ProgramThemeKey;
+  status?: "active" | "archived";
+  seasonStatus?: "active" | "archived";
 }
 
 export interface TeamMembership {

@@ -22,6 +22,35 @@ export interface NotificationDeliveryEvidence {
   errorMessage?: string;
 }
 
+export interface OfficialCommunicationHistoryEntry {
+  versionId: string;
+  versionNumber: number;
+  action: "published" | "corrected" | "withdrawn";
+  title: string;
+  body: string;
+  reason: string;
+  approvedByName?: string;
+  publishedAt: string;
+}
+
+export interface OfficialCommunicationRevision {
+  threadId: string;
+  versionId: string;
+  versionNumber: number;
+  action: "published" | "corrected" | "withdrawn";
+  priority: "routine" | "action_required" | "disruption" | "critical";
+  reason: string;
+  approvedByUserId: string;
+  approvedByName?: string;
+  publishedAt: string;
+  eventScheduleVersion: number;
+  threadState: "published" | "withdrawn";
+  requiredProjectionCount: number;
+  readyProjectionCount: number;
+  partialPropagation: boolean;
+  history: OfficialCommunicationHistoryEntry[];
+}
+
 export interface NotificationReceipt {
   notificationId: string;
   organizationId: string;
@@ -40,6 +69,7 @@ export interface NotificationReceipt {
   sentAt?: string;
   notificationReadAt?: string;
   evidence: NotificationDeliveryEvidence;
+  officialRevision?: OfficialCommunicationRevision;
 }
 
 type NotificationAttemptRow = {
@@ -72,6 +102,32 @@ type NotificationRow = {
   sent_at: string | null;
   read_at: string | null;
   notification_delivery_attempts: NotificationAttemptRow[] | null;
+};
+
+type OfficialVersionRow = {
+  id: string;
+  thread_id: string;
+  version_number: number;
+  action: OfficialCommunicationRevision["action"];
+  priority: OfficialCommunicationRevision["priority"];
+  title: string;
+  body: string;
+  reason: string;
+  approved_by_user_id: string;
+  published_at: string;
+  event_schedule_version: number;
+};
+
+type OfficialThreadRow = {
+  id: string;
+  state: OfficialCommunicationRevision["threadState"];
+  current_version_id: string;
+};
+
+type OfficialProjectionRow = {
+  version_id: string;
+  required: boolean;
+  status: "ready" | "pending" | "failed" | "withdrawn";
 };
 
 function latestAttempt(attempts: NotificationAttemptRow[] | null | undefined) {
@@ -116,6 +172,116 @@ function dbClient() {
   return createSupabaseAdminClient() as unknown as UnsafeSupabase;
 }
 
+async function enrichOfficialCommunicationReceipts(
+  db: UnsafeSupabase,
+  receipts: NotificationReceipt[]
+): Promise<NotificationReceipt[]> {
+  if (!receipts.length) return receipts;
+  try {
+    const notificationIds = receipts.map((receipt) => receipt.notificationId);
+    const { data: links, error: linksError } = await withSupabaseTimeout(db
+      .from("official_communication_notification_links")
+      .select("notification_id,version_id")
+      .in("notification_id", notificationIds), 7000) as {
+        data: Array<{ notification_id: string; version_id: string }> | null;
+        error?: { message?: string } | null;
+      };
+    if (linksError || !links?.length) return receipts;
+    const versionIds = [...new Set(links.map((link) => link.version_id))];
+    const { data: linkedVersions, error: versionError } = await withSupabaseTimeout(db
+      .from("official_communication_versions")
+      .select("id,thread_id,version_number,action,priority,title,body,reason,approved_by_user_id,published_at,event_schedule_version")
+      .in("id", versionIds), 7000) as { data: OfficialVersionRow[] | null; error?: { message?: string } | null };
+    if (versionError || !linkedVersions?.length) return receipts;
+    const threadIds = [...new Set(linkedVersions.map((version) => version.thread_id))];
+    const [{ data: threads, error: threadError }, { data: history, error: historyError }] = await withSupabaseTimeout(Promise.all([
+      db.from("official_communication_threads")
+        .select("id,state,current_version_id")
+        .in("id", threadIds),
+      db.from("official_communication_versions")
+        .select("id,thread_id,version_number,action,priority,title,body,reason,approved_by_user_id,published_at,event_schedule_version")
+        .in("thread_id", threadIds)
+        .order("version_number", { ascending: false })
+    ]), 7000) as [
+      { data: OfficialThreadRow[] | null; error?: { message?: string } | null },
+      { data: OfficialVersionRow[] | null; error?: { message?: string } | null }
+    ];
+    if (threadError || historyError) return receipts;
+    const currentVersions = (history ?? []).filter((version) => (
+      threads?.some((thread) => thread.id === version.thread_id && thread.current_version_id === version.id)
+    ));
+    const currentVersionIds = currentVersions.map((version) => version.id);
+    const approverIds = [...new Set((history ?? []).map((version) => version.approved_by_user_id))];
+    const [{ data: projections }, { data: approvers }] = await withSupabaseTimeout(Promise.all([
+      currentVersionIds.length
+        ? db.from("official_communication_projections")
+          .select("version_id,required,status")
+          .in("version_id", currentVersionIds)
+        : Promise.resolve({ data: [] }),
+      approverIds.length
+        ? db.from("profiles").select("id,display_name").in("id", approverIds)
+        : Promise.resolve({ data: [] })
+    ]), 7000) as [
+      { data: OfficialProjectionRow[] | null; error?: { message?: string } | null },
+      { data: Array<{ id: string; display_name: string }> | null; error?: { message?: string } | null }
+    ];
+    const linkByNotificationId = new Map(links.map((link) => [link.notification_id, link.version_id]));
+    const versionById = new Map((history ?? []).map((version) => [version.id, version]));
+    const threadById = new Map((threads ?? []).map((thread) => [thread.id, thread]));
+    const approverById = new Map((approvers ?? []).map((profile) => [profile.id, profile.display_name]));
+
+    return receipts.flatMap((receipt): NotificationReceipt[] => {
+      const linkedVersionId = linkByNotificationId.get(receipt.notificationId);
+      if (!linkedVersionId) return [receipt];
+      const linkedVersion = versionById.get(linkedVersionId);
+      const thread = linkedVersion ? threadById.get(linkedVersion.thread_id) : undefined;
+      if (!linkedVersion || !thread) return [];
+      if (thread.current_version_id !== linkedVersion.id) return [];
+      const requiredProjections = (projections ?? []).filter((projection) => (
+        projection.version_id === linkedVersion.id && projection.required
+      ));
+      const readyProjectionCount = requiredProjections.filter((projection) => projection.status === "ready").length;
+      const versionHistory = (history ?? [])
+        .filter((version) => version.thread_id === linkedVersion.thread_id)
+        .map((version): OfficialCommunicationHistoryEntry => ({
+          versionId: version.id,
+          versionNumber: version.version_number,
+          action: version.action,
+          title: version.title,
+          body: version.body,
+          reason: version.reason,
+          approvedByName: approverById.get(version.approved_by_user_id),
+          publishedAt: version.published_at
+        }));
+      return [{
+        ...receipt,
+        title: linkedVersion.title,
+        body: linkedVersion.body,
+        officialRevision: {
+          threadId: linkedVersion.thread_id,
+          versionId: linkedVersion.id,
+          versionNumber: linkedVersion.version_number,
+          action: linkedVersion.action,
+          priority: linkedVersion.priority,
+          reason: linkedVersion.reason,
+          approvedByUserId: linkedVersion.approved_by_user_id,
+          approvedByName: approverById.get(linkedVersion.approved_by_user_id),
+          publishedAt: linkedVersion.published_at,
+          eventScheduleVersion: linkedVersion.event_schedule_version,
+          threadState: thread.state,
+          requiredProjectionCount: requiredProjections.length,
+          readyProjectionCount,
+          partialPropagation: requiredProjections.some((projection) => projection.status !== "ready"),
+          history: versionHistory
+        }
+      }];
+    });
+  } catch {
+    // Migration 0030 is intentionally optional until ordered promotion.
+    return receipts;
+  }
+}
+
 const receiptSelect = [
   "id",
   "organization_id",
@@ -148,7 +314,8 @@ export async function listParentNotificationReceipts(input: {
   }
 
   try {
-    const { data, error } = await withSupabaseTimeout(dbClient()
+    const db = dbClient();
+    const { data, error } = await withSupabaseTimeout(db
       .from("notifications")
       .select(receiptSelect)
       .eq("recipient_user_id", input.parentUserId)
@@ -180,13 +347,14 @@ export async function listParentNotificationReceipts(input: {
       : { data: [], error: null };
     const approverNames = new Map((approvers.data ?? []).map((profile) => [profile.id, profile.display_name]));
 
+    const receipts = (data ?? []).map((row) => mapNotificationReceipt(
+      row,
+      row.approved_by_user_id ? approverNames.get(row.approved_by_user_id) : undefined
+    ));
     return {
       ok: true,
       message: "Notification receipts loaded for the signed-in recipient.",
-      receipts: (data ?? []).map((row) => mapNotificationReceipt(
-        row,
-        row.approved_by_user_id ? approverNames.get(row.approved_by_user_id) : undefined
-      ))
+      receipts: await enrichOfficialCommunicationReceipts(db, receipts)
     };
   } catch {
     return {
@@ -211,7 +379,8 @@ export async function listOrganizationNotificationReceipts(input: {
   }
 
   try {
-    const { data, error } = await withSupabaseTimeout(dbClient()
+    const db = dbClient();
+    const { data, error } = await withSupabaseTimeout(db
       .from("notifications")
       .select(receiptSelect)
       .in("organization_id", organizationIds)
@@ -232,7 +401,10 @@ export async function listOrganizationNotificationReceipts(input: {
     return {
       ok: true,
       message: "Organization delivery evidence loaded without collapsing approval, acceptance, delivery, read, or acknowledgment.",
-      receipts: (data ?? []).map((row) => mapNotificationReceipt(row))
+      receipts: await enrichOfficialCommunicationReceipts(
+        db,
+        (data ?? []).map((row) => mapNotificationReceipt(row))
+      )
     };
   } catch {
     return {

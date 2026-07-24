@@ -130,4 +130,68 @@ describe("CommunicationRoom", () => {
     expect(html).toContain("Message status unavailable");
     expect(html).toContain("No unresolved critical messages");
   });
+
+  it("shows only the current immutable correction and binds it to the event version", () => {
+    const html = renderToStaticMarkup(
+      <CommunicationRoom
+        dashboardData={dashboardData}
+        initialReceipts={[{
+          ...criticalReceipt,
+          notificationId: "notification-official-v2",
+          title: "Game moved to Field 3",
+          body: "Arrive at 5:30 PM at Field 3.",
+          providerApprovalStatus: "pending",
+          evidence: { attemptStatus: "not_requested" },
+          officialRevision: {
+            threadId: "official-thread-1",
+            versionId: "official-version-2",
+            versionNumber: 2,
+            action: "corrected",
+            priority: "disruption",
+            reason: "The league confirmed a field reassignment.",
+            approvedByUserId: "user-coach-taylor",
+            approvedByName: "Coach Taylor",
+            publishedAt: "2026-04-04T07:00:00.000Z",
+            eventScheduleVersion: 3,
+            threadState: "published",
+            requiredProjectionCount: 4,
+            readyProjectionCount: 3,
+            partialPropagation: true,
+            history: [{
+              versionId: "official-version-2",
+              versionNumber: 2,
+              action: "corrected",
+              title: "Game moved to Field 3",
+              body: "Arrive at 5:30 PM at Field 3.",
+              reason: "The league confirmed a field reassignment.",
+              approvedByName: "Coach Taylor",
+              publishedAt: "2026-04-04T07:00:00.000Z"
+            }, {
+              versionId: "official-version-1",
+              versionNumber: 1,
+              action: "published",
+              title: "Game moved to Field 2",
+              body: "Arrive at Field 2.",
+              reason: "Initial field assignment.",
+              approvedByName: "Coach Taylor",
+              publishedAt: "2026-04-04T06:30:00.000Z"
+            }]
+          }
+        }]}
+        receiptLoadOk
+        receiptMessage="Message status current."
+        teamChatData={teamChatData}
+        viewerUserId="user-parent-jordan"
+      />
+    );
+
+    expect(html).toContain("Corrected · current version 2");
+    expect(html).toContain("Event schedule version 3");
+    expect(html).toContain("Published by Coach Taylor");
+    expect(html).toContain("Game moved to Field 3");
+    expect(html).toContain("See correction history");
+    expect(html).toContain("Game moved to Field 2");
+    expect(html).toContain("has not reached every required family surface");
+    expect(html).toContain("Confirm receipt only");
+  });
 });

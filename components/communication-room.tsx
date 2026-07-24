@@ -79,11 +79,12 @@ function SourceStatus({
 }
 
 function ReceiptStages({ receipt }: { receipt: NotificationReceipt }) {
+  const publishedAt = receipt.officialRevision?.publishedAt ?? receipt.evidence.approvedAt;
   const stages = [
     {
       label: "Published",
-      complete: receipt.providerApprovalStatus === "approved",
-      detail: receipt.evidence.approvedAt ? formatDateTime(receipt.evidence.approvedAt) : "Time unavailable"
+      complete: Boolean(receipt.officialRevision || receipt.providerApprovalStatus === "approved"),
+      detail: publishedAt ? formatDateTime(publishedAt) : "Time unavailable"
     },
     {
       label: "Delivered",
@@ -116,6 +117,61 @@ function ReceiptStages({ receipt }: { receipt: NotificationReceipt }) {
         </li>
       ))}
     </ol>
+  );
+}
+
+function RevisionTruth({ receipt }: { receipt: NotificationReceipt }) {
+  const revision = receipt.officialRevision;
+  if (!revision) return null;
+  const priorVersions = revision.history.filter((entry) => entry.versionId !== revision.versionId);
+  return (
+    <aside className={`communication-revision-truth ${revision.action}`} aria-label="Official message revision">
+      <div>
+        <strong>
+          {revision.action === "withdrawn"
+            ? `Withdrawn · version ${revision.versionNumber}`
+            : revision.action === "corrected"
+              ? `Corrected · current version ${revision.versionNumber}`
+              : `Published · version ${revision.versionNumber}`}
+        </strong>
+        <span>
+          Event schedule version {revision.eventScheduleVersion}
+          {" · "}
+          {revision.approvedByName ? `Published by ${revision.approvedByName}` : "Publisher recorded"}
+          {" · "}
+          {formatDateTime(revision.publishedAt)}
+        </span>
+      </div>
+      {revision.partialPropagation ? (
+        <p className="notice warning" role="alert">
+          This update has not reached every required family surface. League staff are correcting the mismatch.
+        </p>
+      ) : (
+        <p className="communication-projection-ok">
+          Same official event version ready on {revision.readyProjectionCount} of {revision.requiredProjectionCount} required surfaces.
+        </p>
+      )}
+      {priorVersions.length ? (
+        <details>
+          <summary>See correction history</summary>
+          <ol>
+            {priorVersions.map((entry) => (
+              <li key={entry.versionId}>
+                <strong>Version {entry.versionNumber} · {entry.action}</strong>
+                <span>{entry.title}</span>
+                <p>{entry.body}</p>
+                <small>
+                  Reason: {entry.reason}
+                  {" · "}
+                  {entry.approvedByName ? `${entry.approvedByName} · ` : ""}
+                  {formatDateTime(entry.publishedAt)}
+                </small>
+              </li>
+            ))}
+          </ol>
+        </details>
+      ) : null}
+    </aside>
   );
 }
 
@@ -166,10 +222,18 @@ export function CommunicationRoom({
     ...player,
     team: teamChatData.teams.find((team) => team.id === player.teamId)
   }));
-  const approvedReceipts = receipts.filter((receipt) => receipt.providerApprovalStatus === "approved");
-  const pendingOfficialCount = receipts.length - approvedReceipts.length;
-  const criticalReceipts = approvedReceipts.filter((receipt) => criticalNotificationTypes.has(receipt.notificationType));
-  const updateReceipts = approvedReceipts.filter((receipt) => !criticalNotificationTypes.has(receipt.notificationType));
+  const publishedReceipts = receipts.filter((receipt) => (
+    Boolean(receipt.officialRevision) || receipt.providerApprovalStatus === "approved"
+  ));
+  const pendingOfficialCount = receipts.filter((receipt) => (
+    !receipt.officialRevision && receipt.providerApprovalStatus !== "approved"
+  )).length;
+  const criticalReceipts = publishedReceipts.filter((receipt) => (
+    criticalNotificationTypes.has(receipt.notificationType) ||
+    receipt.officialRevision?.priority === "critical" ||
+    receipt.officialRevision?.priority === "disruption"
+  ));
+  const updateReceipts = publishedReceipts.filter((receipt) => !criticalReceipts.includes(receipt));
   const announcements = messages.filter((message) => message.kind === "announcement" && message.moderationStatus === "visible");
   const conversationMessages = messages.filter((message) => message.kind === "message" && message.moderationStatus === "visible");
   const unreadCriticalCount = criticalReceipts.filter((receipt) => !receipt.evidence.acknowledgedAt).length;
@@ -456,7 +520,7 @@ export function CommunicationRoom({
       ) : null}
       {pendingOfficialCount > 0 ? (
         <aside className="communication-pending-notice" role="status">
-          {pendingOfficialCount} {pendingOfficialCount === 1 ? "message is" : "messages are"} awaiting authorized review. Draft wording is not shown to families.
+          {pendingOfficialCount} {pendingOfficialCount === 1 ? "message is" : "messages are"} awaiting team review. Draft wording is not shown to families.
         </aside>
       ) : null}
       <p className="sr-only" aria-live="polite">{statusMessage}</p>
@@ -480,7 +544,9 @@ export function CommunicationRoom({
               <article className="communication-message-card critical" key={receipt.notificationId}>
                 <header>
                   <div>
-                    <span className="communication-authority-label">Critical team instruction</span>
+                    <span className="communication-authority-label">
+                      {receipt.officialRevision?.action === "withdrawn" ? "Withdrawn official instruction" : "Critical team instruction"}
+                    </span>
                     <h3>{receipt.title}</h3>
                   </div>
                   <span className="communication-team-label">
@@ -488,14 +554,23 @@ export function CommunicationRoom({
                   </span>
                 </header>
                 <div className="communication-publisher">
-                  <strong>{receipt.approvedByName ? `Approved by ${receipt.approvedByName}` : "Approved team message"}</strong>
+                  <strong>
+                    {receipt.officialRevision?.approvedByName
+                      ? `Published by ${receipt.officialRevision.approvedByName}`
+                      : receipt.approvedByName
+                        ? `Approved by ${receipt.approvedByName}`
+                        : "Approved team message"}
+                  </strong>
                   <span>
-                    {receipt.approvedByName ? "Authorized team review recorded" : "Approver name is unavailable"}
+                    {receipt.officialRevision
+                      ? `Official message version ${receipt.officialRevision.versionNumber}`
+                      : receipt.approvedByName ? "Team review recorded" : "Publisher name is unavailable"}
                     {" · "}
-                    {formatDateTime(receipt.evidence.approvedAt ?? receipt.createdAt)}
+                    {formatDateTime(receipt.officialRevision?.publishedAt ?? receipt.evidence.approvedAt ?? receipt.createdAt)}
                   </span>
                 </div>
                 <p className="communication-message-body">{receipt.body}</p>
+                <RevisionTruth receipt={receipt} />
                 <EventContext eventId={receipt.eventId} teamChatData={teamChatData} />
                 <div className="communication-language-label">Original team message · Change language in settings</div>
                 <ReceiptStages receipt={receipt} />
@@ -524,7 +599,7 @@ export function CommunicationRoom({
               <div className="communication-empty-state">
                 <span className="eyebrow">No unresolved critical messages</span>
                 <h3>You are clear for this family view.</h3>
-                <p>New cancellations, relocations, weather instructions, or emergency directions will appear here after authorized publication.</p>
+                <p>New cancellations, relocations, weather instructions, or emergency directions will appear here after staff publication.</p>
               </div>
             ) : null}
         </div>
@@ -540,7 +615,7 @@ export function CommunicationRoom({
             <span className="eyebrow">Official team record</span>
             <h2 id="communication-updates-title">Recent from Updates</h2>
           </div>
-          <p>Schedule changes and safety instructions only become official through authorized team actions.</p>
+          <p>Schedule changes and safety instructions only become official after a team publisher reviews and publishes them.</p>
         </div>
         <div className="communication-message-stack">
             {visibleUpdates.map((item) => {
@@ -558,10 +633,20 @@ export function CommunicationRoom({
                       </span>
                     </header>
                     <div className="communication-publisher">
-                      <strong>{receipt.approvedByName ? `Approved by ${receipt.approvedByName}` : "Approved team message"}</strong>
-                      <span>{formatDateTime(receipt.evidence.approvedAt ?? receipt.createdAt)}</span>
+                      <strong>
+                        {receipt.officialRevision?.approvedByName
+                          ? `Published by ${receipt.officialRevision.approvedByName}`
+                          : receipt.approvedByName
+                            ? `Approved by ${receipt.approvedByName}`
+                            : "Approved team message"}
+                      </strong>
+                      <span>
+                        {receipt.officialRevision ? `Official message version ${receipt.officialRevision.versionNumber} · ` : ""}
+                        {formatDateTime(receipt.officialRevision?.publishedAt ?? receipt.evidence.approvedAt ?? receipt.createdAt)}
+                      </span>
                     </div>
                     <p className="communication-message-body">{receipt.body}</p>
+                    <RevisionTruth receipt={receipt} />
                     <EventContext eventId={receipt.eventId} teamChatData={teamChatData} />
                     <div className="communication-language-label">Original team message · Change language in settings</div>
                     <ReceiptStages receipt={receipt} />
@@ -595,7 +680,7 @@ export function CommunicationRoom({
               <div className="communication-empty-state">
                 <span className="eyebrow">No published updates</span>
                 <h3>Nothing matches this family view.</h3>
-                <p>Authorized schedule notes, team reminders, and published changes will appear here with their team and author.</p>
+                <p>Reviewed schedule notes, team reminders, and published changes will appear here with their team and author.</p>
               </div>
             ) : null}
         </div>

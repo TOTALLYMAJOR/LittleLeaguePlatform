@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { AdminAdditionalGuardianClient } from "@/components/additional-guardian-access";
+import { OfficialCommunicationWorkbench } from "@/components/official-communication-workbench";
 import {
   AdminDeliveryReviewClient,
   GameDayResolutionRoomClient,
@@ -40,6 +41,7 @@ import { listAdminThemeData } from "@/lib/supabase/team-branding";
 import { listAdminTeamManagementData } from "@/lib/supabase/team-management";
 import { seedState } from "@/lib/domain";
 import { listAdminAdditionalGuardianData } from "@/lib/supabase/additional-guardians";
+import { listOfficialCommunicationReviewData } from "@/lib/supabase/official-communications";
 
 export async function AdminAccessDeniedSurface({ message }: { message?: string } = {}) {
   return (
@@ -192,6 +194,34 @@ export async function AdminOperationsSurface() {
   if (!pageAccess.ok) return <AdminAccessDeniedSurface message={pageAccess.message} />;
   const data = await listAdminOperationsData();
   return <AdminOperationsView data={data} />;
+}
+
+export async function AdminCommunicationsSurface() {
+  const pageAccess = await requireAdminPageAccess();
+  if (!pageAccess.ok) return <AdminAccessDeniedSurface message={pageAccess.message} />;
+  const [scheduleData, communicationData] = await Promise.all([
+    listScheduleOperationsData(),
+    listOfficialCommunicationReviewData({
+      organizationIds: pageAccess.access.adminOrganizationIds
+    })
+  ]);
+  const scopedScheduleData = scopeScheduleOperationsData(
+    scheduleData,
+    pageAccess.access.adminTeamIds,
+    "Showing current events for the signed-in administrator's organizations."
+  );
+  const currentTeams = scopedScheduleData.teams.filter((team) => (
+    (team.status ?? "active") === "active" &&
+    (team.seasonStatus ?? "active") === "active"
+  ));
+  const currentTeamIds = new Set(currentTeams.map((team) => team.id));
+  return (
+    <OfficialCommunicationWorkbench
+      events={scopedScheduleData.events.filter((event) => currentTeamIds.has(event.teamId))}
+      teams={currentTeams}
+      initialData={communicationData}
+    />
+  );
 }
 
 export function AdminOperationsView({ data }: { data: AdminOperationsData }) {

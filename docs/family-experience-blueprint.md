@@ -969,6 +969,8 @@ Temporary-caregiver implementation status (2026-07-24): migration `0029` creates
 
 Proof: provider sandbox, webhook evidence, idempotent retries, one-revision multi-surface browser proof, escalation.
 
+Official-communication implementation status (2026-07-24): migration `0030` adds service-only official-message threads, immutable attributed versions, additive corrections/withdrawals, exact current-season event schedule-version checks, idempotency, critical-admin review, and disruption linkage to an existing official event change. Publishing projects one canonical version to Communication Room, Mission Control, Family Schedule, and Event Passport, while external provider delivery stays optional/pending behind its separate review. A required projection mismatch opens an auditable incident. Family reads suppress superseded notification rows, display current wording and correction history, and keep Published, Delivered, Read, and Acknowledged distinct. Acknowledgment now fails closed for superseded versions or delivery evidence from another version. The administrator workbench requires an explicit human review and publishes zero provider sends. Source/API/render tests pass; signed-in migration-unavailable proof at 375/390/768/1440 records zero overflow, undersized controls, and browser errors. Ordered migration/RLS, populated four-surface readback, partial-propagation lifecycle, offline/browser accessibility, provider sandbox/webhook, and hosted proof remain open.
+
 ### Phase 5: Parent Replay and season continuity
 
 1. Family-facing approved Replay story.
