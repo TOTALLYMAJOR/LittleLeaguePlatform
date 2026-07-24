@@ -13,6 +13,10 @@ export interface Database {
           email: string;
           phone: string | null;
           default_role: "admin" | "coach" | "parent";
+          preferred_language: string;
+          translation_enabled: boolean;
+          shared_device_previews: boolean;
+          onboarding_completed_at: Timestamp | null;
           created_at: Timestamp;
           updated_at: Timestamp;
         };
@@ -22,6 +26,10 @@ export interface Database {
           email: string;
           phone?: string | null;
           default_role: "admin" | "coach" | "parent";
+          preferred_language?: string;
+          translation_enabled?: boolean;
+          shared_device_previews?: boolean;
+          onboarding_completed_at?: Timestamp | null;
           created_at?: Timestamp;
           updated_at?: Timestamp;
         };
@@ -602,6 +610,20 @@ export interface Database {
           target_registration_request_id: RowId;
           reviewer_user_id: RowId;
           review_note?: string | null;
+        };
+        Returns: Json;
+      };
+      complete_family_first_sign_in: {
+        Args: {
+          target_user_id: RowId;
+          selected_language: string;
+          selected_critical_channel: string;
+          selected_routine_channel: string;
+          selected_quiet_hours_start: string;
+          selected_quiet_hours_end: string;
+          selected_timezone: string;
+          enable_translation: boolean;
+          enable_shared_device_previews: boolean;
         };
         Returns: Json;
       };

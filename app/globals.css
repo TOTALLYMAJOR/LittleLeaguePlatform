@@ -449,6 +449,17 @@ input[aria-invalid="true"], select[aria-invalid="true"], textarea[aria-invalid="
 input[data-valid="true"] { border-color: var(--ok); }
 
 textarea { min-height: 120px; resize: vertical; }
+.check-row {
+  align-items: center;
+  grid-template-columns: 24px minmax(0, 1fr);
+  min-height: 44px;
+}
+.check-row input[type="checkbox"] {
+  min-height: 20px;
+  height: 20px;
+  margin: 0;
+  width: 20px;
+}
 .small-textarea { min-height: 96px; }
 .large-textarea { min-height: 220px; }
 

@@ -42,6 +42,7 @@ const appRoutes = [
   "/parent/practice-recaps",
   "/parent/schedule",
   "/parent/settings",
+  "/parent/setup",
   "/registration",
   "/invite/expired",
   "/invite/recover",

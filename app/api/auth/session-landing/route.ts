@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { getServerShellAccess } from "@/lib/supabase/shell-access";
+import { getFamilyOnboardingStatus } from "@/lib/supabase/family-onboarding";
 
 export async function GET() {
   const access = await getServerShellAccess();
@@ -15,6 +16,10 @@ export async function GET() {
     return NextResponse.json({ ok: true, href: "/coach" });
   }
   if (access.canParent) {
+    const onboarding = await getFamilyOnboardingStatus(access.userId ?? "");
+    if (onboarding.available && !onboarding.completed) {
+      return NextResponse.json({ ok: true, href: "/parent/setup" });
+    }
     return NextResponse.json({ ok: true, href: "/parent" });
   }
 

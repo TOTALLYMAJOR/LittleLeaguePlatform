@@ -43,6 +43,18 @@ describe("role route guards and compatibility wrappers", () => {
     expect(service).not.toContain("seedState");
   });
 
+  it("keeps first-sign-in preferences session-derived and atomic", () => {
+    const route = source("app/api/parent/setup/route.ts");
+    const service = source("lib/supabase/family-onboarding.ts");
+    const migration = source("supabase/migrations/0025_family_first_sign_in.sql");
+    expect(route).toContain("requireAuthenticatedRouteUser");
+    expect(route).toContain("userId: auth.user.id");
+    expect(service).toContain('supabase.rpc("complete_family_first_sign_in"');
+    expect(migration).toContain("Active parent team access is required.");
+    expect(migration).toContain("No provider message was sent.");
+    expect(migration).not.toContain("net.http");
+  });
+
   it("uses one shared active-admin guard before admin data loaders", () => {
     const surfaces = source("app/admin/_surfaces.tsx");
 
