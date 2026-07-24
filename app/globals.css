@@ -11674,6 +11674,20 @@ caption {
   margin: var(--sp-2) 0 0;
 }
 
+.registration-review-page .stack {
+  grid-template-columns: minmax(0, 1fr);
+}
+
+.registration-review-page .feature-tier-item,
+.registration-review-page .card-header > div,
+.registration-review-page h2,
+.registration-review-page h3,
+.registration-review-page p {
+  min-width: 0;
+  max-width: 100%;
+  overflow-wrap: anywhere;
+}
+
 @media (max-width: 640px) {
   .season-transition-scope {
     grid-template-columns: 1fr;

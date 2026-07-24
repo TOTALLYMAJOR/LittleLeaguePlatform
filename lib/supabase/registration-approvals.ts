@@ -1,5 +1,6 @@
 import type { RegistrationRequest } from "@/lib/domain";
 import { seedState } from "@/lib/domain";
+import { createHash, randomBytes } from "node:crypto";
 import { createSupabaseAdminClient } from "./admin";
 import { listRegistrationRequests } from "./registrations";
 import { withSupabaseTimeout } from "./timeout";
@@ -29,7 +30,18 @@ export interface RegistrationReviewResult {
   ok: boolean;
   message: string;
   result?: unknown;
+  invitationPath?: string;
+  expiresAt?: string;
+  accessActivated?: boolean;
 }
+
+type UnsafeApprovalRpc = {
+  // Migration 0033 intentionally leads generated database function types.
+  rpc(
+    functionName: string,
+    parameters: Record<string, unknown>
+  ): PromiseLike<{ data: unknown; error: { message: string } | null }>;
+};
 
 function fallbackReviewData(): RegistrationReviewData {
   return {
@@ -98,27 +110,53 @@ export async function approveRegistrationRequest(input: {
   reviewerUserId: string;
   note?: string;
 }): Promise<RegistrationReviewResult> {
-  if (!input.requestId || !input.reviewerUserId || !input.note?.trim()) {
+  if (
+    !input.requestId
+    || !input.reviewerUserId
+    || (input.note?.trim().length ?? 0) < 10
+    || (input.note?.trim().length ?? 0) > 1000
+  ) {
     return { ok: false, message: "Registration request, reviewer, and verification note are required." };
   }
 
   try {
-    const supabase = createSupabaseAdminClient();
-    const { data, error } = await withSupabaseTimeout(supabase.rpc("approve_registration_request", {
+    const supabase = createSupabaseAdminClient() as unknown as UnsafeApprovalRpc;
+    const reviewNote = input.note!.trim();
+    const rawToken = randomBytes(32).toString("base64url");
+    const tokenHash = createHash("sha256").update(rawToken).digest("hex");
+    const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString();
+    const { data, error } = await withSupabaseTimeout(supabase.rpc("approve_registration_request_with_invitation", {
       target_registration_request_id: input.requestId,
       reviewer_user_id: input.reviewerUserId,
-      review_note: input.note.trim()
+      review_note: reviewNote,
+      target_invite_token_hash: tokenHash,
+      target_invite_expires_at: expiresAt
     }), 10000);
 
-    if (error) return { ok: false, message: error.message };
+    if (error) {
+      return {
+        ok: false,
+        message: "Registration approval is unavailable until the secure invitation migration is promoted. No records changed."
+      };
+    }
+    const result = data && typeof data === "object" ? data as Record<string, unknown> : {};
+    const inviteId = typeof result.parent_invite_id === "string" ? result.parent_invite_id : "";
 
     return {
       ok: true,
-      message: "Registration approved. Player, guardian, invite or membership, and audit records were created.",
-      result: data
+      message: inviteId
+        ? "Registration approved. Copy the one-time invitation now; no email, SMS, push, or chat message was sent."
+        : "Registration approved. Existing verified parent access was activated; no invitation or provider message was created.",
+      result,
+      invitationPath: inviteId ? `/invite/accept#token=${encodeURIComponent(rawToken)}` : undefined,
+      expiresAt: inviteId ? expiresAt : undefined,
+      accessActivated: !inviteId
     };
   } catch {
-    return { ok: false, message: "Registration approval could not reach Supabase." };
+    return {
+      ok: false,
+      message: "Registration approval outcome could not be confirmed. Refresh the queue before trying again."
+    };
   }
 }
 

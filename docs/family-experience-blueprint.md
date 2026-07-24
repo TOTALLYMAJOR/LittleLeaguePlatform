@@ -934,6 +934,8 @@ Proof: desktop/mobile screenshots, keyboard pass, 400% reflow, public/private fi
 
 Proof: real-session RLS and cross-family isolation, invitation lifecycle, audit history, provider sandbox delivery, recovery.
 
+Access and activation implementation status (2026-07-24): public requests remain pending and produce a receipt, privacy-minimized status, configured review target, and recovery path. Active organization administrators review a blank evidence note; the server derives the reviewer from the verified session. Migration `0033` wraps registration approval and invitation preparation in one transaction. The raw 32-byte secret exists only in server memory and the one-time admin response, while PostgreSQL receives only its SHA-256 hash. Existing verified parents receive scoped access without an invitation; other approved adults receive a manually handed-off fragment link. Migration `0026` requires exact-email verified sign-in, pending/unexpired state, active season, and the reviewed invited guardian record before activation. Migration `0025` handles language, translation, quiet hours, shared-device privacy, and critical/routine channel choices without claiming channel verification or provider delivery. Migration `0027` separately governs additional-guardian proposal, review, issuance, acceptance, and revocation. No path sends email, SMS, push, or chat automatically. Ordered migration/RLS, populated invitation lifecycle, provider sandbox delivery, accessibility, and hosted proof remain open.
+
 ### Phase 2: Family Mission Control
 
 1. Household aggregation and child/team filters.
@@ -1114,4 +1116,4 @@ The design is accepted only when all of the following are demonstrated:
 
 ## 20. Immediate prioritized action
 
-Begin Phase 4 with a durable communication-revision model: preserve published wording and every correction/withdrawal as immutable attributed versions, connect one official event revision to every affected projection, show partial propagation as an operational incident, and require human approval before any provider execution. Communication Room receipt evidence is already proven in isolated QA; provider sandbox, ordered migration/RLS, hosted Phase 0, legacy invitation issuance, and populated Phase 3 proof remain separate external gates.
+The safe local Phase 0-5 implementation queue is complete. The next dependency is an explicitly approved non-production Supabase target for ordered migration `0022` through `0033`, followed by the security-definer hardening migration, real-session RLS, and populated six-stage family proof. See `docs/family-experience-readiness-review-2026-07-24.md` for the journey-by-journey evidence classification and queue. Production promotion, provider sends, hosted release, assistive-technology testing, and moderated family comprehension remain distinct gates.

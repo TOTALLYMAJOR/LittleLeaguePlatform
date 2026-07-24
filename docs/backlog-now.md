@@ -2,6 +2,8 @@
 
 These are the next production-enabling tasks that should happen before adding more surface area. They turn the current local MVP scaffold into a safer, persistent product foundation.
 
+Historical note (2026-07-24): the implementation items below are no longer the active queue; the root production scaffold, Supabase adapters/migrations, role guards, RLS tests, persistence paths, PWA shell, and validation commands now exist. Current proof and promotion truth lives in `docs/production-task-board.md`, `docs/capability-matrix.md`, and `docs/family-experience-readiness-review-2026-07-24.md`. Do not interpret this original checklist as evidence that provider, hosted, migration, or production gates have passed.
+
 ## 1. Production Data And Auth Foundation
 
 - Create Supabase project, environment contract, and local development setup.

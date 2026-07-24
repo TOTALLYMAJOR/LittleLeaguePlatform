@@ -13,6 +13,7 @@ import {
   ParentDashboardClient,
   ParentRsvpClient,
   ParentReplayClient,
+  RegistrationReviewClient,
   RegistrationClient,
   ScheduleAlertsClient,
   TeamChatClient,
@@ -222,6 +223,32 @@ describe("AdminHealthClient", () => {
     expect(html).toContain("Active season");
     expect(html).toContain("Why this status");
     expect(html).toContain("Aggregate setup counts only.");
+  });
+});
+
+describe("RegistrationReviewClient", () => {
+  it("uses the verified session actor, starts with a blank evidence note, and explains manual one-time issuance", () => {
+    const html = renderToStaticMarkup(<RegistrationReviewClient initialData={{
+      reviewers: [{ id: "admin-1", displayName: "Admin One", email: "admin@example.com", scopes: ["admin:org-1"] }],
+      actions: [],
+      registrationRequests: [{
+        id: "request-1",
+        organizationId: "org-1",
+        seasonId: "season-1",
+        teamId: "team-1",
+        parentName: "Jordan R.",
+        parentEmail: "jordan@example.com",
+        playerFirstName: "Maya",
+        playerLastInitial: "R",
+        status: "pending",
+        createdAt: "2026-07-24T12:00:00.000Z"
+      }]
+    }} />);
+    expect(html).toContain("You cannot choose another reviewer");
+    expect(html).toContain("Approve and issue next step");
+    expect(html).toContain("not sent automatically");
+    expect(html).not.toContain("Acting reviewer");
+    expect(html).not.toContain("Reviewed from the admin registration queue");
   });
 });
 

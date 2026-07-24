@@ -5563,26 +5563,32 @@ export function RegistrationClient({
 export function RegistrationReviewClient({ initialData }: { initialData: RegistrationReviewData }) {
   const [requests, setRequests] = useState(initialData.registrationRequests);
   const [actions, setActions] = useState(initialData.actions);
-  const [reviewerUserId, setReviewerUserId] = useState(initialData.reviewers[0]?.id ?? "");
-  const [note, setNote] = useState("Reviewed from the admin registration queue.");
+  const [note, setNote] = useState("");
   const [message, setMessage] = useState("");
+  const [invitation, setInvitation] = useState<{ url: string; expiresAt: string } | null>(null);
   const [busyRequestId, setBusyRequestId] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
 
   function reviewRequest(requestId: string, action: "approve" | "reject") {
     setMessage("");
+    setInvitation(null);
     setBusyRequestId(requestId);
     startTransition(async () => {
       try {
         const response = await authenticatedJsonFetch(`/api/admin/registration-requests/${requestId}/${action}`, { note });
-        const result = await response.json().catch(() => null) as { ok?: boolean; message?: string } | null;
+        const result = await response.json().catch(() => null) as {
+          ok?: boolean;
+          message?: string;
+          invitationPath?: string;
+          expiresAt?: string;
+        } | null;
         setMessage(result?.message ?? "Registration review failed.");
 
         if (result?.ok) {
           const nextStatus = action === "approve" ? "approved" : "rejected";
           setRequests((current) => current.map((request) => (
             request.id === requestId
-              ? { ...request, status: nextStatus, reviewedByUserId: reviewerUserId, reviewedAt: new Date().toISOString() }
+              ? { ...request, status: nextStatus, reviewedAt: new Date().toISOString() }
               : request
           )));
           setActions((current) => [{
@@ -5592,6 +5598,12 @@ export function RegistrationReviewClient({ initialData }: { initialData: Registr
             note,
             createdAt: new Date().toISOString()
           }, ...current]);
+          if (result.invitationPath && result.expiresAt) {
+            setInvitation({
+              url: `${window.location.origin}${result.invitationPath}`,
+              expiresAt: result.expiresAt
+            });
+          }
         }
       } catch {
         setMessage("Registration review could not reach the server.");
@@ -5603,36 +5615,50 @@ export function RegistrationReviewClient({ initialData }: { initialData: Registr
 
   const pendingRequests = requests.filter((request) => request.status === "pending");
 
+  async function copyInvitation() {
+    if (!invitation) return;
+    try {
+      await navigator.clipboard.writeText(invitation.url);
+      setMessage("One-time invitation copied. Share it only with the verified adult.");
+    } catch {
+      setMessage("Copy was blocked. Select the one-time link and copy it manually.");
+    }
+  }
+
   return (
-    <div className="page">
+    <div className="page registration-review-page">
       <section className="hero">
         <span className="eyebrow">Registration review</span>
-        <h1>Approve a request into player, guardian, invite, membership, and audit records.</h1>
-        <p className="lead">Approval is server-side and atomic. If the parent already has a matching profile, the workflow creates active guardian and team membership records. Otherwise it queues a parent invite and invited guardian link.</p>
+        <h1>Verify the family match, then issue the right next step.</h1>
+        <p className="lead">Your signed-in administrator identity and review note are recorded. Existing verified parents receive scoped access; other approved adults receive a one-time link for manual handoff.</p>
       </section>
 
-      {message ? <p className="notice">{message}</p> : null}
+      {message ? <p className="notice" aria-live="polite">{message}</p> : null}
+      {invitation ? (
+        <article className="card stack one-time-link" role="status">
+          <span className="eyebrow">Copy now · shown once</span>
+          <h2>Approved parent invitation</h2>
+          <p className="break-anywhere">{invitation.url}</p>
+          <p className="muted">Expires {new Date(invitation.expiresAt).toLocaleString()}. No email, SMS, push, or chat message was sent.</p>
+          <button type="button" onClick={copyInvitation}>Copy one-time link</button>
+          <p className="muted">The exact invited email must sign in before this link can activate the reviewed child and team scope.</p>
+        </article>
+      ) : null}
 
       <section className="grid two">
         <article className="card stack">
-          <h2>Reviewer</h2>
-          <label>Acting reviewer
-            <select value={reviewerUserId} onChange={(event) => setReviewerUserId(event.target.value)}>
-              {initialData.reviewers.map((reviewer) => (
-                <option key={reviewer.id} value={reviewer.id}>{reviewer.displayName} - {reviewer.email}</option>
-              ))}
-            </select>
+          <h2>Verification record</h2>
+          <p className="notice">The server uses your verified signed-in administrator identity. You cannot choose another reviewer.</p>
+          <label>What evidence did you review?
+            <textarea maxLength={1000} placeholder="Describe the roster, registration, or league record used to verify this adult-child-team match." value={note} onChange={(event) => setNote(event.target.value)} />
           </label>
-          <label>Verification / review note
-            <textarea value={note} onChange={(event) => setNote(event.target.value)} />
-          </label>
-          {initialData.reviewers.length === 0 ? <p className="notice">No reviewer profiles have active organization-admin membership yet. Create an account, then grant organization-admin membership before approving requests.</p> : null}
         </article>
 
         <article className="card stack">
           <h2>Workflow boundary</h2>
           <p>Public registration remains a pending request only.</p>
-          <p>Approval creates durable records and a `registration_approval_actions` trail.</p>
+          <p>Approval creates durable records and a visible review history.</p>
+          <p>A one-time link is returned only to this signed-in admin and is not sent automatically.</p>
           <p>Rejected requests never create player, guardian, membership, or invite records.</p>
         </article>
       </section>
@@ -5652,14 +5678,14 @@ export function RegistrationReviewClient({ initialData }: { initialData: Registr
               <div className="toolbar">
                 <button
                   onClick={() => reviewRequest(request.id, "approve")}
-                  disabled={isPending || busyRequestId === request.id || !reviewerUserId || !note.trim()}
+                  disabled={isPending || busyRequestId === request.id || note.trim().length < 10}
                 >
-                  {busyRequestId === request.id ? "Reviewing..." : "Approve"}
+                  {busyRequestId === request.id ? "Reviewing..." : "Approve and issue next step"}
                 </button>
                 <button
                   className="secondary"
                   onClick={() => reviewRequest(request.id, "reject")}
-                  disabled={isPending || busyRequestId === request.id || !reviewerUserId || !note.trim()}
+                  disabled={isPending || busyRequestId === request.id || note.trim().length < 10}
                 >
                   Reject
                 </button>
