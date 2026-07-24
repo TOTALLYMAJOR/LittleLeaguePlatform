@@ -6,6 +6,7 @@ import {
   TeamPortalClient
 } from "@/components/feature-panels";
 import { CommunicationRoom } from "@/components/communication-room";
+import { ParentAdditionalGuardianClient } from "@/components/additional-guardian-access";
 import {
   FamilyFlightPlanClient,
   ParentNotificationReceiptsClient
@@ -18,6 +19,7 @@ import { listScheduleOperationsData } from "@/lib/supabase/schedule-management";
 import { requireParentPageAccess } from "@/lib/supabase/shell-access";
 import { listTeamChatData } from "@/lib/supabase/team-chat";
 import { listTeamPortalData } from "@/lib/supabase/team-portal";
+import { listParentAdditionalGuardianData } from "@/lib/supabase/additional-guardians";
 
 export async function loadParentDashboardForPage() {
   const pageAccess = await requireParentPageAccess();
@@ -109,6 +111,15 @@ export async function ParentPortalSurface({ audience = "parent" }: { audience?: 
 
 export async function ParentPracticeRecapsSurface() {
   return <ParentPortalSurface audience="parent" />;
+}
+
+export async function ParentFamilyAccessSurface() {
+  const pageAccess = await requireParentPageAccess();
+  if (!pageAccess.ok || !pageAccess.access.userId) {
+    return <ParentDashboardClient dashboardData={pageAccess.dashboardData} />;
+  }
+  const data = await listParentAdditionalGuardianData(pageAccess.access.userId);
+  return <ParentAdditionalGuardianClient data={data} />;
 }
 
 export async function ParentSettingsSurface() {

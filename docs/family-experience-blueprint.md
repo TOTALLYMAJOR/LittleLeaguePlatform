@@ -1102,4 +1102,4 @@ The design is accepted only when all of the following are demonstrated:
 
 ## 20. Immediate prioritized action
 
-Proceed to Phase 1 as one coherent access-and-activation slice: preserve the new request receipt, add visible verification status and invitation lifecycle, then complete first-sign-in language/notification setup and the additional-guardian invitation boundary. Hosted Phase 0 proof remains a separate deployment gate.
+Proceed to Phase 2 as one coherent Family Mission Control slice: aggregate every approved child/team without account switching, lead with the five-second next Event Passport, explain schedule conflicts and unresolved responsibility, and make offline freshness plus reconnect outcomes explicit. Phase 1 is locally implemented through migration `0027`; isolated migration/RLS/browser proof, hosted Phase 0 proof, legacy invitation issuance, and provider delivery remain separate promotion gates.

@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { AdminAdditionalGuardianClient } from "@/components/additional-guardian-access";
 import {
   AdminDeliveryReviewClient,
   GameDayResolutionRoomClient,
@@ -38,6 +39,7 @@ import { listTenantReadinessData } from "@/lib/supabase/tenant-readiness";
 import { listAdminThemeData } from "@/lib/supabase/team-branding";
 import { listAdminTeamManagementData } from "@/lib/supabase/team-management";
 import { seedState } from "@/lib/domain";
+import { listAdminAdditionalGuardianData } from "@/lib/supabase/additional-guardians";
 
 export async function AdminAccessDeniedSurface({ message }: { message?: string } = {}) {
   return (
@@ -74,7 +76,13 @@ export async function AdminBrandingSurface() {
 export async function AdminFamilyAccessSurface() {
   const pageAccess = await requireAdminPageAccess();
   if (!pageAccess.ok) return <AdminAccessDeniedSurface message={pageAccess.message} />;
-  const data = await listGuardianLinkRepairData();
+  const [data, additionalGuardianData] = await Promise.all([
+    listGuardianLinkRepairData(),
+    listAdminAdditionalGuardianData({
+      actorUserId: pageAccess.access.userId ?? "",
+      organizationIds: pageAccess.access.adminOrganizationIds
+    })
+  ]);
 
   return (
     <div className="page">
@@ -95,10 +103,12 @@ export async function AdminFamilyAccessSurface() {
           <article className="card stack" key={link.playerId}>
             <span className="eyebrow">{link.teamName}</span>
             <h2>{link.playerName}</h2>
-            <p className="muted">Use `/api/admin/guardian-links/repair` with an existing parent profile and a 10-500 character verification note to activate team access.</p>
+            <p className="muted">Confirm the adult’s existing parent account and record what was verified before repairing this missing link.</p>
           </article>
         ))}
       </section>
+
+      <AdminAdditionalGuardianClient data={additionalGuardianData} />
     </div>
   );
 }

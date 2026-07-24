@@ -246,6 +246,58 @@ export interface Database {
         Update: Partial<Database["public"]["Tables"]["player_guardians"]["Insert"]>;
         Relationships: [];
       };
+      additional_guardian_requests: {
+        Row: {
+          id: RowId;
+          organization_id: RowId;
+          team_id: RowId;
+          player_id: RowId;
+          proposed_by_user_id: RowId;
+          proposed_email: string;
+          relationship: "mother" | "father" | "guardian" | "other";
+          requested_scope: string[];
+          requested_at: Timestamp;
+          reviewed_at: Timestamp | null;
+          reviewed_by_user_id: RowId | null;
+          approved_at: Timestamp | null;
+          rejected_at: Timestamp | null;
+          cancelled_at: Timestamp | null;
+          revoked_at: Timestamp | null;
+          revoked_by_user_id: RowId | null;
+          decision_reason: string | null;
+          revocation_reason: string | null;
+          parent_invite_id: RowId | null;
+          manual_link_issued_at: Timestamp | null;
+          created_at: Timestamp;
+          updated_at: Timestamp;
+        };
+        Insert: {
+          id?: RowId;
+          organization_id: RowId;
+          team_id: RowId;
+          player_id: RowId;
+          proposed_by_user_id: RowId;
+          proposed_email: string;
+          relationship: "mother" | "father" | "guardian" | "other";
+          requested_scope?: string[];
+          requested_at?: Timestamp;
+          reviewed_at?: Timestamp | null;
+          reviewed_by_user_id?: RowId | null;
+          approved_at?: Timestamp | null;
+          rejected_at?: Timestamp | null;
+          cancelled_at?: Timestamp | null;
+          revoked_at?: Timestamp | null;
+          revoked_by_user_id?: RowId | null;
+          decision_reason?: string | null;
+          revocation_reason?: string | null;
+          parent_invite_id?: RowId | null;
+          manual_link_issued_at?: Timestamp | null;
+          created_at?: Timestamp;
+          updated_at?: Timestamp;
+        };
+        Update: Partial<Database["public"]["Tables"]["additional_guardian_requests"]["Insert"]>;
+        Relationships: [];
+      };
       events: {
         Row: {
           id: RowId;
@@ -631,6 +683,45 @@ export interface Database {
       };
       accept_parent_invite_by_hash: {
         Args: { target_invite_token_hash: string; accepting_user_id: RowId };
+        Returns: Json;
+      };
+      request_additional_guardian: {
+        Args: {
+          target_player_id: RowId;
+          proposing_user_id: RowId;
+          adult_email: string;
+          adult_relationship: string;
+        };
+        Returns: Json;
+      };
+      cancel_additional_guardian_request: {
+        Args: { target_request_id: RowId; cancelling_user_id: RowId };
+        Returns: Json;
+      };
+      reject_additional_guardian_request: {
+        Args: {
+          target_request_id: RowId;
+          reviewing_user_id: RowId;
+          review_reason: string;
+        };
+        Returns: Json;
+      };
+      approve_additional_guardian_request: {
+        Args: {
+          target_request_id: RowId;
+          reviewing_user_id: RowId;
+          review_reason: string;
+          target_invite_token_hash: string;
+          target_expires_at: Timestamp;
+        };
+        Returns: Json;
+      };
+      revoke_additional_guardian_access: {
+        Args: {
+          target_request_id: RowId;
+          revoking_user_id: RowId;
+          revocation_reason: string;
+        };
         Returns: Json;
       };
       current_user_can_read_profile: { Args: { target_user_id: RowId }; Returns: boolean };
