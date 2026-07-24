@@ -34,13 +34,30 @@ Task-specific checks are required only when the surface is touched:
 ### Active Goal - Operational-Truth Hardening and Gated Enhancements
 
 - Priority: P0 authority, privacy, and game-day reliability.
-- Status: Local implementation is present in the current dirty worktree. Provider sends, family-visible uploaded media, and payment collection remain disabled by default. Migration `0023`, RLS, provider sandbox, hosted, recovery, and operational proof are not implied by local source or unit tests.
+- Status: Local implementation is committed. Migrations through `0024` plus `20260724143554_security_definer_execution_hardening.sql`, real-session RLS, multi-child Communication Room persistence, acknowledgment audit readback, and zero-provider-send behavior were proven in an isolated Supabase QA project. The active LeaguePilot production project was not changed. Provider sends, family-visible uploaded media, and payment collection remain disabled by default.
 - Current state: authenticated context is server-derived; operational summaries use independent evidence/freshness lanes; RSVP and attendance use idempotency plus record/schedule versions; Parent Replay separates draft/approval/publication; provider acceptance/delivery/read/acknowledgment are independent; media is quarantined until scan/consent/release; Family Balance uses payment evidence instead of inferred seed charges; admin archive requires a recomputed impact preview and audit.
 - Feature gates: offline replay needs `NEXT_PUBLIC_OFFLINE_WRITES_ENABLED`, `OFFLINE_WRITES_ENABLED`, and `organizations.offline_writes_enabled`. Provider sends, media uploads, and payments each need their server kill switch plus organization flag. Media additionally needs a proven scan adapter; payment confirmation additionally needs a verified Stripe webhook.
 - Rollback: disable the environment switch or organization flag. Existing records remain; the affected surface returns to online-only, draft-only, quarantine/proof-only, or link-only behavior without deleting evidence.
-- Proof queue: apply `0023` in a non-production project; run unit/typecheck/build/audit; execute RLS and cross-role browser proofs; run concurrency and offline conflict journeys; then promote provider/media/payment slices individually through allowlisted sandbox and hosted proof.
+- Proof queue: promote migrations only after an explicit production approval; repeat signed-in hosted role/browser proof; run concurrency and offline conflict journeys for remaining coordination flows; then promote provider, media, and payment slices individually through allowlisted sandbox and hosted proof.
 - Prompt workflow: `docs/prompt-evolution-timeline.md` and `tools/prompt-api/` encode the four-system prompt patterns. `npm run codex:spec` and `npm run codex:debug` print prompts only.
 - Validation: `npm run check:skills`; `npm run typecheck`; `npm test`; `npm run build`; `npm audit`; `npm run qa:rls-proof`; role-browser screenshots at 375, 390, 768, and 1440.
+
+### Active Goal - Approved Family Experience Execution
+
+- Priority: P0 public trust, family access, and five-second logistics clarity.
+- Governing contract: `docs/family-experience-blueprint.md` and the approved Figma frames linked from that document.
+- Commit policy: implement, validate, and commit one coherent slice at a time. If an external provider, hosted environment, production promotion, or missing product authority blocks a slice, record the exact blocker and continue to the next safe slice.
+- Current completed slice: Communication Room local implementation, responsive proof, isolated Supabase QA record proof, privileged RPC hardening, and provider-suppressed acknowledgment evidence.
+- Current next slice: Phase 0 public trust corrections.
+
+| Family phase | Current status | Remaining outcome |
+| --- | --- | --- |
+| Phase 0 - Public trust corrections | Approved design/spec; implementation queued | Access-first public CTA and copy, empty production forms, agenda-first schedule, calendar-provider actions, value-gated install prompt, tangible Parent Replay preview, responsive/accessibility proof. |
+| Phase 1 - Access and activation | Existing registration/admin foundations; journey completion queued | Request receipt and timeline, verification status, invitation lifecycle, first-sign-in language/notification setup, additional guardian invitation. |
+| Phase 2 - Family Mission Control | Local dashboard, RSVP, schedule, Family Flight Plan, and Communication Room foundations | Five-second Event Passport, coherent multi-child conflict handling, offline/reconnect truth, production-hosted proof. |
+| Phase 3 - Responsibility and temporary care | Caregiver handoff coordination record exists; authority workflow queued | Transportation offer and dual acceptance, outbound/return responsibility, time-bound caregiver access, restriction-aware expiry and revocation. |
+| Phase 4 - Priority communication and disruption | Communication Room proof complete in isolated QA; disruption foundations local | Durable message versions/corrections/withdrawals, one-revision projection fan-out, provider sandbox evidence, propagation monitoring and reversible correction. |
+| Phase 5 - Parent Replay and season continuity | Coach-reviewed Replay foundations local | Family story and memory timeline, consent-aware media, season/team transition review, privacy-minimized administrator readiness analysis. |
 
 ### Active Goal - Tenant Onboarding Readiness Lane
 
