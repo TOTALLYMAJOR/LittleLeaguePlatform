@@ -11,6 +11,7 @@ import { FamilyMissionControlClient } from "@/components/family-mission-control"
 import { ParentTransportationClient } from "@/components/family-transportation";
 import { ParentTemporaryCaregiverClient } from "@/components/temporary-caregiver-access";
 import { FamilyParentReplay } from "@/components/family-parent-replay";
+import { ParentSeasonTransitionReview } from "@/components/season-transition-review";
 import {
   FamilyFlightPlanClient,
   ParentNotificationReceiptsClient
@@ -28,6 +29,7 @@ import { buildFamilyMissionControl } from "@/lib/family-mission-control";
 import { listParentTransportationData } from "@/lib/supabase/transportation";
 import { listParentTemporaryCaregiverData } from "@/lib/supabase/temporary-caregivers";
 import { listFamilyReplays } from "@/lib/supabase/family-replays";
+import { listParentSeasonTransitions } from "@/lib/supabase/season-transitions";
 
 export async function loadParentDashboardForPage() {
   const pageAccess = await requireParentPageAccess();
@@ -143,12 +145,14 @@ export async function ParentFamilyAccessSurface() {
   if (!pageAccess.ok || !pageAccess.access.userId) {
     return <ParentDashboardClient dashboardData={pageAccess.dashboardData} />;
   }
-  const [guardianData, caregiverData] = await Promise.all([
+  const [guardianData, caregiverData, transitionData] = await Promise.all([
     listParentAdditionalGuardianData(pageAccess.access.userId),
-    listParentTemporaryCaregiverData(pageAccess.access.userId)
+    listParentTemporaryCaregiverData(pageAccess.access.userId),
+    listParentSeasonTransitions(pageAccess.access.userId)
   ]);
   return (
     <>
+      <ParentSeasonTransitionReview data={transitionData} />
       <ParentAdditionalGuardianClient data={guardianData} />
       <ParentTemporaryCaregiverClient data={caregiverData} />
     </>

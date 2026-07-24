@@ -204,7 +204,11 @@ describe("AdminHealthClient", () => {
                 status: "ready",
                 detail: "Spring 2026 is active.",
                 actionHref: "/admin/teams",
-                actionLabel: "Set season"
+                actionLabel: "Set season",
+                sourceOfTruth: "Organization-scoped setup records.",
+                responsibleAuthority: "League administrator.",
+                privacyBoundary: "Aggregate setup counts only.",
+                explanation: "This rule reports state and does not change records."
               }]
             }]
           }}
@@ -216,6 +220,8 @@ describe("AdminHealthClient", () => {
     expect(html).toContain("League A");
     expect(html).toContain("ready to invite");
     expect(html).toContain("Active season");
+    expect(html).toContain("Why this status");
+    expect(html).toContain("Aggregate setup counts only.");
   });
 });
 

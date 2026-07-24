@@ -11620,3 +11620,67 @@ caption {
     display: none;
   }
 }
+
+.season-transition-scope {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--sp-4);
+}
+
+.season-transition-scope > div {
+  min-width: 0;
+  padding: var(--sp-4);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-md);
+}
+
+.season-transition-scope strong {
+  display: block;
+  margin-bottom: var(--sp-2);
+}
+
+.season-transition-scope ul {
+  margin: 0;
+  padding-inline-start: 1.25rem;
+}
+
+.season-transition-carries {
+  background: var(--ok-soft);
+}
+
+.season-transition-resets {
+  background: var(--warning-soft);
+}
+
+.readiness-rule {
+  padding-block: var(--sp-3);
+  border-top: 1px solid var(--line);
+}
+
+.readiness-rule > p {
+  margin: 0;
+}
+
+.readiness-rule summary {
+  min-height: 44px;
+  display: inline-flex;
+  align-items: center;
+  color: var(--accent-strong);
+  cursor: pointer;
+  font-weight: 700;
+}
+
+.readiness-rule details p {
+  margin: var(--sp-2) 0 0;
+}
+
+@media (max-width: 640px) {
+  .season-transition-scope {
+    grid-template-columns: 1fr;
+  }
+
+  .season-transition-card .card-header,
+  .admin-transition-page .section-heading {
+    align-items: flex-start;
+  }
+}

@@ -1580,12 +1580,21 @@ export function AdminHealthClient({ tenantReadinessData }: { tenantReadinessData
                   <p><strong>{tenant.scheduledEventCount}</strong><br /><span className="muted">event(s)</span></p>
                 </div>
                 {tenant.checks.map((item) => (
-                  <p key={item.id}>
-                    <span className={`badge ${tenantReadinessStatusClass(item.status)}`}>{item.status.replace("_", " ")}</span>{" "}
-                    <strong>{item.label}</strong><br />
-                    <span className="muted">{item.detail}</span><br />
-                    <a href={item.actionHref}>{item.actionLabel}</a>
-                  </p>
+                  <div className="readiness-rule" key={item.id}>
+                    <p>
+                      <span className={`badge ${tenantReadinessStatusClass(item.status)}`}>{item.status.replace("_", " ")}</span>{" "}
+                      <strong>{item.label}</strong><br />
+                      <span className="muted">{item.detail}</span><br />
+                      <a href={item.actionHref}>{item.actionLabel}</a>
+                    </p>
+                    <details>
+                      <summary data-analytics-event="readiness_rule_opened">Why this status</summary>
+                      <p><strong>Source of truth:</strong> {item.sourceOfTruth}</p>
+                      <p><strong>Responsible authority:</strong> {item.responsibleAuthority}</p>
+                      <p><strong>Privacy boundary:</strong> {item.privacyBoundary}</p>
+                      <p className="muted">{item.explanation}</p>
+                    </details>
+                  </div>
                 ))}
               </article>
             ))}

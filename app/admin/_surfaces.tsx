@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { AdminAdditionalGuardianClient } from "@/components/additional-guardian-access";
 import { OfficialCommunicationWorkbench } from "@/components/official-communication-workbench";
+import { AdminSeasonTransitionReview } from "@/components/season-transition-review";
 import {
   AdminDeliveryReviewClient,
   GameDayResolutionRoomClient,
@@ -42,6 +43,7 @@ import { listAdminTeamManagementData } from "@/lib/supabase/team-management";
 import { seedState } from "@/lib/domain";
 import { listAdminAdditionalGuardianData } from "@/lib/supabase/additional-guardians";
 import { listOfficialCommunicationReviewData } from "@/lib/supabase/official-communications";
+import { listAdminSeasonTransitions } from "@/lib/supabase/season-transitions";
 
 export async function AdminAccessDeniedSurface({ message }: { message?: string } = {}) {
   return (
@@ -348,10 +350,18 @@ export async function AdminInvitesSurface() {
 export async function AdminHealthSurface() {
   const pageAccess = await requireAdminPageAccess();
   if (!pageAccess.ok) return <AdminAccessDeniedSurface message={pageAccess.message} />;
-  const tenantReadinessData = await listTenantReadinessData({
-    organizationIds: pageAccess.access.adminOrganizationIds
-  });
-  return <AdminHealthClient tenantReadinessData={tenantReadinessData} />;
+  const [tenantReadinessData, transitionData] = await Promise.all([
+    listTenantReadinessData({
+      organizationIds: pageAccess.access.adminOrganizationIds
+    }),
+    listAdminSeasonTransitions(pageAccess.access.adminOrganizationIds)
+  ]);
+  return (
+    <>
+      <AdminHealthClient tenantReadinessData={tenantReadinessData} />
+      <AdminSeasonTransitionReview data={transitionData} />
+    </>
+  );
 }
 
 export async function AdminScheduleVenuesSurface() {

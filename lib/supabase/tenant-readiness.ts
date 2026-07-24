@@ -18,6 +18,10 @@ export interface TenantReadinessCheck {
   detail: string;
   actionHref: string;
   actionLabel: string;
+  sourceOfTruth: string;
+  responsibleAuthority: string;
+  privacyBoundary: string;
+  explanation: string;
 }
 
 export interface TenantReadinessSummary {
@@ -118,8 +122,16 @@ function byNewestSeason(left: SeasonRow, right: SeasonRow) {
   return new Date(right.starts_at ?? "").getTime() - new Date(left.starts_at ?? "").getTime();
 }
 
-function check(input: TenantReadinessCheck): TenantReadinessCheck {
-  return input;
+function check(
+  input: Omit<TenantReadinessCheck, "sourceOfTruth" | "responsibleAuthority" | "privacyBoundary" | "explanation">
+): TenantReadinessCheck {
+  return {
+    ...input,
+    sourceOfTruth: "Organization-scoped season, team, roster, membership, and event records.",
+    responsibleAuthority: "League administrator.",
+    privacyBoundary: "Uses aggregate setup counts only; no custody, medical, caregiver, or private family detail.",
+    explanation: "This deterministic rule reports current setup state. It does not change records or send notifications."
+  };
 }
 
 function readinessFromCounts(blockingCount: number, attentionCount: number): TenantInviteReadiness {

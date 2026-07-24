@@ -47,6 +47,11 @@ describe("tenant readiness", () => {
     expect(data.tenants[0]?.readiness).toBe("ready_to_invite");
     expect(data.tenants[0]?.readyToInviteFamilies).toBe(true);
     expect(data.tenants[0]?.blockingCount).toBe(0);
+    expect(data.tenants[0]?.checks[0]).toMatchObject({
+      responsibleAuthority: "League administrator.",
+      privacyBoundary: expect.stringContaining("no custody"),
+      explanation: expect.stringContaining("does not change records")
+    });
   });
 
   it("ignores rows from other organizations when computing a tenant checklist", () => {
