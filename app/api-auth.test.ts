@@ -104,7 +104,8 @@ describe("API mutation auth boundaries", () => {
     expect(callback).toContain("/auth?oauth=complete");
     expect(panel).toContain("signInWithOAuth");
     expect(panel).toContain("provider,");
-    expect(panel).toContain("getSupabaseEmailRedirectTo(\"/auth/callback\")");
+    expect(panel).toContain("getSupabaseEmailRedirectTo(`/auth/callback");
+    expect(panel).toContain("encodeURIComponent(returnTo)");
     expect(panel).toContain("/api/auth/session-landing");
   });
 });

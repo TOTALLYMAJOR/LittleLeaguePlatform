@@ -55,6 +55,21 @@ describe("role route guards and compatibility wrappers", () => {
     expect(migration).not.toContain("net.http");
   });
 
+  it("keeps invitation acceptance one-time, session-derived, and open-redirect safe", () => {
+    const acceptRoute = source("app/api/invites/accept/route.ts");
+    const service = source("lib/supabase/invite-acceptance.ts");
+    const migration = source("supabase/migrations/0026_parent_invite_acceptance.sql");
+    const authPage = source("app/auth/page.tsx");
+    expect(acceptRoute).toContain("requireAuthenticatedRouteUser");
+    expect(acceptRoute).toContain("userId: auth.user.id");
+    expect(service).toContain('createHash("sha256")');
+    expect(service).not.toContain("seedState");
+    expect(migration).toContain("Signed-in email does not match this invitation.");
+    expect(migration).toContain("status = 'accepted'");
+    expect(migration).toContain("to service_role");
+    expect(authPage).toContain('!returnTo.startsWith("//")');
+  });
+
   it("uses one shared active-admin guard before admin data loaders", () => {
     const surfaces = source("app/admin/_surfaces.tsx");
 

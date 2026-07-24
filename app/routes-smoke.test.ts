@@ -45,6 +45,7 @@ const appRoutes = [
   "/parent/setup",
   "/registration",
   "/invite/expired",
+  "/invite/accept",
   "/invite/recover",
   "/team-portal",
   "/team-chat",

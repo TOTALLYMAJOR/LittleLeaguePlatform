@@ -1,4 +1,4 @@
-export type PublicIntakeRoute = "registration" | "registration_status" | "invite_recovery" | "mobile_usage";
+export type PublicIntakeRoute = "registration" | "registration_status" | "invite_recovery" | "invite_preview" | "mobile_usage";
 
 type RateLimitPolicy = {
   maxRequests: number;
@@ -17,6 +17,7 @@ const policies: Record<PublicIntakeRoute, RateLimitPolicy> = {
   registration: { maxRequests: 5, windowMs: 60_000 },
   registration_status: { maxRequests: 8, windowMs: 60_000 },
   invite_recovery: { maxRequests: 5, windowMs: 60_000 },
+  invite_preview: { maxRequests: 8, windowMs: 60_000 },
   mobile_usage: { maxRequests: 60, windowMs: 60_000 },
 };
 

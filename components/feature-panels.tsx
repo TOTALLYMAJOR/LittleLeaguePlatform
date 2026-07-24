@@ -1019,7 +1019,7 @@ function mergeRegistrationRequests(localRequests: RegistrationRequest[], serverR
   });
 }
 
-export function AuthClient() {
+export function AuthClient({ returnTo = "" }: { returnTo?: string }) {
   type SocialAuthProvider = "google" | "facebook";
 
   const [email, setEmail] = useState("");
@@ -1038,6 +1038,10 @@ export function AuthClient() {
         const { data, error } = await supabase.auth.getSession();
         if (cancelled || error || !data.session) return;
         setMessage("Signed in. Opening the right dashboard.");
+        if (returnTo) {
+          if (!cancelled) window.location.assign(returnTo);
+          return;
+        }
         const landingResponse = await fetch("/api/auth/session-landing", { cache: "no-store" }).catch(() => null);
         const landing = await landingResponse?.json().catch(() => null) as { href?: string } | null;
         if (!cancelled) window.location.assign(landing?.href ?? "/account");
@@ -1050,7 +1054,7 @@ export function AuthClient() {
     return () => {
       cancelled = true;
     };
-  }, [authConfigStatus.ok]);
+  }, [authConfigStatus.ok, returnTo]);
 
   function submitAuth() {
     setMessage("");
@@ -1068,6 +1072,10 @@ export function AuthClient() {
           return;
         }
         setMessage("Signed in. Opening the right dashboard.");
+        if (returnTo) {
+          window.location.assign(returnTo);
+          return;
+        }
         const landingResponse = await fetch("/api/auth/session-landing", { cache: "no-store" }).catch(() => null);
         const landing = await landingResponse?.json().catch(() => null) as { href?: string } | null;
         window.location.assign(landing?.href ?? "/account");
@@ -1091,7 +1099,7 @@ export function AuthClient() {
         const { error } = await supabase.auth.signInWithOAuth({
           provider,
           options: {
-            redirectTo: getSupabaseEmailRedirectTo("/auth/callback")
+            redirectTo: getSupabaseEmailRedirectTo(`/auth/callback${returnTo ? `?returnTo=${encodeURIComponent(returnTo)}` : ""}`)
           }
         });
 

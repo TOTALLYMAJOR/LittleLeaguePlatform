@@ -196,6 +196,7 @@ export interface Database {
           last_sent_at: Timestamp | null;
           expires_at: Timestamp;
           accepted_at: Timestamp | null;
+          accepted_by_user_id: RowId | null;
           created_at: Timestamp;
           updated_at: Timestamp;
         };
@@ -214,6 +215,7 @@ export interface Database {
           last_sent_at?: Timestamp | null;
           expires_at: Timestamp;
           accepted_at?: Timestamp | null;
+          accepted_by_user_id?: RowId | null;
           created_at?: Timestamp;
           updated_at?: Timestamp;
         };
@@ -625,6 +627,10 @@ export interface Database {
           enable_translation: boolean;
           enable_shared_device_previews: boolean;
         };
+        Returns: Json;
+      };
+      accept_parent_invite_by_hash: {
+        Args: { target_invite_token_hash: string; accepting_user_id: RowId };
         Returns: Json;
       };
       current_user_can_read_profile: { Args: { target_user_id: RowId }; Returns: boolean };
