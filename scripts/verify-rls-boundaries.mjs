@@ -6,7 +6,7 @@ const envFile = ".env.local";
 const ids = {
   playerMason: "44444444-4444-4444-8444-444444444441",
   playerAvery: "44444444-4444-4444-8444-444444444442",
-  playerOtherTeam: "44444444-4444-4444-8444-444444444443",
+  playerArchivedTeam: "44444444-4444-4444-8444-444444444444",
   game: "55555555-5555-4555-8555-555555555551",
   archivedGame: "55555555-5555-4555-8555-555555555553",
   weather: "cccccccc-cccc-4ccc-8ccc-ccccccccccc1"
@@ -108,7 +108,7 @@ async function main() {
   const parentOtherTeamPlayerRead = await parent
     .from("players")
     .select("id,first_name")
-    .eq("id", ids.playerOtherTeam);
+    .eq("id", ids.playerArchivedTeam);
   assertNoError(parentOtherTeamPlayerRead.error, "parent cross-team player read denial");
   assertRows(parentOtherTeamPlayerRead.data, 0, "parent cannot read cross-team players");
 

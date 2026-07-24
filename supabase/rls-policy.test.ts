@@ -26,6 +26,7 @@ describe("Supabase RLS policy coverage", () => {
   const guardianVerification = migration("0020_guardian_verification_policy.sql");
   const drillVideoReferences = migration("0022_drill_video_references.sql");
   const coordinationLoops = migration("0024_coordination_loops.sql");
+  const securityDefinerHardening = migration("20260724143554_security_definer_execution_hardening.sql");
   const packageJson = readFileSync(join(process.cwd(), "package.json"), "utf8");
   const rlsProof = readFileSync(join(process.cwd(), "scripts", "verify-rls-boundaries.mjs"), "utf8");
 
@@ -184,5 +185,20 @@ describe("Supabase RLS policy coverage", () => {
     expect(coordinationLoops).toContain("create or replace function public.rollback_roster_import");
     expect(coordinationLoops).toContain("'providerSendsExecuted', 0");
     expect(coordinationLoops).toContain("grant execute on function public.apply_game_day_resolution");
+  });
+
+  it("keeps privileged security-definer entry points server-only", () => {
+    expect(securityDefinerHardening).toContain(
+      "revoke all on function public.approve_registration_request(uuid, uuid, text)"
+    );
+    expect(securityDefinerHardening).toContain(
+      "revoke all on function public.reject_registration_request(uuid, uuid, text)"
+    );
+    expect(securityDefinerHardening).toContain(
+      "revoke all on function public.purge_expired_team_chat_messages(timestamptz)"
+    );
+    expect(securityDefinerHardening).toContain("from public, anon, authenticated");
+    expect(securityDefinerHardening).toContain("to service_role");
+    expect(securityDefinerHardening).toContain("set search_path = pg_catalog, public");
   });
 });

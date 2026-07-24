@@ -1,6 +1,6 @@
 # Communication Room implementation contract
 
-Status: Local implementation and signed-in responsive browser proof complete; hosted proof tracked separately
+Status: Local implementation, responsive browser proof, and isolated Supabase QA record proof complete; production-hosted proof tracked separately
 Task ID: LP-COMM-001
 Approved design: [LeaguePilot Family Experience](https://www.figma.com/design/c28Jx5U8wI2SPWPhbKaMje)
 Primary route: `/parent/messages`
@@ -23,7 +23,7 @@ The selected visual direction is Calm Family Operations with Community Sports Jo
 | --- | --- |
 | Tenant context | The verified parent session establishes guardian identity. Active guardian links establish child scope; linked team IDs establish team and organization scope. |
 | Tenant propagation | Server shell access resolves the parent team IDs. `ParentMessagesSurface` passes them into `scopeTeamChatData`; notification receipts are queried by the session-derived parent user ID. The client receives only those scoped rows. |
-| Isolation proof | `requireParentPageAccess`, server-side team scoping, recipient-filtered receipt reads, session-derived write routes, existing team-membership checks, and RLS policy tests prevent cross-team access. Browser proof remains a separate gate. |
+| Isolation proof | `requireParentPageAccess`, server-side team scoping, recipient-filtered receipt reads, session-derived write routes, existing team-membership checks, real-session RLS proof, and populated browser proof prevent cross-team access. |
 | Actor and authorization | An authenticated linked parent can read scoped records and post an ordinary team-chat reply. Only an affected notification recipient can acknowledge that receipt. Coaches or administrators remain responsible for announcements and consequential publication. |
 | State model | Existing team-chat message and notification evidence states are read. The surface does not add domain or workflow states. Acknowledgment uses the existing atomic RPC; reply creation uses the existing team-chat service. |
 | Configuration | Read scope is user and team specific. Provider delivery remains environment and organization gated and is not invoked by this surface. |
@@ -33,7 +33,7 @@ The selected visual direction is Calm Family Operations with Community Sports Jo
 | Security threat model | The slice avoids client-supplied actor IDs, filters every team and receipt server-side, withholds unauthorized drafts, makes fallback data read-only, and adds no provider call, access grant, sensitive child data, or mass-assignment seam. |
 | Provider impact | None. Published, delivered, read, and acknowledged evidence is displayed without initiating email, SMS, push, or provider review. |
 | Storage and analytics impact | No new private storage, cache, export, or analytics write. The production service worker continues to avoid cache-first private HTML. |
-| Migration and rollout | No migration is required. Rollback is confined to restoring the parent route wrapper; coach chat and compatibility Team Chat remain unchanged. Existing tenants with no messages receive explanatory empty states. |
+| Migration and rollout | The surface adds no new domain table. Isolated QA proof applies existing migrations `0023` and `0024` plus the server-only security-definer execution hardening migration. Production remains untouched until an explicit promotion. UI rollback is confined to restoring the parent route wrapper; coach chat and compatibility Team Chat remain unchanged. |
 
 ## Surface behavior
 
@@ -103,5 +103,16 @@ The selected visual direction is Calm Family Operations with Community Sports Jo
 - [x] Loading, empty, partial-error, offline, pending, failure, and completed receipt states are implemented.
 - [x] Focused component and receipt-evidence tests pass.
 - [x] Signed-in browser comparison passes at 390, 768, and 1440 pixels with no document overflow, undersized surface controls, or page errors.
-- [ ] Hosted Supabase and RLS proof confirms multi-child isolation, acknowledgment readback, and conversation write behavior.
+- [x] Isolated Supabase QA and real-session RLS proof confirms multi-child isolation, acknowledgment readback, audit attribution, and conversation persistence with zero provider sends.
+- [ ] Production-hosted route proof is repeated after an explicitly approved deployment and migration promotion.
 - [ ] Durable version, withdrawal, correction, and supersession records are available before those states are called production-ready.
+
+## Isolated QA proof
+
+- Project boundary: restored empty Supabase project, separate from the active LeaguePilot production project.
+- Migration evidence: all repository migrations through `0024`, followed by `20260724143554_security_definer_execution_hardening.sql`.
+- RLS evidence: `npm run qa:rls-proof` passed for parent, coach, and anonymous sessions.
+- Browser and readback evidence: `npm run qa:communication-room-record-proof`.
+- Proof artifact: `output/playwright/communication-room/populated-record-proof.json`.
+- Visual artifact: `output/playwright/communication-room/populated-record-mobile.png`.
+- Verified result: two linked children across two teams; archived-team child excluded; parent reply persisted; critical acknowledgment and attributed audit recorded; notification attempt remained `suppressed`; provider acceptance and delivery remained false; event stayed scheduled; RSVP, attendance, and transportation rows remained unchanged.

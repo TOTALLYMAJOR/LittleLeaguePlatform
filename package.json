@@ -22,6 +22,7 @@
     "qa:brand-proof": "node scripts/verify-brand-surface-proof.mjs",
     "qa:coordination-proof": "node scripts/capture-coordination-loops-proof.mjs",
     "qa:communication-room-proof": "node scripts/capture-communication-room-proof.mjs",
+    "qa:communication-room-record-proof": "node scripts/capture-communication-room-record-proof.mjs",
     "qa:rls-proof": "node scripts/verify-rls-boundaries.mjs",
     "check:skills": "node scripts/check-agent-skills.mjs",
     "supabase:oauth": "node scripts/configure-supabase-oauth.mjs",
@@ -45,7 +46,8 @@
   },
   "overrides": {
     "esbuild": "0.27.2",
-    "postcss": "^8.5.10"
+    "postcss": "^8.5.10",
+    "sharp": "$sharp"
   },
   "devDependencies": {
     "@playwright/test": "^1.61.0",

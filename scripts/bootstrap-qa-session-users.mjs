@@ -154,15 +154,19 @@ async function main() {
     playerMason: "44444444-4444-4444-8444-444444444441",
     playerAvery: "44444444-4444-4444-8444-444444444442",
     playerOtherTeam: "44444444-4444-4444-8444-444444444443",
+    playerArchivedTeam: "44444444-4444-4444-8444-444444444444",
     game: "55555555-5555-4555-8555-555555555551",
     practice: "55555555-5555-4555-8555-555555555552",
     archivedGame: "55555555-5555-4555-8555-555555555553",
     coachMembership: "66666666-6666-4666-8666-666666666661",
     parentMembership: "66666666-6666-4666-8666-666666666662",
     archivedCoachMembership: "66666666-6666-4666-8666-666666666663",
+    parentOtherTeamMembership: "66666666-6666-4666-8666-666666666664",
     guardian: "77777777-7777-4777-8777-777777777771",
     guardianMedicalAuthorization: "77777777-7777-4777-8777-777777777772",
     emergencyContact: "77777777-7777-4777-8777-777777777773",
+    guardianAvery: "77777777-7777-4777-8777-777777777774",
+    guardianOtherTeam: "77777777-7777-4777-8777-777777777775",
     announcement: "88888888-8888-4888-8888-888888888881",
     mediaAlbum: "99999999-9999-4999-8999-999999999991",
     mediaVideo: "99999999-9999-4999-8999-999999999992",
@@ -271,6 +275,13 @@ async function main() {
     status: "active"
   }, { onConflict: "team_id,user_id,role" });
   await upsertOrThrow(supabase, "team_memberships", {
+    id: ids.parentOtherTeamMembership,
+    team_id: ids.otherTeam,
+    user_id: parent.id,
+    role: "parent",
+    status: "active"
+  }, { onConflict: "team_id,user_id,role" });
+  await upsertOrThrow(supabase, "team_memberships", {
     id: ids.archivedCoachMembership,
     team_id: ids.archivedTeam,
     user_id: coach.id,
@@ -304,11 +315,34 @@ async function main() {
     last_initial: "R",
     jersey: "3"
   });
+  await upsertOrThrow(supabase, "players", {
+    id: ids.playerArchivedTeam,
+    organization_id: ids.organization,
+    season_id: ids.archivedSeason,
+    team_id: ids.archivedTeam,
+    first_name: "Riley",
+    last_initial: "Q",
+    jersey: "9"
+  });
   await upsertOrThrow(supabase, "player_guardians", {
     id: ids.guardian,
     player_id: ids.playerMason,
     parent_user_id: parent.id,
     relationship: "father",
+    status: "active"
+  });
+  await upsertOrThrow(supabase, "player_guardians", {
+    id: ids.guardianAvery,
+    player_id: ids.playerAvery,
+    parent_user_id: parent.id,
+    relationship: "guardian",
+    status: "removed"
+  });
+  await upsertOrThrow(supabase, "player_guardians", {
+    id: ids.guardianOtherTeam,
+    player_id: ids.playerOtherTeam,
+    parent_user_id: parent.id,
+    relationship: "guardian",
     status: "active"
   });
   await upsertOrThrow(supabase, "guardian_authorizations", {
