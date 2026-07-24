@@ -41,6 +41,34 @@ const routeSpecs = [
     ]
   },
   {
+    role: "parent-caregiver",
+    path: "/parent/family-access",
+    credentialKeys: ["QA_PARENT_EMAIL", "QA_PARENT_PASSWORD"],
+    readyTexts: [
+      "Choose exactly what one adult may see and do.",
+      "Temporary caregiver access is temporarily unavailable.",
+      "Sign in to see your family home.",
+      "Family access is not active yet."
+    ]
+  },
+  {
+    role: "caregiver-acceptance",
+    path: "/caregiver/accept",
+    credentialKeys: ["QA_PARENT_EMAIL", "QA_PARENT_PASSWORD"],
+    readyTexts: [
+      "Review every permission before accepting."
+    ]
+  },
+  {
+    role: "caregiver-portal",
+    path: "/caregiver",
+    credentialKeys: ["QA_PARENT_EMAIL", "QA_PARENT_PASSWORD"],
+    readyTexts: [
+      "No current temporary access.",
+      "Temporary caregiver access is temporarily unavailable."
+    ]
+  },
+  {
     role: "coach",
     path: "/coach",
     credentialKeys: ["QA_COACH_EMAIL", "QA_COACH_PASSWORD"],
@@ -221,7 +249,23 @@ async function captureRoute(browser, routeSpec) {
       }));
       proof.viewports.push({ name, width, height, ...layout });
       if (layout.scrollWidth > layout.clientWidth) {
-        throw new Error(`${routeSpec.role} ${name} has document overflow: ${layout.scrollWidth}px > ${layout.clientWidth}px.`);
+        const overflowElements = await page.evaluate(() => [...document.querySelectorAll("body *")]
+          .map((element) => {
+            const rect = element.getBoundingClientRect();
+            return {
+              selector: `${element.tagName.toLowerCase()}${element.id ? `#${element.id}` : ""}${[...element.classList].slice(0, 3).map((name) => `.${name}`).join("")}`,
+              left: Math.round(rect.left),
+              right: Math.round(rect.right),
+              width: Math.round(rect.width),
+              clientWidth: element.clientWidth,
+              scrollWidth: element.scrollWidth,
+              minWidth: getComputedStyle(element).minWidth
+            };
+          })
+          .filter((rect) => rect.left < 0 || rect.right > document.documentElement.clientWidth || rect.scrollWidth > rect.clientWidth)
+          .sort((left, right) => (right.scrollWidth - right.clientWidth) - (left.scrollWidth - left.clientWidth))
+          .slice(0, 16));
+        throw new Error(`${routeSpec.role} ${name} has document overflow: ${layout.scrollWidth}px > ${layout.clientWidth}px. ${JSON.stringify(overflowElements)}`);
       }
       if (name === "mobile-375") {
         proof.firstViewportText = normalizeText(await page.locator("body").innerText({ timeout: 15_000 }));
@@ -286,10 +330,13 @@ async function main() {
   try {
     const proofs = [];
     const requestedRole = process.env.SEASON_CERTAINTY_ROLE;
-    const selectedRouteSpecs = requestedRole
-      ? routeSpecs.filter((routeSpec) => routeSpec.role === requestedRole)
+    const requestedRoles = requestedRole?.split(",").map((role) => role.trim()).filter(Boolean) ?? [];
+    const selectedRouteSpecs = requestedRoles.length
+      ? routeSpecs.filter((routeSpec) => requestedRoles.includes(routeSpec.role))
       : routeSpecs;
-    if (!selectedRouteSpecs.length) throw new Error(`Unknown SEASON_CERTAINTY_ROLE: ${requestedRole}`);
+    if (selectedRouteSpecs.length !== (requestedRoles.length || routeSpecs.length)) {
+      throw new Error(`Unknown or duplicate SEASON_CERTAINTY_ROLE selection: ${requestedRole}`);
+    }
     for (const routeSpec of selectedRouteSpecs) {
       proofs.push(await captureRoute(browser, routeSpec));
     }

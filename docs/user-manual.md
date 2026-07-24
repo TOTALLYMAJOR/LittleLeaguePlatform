@@ -129,7 +129,20 @@ Parents can review coach-approved practice recap material from Parent Replay. Th
 
 Route: `/parent/family-access`
 
-Use this area to understand which family links are active. If a child, team, or guardian link is missing, contact the league admin for review.
+Use this area for two different paths:
+
+- Ask the league to review another full guardian link. This does not grant access until an administrator approves the request and the exact invited email accepts.
+- Authorize one temporary caregiver for one child/team, selected events, and no more than 14 days. Review the allowed and prohibited actions, copy the one-time link, and share it yourself. No message is sent automatically.
+
+Temporary care never grants medical/health access, custody authority, RSVP/attendance changes, official schedule changes, publishing, roster/other-child access, or permission to pass access onward. Optional pickup fails closed when a restriction needs league review. Revoke temporary access with a reason when care ends early.
+
+The invited caregiver opens `/caregiver/accept`, reviews the exact scope, signs in with the named email, and accepts. `/caregiver` then shows only the authorized child, selected events, actions, and time window. Future scope does not activate before its start; expired or revoked scope reveals no private event details and clears the caregiver cache namespace at next contact.
+
+### Transportation
+
+Route: `/parent/transportation`
+
+Outbound and return responsibility are separate. A ride request stays unassigned until another active team guardian offers and the requesting guardian separately accepts at the current official schedule version. A changed schedule requires review, and either adult can withdraw with an attributed reason.
 
 ### Settings
 

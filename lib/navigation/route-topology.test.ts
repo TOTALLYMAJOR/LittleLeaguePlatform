@@ -175,4 +175,16 @@ describe("route topology", () => {
     expect(teamChat?.requiresAuth).toBe(true);
     expect(teamChat?.allowedRoles).toEqual(["parent", "coach", "admin"]);
   });
+
+  it("keeps caregiver acceptance public but caregiver event data signed-in only", () => {
+    const acceptance = getRouteEntry("/caregiver/accept");
+    const portal = getRouteEntry("/caregiver");
+
+    expect(acceptance?.requiresAuth).toBe(false);
+    expect(acceptance?.allowedRoles).toEqual(["signed_out", "signed_in"]);
+    expect(acceptance?.navVisible).toBe(false);
+    expect(portal?.requiresAuth).toBe(true);
+    expect(portal?.allowedRoles).toEqual(["signed_in"]);
+    expect(portal?.navVisible).toBe(false);
+  });
 });

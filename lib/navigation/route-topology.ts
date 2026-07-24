@@ -76,6 +76,8 @@ export const routeTopology = [
   route("/account", "Account", "AC", "support", "Support", ["signed_in"], true, true, true, true, 5),
   route("/invite/recover", "Recover Invite", "RI", "support", "Support", ["signed_in"], false, false, true, true),
   route("/invite/expired", "Expired Invite", "EX", "support", "Support", ["signed_out", "parent", "coach", "admin"], false, false, false, false),
+  route("/caregiver/accept", "Accept temporary care", "TC", "support", "Support", ["signed_out", "signed_in"], false, false, false, false),
+  route("/caregiver", "Temporary caregiver", "TC", "support", "Support", ["signed_in"], false, false, false, true),
   route("/offline", "Offline", "OF", "support", "Support", ["signed_out", "parent", "coach", "admin"], false, false, false, false),
 
   route("/parent", "Home", "HM", "parent", "Family", ["parent"], true, true, true, true, 1),

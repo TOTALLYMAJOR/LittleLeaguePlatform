@@ -24,6 +24,8 @@ const appRoutes = [
   "/admin/themes",
   "/admin/registrations",
   "/access/status",
+  "/caregiver",
+  "/caregiver/accept",
   "/coach",
   "/coach/attendance",
   "/coach/drafts",
@@ -154,7 +156,8 @@ describe("route smoke coverage", () => {
     expect(shell).toContain("Skip to main content");
     expect(shell).toContain("You are here");
     expect(shell).toContain("getShellContext");
-    expect(shell).toContain("Role scoped");
+    expect(shell).toContain("Current access");
+    expect(shell).toContain("Private team details stay hidden on this page");
     expect(shell).toContain("Sign-in required");
     expect(shell).toContain("little-league-shell-collapsed");
     expect(shell).toContain("Quick navigation");

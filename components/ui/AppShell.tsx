@@ -60,7 +60,7 @@ const routeHelpByRole: Record<RouteTopologyEntry["role"], { title: string; body:
   },
   support: {
     title: "Account help",
-    body: "Use this area for sign in, account status, invite recovery, and support paths.",
+    body: "Use this area for sign in, account status, invite recovery, temporary-care review, and support.",
     tone: "support"
   },
   shared: {
@@ -105,7 +105,7 @@ function getShellContext(pathname: string, access: ClientShellAccess) {
   const title = entry?.label ? `${roleHelp.title}: ${entry.label}` : roleHelp.title;
   const body = entry?.href && routeHelpByHref[entry.href] ? routeHelpByHref[entry.href] : roleHelp.body;
   const signInRequired = Boolean(entry?.requiresAuth && !access.signedIn);
-  const badge = signInRequired ? "Sign-in required" : access.signedIn ? "Role scoped" : "Public entry";
+  const badge = signInRequired ? "Sign-in required" : access.signedIn ? "Signed in" : "Public entry";
   const badgeVariant = signInRequired ? "warning" : access.signedIn ? "info" : "neutral";
   return { ...roleHelp, title, body, badge, badgeVariant: badgeVariant as "warning" | "info" | "neutral" };
 }
@@ -358,12 +358,12 @@ export function AppShell({ access = signedOutShellAccess, children }: { access?:
                   {activeContext.teamName ? <span><small>Team</small><strong>{activeContext.teamName}</strong></span> : null}
                   <span className={activeContext.readOnly ? "state-readonly" : "state-current"}>
                     <small>Access</small>
-                    <strong>{activeContext.readOnly ? "Archived, read-only" : "Current, role scoped"}</strong>
+                    <strong>{activeContext.readOnly ? "Archived, read-only" : "Current access"}</strong>
                   </span>
                 </div>
               ) : (
                 <div className="verified-context-bar context-unavailable" role="status">
-                  <span><small>Context</small><strong>No verified context for this route</strong></span>
+                  <span><small>Privacy</small><strong>Private team details stay hidden on this page</strong></span>
                 </div>
               )}
             </>

@@ -13,6 +13,11 @@ supabase/migrations/0003_registration_approval_workflow.sql
 supabase/migrations/0004_fix_registration_approval_digest.sql
 ...
 supabase/migrations/0024_coordination_loops.sql
+supabase/migrations/0025_family_first_sign_in.sql
+supabase/migrations/0026_parent_invite_acceptance.sql
+supabase/migrations/0027_additional_guardian_requests.sql
+supabase/migrations/0028_transportation_responsibility.sql
+supabase/migrations/0029_temporary_caregiver_authorizations.sql
 ```
 
 Demo seed:
@@ -72,6 +77,7 @@ npm run supabase:push
 - Practice completion is an auditable receipt separate from planning, start, Parent Replay approval, and publication. A completed receipt may be linked to one same-team Replay only.
 - Caregiver handoffs are guardian-owned coordination records for one linked player and event. They do not create a profile, invite, membership, or access grant.
 - Transportation requests, offers, and assignments are separate from caregiver coordination notes. Outbound and return are independent; a request is unassigned, a driver offer records only driver-side acceptance, and assignment requires the requesting guardian’s second acceptance at the same official schedule version. Recorded pickup restrictions fail closed. Withdrawal creates attributed history and no provider send.
+- Temporary caregiver authorizations are separate from guardian membership and from coordination notes. Scope is one child/team, selected events, at most 14 days, Event Passport view, optional pickup, and fixed prohibitions. Exact-email acceptance, future-start state, expiry, revocation, restriction checks, and audit history are explicit.
 - Game-day monitor, confirm, delay, and cancel decisions require assigned coach/admin review. Delay/cancel changes, evidence, audit/change logs, and notification drafts are committed together; no provider send occurs in the RPC.
 - Explicit notification acknowledgment is recipient-scoped and requires an existing delivery attempt. It does not infer provider acceptance, delivery, or read evidence.
 
@@ -114,3 +120,5 @@ The seed is idempotent and writes fixed fictional UUIDs under `LeaguePilot Demo 
 ## Coordination Loop Promotion
 
 Apply migration `0024` only to an explicitly selected disposable QA/preview project, then run signed-in admin, coach, and guardian journeys with database readback. Provider sandbox evidence is a separate gate: notification drafts, approval, provider acceptance, verified delivery/failure, read, and acknowledgment must remain independent proof lanes.
+
+Apply migrations `0025` through `0029` in order only to an explicitly approved QA/preview target. Migration `0029_temporary_caregiver_authorizations.sql` adds least-privilege, time-bound caregiver scope separate from guardian membership: one child/team, selected scheduled events, a maximum 14-day window, selected Event Passport view, optional pickup, and fixed medical/custody/attendance/schedule/publishing/roster/delegation prohibitions. Exact-email acceptance, active-guardian revalidation, hashed single-use proof, pickup-restriction review, automatic expiry, attributed revocation, and audit events are enforced server-side. Prove real-session isolation and caregiver cache clearing before any production claim.
