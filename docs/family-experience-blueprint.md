@@ -981,6 +981,8 @@ Official-communication implementation status (2026-07-24): migration `0030` adds
 
 Proof: source/approval/publication boundaries, media lifecycle, archive and revocation, moderated parent comprehension.
 
+Family Parent Replay implementation status (2026-07-24): `/parent/practice-recaps` now uses a dedicated guardian-scoped, published-only reader instead of the broad Team Portal. Parent compatibility scoping also removes draft Replays. The family story names linked children with first name/last initial, team, coach, publication date, a concrete short activity, coach cue, learning context, team quest, private save/tried states, and a season memory timeline. Text remains emotionally complete without child imagery. Migration `0031` makes optional media service-only and requires complete subject identification, administrator review, moderation, safety scan, family release, accessible alt text/transcript, and current team-family consent from every active guardian for every identified child. Every read rechecks current team, guardian consent, storage deletion, scan, release, and moderation state; attributed revocation removes media while retaining the text Replay. Individual family engagement is parent-only and explicitly non-ranking. Focused source/API/render tests pass, and signed-in populated 375/390/768/1440 proof records zero overflow, undersized controls, and browser errors. Ordered migration/RLS, media lifecycle, consent-revocation, offline/reconnect, assistive-technology, retention, moderated parent-comprehension, and hosted proof remain open.
+
 ## 18. Figma-ready prototype specification: primary parent journey
 
 Selected prototype direction: Community Sports Journal.

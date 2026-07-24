@@ -10,6 +10,7 @@ import { ParentAdditionalGuardianClient } from "@/components/additional-guardian
 import { FamilyMissionControlClient } from "@/components/family-mission-control";
 import { ParentTransportationClient } from "@/components/family-transportation";
 import { ParentTemporaryCaregiverClient } from "@/components/temporary-caregiver-access";
+import { FamilyParentReplay } from "@/components/family-parent-replay";
 import {
   FamilyFlightPlanClient,
   ParentNotificationReceiptsClient
@@ -26,6 +27,7 @@ import { listParentAdditionalGuardianData } from "@/lib/supabase/additional-guar
 import { buildFamilyMissionControl } from "@/lib/family-mission-control";
 import { listParentTransportationData } from "@/lib/supabase/transportation";
 import { listParentTemporaryCaregiverData } from "@/lib/supabase/temporary-caregivers";
+import { listFamilyReplays } from "@/lib/supabase/family-replays";
 
 export async function loadParentDashboardForPage() {
   const pageAccess = await requireParentPageAccess();
@@ -128,7 +130,12 @@ export async function ParentPortalSurface({ audience = "parent" }: { audience?: 
 }
 
 export async function ParentPracticeRecapsSurface() {
-  return <ParentPortalSurface audience="parent" />;
+  const pageAccess = await requireParentPageAccess();
+  if (!pageAccess.ok || !pageAccess.access.userId) {
+    return <ParentDashboardClient dashboardData={pageAccess.dashboardData} />;
+  }
+  const data = await listFamilyReplays({ parentUserId: pageAccess.access.userId });
+  return <FamilyParentReplay data={data} />;
 }
 
 export async function ParentFamilyAccessSurface() {

@@ -72,6 +72,7 @@ describe("route data scoping", () => {
     expect(scoped.players.every((player) => player.teamId === allowedTeam.id)).toBe(true);
     expect(scoped.guardianLinks.every((link) => link.parentUserId === allowedParent.id)).toBe(true);
     expect(scoped.parentInvites).toEqual([]);
+    expect(scoped.parentReplays.every((replay) => replay.status === "queued")).toBe(true);
     expect(scoped.players.some((player) => player.id === allowedPlayer.id)).toBe(true);
   });
 });

@@ -95,6 +95,9 @@ export function scopeTeamPortalData(
     users: data.users.filter((user) => membershipUserIds.has(user.id)),
     events: data.events.filter((event) => allowedTeamIds.has(event.teamId)),
     mediaItems: data.mediaItems.filter((item) => allowedTeamIds.has(item.teamId)),
-    parentReplays: data.parentReplays.filter((replay) => allowedTeamIds.has(replay.teamId))
+    parentReplays: data.parentReplays.filter((replay) => (
+      allowedTeamIds.has(replay.teamId) &&
+      (options.audience !== "parent" || replay.status === "queued")
+    ))
   };
 }

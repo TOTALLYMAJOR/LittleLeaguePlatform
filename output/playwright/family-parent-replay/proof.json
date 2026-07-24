@@ -1,0 +1,46 @@
+{
+  "generatedAt": "2026-07-24T18:07:14.223Z",
+  "baseUrl": "http://127.0.0.1:3022",
+  "proof": [
+    {
+      "name": "mobile-375",
+      "path": "/parent/practice-recaps",
+      "width": 375,
+      "height": 812,
+      "documentOverflow": false,
+      "undersizedInteractiveCount": 0,
+      "renderedState": "published",
+      "pageErrors": []
+    },
+    {
+      "name": "mobile-390",
+      "path": "/parent/practice-recaps",
+      "width": 390,
+      "height": 844,
+      "documentOverflow": false,
+      "undersizedInteractiveCount": 0,
+      "renderedState": "published",
+      "pageErrors": []
+    },
+    {
+      "name": "tablet-768",
+      "path": "/parent/practice-recaps",
+      "width": 768,
+      "height": 1024,
+      "documentOverflow": false,
+      "undersizedInteractiveCount": 0,
+      "renderedState": "published",
+      "pageErrors": []
+    },
+    {
+      "name": "desktop-1440",
+      "path": "/parent/practice-recaps",
+      "width": 1440,
+      "height": 1100,
+      "documentOverflow": false,
+      "undersizedInteractiveCount": 0,
+      "renderedState": "published",
+      "pageErrors": []
+    }
+  ]
+}
