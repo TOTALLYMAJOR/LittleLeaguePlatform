@@ -71,6 +71,7 @@ npm run supabase:push
 - Season Launch commit and rollback execute as admin-only atomic RPCs. Provenance is retained on imported players, guardian links, memberships, and invites; rollback stops once downstream family, attendance, safety, learning, media-consent, RSVP, or handoff activity exists.
 - Practice completion is an auditable receipt separate from planning, start, Parent Replay approval, and publication. A completed receipt may be linked to one same-team Replay only.
 - Caregiver handoffs are guardian-owned coordination records for one linked player and event. They do not create a profile, invite, membership, or access grant.
+- Transportation requests, offers, and assignments are separate from caregiver coordination notes. Outbound and return are independent; a request is unassigned, a driver offer records only driver-side acceptance, and assignment requires the requesting guardian’s second acceptance at the same official schedule version. Recorded pickup restrictions fail closed. Withdrawal creates attributed history and no provider send.
 - Game-day monitor, confirm, delay, and cancel decisions require assigned coach/admin review. Delay/cancel changes, evidence, audit/change logs, and notification drafts are committed together; no provider send occurs in the RPC.
 - Explicit notification acknowledgment is recipient-scoped and requires an existing delivery attempt. It does not infer provider acceptance, delivery, or read evidence.
 

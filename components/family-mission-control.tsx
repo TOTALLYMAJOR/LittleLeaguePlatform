@@ -107,6 +107,7 @@ export function FamilyMissionControlClient({ view }: { view: FamilyMissionContro
       <section className="mission-secondary-actions" aria-label="Family shortcuts">
         <a href="#family-week">View week</a>
         <a href="/parent/messages">Messages</a>
+        <a href="/parent/transportation">Transportation</a>
         <a href="/parent/practice-recaps">Parent Replay</a>
         <a data-analytics-event="offline_pack_opened" href="/offline">Offline pack</a>
       </section>
@@ -222,7 +223,9 @@ function EventPassport({ event, conflict }: { event: FamilyMissionEvent; conflic
         <div><dt>Venue</dt><dd>{event.venueLabel}</dd><small>{event.addressLabel}</small></div>
         <div><dt>Field</dt><dd>{event.fieldLabel}</dd></div>
         <div><dt>Bring</dt><dd>{event.bringLabel}</dd></div>
-        <div><dt>Responsible adult</dt><dd>{event.responsibleAdultLabel}</dd>{event.handoffLabel ? <small>Handoff: {event.handoffLabel}</small> : null}</div>
+        <div><dt>Outbound responsibility</dt><dd>{event.outboundResponsibilityLabel}</dd></div>
+        <div><dt>Return responsibility</dt><dd>{event.returnResponsibilityLabel}</dd></div>
+        <div><dt>Responsibility summary</dt><dd>{event.responsibleAdultLabel}</dd>{event.handoffLabel ? <small>Coordination note: {event.handoffLabel}</small> : null}</div>
         <div><dt>RSVP</dt><dd>{event.rsvpLabel}</dd></div>
         <div><dt>Opponent</dt><dd>{event.opponentLabel}</dd></div>
       </dl>
@@ -246,6 +249,7 @@ function EventPassport({ event, conflict }: { event: FamilyMissionEvent; conflic
           <a className="button secondary" data-analytics-event="directions_opened" href={event.directionsUrl} rel="noreferrer" target="_blank">Directions</a>
         ) : null}
         <a className="button secondary" href="/parent/messages">View messages</a>
+        <a className="button secondary" href="/parent/transportation">Transportation</a>
       </div>
 
       <footer>

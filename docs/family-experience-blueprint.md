@@ -955,6 +955,8 @@ Local implementation status (2026-07-24): Parent Home leads with a guardian-scop
 
 Proof: permission tests, revocation cache clearing, audit, no silent assignment.
 
+Transportation implementation status (2026-07-24): migration `0028` defines service-only request, offer, assignment, mutual-acceptance, restriction-check, and withdrawal records/RPCs. Outbound and return are distinct. A driver offer is the driver-side acceptance; the requesting guardian must separately accept at the same official schedule version before Event Passport names an adult. Version drift becomes needs review, pickup restrictions fail closed without exposing details, withdrawals are attributed, and no home address or provider send is involved. Source/API/render tests pass, and signed-in 375/390/768/1440 migration-unavailable proof records disabled mutation controls, zero overflow, and zero browser errors. Ordered migration/RLS/populated/offline/hosted proof remains open; local SQL installation is unavailable because this workspace lacks `psql` and WSL Docker integration. Temporary-caregiver authorization remains the next local slice.
+
 ### Phase 4: Priority communication and disruption
 
 1. Message taxonomy and critical lane.
@@ -1104,4 +1106,4 @@ The design is accepted only when all of the following are demonstrated:
 
 ## 20. Immediate prioritized action
 
-Proceed to Phase 3 as one coherent responsibility and temporary-care slice: model outbound and return transportation separately, require dual human acceptance before responsibility becomes assigned, add time-bound caregiver authorization with explicit allowed/prohibited actions, and make expiry/revocation clear across Event Passport and offline state. Phase 2 is locally implemented with responsive empty-state proof; populated/offline/hosted proof remains a promotion gate. Phase 1 migration/RLS proof, hosted Phase 0 proof, legacy invitation issuance, and provider delivery remain separate external gates.
+Continue Phase 3 with time-bound temporary-caregiver authorization: use a dedicated least-privilege record rather than guardian membership, require guardian scope review plus caregiver identity acceptance, list allowed and prohibited actions, expire automatically, revoke with attribution, and clear caregiver-visible cached private data at next contact. Transportation is locally implemented through migration `0028`; ordered migration/RLS/populated/offline/hosted proof remains a promotion gate. Phase 1 migration/RLS proof, hosted Phase 0 proof, legacy invitation issuance, and provider delivery remain separate external gates.

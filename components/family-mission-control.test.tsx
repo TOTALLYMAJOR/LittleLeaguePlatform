@@ -25,7 +25,9 @@ describe("FamilyMissionControlClient", () => {
     expect(html).toContain("Not published");
     expect(html).toContain("Not separately published");
     expect(html).toContain("Not assigned");
-    expect(html).toContain("6 unresolved");
+    expect(html).toContain("7 unresolved");
+    expect(html).toContain("Outbound responsibility");
+    expect(html).toContain("Return responsibility");
     expect(html).toContain("RSVP now");
     expect(html).toContain("Your next seven days");
     expect(html).toContain("Opponent Rookie Rockets");

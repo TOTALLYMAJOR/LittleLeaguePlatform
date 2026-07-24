@@ -42,6 +42,8 @@ export interface FamilyMissionEvent {
   rsvpNeedsAction: boolean;
   rsvpOutdated: boolean;
   responsibleAdultLabel: string;
+  outboundResponsibilityLabel: string;
+  returnResponsibilityLabel: string;
   handoffLabel?: string;
   bringLabel: string;
   changed: boolean;
@@ -84,10 +86,20 @@ export interface FamilyMissionControlView {
   offlineLabel: string;
 }
 
+export interface FamilyTransportationResponsibility {
+  eventId: string;
+  playerId: string;
+  direction: "outbound" | "return";
+  state: "assigned" | "unassigned" | "needs_review";
+  adultLabel?: string;
+  scheduleVersion?: number;
+}
+
 export function buildFamilyMissionControl(input: {
   state: AppState;
   parentUserId: string;
   handoffs: FamilyEventHandoff[];
+  transportationResponsibilities?: FamilyTransportationResponsibility[];
   accessStatus: "live" | "signed_out" | "missing_parent_link" | "missing_coach_membership" | "unavailable";
   isSupabaseBacked: boolean;
   message: string;
@@ -138,6 +150,9 @@ export function buildFamilyMissionControl(input: {
           item.eventId === event.id &&
           item.playerId === child.id &&
           !item.cancelledAt
+        )),
+        transportationResponsibilities: (input.transportationResponsibilities ?? []).filter((item) => (
+          item.eventId === event.id && item.playerId === child.id
         )),
         isLive: input.isSupabaseBacked
       })))
@@ -191,6 +206,7 @@ function buildMissionEvent(input: {
   child: FamilyMissionChild;
   rsvp?: Rsvp;
   handoff?: FamilyEventHandoff;
+  transportationResponsibilities: FamilyTransportationResponsibility[];
   isLive: boolean;
 }): FamilyMissionEvent {
   const version = input.event.scheduleVersion ?? 1;
@@ -200,13 +216,18 @@ function buildMissionEvent(input: {
     input.rsvp.confirmedScheduleVersion < version
   );
   const rsvpNeedsAction = input.event.status === "scheduled" && (!input.rsvp || rsvpOutdated);
+  const outboundResponsibility = input.transportationResponsibilities.find((item) => item.direction === "outbound");
+  const returnResponsibility = input.transportationResponsibilities.find((item) => item.direction === "return");
+  const outboundResponsibilityLabel = responsibilityLabel(outboundResponsibility);
+  const returnResponsibilityLabel = responsibilityLabel(returnResponsibility);
   const unresolved = [
     "Official arrival time",
     "Family leave time",
     "Field",
-    "Bring list",
-    "Responsible adult"
+    "Bring list"
   ];
+  if (outboundResponsibility?.state !== "assigned") unresolved.push("Outbound responsibility");
+  if (returnResponsibility?.state !== "assigned") unresolved.push("Return responsibility");
   if (input.handoff) unresolved.push("Transportation responsibility");
   if (rsvpNeedsAction) unresolved.push(rsvpOutdated ? "RSVP after schedule change" : "RSVP");
   const changed = version > 1;
@@ -247,7 +268,11 @@ function buildMissionEvent(input: {
         : "Not answered",
     rsvpNeedsAction,
     rsvpOutdated,
-    responsibleAdultLabel: "Not assigned",
+    responsibleAdultLabel: outboundResponsibility?.state === "assigned" && returnResponsibility?.state === "assigned"
+      ? `Outbound: ${outboundResponsibility.adultLabel} · Return: ${returnResponsibility.adultLabel}`
+      : "Not fully assigned",
+    outboundResponsibilityLabel,
+    returnResponsibilityLabel,
     handoffLabel: input.handoff
       ? `${input.handoff.caregiverLabel} · coordination note only`
       : undefined,
@@ -260,12 +285,20 @@ function buildMissionEvent(input: {
     freshnessLabel: input.isLive ? `Loaded live · updated ${formatTimestamp(input.event.updatedAt)}` : "Needs verification",
     primaryAction: rsvpNeedsAction
       ? { label: rsvpOutdated ? "Review RSVP" : "RSVP now", href: "/parent/rsvp" }
+      : outboundResponsibility?.state !== "assigned" || returnResponsibility?.state !== "assigned"
+        ? { label: "Coordinate transportation", href: "/parent/transportation" }
       : directionsUrl
         ? { label: "Get directions", href: directionsUrl }
         : { label: "View schedule", href: "/parent/schedule" },
     directionsUrl,
     unresolved
   };
+}
+
+function responsibilityLabel(responsibility?: FamilyTransportationResponsibility) {
+  if (responsibility?.state === "assigned") return `${responsibility.adultLabel ?? "Accepted adult"} · mutually accepted`;
+  if (responsibility?.state === "needs_review") return "Needs review after schedule change";
+  return "Not assigned";
 }
 
 function buildConflicts(events: FamilyMissionEvent[]) {

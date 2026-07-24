@@ -43,6 +43,7 @@ const appRoutes = [
   "/parent/schedule",
   "/parent/settings",
   "/parent/setup",
+  "/parent/transportation",
   "/registration",
   "/invite/expired",
   "/invite/accept",

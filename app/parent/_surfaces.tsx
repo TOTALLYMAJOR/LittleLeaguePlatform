@@ -8,6 +8,7 @@ import {
 import { CommunicationRoom } from "@/components/communication-room";
 import { ParentAdditionalGuardianClient } from "@/components/additional-guardian-access";
 import { FamilyMissionControlClient } from "@/components/family-mission-control";
+import { ParentTransportationClient } from "@/components/family-transportation";
 import {
   FamilyFlightPlanClient,
   ParentNotificationReceiptsClient
@@ -22,6 +23,7 @@ import { listTeamChatData } from "@/lib/supabase/team-chat";
 import { listTeamPortalData } from "@/lib/supabase/team-portal";
 import { listParentAdditionalGuardianData } from "@/lib/supabase/additional-guardians";
 import { buildFamilyMissionControl } from "@/lib/family-mission-control";
+import { listParentTransportationData } from "@/lib/supabase/transportation";
 
 export async function loadParentDashboardForPage() {
   const pageAccess = await requireParentPageAccess();
@@ -34,15 +36,17 @@ export async function ParentHomeSurface() {
   if (!pageAccess.ok || !pageAccess.access.userId) {
     return <ParentDashboardClient dashboardData={pageAccess.dashboardData} />;
   }
-  const [dashboardData, notificationData, handoffData] = await Promise.all([
+  const [dashboardData, notificationData, handoffData, transportationData] = await Promise.all([
     listParentCoachDashboardData({ viewerUserId: pageAccess.access.userId, surface: "parent" }),
     listParentNotificationReceipts({ parentUserId: pageAccess.access.userId }),
-    listParentFamilyHandoffs({ parentUserId: pageAccess.access.userId })
+    listParentFamilyHandoffs({ parentUserId: pageAccess.access.userId }),
+    listParentTransportationData(pageAccess.access.userId)
   ]);
   const missionControl = buildFamilyMissionControl({
     state: dashboardData.state,
     parentUserId: pageAccess.access.userId,
     handoffs: handoffData.handoffs,
+    transportationResponsibilities: transportationData.responsibilities,
     accessStatus: dashboardData.accessStatus,
     isSupabaseBacked: dashboardData.isSupabaseBacked,
     message: dashboardData.message,
@@ -132,6 +136,15 @@ export async function ParentFamilyAccessSurface() {
   }
   const data = await listParentAdditionalGuardianData(pageAccess.access.userId);
   return <ParentAdditionalGuardianClient data={data} />;
+}
+
+export async function ParentTransportationSurface() {
+  const pageAccess = await requireParentPageAccess();
+  if (!pageAccess.ok || !pageAccess.access.userId) {
+    return <ParentDashboardClient dashboardData={pageAccess.dashboardData} />;
+  }
+  const data = await listParentTransportationData(pageAccess.access.userId);
+  return <ParentTransportationClient data={data} />;
 }
 
 export async function ParentSettingsSurface() {

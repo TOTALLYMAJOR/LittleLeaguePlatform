@@ -31,7 +31,9 @@ describe("family Mission Control read model", () => {
       leaveLabel: "Not planned",
       fieldLabel: "Not separately published",
       bringLabel: "Not published",
-      responsibleAdultLabel: "Not assigned",
+      responsibleAdultLabel: "Not fully assigned",
+      outboundResponsibilityLabel: "Not assigned",
+      returnResponsibilityLabel: "Not assigned",
       sourceLabel: "Official team schedule · version 1"
     });
     expect(view.nextEvent?.unresolved).toEqual(expect.arrayContaining([
@@ -39,10 +41,49 @@ describe("family Mission Control read model", () => {
       "Family leave time",
       "Field",
       "Bring list",
-      "Responsible adult",
+      "Outbound responsibility",
+      "Return responsibility",
       "RSVP"
     ]));
     expect(view.criticalChange).toBeUndefined();
+  });
+
+  it("shows mutually accepted current-version transportation in the Event Passport", () => {
+    const view = buildFamilyMissionControl({
+      state: seedState,
+      parentUserId: "user-parent-jordan",
+      handoffs: [],
+      transportationResponsibilities: [
+        {
+          eventId: "event-tigers-game",
+          playerId: "player-mason",
+          direction: "outbound",
+          state: "assigned",
+          adultLabel: "Riley Parker",
+          scheduleVersion: 1
+        },
+        {
+          eventId: "event-tigers-game",
+          playerId: "player-mason",
+          direction: "return",
+          state: "needs_review",
+          adultLabel: "Jordan Taylor",
+          scheduleVersion: 1
+        }
+      ],
+      accessStatus: "live",
+      isSupabaseBacked: true,
+      message: "Current family records loaded.",
+      now
+    });
+
+    expect(view.nextEvent).toMatchObject({
+      outboundResponsibilityLabel: "Riley Parker · mutually accepted",
+      returnResponsibilityLabel: "Needs review after schedule change",
+      responsibleAdultLabel: "Not fully assigned"
+    });
+    expect(view.nextEvent?.unresolved).not.toContain("Outbound responsibility");
+    expect(view.nextEvent?.unresolved).toContain("Return responsibility");
   });
 
   it("requires RSVP review when the official schedule version advances", () => {

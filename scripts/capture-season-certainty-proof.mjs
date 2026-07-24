@@ -31,6 +31,16 @@ const routeSpecs = [
     ]
   },
   {
+    role: "parent-transportation",
+    path: "/parent/transportation",
+    credentialKeys: ["QA_PARENT_EMAIL", "QA_PARENT_PASSWORD"],
+    readyTexts: [
+      "Who is getting this child there and home?",
+      "Sign in to see your family home.",
+      "Family access is not active yet."
+    ]
+  },
+  {
     role: "coach",
     path: "/coach",
     credentialKeys: ["QA_COACH_EMAIL", "QA_COACH_PASSWORD"],

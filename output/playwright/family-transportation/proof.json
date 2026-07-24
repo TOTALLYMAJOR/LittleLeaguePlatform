@@ -1,0 +1,44 @@
+{
+  "baseUrl": "http://127.0.0.1:3022",
+  "capturedAt": "2026-07-24T17:00:43.816Z",
+  "proofs": [
+    {
+      "role": "parent-transportation",
+      "path": "/parent/transportation",
+      "signedIn": true,
+      "matchedText": "Who is getting this child there and home?",
+      "firstViewportText": "Skip to main content Family tools: Transportation Role scoped ROLE parent ORGANIZATION Little League HQ SEASON Spring 2026 TEAM Tiny Tigers ACCESS Current, role scoped TRANSPORTATION RESPONSIBILITY Who is getting this child there and home? Outbound and return are separate. A request is not an assignment, and responsibility stays unassigned until the driver and requesting guardian both accept at the current event version. Mutual acceptance required Transportation coordination is temporarily unavailable. No responsibility changed. NEXT EVENT PASSPORT No upcoming event OUTBOUND · GETTING THERE Not assigned No mutually accepted responsibility is current. RETURN · GETTING HOME Not assigned No mutually accepted responsibility is current. No home address is displayed or requested here. Recorded pickup restrictions stop assignment and route the family to league review without revealing private restriction details. REQUEST ONE DIRECTION Ask another team guardian for help Child and event No upcoming linked events Direction Outbound · getting there Return · getting home I understand this creates a team-visible request only. It does not assign a driver or send an external message. Request outbound help HOW MUTUAL ACCEPTANCE WORKS Two adults, two explicit decisions A linked guardian requests outbound or return help for one child and event version. Another active team guardian offers seats and accepts the driver side. The requesting guardian reviews the named adult, direction, seats, and event version. Only that second acceptance changes the Event Passport to assigned. A schedule change makes earlier acceptance need review. Withdrawal is attributed and returns responsibility to unassigned. No automation, coach note, or chat reply can assign a driver. CURRENT TEAM COORDINATION Requests, offers, and accepted responsibility No transportation records yet Outbound and return will stay “Not assigned” until a request and mutual acceptance exist. HM Today SC Schedule MS Messages FA Team ST More Route ready",
+      "browserErrors": [],
+      "viewports": [
+        {
+          "name": "mobile-375",
+          "width": 375,
+          "height": 812,
+          "clientWidth": 375,
+          "scrollWidth": 375
+        },
+        {
+          "name": "mobile-390",
+          "width": 390,
+          "height": 844,
+          "clientWidth": 390,
+          "scrollWidth": 390
+        },
+        {
+          "name": "tablet-768",
+          "width": 768,
+          "height": 1024,
+          "clientWidth": 768,
+          "scrollWidth": 768
+        },
+        {
+          "name": "desktop-1440",
+          "width": 1440,
+          "height": 1100,
+          "clientWidth": 1440,
+          "scrollWidth": 1440
+        }
+      ]
+    }
+  ]
+}

@@ -85,6 +85,7 @@ export const routeTopology = [
   route("/parent/photos", "Photos", "PH", "parent", "Family", ["parent"], true, true, true, true, 5),
   route("/parent/practice-recaps", "Practice Recaps", "PR", "parent", "Family", ["parent"], true, true, true, true),
   route("/parent/family-access", "Family Access", "FA", "parent", "Family", ["parent"], true, true, true, true),
+  route("/parent/transportation", "Transportation", "TR", "parent", "Family", ["parent"], true, true, true, true),
   route("/parent/settings", "Settings", "ST", "parent", "Family", ["parent"], true, true, true, true),
 
   route("/coach", "Home", "HM", "coach", "Command", ["coach"], true, true, true, true, 1),

@@ -26,6 +26,7 @@ describe("Supabase RLS policy coverage", () => {
   const guardianVerification = migration("0020_guardian_verification_policy.sql");
   const drillVideoReferences = migration("0022_drill_video_references.sql");
   const coordinationLoops = migration("0024_coordination_loops.sql");
+  const transportation = migration("0028_transportation_responsibility.sql");
   const securityDefinerHardening = migration("20260724143554_security_definer_execution_hardening.sql");
   const packageJson = readFileSync(join(process.cwd(), "package.json"), "utf8");
   const rlsProof = readFileSync(join(process.cwd(), "scripts", "verify-rls-boundaries.mjs"), "utf8");
@@ -200,5 +201,15 @@ describe("Supabase RLS policy coverage", () => {
     expect(securityDefinerHardening).toContain("from public, anon, authenticated");
     expect(securityDefinerHardening).toContain("to service_role");
     expect(securityDefinerHardening).toContain("set search_path = pg_catalog, public");
+  });
+
+  it("keeps transportation tables and mutual-acceptance RPCs service-only", () => {
+    expect(transportation).toContain("alter table public.transportation_requests enable row level security");
+    expect(transportation).toContain("alter table public.transportation_offers enable row level security");
+    expect(transportation).toContain("alter table public.transportation_assignments enable row level security");
+    expect(transportation).toContain("from public, anon, authenticated");
+    expect(transportation).toContain("to service_role");
+    expect(transportation).toContain("transportation_pickup_restriction_exists");
+    expect(transportation).toContain("requester_accepted_at = now()");
   });
 });
