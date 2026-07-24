@@ -21,11 +21,13 @@
     "@supabase/supabase-js": "^2.108.2",
     "next": "^16.2.9",
     "react": "^19.2.7",
-    "react-dom": "^19.2.7"
+    "react-dom": "^19.2.7",
+    "sharp": "^0.35.3"
   },
   "overrides": {
     "esbuild": "0.27.2",
-    "postcss": "^8.5.10"
+    "postcss": "8.5.23",
+    "sharp": "$sharp"
   },
   "devDependencies": {
     "@playwright/test": "^1.61.0",
