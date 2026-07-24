@@ -130,6 +130,7 @@ export function AppShell({ access = signedOutShellAccess, children }: { access?:
   const shellContext = useMemo(() => getShellContext(pathname, access), [access, pathname]);
   const activeRouteRole = getRouteEntry(pathname)?.role;
   const activeContext = access.contexts?.find((context) => context.role === activeRouteRole);
+  const usesImmersiveFamilyHeader = pathname === "/parent/messages";
   const showMobileTabbar = access.signedIn && (access.canParent || access.canCoach || access.canAdmin) && activeMobileItems.length >= 3;
 
   const filteredNav = useMemo(() => {
@@ -333,36 +334,40 @@ export function AppShell({ access = signedOutShellAccess, children }: { access?:
           </nav>
         </aside>
 
-        <main id="main-content" className="main">
-          <div className={`context-bar context-bar-${shellContext.tone}`} aria-label="Current app area">
-            <div className="context-copy">
-              <span className="context-kicker">You are here</span>
-              <strong>{shellContext.title}</strong>
-              <small>{shellContext.body}</small>
-            </div>
-            <div className="context-actions">
-              <button type="button" className="secondary context-back" onClick={() => (window.history.length > 1 ? router.back() : router.push(getRouteParent(pathname)))}>
-                Back
-              </button>
-              <StatusBadge label={shellContext.badge} variant={shellContext.badgeVariant} />
-            </div>
-          </div>
-          {activeContext ? (
-            <div className="verified-context-bar" aria-label="Verified role and organization context">
-              <span><small>Role</small><strong>{activeContext.role}</strong></span>
-              <span><small>Organization</small><strong>{activeContext.organizationName}</strong></span>
-              <span><small>Season</small><strong>{activeContext.seasonName}</strong></span>
-              {activeContext.teamName ? <span><small>Team</small><strong>{activeContext.teamName}</strong></span> : null}
-              <span className={activeContext.readOnly ? "state-readonly" : "state-current"}>
-                <small>Access</small>
-                <strong>{activeContext.readOnly ? "Archived, read-only" : "Current, role scoped"}</strong>
-              </span>
-            </div>
-          ) : (
-            <div className="verified-context-bar context-unavailable" role="status">
-              <span><small>Context</small><strong>No verified context for this route</strong></span>
-            </div>
-          )}
+        <main id="main-content" className={`main${usesImmersiveFamilyHeader ? " immersive-family-main" : ""}`}>
+          {!usesImmersiveFamilyHeader ? (
+            <>
+              <div className={`context-bar context-bar-${shellContext.tone}`} aria-label="Current app area">
+                <div className="context-copy">
+                  <span className="context-kicker">You are here</span>
+                  <strong>{shellContext.title}</strong>
+                  <small>{shellContext.body}</small>
+                </div>
+                <div className="context-actions">
+                  <button type="button" className="secondary context-back" onClick={() => (window.history.length > 1 ? router.back() : router.push(getRouteParent(pathname)))}>
+                    Back
+                  </button>
+                  <StatusBadge label={shellContext.badge} variant={shellContext.badgeVariant} />
+                </div>
+              </div>
+              {activeContext ? (
+                <div className="verified-context-bar" aria-label="Verified role and organization context">
+                  <span><small>Role</small><strong>{activeContext.role}</strong></span>
+                  <span><small>Organization</small><strong>{activeContext.organizationName}</strong></span>
+                  <span><small>Season</small><strong>{activeContext.seasonName}</strong></span>
+                  {activeContext.teamName ? <span><small>Team</small><strong>{activeContext.teamName}</strong></span> : null}
+                  <span className={activeContext.readOnly ? "state-readonly" : "state-current"}>
+                    <small>Access</small>
+                    <strong>{activeContext.readOnly ? "Archived, read-only" : "Current, role scoped"}</strong>
+                  </span>
+                </div>
+              ) : (
+                <div className="verified-context-bar context-unavailable" role="status">
+                  <span><small>Context</small><strong>No verified context for this route</strong></span>
+                </div>
+              )}
+            </>
+          ) : null}
           {children}
         </main>
 

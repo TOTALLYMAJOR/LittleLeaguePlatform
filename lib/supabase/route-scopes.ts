@@ -44,6 +44,8 @@ export function scopeTeamChatData(
   ]);
 
   return {
+    isSupabaseBacked: data.isSupabaseBacked,
+    message: data.message,
     teams,
     users: data.users.filter((user) => userIds.has(user.id)),
     teamMemberships,

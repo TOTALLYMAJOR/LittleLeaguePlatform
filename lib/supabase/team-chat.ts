@@ -11,6 +11,8 @@ export interface TeamChatData {
   channels: TeamChatChannel[];
   messages: TeamChatMessage[];
   moderationEvents: ChatModerationAuditEvent[];
+  isSupabaseBacked?: boolean;
+  message?: string;
 }
 
 export interface TeamChatMutationResult {
@@ -164,7 +166,9 @@ function fallbackChatData(): TeamChatData {
     events: seedState.events,
     channels: seedState.teamChatChannels,
     messages: seedState.chatMessages,
-    moderationEvents: seedState.chatModerationAuditEvents
+    moderationEvents: seedState.chatModerationAuditEvents,
+    isSupabaseBacked: false,
+    message: "Current team conversation could not be reached. Preview data is read-only."
   };
 }
 
@@ -216,6 +220,10 @@ export async function listTeamChatData(): Promise<TeamChatData> {
       supabase.from("team_chat_messages").select("id,organization_id,season_id,team_id,channel_id,event_id,author_user_id,author_role,message_kind,announcement_topic,body,pinned,moderation_status,read_by_user_ids,created_at,edited_at,deleted_at,moderated_at,moderated_by_user_id,moderation_reason").order("created_at", { ascending: true }).limit(200),
       supabase.from("chat_moderation_audit_events").select("id,message_id,channel_id,team_id,actor_user_id,actor_role,action,reason,created_at").order("created_at", { ascending: false }).limit(100)
     ]), 7000);
+
+    if (channelsResult.error || messagesResult.error || moderationResult.error) {
+      return fallbackChatData();
+    }
 
     return {
       teams,
@@ -269,7 +277,9 @@ export async function listTeamChatData(): Promise<TeamChatData> {
         action: event.action,
         reason: event.reason,
         createdAt: event.created_at
-      }))
+      })),
+      isSupabaseBacked: true,
+      message: "Current team conversation loaded for the signed-in team scope."
     };
   } catch {
     return fallbackChatData();

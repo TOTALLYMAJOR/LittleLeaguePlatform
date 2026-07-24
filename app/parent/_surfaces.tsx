@@ -3,9 +3,9 @@ import {
   ParentReplayClient,
   ParentRsvpClient,
   ScheduleAlertsClient,
-  TeamChatClient,
   TeamPortalClient
 } from "@/components/feature-panels";
+import { CommunicationRoom } from "@/components/communication-room";
 import {
   FamilyFlightPlanClient,
   ParentNotificationReceiptsClient
@@ -75,13 +75,21 @@ export async function ParentScheduleSurface() {
 export async function ParentMessagesSurface() {
   const pageAccess = await requireParentPageAccess();
   if (!pageAccess.ok) return <ParentDashboardClient dashboardData={pageAccess.dashboardData} />;
-  const teamChatData = await listTeamChatData();
-  const scopedTeamChatData = scopeTeamChatData(teamChatData, pageAccess.access.parentTeamIds, pageAccess.access.userId ?? "");
+  const viewerUserId = pageAccess.access.userId ?? "";
+  const [teamChatData, dashboardData, notificationData] = await Promise.all([
+    listTeamChatData(),
+    listParentCoachDashboardData({ viewerUserId, surface: "parent" }),
+    listParentNotificationReceipts({ parentUserId: viewerUserId, limit: 50 })
+  ]);
+  const scopedTeamChatData = scopeTeamChatData(teamChatData, pageAccess.access.parentTeamIds, viewerUserId);
   return (
-    <TeamChatClient
+    <CommunicationRoom
+      dashboardData={dashboardData}
+      initialReceipts={notificationData.receipts}
+      receiptLoadOk={notificationData.ok}
+      receiptMessage={notificationData.message}
       teamChatData={scopedTeamChatData}
-      viewerUserId={pageAccess.access.userId}
-      lockedTeamId={scopedTeamChatData.teams[0]?.id}
+      viewerUserId={viewerUserId}
     />
   );
 }

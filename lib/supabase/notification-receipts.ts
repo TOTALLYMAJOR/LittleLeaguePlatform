@@ -34,6 +34,8 @@ export interface NotificationReceipt {
   notificationType: string;
   notificationStatus: "pending" | "sent" | "failed" | "read";
   providerApprovalStatus: "pending" | "approved" | "rejected";
+  approvedByUserId?: string;
+  approvedByName?: string;
   createdAt: string;
   sentAt?: string;
   notificationReadAt?: string;
@@ -65,6 +67,7 @@ type NotificationRow = {
   notification_type: string;
   status: "pending" | "sent" | "failed" | "read";
   provider_approval_status: "pending" | "approved" | "rejected";
+  approved_by_user_id?: string | null;
   created_at: string;
   sent_at: string | null;
   read_at: string | null;
@@ -76,7 +79,7 @@ function latestAttempt(attempts: NotificationAttemptRow[] | null | undefined) {
     .sort((left, right) => Date.parse(right.attempted_at) - Date.parse(left.attempted_at))[0];
 }
 
-export function mapNotificationReceipt(row: NotificationRow): NotificationReceipt {
+export function mapNotificationReceipt(row: NotificationRow, approvedByName?: string): NotificationReceipt {
   const attempt = latestAttempt(row.notification_delivery_attempts);
   return {
     notificationId: row.id,
@@ -90,6 +93,8 @@ export function mapNotificationReceipt(row: NotificationRow): NotificationReceip
     notificationType: row.notification_type,
     notificationStatus: row.status,
     providerApprovalStatus: row.provider_approval_status,
+    approvedByUserId: row.approved_by_user_id ?? undefined,
+    approvedByName,
     createdAt: row.created_at,
     sentAt: row.sent_at ?? undefined,
     notificationReadAt: row.read_at ?? undefined,
@@ -123,6 +128,7 @@ const receiptSelect = [
   "notification_type",
   "status",
   "provider_approval_status",
+  "approved_by_user_id",
   "created_at",
   "sent_at",
   "read_at",
@@ -160,10 +166,27 @@ export async function listParentNotificationReceipts(input: {
       };
     }
 
+    const approverIds = Array.from(new Set((data ?? [])
+      .map((row) => row.approved_by_user_id)
+      .filter((value): value is string => Boolean(value))));
+    const approvers = approverIds.length
+      ? await withSupabaseTimeout(dbClient()
+        .from("profiles")
+        .select("id,display_name")
+        .in("id", approverIds), 7000) as {
+          data: Array<{ id: string; display_name: string }> | null;
+          error: { message?: string } | null;
+        }
+      : { data: [], error: null };
+    const approverNames = new Map((approvers.data ?? []).map((profile) => [profile.id, profile.display_name]));
+
     return {
       ok: true,
       message: "Notification receipts loaded for the signed-in recipient.",
-      receipts: (data ?? []).map(mapNotificationReceipt)
+      receipts: (data ?? []).map((row) => mapNotificationReceipt(
+        row,
+        row.approved_by_user_id ? approverNames.get(row.approved_by_user_id) : undefined
+      ))
     };
   } catch {
     return {
@@ -209,7 +232,7 @@ export async function listOrganizationNotificationReceipts(input: {
     return {
       ok: true,
       message: "Organization delivery evidence loaded without collapsing approval, acceptance, delivery, read, or acknowledgment.",
-      receipts: (data ?? []).map(mapNotificationReceipt)
+      receipts: (data ?? []).map((row) => mapNotificationReceipt(row))
     };
   } catch {
     return {

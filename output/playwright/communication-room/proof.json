@@ -1,0 +1,33 @@
+{
+  "generatedAt": "2026-07-24T12:27:15.041Z",
+  "baseUrl": "http://127.0.0.1:3021",
+  "proof": [
+    {
+      "name": "mobile-390",
+      "path": "/parent/messages",
+      "width": 390,
+      "height": 844,
+      "documentOverflow": false,
+      "undersizedInteractiveCount": 0,
+      "pageErrors": []
+    },
+    {
+      "name": "tablet-768",
+      "path": "/parent/messages",
+      "width": 768,
+      "height": 1024,
+      "documentOverflow": false,
+      "undersizedInteractiveCount": 0,
+      "pageErrors": []
+    },
+    {
+      "name": "desktop-1440",
+      "path": "/parent/messages",
+      "width": 1440,
+      "height": 1100,
+      "documentOverflow": false,
+      "undersizedInteractiveCount": 0,
+      "pageErrors": []
+    }
+  ]
+}
