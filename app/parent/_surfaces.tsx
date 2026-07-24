@@ -7,6 +7,7 @@ import {
 } from "@/components/feature-panels";
 import { CommunicationRoom } from "@/components/communication-room";
 import { ParentAdditionalGuardianClient } from "@/components/additional-guardian-access";
+import { FamilyMissionControlClient } from "@/components/family-mission-control";
 import {
   FamilyFlightPlanClient,
   ParentNotificationReceiptsClient
@@ -20,6 +21,7 @@ import { requireParentPageAccess } from "@/lib/supabase/shell-access";
 import { listTeamChatData } from "@/lib/supabase/team-chat";
 import { listTeamPortalData } from "@/lib/supabase/team-portal";
 import { listParentAdditionalGuardianData } from "@/lib/supabase/additional-guardians";
+import { buildFamilyMissionControl } from "@/lib/family-mission-control";
 
 export async function loadParentDashboardForPage() {
   const pageAccess = await requireParentPageAccess();
@@ -37,8 +39,18 @@ export async function ParentHomeSurface() {
     listParentNotificationReceipts({ parentUserId: pageAccess.access.userId }),
     listParentFamilyHandoffs({ parentUserId: pageAccess.access.userId })
   ]);
+  const missionControl = buildFamilyMissionControl({
+    state: dashboardData.state,
+    parentUserId: pageAccess.access.userId,
+    handoffs: handoffData.handoffs,
+    accessStatus: dashboardData.accessStatus,
+    isSupabaseBacked: dashboardData.isSupabaseBacked,
+    message: dashboardData.message,
+    now: new Date().toISOString()
+  });
   return (
     <>
+      <FamilyMissionControlClient view={missionControl} />
       <FamilyFlightPlanClient
         state={dashboardData.state}
         parentUserId={pageAccess.access.userId}

@@ -812,20 +812,6 @@ function ParentGameDayCalmCard({
   );
 }
 
-function formatEventOffsetTime(value: string, minutesOffset: number) {
-  return new Date(Date.parse(value) + minutesOffset * 60 * 1000).toLocaleTimeString("en-US", {
-    hour: "numeric",
-    minute: "2-digit"
-  });
-}
-
-function formatArrivalTime(value: string) {
-  return new Date(Date.parse(value) - 20 * 60 * 1000).toLocaleTimeString("en-US", {
-    hour: "numeric",
-    minute: "2-digit"
-  });
-}
-
 function formatTopic(value?: string) {
   if (!value) return "reminder";
   return value.replaceAll("_", " ");
@@ -1761,13 +1747,11 @@ export function ParentDashboardClient({ dashboardData }: { dashboardData?: Paren
   const parentHelpCopy = parentHelpCount
     ? `${openSnackSlots.length} snack and ${openVolunteerSignups.length} volunteer opening(s).`
     : "Snacks and volunteers look covered.";
-  const venueAmenities = getVenueAmenityNotes(nextParentEvent);
-  const fieldLayout = getFieldLayoutMetadata(nextParentEvent);
   const gameDayArrivalPlan: GameDayPlanItem[] = nextParentEvent
     ? [
-      { id: "leave", label: "Leave by", detail: formatEventOffsetTime(nextParentEvent.startsAt, -45) },
-      { id: "arrive", label: "Arrive by", detail: formatEventOffsetTime(nextParentEvent.startsAt, -20) },
-      { id: "warmup", label: "Warm-up", detail: formatEventOffsetTime(nextParentEvent.startsAt, -10) },
+      { id: "leave", label: "Leave by", detail: "Not planned" },
+      { id: "arrive", label: "Arrive by", detail: "Not published" },
+      { id: "warmup", label: "Warm-up", detail: "Not published" },
       { id: "start", label: "Start", detail: formatShortTime(nextParentEvent.startsAt) }
     ]
     : [
@@ -1786,19 +1770,19 @@ export function ParentDashboardClient({ dashboardData }: { dashboardData?: Paren
     {
       id: "uniform",
       label: "Uniform",
-      detail: primaryPlayer ? `${teamName} jersey #${primaryPlayer.jersey}` : `${teamName} uniform`,
+      detail: "League bring list not published.",
       checked: checkedGameDayItems.uniform ?? gameDayPackDefaults.uniform
     },
     {
       id: "water",
       label: "Water",
-      detail: "Bottle filled before leaving.",
+      detail: "Family-added checklist item; not an official instruction.",
       checked: checkedGameDayItems.water ?? gameDayPackDefaults.water
     },
     {
       id: "gear",
       label: "Gear",
-      detail: "Glove, cleats, hat, and age-group safety gear.",
+      detail: "League bring list not published.",
       checked: checkedGameDayItems.gear ?? gameDayPackDefaults.gear
     },
     {
@@ -1817,12 +1801,12 @@ export function ParentDashboardClient({ dashboardData }: { dashboardData?: Paren
     {
       id: "parking",
       label: "Parking",
-      detail: venueAmenities.parking
+      detail: "Not published"
     },
     {
       id: "meet",
       label: "Meet",
-      detail: `${fieldLayout.entrance}; warm up at ${fieldLayout.warmupArea}.`
+      detail: "Not published"
     },
     {
       id: "map",
@@ -1861,7 +1845,7 @@ export function ParentDashboardClient({ dashboardData }: { dashboardData?: Paren
     `Leave by: ${gameDayArrivalPlan[0]?.detail ?? "Pending"}`,
     `Arrive by: ${gameDayArrivalPlan[1]?.detail ?? "Pending"}`,
     `Field: ${gameDayFieldPlan[0]?.detail ?? "Location pending"}`,
-    `Meet: ${getArrivalInstructions(nextParentEvent)}`,
+    "Meet: Not published",
     `RSVP: ${nextParentRsvpCopy}`,
     `Weather: ${parentWeatherCopy}`,
     `Family help: ${parentHelpCopy}`,
@@ -2294,7 +2278,7 @@ export function ParentDashboardClient({ dashboardData }: { dashboardData?: Paren
             <p key={event.id}>
               <span className="badge">{event.eventType.replace("_", " ")}</span>{" "}
                 <strong>{event.title}</strong><br />
-              <span className="muted">{formatDate(event.startsAt)} - Arrive {formatArrivalTime(event.startsAt)} - {event.locationName}</span>
+              <span className="muted">{formatDate(event.startsAt)} · Arrival not published · {event.locationName}</span>
             </p>
           ))}
           {!filteredParentEvents.length ? <p className="muted">No family events match this filter.</p> : null}
@@ -8700,12 +8684,12 @@ export function TeamPortalClient({ teamPortalData, audience = "shared" }: { team
           <h2>{upcomingGame?.title ?? "Next game"}</h2>
           {upcomingGame ? (
             <>
-              <p>{formatDate(upcomingGame.startsAt)} - arrive by {formatArrivalTime(upcomingGame.startsAt)}</p>
-              <p><strong>Field:</strong> {upcomingGame.locationName} - {upcomingGame.locationAddress}</p>
-              <p><strong>Uniform:</strong> {team.primaryColor} jersey / {team.secondaryColor} accent</p>
+              <p>{formatDate(upcomingGame.startsAt)} · Arrival time not published</p>
+              <p><strong>Venue:</strong> {upcomingGame.locationName} · {upcomingGame.locationAddress}</p>
+              <p><strong>Bring:</strong> League bring list not published</p>
               <p><strong>RSVP:</strong> {gameRsvps.length} of {players.length} player response(s)</p>
               <p><strong>Snack:</strong> {gameSnackSlots.find((slot) => slot.status === "assigned")?.item ?? "Open snack duty"}</p>
-              <p><strong>Parking:</strong> Use the main lot near {upcomingGame.locationName}; check urgent alerts before leaving.</p>
+              <p><strong>Parking:</strong> Not published; check authorized team updates before leaving.</p>
               <p><strong>Weather:</strong> {gameWeatherAlert ? `${gameWeatherAlert.headline} - ${gameWeatherAlert.detail}` : "No weather alert drafted."}</p>
               <p><strong>Urgent help:</strong> {gameVolunteerSignups.filter((signup) => signup.status === "open").map((signup) => signup.role).join(", ") || "Covered"}</p>
               <a href={`https://maps.google.com/?q=${encodeURIComponent(upcomingGame.locationAddress)}`}>Open field map</a>
@@ -9200,7 +9184,7 @@ export function TeamChatClient({
                   <StatusBadge label="Game-Day Questions" variant="success" />
                   <h3>{view.upcomingGame.title}</h3>
                   <p className="muted">
-                    {formatDate(view.upcomingGame.startsAt)} · Arrive by {formatArrivalTime(view.upcomingGame.startsAt)}
+                    {formatDate(view.upcomingGame.startsAt)} · Arrival time not published
                   </p>
                 </div>
                 <ul className="list compact">

@@ -102,7 +102,7 @@ export function ParentSeasonStory({
       <header className="parent-season-story-header">
         <div>
           <span>Season story</span>
-          <h1 id="parent-season-story-title">{teamName}</h1>
+          <h2 id="parent-season-story-title">{teamName}</h2>
           <p>{seasonName} for {childLabel}</p>
         </div>
         <div className="parent-story-child-mark" aria-label={`Private family view for ${childLabel}`}>

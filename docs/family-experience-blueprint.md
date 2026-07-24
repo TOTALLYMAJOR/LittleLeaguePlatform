@@ -944,6 +944,8 @@ Proof: real-session RLS and cross-family isolation, invitation lifecycle, audit 
 
 Proof: 375/390/768/1440 matrix, offline/reconnect conflicts, organization isolation, performance budget.
 
+Local implementation status (2026-07-24): Parent Home leads with a guardian-scoped Mission Control, child/team filters, an Event Passport, seven-day agenda, explicit overlap evidence, schedule-version-aware RSVP review, and source/freshness/offline truth. Arrival, leave time, separate field, bring list, and responsible adult remain unresolved rather than inferred. The caregiver coordination form begins blank and explicitly grants no transportation, pickup, schedule, or access authority. Focused source/render tests pass, and signed-in 375/390/768/1440 empty-state browser proof records zero overflow and zero browser errors. Populated multi-child, offline/reconnect, organization-isolation, performance, accessibility, and hosted proof remain separate gates.
+
 ### Phase 3: Responsibility and temporary care
 
 1. Transportation request/offer/dual acceptance.
@@ -1102,4 +1104,4 @@ The design is accepted only when all of the following are demonstrated:
 
 ## 20. Immediate prioritized action
 
-Proceed to Phase 2 as one coherent Family Mission Control slice: aggregate every approved child/team without account switching, lead with the five-second next Event Passport, explain schedule conflicts and unresolved responsibility, and make offline freshness plus reconnect outcomes explicit. Phase 1 is locally implemented through migration `0027`; isolated migration/RLS/browser proof, hosted Phase 0 proof, legacy invitation issuance, and provider delivery remain separate promotion gates.
+Proceed to Phase 3 as one coherent responsibility and temporary-care slice: model outbound and return transportation separately, require dual human acceptance before responsibility becomes assigned, add time-bound caregiver authorization with explicit allowed/prohibited actions, and make expiry/revocation clear across Event Passport and offline state. Phase 2 is locally implemented with responsive empty-state proof; populated/offline/hosted proof remains a promotion gate. Phase 1 migration/RLS proof, hosted Phase 0 proof, legacy invitation issuance, and provider delivery remain separate external gates.

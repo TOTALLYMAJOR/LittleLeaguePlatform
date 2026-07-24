@@ -746,8 +746,8 @@ export function FamilyFlightPlanClient({ state, parentUserId, initialHandoffs, m
 }) {
   const [handoffs, setHandoffs] = useState(initialHandoffs);
   const [selectedKey, setSelectedKey] = useState("");
-  const [caregiverLabel, setCaregiverLabel] = useState("Grandparent pickup");
-  const [note, setNote] = useState("Meet at the team check-in flag 20 minutes before start.");
+  const [caregiverLabel, setCaregiverLabel] = useState("");
+  const [note, setNote] = useState("");
   const [statusMessage, setStatusMessage] = useState(message);
   const [isPending, startTransition] = useTransition();
   const legs = useMemo(() => {
@@ -807,14 +807,17 @@ export function FamilyFlightPlanClient({ state, parentUserId, initialHandoffs, m
   }
 
   return (
-    <div className="page coordination-workbench family-flight-plan">
-      <section className="hero compact-hero">
-        <span className="eyebrow">Family Flight Plan</span>
-        <h1>One timeline for every child, field, RSVP, weather flag, and family handoff.</h1>
-        <p className="lead">LeaguePilot combines only the children linked to this guardian. Children still do not log in, and caregiver labels do not grant app access.</p>
-      </section>
+    <section className="coordination-workbench family-flight-plan embedded-family-flight-plan" aria-labelledby="family-coordination-title">
+      <header className="card-header">
+        <div>
+          <span className="eyebrow">Family coordination notes</span>
+          <h2 id="family-coordination-title">Keep a caregiver note with one child event.</h2>
+          <p className="muted">This private note does not assign transportation, authorize pickup, grant app access, or change the official schedule.</p>
+        </div>
+        <span className="badge warning">Coordination only</span>
+      </header>
       <p className="notice">{statusMessage}</p>
-      {conflicts.length ? <p className="notice warning"><strong>Overlap detected:</strong> {Array.from(new Set(conflicts)).join(", ")} have overlapping events. Confirm a caregiver handoff below.</p> : <p className="notice ok">No overlapping child events are currently visible.</p>}
+      {conflicts.length ? <p className="notice warning"><strong>Overlap detected:</strong> {Array.from(new Set(conflicts)).join(", ")} have overlapping events. A coordination note can record the family&apos;s current idea, but it is not a transportation assignment.</p> : <p className="notice ok">No overlapping child events are currently visible.</p>}
       <section className="flight-timeline" aria-label="Family event timeline">
         {legs.slice(0, 10).map((leg) => (
           <article className="card flight-leg" key={`${leg.event.id}:${leg.playerId}`}>
@@ -837,19 +840,19 @@ export function FamilyFlightPlanClient({ state, parentUserId, initialHandoffs, m
       </section>
       {selectedLeg ? (
         <section className="card stack">
-          <div className="card-header"><div><span className="eyebrow">Caregiver coordination</span><h2>Confirm one event handoff</h2></div><span className="badge warning">No access grant</span></div>
+          <div className="card-header"><div><span className="eyebrow">Caregiver coordination</span><h2>Save one event note</h2></div><span className="badge warning">No authorization</span></div>
           <div className="grid two">
             <label>Child event<select value={selectedKey || `${selectedLeg.event.id}:${selectedLeg.playerId}`} onChange={(event) => setSelectedKey(event.target.value)}>{legs.map((leg) => <option key={`${leg.event.id}:${leg.playerId}`} value={`${leg.event.id}:${leg.playerId}`}>{leg.playerName} · {leg.event.title} · {shortDate(leg.event.startsAt)}</option>)}</select></label>
-            <label>Caregiver label<input value={caregiverLabel} onChange={(event) => setCaregiverLabel(event.target.value)} /></label>
+            <label>Caregiver name or relationship<input autoComplete="off" placeholder="Enter a name or relationship" value={caregiverLabel} onChange={(event) => setCaregiverLabel(event.target.value)} /></label>
           </div>
-          <label>Handoff note<textarea value={note} onChange={(event) => setNote(event.target.value)} /></label>
+          <label>Optional coordination details<textarea placeholder="Add only the details your family needs for this event" value={note} onChange={(event) => setNote(event.target.value)} /></label>
           <div className="button-row">
-            <button disabled={isPending || caregiverLabel.trim().length < 2} onClick={saveHandoff}>Confirm caregiver handoff</button>
-            {selectedLeg.handoff ? <button className="secondary" disabled={isPending} onClick={() => cancelHandoff(selectedLeg.handoff!)}>Cancel current handoff</button> : null}
+            <button disabled={isPending || caregiverLabel.trim().length < 2} onClick={saveHandoff}>Save coordination note</button>
+            {selectedLeg.handoff ? <button className="secondary" disabled={isPending} onClick={() => cancelHandoff(selectedLeg.handoff!)}>Remove current note</button> : null}
           </div>
         </section>
       ) : null}
-    </div>
+    </section>
   );
 }
 

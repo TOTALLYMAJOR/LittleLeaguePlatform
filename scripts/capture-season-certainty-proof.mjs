@@ -1,4 +1,4 @@
-import { existsSync, mkdirSync, readFileSync } from "node:fs";
+import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { chromium } from "@playwright/test";
 import { createClient } from "@supabase/supabase-js";
@@ -12,6 +12,7 @@ const routeSpecs = [
     path: "/parent",
     credentialKeys: ["QA_PARENT_EMAIL", "QA_PARENT_PASSWORD"],
     readyTexts: [
+      "Family Mission Control",
       "RSVP needed",
       "Next event confirmed",
       "Sign in to see your family home.",
@@ -171,13 +172,20 @@ async function captureRoute(browser, routeSpec) {
     }
   });
   const page = await context.newPage();
+  const browserErrors = [];
+  page.on("console", (message) => {
+    if (message.type() === "error") browserErrors.push(message.text());
+  });
+  page.on("pageerror", (error) => browserErrors.push(error.message));
   const signedIn = hasCredentials(routeSpec.credentialKeys);
   const proof = {
     role: routeSpec.role,
     path: routeSpec.path,
     signedIn,
     matchedText: "",
-    firstViewportText: ""
+    firstViewportText: "",
+    browserErrors,
+    viewports: []
   };
 
   try {
@@ -195,12 +203,22 @@ async function captureRoute(browser, routeSpec) {
       await page.setViewportSize({ width, height });
       await page.goto(`${baseUrl}${routeSpec.path}?season_certainty_proof=${Date.now()}-${width}`, { waitUntil: "domcontentloaded" });
       proof.matchedText = await waitForAnyText(page, routeSpec.readyTexts);
+      await page.waitForTimeout(500);
       await page.evaluate(() => window.scrollTo(0, 0));
+      const layout = await page.evaluate(() => ({
+        clientWidth: document.documentElement.clientWidth,
+        scrollWidth: document.documentElement.scrollWidth
+      }));
+      proof.viewports.push({ name, width, height, ...layout });
+      if (layout.scrollWidth > layout.clientWidth) {
+        throw new Error(`${routeSpec.role} ${name} has document overflow: ${layout.scrollWidth}px > ${layout.clientWidth}px.`);
+      }
       if (name === "mobile-375") {
         proof.firstViewportText = normalizeText(await page.locator("body").innerText({ timeout: 15_000 }));
       }
       await page.screenshot({
-        path: join(screenshotDir, `${routeSpec.role}-${name}.png`)
+        path: join(screenshotDir, `${routeSpec.role}-${name}.png`),
+        caret: "initial"
       });
       console.log(`captured ${routeSpec.role}-${name}.png`);
       if (routeSpec.role === "parent-schedule" && name === "mobile-390") {
@@ -212,7 +230,8 @@ async function captureRoute(browser, routeSpec) {
             await sheet.waitFor({ timeout: 8_000 });
             await sheet.scrollIntoViewIfNeeded();
             await page.screenshot({
-              path: join(screenshotDir, "parent-schedule-sheet-mobile-390.png")
+              path: join(screenshotDir, "parent-schedule-sheet-mobile-390.png"),
+              caret: "initial"
             });
             console.log("captured parent-schedule-sheet-mobile-390.png");
           } catch {
@@ -227,7 +246,8 @@ async function captureRoute(browser, routeSpec) {
           try {
             await page.getByText("1 changed", { exact: true }).first().waitFor({ timeout: 8_000 });
             await page.screenshot({
-              path: join(screenshotDir, "admin-schedule-change-lens-desktop-1440.png")
+              path: join(screenshotDir, "admin-schedule-change-lens-desktop-1440.png"),
+              caret: "initial"
             });
             console.log("captured admin-schedule-change-lens-desktop-1440.png");
           } catch {
@@ -268,7 +288,13 @@ async function main() {
       const signInState = proof.signedIn ? "signed-in QA state" : "access-gated or signed-out state";
       const signInNote = proof.signInError ? ` (${proof.signInError})` : "";
       console.log(`${proof.role}: captured ${signInState}${signInNote}; matched "${proof.matchedText}"`);
+      if (proof.browserErrors.length) throw new Error(`${proof.role} emitted browser errors: ${proof.browserErrors.join(" | ")}`);
     }
+    writeFileSync(join(screenshotDir, "proof.json"), `${JSON.stringify({
+      baseUrl,
+      capturedAt: new Date().toISOString(),
+      proofs
+    }, null, 2)}\n`);
     console.log(`Season Certainty screenshots saved under ${screenshotDir}`);
   } finally {
     await browser.close();

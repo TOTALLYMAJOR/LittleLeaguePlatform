@@ -12,7 +12,7 @@ export async function POST(request: Request) {
   }
   const body = await request.json().catch(() => null);
   if (!body || typeof body !== "object") {
-    return NextResponse.json({ ok: false, message: "Caregiver handoff body is required." }, { status: 400 });
+    return NextResponse.json({ ok: false, message: "Caregiver coordination details are required." }, { status: 400 });
   }
   const action = String(body.action ?? "confirm");
   const result = action === "cancel"

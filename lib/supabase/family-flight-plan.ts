@@ -105,10 +105,10 @@ export async function saveFamilyEventHandoff(input: {
   const caregiverLabel = input.caregiverLabel.trim();
   const note = input.note?.trim();
   if (!input.parentUserId || !input.playerId || !input.eventId || caregiverLabel.length < 2 || caregiverLabel.length > 120) {
-    return { ok: false, message: "Caregiver handoff requires player, event, guardian, and a 2-120 character caregiver label." };
+    return { ok: false, message: "A caregiver coordination note requires a linked child, event, guardian, and a 2-120 character caregiver name or relationship." };
   }
   if (note && (note.length < 2 || note.length > 1000)) {
-    return { ok: false, message: "Caregiver handoff note must be 2-1000 characters." };
+    return { ok: false, message: "Optional coordination details must be 2-1000 characters." };
   }
   try {
     const db = dbClient();
@@ -127,7 +127,7 @@ export async function saveFamilyEventHandoff(input: {
       { data: { id: string; organization_id: string; team_id: string } | null }
     ];
     if (!player || !event || player.team_id !== event.team_id || player.organization_id !== event.organization_id) {
-      return { ok: false, message: "Caregiver handoff could not verify the player and event context." };
+      return { ok: false, message: "Caregiver coordination could not verify the linked child and event." };
     }
     const now = new Date().toISOString();
     const { data, error } = await withSupabaseTimeout(db
@@ -148,22 +148,22 @@ export async function saveFamilyEventHandoff(input: {
         data: HandoffRow | null;
         error: { message?: string } | null;
       };
-    if (error || !data) return { ok: false, message: "Caregiver handoff could not be saved." };
+    if (error || !data) return { ok: false, message: "Caregiver coordination note could not be saved." };
     await withSupabaseTimeout(db.from("audit_events").insert({
       organization_id: event.organization_id,
       actor_user_id: input.parentUserId,
       action: "family_event_handoff_confirmed",
       target_type: "family_event_handoff",
       target_id: data.id,
-      summary: "Guardian confirmed a caregiver handoff for one player event. No provider message was sent."
+      summary: "Guardian saved a private caregiver coordination note for one player event. It did not assign transportation, authorize pickup, grant access, or send a provider message."
     }), 7000);
     return {
       ok: true,
-      message: "Caregiver handoff confirmed for this event. No invitation or provider message was sent.",
+      message: "Caregiver coordination note saved. It did not assign transportation, authorize pickup, grant access, or send a message.",
       handoff: mapHandoff(data)
     };
   } catch {
-    return { ok: false, message: "Caregiver handoff could not reach team records." };
+    return { ok: false, message: "Caregiver coordination could not reach team records." };
   }
 }
 
@@ -172,7 +172,7 @@ export async function cancelFamilyEventHandoff(input: {
   handoffId: string;
 }) {
   if (!input.parentUserId || !input.handoffId) {
-    return { ok: false, message: "Canceling a caregiver handoff requires guardian and handoff." };
+    return { ok: false, message: "Removing a caregiver coordination note requires a guardian and note." };
   }
   try {
     const db = dbClient();
@@ -182,9 +182,9 @@ export async function cancelFamilyEventHandoff(input: {
       .eq("id", input.handoffId)
       .eq("requested_by_user_id", input.parentUserId)
       .maybeSingle(), 7000) as { data: HandoffRow | null };
-    if (!existing) return { ok: false, message: "Caregiver handoff is not available to this guardian." };
+    if (!existing) return { ok: false, message: "Caregiver coordination note is not available to this guardian." };
     if (existing.cancelled_at) {
-      return { ok: true, idempotentReplay: true, message: "Caregiver handoff was already cancelled.", handoff: mapHandoff(existing) };
+      return { ok: true, idempotentReplay: true, message: "Caregiver coordination note was already removed.", handoff: mapHandoff(existing) };
     }
     const access = await requireActiveParentForPlayerEvent({
       db,
@@ -203,17 +203,17 @@ export async function cancelFamilyEventHandoff(input: {
         data: HandoffRow | null;
         error: { message?: string } | null;
       };
-    if (error || !data) return { ok: false, message: "Caregiver handoff cancellation could not be saved." };
+    if (error || !data) return { ok: false, message: "Caregiver coordination note could not be removed." };
     await withSupabaseTimeout(db.from("audit_events").insert({
       organization_id: existing.organization_id,
       actor_user_id: input.parentUserId,
       action: "family_event_handoff_cancelled",
       target_type: "family_event_handoff",
       target_id: existing.id,
-      summary: "Guardian cancelled a caregiver handoff."
+      summary: "Guardian removed a private caregiver coordination note."
     }), 7000);
-    return { ok: true, message: "Caregiver handoff cancelled.", handoff: mapHandoff(data) };
+    return { ok: true, message: "Caregiver coordination note removed.", handoff: mapHandoff(data) };
   } catch {
-    return { ok: false, message: "Caregiver handoff cancellation could not reach team records." };
+    return { ok: false, message: "Caregiver coordination removal could not reach team records." };
   }
 }
