@@ -19,8 +19,17 @@ describe("FamilyMissionControlClient", () => {
     const html = renderToStaticMarkup(<FamilyMissionControlClient view={view} />);
 
     expect(html).toContain("Family Mission Control");
+    expect(html).toContain("Your family week");
     expect(html).toContain("Next: Mason T. · Tiny Tigers vs Rookie Rockets");
-    expect(html).toContain("Event Passport · official schedule v1");
+    expect(html).toContain("Full Event Passport · official schedule v1");
+    expect(html).toContain("Family readiness");
+    expect(html).toContain("Parent Replay");
+    expect(html).toContain("data-family-icon=\"sun\"");
+    expect(html).toContain("data-family-icon=\"trophy\"");
+    expect(html).toContain("data-family-icon=\"location\"");
+    expect(html).toContain("data-family-icon=\"transportation\"");
+    expect(html).toContain("data-family-icon=\"replay\"");
+    expect(html).toContain("%2Fimages%2Fleaguepilot-game-day-parent.png");
     expect(html).toContain("Not planned");
     expect(html).toContain("Not published");
     expect(html).toContain("Not separately published");
