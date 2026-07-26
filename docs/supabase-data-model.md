@@ -18,6 +18,16 @@ supabase/migrations/0026_parent_invite_acceptance.sql
 supabase/migrations/0027_additional_guardian_requests.sql
 supabase/migrations/0028_transportation_responsibility.sql
 supabase/migrations/0029_temporary_caregiver_authorizations.sql
+supabase/migrations/0030_official_communication_revisions.sql
+supabase/migrations/0031_parent_replay_family_story.sql
+supabase/migrations/0032_season_transition_reviews.sql
+supabase/migrations/0033_registration_invitation_issuance.sql
+supabase/migrations/20260724143554_security_definer_execution_hardening.sql
+supabase/migrations/20260726134836_data_api_service_role_grants.sql
+supabase/migrations/20260726142404_relocate_btree_gist_extension.sql
+supabase/migrations/20260726143452_fix_additional_guardian_revocation_ambiguity.sql
+supabase/migrations/20260726143938_restrict_rls_helper_execution.sql
+supabase/migrations/20260726144407_restore_anon_rls_policy_evaluation.sql
 ```
 
 Demo seed:
@@ -27,19 +37,43 @@ supabase/seed.sql
 scripts/bootstrap-demo-tenant.mjs
 ```
 
-The configured Supabase project has a previously verified migration baseline, but migration `0024` still requires an explicitly selected QA/preview target before it is pushed. Locally, migrations `0001` through `0024` install together in an empty PostgreSQL database, and transaction/RLS smoke checks cover the new coordination loops. That local evidence does not prove hosted migration state, provider behavior, or production deployment. `supabase/seed.sql` adds a minimal demo organization, active season, and teams with UUID IDs so public registration has valid team choices. `scripts/bootstrap-demo-tenant.mjs` is the richer fictional product-demo seed: it creates demo auth users and populated tenant rows for admin, coach, and parent workflows while keeping provider sends and payment collection disconnected.
+The active LeaguePilot Supabase production project remains unchanged at migration `0021`. On 2026-07-26, a clean PostgreSQL 17 reset and the empty-data Supabase preview `gmrvnnkxksqkcxcmydhr` both applied `0022` through `0033` plus six timestamped hardening migrations ending at `20260726144407_restore_anon_rls_policy_evaluation.sql`. The first local pass exposed `authorization` as a reserved alias in `0028` and `0029`; after those aliases were replaced, the chain installed. Transportation now permits multiple pending offers while a partial unique index enforces only one final assignment. Error-level lint also found and the additive chain repaired an ambiguous `revocation_reason` reference in the additional-guardian revocation function.
 
-From this WSL environment, Supabase's direct database URL requires IPv6 and may not connect. Keep using the project's IPv4 transaction pooler URL in:
+Current Supabase projects may use opt-in Data API grants. The compatibility migration preserves `select`, `insert`, `update`, and `delete` for `anon`, `authenticated`, and `service_role` on the 58 legacy RLS-governed tables. For the 20 server-adapter tables added in `0022`-`0024`, it first revokes `public`, `anon`, and `authenticated`, then grants those four DML privileges only to `service_role`. All public tables have RLS. The extension hardening migration relocates `btree_gist` from `public` to `extensions`, and the dependent field-reservation exclusion constraint remains valid. The RLS-helper hardening removes the default broad `PUBLIC` execution grant, then explicitly grants the eight helpers to `authenticated`, `anon`, and `service_role`; real-session proof confirms anonymous denial still evaluates to zero rows rather than a function-permission error.
+
+The hosted preview proves ordered application, migration readback, a no-op follow-up plan, Data API privileges, RLS enablement, real-session parent/coach/anonymous boundaries, and the provider-free `0028`/`0029` lifecycle. It does not prove production backup restoration, every `0022`-`0033` feature lifecycle, hosted application rendering, provider behavior, or production deployment. See `docs/supabase-migration-rehearsal-2026-07-26.md`.
+
+`supabase/seed.sql` adds a minimal demo organization, active season, and teams with UUID IDs so public registration has valid team choices. `scripts/bootstrap-demo-tenant.mjs` is the richer fictional product-demo seed: it creates demo auth users and populated tenant rows for admin, coach, and parent workflows while keeping provider sends and payment collection disconnected.
+
+## Migration Promotion Boundary
+
+Use only an explicitly approved QA project or preview branch. Do not rely on the repository's cached link metadata or the default app database URL. Before applying:
+
+1. Confirm the target project reference and environment independently.
+2. Review the target's backup, point-in-time recovery, and restore procedure.
+3. Run the guarded dry-run plan and inspect the exact ordered migration list.
+4. Apply without seed data.
+5. Read back migration history and run security advisors.
+6. Seed only fictional QA users, then run real-session RLS and populated lifecycle proof.
+
+The guarded runner requires target-specific values supplied through the process environment:
 
 ```env
-SUPABASE_POOLER_DATABASE_URL=
+SUPABASE_MIGRATION_TARGET_REF=<approved-qa-or-preview-ref>
+SUPABASE_MIGRATION_TARGET_ENV=preview
+SUPABASE_POOLER_DATABASE_URL=<direct-or-session-pooler-database-url>
 ```
 
-Then run:
+Plan first, then apply only after reviewing that plan:
 
 ```bash
-npm run supabase:push
+npm run supabase:plan
+SUPABASE_MIGRATION_CONFIRM=apply-reviewed-migrations npm run supabase:push
 ```
+
+Target ref, target classification, app-target override, seed opt-in, and apply confirmations are invocation-only; the runner deliberately ignores those keys in `.env.local`. Seed inclusion is opt-in and forbidden for production promotion. The protected production ref must be classified as `production`, no other ref may use that classification, and production apply requires the distinct per-invocation confirmation `SUPABASE_MIGRATION_CONFIRM=apply-reviewed-production-migrations` after QA/preview evidence and approval pass.
+
+Use the direct database endpoint when IPv6 is available or the Supavisor session pooler on port `5432` from IPv4-only environments. The guarded runner rejects transaction-pooler URLs on port `6543` because migration tooling uses prepared statements.
 
 ## Core Tables
 
@@ -93,6 +127,7 @@ npm run supabase:push
 - Weather, notification, and Parent Replay records are persisted as draft/queued records before any provider send.
 - Health notes and emergency contact records are not general team portal content; they use explicit guardian/team-manager policies.
 - AI-generated content is stored as a draft/review artifact before a learning plan or Parent Replay can be treated as approved.
+- Data API table grants and row authorization are separate. The compatibility migration restores legacy-table DML behind existing RLS and explicitly removes browser-role access from the 20 server-adapter-only tables before granting service-role DML.
 
 ## TypeScript Boundary
 
@@ -117,8 +152,8 @@ DEMO_TENANT_SEED_CONFIRM=load-fictional-data npm run supabase:demo-tenant
 
 The seed is idempotent and writes fixed fictional UUIDs under `LeaguePilot Demo League`. It is meant to make local, QA, preview, or intentionally selected hosted environments feel fully populated for product review. It does not prove production readiness, provider delivery, Stripe payments, media storage, AI-provider output, or hosted browser proof.
 
-## Coordination Loop Promotion
+## Family Migration Promotion
 
-Apply migration `0024` only to an explicitly selected disposable QA/preview project, then run signed-in admin, coach, and guardian journeys with database readback. Provider sandbox evidence is a separate gate: notification drafts, approval, provider acceptance, verified delivery/failure, read, and acknowledgment must remain independent proof lanes.
+The ordered chain is installed and aligned on isolated preview `gmrvnnkxksqkcxcmydhr`. `npm run qa:rls-proof` and `npm run qa:migration-gap-proof` pass there, covering real-session parent/coach/anonymous policies plus the provider-free transportation and caregiver happy/denial/revocation path. Cross-organization, cross-team, cross-family, competing-offer, wrong-role, expiry, cache-clearing, correction, downstream-refusal, and hosted browser proof remain pending before production promotion.
 
-Apply migrations `0025` through `0029` in order only to an explicitly approved QA/preview target. Migration `0029_temporary_caregiver_authorizations.sql` adds least-privilege, time-bound caregiver scope separate from guardian membership: one child/team, selected scheduled events, a maximum 14-day window, selected Event Passport view, optional pickup, and fixed medical/custody/attendance/schedule/publishing/roster/delegation prohibitions. Exact-email acceptance, active-guardian revalidation, hashed single-use proof, pickup-restriction review, automatic expiry, attributed revocation, and audit events are enforced server-side. Prove real-session isolation and caregiver cache clearing before any production claim.
+Migration `0029_temporary_caregiver_authorizations.sql` adds least-privilege, time-bound caregiver scope separate from guardian membership: one child/team, selected scheduled events, a maximum 14-day window, selected Event Passport view, optional pickup, and fixed medical/custody/attendance/schedule/publishing/roster/delegation prohibitions. Exact-email acceptance, active-guardian revalidation, hashed single-use proof, pickup-restriction review, automatic expiry, attributed revocation, and audit events are enforced server-side. Provider sandbox evidence is a separate gate: notification drafts, approval, provider acceptance, verified delivery/failure, read, and acknowledgment remain independent proof lanes.

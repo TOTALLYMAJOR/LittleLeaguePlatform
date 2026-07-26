@@ -1,5 +1,6 @@
 import { existsSync, readFileSync } from "node:fs";
 import { createClient } from "@supabase/supabase-js";
+import { assertIsolatedQaTarget } from "./qa-target-guard.mjs";
 
 const envFile = ".env.local";
 
@@ -87,6 +88,7 @@ function assertDenied(result, label) {
 
 async function main() {
   loadLocalEnv();
+  assertIsolatedQaTarget(requireEnv("NEXT_PUBLIC_SUPABASE_URL"), "RLS proof");
 
   const parent = await signIn("QA_PARENT_EMAIL", "QA_PARENT_PASSWORD");
   const coach = await signIn("QA_COACH_EMAIL", "QA_COACH_PASSWORD");

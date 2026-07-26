@@ -77,9 +77,9 @@ create table if not exists public.transportation_assignments (
   check (withdrawal_reason is null or char_length(withdrawal_reason) between 10 and 500)
 );
 
-create unique index if not exists idx_transportation_assignments_one_current
+create unique index if not exists idx_transportation_assignments_one_assigned
   on public.transportation_assignments(request_id)
-  where status in ('awaiting_requester_acceptance', 'assigned');
+  where status = 'assigned';
 create index if not exists idx_transportation_assignments_event_player
   on public.transportation_assignments(event_id, player_id, direction);
 create index if not exists idx_transportation_assignments_driver
@@ -120,15 +120,15 @@ set search_path = public
 as $$
   select exists (
     select 1
-    from public.guardian_authorizations authorization
-    join public.player_guardians guardian on guardian.id = authorization.player_guardian_id
-    where authorization.authorization_type = 'pickup'
-      and authorization.allowed = false
-      and authorization.effective_at <= now()
-      and (authorization.expires_at is null or authorization.expires_at > now())
+    from public.guardian_authorizations guardian_authorization
+    join public.player_guardians guardian on guardian.id = guardian_authorization.player_guardian_id
+    where guardian_authorization.authorization_type = 'pickup'
+      and guardian_authorization.allowed = false
+      and guardian_authorization.effective_at <= now()
+      and (guardian_authorization.expires_at is null or guardian_authorization.expires_at > now())
       and guardian.status = 'active'
       and (
-        authorization.player_id = target_player_id
+        guardian_authorization.player_id = target_player_id
         or (target_user_id is not null and guardian.parent_user_id = target_user_id)
       )
   );

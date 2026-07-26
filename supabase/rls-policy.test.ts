@@ -28,8 +28,20 @@ describe("Supabase RLS policy coverage", () => {
   const coordinationLoops = migration("0024_coordination_loops.sql");
   const transportation = migration("0028_transportation_responsibility.sql");
   const securityDefinerHardening = migration("20260724143554_security_definer_execution_hardening.sql");
+  const dataApiServiceRoleGrants = migration("20260726134836_data_api_service_role_grants.sql");
+  const extensionHardening = migration("20260726142404_relocate_btree_gist_extension.sql");
+  const guardianRevocationFix = migration(
+    "20260726143452_fix_additional_guardian_revocation_ambiguity.sql"
+  );
+  const rlsHelperExecution = migration(
+    "20260726143938_restrict_rls_helper_execution.sql"
+  );
+  const anonymousRlsPolicyEvaluation = migration(
+    "20260726144407_restore_anon_rls_policy_evaluation.sql"
+  );
   const packageJson = readFileSync(join(process.cwd(), "package.json"), "utf8");
   const rlsProof = readFileSync(join(process.cwd(), "scripts", "verify-rls-boundaries.mjs"), "utf8");
+  const migrationPush = readFileSync(join(process.cwd(), "scripts", "supabase-push.mjs"), "utf8");
 
   it("keeps parent, coach, and admin team boundaries explicit", () => {
     expect(core).toContain("create policy \"team members can read players\"");
@@ -102,6 +114,21 @@ describe("Supabase RLS policy coverage", () => {
     expect(rlsProof).toContain("parent cannot read cross-team players");
     expect(rlsProof).toContain("coach cannot update archived-season events");
     expect(rlsProof).toContain("anonymous cannot read private teams");
+  });
+
+  it("keeps migration promotion target-bound, dry-run-first, and seed-opt-in", () => {
+    expect(packageJson).toContain("\"supabase:plan\": \"node scripts/supabase-push.mjs --dry-run\"");
+    expect(migrationPush).toContain("SUPABASE_MIGRATION_TARGET_REF");
+    expect(migrationPush).toContain("SUPABASE_MIGRATION_TARGET_ENV");
+    expect(migrationPush).toContain("SUPABASE_MIGRATION_CONFIRM");
+    expect(migrationPush).toContain("\"--dry-run\"");
+    expect(migrationPush).toContain("SUPABASE_MIGRATION_INCLUDE_SEED");
+    expect(migrationPush).toContain("Seed data is forbidden for production migration promotion.");
+    expect(migrationPush).toContain("const pushArgs = [");
+    expect(migrationPush).toContain('runSupabase([...pushArgs, "--dry-run"])');
+    expect(migrationPush).toContain('runSupabase([...pushArgs, "--yes"])');
+    expect(migrationPush).toContain("transaction-pooler URLs (port 6543)");
+    expect(migrationPush).toContain("\"--no-install\", \"supabase\"");
   });
 
   it("keeps archived seasons readable but mutation-locked", () => {
@@ -211,5 +238,66 @@ describe("Supabase RLS policy coverage", () => {
     expect(transportation).toContain("to service_role");
     expect(transportation).toContain("transportation_pickup_restriction_exists");
     expect(transportation).toContain("requester_accepted_at = now()");
+    expect(transportation).toContain("idx_transportation_assignments_one_assigned");
+    expect(transportation).toContain("where status = 'assigned'");
+    expect(transportation).toContain("Another mutually accepted offer was selected.");
+  });
+
+  it("keeps migration-backed server tables available only to the service adapter role", () => {
+    const serverOnlyGrants = dataApiServiceRoleGrants.split(
+      "-- Server-adapter-only tables from migrations 0022-0024."
+    )[1];
+    expect(dataApiServiceRoleGrants).toContain(
+      "grant select, insert, update, delete on table"
+    );
+    expect(dataApiServiceRoleGrants).toContain("to anon, authenticated, service_role");
+    expect(dataApiServiceRoleGrants).not.toContain("grant all on table");
+    expect(dataApiServiceRoleGrants).toContain("public.profiles");
+    expect(dataApiServiceRoleGrants).toContain("public.support_requests");
+    expect(serverOnlyGrants).toBeTruthy();
+    expect(serverOnlyGrants).toContain("public.drill_videos");
+    expect(serverOnlyGrants).toContain("public.offline_action_receipts");
+    expect(serverOnlyGrants).toContain("public.practice_run_receipts");
+    expect(serverOnlyGrants).toContain("public.game_day_resolution_reviews");
+    expect(serverOnlyGrants).toContain("from public, anon, authenticated");
+    expect(serverOnlyGrants).toContain("to service_role");
+    expect(serverOnlyGrants).not.toContain("to authenticated");
+    expect(serverOnlyGrants).not.toContain("to anon");
+  });
+
+  it("avoids PostgreSQL reserved words as transportation and caregiver aliases", () => {
+    const caregiver = migration("0029_temporary_caregiver_authorizations.sql");
+    expect(transportation).not.toContain("guardian_authorizations authorization");
+    expect(caregiver).not.toContain("temporary_caregiver_authorizations authorization");
+  });
+
+  it("keeps relocatable extensions out of the exposed public schema", () => {
+    expect(extensionHardening).toContain("create schema if not exists extensions");
+    expect(extensionHardening).toContain("alter extension btree_gist set schema extensions");
+  });
+
+  it("keeps additional-guardian revocation executable and service-only", () => {
+    expect(guardianRevocationFix).toContain("revocation_reason = trim($3)");
+    expect(guardianRevocationFix).toContain(
+      "revoke all on function public.revoke_additional_guardian_access(uuid, uuid, text)"
+    );
+    expect(guardianRevocationFix).toContain("from public, anon, authenticated");
+    expect(guardianRevocationFix).toContain("to service_role");
+  });
+
+  it("removes broad RLS-helper execution while retaining required API policy evaluation", () => {
+    expect(rlsHelperExecution).toContain(
+      "revoke execute on function public.current_user_can_access_team(uuid) from public, anon"
+    );
+    expect(rlsHelperExecution).toContain(
+      "grant execute on function public.current_user_can_access_team(uuid) to authenticated, service_role"
+    );
+    expect(rlsHelperExecution.match(/revoke execute on function/g)).toHaveLength(8);
+    expect(rlsHelperExecution.match(/grant execute on function/g)).toHaveLength(8);
+    expect(anonymousRlsPolicyEvaluation).toContain(
+      "grant execute on function public.current_user_can_access_team(uuid) to anon"
+    );
+    expect(anonymousRlsPolicyEvaluation.match(/grant execute on function/g)).toHaveLength(8);
+    expect(anonymousRlsPolicyEvaluation).not.toContain("to public");
   });
 });

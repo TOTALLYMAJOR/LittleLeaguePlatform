@@ -183,12 +183,12 @@ begin
 
   if exists (
     select 1
-    from public.temporary_caregiver_authorizations authorization
-    where authorization.player_id = target_player_id
-      and authorization.caregiver_email = normalized_email
-      and authorization.revoked_at is null
-      and authorization.expires_at > now()
-      and tstzrange(authorization.starts_at, authorization.expires_at, '[)')
+    from public.temporary_caregiver_authorizations caregiver_authorization
+    where caregiver_authorization.player_id = target_player_id
+      and caregiver_authorization.caregiver_email = normalized_email
+      and caregiver_authorization.revoked_at is null
+      and caregiver_authorization.expires_at > now()
+      and tstzrange(caregiver_authorization.starts_at, caregiver_authorization.expires_at, '[)')
         && tstzrange(target_starts_at, target_expires_at, '[)')
   ) then
     raise exception 'This caregiver already has current access for the child during that time.';

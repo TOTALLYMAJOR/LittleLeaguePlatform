@@ -11,8 +11,10 @@
     "typegen": "next typegen",
     "typecheck": "next typegen && tsc --noEmit -p tsconfig.typecheck.json",
     "test": "TMPDIR=/tmp TEMP=/tmp TMP=/tmp vitest run",
+    "supabase:plan": "node scripts/supabase-push.mjs --dry-run",
     "supabase:push": "node scripts/supabase-push.mjs",
     "supabase:qa-users": "node scripts/bootstrap-qa-session-users.mjs",
+    "qa:migration-gap-proof": "node scripts/verify-migration-gap-lifecycle.mjs",
     "supabase:demo-tenant": "node scripts/bootstrap-demo-tenant.mjs",
     "qa:session-proof": "node scripts/verify-qa-session-paths.mjs",
     "qa:season-certainty-proof": "node scripts/capture-season-certainty-proof.mjs",
@@ -63,6 +65,7 @@
     "@types/web-push": "^3.6.4",
     "eslint": "^9.39.2",
     "eslint-config-next": "^16.2.9",
+    "supabase": "2.109.1",
     "typescript": "^5.9.3",
     "vitest": "^3.2.6"
   },

@@ -1,14 +1,53 @@
 import { existsSync, readFileSync, appendFileSync } from "node:fs";
 import { randomBytes } from "node:crypto";
 import { createClient } from "@supabase/supabase-js";
+import {
+  assertIsolatedQaTarget,
+  assertServiceRoleCredential
+} from "./qa-target-guard.mjs";
 
 const envFile = ".env.local";
+const ids = {
+  organization: "11111111-1111-4111-8111-111111111111",
+  season: "22222222-2222-4222-8222-222222222222",
+  archivedSeason: "22222222-2222-4222-8222-222222222223",
+  team: "33333333-3333-4333-8333-333333333331",
+  otherTeam: "33333333-3333-4333-8333-333333333332",
+  archivedTeam: "33333333-3333-4333-8333-333333333333",
+  playerMason: "44444444-4444-4444-8444-444444444441",
+  playerAvery: "44444444-4444-4444-8444-444444444442",
+  playerOtherTeam: "44444444-4444-4444-8444-444444444443",
+  playerArchivedTeam: "44444444-4444-4444-8444-444444444444",
+  game: "55555555-5555-4555-8555-555555555551",
+  practice: "55555555-5555-4555-8555-555555555552",
+  archivedGame: "55555555-5555-4555-8555-555555555553",
+  coachMembership: "66666666-6666-4666-8666-666666666661",
+  parentMembership: "66666666-6666-4666-8666-666666666662",
+  archivedCoachMembership: "66666666-6666-4666-8666-666666666663",
+  parentOtherTeamMembership: "66666666-6666-4666-8666-666666666664",
+  guardian: "77777777-7777-4777-8777-777777777771",
+  guardianMedicalAuthorization: "77777777-7777-4777-8777-777777777772",
+  emergencyContact: "77777777-7777-4777-8777-777777777773",
+  guardianAvery: "77777777-7777-4777-8777-777777777774",
+  guardianOtherTeam: "77777777-7777-4777-8777-777777777775",
+  announcement: "88888888-8888-4888-8888-888888888881",
+  mediaAlbum: "99999999-9999-4999-8999-999999999991",
+  mediaVideo: "99999999-9999-4999-8999-999999999992",
+  snackAssigned: "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaa1",
+  snackOpen: "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaa2",
+  volunteerOpen: "bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbb1",
+  volunteerFilled: "bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbb2",
+  weather: "cccccccc-cccc-4ccc-8ccc-ccccccccccc1"
+};
 
 function parseEnvLine(line) {
   if (!line || line.trim().startsWith("#")) return null;
   const separator = line.indexOf("=");
   if (separator === -1) return null;
-  return [line.slice(0, separator).trim(), line.slice(separator + 1).trim()];
+  return [
+    line.slice(0, separator).trim(),
+    line.slice(separator + 1).trim().replace(/^"|"$/g, "")
+  ];
 }
 
 function loadLocalEnv() {
@@ -105,25 +144,99 @@ async function upsertOrThrow(supabase, table, row, options = {}) {
   return data;
 }
 
+async function assertExistingFixtureSchedule(supabase, fixtures) {
+  const { data, error } = await supabase
+    .from("events")
+    .select("id,starts_at,ends_at")
+    .in("id", fixtures.map((fixture) => fixture.id));
+  if (error) {
+    throw new Error(`QA fixture schedule preflight failed: ${error.message}`);
+  }
+
+  const expectedById = new Map(fixtures.map((fixture) => [fixture.id, fixture]));
+  for (const row of data ?? []) {
+    const expected = expectedById.get(row.id);
+    const startsMatch =
+      expected && new Date(row.starts_at).valueOf() === new Date(expected.startsAt).valueOf();
+    const endsMatch =
+      expected && new Date(row.ends_at).valueOf() === new Date(expected.endsAt).valueOf();
+    if (!startsMatch || !endsMatch) {
+      throw new Error(
+        "Existing QA fixture dates do not match QA_FIXTURE_ANCHOR_DATE. Use a fresh isolated target instead of silently rewriting versioned events."
+      );
+    }
+  }
+}
+
+async function resolveFixtureAnchorDate(supabase) {
+  if (process.env.QA_FIXTURE_ANCHOR_DATE) {
+    return process.env.QA_FIXTURE_ANCHOR_DATE;
+  }
+
+  const { data, error } = await supabase
+    .from("events")
+    .select("starts_at")
+    .eq("id", ids.game)
+    .maybeSingle();
+  if (error) {
+    throw new Error(`QA fixture anchor preflight failed: ${error.message}`);
+  }
+  if (!data?.starts_at) return new Date().toISOString().slice(0, 10);
+
+  const existingAnchor = new Date(data.starts_at);
+  existingAnchor.setUTCDate(existingAnchor.getUTCDate() - 7);
+  return existingAnchor.toISOString().slice(0, 10);
+}
+
 async function main() {
   loadLocalEnv();
-  appendMissingEnv({
-    QA_ADMIN_EMAIL: process.env.QA_ADMIN_EMAIL || "qa.admin.littleleague@example.com",
-    QA_ADMIN_PASSWORD: process.env.QA_ADMIN_PASSWORD || generatedPassword(),
-    QA_PARENT_EMAIL: process.env.QA_PARENT_EMAIL || "qa.parent.littleleague@example.com",
-    QA_PARENT_PASSWORD: process.env.QA_PARENT_PASSWORD || generatedPassword(),
-    QA_COACH_EMAIL: process.env.QA_COACH_EMAIL || "qa.coach.littleleague@example.com",
-    QA_COACH_PASSWORD: process.env.QA_COACH_PASSWORD || generatedPassword()
-  });
-
   const url = requireEnv("NEXT_PUBLIC_SUPABASE_URL");
   const serviceRoleKey = requireEnv("SUPABASE_SERVICE_ROLE_KEY");
+  assertIsolatedQaTarget(url, "QA fixture bootstrap");
+  assertServiceRoleCredential(serviceRoleKey);
+
   const supabase = createClient(url, serviceRoleKey, {
     auth: {
       autoRefreshToken: false,
       persistSession: false
     }
   });
+  const fixtureAnchorDate = await resolveFixtureAnchorDate(supabase);
+
+  appendMissingEnv({
+    QA_ADMIN_EMAIL: process.env.QA_ADMIN_EMAIL || "qa.admin.littleleague@example.com",
+    QA_ADMIN_PASSWORD: process.env.QA_ADMIN_PASSWORD || generatedPassword(),
+    QA_PARENT_EMAIL: process.env.QA_PARENT_EMAIL || "qa.parent.littleleague@example.com",
+    QA_PARENT_PASSWORD: process.env.QA_PARENT_PASSWORD || generatedPassword(),
+    QA_COACH_EMAIL: process.env.QA_COACH_EMAIL || "qa.coach.littleleague@example.com",
+    QA_COACH_PASSWORD: process.env.QA_COACH_PASSWORD || generatedPassword(),
+    QA_FIXTURE_ANCHOR_DATE: fixtureAnchorDate
+  });
+
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(fixtureAnchorDate)) {
+    throw new Error("QA_FIXTURE_ANCHOR_DATE must use YYYY-MM-DD.");
+  }
+  const fixtureDay = new Date(`${fixtureAnchorDate}T00:00:00.000Z`);
+  if (Number.isNaN(fixtureDay.valueOf())) {
+    throw new Error("QA_FIXTURE_ANCHOR_DATE is not a valid date.");
+  }
+  const fixtureDate = (daysFromFixtureDay, hour) => {
+    const value = new Date(fixtureDay);
+    value.setUTCDate(value.getUTCDate() + daysFromFixtureDay);
+    value.setUTCHours(hour, 0, 0, 0);
+    return value.toISOString();
+  };
+  const activeSeasonStartsAt = fixtureDate(-30, 0);
+  const activeSeasonEndsAt = fixtureDate(180, 23);
+  const gameStartsAt = fixtureDate(7, 15);
+  const gameEndsAt = fixtureDate(7, 16);
+  const practiceStartsAt = fixtureDate(10, 23);
+  const practiceEndsAt = fixtureDate(11, 0);
+  if (new Date(gameStartsAt) <= new Date() || new Date(practiceStartsAt) <= new Date()) {
+    throw new Error(
+      "QA fixture events are no longer future-dated. Select a fresh isolated target and a new QA_FIXTURE_ANCHOR_DATE instead of silently moving versioned events."
+    );
+  }
 
   const admin = await upsertAuthUser(supabase, {
     email: requireEnv("QA_ADMIN_EMAIL"),
@@ -144,38 +257,10 @@ async function main() {
     defaultRole: "coach"
   });
 
-  const ids = {
-    organization: "11111111-1111-4111-8111-111111111111",
-    season: "22222222-2222-4222-8222-222222222222",
-    archivedSeason: "22222222-2222-4222-8222-222222222223",
-    team: "33333333-3333-4333-8333-333333333331",
-    otherTeam: "33333333-3333-4333-8333-333333333332",
-    archivedTeam: "33333333-3333-4333-8333-333333333333",
-    playerMason: "44444444-4444-4444-8444-444444444441",
-    playerAvery: "44444444-4444-4444-8444-444444444442",
-    playerOtherTeam: "44444444-4444-4444-8444-444444444443",
-    playerArchivedTeam: "44444444-4444-4444-8444-444444444444",
-    game: "55555555-5555-4555-8555-555555555551",
-    practice: "55555555-5555-4555-8555-555555555552",
-    archivedGame: "55555555-5555-4555-8555-555555555553",
-    coachMembership: "66666666-6666-4666-8666-666666666661",
-    parentMembership: "66666666-6666-4666-8666-666666666662",
-    archivedCoachMembership: "66666666-6666-4666-8666-666666666663",
-    parentOtherTeamMembership: "66666666-6666-4666-8666-666666666664",
-    guardian: "77777777-7777-4777-8777-777777777771",
-    guardianMedicalAuthorization: "77777777-7777-4777-8777-777777777772",
-    emergencyContact: "77777777-7777-4777-8777-777777777773",
-    guardianAvery: "77777777-7777-4777-8777-777777777774",
-    guardianOtherTeam: "77777777-7777-4777-8777-777777777775",
-    announcement: "88888888-8888-4888-8888-888888888881",
-    mediaAlbum: "99999999-9999-4999-8999-999999999991",
-    mediaVideo: "99999999-9999-4999-8999-999999999992",
-    snackAssigned: "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaa1",
-    snackOpen: "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaa2",
-    volunteerOpen: "bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbb1",
-    volunteerFilled: "bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbb2",
-    weather: "cccccccc-cccc-4ccc-8ccc-ccccccccccc1"
-  };
+  await assertExistingFixtureSchedule(supabase, [
+    { id: ids.game, startsAt: gameStartsAt, endsAt: gameEndsAt },
+    { id: ids.practice, startsAt: practiceStartsAt, endsAt: practiceEndsAt }
+  ]);
 
   await upsertOrThrow(supabase, "profiles", {
     id: admin.id,
@@ -212,8 +297,8 @@ async function main() {
     organization_id: ids.organization,
     name: "Spring 2026",
     status: "active",
-    starts_at: "2026-03-01T00:00:00.000Z",
-    ends_at: "2026-06-15T23:59:59.000Z"
+    starts_at: activeSeasonStartsAt,
+    ends_at: activeSeasonEndsAt
   });
   await upsertOrThrow(supabase, "seasons", {
     id: ids.archivedSeason,
@@ -373,8 +458,8 @@ async function main() {
     season_id: ids.season,
     title: "Tiny Tigers vs Rookie Rockets",
     event_type: "game",
-    starts_at: "2026-07-11T15:00:00.000Z",
-    ends_at: "2026-07-11T16:00:00.000Z",
+    starts_at: gameStartsAt,
+    ends_at: gameEndsAt,
     location_name: "Field 1",
     location_address: "100 League Way",
     opponent: "Rookie Rockets",
@@ -387,8 +472,8 @@ async function main() {
     season_id: ids.season,
     title: "Tiny Tigers Practice",
     event_type: "practice",
-    starts_at: "2026-07-15T23:00:00.000Z",
-    ends_at: "2026-07-16T00:00:00.000Z",
+    starts_at: practiceStartsAt,
+    ends_at: practiceEndsAt,
     location_name: "Practice Field",
     location_address: "100 League Way",
     status: "scheduled"
