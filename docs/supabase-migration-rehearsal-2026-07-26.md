@@ -2,19 +2,19 @@
 
 Date: 2026-07-26
 
-Scope: close the LeaguePilot `0021` → current migration uncertainty on an isolated target without mutating production or treating database proof as provider/production acceptance.
+Scope: close the LeaguePilot `0021` → current migration uncertainty on an isolated target, then record the separately approved production installation and readback without treating database proof as browser, provider, recovery, Realtime, or operational acceptance.
 
 ## Outcome
 
-The migration gap is closed on local PostgreSQL 17 and on an isolated Supabase preview. Production remains unchanged.
+The migration gap is closed on local PostgreSQL 17, isolated Supabase preview, and the active production database.
 
-- Production `main` (`dkwghvvlbdnnwzbnscvu`) still ends at migration `0021`.
+- Production `main` (`dkwghvvlbdnnwzbnscvu`) is aligned at 39 migrations through `20260726144407_restore_anon_rls_policy_evaluation.sql`.
 - After the Supabase plan upgrade, preview branch `leaguepilot-migration-gap-qa-20260726` (`gmrvnnkxksqkcxcmydhr`) was created without production data.
-- A guarded dry run listed exactly `0022`-`0033`, security-definer hardening, Data API grant compatibility, and extension relocation.
-- The complete chain applied through `20260726144407`; migration-history readback aligns and the next dry run reports the database up to date.
-- `btree_gist` now lives in the `extensions` schema, its field-reservation exclusion constraint remains valid, and local and hosted error-level database lint reports no findings.
-- Hosted parent, coach, and anonymous real-session RLS proof passes.
-- Hosted provider-free transportation and caregiver lifecycle proof passes with audit and database readback.
+- Preview and production guarded dry runs listed the same exact 18-migration gap: `0022`-`0033` plus six timestamped security/Data API/extension hardening migrations.
+- After explicit production approval and a zero-workload preflight, the complete chain applied without seed data. Preview and production history align, and both follow-up plans report the database up to date.
+- `btree_gist` now lives in `extensions`, its field-reservation exclusion constraint remains valid, and local, preview, and production error-level database lint reports no findings.
+- Preview parent, coach, and anonymous real-session RLS proof passes.
+- Preview provider-free transportation and caregiver lifecycle proof passes with audit and database readback. Those populated journeys were not run against production.
 
 ## Defects Closed
 
@@ -31,22 +31,45 @@ The migration gap is closed on local PostgreSQL 17 and on an isolated Supabase p
 8. Error-level PL/pgSQL lint found `revocation_reason` ambiguous inside additional-guardian revocation. An additive replacement preserves the named RPC contract and uses the positional argument for the table update.
 9. PostgreSQL's default `PUBLIC` execution grant exposed eight security-definer RLS helpers more broadly than required. The candidate now revokes `PUBLIC` and grants only the API roles that need policy evaluation plus `service_role`. A real anonymous query caught and corrected the initial over-restriction before publication.
 
+## Production Promotion
+
+- Target: LeaguePilot production `dkwghvvlbdnnwzbnscvu`, PostgreSQL `17.6.1.127`, `us-east-1`.
+- Preflight: 21 migrations ending at `0021`; zero competing active sessions, open transactions, lock waiters, or long-running transactions; database size 17,411,219 bytes.
+- Recovery posture: WAL-G daily backups enabled, PITR disabled, eight completed physical snapshots observed, and the latest platform snapshot was `2026-07-26T09:34:41.666Z`. No provider restore drill is proven.
+- Additional safety evidence: restricted schema-only and data-only logical snapshots were created outside the repository before apply. The data-only dump reported circular team-chat foreign keys and is not a proven standalone restore; it supplements rather than replaces the platform backup.
+- Apply: the guarded runner independently verified the production ref/classification, rejected seed inclusion, repeated the reviewed dry run, and applied the 18 migrations over the Supavisor session pooler on port `5432`.
+- Readback: 39 local/remote migrations align at `20260726144407`; the guarded follow-up plan is empty.
+- Workload after apply: zero other active sessions, open transactions, lock waiters, or ungranted locks.
+- Provider boundary: all 34 new workflow tables remain empty, both organizations retain `provider_sends_enabled=false`, and no provider call or fixture seed ran.
+
 ## Verified Evidence
 
 ### Migration and schema
 
 - Clean local reset: `0001` through `0033` plus six timestamped migrations ending at `20260726144407`.
-- Hosted preview history: the same complete sequence.
-- Hosted follow-up plan: no pending migration.
-- Local and hosted error-level database lint: no findings.
+- Preview and production history: the same complete sequence, 39 migrations total.
+- Preview and production follow-up plans: no pending migration.
+- Local, preview, and production error-level database lint: no findings.
 - `btree_gist` schema: `extensions`; field-reservation exclusion constraint validated.
-- Hosted Security Advisor after final apply: 14 informational `rls_enabled_no_policy` entries for intentionally service-only tables, 16 RLS-helper execution warnings for the `anon`/`authenticated` roles needed by policy evaluation, and one leaked-password-protection warning.
-- Public tables with RLS disabled: `0`.
-- Legacy grant set: `58` tables, intended DML present for all three Data API roles.
-- Server-only grant set: `20` tables, browser-role DML absent and service-role DML present.
+- Production error-level Security and Performance Advisors: no findings. Production Security Advisor warnings improved from three to zero.
+- Production Performance Advisor warnings: 224 total, comprising 49 `auth_rls_initplan` and 175 `multiple_permissive_policies`; this warning-level regression is open performance debt.
+- Production public tables: 92 total; RLS disabled: `0`.
+- Production legacy grant set: `58` tables, intended DML present for `anon`, `authenticated`, and `service_role`.
+- Production `0022`-`0024` server-only grant set: `20` tables, browser-role DML absent and service-role DML present.
+- Production later policy-less server-only set: `14` tables, browser-role DML absent and service-role DML present.
 - Transportation uniqueness: one partial unique index on `request_id where status = 'assigned'`.
+- Production backfill: all five existing RSVPs have a non-null current schedule version, updater, and valid lock version; no duplicate client action IDs.
+- Production row integrity: preflight-sampled counts for organizations, profiles, players, guardians, RSVPs, field reservations, registration actions, notifications, and delivery attempts are unchanged. All 34 new workflow tables remain empty. The intentional `NOT VALID` registration evidence-note constraint has zero existing-row violations.
 
-### Real-session and lifecycle
+### Production service smoke
+
+- Supabase project, Auth, REST, Storage, Database, and Realtime control-plane services report `ACTIVE_HEALTHY`.
+- `https://www.leaguepilot.us/` and `/auth` return HTTP 200.
+- Supabase Auth health and Storage status return HTTP 200.
+- Anonymous PostgREST reads against `organizations` and `profiles` return HTTP 200 and zero rows through RLS.
+- Realtime operational data remains disconnected: `db_connected=false`, `replication_connected=false`, `connected_cluster=0`, and no Realtime replication slot exists. Control-plane health is not subscription/change-delivery proof.
+
+### Preview real-session and lifecycle
 
 - QA parent can read a linked child but not another team.
 - QA coach can update assigned-team weather but not archived-season events.
@@ -58,17 +81,17 @@ The migration gap is closed on local PostgreSQL 17 and on an isolated Supabase p
 
 ## Evidence Still Open
 
-- Production backup, PITR, and restore-procedure review.
-- Explicit production migration approval and production apply/readback.
+- Enable or explicitly accept the absence of PITR, establish a fresh durable recovery point, and prove the restore procedure. The observed daily backup predates promotion, and the logical snapshots were not restore-tested.
 - Full populated proof for every `0022`-`0033` feature, including cross-organization, cross-team, cross-family, wrong-role, concurrency, expiry, cache clearing, official correction/projection, media revocation, season transition, and downstream refusal.
-- Hosted application/browser proof against the preview API.
+- Signed-in application/browser proof against the migrated preview and production APIs.
+- Production Realtime subscription authorization, reconnect, and change-delivery proof.
+- Review, optimize, or explicitly accept the 224 warning-level RLS performance findings.
 - Provider sandbox, webhook, consent, sender-registration, media-scan, payment-settlement, and production-operational proof.
-- Hosted Auth settings such as leaked-password protection.
-- Security Advisor review and explicit acceptance or redesign of the RLS-helper execution pattern and intentionally policy-less service tables.
+- Broader production application health and role-scoped lifecycle proof beyond the public/Auth/Storage/Data API smoke checks.
 
-## Ordered Candidate
+## Installed Order
 
-For production, which is still aligned through `0021`, the reviewed order is:
+Production applied and read back the reviewed order below:
 
 1. `0022_drill_video_references.sql`
 2. `0023_operational_truth_hardening.sql`
@@ -89,16 +112,15 @@ For production, which is still aligned through `0021`, the reviewed order is:
 17. `20260726143938_restrict_rls_helper_execution.sql`
 18. `20260726144407_restore_anon_rls_policy_evaluation.sql`
 
-Do not repair history merely to force alignment. Stop if the target does not match the expected `0021` lineage.
+Do not repair history merely to force alignment. Future migrations must start from the verified `20260726144407` lineage and be independently planned and read back.
 
-## Production Gate
+## Post-Migration Production Gates
 
-1. Retain the preview evidence and complete the missing cross-boundary/browser journeys.
-2. Review production backup, PITR, restore timing, and lock/traffic posture.
-3. Run `npm run supabase:plan` against the allowlisted, explicitly bound production session/direct URL with the protected ref classified as `production`.
-4. Obtain explicit production approval after reviewing the exact plan.
-5. Apply without seed data using the invocation-only `SUPABASE_MIGRATION_CONFIRM=apply-reviewed-production-migrations` confirmation.
-6. Read back history, grants, RLS, advisors, and application health.
-7. Keep provider, media, and payment activation as separate approvals.
+1. Preserve production migration-history/readback evidence through `20260726144407`.
+2. Close or explicitly accept production backup/PITR/restore timing and prove the restore procedure.
+3. Run production signed-in browser/session proof, including cross-tenant and broader feature lifecycles.
+4. Prove production Realtime subscription authorization, reconnect, and change delivery.
+5. Review and disposition the warning-level RLS performance findings.
+6. Keep provider, media, and payment activation as separate approvals.
 
-The preview proves migration compatibility and the focused RLS/lifecycle slice. It is not production or provider acceptance.
+Production migration installation/readback proves schema promotion only. It is not signed-in browser, provider, backup/PITR/restore, Realtime, or operational acceptance.
