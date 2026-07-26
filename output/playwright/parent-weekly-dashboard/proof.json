@@ -1,0 +1,56 @@
+{
+  "baseUrl": "http://127.0.0.1:3020",
+  "capturedAt": "2026-07-26T23:44:00.414Z",
+  "buildMode": "production",
+  "privacy": {
+    "screenshotsCommitted": false,
+    "note": "Authenticated screenshots remain in a private temporary directory because they contain guardian-scoped family context."
+  },
+  "proofs": [
+    {
+      "role": "parent",
+      "path": "/parent",
+      "signedIn": true,
+      "matchedText": "Family home",
+      "browserErrors": [],
+      "browserWarnings": [],
+      "viewports": [
+        {
+          "name": "mobile-375",
+          "width": 375,
+          "height": 812,
+          "clientWidth": 375,
+          "scrollWidth": 375
+        },
+        {
+          "name": "mobile-390",
+          "width": 390,
+          "height": 844,
+          "clientWidth": 390,
+          "scrollWidth": 390
+        },
+        {
+          "name": "tablet-768",
+          "width": 768,
+          "height": 1024,
+          "clientWidth": 768,
+          "scrollWidth": 768
+        },
+        {
+          "name": "laptop-1024",
+          "width": 1024,
+          "height": 900,
+          "clientWidth": 1024,
+          "scrollWidth": 1024
+        },
+        {
+          "name": "desktop-1440",
+          "width": 1440,
+          "height": 1100,
+          "clientWidth": 1440,
+          "scrollWidth": 1440
+        }
+      ]
+    }
+  ]
+}

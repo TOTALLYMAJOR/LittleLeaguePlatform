@@ -12,6 +12,7 @@ const routeSpecs = [
     path: "/parent",
     credentialKeys: ["QA_PARENT_EMAIL", "QA_PARENT_PASSWORD"],
     readyTexts: [
+      "Family home",
       "Family Mission Control",
       "RSVP needed",
       "Next event confirmed",
@@ -124,6 +125,7 @@ const viewportSpecs = [
   ["mobile-375", 375, 812],
   ["mobile-390", 390, 844],
   ["tablet-768", 768, 1024],
+  ["laptop-1024", 1024, 900],
   ["desktop-1440", 1440, 1100]
 ];
 
@@ -211,8 +213,10 @@ async function captureRoute(browser, routeSpec) {
   });
   const page = await context.newPage();
   const browserErrors = [];
+  const browserWarnings = [];
   page.on("console", (message) => {
     if (message.type() === "error") browserErrors.push(message.text());
+    if (message.type() === "warning") browserWarnings.push(message.text());
   });
   page.on("pageerror", (error) => browserErrors.push(error.message));
   const signedIn = hasCredentials(routeSpec.credentialKeys);
@@ -223,6 +227,7 @@ async function captureRoute(browser, routeSpec) {
     matchedText: "",
     firstViewportText: "",
     browserErrors,
+    browserWarnings,
     viewports: []
   };
 
@@ -346,6 +351,7 @@ async function main() {
       const signInNote = proof.signInError ? ` (${proof.signInError})` : "";
       console.log(`${proof.role}: captured ${signInState}${signInNote}; matched "${proof.matchedText}"`);
       if (proof.browserErrors.length) throw new Error(`${proof.role} emitted browser errors: ${proof.browserErrors.join(" | ")}`);
+      if (proof.browserWarnings.length) console.log(`${proof.role}: captured browser warnings: ${proof.browserWarnings.join(" | ")}`);
     }
     writeFileSync(join(screenshotDir, "proof.json"), `${JSON.stringify({
       baseUrl,

@@ -1,7 +1,21 @@
 import type { Metadata, Viewport } from "next";
+import { Fredoka, Geist } from "next/font/google";
 import "./globals.css";
+import "./parent/parent-weekly.css";
 import { AppShell } from "@/components/ui/AppShell";
 import { getServerShellAccess, toClientShellAccess } from "@/lib/supabase/shell-access";
+
+const parentSans = Geist({
+  subsets: ["latin"],
+  display: "swap",
+  variable: "--font-parent-sans"
+});
+
+const parentDisplay = Fredoka({
+  subsets: ["latin"],
+  display: "swap",
+  variable: "--font-parent-display"
+});
 
 const criticalShellCss = `
 html,body{margin:0;min-height:100%}
@@ -52,7 +66,7 @@ export default async function RootLayout({ children }: Readonly<{ children: Reac
   const shellAccess = toClientShellAccess(await getServerShellAccess());
 
   return (
-    <html lang="en">
+    <html lang="en" className={`${parentSans.variable} ${parentDisplay.variable}`}>
       <head>
         <style id="critical-shell-css" dangerouslySetInnerHTML={{ __html: criticalShellCss }} />
       </head>

@@ -8,6 +8,7 @@ import {
 import { CommunicationRoom } from "@/components/communication-room";
 import { ParentAdditionalGuardianClient } from "@/components/additional-guardian-access";
 import { FamilyMissionControlClient } from "@/components/family-mission-control";
+import { ParentWeeklyDashboard } from "@/components/parent-weekly-dashboard";
 import { ParentTransportationClient } from "@/components/family-transportation";
 import { ParentTemporaryCaregiverClient } from "@/components/temporary-caregiver-access";
 import { FamilyParentReplay } from "@/components/family-parent-replay";
@@ -42,11 +43,12 @@ export async function ParentHomeSurface() {
   if (!pageAccess.ok || !pageAccess.access.userId) {
     return <ParentDashboardClient dashboardData={pageAccess.dashboardData} />;
   }
-  const [dashboardData, notificationData, handoffData, transportationData] = await Promise.all([
+  const [dashboardData, notificationData, handoffData, transportationData, replayData] = await Promise.all([
     listParentCoachDashboardData({ viewerUserId: pageAccess.access.userId, surface: "parent" }),
     listParentNotificationReceipts({ parentUserId: pageAccess.access.userId }),
     listParentFamilyHandoffs({ parentUserId: pageAccess.access.userId }),
-    listParentTransportationData(pageAccess.access.userId)
+    listParentTransportationData(pageAccess.access.userId),
+    listFamilyReplays({ parentUserId: pageAccess.access.userId })
   ]);
   const missionControl = buildFamilyMissionControl({
     state: dashboardData.state,
@@ -60,18 +62,34 @@ export async function ParentHomeSurface() {
   });
   return (
     <>
-      <FamilyMissionControlClient view={missionControl} />
-      <FamilyFlightPlanClient
-        state={dashboardData.state}
-        parentUserId={pageAccess.access.userId}
-        initialHandoffs={handoffData.handoffs}
-        message={handoffData.message}
+      <ParentWeeklyDashboard
+        view={missionControl}
+        dashboardData={dashboardData}
+        replayData={replayData}
       />
-      <ParentDashboardClient dashboardData={dashboardData} />
-      <ParentNotificationReceiptsClient
-        initialReceipts={notificationData.receipts}
-        message={notificationData.message}
-      />
+      <details className="parent-weekly-deep-operations">
+        <summary>
+          <span>
+            <strong>Detailed family operations</strong>
+            <small>Event Passport, transportation, notifications, balance, support, and season records</small>
+          </span>
+          <span aria-hidden="true">Open</span>
+        </summary>
+        <div className="parent-weekly-deep-content">
+          <FamilyMissionControlClient view={missionControl} />
+          <FamilyFlightPlanClient
+            state={dashboardData.state}
+            parentUserId={pageAccess.access.userId}
+            initialHandoffs={handoffData.handoffs}
+            message={handoffData.message}
+          />
+          <ParentDashboardClient dashboardData={dashboardData} />
+          <ParentNotificationReceiptsClient
+            initialReceipts={notificationData.receipts}
+            message={notificationData.message}
+          />
+        </div>
+      </details>
     </>
   );
 }

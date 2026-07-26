@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
+import { Bell, CalendarDays, Menu, MessageCircle, ShieldCheck } from "lucide-react";
 import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { AppStateProvider } from "@/app/providers";
 import {
@@ -130,7 +131,8 @@ export function AppShell({ access = signedOutShellAccess, children }: { access?:
   const shellContext = useMemo(() => getShellContext(pathname, access), [access, pathname]);
   const activeRouteRole = getRouteEntry(pathname)?.role;
   const activeContext = access.contexts?.find((context) => context.role === activeRouteRole);
-  const usesImmersiveFamilyHeader = pathname === "/parent/messages";
+  const usesParentWeeklyShell = pathname === "/parent" && access.canParent;
+  const usesImmersiveFamilyHeader = pathname === "/parent/messages" || usesParentWeeklyShell;
   const showMobileTabbar = access.signedIn && (access.canParent || access.canCoach || access.canAdmin) && activeMobileItems.length >= 3;
 
   const filteredNav = useMemo(() => {
@@ -266,7 +268,48 @@ export function AppShell({ access = signedOutShellAccess, children }: { access?:
           You are offline. Current team details may be unavailable until the connection returns.
         </div>
       ) : null}
-      <div className={`shell app-shell${collapsed ? " sidebar-collapsed" : ""}`}>
+      <div className={usesParentWeeklyShell
+        ? "parent-weekly-app-shell"
+        : `shell app-shell${collapsed ? " sidebar-collapsed" : ""}`}>
+        {usesParentWeeklyShell ? (
+          <header className="parent-weekly-header">
+            <div className="parent-weekly-header-inner">
+              <Link href="/parent" className="parent-weekly-brand" aria-label="LeaguePilot family home">
+                <span className="parent-weekly-brand-mark">LP</span>
+                <span>
+                  <strong>LeaguePilot</strong>
+                  <small>{activeContext?.teamName ?? "Family home"}</small>
+                </span>
+              </Link>
+              <nav className="parent-weekly-header-nav" aria-label="Family shortcuts">
+                <Link href="/parent/schedule" aria-label="Open family schedule">
+                  <CalendarDays aria-hidden="true" size={20} />
+                  <span>Schedule</span>
+                </Link>
+                <Link href="/parent/messages" aria-label="Open family messages">
+                  <MessageCircle aria-hidden="true" size={20} />
+                  <span>Messages</span>
+                </Link>
+                <Link href="/account" aria-label="Open account and notification settings">
+                  <Bell aria-hidden="true" size={20} />
+                  <span>Account</span>
+                </Link>
+                <button
+                  type="button"
+                  aria-label="Open all LeaguePilot pages"
+                  onClick={() => setCommandOpen(true)}
+                >
+                  <Menu aria-hidden="true" size={21} />
+                  <span>Menu</span>
+                </button>
+                <Link className="parent-weekly-avatar" href="/account" aria-label="Open parent account">
+                  <ShieldCheck aria-hidden="true" size={18} />
+                  <span className="sr-only">Verified parent account</span>
+                </Link>
+              </nav>
+            </div>
+          </header>
+        ) : (
         <aside className="sidebar app-sidebar" aria-label="Primary">
           <div className="sidebar-video-backdrop" aria-hidden="true">
             <video
@@ -333,8 +376,14 @@ export function AppShell({ access = signedOutShellAccess, children }: { access?:
             })}
           </nav>
         </aside>
+        )}
 
-        <main id="main-content" className={`main${usesImmersiveFamilyHeader ? " immersive-family-main" : ""}`}>
+        <main
+          id="main-content"
+          className={usesParentWeeklyShell
+            ? "main parent-weekly-main"
+            : `main${usesImmersiveFamilyHeader ? " immersive-family-main" : ""}`}
+        >
           {!usesImmersiveFamilyHeader ? (
             <>
               <div className={`context-bar context-bar-${shellContext.tone}`} aria-label="Current app area">
