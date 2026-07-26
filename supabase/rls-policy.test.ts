@@ -39,6 +39,9 @@ describe("Supabase RLS policy coverage", () => {
   const anonymousRlsPolicyEvaluation = migration(
     "20260726144407_restore_anon_rls_policy_evaluation.sql"
   );
+  const rlsAuthInitplanOptimization = migration(
+    "20260726182645_optimize_rls_auth_initplans.sql"
+  );
   const packageJson = readFileSync(join(process.cwd(), "package.json"), "utf8");
   const rlsProof = readFileSync(join(process.cwd(), "scripts", "verify-rls-boundaries.mjs"), "utf8");
   const migrationPush = readFileSync(join(process.cwd(), "scripts", "supabase-push.mjs"), "utf8");
@@ -299,5 +302,85 @@ describe("Supabase RLS policy coverage", () => {
     );
     expect(anonymousRlsPolicyEvaluation.match(/grant execute on function/g)).toHaveLength(8);
     expect(anonymousRlsPolicyEvaluation).not.toContain("to public");
+  });
+
+  it("caches request-constant user identity without changing RLS policy scope", () => {
+    const executableSql = rlsAuthInitplanOptimization.replace(/--.*$/gm, "");
+    const optimizedPolicies = Array.from(
+      executableSql.matchAll(
+        /^alter policy "([^"]+)"\s+on public\.([a-z_]+)/gm
+      ),
+      ([, policy, table]) => `${table}:${policy}`
+    );
+
+    expect(optimizedPolicies).toEqual([
+      "coach_event_notes:team staff manage coach event notes",
+      "drill_video_sources:coaches read reviewed drill video sources",
+      "drill_videos:coaches read approved drill videos",
+      "drill_videos:coaches submit drill videos for their organizations",
+      "event_attendance:linked families and team staff read attendance",
+      "family_event_handoffs:guardians create own family handoff plans",
+      "family_event_handoffs:guardians read own family handoff plans",
+      "family_event_handoffs:guardians update own family handoff plans",
+      "family_obligations:guardians and admins read family obligations",
+      "fee_definitions:organization admins manage fee definitions",
+      "game_day_resolution_reviews:coaches and admins manage game day resolution reviews",
+      "media_review_history:team staff create media review history",
+      "mobile_usage_events:organization admins read mobile usage events",
+      "mobile_usage_events:users create own mobile usage events",
+      "notification_delivery_attempts:notification recipients and team managers read delivery attempt",
+      "notification_preferences:users manage own notification preferences",
+      "notifications:users can mark own notifications read",
+      "notifications:users can read own notifications",
+      "offline_action_receipts:actors create scoped offline action receipts",
+      "offline_action_receipts:actors read own offline action receipts",
+      "organization_memberships:members can read their org memberships",
+      "organizations:organization members can read organizations",
+      "parent_replay_engagement:parents read own replay engagement",
+      "payment_evidence:guardians and admins read payment evidence",
+      "player_media_consents:guardians and staff read media consent",
+      "player_media_consents:guardians manage own media consent",
+      "practice_run_receipts:coaches and admins manage practice run receipts",
+      "profiles:profiles can insert own profile",
+      "profiles:profiles can update own basic profile",
+      "push_subscriptions:users manage own push subscriptions",
+      "rsvp_change_logs:parents and staff read rsvp change logs",
+      "rsvp_change_logs:parents insert own rsvp change logs",
+      "rsvps:parents can upsert active linked child rsvps",
+      "seasons:members can read seasons",
+      "support_requests:parents and staff read support requests",
+      "support_requests:parents create own support requests",
+      "team_chat_attachments:team members create chat attachments",
+      "team_chat_message_reads:users manage own chat reads",
+      "team_chat_messages:authors can edit own visible chat messages",
+      "team_chat_messages:team members can create chat messages",
+      "team_chat_reactions:users manage own chat reactions",
+      "team_chat_reports:team members create chat reports",
+      "team_memberships:members can read team memberships",
+      "volunteer_transfer_requests:requesters and staff update volunteer transfers",
+      "volunteer_transfer_requests:users and team staff read volunteer transfers",
+      "volunteer_transfer_requests:users request own volunteer transfers",
+      "volunteer_waitlist_entries:users and team staff read volunteer waitlists",
+      "volunteer_waitlist_entries:users join own volunteer waitlists",
+      "volunteer_waitlist_entries:users withdraw own volunteer waitlists"
+    ]);
+    const declaredDeliveryAttemptPolicy =
+      "notification recipients and team managers read delivery attempts";
+    expect(Buffer.byteLength(declaredDeliveryAttemptPolicy, "utf8")).toBe(64);
+    expect(
+      Buffer.from(declaredDeliveryAttemptPolicy, "utf8")
+        .subarray(0, 63)
+        .toString("utf8")
+    ).toBe(
+      "notification recipients and team managers read delivery attempt"
+    );
+    expect(executableSql.match(/^alter policy /gm)).toHaveLength(49);
+    expect(executableSql.match(/\(select auth\.uid\(\)\)/g)).toHaveLength(72);
+    expect(executableSql).not.toMatch(/(?<!select )auth\.uid\(\)/);
+    expect(executableSql).not.toMatch(/\b(?:create|drop)\s+policy\b/i);
+    expect(executableSql).not.toMatch(
+      /\bto\s+(?:public|anon|authenticated|service_role)\b/i
+    );
+    expect(executableSql).not.toMatch(/disable row level security/i);
   });
 });
