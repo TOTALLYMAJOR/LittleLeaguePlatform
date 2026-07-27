@@ -1027,12 +1027,19 @@ export interface TeamBuildFriendRequest {
   friendPlayerId: string;
 }
 
+export interface TeamBuilderPlayerProfileInput {
+  birthDate?: string | null;
+  ageBand?: string | null;
+  evaluationRating?: number | null;
+}
+
 export interface BalancedTeamBuildInput {
   division: string;
   targetRosterSize: number;
   actorUserId: string;
   now: string;
   skillRatings?: Record<string, number>;
+  playerProfiles?: Record<string, TeamBuilderPlayerProfileInput>;
   friendRequests?: TeamBuildFriendRequest[];
 }
 
@@ -1045,10 +1052,17 @@ export interface BalancedTeamBuildPreview {
     teamName: string;
     playerCount: number;
     averageSkill: number;
+    ageBandCounts: Record<string, number>;
+    missingProfileCount: number;
+    defaultedEvaluationCount: number;
     players: Array<{
       playerId: string;
       name: string;
       skillRating: number;
+      ageBand: string;
+      ageBandSource: "explicit" | "division_default";
+      evaluationSource: "explicit" | "legacy_override" | "defaulted";
+      birthDateStatus: "recorded" | "missing";
       constraintNotes: string[];
     }>;
   }>;
