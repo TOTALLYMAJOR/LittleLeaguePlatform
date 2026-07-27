@@ -1,5 +1,7 @@
 # Runbook
 
+Current proof boundary (2026-07-27): use [`docs/backlog-closeout-2026-07-27.md`](backlog-closeout-2026-07-27.md) for the canonical local/external/decision/historical split. Mutating QA scripts are isolated-QA-only after LP-QA-GUARD-001. No command here authorizes writes, seeding, acknowledgment, provider calls, or cleanup against the production alias.
+
 ## Local Next.js Run
 
 Install dependencies:
@@ -65,7 +67,7 @@ curl -fsSI http://localhost:8081/
 
 ## Supabase QA Proof
 
-Use these checks after migrations are applied to a Supabase QA or preview project:
+Use these checks only after selecting a local or explicitly isolated QA Supabase project and a matching non-production app:
 
 ```bash
 npm run supabase:qa-users
@@ -78,6 +80,8 @@ npm run qa:coordination-proof
 npm run qa:public-family-proof
 ```
 
+Before any mutating proof, the shared target guard must verify that the Supabase project is not protected production, the app is not `leaguepilot.us` or `www.leaguepilot.us`, the hosted app URL exactly matches the invocation, and `/api/qa-target-identity` reports the expected non-production deployment class and project ref. Do not bypass these checks.
+
 Migration `0024_coordination_loops.sql` adds the Season Launch commit/rollback RPCs, practice-run receipts, family caregiver handoffs, Game-Day Resolution receipts/RPC, and atomic notification acknowledgment. Before promotion, apply all migrations to a disposable empty PostgreSQL/Supabase database, then verify:
 
 - a reviewed roster import can commit and safely roll back provenance-created rows;
@@ -88,33 +92,27 @@ Migration `0024_coordination_loops.sql` adds the Season Launch commit/rollback R
 
 Migration `0025_family_first_sign_in.sql` adds adult-owned language/privacy setup and an atomic service-only first-sign-in RPC. Before enabling the setup redirect in a hosted environment, prove that an active parent can save preferences, an unlinked account is rejected, notification rows remain scoped to the adult and team, an audit row is attributed, and zero provider sends occur. Missing `0025` intentionally leaves existing parents on `/parent`; it is not treated as completed setup.
 
-Migration `0026_parent_invite_acceptance.sql` adds one-time, identity-matched parent invitation acceptance. Apply it only after proving exact invited-email match, active-season and invited-guardian scope, replay rejection, wrong-account rejection, expiry/revocation behavior, audit attribution, and zero provider sends. This migration accepts a securely delivered secret; it does not issue or send one. Existing approval-created hashes are not reversible, so invitation issuance/provider delivery remains blocked until an approved server-side issuance path is implemented and proven.
+Migration `0026_parent_invite_acceptance.sql` is in the promoted chain and adds one-time, identity-matched parent invitation acceptance. Feature acceptance still requires exact invited-email match, active-season and invited-guardian scope, replay rejection, wrong-account rejection, expiry/revocation behavior, audit attribution, and zero provider sends. It accepts a securely delivered secret; it does not issue or send one.
 
-Migration `0027_additional_guardian_requests.sql` adds the human-reviewed additional-guardian path. Apply it after `0026`. Proposals require an active guardian link for exactly one child in an active season and do not alter access. Approval and rejection require an active organization administrator plus a 10-500 character decision reason. Approval revalidates the proposing guardian and scope, hashes a server-generated secret, creates an invited guardian row, and returns a seven-day fragment link once for manual sharing; no provider job is created or sent. Prove parent/admin cross-family denial, duplicate-request denial, wrong-account acceptance denial, cancellation, rejection, expiry, acceptance, revocation, membership retention when another linked child remains, audit attribution, and zero provider sends. This manual path does not repair unrecoverable legacy invitation hashes or establish outbound email/SMS delivery.
+Migration `0027_additional_guardian_requests.sql` follows `0026` in the promoted chain and adds the human-reviewed additional-guardian path. Proposals require an active guardian link for exactly one child in an active season and do not alter access. Approval and rejection require an active organization administrator plus a bounded decision reason. No provider job is created or sent. The remaining lifecycle/RLS cases belong to the guarded isolated-QA acceptance gates.
 
-Migration `0028_transportation_responsibility.sql` adds guardian-owned event transportation without upgrading legacy caregiver notes into authority. Apply it after `0027`. A request is direction-, child-, event-, and schedule-version scoped and remains unassigned. A different active team guardian may offer seats, which records driver-side acceptance; the requesting guardian must separately accept before responsibility becomes assigned. Recorded pickup restrictions stop request/offer/accept without revealing restriction content. A schedule-version mismatch fails acceptance and projects as needs review. Either adult can withdraw with a 10-500 character reason and audit attribution; no home address or provider message is created. Prove request/offer/accept/withdraw, outbound/return independence, same-actor denial, cross-team/cross-family denial, restriction denial, cancellation/expiry/version drift, Event Passport readback, and zero provider sends before promotion.
+Migration `0028_transportation_responsibility.sql` follows `0027` in the promoted chain and adds guardian-owned event transportation without upgrading legacy caregiver notes into authority. Requests and mutual acceptance are child/event/schedule-version scoped; restrictions fail closed; no home address or provider message is created. The committed lifecycle harness covers the local contract, while connected isolated-QA execution remains external.
 
-Migration `0029_temporary_caregiver_authorizations.sql` adds one-child/team, selected-event, time-bound temporary care without creating guardian membership. Apply it after `0028`. The guardian reviews 1-10 events, a window no longer than 14 days, Event Passport view, optional pickup, and fixed prohibited actions. The exact-email caregiver separately accepts a one-time fragment secret; the secret is hashed at rest and rotated after acceptance or revocation. A future scope remains accepted-upcoming until its start. Expiry and attributed revocation remove server access, and the caregiver surface clears its private cache namespace at next contact. Prove wrong-email, replay, future-start, expiry, revocation, pickup restriction, active-guardian removal, cross-family/team denial, current event-version readback, cache clearing, audit attribution, and zero provider sends before promotion.
+Migration `0029_temporary_caregiver_authorizations.sql` follows `0028` in the promoted chain and adds one-child/team, selected-event, time-bound temporary care without guardian membership. Exact-email acceptance, hashed/rotated secrets, expiry/revocation, and private cache clearing fail closed. The committed lifecycle harness covers the local contract, while connected isolated-QA execution remains external.
 
 The local empty-database migration and transactional workflow smoke proves SQL installation and behavior only. It does not replace real-session RLS, hosted route, provider sandbox, webhook, or production deployment proof.
 
-`supabase:qa-users` creates or updates the QA admin, parent, and coach credentials in `.env.local` when they are not already supplied. `qa:rls-proof` signs in through the anon key and verifies parent, coach, and anonymous Row Level Security boundaries. `qa:session-proof` verifies signed-out gates, signed-in browser routes, and parent RSVP/preference/snack/volunteer live actions, then confirms those parent action rows with the QA service-role key before capturing screenshots under `output/playwright/`. `qa:tenant-readiness-proof` signs in as the QA admin, opens `/admin/health` and `/admin/teams`, verifies tenant setup/readiness copy, and captures mobile plus desktop screenshots under `output/playwright/tenant-readiness/`. `qa:demo-tenant-proof` signs in with DEMO admin, coach, and parent credentials, verifies fictional `LeaguePilot Demo League` content across role-scoped routes, confirms demo Supabase row counts and delivery-attempt metadata, writes `output/playwright/demo-tenant/demo-tenant-proof.json`, and captures mobile plus desktop screenshots under `output/playwright/demo-tenant/`. `qa:brand-proof` verifies the `/admin/themes` brand launch checklist, all 20 target brand surfaces, monitoring events, and alert rules against `QA_PROOF_BASE_URL`, then captures `output/playwright/brand-launch-validation.png`. `qa:coordination-proof` signs in as QA admin, coach, and parent, verifies all five coordination workbenches at 1440px and 390px, fails on document overflow, and writes screenshots plus `coordination-proof.json` under `output/playwright/coordination-loops/`.
+`supabase:qa-users` creates or updates fictional QA users on the guarded target. `qa:rls-proof` signs in through the anon key and verifies role boundaries. `qa:session-proof` writes RSVP/preference/snack/volunteer and other fixture-backed actions and is therefore isolated-QA-only. `qa:tenant-readiness-proof`, `qa:demo-tenant-proof`, `qa:brand-proof`, and `qa:coordination-proof` likewise prove only the selected target and commit.
 
-`qa:communication-room-record-proof` signs in with the fictional QA parent, proves three linked children across two teams without exposing an archived team, persists a parent reply with service-role readback, and proves critical-message acknowledgment plus audit readback when migrations `0023` and `0024` are present. It refuses non-`example.com` parent identities, creates only a provider-suppressed QA notification, and writes `output/playwright/communication-room/populated-record-proof.json`. A missing delivery-evidence column or acknowledgment RPC is reported as a blocking migration gap rather than inferred as success.
+`qa:communication-room-record-proof` persists a fictional parent reply and acknowledgment, performs service-role readback, and cleans exact fixture state. It is isolated-QA-only. The shared guard rejects protected production and the canonical production host, requires explicit target identity, and preserves provider suppression. A missing schema capability is a failure, never inferred success.
 
 `qa:public-family-proof` verifies signed-out Home, Schedule, Request Team Access, and Sign In at 320, 390, 768, and 1440 pixels. It checks CTA/copy contracts, empty forms, canonical-organization and current-team exposure, calendar-provider actions, value-gated installation, 44px controls, document overflow, and browser errors, then writes screenshots plus `proof.json` under `output/playwright/public-family-phase0/`. Set `PUBLIC_FAMILY_BASE_URL` for a non-default local or hosted target. Hosted environments must configure `PUBLIC_ORGANIZATION_ID` and `PUBLIC_ACCESS_REVIEW_WINDOW`; local fallback organization selection is deterministic but is not a production configuration claim.
 
-Hosted tenant-readiness proof must be rerun after deployment before a real organization is invited:
-
-```bash
-QA_PROOF_BASE_URL=https://www.leaguepilot.us npm run qa:tenant-readiness-proof
-```
-
-Local tenant-readiness proof only demonstrates the current checkout and configured Supabase project. Hosted proof is the evidence that production aliases, auth cookies, Supabase env values, and signed-in admin route wrappers all agree after deployment.
+Local or isolated-QA tenant-readiness proof only demonstrates the selected checkout, app deployment, and guarded Supabase project. Production acceptance must use the separately named read-only harness required by `EXT-PRODUCTION-READONLY`; it must not reuse a mutating QA command.
 
 CI runs source validation in `.github/workflows/static-smoke.yml`. Live Supabase QA proof is manual through `.github/workflows/supabase-qa-proof.yml` because it requires project secrets and mutates seeded QA rows. Configure these required secrets in the `qa` GitHub Actions environment: `QA_SUPABASE_URL`, `QA_SUPABASE_ANON_KEY`, `QA_SUPABASE_SERVICE_ROLE_KEY`, and `QA_SUPABASE_PROJECT_REF`. The workflow maps them into the runtime names expected by the app scripts: `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`, and `SUPABASE_SERVICE_ROLE_KEY`.
 
-Optional QA user override secrets can also be configured in the same `qa` environment: `QA_ADMIN_EMAIL`, `QA_ADMIN_PASSWORD`, `QA_PARENT_EMAIL`, `QA_PARENT_PASSWORD`, `QA_COACH_EMAIL`, and `QA_COACH_PASSWORD`. If they are absent, `npm run supabase:qa-users` generates/appends QA credentials before `qa:rls-proof` and `qa:session-proof` run.
+Optional QA user override secrets belong only in the isolated `qa` environment. If absent, bootstrap generates fictional QA credentials on the guarded target. Never substitute production identities or production service credentials.
 
 To verify manually, open GitHub Actions, choose `Supabase QA proof`, run the workflow from `workflow_dispatch`, and confirm the preflight passes before `Seed QA users and rows`, `Prove real-session RLS`, and `Prove signed-in browser paths and brand surfaces`. The `QA_SUPABASE_SERVICE_ROLE_KEY` secret must belong only to the QA Supabase project, must not be production, and must never be committed or printed.
 
@@ -135,7 +133,7 @@ The seed command uses `SUPABASE_SERVICE_ROLE_KEY` and mutates the configured Sup
 
 If the target project has not applied the notification delivery execution metadata migration, the seed falls back to base `notification_delivery_attempts` rows and prints a warning. That fallback is acceptable for product demo data, but provider-send worker proof still requires the execution metadata columns to be present.
 
-The configured Supabase project was repaired on 2026-07-16 by renumbering notification delivery execution metadata to `0021_notification_delivery_execution.sql`, applying its idempotent SQL, and marking migration version `0021` applied. If another environment still lacks `idempotency_key`, `next_attempt_at`, `retry_count`, or `dead_lettered_at` on `notification_delivery_attempts`, apply migrations through a reachable direct/session database URL or execute `0021_notification_delivery_execution.sql` and repair migration history before rerunning provider-send proof. In this WSL environment, full `supabase db push` through the transaction pooler can report `prepared statement "lrupsc_1_0" already exists`; `scripts/supabase-push.mjs` now verifies migration history and treats that pooler failure as a no-op only when local and remote versions are aligned.
+Historical repair note: the configured project was repaired on 2026-07-16 by renumbering notification delivery execution metadata to `0021_notification_delivery_execution.sql` and aligning migration history. New environments must install and read back the complete ordered migration chain under explicit environment authority; do not repeat the one-off repair as a current instruction. In this WSL environment, full `supabase db push` through the transaction pooler can report `prepared statement "lrupsc_1_0" already exists`; `scripts/supabase-push.mjs` treats that pooler failure as a no-op only when local and remote versions are already aligned.
 
 ## Vercel And Supabase Networking
 
@@ -159,19 +157,11 @@ OPENAI_AI_COACH_MODEL=gpt-5.5
 
 Keep `OPENAI_API_KEY` out of `NEXT_PUBLIC_*` variables. Provider requests use `store: false`, local privacy filters, source evidence, and review-only output. Generated provider drafts do not publish, queue notifications, or send provider messages.
 
-Hosted proof:
-
-```bash
-QA_PROOF_BASE_URL=https://www.leaguepilot.us npm run qa:ai-coach-proof
-```
-
-The proof signs in as the QA coach, opens `/coach/parent-replay`, requests an AI provider rewrite, asserts OpenAI-sourced draft/review-only output, and captures `output/playwright/ai-coach-provider-rewrite-qa-session-live.png`.
-
-Current Vercel state: Production and Development have the AI Coach provider variables configured. Preview is intentionally out of launch scope until a named non-production preview branch target is chosen.
+The dated production AI proof recorded in historical trackers is not a current execution instruction. Any new provider proof requires an approved named environment and provider authority. Preview OpenAI remains out of scope under `DEC-PREVIEW-OPENAI`; generated output remains draft/review-only.
 
 ## Operational-Truth Feature Gates
 
-Apply `supabase/migrations/0023_operational_truth_hardening.sql` to a non-production project before enabling any new persistence path. Local compilation does not prove the migration, RLS, storage policy, provider webhook, or connected-account behavior.
+Migration `0023_operational_truth_hardening.sql` is already in the promoted chain. A newly created isolated target must install the complete ordered chain before proof. Local compilation does not prove connected-project RLS, storage policy, provider webhook, or connected-account behavior.
 
 Every gated capability requires its environment switch and the matching organization column:
 
@@ -243,7 +233,7 @@ curl -I http://localhost:8081/
 
 ## Production Readiness Warning
 
-The app is production-hosted, and hosted Supabase/browser proof passed for the current `https://www.leaguepilot.us` deployment on 2026-07-02. Real-family launch still requires preserving the QA and hosted proof gates after env rotation and keeping provider sends disconnected unless explicitly implemented.
+Historical hosting evidence: hosted Supabase/browser proof passed for the then-current `https://www.leaguepilot.us` deployment on 2026-07-02. That result does not prove the 2026-07-27 commit or current environment. Real-family acceptance requires the closeout ledger’s external gates, including a separately named read-only production harness.
 
 Google and Facebook SSO use Supabase OAuth through `/auth/callback`. Hosted production requires the Google and Facebook auth providers to be enabled in the Supabase project and the allowed redirect URLs to include `https://www.leaguepilot.us/auth/callback`, `https://leaguepilot.us/auth/callback`, and the intended local/preview callback URLs. OAuth identity does not grant role access by itself; parent, coach, and admin surfaces still depend on approved membership and guardian-link rows.
 

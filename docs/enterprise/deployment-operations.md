@@ -1,6 +1,6 @@
 # Deployment, Operations, And Software Development Plan
 
-Status: draft. This supplements `docs/runbook.md`.
+Status: reconciled planning artifact. This supplements `docs/runbook.md`; the canonical current gate ledger is `docs/backlog-closeout-2026-07-27.md`.
 
 ## Software Development Plan
 
@@ -28,8 +28,11 @@ Open `http://localhost:3000/`.
 npm run typecheck
 npm test
 npm run build
+npm audit --omit=dev
 npm audit
 ```
+
+The integrated review reports production dependencies clean. The supported Next 16.2.9 ESLint graph retains a development-only `minimatch`/`brace-expansion` advisory path that is not safely removable through supported peers without weakening lint rules. Rerun both audits with registry access for every release.
 
 ## Docker Deployment Smoke
 
@@ -74,11 +77,11 @@ docker compose down
 | --- | --- | --- |
 | Health check | Hosted route smoke and `/admin/operations` screenshots. | Formal uptime monitor and alert routing. |
 | Auth/RLS proof | `npm run qa:rls-proof`. | Scheduled proof after migrations/env rotations. |
-| Browser proof | `QA_PROOF_BASE_URL=<url> npm run qa:session-proof`. | Coverage for remaining media, registration, team-builder admin writes. |
+| Browser proof | Run mutating scripts only against a guarded isolated QA app/project. | Complete `EXT-HOSTED-SESSION`; production requires the separately named read-only harness in `EXT-PRODUCTION-READONLY`. |
 | Provider proof | Provider rows, AI proof, brand proof. | Allowlisted SendGrid/Twilio/Web Push sandbox plus verified webhook proof if sends are approved. |
 | Payment proof | Local Stripe adapter and signed webhook tests. | Connected-account test-mode Checkout, replay, refund/dispute ownership, and hosted proof. |
 | Media proof | Local quarantine/consent/release policy. | Private storage RLS, production scanner, retention deletion, and family-visibility proof. |
-| Backups | Supabase project backups/provider controls. | Document restore drill and RPO/RTO. |
+| Backups | Supabase project backups/provider controls. | Complete `EXT-BACKUP-RESTORE`: current backup, accepted PITR posture, RPO/RTO, and non-production restore drill. |
 | Incident response | Runbook common issues. | Dedicated incident template and escalation contacts. |
 | Audit review | Admin/security surfaces and audit rows. | Dashboard/alerting for suspicious admin/provider actions. |
 | Retention | Archive checklist. | Scheduled retention jobs and restore/deletion proof. |
