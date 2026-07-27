@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { OfflineSyncStatus } from "@/components/offline-sync-status";
 
 export default function OfflinePage() {
   return (
@@ -21,6 +22,7 @@ export default function OfflinePage() {
           <p className="muted">Live Supabase reads remain the source of truth.</p>
         </article>
       </section>
+      <OfflineSyncStatus />
     </div>
   );
 }
