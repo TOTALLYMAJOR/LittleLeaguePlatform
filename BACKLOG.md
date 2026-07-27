@@ -83,7 +83,7 @@ external acceptance gate; this task does not deploy or apply the migration.
 - Focused migration, RLS, domain, service, route, and component tests pass; the
   full typecheck and production build pass.
 
-## LP-RLS-001 - Produce the permissive-policy actor-action review
+## LP-RLS-001 - Verify the recovered permissive-policy actor-action review
 
 ```yaml
 estimate_hours: 6
@@ -91,6 +91,7 @@ epic_id: LOCAL-CLOSEOUT
 epic_title: Safe local backlog closeout
 epic_outcome: Remaining approved local implementation and proof gaps are closed without crossing hosted or provider authority.
 depends_on: []
+allow_no_changes: true
 owns:
   - scripts/audit-rls-policy-overlaps.mjs
   - tools/audit-rls-policy-overlaps.test.mjs
@@ -104,8 +105,9 @@ validate:
 risk_score: 7
 ```
 
-Turn the remaining Supabase `multiple_permissive_policies` warning set into a
-deterministic actor/action review instead of mechanically changing policies.
+Verify and, only if required by the acceptance criteria, correct the recovered
+Supabase `multiple_permissive_policies` actor/action review instead of
+mechanically changing policies.
 Reconstruct the final policy catalog from the ordered migration chain and group
 permissive policies by schema, table, command, and effective actor. Also provide
 a read-only catalog query that can reproduce the matrix against an authorized

@@ -9,7 +9,7 @@ import {
   runCli,
   splitSqlStatements,
   verifyCatalog,
-} from "./audit-rls-policy-overlaps.mjs";
+} from "../scripts/audit-rls-policy-overlaps.mjs";
 
 const rootDir = resolve(import.meta.dirname, "..");
 
