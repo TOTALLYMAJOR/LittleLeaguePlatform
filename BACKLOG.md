@@ -83,61 +83,6 @@ external acceptance gate; this task does not deploy or apply the migration.
 - Focused migration, RLS, domain, service, route, and component tests pass; the
   full typecheck and production build pass.
 
-## LP-RLS-001 - Verify the recovered permissive-policy actor-action review
-
-```yaml
-estimate_hours: 6
-epic_id: LOCAL-CLOSEOUT
-epic_title: Safe local backlog closeout
-epic_outcome: Remaining approved local implementation and proof gaps are closed without crossing hosted or provider authority.
-depends_on: []
-allow_no_changes: true
-owns:
-  - scripts/audit-rls-policy-overlaps.mjs
-  - tools/audit-rls-policy-overlaps.test.mjs
-  - supabase/rls-policy-overlap-review.sql
-  - docs/rls-policy-overlap-review-2026-07-27.md
-validate:
-  - npm ci --ignore-scripts --prefer-offline
-  - npx vitest run tools/audit-rls-policy-overlaps.test.mjs
-  - node scripts/audit-rls-policy-overlaps.mjs --verify
-  - git diff --check
-risk_score: 7
-```
-
-Verify and, only if required by the acceptance criteria, correct the recovered
-Supabase `multiple_permissive_policies` actor/action review instead of
-mechanically changing policies.
-Reconstruct the final policy catalog from the ordered migration chain and group
-permissive policies by schema, table, command, and effective actor. Also provide
-a read-only catalog query that can reproduce the matrix against an authorized
-Postgres target later.
-
-The migration-40 source audit expects 158 final policies and 35 unique overlap
-groups: 34 SELECT and one UPDATE. Seven groups are on tables whose browser grants
-were later revoked; the rest require actor/action review. Treat `175 = 35 x 5`
-as a role-expansion hypothesis until the live advisor export is compared.
-
-The review must distinguish service-role-only tables from Data API tables,
-separate SELECT from write semantics, show policy predicates without secrets or
-row data, and assign each group one disposition: intentional separation,
-candidate consolidation, or needs hosted/live-role proof. Explain how Supabase
-role expansion can produce more advisor warnings than unique semantic groups.
-Do not edit any RLS policy or connect to preview/production in this task.
-
-### Acceptance Criteria
-
-- The verifier deterministically reconstructs the current final policy set and
-  overlap groups from committed migrations, fails on unparsed policy-changing
-  DDL, and emits stable machine-readable and Markdown-friendly output.
-- The checked-in review covers every reconstructed overlap group by actor and
-  action, identifies service-role-only versus exposed Data API scope, and gives
-  an evidence-backed disposition without claiming live-catalog acceptance.
-- The read-only SQL query exposes the fields needed to compare static and live
-  policy semantics while returning no application rows or secrets.
-- No migration, grant, policy, hosted project, provider, or production state is
-  changed.
-
 ## LP-OFFLINE-001 - Close private, actor-bound offline and reconnect proof
 
 ```yaml
@@ -296,7 +241,6 @@ epic_title: Safe local backlog closeout
 epic_outcome: Remaining approved local implementation and proof gaps are closed without crossing hosted or provider authority.
 depends_on:
   - LP-QA-GUARD-001
-  - LP-RLS-001
 owns:
   - scripts/verify-rls-actor-action-matrix.mjs
   - scripts/verify-realtime-boundaries.mjs
@@ -392,7 +336,6 @@ epic_title: Safe local backlog closeout
 epic_outcome: Remaining approved local implementation and proof gaps are closed without crossing hosted or provider authority.
 depends_on:
   - LP-TEAM-008
-  - LP-RLS-001
   - LP-OFFLINE-001
   - LP-QA-GUARD-001
   - LP-RLS-PROOF-002
