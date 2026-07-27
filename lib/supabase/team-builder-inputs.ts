@@ -6,6 +6,8 @@ type UnsafeSupabase = {
   // The timestamped team-builder migration intentionally leads generated types.
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   from(table: string): any;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  rpc(name: string, parameters: Record<string, unknown>): any;
 };
 
 export interface TeamBuilderPrivateInput {
@@ -160,55 +162,30 @@ export async function saveTeamBuilderInput(input: SaveTeamBuilderInput) {
     });
     if (!access.ok) return { ok: false, message: access.message };
 
-    const [{ data: season }, { data: player }] = await withSupabaseTimeout(Promise.all([
-      db.from("seasons")
-        .select("id,status")
-        .eq("id", input.seasonId)
-        .eq("organization_id", input.organizationId)
-        .maybeSingle(),
-      db.from("players")
-        .select("id,organization_id,season_id,team_id")
-        .eq("id", input.playerId)
-        .eq("organization_id", input.organizationId)
-        .eq("season_id", input.seasonId)
-        .maybeSingle()
-    ]), 7000) as [
-      { data: { id: string; status: "active" | "archived" } | null },
-      { data: { id: string; organization_id: string; season_id: string; team_id: string } | null }
-    ];
-    if (!season || season.status !== "active") {
-      return { ok: false, message: "Private team-builder inputs can change only in an active in-scope season." };
-    }
-    if (!player) {
-      return { ok: false, message: "Player does not belong to the requested organization and season." };
-    }
-
-    const { data: profile, error } = await withSupabaseTimeout(db
-      .from("player_team_builder_profiles")
-      .upsert({
-        player_id: input.playerId,
-        organization_id: input.organizationId,
-        season_id: input.seasonId,
-        birth_date: normalized.birthDate,
-        age_band: normalized.ageBand,
-        evaluation_rating: normalized.evaluationRating,
-        updated_by_user_id: input.actorUserId
-      }, { onConflict: "player_id" })
-      .select("player_id,birth_date,age_band,evaluation_rating")
-      .single(), 7000) as {
-        data: { player_id: string; birth_date: string | null; age_band: string | null; evaluation_rating: number | null } | null;
+    const { data: profile, error } = await withSupabaseTimeout(db.rpc(
+      "save_player_team_builder_profile",
+      {
+        target_organization_id: input.organizationId,
+        target_season_id: input.seasonId,
+        target_player_id: input.playerId,
+        target_actor_user_id: input.actorUserId,
+        target_birth_date: normalized.birthDate,
+        target_age_band: normalized.ageBand,
+        target_evaluation_rating: normalized.evaluationRating
+      }
+    ), 7000) as {
+        data: {
+          ok: boolean;
+          player_id: string;
+          birth_date: string | null;
+          age_band: string | null;
+          evaluation_rating: number | null;
+        } | null;
         error?: { message?: string } | null;
       };
-    if (error || !profile) return { ok: false, message: "Private team-builder input could not be saved." };
-
-    await withSupabaseTimeout(db.from("audit_events").insert({
-      organization_id: input.organizationId,
-      actor_user_id: input.actorUserId,
-      action: "team_builder_private_input_saved",
-      target_type: "player_team_builder_profile",
-      target_id: input.playerId,
-      summary: `Private team-builder profile saved with birth date ${profile.birth_date ? "recorded" : "missing"}, age band ${profile.age_band ? "explicit" : "missing"}, and evaluation ${profile.evaluation_rating == null ? "defaulted" : "explicit"}.`
-    }), 7000);
+    if (error || !profile?.ok) {
+      return { ok: false, message: "Private team-builder input could not be saved." };
+    }
 
     return {
       ok: true,

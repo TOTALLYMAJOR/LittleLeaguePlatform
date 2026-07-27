@@ -215,12 +215,15 @@ async function loadRosterContext(input: SaveTeamBuildPlanInput) {
       .eq("organization_id", input.organizationId)
       .eq("season_id", input.seasonId)
       .eq("division", input.division)
-      .eq("status", "active"),
+      .eq("status", "active")
+      .order("name", { ascending: true })
+      .order("id", { ascending: true }),
     db.from("players")
       .select("id,team_id,season_id,organization_id,first_name,last_initial,roster_status")
       .eq("organization_id", input.organizationId)
       .eq("season_id", input.seasonId)
       .eq("roster_status", "active")
+      .order("id", { ascending: true })
   ]), 7000) as [
     { data: { id: string; organization_id: string; status: "active" | "archived" } | null },
     { data: Array<{ id: string; name: string; division: string; season_id: string; organization_id: string; status: "active" | "archived" }> | null },
