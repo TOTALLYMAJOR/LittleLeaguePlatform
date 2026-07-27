@@ -1,0 +1,40 @@
+version: 1
+
+repository:
+  name: LeaguePilot
+  base_branch: codex/backlog-closeout-20260727
+
+backlog:
+  path: BACKLOG.md
+
+workers:
+  maximum: 3
+
+contracts:
+  roots:
+    - lib/domain/
+    - supabase/migrations/
+
+validation:
+  task_default:
+    - npm ci --ignore-scripts --prefer-offline
+    - npm run lint
+    - npm run typecheck
+  integration:
+    - npm ci --ignore-scripts --prefer-offline
+    - npm run check:skills
+    - npm run lint
+    - npm run typecheck
+    - npm test
+    - npm run build
+    - npm audit
+
+docker:
+  enabled: false
+  compose_file: docker-compose.yml
+
+git:
+  remote: origin
+  push_task_branches: false
+  push_integration_branch: false
+  open_integration_pull_request: false
