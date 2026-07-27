@@ -245,7 +245,8 @@ export function AppShell({ access = signedOutShellAccess, children }: { access?:
         detail: { actorId: access.userId }
       }));
       const supabase = createSupabaseBrowserClient();
-      await supabase.auth.signOut();
+      const { error } = await supabase.auth.signOut();
+      if (error) throw error;
       window.location.assign("/auth");
     } catch {
       setSignOutError("Sign-out could not safely clear private offline data. Try again before leaving this device.");

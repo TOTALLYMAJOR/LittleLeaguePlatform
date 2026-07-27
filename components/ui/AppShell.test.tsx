@@ -96,6 +96,7 @@ describe("AppShell private sign-out boundary", () => {
     expect(clearIndex).toBeGreaterThan(-1);
     expect(authIndex).toBeGreaterThan(clearIndex);
     expect(navigationIndex).toBeGreaterThan(authIndex);
+    expect(shell).toContain("if (error) throw error");
     expect(shell).toContain("detail: { actorId: access.userId }");
     expect(shell).not.toContain("clearPrivateGameDayData()");
   });

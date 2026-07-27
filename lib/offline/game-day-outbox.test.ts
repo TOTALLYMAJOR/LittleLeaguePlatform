@@ -6,6 +6,7 @@ import {
   endpointForOfflineAction,
   isOfflineActionAllowed,
   outboxDisplayState,
+  type OfflineGameDayAction,
   type OfflineOwnerContext,
   type QueueOfflineGameDayActionInput
 } from "./game-day-outbox";
@@ -49,6 +50,29 @@ describe("game-day offline outbox policy", () => {
       ...action("action-1"),
       endpoint: "https://attacker.example/send"
     } as unknown as QueueOfflineGameDayActionInput)).rejects.toThrow(/cannot be supplied/);
+  });
+
+  it("rejects persisted routing metadata before fetch", async () => {
+    const store = new MemoryGameDayOutboxStore();
+    const claimNext = store.claimNext.bind(store);
+    store.claimNext = async (...args) => {
+      const claim = await claimNext(...args);
+      if (claim) {
+        (claim.action as OfflineGameDayAction & { endpoint?: string }).endpoint = "/api/rsvps";
+      }
+      return claim;
+    };
+    const engine = new GameDayOutboxEngine(store);
+    await engine.queue(action("action-1"));
+    const send = vi.fn();
+
+    await expect(engine.sync(scope, { actorId: scope.actorId }, send))
+      .rejects.toThrow(/routing must be derived/);
+    expect(send).not.toHaveBeenCalled();
+    expect((await store.list(scope))[0]).toMatchObject({
+      actionId: "action-1",
+      state: "review_required"
+    });
   });
 
   it("structurally clones nested payloads on write and read", async () => {

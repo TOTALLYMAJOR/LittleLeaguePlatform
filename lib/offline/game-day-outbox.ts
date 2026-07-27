@@ -469,16 +469,27 @@ function openDatabase(): Promise<IDBDatabase> {
   });
 }
 
-async function withStore<T>(mode: IDBTransactionMode, operation: (store: IDBObjectStore, resolve: (value: T) => void, reject: (reason?: unknown) => void) => void) {
+async function withStore<T>(
+  mode: IDBTransactionMode,
+  operation: (
+    store: IDBObjectStore,
+    resolve: (value: T) => void,
+    abort: (reason: Error) => void
+  ) => void
+) {
   const database = await openDatabase();
   return new Promise<T>((resolve, reject) => {
     const transaction = database.transaction(STORE_NAME, mode);
     let result: T;
     let resolved = false;
+    let abortReason: Error | undefined;
     operation(transaction.objectStore(STORE_NAME), (value) => {
       result = value;
       resolved = true;
-    }, reject);
+    }, (reason) => {
+      abortReason = reason;
+      transaction.abort();
+    });
     transaction.oncomplete = () => {
       database.close();
       if (resolved) resolve(result);
@@ -489,7 +500,7 @@ async function withStore<T>(mode: IDBTransactionMode, operation: (store: IDBObje
     };
     transaction.onabort = () => {
       database.close();
-      reject(transaction.error ?? new Error("Offline storage transaction was aborted."));
+      reject(abortReason ?? transaction.error ?? new Error("Offline storage transaction was aborted."));
     };
   });
 }
@@ -517,7 +528,7 @@ export class IndexedDbGameDayOutboxStore implements GameDayOutboxStore {
     expectedOwnerGeneration?: number
   ) {
     assertAction(input);
-    return withStore<OfflineGameDayAction>("readwrite", (store, resolve) => getAll(store, (records) => {
+    return withStore<OfflineGameDayAction>("readwrite", (store, resolve, abort) => getAll(store, (records) => {
       for (const record of records) {
         if (record.kind !== "generation" && isExpired(record, now)) store.delete(record.key);
       }
@@ -535,8 +546,7 @@ export class IndexedDbGameDayOutboxStore implements GameDayOutboxStore {
         expectedOwnerGeneration !== undefined &&
         expectedOwnerGeneration !== ownerGeneration
       ) {
-        store.transaction.abort();
-        return;
+        return abort(new Error("Offline owner changed before this action could be saved."));
       }
       const key = actionKey(input.actorId, input.contextKey, input.actionId);
       const duplicate = liveRecords.find(
@@ -548,12 +558,10 @@ export class IndexedDbGameDayOutboxStore implements GameDayOutboxStore {
           record.kind === "receipt" &&
           record.key === receiptKey(input.actorId, input.contextKey, input.actionId)
       )) {
-        store.transaction.abort();
-        return;
+        return abort(new Error("This offline action already has a successful sync receipt."));
       }
       if (current.length >= MAX_ACTIONS_PER_CONTEXT) {
-        store.transaction.abort();
-        return;
+        return abort(new Error("Offline queue limit reached. Reconnect or review saved actions."));
       }
       const generation = liveRecords.find(
         (record): record is GenerationRecord =>
@@ -769,6 +777,21 @@ export class GameDayOutboxEngine {
       if (session.validate && !await session.validate()) {
         await this.store.settleFailure(claim, classifyOfflineFailure({ ok: false, status: 401 }), now);
         throw new Error("The authenticated actor changed or the session expired during offline replay.");
+      }
+      const persistedAction = claim.action as OfflineGameDayAction & {
+        endpoint?: unknown;
+      };
+      if (
+        !isOfflineActionAllowed(persistedAction.actionType) ||
+        "endpoint" in persistedAction
+      ) {
+        await this.store.settleFailure(claim, {
+          kind: "validation",
+          state: "review_required",
+          retryable: false,
+          message: "Saved offline action routing is invalid. Review it online."
+        }, now);
+        throw new Error("Offline action routing must be derived from an approved action type.");
       }
       const endpoint = endpointForOfflineAction(claim.action.actionType);
       const controller = new AbortController();
