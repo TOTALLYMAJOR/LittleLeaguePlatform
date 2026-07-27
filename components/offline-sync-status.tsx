@@ -13,19 +13,19 @@ const emptySummary: OfflineStatusSummary = {
 };
 
 export function OfflineSyncStatus({ actorId, contextKey }: { actorId?: string; contextKey?: string }) {
-  const [summary, setSummary] = useState(emptySummary);
+  const [actorSummary, setActorSummary] = useState<{
+    actorId: string;
+    summary: OfflineStatusSummary;
+  } | null>(null);
 
   useEffect(() => {
-    if (!actorId) {
-      setSummary(emptySummary);
-      return;
-    }
+    if (!actorId) return;
     let current = true;
     const refresh = () => {
       void getOfflineStatusSummary({ actorId, contextKey }).then((next) => {
-        if (current) setSummary(next);
+        if (current) setActorSummary({ actorId, summary: next });
       }).catch(() => {
-        if (current) setSummary(emptySummary);
+        if (current) setActorSummary({ actorId, summary: emptySummary });
       });
     };
     refresh();
@@ -41,6 +41,9 @@ export function OfflineSyncStatus({ actorId, contextKey }: { actorId?: string; c
   }, [actorId, contextKey]);
 
   if (!actorId) return null;
+  const summary = actorSummary?.actorId === actorId
+    ? actorSummary.summary
+    : emptySummary;
 
   const total = summary.queued + summary.retrying + summary.conflict
     + summary.signInRequired + summary.reviewRequired + summary.synced;

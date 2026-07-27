@@ -21,6 +21,7 @@ export interface OfflineGameDayAction extends Omit<SyncEnvelope, "succeededAt" |
   payload: Record<string, unknown>;
   state: OfflineActionState;
   expiresAt: string;
+  ownerGeneration: number;
   lastError?: string;
   conflictDetail?: string;
   retryAfter?: string;
@@ -32,7 +33,7 @@ export interface OfflineGameDayAction extends Omit<SyncEnvelope, "succeededAt" |
 
 export type QueueOfflineGameDayActionInput = Omit<
   OfflineGameDayAction,
-  "state" | "expiresAt" | "generation" | "leaseOwner" | "leaseToken" | "leaseExpiresAt"
+  "state" | "expiresAt" | "generation" | "ownerGeneration" | "leaseOwner" | "leaseToken" | "leaseExpiresAt"
 > & {
   /** Rejected if supplied. Endpoints are derived from actionType only. */
   endpoint?: never;
@@ -93,7 +94,8 @@ export interface OfflineActionFailure {
 }
 
 export interface GameDayOutboxStore {
-  enqueue(action: QueueOfflineGameDayActionInput, now?: Date): Promise<OfflineGameDayAction>;
+  ownerGeneration(actorId: string): Promise<number>;
+  enqueue(action: QueueOfflineGameDayActionInput, now?: Date, expectedOwnerGeneration?: number): Promise<OfflineGameDayAction>;
   list(scope: OfflineOwnerContext, now?: Date): Promise<OfflineGameDayAction[]>;
   claimNext(scope: OfflineOwnerContext, leaseOwner: string, leaseMs: number, now?: Date): Promise<OfflineClaim | null>;
   settleSuccess(claim: OfflineClaim, now?: Date): Promise<OfflineSyncReceipt | null>;
@@ -109,8 +111,10 @@ const DATABASE_VERSION = 2;
 const ACTION_RETENTION_MS = 7 * 24 * 60 * 60 * 1000;
 const RECEIPT_RETENTION_MS = 30 * 24 * 60 * 60 * 1000;
 const DEFAULT_LEASE_MS = 30_000;
+const DEFAULT_SEND_TIMEOUT_MS = 20_000;
 const MAX_ACTIONS_PER_CONTEXT = 100;
 const MAX_RETRIES = 8;
+const OWNER_GENERATION_CONTEXT = "__owner__";
 
 const ENDPOINTS: Record<OfflineGameDayActionType, string> = {
   rsvp: "/api/rsvps",
@@ -146,6 +150,10 @@ function receiptKey(actorId: string, contextKey: string, actionId: string) {
 
 function generationKey(actorId: string, contextKey: string) {
   return `generation:${actorId}:${contextKey}`;
+}
+
+function ownerGenerationKey(actorId: string) {
+  return generationKey(actorId, OWNER_GENERATION_CONTEXT);
 }
 
 function scopeMatches(record: OfflineOwnerContext, scope: Pick<OfflineOwnerContext, "actorId"> & Partial<OfflineOwnerContext>) {
@@ -186,6 +194,18 @@ function expiresAt(from: Date, duration: number) {
 
 function isExpired(value: { expiresAt: string }, now: Date) {
   return Date.parse(value.expiresAt) <= now.getTime();
+}
+
+function retryAfterForFailure(
+  failure: OfflineActionFailure,
+  retryCount: number,
+  now: Date
+) {
+  if (failure.retryAfter || !failure.retryable) return failure.retryAfter;
+  return expiresAt(
+    now,
+    Math.min(60_000, 1_000 * 2 ** Math.min(retryCount - 1, 5))
+  );
 }
 
 export function endpointForOfflineAction(actionType: OfflineGameDayActionType) {
@@ -241,9 +261,24 @@ function summaryFrom(records: StoredRecord[], scope: Pick<OfflineOwnerContext, "
 export class MemoryGameDayOutboxStore implements GameDayOutboxStore {
   private records = new Map<string, StoredRecord>();
 
-  async enqueue(input: QueueOfflineGameDayActionInput, now = new Date()) {
+  async ownerGeneration(actorId: string) {
+    return this.generation(actorId, OWNER_GENERATION_CONTEXT);
+  }
+
+  async enqueue(
+    input: QueueOfflineGameDayActionInput,
+    now = new Date(),
+    expectedOwnerGeneration?: number
+  ) {
     assertAction(input);
     this.prune(now);
+    const ownerGeneration = this.generation(input.actorId, OWNER_GENERATION_CONTEXT);
+    if (
+      expectedOwnerGeneration !== undefined &&
+      expectedOwnerGeneration !== ownerGeneration
+    ) {
+      throw new Error("Offline owner changed before this action could be saved.");
+    }
     const key = actionKey(input.actorId, input.contextKey, input.actionId);
     const duplicate = this.records.get(key);
     if (duplicate?.kind === "action") return clone(duplicate);
@@ -262,7 +297,8 @@ export class MemoryGameDayOutboxStore implements GameDayOutboxStore {
       key,
       state: "queued",
       expiresAt: expiresAt(now, ACTION_RETENTION_MS),
-      generation
+      generation,
+      ownerGeneration
     };
     this.records.set(action.key, action);
     return clone(action);
@@ -291,7 +327,11 @@ export class MemoryGameDayOutboxStore implements GameDayOutboxStore {
       || (action.leaseExpiresAt && Date.parse(action.leaseExpiresAt) > now.getTime())
     ) return null;
     const stored = this.records.get(actionKey(action.actorId, action.contextKey, action.actionId)) as ActionRecord | undefined;
-    if (!stored || stored.generation !== this.generation(scope.actorId, scope.contextKey)) return null;
+    if (
+      !stored ||
+      stored.generation !== this.generation(scope.actorId, scope.contextKey) ||
+      stored.ownerGeneration !== this.generation(scope.actorId, OWNER_GENERATION_CONTEXT)
+    ) return null;
     const leaseToken = `${leaseOwner}:${now.getTime()}:${Math.random().toString(16).slice(2)}`;
     Object.assign(stored, { leaseOwner, leaseToken, leaseExpiresAt: expiresAt(now, leaseMs) });
     return { action: clone(stored), leaseToken, generation: stored.generation };
@@ -300,7 +340,13 @@ export class MemoryGameDayOutboxStore implements GameDayOutboxStore {
   async settleSuccess(claim: OfflineClaim, now = new Date()) {
     const key = actionKey(claim.action.actorId, claim.action.contextKey, claim.action.actionId);
     const action = this.records.get(key);
-    if (action?.kind !== "action" || action.leaseToken !== claim.leaseToken || action.generation !== claim.generation || this.generation(action.actorId, action.contextKey) !== claim.generation) return null;
+    if (
+      action?.kind !== "action" ||
+      action.leaseToken !== claim.leaseToken ||
+      action.generation !== claim.generation ||
+      this.generation(action.actorId, action.contextKey) !== claim.generation ||
+      action.ownerGeneration !== this.generation(action.actorId, OWNER_GENERATION_CONTEXT)
+    ) return null;
     this.records.delete(key);
     const receipt: ReceiptRecord = {
       kind: "receipt",
@@ -324,13 +370,19 @@ export class MemoryGameDayOutboxStore implements GameDayOutboxStore {
   async settleFailure(claim: OfflineClaim, failure: OfflineActionFailure, now = new Date()) {
     const key = actionKey(claim.action.actorId, claim.action.contextKey, claim.action.actionId);
     const action = this.records.get(key);
-    if (action?.kind !== "action" || action.leaseToken !== claim.leaseToken || action.generation !== claim.generation || this.generation(action.actorId, action.contextKey) !== claim.generation) return null;
+    if (
+      action?.kind !== "action" ||
+      action.leaseToken !== claim.leaseToken ||
+      action.generation !== claim.generation ||
+      this.generation(action.actorId, action.contextKey) !== claim.generation ||
+      action.ownerGeneration !== this.generation(action.actorId, OWNER_GENERATION_CONTEXT)
+    ) return null;
     action.attemptedAt = now.toISOString();
     action.retryCount += 1;
     action.state = failure.retryable && action.retryCount >= MAX_RETRIES ? "review_required" : failure.state;
     action.lastError = failure.message;
     action.conflictDetail = failure.kind === "conflict" ? failure.message : undefined;
-    action.retryAfter = failure.retryAfter;
+    action.retryAfter = retryAfterForFailure(failure, action.retryCount, now);
     delete action.leaseOwner;
     delete action.leaseToken;
     delete action.leaseExpiresAt;
@@ -338,9 +390,12 @@ export class MemoryGameDayOutboxStore implements GameDayOutboxStore {
   }
 
   async clearOwner(actorId: string) {
+    this.bumpGeneration(actorId, OWNER_GENERATION_CONTEXT);
     const contexts = new Set<string>();
     for (const record of this.records.values()) {
-      if (record.actorId === actorId) contexts.add(record.contextKey);
+      if (record.actorId === actorId && record.contextKey !== OWNER_GENERATION_CONTEXT) {
+        contexts.add(record.contextKey);
+      }
     }
     for (const contextKey of contexts) this.bumpGeneration(actorId, contextKey);
     for (const [key, record] of this.records) {
@@ -382,7 +437,17 @@ function openDatabase(): Promise<IDBDatabase> {
   return new Promise((resolve, reject) => {
     if (typeof indexedDB === "undefined") return reject(new Error("Offline storage is unavailable."));
     const request = indexedDB.open(DATABASE_NAME, DATABASE_VERSION);
-    request.onerror = () => reject(request.error ?? new Error("Offline storage could not open."));
+    let settled = false;
+    request.onerror = () => {
+      if (settled) return;
+      settled = true;
+      reject(request.error ?? new Error("Offline storage could not open."));
+    };
+    request.onblocked = () => {
+      if (settled) return;
+      settled = true;
+      reject(new Error("Offline storage upgrade is blocked by another open tab."));
+    };
     request.onupgradeneeded = () => {
       const database = request.result;
       if (!database.objectStoreNames.contains(STORE_NAME)) {
@@ -392,7 +457,15 @@ function openDatabase(): Promise<IDBDatabase> {
       }
       if (database.objectStoreNames.contains("context-outbox")) database.deleteObjectStore("context-outbox");
     };
-    request.onsuccess = () => resolve(request.result);
+    request.onsuccess = () => {
+      if (settled) {
+        request.result.close();
+        return;
+      }
+      settled = true;
+      request.result.onversionchange = () => request.result.close();
+      resolve(request.result);
+    };
   });
 }
 
@@ -428,14 +501,53 @@ function getAll(store: IDBObjectStore, callback: (records: StoredRecord[]) => vo
 }
 
 export class IndexedDbGameDayOutboxStore implements GameDayOutboxStore {
-  async enqueue(input: QueueOfflineGameDayActionInput, now = new Date()) {
+  async ownerGeneration(actorId: string) {
+    return withStore<number>("readonly", (store, resolve) => getAll(store, (records) => {
+      const record = records.find(
+        (candidate): candidate is GenerationRecord =>
+          candidate.kind === "generation" && candidate.key === ownerGenerationKey(actorId)
+      );
+      resolve(record?.generation ?? 0);
+    }));
+  }
+
+  async enqueue(
+    input: QueueOfflineGameDayActionInput,
+    now = new Date(),
+    expectedOwnerGeneration?: number
+  ) {
     assertAction(input);
     return withStore<OfflineGameDayAction>("readwrite", (store, resolve) => getAll(store, (records) => {
-      const current = records.filter((record): record is ActionRecord => record.kind === "action" && scopeMatches(record, input) && !isExpired(record, now));
+      for (const record of records) {
+        if (record.kind !== "generation" && isExpired(record, now)) store.delete(record.key);
+      }
+      const liveRecords = records.filter(
+        (record) => record.kind === "generation" || !isExpired(record, now)
+      );
+      const current = liveRecords.filter(
+        (record): record is ActionRecord => record.kind === "action" && scopeMatches(record, input)
+      );
+      const ownerGeneration = liveRecords.find(
+        (record): record is GenerationRecord =>
+          record.kind === "generation" && record.key === ownerGenerationKey(input.actorId)
+      )?.generation ?? 0;
+      if (
+        expectedOwnerGeneration !== undefined &&
+        expectedOwnerGeneration !== ownerGeneration
+      ) {
+        store.transaction.abort();
+        return;
+      }
       const key = actionKey(input.actorId, input.contextKey, input.actionId);
-      const duplicate = records.find((record): record is ActionRecord => record.kind === "action" && record.key === key);
+      const duplicate = liveRecords.find(
+        (record): record is ActionRecord => record.kind === "action" && record.key === key
+      );
       if (duplicate) return resolve(clone(duplicate));
-      if (records.some((record) => record.kind === "receipt" && record.key === receiptKey(input.actorId, input.contextKey, input.actionId))) {
+      if (liveRecords.some(
+        (record) =>
+          record.kind === "receipt" &&
+          record.key === receiptKey(input.actorId, input.contextKey, input.actionId)
+      )) {
         store.transaction.abort();
         return;
       }
@@ -443,9 +555,20 @@ export class IndexedDbGameDayOutboxStore implements GameDayOutboxStore {
         store.transaction.abort();
         return;
       }
-      for (const record of records) if (record.kind !== "generation" && isExpired(record, now)) store.delete(record.key);
-      const generation = records.find((record): record is GenerationRecord => record.kind === "generation" && record.key === generationKey(input.actorId, input.contextKey))?.generation ?? 0;
-      const action: ActionRecord = { ...clone(input), kind: "action", key, state: "queued", expiresAt: expiresAt(now, ACTION_RETENTION_MS), generation };
+      const generation = liveRecords.find(
+        (record): record is GenerationRecord =>
+          record.kind === "generation" &&
+          record.key === generationKey(input.actorId, input.contextKey)
+      )?.generation ?? 0;
+      const action: ActionRecord = {
+        ...clone(input),
+        kind: "action",
+        key,
+        state: "queued",
+        expiresAt: expiresAt(now, ACTION_RETENTION_MS),
+        generation,
+        ownerGeneration
+      };
       store.put(action);
       resolve(clone(action));
     }));
@@ -463,8 +586,24 @@ export class IndexedDbGameDayOutboxStore implements GameDayOutboxStore {
   async claimNext(scope: OfflineOwnerContext, leaseOwner: string, leaseMs: number, now = new Date()) {
     assertScope(scope);
     return withStore<OfflineClaim | null>("readwrite", (store, resolve) => getAll(store, (records) => {
+      for (const record of records) {
+        if (record.kind !== "generation" && isExpired(record, now)) store.delete(record.key);
+      }
+      const liveRecords = records.filter(
+        (record) => record.kind === "generation" || !isExpired(record, now)
+      );
       const generation = records.find((record): record is GenerationRecord => record.kind === "generation" && record.key === generationKey(scope.actorId, scope.contextKey))?.generation ?? 0;
-      const action = records.filter((record): record is ActionRecord => record.kind === "action" && scopeMatches(record, scope) && record.generation === generation)
+      const ownerGeneration = liveRecords.find(
+        (record): record is GenerationRecord =>
+          record.kind === "generation" && record.key === ownerGenerationKey(scope.actorId)
+      )?.generation ?? 0;
+      const action = liveRecords.filter(
+        (record): record is ActionRecord =>
+          record.kind === "action" &&
+          scopeMatches(record, scope) &&
+          record.generation === generation &&
+          record.ownerGeneration === ownerGeneration
+      )
         .sort((left, right) => left.queuedAt.localeCompare(right.queuedAt))[0];
       if (!action
         || (action.state !== "queued" && action.state !== "retrying")
@@ -482,7 +621,17 @@ export class IndexedDbGameDayOutboxStore implements GameDayOutboxStore {
     return withStore<OfflineSyncReceipt | null>("readwrite", (store, resolve) => getAll(store, (records) => {
       const action = records.find((record): record is ActionRecord => record.kind === "action" && record.key === actionKey(claim.action.actorId, claim.action.contextKey, claim.action.actionId));
       const generation = records.find((record): record is GenerationRecord => record.kind === "generation" && record.key === generationKey(claim.action.actorId, claim.action.contextKey))?.generation ?? 0;
-      if (!action || action.leaseToken !== claim.leaseToken || action.generation !== claim.generation || generation !== claim.generation) return resolve(null);
+      const ownerGeneration = records.find(
+        (record): record is GenerationRecord =>
+          record.kind === "generation" && record.key === ownerGenerationKey(claim.action.actorId)
+      )?.generation ?? 0;
+      if (
+        !action ||
+        action.leaseToken !== claim.leaseToken ||
+        action.generation !== claim.generation ||
+        generation !== claim.generation ||
+        action.ownerGeneration !== ownerGeneration
+      ) return resolve(null);
       store.delete(action.key);
       const receipt: ReceiptRecord = {
         kind: "receipt", key: receiptKey(action.actorId, action.contextKey, action.actionId),
@@ -500,12 +649,25 @@ export class IndexedDbGameDayOutboxStore implements GameDayOutboxStore {
     return withStore<OfflineGameDayAction | null>("readwrite", (store, resolve) => getAll(store, (records) => {
       const action = records.find((record): record is ActionRecord => record.kind === "action" && record.key === actionKey(claim.action.actorId, claim.action.contextKey, claim.action.actionId));
       const generation = records.find((record): record is GenerationRecord => record.kind === "generation" && record.key === generationKey(claim.action.actorId, claim.action.contextKey))?.generation ?? 0;
-      if (!action || action.leaseToken !== claim.leaseToken || action.generation !== claim.generation || generation !== claim.generation) return resolve(null);
+      const ownerGeneration = records.find(
+        (record): record is GenerationRecord =>
+          record.kind === "generation" && record.key === ownerGenerationKey(claim.action.actorId)
+      )?.generation ?? 0;
+      if (
+        !action ||
+        action.leaseToken !== claim.leaseToken ||
+        action.generation !== claim.generation ||
+        generation !== claim.generation ||
+        action.ownerGeneration !== ownerGeneration
+      ) return resolve(null);
       const updated: ActionRecord = {
         ...action, attemptedAt: now.toISOString(), retryCount: action.retryCount + 1,
         state: failure.retryable && action.retryCount + 1 >= MAX_RETRIES ? "review_required" : failure.state,
         lastError: failure.message, conflictDetail: failure.kind === "conflict" ? failure.message : undefined,
-        retryAfter: failure.retryAfter, leaseOwner: undefined, leaseToken: undefined, leaseExpiresAt: undefined
+        retryAfter: retryAfterForFailure(failure, action.retryCount + 1, now),
+        leaseOwner: undefined,
+        leaseToken: undefined,
+        leaseExpiresAt: undefined
       };
       store.put(updated);
       resolve(clone(updated));
@@ -514,7 +676,24 @@ export class IndexedDbGameDayOutboxStore implements GameDayOutboxStore {
 
   async clearOwner(actorId: string) {
     return withStore<void>("readwrite", (store, resolve) => getAll(store, (records) => {
-      const contexts = new Set(records.filter((record) => record.actorId === actorId).map((record) => record.contextKey));
+      const ownerKey = ownerGenerationKey(actorId);
+      const ownerGeneration = records.find(
+        (record): record is GenerationRecord =>
+          record.kind === "generation" && record.key === ownerKey
+      )?.generation ?? 0;
+      store.put({
+        kind: "generation",
+        key: ownerKey,
+        actorId,
+        contextKey: OWNER_GENERATION_CONTEXT,
+        generation: ownerGeneration + 1
+      } satisfies GenerationRecord);
+      const contexts = new Set(records
+        .filter(
+          (record) =>
+            record.actorId === actorId && record.contextKey !== OWNER_GENERATION_CONTEXT
+        )
+        .map((record) => record.contextKey));
       for (const contextKey of contexts) {
         const key = generationKey(actorId, contextKey);
         const current = records.find((record): record is GenerationRecord => record.kind === "generation" && record.key === key)?.generation ?? 0;
@@ -548,17 +727,29 @@ export class GameDayOutboxEngine {
   constructor(
     private readonly store: GameDayOutboxStore,
     private readonly engineId = `engine:${Math.random().toString(16).slice(2)}`,
-    private readonly leaseMs = DEFAULT_LEASE_MS
+    private readonly leaseMs = DEFAULT_LEASE_MS,
+    private readonly sendTimeoutMs = Math.min(
+      DEFAULT_SEND_TIMEOUT_MS,
+      Math.max(1, leaseMs - 1_000)
+    )
   ) {}
 
-  queue(action: QueueOfflineGameDayActionInput, now?: Date) {
-    return this.store.enqueue(action, now);
+  ownerGeneration(actorId: string) {
+    return this.store.ownerGeneration(actorId);
+  }
+
+  queue(action: QueueOfflineGameDayActionInput, now?: Date, expectedOwnerGeneration?: number) {
+    return this.store.enqueue(action, now, expectedOwnerGeneration);
   }
 
   async sync(
     scope: OfflineOwnerContext,
     session: OfflineSession | null,
-    send: (action: OfflineGameDayAction, endpoint: string) => Promise<OutboxSendResult>,
+    send: (
+      action: OfflineGameDayAction,
+      endpoint: string,
+      signal: AbortSignal
+    ) => Promise<OutboxSendResult>,
     now = new Date()
   ) {
     assertScope(scope);
@@ -580,7 +771,14 @@ export class GameDayOutboxEngine {
         throw new Error("The authenticated actor changed or the session expired during offline replay.");
       }
       const endpoint = endpointForOfflineAction(claim.action.actionType);
-      const response = await send(clone(claim.action), endpoint).catch(() => ({ ok: false, status: 0, body: null }));
+      const controller = new AbortController();
+      const timeout = setTimeout(() => controller.abort(), this.sendTimeoutMs);
+      const response = await send(
+        clone(claim.action),
+        endpoint,
+        controller.signal
+      ).catch(() => ({ ok: false, status: 0, body: null }))
+        .finally(() => clearTimeout(timeout));
       if (response.ok) {
         const receipt = await this.store.settleSuccess(claim, now);
         if (receipt) results.push(receipt);
@@ -601,8 +799,22 @@ function notifyOfflineStatusChanged() {
   if (typeof window !== "undefined") window.dispatchEvent(new Event("leaguepilot:offline-status"));
 }
 
-export async function queueOfflineGameDayAction(action: QueueOfflineGameDayActionInput) {
-  const queued = await defaultEngine.queue(action);
+export async function captureOfflineOwnerGeneration(actorId: string) {
+  if (typeof indexedDB === "undefined" || !actorId) {
+    throw new Error("Offline storage is unavailable.");
+  }
+  return defaultEngine.ownerGeneration(actorId);
+}
+
+export async function queueOfflineGameDayAction(
+  action: QueueOfflineGameDayActionInput,
+  expectedOwnerGeneration?: number
+) {
+  const queued = await defaultEngine.queue(
+    action,
+    undefined,
+    expectedOwnerGeneration
+  );
   notifyOfflineStatusChanged();
   return queued;
 }
@@ -631,7 +843,11 @@ export async function getOfflineStatusSummary(scope: Pick<OfflineOwnerContext, "
 export async function syncContextOutbox(
   scope: OfflineOwnerContext,
   session: OfflineSession | null,
-  send: (action: OfflineGameDayAction, endpoint: string) => Promise<OutboxSendResult>
+  send: (
+    action: OfflineGameDayAction,
+    endpoint: string,
+    signal: AbortSignal
+  ) => Promise<OutboxSendResult>
 ) {
   const results = await defaultEngine.sync(scope, session, send);
   notifyOfflineStatusChanged();

@@ -151,6 +151,105 @@ describe("game-day offline outbox policy", () => {
     });
   });
 
+  it("rejects a late enqueue that captured its owner generation before sign-out clear", async () => {
+    const store = new MemoryGameDayOutboxStore();
+    const engine = new GameDayOutboxEngine(store, "tab-1");
+    const capturedOwnerGeneration = await engine.ownerGeneration(scope.actorId);
+
+    await store.clearOwner(scope.actorId);
+
+    await expect(engine.queue(
+      action("action-1"),
+      new Date("2026-07-19T10:01:00.000Z"),
+      capturedOwnerGeneration
+    )).rejects.toThrow(/owner changed/);
+    expect(await engine.ownerGeneration(scope.actorId)).toBe(capturedOwnerGeneration + 1);
+    expect(await store.list(scope)).toHaveLength(0);
+  });
+
+  it("aborts a stalled send before its lease expires and suppresses replay during backoff", async () => {
+    vi.useFakeTimers();
+    try {
+      const store = new MemoryGameDayOutboxStore();
+      const engine = new GameDayOutboxEngine(store, "tab-1", 1_001);
+      const replayStartedAt = new Date("2026-07-19T10:01:00.000Z");
+      await engine.queue(action("action-1"), new Date("2026-07-19T10:00:00.000Z"));
+      const observedSignals: AbortSignal[] = [];
+      const send = vi.fn(async (
+        _queuedAction: unknown,
+        _endpoint: string,
+        signal: AbortSignal
+      ) => new Promise<{ ok: boolean; status: number }>((_resolve, reject) => {
+        observedSignals.push(signal);
+        signal.addEventListener("abort", () => reject(new Error("send aborted")), { once: true });
+      }));
+
+      const replay = engine.sync(
+        scope,
+        { actorId: scope.actorId },
+        send,
+        replayStartedAt
+      );
+      await vi.advanceTimersByTimeAsync(1);
+      const results = await replay;
+
+      expect(send).toHaveBeenCalledTimes(1);
+      expect(observedSignals).toHaveLength(1);
+      expect(observedSignals[0]?.aborted).toBe(true);
+      expect(results[0]).toMatchObject({
+        actionId: "action-1",
+        state: "retrying",
+        retryCount: 1,
+        retryAfter: "2026-07-19T10:01:01.000Z"
+      });
+
+      await engine.sync(
+        scope,
+        { actorId: scope.actorId },
+        send,
+        new Date("2026-07-19T10:01:00.500Z")
+      );
+      expect(send).toHaveBeenCalledTimes(1);
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it("expires private actions before replay and releases expired receipt keys", async () => {
+    const store = new MemoryGameDayOutboxStore();
+    const engine = new GameDayOutboxEngine(store, "tab-1");
+    const queuedAt = new Date("2026-07-19T10:00:00.000Z");
+    const actionExpiry = new Date("2026-07-26T10:00:00.000Z");
+    const send = vi.fn(async () => ({ ok: true, status: 200 }));
+
+    await engine.queue(action("action-1"), queuedAt);
+    expect(await engine.sync(
+      scope,
+      { actorId: scope.actorId },
+      send,
+      actionExpiry
+    )).toEqual([]);
+    expect(send).not.toHaveBeenCalled();
+    expect(await store.list(scope, actionExpiry)).toHaveLength(0);
+
+    const receiptAction = action("action-2", {
+      queuedAt: "2026-07-26T10:01:00.000Z"
+    });
+    await engine.queue(receiptAction, new Date("2026-07-26T10:01:00.000Z"));
+    await engine.sync(
+      scope,
+      { actorId: scope.actorId },
+      send,
+      new Date("2026-07-26T10:02:00.000Z")
+    );
+    const receiptExpiry = new Date("2026-08-25T10:02:00.000Z");
+    expect(await store.summary(scope, receiptExpiry)).toMatchObject({ synced: 0 });
+    await expect(engine.queue(
+      receiptAction,
+      receiptExpiry
+    )).resolves.toMatchObject({ actionId: "action-2", state: "queued" });
+  });
+
   it("clears one owner context without deleting another actor or context", async () => {
     const store = new MemoryGameDayOutboxStore();
     const otherActor = { ...scope, actorId: "actor-2" };
