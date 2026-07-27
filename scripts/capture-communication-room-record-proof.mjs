@@ -3,9 +3,18 @@ import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { chromium } from "@playwright/test";
 import { createClient } from "@supabase/supabase-js";
+import {
+  assertIsolatedQaTarget,
+  assertQaApplicationTarget,
+  assertServiceRoleCredential,
+  captureQaAppInvocation,
+  preflightQaApplicationIdentity,
+  preflightServiceRoleCredential
+} from "./qa-target-guard.mjs";
 
 const envFile = ".env.local";
 const baseUrl = process.env.COMMUNICATION_ROOM_BASE_URL || "http://127.0.0.1:3021";
+const appInvocation = captureQaAppInvocation();
 const outputDir = "output/playwright/communication-room";
 const organizationId = "11111111-1111-4111-8111-111111111111";
 const primaryTeamId = "33333333-3333-4333-8333-333333333331";
@@ -150,11 +159,18 @@ async function addParentSession(context) {
 }
 
 loadLocalEnv();
-mkdirSync(outputDir, { recursive: true });
+const supabaseUrl = requireEnv("NEXT_PUBLIC_SUPABASE_URL");
+const serviceRoleKey = requireEnv("SUPABASE_SERVICE_ROLE_KEY");
+const supabaseTarget = assertIsolatedQaTarget(supabaseUrl, "Communication Room proof");
+assertQaApplicationTarget(baseUrl, appInvocation);
+assertServiceRoleCredential(serviceRoleKey);
+await preflightQaApplicationIdentity(baseUrl, supabaseTarget, { invocation: appInvocation });
+await preflightServiceRoleCredential(supabaseUrl, serviceRoleKey);
 
+mkdirSync(outputDir, { recursive: true });
 const db = createClient(
-  requireEnv("NEXT_PUBLIC_SUPABASE_URL"),
-  requireEnv("SUPABASE_SERVICE_ROLE_KEY"),
+  supabaseUrl,
+  serviceRoleKey,
   { auth: { autoRefreshToken: false, persistSession: false } }
 );
 const qaContext = await requireQaContext(db);
