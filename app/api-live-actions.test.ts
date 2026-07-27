@@ -187,7 +187,28 @@ describe("live action API routes", () => {
   beforeEach(() => {
     vi.resetAllMocks();
     authMock.mockResolvedValue({ ok: true, user: { id: "user-live-session", email: "parent@example.com" } });
-    createSupabaseAdminClientMock.mockReturnValue({ from: vi.fn() } as unknown as ReturnType<typeof createSupabaseAdminClient>);
+    const adminQuery = (data: Array<Record<string, string>>) => {
+      const query = {
+        select: vi.fn(),
+        eq: vi.fn(),
+        order: vi.fn(),
+        limit: vi.fn(),
+        then: (
+          resolve: (value: { data: Array<Record<string, string>>; error: null }) => unknown,
+          reject: (reason: unknown) => unknown
+        ) => Promise.resolve({ data, error: null }).then(resolve, reject)
+      };
+      query.select.mockReturnValue(query);
+      query.eq.mockReturnValue(query);
+      query.order.mockReturnValue(query);
+      query.limit.mockReturnValue(query);
+      return query;
+    };
+    createSupabaseAdminClientMock.mockReturnValue({
+      from: vi.fn((table: string) => adminQuery(table === "seasons"
+        ? [{ id: seedState.activeSeason.id }]
+        : [{ organization_id: seedState.organization.id }]))
+    } as unknown as ReturnType<typeof createSupabaseAdminClient>);
     requireActiveOrganizationAdminMock.mockResolvedValue({ ok: true, message: "Access allowed.", organizationId: seedState.organization.id });
     listParentCoachDashboardDataMock.mockResolvedValue({
       state: {
@@ -203,10 +224,10 @@ describe("live action API routes", () => {
     listSponsorAdminDataMock.mockResolvedValue({
       organizationId: seedState.organization.id,
       teams: seedState.teams,
-      users: seedState.users,
       sponsors: seedState.sponsors,
+      billingRecords: [],
       isSupabaseBacked: true,
-      message: "Sponsor records, placements, and logo assets are loaded from Supabase."
+      message: "Sponsor records, active placements, approved logos, and payment-proof records are loaded from Supabase."
     });
     listFamilyBalanceSummaryMock.mockResolvedValue({
       ok: true,
@@ -641,17 +662,18 @@ describe("live action API routes", () => {
   it("uses the authenticated admin session for sponsor saves", async () => {
     saveSponsorMock.mockResolvedValue({
       ok: true,
+      partial: false,
       message: "Sponsor saved.",
       sponsor: {
         id: "sponsor-1",
         organizationId: "org-1",
         name: "Local Pizza",
-        level: "league",
+        level: "league" as const,
         teamId: undefined,
         url: "https://sponsor.example",
-        status: "active",
-        placementKey: "team_portal",
-        logoUrl: "https://sponsor.example/logo.png"
+        status: "active" as const,
+        placementKey: "team_portal" as const,
+        logoUrl: undefined
       }
     });
 
@@ -693,6 +715,44 @@ describe("live action API routes", () => {
   });
 
   it("returns admin-only revenue summaries after organization admin access", async () => {
+    listSponsorAdminDataMock.mockResolvedValue({
+      organizationId: seedState.organization.id,
+      teams: seedState.teams,
+      sponsors: seedState.sponsors,
+      billingRecords: [
+        {
+          id: "billing-invoice",
+          sponsorId: seedState.sponsors[0]!.id,
+          invoiceReference: "inv_pending",
+          amountCents: 10000,
+          currency: "usd",
+          status: "invoice_ready",
+          paymentProofStatus: "awaiting_invoice"
+        },
+        {
+          id: "billing-paid",
+          sponsorId: seedState.sponsors[0]!.id,
+          invoiceReference: "inv_paid",
+          amountCents: 25000,
+          currency: "usd",
+          status: "payment_recorded",
+          paymentProofStatus: "paid",
+          confirmedAt: "2026-07-26T15:00:00.000Z"
+        },
+        {
+          id: "billing-draft",
+          sponsorId: seedState.sponsors[0]!.id,
+          invoiceReference: "draft",
+          amountCents: 99000,
+          currency: "usd",
+          status: "draft",
+          paymentProofStatus: "not_requested"
+        }
+      ],
+      isSupabaseBacked: true,
+      message: "Sponsor records are loaded."
+    });
+
     const response = await getAdminRevenueSummary(getRequest());
     const payload = await response.json();
 
@@ -703,9 +763,34 @@ describe("live action API routes", () => {
       userId: "user-live-session",
       action: "view league revenue"
     });
-    expect(payload.revenueSummary.sponsorInvoiceCents).toBe(0);
-    expect(payload.sponsorOpportunities.map((item: { need: string }) => item.need)).toContain("scholarships");
+    expect(payload.revenueSummary.sponsorInvoiceCents).toBe(35000);
+    expect(payload.revenueSummary.confirmedSponsorPaymentCents).toBe(25000);
+    expect(payload.revenueSummary.organizationId).toBe(seedState.organization.id);
+    expect(payload.revenueSummary.seasonId).toBe(seedState.activeSeason.id);
+    expect(payload.revenueSummary.registrationFeeCents).toBeNull();
+    expect(payload.sponsorOpportunities).toEqual([]);
+    expect(payload.sponsorOpportunityBoundary).toContain("organization-scoped");
     expect(payload.message).toContain("webhook-proof gated");
+  });
+
+  it("fails the revenue summary closed when scoped sponsor evidence is unavailable", async () => {
+    listSponsorAdminDataMock.mockResolvedValue({
+      organizationId: seedState.organization.id,
+      teams: [],
+      sponsors: [],
+      billingRecords: [],
+      isSupabaseBacked: false,
+      message: "Sponsor records could not be loaded safely."
+    });
+
+    const response = await getAdminRevenueSummary(getRequest());
+    const payload = await response.json();
+
+    expect(response.status).toBe(503);
+    expect(payload).toEqual({
+      ok: false,
+      message: "Sponsor records could not be loaded safely."
+    });
   });
 
   it("uses the authenticated admin session for tenant theme defaults", async () => {

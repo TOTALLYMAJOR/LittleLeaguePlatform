@@ -1,8 +1,12 @@
-import { createHash } from "node:crypto";
+import { createHash, randomUUID } from "node:crypto";
 import type { ParentReplayDraft, ParentReplayRecord, PracticeFocusArea } from "@/lib/domain";
 import { featureGateDecision } from "@/lib/services/feature-gates";
 import { getWeatherEventDraft } from "@/lib/services/weather";
-import { requireActiveParentForPlayerEvent, requireActiveTeamCoachOrOrgAdmin } from "./access-control";
+import {
+  requireActiveOrganizationAdmin,
+  requireActiveParentForPlayerEvent,
+  requireActiveTeamCoachOrOrgAdmin
+} from "./access-control";
 import { createSupabaseAdminClient } from "./admin";
 import { withSupabaseTimeout } from "./timeout";
 
@@ -1029,24 +1033,67 @@ export async function saveSponsor(input: {
 
   try {
     const db = adminDb();
-    const { data: adminRows } = await runDynamicQuery<Array<{ id: string }>>(db
-      .from("organization_memberships")
-      .select("id")
-      .eq("organization_id", input.organizationId)
-      .eq("user_id", input.actorUserId)
-      .eq("role", "admin")
-      .eq("status", "active"));
+    const sponsorId = input.sponsorId ?? randomUUID();
+    const access = await requireActiveOrganizationAdmin({
+      db,
+      organizationId: input.organizationId,
+      userId: input.actorUserId,
+      action: "manage sponsors"
+    });
+    if (!access.ok) return { ok: false, message: access.message };
 
-    if (!adminRows?.length) return { ok: false, message: "Only active organization admins can manage sponsors." };
+    if (input.sponsorId) {
+      const { data: existingSponsor, error: existingSponsorError } = await runDynamicQuery<{
+        id: string;
+        organization_id: string;
+      }>(db
+        .from("sponsors")
+        .select("id,organization_id")
+        .eq("id", input.sponsorId)
+        .eq("organization_id", input.organizationId)
+        .maybeSingle());
+      if (existingSponsorError || !existingSponsor) {
+        return { ok: false, message: "The sponsor record could not be found in this organization." };
+      }
+    }
+
+    if (input.level === "team") {
+      const { data: team, error: teamError } = await runDynamicQuery<{
+        id: string;
+        organization_id: string;
+      }>(db
+        .from("teams")
+        .select("id,organization_id")
+        .eq("id", input.teamId!)
+        .eq("organization_id", input.organizationId)
+        .maybeSingle());
+      if (teamError || !team) {
+        return { ok: false, message: "Team sponsors require a team from the same organization." };
+      }
+    }
+
+    const auditInsert = await runDynamicQuery(db
+      .from("audit_events")
+      .insert({
+        organization_id: input.organizationId,
+        actor_user_id: input.actorUserId,
+        action: "sponsor_save_requested",
+        target_type: "sponsor",
+        target_id: sponsorId,
+        summary: `Sponsor ${name} save requested with ${input.status} status and ${input.placementKey ?? "no"} placement.`
+      }));
+    if (auditInsert.error) {
+      return { ok: false, message: "Sponsor was not changed because audit logging is unavailable." };
+    }
 
     const sponsorPayload = {
+      id: sponsorId,
       organization_id: input.organizationId,
       name,
       level: input.level,
       team_id: input.level === "team" ? input.teamId : null,
       url,
-      status: input.status,
-      ...(input.sponsorId ? { id: input.sponsorId } : {})
+      status: input.status
     };
 
     const { data: sponsor, error } = await runDynamicQuery<{
@@ -1065,13 +1112,16 @@ export async function saveSponsor(input: {
 
     if (error || !sponsor) return { ok: false, message: "Sponsor could not be saved." };
 
-    if (input.placementKey) {
-      await runDynamicQuery(db
-        .from("sponsor_placements")
-        .delete()
-        .eq("sponsor_id", sponsor.id)
-        .eq("placement_key", input.placementKey));
-      await runDynamicQuery(db
+    const followUpFailures: string[] = [];
+    const placementReset = await runDynamicQuery(db
+      .from("sponsor_placements")
+      .update({ status: "expired" })
+      .eq("sponsor_id", sponsor.id)
+      .eq("status", "active"));
+    if (placementReset.error) {
+      followUpFailures.push("placement history was not reconciled");
+    } else if (input.placementKey) {
+      const placementInsert = await runDynamicQuery(db
         .from("sponsor_placements")
         .insert({
           sponsor_id: sponsor.id,
@@ -1080,10 +1130,13 @@ export async function saveSponsor(input: {
           placement_key: input.placementKey,
           status: input.status === "expired" ? "expired" : "active"
         }));
+      if (placementInsert.error) {
+        followUpFailures.push("the selected placement was not saved");
+      }
     }
 
     if (logoUrl) {
-      await runDynamicQuery(db
+      const assetInsert = await runDynamicQuery(db
         .from("sponsor_assets")
         .insert({
           sponsor_id: sponsor.id,
@@ -1091,22 +1144,21 @@ export async function saveSponsor(input: {
           url: logoUrl,
           status: "pending"
         }));
+      if (assetInsert.error) {
+        followUpFailures.push("the logo review item was not queued");
+      }
     }
 
-    await runDynamicQuery(db
-      .from("audit_events")
-      .insert({
-        organization_id: input.organizationId,
-        actor_user_id: input.actorUserId,
-        action: "sponsor_saved",
-        target_type: "sponsor",
-        target_id: sponsor.id,
-        summary: `Sponsor ${name} saved with ${input.status} status and ${input.placementKey ?? "no"} placement.`
-      }));
+    const partial = followUpFailures.length > 0;
 
     return {
       ok: true,
-      message: "Sponsor saved with admin audit event. Sponsor billing is still disconnected.",
+      partial,
+      message: partial
+        ? `Sponsor record saved, but ${followUpFailures.join(", ")}. Reload before retrying.`
+        : logoUrl
+          ? "Sponsor record saved. The new logo remains pending review. No Stripe or renewal-provider call occurred."
+          : "Sponsor record saved after the admin audit intent was recorded. No Stripe or renewal-provider call occurred.",
       sponsor: {
         id: sponsor.id,
         organizationId: sponsor.organization_id,
@@ -1115,8 +1167,8 @@ export async function saveSponsor(input: {
         teamId: sponsor.team_id ?? undefined,
         url: sponsor.url,
         status: sponsor.status,
-        placementKey: input.placementKey,
-        logoUrl
+        placementKey: input.status === "expired" ? undefined : input.placementKey,
+        logoUrl: undefined
       }
     };
   } catch {

@@ -3917,10 +3917,10 @@ export function AdminDashboardClient({ registrationRequests, sponsorData, mediaD
   const adminSuggestions = buildAdminAssistiveSuggestions(state, NOW);
   const visibleRegistrations = registrationRequests ?? state.registrationRequests;
   const pendingRegistrations = visibleRegistrations.filter((request) => request.status === "pending");
-  const sponsorTeams = sponsorData?.teams.length ? sponsorData.teams : state.teams;
+  const sponsorTeams = sponsorData ? sponsorData.teams : state.teams;
   const mediaTeams = mediaData?.teams.length ? mediaData.teams : state.teams;
   const drillTeams = drillVideoData?.teams.length ? drillVideoData.teams : state.teams;
-  const initialSponsors = sponsorData?.sponsors.length ? sponsorData.sponsors : state.sponsors;
+  const initialSponsors = sponsorData ? sponsorData.sponsors : state.sponsors;
   const initialMediaItems = mediaData?.mediaItems.length ? mediaData.mediaItems : state.mediaItems;
   const initialDrillVideos = drillVideoData?.drillVideos ?? [];
   const initialDrillSources = drillVideoData?.sources ?? [];
@@ -4004,7 +4004,7 @@ export function AdminDashboardClient({ registrationRequests, sponsorData, mediaD
   const [sponsorStatus, setSponsorStatus] = useState<Sponsor["status"]>(initialSponsors[0]?.status ?? "pending");
   const [sponsorPlacementKey, setSponsorPlacementKey] = useState<Sponsor["placementKey"] | "none">(initialSponsors[0]?.placementKey ?? "team_portal");
   const [sponsorLogoUrl, setSponsorLogoUrl] = useState(initialSponsors[0]?.logoUrl ?? "");
-  const [sponsorMessage, setSponsorMessage] = useState(sponsorData ? "Sponsor records are current for this organization." : "Sponsor preview records are shown.");
+  const [sponsorMessage, setSponsorMessage] = useState(sponsorData?.message ?? "Sponsor preview records are shown.");
   const [isSponsorPending, startSponsorTransition] = useTransition();
   const [mediaMessage, setMediaMessage] = useState(mediaData ? "Media review records are current for this organization." : "Media review preview records are shown.");
   const [drillVideoMessage, setDrillVideoMessage] = useState(drillVideoData ? "Drill video review records are current." : "Drill video review preview records are shown.");
@@ -4093,6 +4093,10 @@ export function AdminDashboardClient({ registrationRequests, sponsorData, mediaD
 
   function saveSponsorDraft() {
     setSponsorMessage("");
+    if (sponsorData && !sponsorData.isSupabaseBacked) {
+      setSponsorMessage("Live organization records are required before sponsor changes can be saved.");
+      return;
+    }
     startSponsorTransition(async () => {
       const response = await authenticatedJsonFetch("/api/admin/sponsors", {
         organizationId: sponsorData?.organizationId ?? state.organization.id,
@@ -4770,7 +4774,7 @@ export function AdminDashboardClient({ registrationRequests, sponsorData, mediaD
               <input value={sponsorLogoUrl} onChange={(event) => setSponsorLogoUrl(event.target.value)} placeholder="https://..." />
             </label>
           </div>
-          <button disabled={isSponsorPending} onClick={saveSponsorDraft}>Save sponsor</button>
+          <button disabled={isSponsorPending || Boolean(sponsorData && !sponsorData.isSupabaseBacked)} onClick={saveSponsorDraft}>Save sponsor</button>
           <p className="muted">Stripe live collection is not connected. Sponsor billing records stay separate from registration, RSVP, schedule, safety, and child-facing sponsor display.</p>
           <div className="stack compact">
             <h3>Sponsor billing records</h3>

@@ -6,10 +6,12 @@ import { demoTenantIds } from "./bootstrap-demo-tenant.mjs";
 
 const envFile = ".env.local";
 const baseUrl = process.env.DEMO_TENANT_BASE_URL || process.env.QA_PROOF_BASE_URL || "http://localhost:3001";
-const screenshotDir = "output/playwright/demo-tenant";
+const screenshotDir = process.env.DEMO_TENANT_SCREENSHOT_DIR || "output/playwright/demo-tenant";
 const proofFile = join(screenshotDir, "demo-tenant-proof.json");
 const viewportSpecs = [
   ["mobile-390", 390, 844],
+  ["tablet-768", 768, 1024],
+  ["laptop-1024", 1024, 768],
   ["desktop-1440", 1440, 1100]
 ];
 const roleSpecs = {
@@ -46,10 +48,10 @@ const routeSpecs = [
     name: "admin-sponsors",
     path: "/admin/sponsors",
     requiredTexts: [
-      "Sponsor evidence ledger",
-      "Community evidence receipt",
-      "Player data",
-      "Not included"
+      "Sponsor Hub",
+      "Organization records loaded",
+      "Verified revenue",
+      "Public placement stays separate from payment and fulfillment evidence"
     ]
   },
   {
@@ -209,20 +211,47 @@ async function captureRoute(browser, routeSpec) {
   const result = {
     role: routeSpec.role,
     path: routeSpec.path,
-    screenshots: []
+    screenshots: [],
+    viewports: []
   };
+  const browserErrors = [];
+  page.on("console", (message) => {
+    if (message.type() === "error") browserErrors.push(`console: ${message.text()}`);
+  });
+  page.on("pageerror", (error) => {
+    browserErrors.push(`pageerror: ${error.message}`);
+  });
 
   try {
     const session = await signIn(page, routeSpec.role);
     result.userId = session.userId;
     for (const [viewportName, width, height] of viewportSpecs) {
+      browserErrors.length = 0;
       await page.setViewportSize({ width, height });
       await page.goto(`${baseUrl}${routeSpec.path}?demo_tenant_proof=${Date.now()}-${width}`, { waitUntil: "domcontentloaded" });
+      await assertRequiredTexts(page, routeSpec.requiredTexts);
+      const layout = await page.evaluate(() => ({
+        clientWidth: document.documentElement.clientWidth,
+        scrollWidth: document.documentElement.scrollWidth
+      }));
+      if (layout.scrollWidth > layout.clientWidth) {
+        throw new Error(`${routeSpec.name}-${viewportName} has horizontal overflow: ${layout.scrollWidth}px > ${layout.clientWidth}px.`);
+      }
+      if (browserErrors.length) {
+        throw new Error(`${routeSpec.name}-${viewportName} reported browser errors: ${browserErrors.join(" | ")}`);
+      }
       const screenshotPath = join(screenshotDir, `${routeSpec.name}-${viewportName}.png`);
       await page.screenshot({ path: screenshotPath, fullPage: true });
       result.screenshots.push(screenshotPath);
+      result.viewports.push({
+        name: viewportName,
+        width,
+        height,
+        clientWidth: layout.clientWidth,
+        scrollWidth: layout.scrollWidth,
+        browserErrors: 0
+      });
       console.log(`captured ${routeSpec.name}-${viewportName}.png`);
-      await assertRequiredTexts(page, routeSpec.requiredTexts);
     }
   } finally {
     await context.close();

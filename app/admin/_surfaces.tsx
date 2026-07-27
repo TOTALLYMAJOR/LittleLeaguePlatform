@@ -61,9 +61,14 @@ export async function AdminAccessDeniedSurface({ message }: { message?: string }
 export async function AdminDashboardSurface({ surface = "overview" }: { surface?: AdminDashboardSurfaceMode } = {}) {
   const pageAccess = await requireAdminPageAccess();
   if (!pageAccess.ok) return <AdminAccessDeniedSurface message={pageAccess.message} />;
+  const organizationId = pageAccess.access.contexts?.find((context) => context.role === "admin")?.organizationId
+    ?? pageAccess.access.adminOrganizationIds[0];
+  if (!organizationId) {
+    return <AdminAccessDeniedSurface message="An active organization context is required for admin operations." />;
+  }
   const [registrationRequests, sponsorData, mediaData, drillVideoData] = await Promise.all([
     listRegistrationRequests(),
-    listSponsorAdminData(),
+    listSponsorAdminData({ organizationId }),
     listMediaGovernanceData(),
     listAdminDrillVideoLibraryData({ organizationIds: pageAccess.access.adminOrganizationIds })
   ]);

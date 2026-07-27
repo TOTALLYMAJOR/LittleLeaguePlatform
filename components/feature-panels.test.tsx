@@ -772,6 +772,28 @@ describe("AdminDashboardClient", () => {
     expect(html).not.toContain("Roster maker readiness");
     expect(html).not.toContain("Media governance");
   });
+
+  it("fails closed instead of restoring seed sponsors when scoped sponsor reads are unavailable", () => {
+    const html = renderToStaticMarkup(
+      <AppStateProvider>
+        <AdminDashboardClient
+          surface="sponsors"
+          sponsorData={{
+            organizationId: seedState.organization.id,
+            teams: [],
+            sponsors: [],
+            billingRecords: [],
+            isSupabaseBacked: false,
+            message: "Sponsor records are unavailable for this organization."
+          }}
+        />
+      </AppStateProvider>
+    );
+
+    expect(html).toContain("Sponsor records are unavailable for this organization.");
+    expect(html).not.toContain(seedState.sponsors[0]!.name);
+    expect(html).toContain("<button disabled=\"\">Save sponsor</button>");
+  });
 });
 
 describe("AdminThemesClient", () => {
