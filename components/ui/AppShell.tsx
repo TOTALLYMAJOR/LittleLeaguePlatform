@@ -133,6 +133,7 @@ export function AppShell({ access = signedOutShellAccess, children }: { access?:
   const activeContext = access.contexts?.find((context) => context.role === activeRouteRole);
   const usesParentWeeklyShell = pathname === "/parent" && access.canParent;
   const usesImmersiveFamilyHeader = pathname === "/parent/messages" || usesParentWeeklyShell;
+  const usesPublicGateway = pathname === "/";
   const showMobileTabbar = access.signedIn && (access.canParent || access.canCoach || access.canAdmin) && activeMobileItems.length >= 3;
 
   const filteredNav = useMemo(() => {
@@ -236,8 +237,8 @@ export function AppShell({ access = signedOutShellAccess, children }: { access?:
             You are offline. Saved pages may still be available, but current team details need a connection.
           </div>
         ) : null}
-        <div className="public-app-shell">
-          <header className="public-header">
+        <div className={`public-app-shell${usesPublicGateway ? " public-app-shell-gateway" : ""}`}>
+          <header className={`public-header${usesPublicGateway ? " public-header-gateway" : ""}`}>
             <Link href="/" className="public-brand" aria-label="LeaguePilot home">
               <span className="public-brand-mark">LP</span>
               <span className="public-brand-copy">
@@ -247,7 +248,7 @@ export function AppShell({ access = signedOutShellAccess, children }: { access?:
             </Link>
             <nav className="public-nav" aria-label="Public navigation">
               <Link href="/schedule">Schedule</Link>
-              <Link className="button" href="/registration">Request Team Access</Link>
+              {usesPublicGateway ? <Link href="/sponsors">Sponsors</Link> : <Link className="button" href="/registration">Request Team Access</Link>}
               <Link className="button secondary" href="/auth">Sign in</Link>
             </nav>
           </header>

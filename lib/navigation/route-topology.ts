@@ -72,6 +72,7 @@ export const routeTopology = [
   route("/", "Home", "HM", "public", "Family", ["signed_out", "signed_in"], false, false, false, false, 1),
   route("/registration", "Sign up", "SU", "public", "League Ops", ["signed_out", "signed_in"], true, true, true, false),
   route("/schedule", "Calendar", "CL", "public", "Family", ["signed_out", "signed_in"], true, true, true, false, 3),
+  route("/sponsors", "Sponsors", "SP", "public", "Business", ["signed_out", "signed_in"], false, false, true, false),
   route("/auth", "Sign in", "AU", "support", "Support", ["signed_out"], true, true, true, false, 4),
   route("/account", "Account", "AC", "support", "Support", ["signed_in"], true, true, true, true, 5),
   route("/invite/recover", "Recover Invite", "RI", "support", "Support", ["signed_in"], false, false, true, true),

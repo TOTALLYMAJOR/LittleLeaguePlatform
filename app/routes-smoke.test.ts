@@ -47,6 +47,7 @@ const appRoutes = [
   "/parent/setup",
   "/parent/transportation",
   "/registration",
+  "/sponsors",
   "/invite/expired",
   "/invite/accept",
   "/invite/recover",
@@ -67,29 +68,38 @@ describe("route smoke coverage", () => {
     }
   });
 
-  it("keeps the homepage positioned as a product landing page with accurate provider boundaries", () => {
+  it("keeps the homepage as a compact public gateway with accurate privacy boundaries", () => {
     const page = readFileSync(join(process.cwd(), "app", "page.tsx"), "utf8");
 
-    expect(page).toContain("Stop chasing families.");
-    expect(page).toContain("One season. Three clear views.");
-    expect(page).toContain("Parent Replay carries practice home.");
+    expect(page).toContain("Your season, organized.");
+    expect(page).toContain("Games and field updates");
+    expect(page).toContain("Support local youth sports");
     expect(page).toContain("Private by default");
-    expect(page).toContain("Start with the right door.");
     expect(page).toContain("Sign in");
-    expect(page).toContain("Request Team Access");
     expect(page).toContain("/auth");
-    expect(page).toContain("landing-soccer-ambient");
-    expect(page).toContain("/images/leaguepilot-game-day-parent.png");
-    expect(page).toContain("External messages are not connected or sent from this preview.");
-    expect(page).toContain("Example Parent Replay");
-    expect(page).toContain("Try it together");
+    expect(page).toContain("/schedule");
+    expect(page).toContain("/sponsors");
+    expect(page).toContain("landing-gateway");
+    expect(page).toContain("/images/leaguepilot-community-game-day-hero.png");
+    expect(existsSync(join(process.cwd(), "public", "images", "leaguepilot-community-game-day-hero.png"))).toBe(true);
     expect(page).toContain("Children do not create accounts");
     expect(page).not.toContain("Little League HQ is the demo organization");
-    expect(page).toContain("/coach/practice-recaps");
+    expect(page).not.toContain("Request Team Access");
     expect(page).not.toContain("/prototype/index.html");
     expect(page).not.toContain("Supabase");
     expect(page).not.toContain("seed fallback");
     expect(page).not.toContain("Current scaffold inventory");
+  });
+
+  it("keeps the public sponsor page informational and proof-safe", () => {
+    const page = readFileSync(join(process.cwd(), "app", "sponsors", "page.tsx"), "utf8");
+
+    expect(page).toContain("Put local support behind every game.");
+    expect(page).toContain("Ask your league administrator");
+    expect(page).toContain("never includes child profiles");
+    expect(page).toContain("not by this public page");
+    expect(page).not.toContain("checkout");
+    expect(page).not.toContain("donate");
   });
 
   it("keeps the static prototype available but hidden from indexable IA", () => {
@@ -176,6 +186,25 @@ describe("route smoke coverage", () => {
     expect(css).toContain(".parent-rsvp-glow");
     expect(css).toContain("@media print");
     expect(css).toContain("@media (forced-colors: active)");
+  });
+
+  it("keeps the parent weekly visual language in the shared app design system", () => {
+    const layout = readFileSync(join(process.cwd(), "app", "layout.tsx"), "utf8");
+    const css = readFileSync(join(process.cwd(), "app", "globals.css"), "utf8");
+
+    expect(css).toContain("--bg:             #fdf8f1");
+    expect(css).toContain("--accent:        #1f3a63");
+    expect(css).toContain("--action:        #c94f17");
+    expect(css).toContain("--font-sans: var(--font-parent-sans)");
+    expect(css).toContain("font-family: var(--font-parent-display), var(--font-sans)");
+    expect(css).toContain("border-radius: var(--radius-lg)");
+    expect(css).toContain("background: var(--action)");
+    expect(css).toContain("@media (max-width: 1180px)");
+    expect(css).toContain(".temporary-caregiver-builder input");
+    expect(css).toContain(".admin-calendar-split");
+    expect(css).toContain(".admin-inspector-edit input");
+    expect(layout).toContain("background:#fdf8f1");
+    expect(layout).toContain("background:#1f3a63");
   });
 
   it("keeps the 100 concept scorecard documented and route-integrated", () => {

@@ -76,9 +76,10 @@ async function inspectPage(page, routeName, viewportName) {
 
 async function assertRouteContract(page, routeName) {
   if (routeName === "home") {
-    await page.getByRole("heading", { name: "Stop chasing families. Run the season." }).waitFor();
-    await page.getByRole("link", { name: "Request Team Access" }).first().waitFor();
-    await page.getByText("Example Parent Replay", { exact: true }).waitFor();
+    await page.getByRole("heading", { name: "Your season, organized." }).waitFor();
+    await page.getByRole("link", { name: "Games and field updates" }).waitFor();
+    await page.getByRole("link", { name: "Support local youth sports" }).waitFor();
+    await page.getByRole("link", { name: "Sign in" }).last().waitFor();
     return;
   }
 
