@@ -57,12 +57,73 @@ function responseBadge(value: string) {
   return "warning";
 }
 
+function requiresDeliveryReconciliation(receipt: NotificationReceipt) {
+  return receipt.evidence.requestOutcome === "indeterminate" || Boolean(receipt.evidence.reconciliationRequiredAt);
+}
+
+function transportProviderLabel(receipt: NotificationReceipt) {
+  const provider = receipt.evidence.transportProvider;
+  if (provider === "sendgrid") return "SendGrid";
+  if (provider === "twilio") return "Twilio";
+  if (provider === "pingram") return "Pingram";
+  if (provider === "web_push") return "Web Push";
+  return "Not recorded";
+}
+
+function requestOutcomeLabel(receipt: NotificationReceipt) {
+  const outcome = receipt.evidence.requestOutcome;
+  if (outcome === "provider_accepted") return "Provider accepted";
+  if (outcome === "not_attempted") return "Not attempted";
+  if (outcome === "indeterminate") return "Reconciliation required";
+  if (outcome === "rejected") return "Rejected";
+  if (outcome === "suppressed") return "Suppressed";
+  return "Not recorded";
+}
+
+function deliveryEvidenceBadge(receipt: NotificationReceipt, acknowledge = false) {
+  if (requiresDeliveryReconciliation(receipt)) return "reconciliation required";
+  if (acknowledge && receipt.evidence.acknowledgedAt) return "acknowledged";
+  return receipt.evidence.attemptStatus.replaceAll("_", " ");
+}
+
+function NotificationProviderEvidence({ receipt }: { receipt: NotificationReceipt }) {
+  const reconciliationRequired = requiresDeliveryReconciliation(receipt);
+  return (
+    <>
+      <p className="muted" aria-label="Provider request evidence">
+        Transport: <strong>{transportProviderLabel(receipt)}</strong>
+        {" · "}
+        Request outcome: <strong>{requestOutcomeLabel(receipt)}</strong>
+        {" · "}
+        Reconciliation: <strong>
+          {reconciliationRequired
+            ? shortDate(receipt.evidence.reconciliationRequiredAt)
+            : "Not required"}
+        </strong>
+      </p>
+      {reconciliationRequired ? (
+        <p className="notice warning" role="alert">
+          <strong>Reconciliation required.</strong> The provider result is inconclusive. This is not proof of delivery, and the system will not automatically retry it.
+        </p>
+      ) : null}
+    </>
+  );
+}
+
 export function NotificationEvidenceRail({ receipt }: { receipt: NotificationReceipt }) {
+  const reconciliationRequired = requiresDeliveryReconciliation(receipt);
+  const providerAcceptedAt = reconciliationRequired ? undefined : receipt.evidence.providerAcceptedAt;
+  const deliveredAt = reconciliationRequired ? undefined : receipt.evidence.deliveredAt;
   const milestones = [
     { label: "Draft", at: receipt.createdAt, detail: receipt.notificationStatus },
     { label: "Approved", at: receipt.evidence.approvedAt, detail: receipt.providerApprovalStatus },
-    { label: "Provider accepted", at: receipt.evidence.providerAcceptedAt, detail: receipt.evidence.attemptStatus },
-    { label: "Delivered", at: receipt.evidence.deliveredAt, detail: receipt.evidence.deliveredAt ? "webhook evidence" : "not proved" },
+    { label: "Provider accepted", at: providerAcceptedAt, detail: reconciliationRequired ? "not proved; reconcile first" : receipt.evidence.attemptStatus },
+    ...(reconciliationRequired ? [{
+      label: "Reconciliation required",
+      at: receipt.evidence.reconciliationRequiredAt,
+      detail: "provider result indeterminate"
+    }] : []),
+    { label: "Delivered", at: deliveredAt, detail: deliveredAt ? "webhook evidence" : reconciliationRequired ? "not proved; reconcile first" : "not proved" },
     { label: "Read", at: receipt.evidence.readAt ?? receipt.notificationReadAt, detail: receipt.evidence.readAt || receipt.notificationReadAt ? "read receipt" : "not proved" },
     { label: "Acknowledged", at: receipt.evidence.acknowledgedAt, detail: receipt.evidence.acknowledgedAt ? "recipient action" : "not proved" }
   ];
@@ -84,17 +145,30 @@ export function AdminDeliveryReviewClient({ initialReceipts, message }: {
   message: string;
 }) {
   const [receipts, setReceipts] = useState(initialReceipts);
-  const [filter, setFilter] = useState<"all" | "pending" | "failed" | "proved">("all");
+  const [filter, setFilter] = useState<"all" | "pending" | "failed" | "reconcile" | "proved">("all");
   const [statusMessage, setStatusMessage] = useState(message);
   const [pendingId, setPendingId] = useState("");
   const [isPending, startTransition] = useTransition();
   const visible = receipts.filter((receipt) => {
+    const reconciliationRequired = requiresDeliveryReconciliation(receipt);
     if (filter === "pending") return receipt.providerApprovalStatus === "pending";
-    if (filter === "failed") return receipt.evidence.attemptStatus === "failed" || receipt.notificationStatus === "failed";
-    if (filter === "proved") return Boolean(receipt.evidence.deliveredAt || receipt.evidence.acknowledgedAt);
+    if (filter === "failed") {
+      return !reconciliationRequired && (
+        receipt.evidence.attemptStatus === "failed" || receipt.notificationStatus === "failed"
+      );
+    }
+    if (filter === "reconcile") return reconciliationRequired;
+    if (filter === "proved") {
+      return Boolean(
+        (!reconciliationRequired && receipt.evidence.deliveredAt) ||
+        receipt.evidence.acknowledgedAt
+      );
+    }
     return true;
   });
-  const evidenceCount = receipts.filter((receipt) => receipt.evidence.deliveredAt).length;
+  const evidenceCount = receipts.filter((receipt) => (
+    !requiresDeliveryReconciliation(receipt) && receipt.evidence.deliveredAt
+  )).length;
   const acknowledgmentCount = receipts.filter((receipt) => receipt.evidence.acknowledgedAt).length;
 
   function review(receipt: NotificationReceipt, decision: "approved" | "rejected") {
@@ -111,7 +185,15 @@ export function AdminDeliveryReviewClient({ initialReceipts, message }: {
         ok?: boolean;
         message?: string;
         notification?: { provider_approval_status?: NotificationReceipt["providerApprovalStatus"]; approved_at?: string };
-        attempt?: { id?: string; provider?: "email" | "sms" | "web_push"; status?: NotificationReceipt["evidence"]["attemptStatus"]; attempted_at?: string };
+        attempt?: {
+          id?: string;
+          provider?: "email" | "sms" | "web_push";
+          transport_provider?: NotificationReceipt["evidence"]["transportProvider"];
+          status?: NotificationReceipt["evidence"]["attemptStatus"];
+          request_outcome?: NotificationReceipt["evidence"]["requestOutcome"];
+          reconciliation_required_at?: string;
+          attempted_at?: string;
+        };
       } | null;
       if (result?.ok) {
         setReceipts((current) => current.map((item) => item.notificationId === receipt.notificationId ? {
@@ -121,7 +203,10 @@ export function AdminDeliveryReviewClient({ initialReceipts, message }: {
             ...item.evidence,
             attemptId: result.attempt?.id,
             provider: result.attempt?.provider,
+            transportProvider: result.attempt?.transport_provider,
             attemptStatus: result.attempt?.status ?? (decision === "rejected" ? "suppressed" : "queued"),
+            requestOutcome: result.attempt?.request_outcome,
+            reconciliationRequiredAt: result.attempt?.reconciliation_required_at,
             approvedAt: decision === "approved" ? result.notification?.approved_at ?? new Date().toISOString() : undefined
           }
         } : item));
@@ -145,7 +230,7 @@ export function AdminDeliveryReviewClient({ initialReceipts, message }: {
         <article className="card metric"><span className="muted">Acknowledged</span><strong>{acknowledgmentCount}</strong></article>
       </section>
       <div className="pill-row" aria-label="Delivery evidence filters">
-        {(["all", "pending", "failed", "proved"] as const).map((item) => (
+        {(["all", "pending", "failed", "reconcile", "proved"] as const).map((item) => (
           <button className={filter === item ? "" : "secondary"} key={item} onClick={() => setFilter(item)}>{item}</button>
         ))}
       </div>
@@ -157,9 +242,12 @@ export function AdminDeliveryReviewClient({ initialReceipts, message }: {
                 <span className="eyebrow">{receipt.channel} · {receipt.notificationType.replaceAll("_", " ")}</span>
                 <h2>{receipt.title}</h2>
               </div>
-              <span className={`badge ${responseBadge(receipt.evidence.attemptStatus)}`}>{receipt.evidence.attemptStatus.replaceAll("_", " ")}</span>
+              <span className={`badge ${responseBadge(requiresDeliveryReconciliation(receipt) ? "reconciliation_required" : receipt.evidence.attemptStatus)}`}>
+                {deliveryEvidenceBadge(receipt)}
+              </span>
             </div>
             <p>{receipt.body}</p>
+            <NotificationProviderEvidence receipt={receipt} />
             <NotificationEvidenceRail receipt={receipt} />
             {receipt.evidence.errorMessage ? <p className="notice warning">{receipt.evidence.errorMessage}</p> : null}
             <div className="button-row">
@@ -223,11 +311,12 @@ export function ParentNotificationReceiptsClient({ initialReceipts, message }: {
           <article className="card stack" key={receipt.notificationId}>
             <div className="card-header">
               <div><span className="eyebrow">{receipt.channel}</span><h2>{receipt.title}</h2></div>
-              <span className={`badge ${responseBadge(receipt.evidence.acknowledgedAt ? "acknowledged" : receipt.evidence.attemptStatus)}`}>
-                {receipt.evidence.acknowledgedAt ? "acknowledged" : receipt.evidence.attemptStatus.replaceAll("_", " ")}
+              <span className={`badge ${responseBadge(requiresDeliveryReconciliation(receipt) ? "reconciliation_required" : receipt.evidence.acknowledgedAt ? "acknowledged" : receipt.evidence.attemptStatus)}`}>
+                {deliveryEvidenceBadge(receipt, true)}
               </span>
             </div>
             <p>{receipt.body}</p>
+            <NotificationProviderEvidence receipt={receipt} />
             <NotificationEvidenceRail receipt={receipt} />
             <button
               disabled={isPending || !receipt.evidence.attemptId || Boolean(receipt.evidence.acknowledgedAt)}

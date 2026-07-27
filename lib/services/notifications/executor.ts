@@ -2,6 +2,7 @@ import { createConfiguredNotificationAdapters } from "./adapters";
 import { runNotificationSendWorker } from "./worker";
 import {
   claimQueuedNotificationDeliveries,
+  recheckNotificationDeliveryAuthority,
   recordNotificationDeliveryOutcome
 } from "@/lib/supabase/provider-delivery";
 
@@ -12,7 +13,8 @@ export async function executeApprovedNotificationBatch(input: {
 }) {
   const claimed = await claimQueuedNotificationDeliveries({
     workerId: input.workerId,
-    limit: input.limit
+    limit: input.limit,
+    env: input.env
   });
   if (!claimed.ok) {
     return {
@@ -21,6 +23,7 @@ export async function executeApprovedNotificationBatch(input: {
       attempted: 0,
       sent: 0,
       failed: 0,
+      indeterminate: 0,
       deadLettered: 0,
       outcomes: []
     };
@@ -31,7 +34,12 @@ export async function executeApprovedNotificationBatch(input: {
       const result = await recordNotificationDeliveryOutcome(outcome);
       if (!result.ok) throw new Error(result.message);
     },
-    adapters: createConfiguredNotificationAdapters(input.env)
+    adapters: createConfiguredNotificationAdapters(input.env),
+    authorizeAttempt: (payload) => recheckNotificationDeliveryAuthority({
+      payload,
+      workerId: input.workerId,
+      env: input.env
+    })
   });
   return {
     ok: true,

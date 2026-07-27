@@ -1,8 +1,14 @@
 import { createSupabaseAdminClient } from "./admin";
 import { withSupabaseTimeout } from "./timeout";
-import { buildNotificationIdempotencyKey } from "@/lib/services/notifications/worker";
+import {
+  buildNotificationIdempotencyKey,
+  type NotificationDeliveryAuthorityDecision
+} from "@/lib/services/notifications/worker";
 import type { NotificationDeliveryOutcome, NotificationDeliveryPayload } from "@/lib/services/notifications/types";
 import { featureGateDecision } from "@/lib/services/feature-gates";
+import { pingramDeliveryConfigurationReady } from "@/lib/services/notifications/pingram";
+import { resolveSmsProvider } from "@/lib/services/notifications/sms-provider";
+import { normalizeSmsRecipient } from "@/lib/services/notifications/sms-contact-suppression";
 
 type ProviderDeliveryReviewDecision = "approved" | "rejected";
 type ProviderDeliveryProvider = "email" | "sms" | "web_push";
@@ -14,6 +20,8 @@ type UnsafeSupabase = {
   // Provider approval columns are staged until generated types are refreshed.
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   from(table: string): any;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  rpc(name: string, args: Record<string, unknown>): any;
 };
 
 function adminDb() {
@@ -37,6 +45,7 @@ export function getProviderDeliveryReadiness(
     );
     return {
       configured,
+      transportProvider: "web_push" as const,
       reason: configured
         ? "Web Push VAPID keys are configured; delivery still requires approval and preference checks."
         : "Web Push VAPID keys are missing, so approved attempts stay suppressed."
@@ -44,21 +53,47 @@ export function getProviderDeliveryReadiness(
   }
 
   if (provider === "email") {
-    const configured = Boolean(env.RESEND_API_KEY || env.SENDGRID_API_KEY || env.EMAIL_PROVIDER_API_KEY);
+    const configured = Boolean(env.SENDGRID_API_KEY && env.SENDGRID_FROM_EMAIL);
     return {
       configured,
+      transportProvider: "sendgrid" as const,
       reason: configured
-        ? "Email provider credentials are configured; delivery still requires approval and preference checks."
-        : "Email provider credentials are missing, so approved attempts stay suppressed."
+        ? "SendGrid credentials are configured; delivery still requires approval and preference checks."
+        : "SendGrid credentials are missing, so approved attempts stay suppressed."
     };
   }
 
-  const configured = Boolean(env.TWILIO_ACCOUNT_SID && env.TWILIO_AUTH_TOKEN && (env.TWILIO_MESSAGING_SERVICE_SID || env.TWILIO_FROM_NUMBER));
+  const smsProvider = resolveSmsProvider(env);
+  if (smsProvider === "pingram") {
+    const configured = pingramDeliveryConfigurationReady(env);
+    return {
+      configured,
+      transportProvider: "pingram" as const,
+      reason: configured
+        ? "Pingram send, sender, webhook, and STOP-suppression configuration is present; delivery still requires approval and preference checks."
+        : "Pingram is selected but its send, sender, webhook, or STOP-suppression configuration is incomplete, so approved attempts stay suppressed."
+    };
+  }
+
+  if (smsProvider === "twilio") {
+    const configured = Boolean(
+      env.TWILIO_ACCOUNT_SID &&
+      env.TWILIO_AUTH_TOKEN &&
+      env.TWILIO_MESSAGING_SERVICE_SID
+    );
+    return {
+      configured,
+      transportProvider: "twilio" as const,
+      reason: configured
+        ? "Twilio rollback credentials are configured; delivery still requires approval, urgency, and preference checks."
+        : "Twilio is selected but its Messaging Service credentials are missing, so approved attempts stay suppressed."
+    };
+  }
+
   return {
-    configured,
-    reason: configured
-      ? "SMS provider credentials are configured; delivery still requires approval, urgency, and preference checks."
-      : "SMS provider credentials are missing, so approved attempts stay suppressed."
+    configured: false,
+    transportProvider: null,
+    reason: "SMS_PROVIDER must explicitly select pingram or twilio before approved attempts can leave suppression."
   };
 }
 
@@ -97,14 +132,16 @@ async function recipientAllowsProviderDelivery(db: UnsafeSupabase, notification:
   channel: ProviderDeliveryChannel;
   notification_type: string;
 }) {
-  const { data } = await withSupabaseTimeout(db
+  const { data, error } = await withSupabaseTimeout(db
     .from("notification_preferences")
     .select("id,organization_id,team_id,enabled")
     .eq("user_id", notification.recipient_user_id)
     .eq("channel", notification.channel)
     .eq("notification_type", notification.notification_type), 7000) as {
       data: Array<{ id: string; organization_id: string | null; team_id: string | null; enabled: boolean }> | null;
+      error: { message?: string } | null;
     };
+  if (error) throw new Error("Notification preference authority is unavailable.");
 
   const matchingPreferences = (data ?? []).filter((preference) => (
     preference.team_id === notification.team_id ||
@@ -158,7 +195,6 @@ export async function reviewNotificationDelivery(input: {
       return { ok: false, message: "Only assigned coaches or organization admins can approve provider delivery." };
     }
 
-    const now = new Date().toISOString();
     const preferencesAllowed = await recipientAllowsProviderDelivery(db, notification);
     const providerReadiness = getProviderDeliveryReadiness(input.provider);
     const { data: organization } = await withSupabaseTimeout(db
@@ -187,48 +223,52 @@ export async function reviewNotificationDelivery(input: {
       suppressionCode,
       providerReadiness.configured ? providerGate.reason : providerReadiness.reason
     );
-    const [{ data: updatedNotification }, { data: attempt }] = await withSupabaseTimeout(Promise.all([
-      db.from("notifications")
-        .update({
-          provider_approval_status: input.decision,
-          approved_by_user_id: input.actorUserId,
-          approved_at: now
-        })
-        .eq("id", notification.id)
-        .select("id,provider_approval_status,approved_at")
-        .single(),
-      db.from("notification_delivery_attempts")
-        .insert({
-          notification_id: notification.id,
-          provider: input.provider,
-          channel: notification.channel,
-          status: attemptStatus,
-          idempotency_key: buildNotificationIdempotencyKey({
-            notificationId: notification.id,
-            provider: input.provider
-          }),
-          next_attempt_at: now,
-          retry_count: 0,
-          max_retries: DEFAULT_DELIVERY_MAX_RETRIES,
-          approved_at: input.decision === "approved" ? now : null,
-          error_code: suppressionCode,
-          error_message: suppressionMessage
-        })
-        .select("id,provider,channel,status,attempted_at,idempotency_key,next_attempt_at,retry_count,max_retries")
-        .single()
-    ]), 7000) as [
-      { data: { id: string; provider_approval_status: string; approved_at: string } | null },
-      { data: { id: string; provider: string; channel: string; status: string; attempted_at: string; idempotency_key: string | null; next_attempt_at: string | null; retry_count: number; max_retries: number } | null }
-    ];
-
-    await withSupabaseTimeout(db.from("audit_events").insert({
-      organization_id: notification.organization_id,
-      actor_user_id: input.actorUserId,
-      action: `provider_delivery_${input.decision}`,
-      target_type: "notification",
-      target_id: notification.id,
-      summary: `${input.provider} delivery ${input.decision}; attempt status ${attemptStatus}.`
-    }), 7000);
+    const { data: transaction, error: transactionError } = await withSupabaseTimeout(
+      db.rpc("review_notification_delivery_transaction", {
+        p_notification_id: notification.id,
+        p_actor_user_id: input.actorUserId,
+        p_decision: input.decision,
+        p_provider: input.provider,
+        p_transport_provider: providerReadiness.transportProvider,
+        p_attempt_status: attemptStatus,
+        p_request_outcome: attemptStatus === "queued" ? "not_attempted" : "suppressed",
+        p_error_code: suppressionCode,
+        p_error_message: suppressionMessage
+      }),
+      7000
+    ) as {
+      data: {
+        ok?: boolean;
+        code?: string;
+        notification?: {
+          id: string;
+          provider_approval_status: string;
+          approved_at: string;
+        };
+        attempt?: {
+          id: string;
+          provider: string;
+          transport_provider: string | null;
+          channel: string;
+          status: string;
+          request_outcome: string | null;
+          attempted_at: string;
+          idempotency_key: string | null;
+          next_attempt_at: string | null;
+          retry_count: number;
+          max_retries: number;
+        };
+      } | null;
+      error: { message?: string } | null;
+    };
+    if (transactionError || !transaction?.ok || !transaction.notification || !transaction.attempt) {
+      return {
+        ok: false,
+        message: transaction?.code === "review_conflict"
+          ? "This provider delivery already has a different review decision."
+          : "Provider delivery review could not be committed atomically."
+      };
+    }
 
     return {
       ok: true,
@@ -237,8 +277,8 @@ export async function reviewNotificationDelivery(input: {
         : input.decision === "approved"
           ? "Provider delivery approved but suppressed by provider readiness or recipient preferences. No external send occurred."
           : "Provider delivery rejected and logged as suppressed.",
-      notification: updatedNotification,
-      attempt
+      notification: transaction.notification,
+      attempt: transaction.attempt
     };
   } catch {
     return { ok: false, message: "Provider delivery review could not reach Supabase." };
@@ -249,12 +289,19 @@ type DeliveryAttemptRow = {
   id: string;
   notification_id: string;
   provider: ProviderDeliveryProvider;
+  transport_provider: NotificationDeliveryPayload["transportProvider"] | null;
   channel: ProviderDeliveryChannel;
   status: ProviderDeliveryAttemptStatus;
+  request_outcome: NotificationDeliveryOutcome["requestOutcome"] | null;
+  approved_at: string | null;
   idempotency_key: string | null;
   retry_count: number | null;
   max_retries: number | null;
   next_attempt_at: string | null;
+  reconciliation_required_at: string | null;
+  dead_lettered_at: string | null;
+  locked_at: string | null;
+  locked_by: string | null;
   notifications: {
     id: string;
     organization_id: string;
@@ -262,24 +309,41 @@ type DeliveryAttemptRow = {
     team_id: string;
     notification_type: string;
     channel: ProviderDeliveryChannel;
+    status: string;
+    provider_approval_status: string;
+    approved_at: string | null;
     title: string;
     body: string;
   } | null;
 };
 
 async function loadRecipientForNotification(db: UnsafeSupabase, notification: NonNullable<DeliveryAttemptRow["notifications"]>) {
-  const [{ data: profile }, { data: subscriptions }] = await withSupabaseTimeout(Promise.all([
-    db.from("profiles").select("id,email,phone").eq("id", notification.recipient_user_id).maybeSingle(),
-    db.from("push_subscriptions")
+  const { data: profile, error: profileError } = await withSupabaseTimeout(
+    db.from("profiles")
+      .select("id,email,phone")
+      .eq("id", notification.recipient_user_id)
+      .maybeSingle(),
+    7000
+  ) as {
+    data: { id: string; email: string | null; phone: string | null } | null;
+    error: { message?: string } | null;
+  };
+  if (profileError) throw new Error("Recipient contact authority is unavailable.");
+
+  let subscriptions: Array<{ endpoint: string; p256dh: string; auth_secret: string }> | null = null;
+  if (notification.channel === "push") {
+    const subscriptionResult = await withSupabaseTimeout(db.from("push_subscriptions")
       .select("endpoint,p256dh,auth_secret")
       .eq("user_id", notification.recipient_user_id)
       .eq("enabled", true)
       .order("updated_at", { ascending: false })
-      .limit(1)
-  ]), 7000) as [
-    { data: { id: string; email: string | null; phone: string | null } | null },
-    { data: Array<{ endpoint: string; p256dh: string; auth_secret: string }> | null }
-  ];
+      .limit(1), 7000) as {
+        data: Array<{ endpoint: string; p256dh: string; auth_secret: string }> | null;
+        error: { message?: string } | null;
+      };
+    if (subscriptionResult.error) throw new Error("Recipient contact authority is unavailable.");
+    subscriptions = subscriptionResult.data;
+  }
 
   return {
     userId: notification.recipient_user_id,
@@ -291,22 +355,146 @@ async function loadRecipientForNotification(db: UnsafeSupabase, notification: No
   };
 }
 
-async function mapAttemptPayload(db: UnsafeSupabase, attempt: DeliveryAttemptRow): Promise<NotificationDeliveryPayload | null> {
-  if (!attempt.notifications) return null;
+async function suppressClaimedAttempt(
+  db: UnsafeSupabase,
+  attemptId: string,
+  errorCode: string,
+  errorMessage: string
+) {
+  await withSupabaseTimeout(db
+    .from("notification_delivery_attempts")
+    .update({
+      status: "suppressed",
+      request_outcome: "suppressed",
+      error_code: errorCode,
+      error_message: errorMessage,
+      locked_at: null,
+      locked_by: null,
+      reconciliation_required_at: null
+    })
+    .eq("id", attemptId), 7000);
+}
+
+async function mapAttemptPayload(
+  db: UnsafeSupabase,
+  attempt: DeliveryAttemptRow,
+  env: Partial<NodeJS.ProcessEnv>
+): Promise<NotificationDeliveryPayload | null> {
+  if (!attempt.notifications) {
+    await suppressClaimedAttempt(
+      db,
+      attempt.id,
+      "notification_missing",
+      "Delivery attempt was suppressed because its notification record is unavailable."
+    );
+    return null;
+  }
   const notification = attempt.notifications;
-  const { data: organization } = await withSupabaseTimeout(db
+  if (
+    notification.provider_approval_status !== "approved" ||
+    !notification.approved_at ||
+    !attempt.approved_at ||
+    attempt.request_outcome !== "not_attempted" ||
+    attempt.reconciliation_required_at ||
+    attempt.dead_lettered_at
+  ) {
+    await suppressClaimedAttempt(
+      db,
+      attempt.id,
+      "durable_provider_approval_missing",
+      "Delivery was suppressed because its durable approval chain is incomplete or no longer sendable."
+    );
+    return null;
+  }
+  if (providerChannel(attempt.provider) !== notification.channel) {
+    await suppressClaimedAttempt(
+      db,
+      attempt.id,
+      "provider_channel_mismatch",
+      "Delivery was suppressed because the approved provider does not match the notification channel."
+    );
+    return null;
+  }
+  const { data: organization, error: organizationError } = await withSupabaseTimeout(db
     .from("organizations")
     .select("provider_sends_enabled")
     .eq("id", notification.organization_id)
     .maybeSingle(), 7000) as {
       data: { provider_sends_enabled: boolean } | null;
+      error: { message?: string } | null;
     };
+  if (organizationError) throw new Error("Organization send authority is unavailable.");
+  if (attempt.provider === "sms" && !attempt.transport_provider) {
+    await suppressClaimedAttempt(
+      db,
+      attempt.id,
+      "sms_transport_unbound",
+      "SMS delivery was suppressed because the approved attempt is not bound to a transport provider."
+    );
+    return null;
+  }
+  if (
+    attempt.provider === "sms" &&
+    attempt.transport_provider !== resolveSmsProvider(env)
+  ) {
+    await suppressClaimedAttempt(
+      db,
+      attempt.id,
+      "sms_transport_selection_changed",
+      "Delivery was suppressed because the approved SMS transport is no longer selected."
+    );
+    return null;
+  }
+
+  const preferencesAllowed = await recipientAllowsProviderDelivery(db, notification);
+  if (!preferencesAllowed) {
+    await suppressClaimedAttempt(
+      db,
+      attempt.id,
+      "recipient_preference_disabled",
+      "Delivery was suppressed because the recipient preference is no longer enabled."
+    );
+    return null;
+  }
+
+  const recipient = await loadRecipientForNotification(db, notification);
+  if (attempt.provider === "sms") {
+    const phone = normalizeSmsRecipient(recipient.phone);
+    if (!phone) {
+      await suppressClaimedAttempt(
+        db,
+        attempt.id,
+        "sms_suppression_authority_unavailable",
+        "SMS delivery was suppressed because recipient or STOP-suppression authority is unavailable."
+      );
+      return null;
+    }
+    const { data: suppression } = await withSupabaseTimeout(db
+      .from("sms_contact_suppressions")
+      .select("state")
+      .eq("organization_id", notification.organization_id)
+      .eq("user_id", notification.recipient_user_id)
+      .maybeSingle(), 7000) as {
+        data: { state: "suppressed" | "subscribed" } | null;
+      };
+    if (suppression?.state === "suppressed") {
+      await suppressClaimedAttempt(
+        db,
+        attempt.id,
+        "sms_contact_suppressed",
+        "SMS delivery was suppressed by verified provider opt-out evidence."
+      );
+      return null;
+    }
+  }
+
   const retryCount = attempt.retry_count ?? 0;
   const maxRetries = attempt.max_retries ?? DEFAULT_DELIVERY_MAX_RETRIES;
   return {
     attemptId: attempt.id,
     notificationId: notification.id,
     provider: attempt.provider,
+    transportProvider: attempt.transport_provider ?? undefined,
     channel: attempt.channel,
     organizationId: notification.organization_id,
     organizationProviderSendsEnabled: organization?.provider_sends_enabled === true,
@@ -314,7 +502,7 @@ async function mapAttemptPayload(db: UnsafeSupabase, attempt: DeliveryAttemptRow
     title: notification.title,
     body: notification.body,
     notificationType: notification.notification_type,
-    recipient: await loadRecipientForNotification(db, notification),
+    recipient,
     idempotencyKey: attempt.idempotency_key ?? buildNotificationIdempotencyKey({
       notificationId: notification.id,
       provider: attempt.provider
@@ -324,10 +512,226 @@ async function mapAttemptPayload(db: UnsafeSupabase, attempt: DeliveryAttemptRow
   };
 }
 
+function denyDeliveryAuthority(
+  errorCode: string,
+  errorMessage: string
+): NotificationDeliveryAuthorityDecision {
+  return {
+    allowed: false,
+    errorCode,
+    errorMessage
+  };
+}
+
+function expectedTransportProvider(
+  provider: ProviderDeliveryProvider,
+  env: Partial<NodeJS.ProcessEnv>
+): NotificationDeliveryPayload["transportProvider"] | null {
+  if (provider === "email") return "sendgrid";
+  if (provider === "web_push") return "web_push";
+  return resolveSmsProvider(env);
+}
+
+function deliveryBindingMatches(
+  attempt: DeliveryAttemptRow,
+  payload: NotificationDeliveryPayload
+) {
+  const notification = attempt.notifications;
+  return Boolean(
+    notification &&
+    attempt.id === payload.attemptId &&
+    attempt.notification_id === payload.notificationId &&
+    attempt.provider === payload.provider &&
+    attempt.transport_provider === payload.transportProvider &&
+    attempt.channel === payload.channel &&
+    attempt.idempotency_key === payload.idempotencyKey &&
+    notification.id === payload.notificationId &&
+    notification.organization_id === payload.organizationId &&
+    notification.recipient_user_id === payload.recipient.userId &&
+    notification.team_id === payload.teamId &&
+    notification.notification_type === payload.notificationType &&
+    notification.channel === payload.channel &&
+    notification.title === payload.title &&
+    notification.body === payload.body
+  );
+}
+
+/**
+ * Re-loads send authority after a batch claim and immediately before the
+ * provider adapter executes. A denial is returned as a suppressible worker
+ * outcome so no provider call occurs and the attempt remains auditable.
+ */
+export async function recheckNotificationDeliveryAuthority(input: {
+  payload: NotificationDeliveryPayload;
+  workerId: string;
+  env?: Partial<NodeJS.ProcessEnv>;
+}): Promise<NotificationDeliveryAuthorityDecision> {
+  const workerId = input.workerId.trim();
+  if (!workerId) {
+    return denyDeliveryAuthority(
+      "delivery_worker_identity_missing",
+      "Delivery was suppressed because the claiming worker identity is unavailable."
+    );
+  }
+
+  try {
+    const db = adminDb();
+    const env = input.env ?? process.env;
+    const { data: attempt, error: attemptError } = await withSupabaseTimeout(db
+      .from("notification_delivery_attempts")
+      .select("id,notification_id,provider,transport_provider,channel,status,request_outcome,approved_at,idempotency_key,retry_count,max_retries,next_attempt_at,reconciliation_required_at,dead_lettered_at,locked_at,locked_by,notifications(id,organization_id,recipient_user_id,team_id,notification_type,channel,status,provider_approval_status,approved_at,title,body)")
+      .eq("id", input.payload.attemptId)
+      .maybeSingle(), 7000) as {
+        data: DeliveryAttemptRow | null;
+        error: { message?: string } | null;
+      };
+
+    if (attemptError) throw new Error("Delivery attempt authority is unavailable.");
+    if (!attempt) {
+      return denyDeliveryAuthority(
+        "delivery_attempt_missing",
+        "Delivery was suppressed because the claimed attempt no longer exists."
+      );
+    }
+    if (
+      attempt.status !== "queued" ||
+      attempt.request_outcome !== "not_attempted" ||
+      !attempt.locked_at ||
+      attempt.locked_by !== workerId ||
+      attempt.reconciliation_required_at ||
+      attempt.dead_lettered_at
+    ) {
+      return denyDeliveryAuthority(
+        "delivery_attempt_not_sendable",
+        "Delivery was suppressed because the exact claimed attempt is no longer sendable."
+      );
+    }
+    if (!deliveryBindingMatches(attempt, input.payload)) {
+      return denyDeliveryAuthority(
+        "delivery_approval_binding_changed",
+        "Delivery was suppressed because approved content, recipient, scope, or provider binding changed."
+      );
+    }
+
+    const notification = attempt.notifications;
+    if (
+      !notification ||
+      notification.status !== "pending" ||
+      notification.provider_approval_status !== "approved" ||
+      !notification.approved_at ||
+      !attempt.approved_at ||
+      notification.approved_at !== attempt.approved_at
+    ) {
+      return denyDeliveryAuthority(
+        "durable_provider_approval_missing",
+        "Delivery was suppressed because its durable notification and attempt approval chain is incomplete."
+      );
+    }
+    if (providerChannel(attempt.provider) !== notification.channel) {
+      return denyDeliveryAuthority(
+        "provider_channel_mismatch",
+        "Delivery was suppressed because the approved provider does not match the notification channel."
+      );
+    }
+
+    const expectedTransport = expectedTransportProvider(attempt.provider, env);
+    if (!expectedTransport || attempt.transport_provider !== expectedTransport) {
+      return denyDeliveryAuthority(
+        attempt.provider === "sms"
+          ? "sms_transport_selection_changed"
+          : "provider_transport_binding_changed",
+        "Delivery was suppressed because the currently selected provider transport does not match the approved attempt."
+      );
+    }
+
+    const [
+      organizationResult,
+      preferencesAllowed,
+      recipient,
+      suppressionResult
+    ] = await Promise.all([
+      withSupabaseTimeout(db
+        .from("organizations")
+        .select("provider_sends_enabled")
+        .eq("id", notification.organization_id)
+        .maybeSingle(), 7000) as Promise<{
+          data: { provider_sends_enabled: boolean } | null;
+          error: { message?: string } | null;
+        }>,
+      recipientAllowsProviderDelivery(db, notification),
+      loadRecipientForNotification(db, notification),
+      attempt.provider === "sms"
+        ? withSupabaseTimeout(db
+          .from("sms_contact_suppressions")
+          .select("state")
+          .eq("organization_id", notification.organization_id)
+          .eq("user_id", notification.recipient_user_id)
+          .maybeSingle(), 7000) as Promise<{
+            data: { state: "suppressed" | "subscribed" } | null;
+            error: { message?: string } | null;
+          }>
+        : Promise.resolve({
+          data: null,
+          error: null
+        })
+    ]);
+
+    if (organizationResult.error || suppressionResult.error) {
+      throw new Error("Current delivery authority is unavailable.");
+    }
+    if (organizationResult.data?.provider_sends_enabled !== true) {
+      return denyDeliveryAuthority(
+        "organization_provider_sends_disabled",
+        "Delivery was suppressed because provider sends are currently disabled for this organization."
+      );
+    }
+    if (!preferencesAllowed) {
+      return denyDeliveryAuthority(
+        "recipient_preference_disabled",
+        "Delivery was suppressed because the recipient preference is currently disabled."
+      );
+    }
+    if (suppressionResult.data?.state === "suppressed") {
+      return denyDeliveryAuthority(
+        "sms_contact_suppressed",
+        "Delivery was suppressed by current verified SMS opt-out evidence."
+      );
+    }
+    if (
+      (attempt.provider === "email" && !recipient.email?.trim()) ||
+      (attempt.provider === "sms" && !normalizeSmsRecipient(recipient.phone)) ||
+      (
+        attempt.provider === "web_push" &&
+        (!recipient.pushEndpoint || !recipient.pushP256dh || !recipient.pushAuth)
+      )
+    ) {
+      return denyDeliveryAuthority(
+        "recipient_contact_unavailable",
+        "Delivery was suppressed because the recipient's current provider contact is unavailable."
+      );
+    }
+
+    return {
+      allowed: true,
+      payload: {
+        ...input.payload,
+        organizationProviderSendsEnabled: true,
+        recipient
+      }
+    };
+  } catch {
+    return denyDeliveryAuthority(
+      "delivery_authority_unavailable",
+      "Delivery was suppressed because current send authority could not be verified."
+    );
+  }
+}
+
 export async function claimQueuedNotificationDeliveries(input: {
   workerId: string;
   limit?: number;
   now?: string;
+  env?: Partial<NodeJS.ProcessEnv>;
 }) {
   const workerId = input.workerId.trim();
   if (!workerId) return { ok: false, message: "Notification delivery worker id is required.", attempts: [] as NotificationDeliveryPayload[] };
@@ -335,9 +739,10 @@ export async function claimQueuedNotificationDeliveries(input: {
   try {
     const db = adminDb();
     const now = input.now ?? new Date().toISOString();
+    const env = input.env ?? process.env;
     const { data, error } = await withSupabaseTimeout(db
       .from("notification_delivery_attempts")
-      .select("id,notification_id,provider,channel,status,idempotency_key,retry_count,max_retries,next_attempt_at,notifications(id,organization_id,recipient_user_id,team_id,notification_type,channel,title,body)")
+      .select("id,notification_id,provider,transport_provider,channel,status,request_outcome,approved_at,idempotency_key,retry_count,max_retries,next_attempt_at,reconciliation_required_at,dead_lettered_at,locked_at,locked_by,notifications(id,organization_id,recipient_user_id,team_id,notification_type,channel,status,provider_approval_status,approved_at,title,body)")
       .eq("status", "queued")
       .is("locked_at", null)
       .lte("next_attempt_at", now)
@@ -357,11 +762,11 @@ export async function claimQueuedNotificationDeliveries(input: {
         .eq("id", attempt.id)
         .eq("status", "queued")
         .is("locked_at", null)
-        .select("id,notification_id,provider,channel,status,idempotency_key,retry_count,max_retries,next_attempt_at,notifications(id,organization_id,recipient_user_id,team_id,notification_type,channel,title,body)")
+        .select("id,notification_id,provider,transport_provider,channel,status,request_outcome,approved_at,idempotency_key,retry_count,max_retries,next_attempt_at,reconciliation_required_at,dead_lettered_at,locked_at,locked_by,notifications(id,organization_id,recipient_user_id,team_id,notification_type,channel,status,provider_approval_status,approved_at,title,body)")
         .maybeSingle(), 7000) as { data: DeliveryAttemptRow | null };
 
       if (!lockedAttempt) continue;
-      const payload = await mapAttemptPayload(db, lockedAttempt);
+      const payload = await mapAttemptPayload(db, lockedAttempt, env);
       if (payload) claimed.push(payload);
     }
 
@@ -378,18 +783,22 @@ export async function claimQueuedNotificationDeliveries(input: {
 export async function recordNotificationDeliveryOutcome(outcome: NotificationDeliveryOutcome) {
   try {
     const db = adminDb();
+    const recordedAt = new Date().toISOString();
     const storedStatus: ProviderDeliveryAttemptStatus = outcome.status === "failed" && outcome.nextAttemptAt ? "queued" : outcome.status;
     const updatePayload = {
       status: storedStatus,
+      transport_provider: outcome.transportProvider ?? null,
+      request_outcome: outcome.requestOutcome ?? null,
       provider_message_id: outcome.providerMessageId ?? null,
       provider_status: outcome.providerStatus ?? null,
       error_code: outcome.errorCode ?? null,
       error_message: outcome.errorMessage ?? null,
       retry_count: outcome.retryCount,
-      next_attempt_at: outcome.nextAttemptAt ?? new Date().toISOString(),
+      next_attempt_at: outcome.nextAttemptAt ?? recordedAt,
       dead_lettered_at: outcome.deadLetteredAt ?? null,
+      reconciliation_required_at: outcome.requestOutcome === "indeterminate" ? recordedAt : null,
       provider_response_json: outcome.providerResponse ?? {},
-      provider_accepted_at: outcome.status === "sent" ? new Date().toISOString() : null,
+      provider_accepted_at: outcome.requestOutcome === "provider_accepted" ? recordedAt : null,
       locked_at: null,
       locked_by: null
     };
@@ -406,16 +815,18 @@ export async function recordNotificationDeliveryOutcome(outcome: NotificationDel
 
     if (error || !attempt) return { ok: false, message: "Notification delivery outcome could not be recorded." };
 
-    if (outcome.status === "sent") {
-      await withSupabaseTimeout(db.from("notifications").update({ status: "sent", sent_at: new Date().toISOString() }).eq("id", attempt.notification_id), 7000);
+    if (outcome.requestOutcome === "provider_accepted") {
+      await withSupabaseTimeout(db.from("notifications").update({ status: "sent", sent_at: recordedAt }).eq("id", attempt.notification_id), 7000);
     } else if (outcome.deadLetteredAt) {
       await withSupabaseTimeout(db.from("notifications").update({ status: "failed" }).eq("id", attempt.notification_id), 7000);
     }
 
     return {
       ok: true,
-      message: outcome.status === "sent"
+      message: outcome.requestOutcome === "provider_accepted"
         ? "Provider acceptance recorded. Verified delivery still requires provider webhook evidence."
+        : outcome.requestOutcome === "indeterminate"
+          ? "Provider outcome is indeterminate. Automatic retry is blocked pending reconciliation."
         : "Notification delivery attempt outcome recorded.",
       attempt
     };

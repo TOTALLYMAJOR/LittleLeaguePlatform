@@ -178,7 +178,7 @@ Every gated capability requires its environment switch and the matching organiza
 | Capability | Environment switch | Organization column | Additional requirement |
 | --- | --- | --- | --- |
 | Offline replay | `OFFLINE_WRITES_ENABLED`; client UI also uses `NEXT_PUBLIC_OFFLINE_WRITES_ENABLED` | `offline_writes_enabled` | Session-derived context, idempotency receipt, current record and schedule versions. |
-| Email/SMS/Web Push | `PROVIDER_SENDS_ENABLED` | `provider_sends_enabled` | Human approval, consent/preference evaluation, QA recipient allowlist, provider credentials, verified webhook handling. |
+| Email/SMS/Web Push | `PROVIDER_SENDS_ENABLED` | `provider_sends_enabled` | Human approval, consent/preference evaluation, QA recipient allowlist or explicit production approval, provider credentials/readiness, verified webhook handling, and durable suppression. |
 | Private media | `MEDIA_UPLOADS_ENABLED` | `media_uploads_enabled` | `MEDIA_SCAN_ADAPTER_READY=true`, private Storage/RLS, clean scan evidence, consent, human family release. |
 | Stripe | `PAYMENTS_ENABLED` | `payments_enabled` | Connect Standard account readiness, restricted server key, signed webhook, replay-safe event record. |
 
@@ -187,13 +187,51 @@ High-impact archive previews also require server-only `IMPACT_PREVIEW_SECRET`. D
 Provider-specific server variables are read only by their adapters:
 
 - SendGrid: `SENDGRID_API_KEY`, `SENDGRID_FROM_EMAIL`, and webhook verification key.
-- Twilio: account/auth credentials and `TWILIO_MESSAGING_SERVICE_SID`.
+- Pingram SMS: exact `SMS_PROVIDER=pingram`, `PINGRAM_API_KEY`, an approved `PINGRAM_API_BASE_URL`, sender configuration, `PINGRAM_WEBHOOK_SECRET`, `PINGRAM_CONTACT_DIGEST_SECRET`, and `PINGRAM_SMS_SENDER_READY=true`.
+- Twilio SMS: rollback only when `SMS_PROVIDER=twilio`, with account/auth credentials and `TWILIO_MESSAGING_SERVICE_SID`.
 - Web Push: VAPID subject/public/private keys.
 - Stripe: restricted/test server key and endpoint webhook secret.
 - Media scanner: `MEDIA_SCAN_ENDPOINT`, `MEDIA_SCAN_TOKEN`, and `MEDIA_SCAN_PROVIDER`.
 - Internal notification worker: `NOTIFICATION_WORKER_TOKEN`.
 
 Keep production execution disabled until sandbox/allowlist tests, duplicate-webhook tests, failure/retry behavior, RLS, hosted configuration, cost controls, and monitoring are proven. Provider acceptance is not delivery; Checkout return is not payment confirmation; upload completion is not family release.
+
+## Pingram SMS Transport
+
+Current state on 2026-07-27: Pingram is the intended SMS transport in code, but no hosted Pingram secrets are configured and no live SMS has been sent. Twilio remains an explicit rollback transport only. Do not treat a local API key, adapter tests, a queued attempt, provider acceptance, or a deployed webhook route as delivery proof.
+
+The worker selects SMS transport only from the exact server value `SMS_PROVIDER=pingram` or `SMS_PROVIDER=twilio`; a missing or unknown value remains suppressed. Pingram also requires all general provider gates plus its own readiness:
+
+```bash
+SMS_PROVIDER=pingram
+PINGRAM_API_KEY=<server-only key>
+PINGRAM_API_BASE_URL=https://api.pingram.io
+PINGRAM_FROM_NUMBER=<approved E.164 sender when required>
+PINGRAM_SMS_TYPE=leaguepilot_transactional_sms
+PINGRAM_WEBHOOK_SECRET=<server-only webhook secret>
+PINGRAM_CONTACT_DIGEST_SECRET=<server-only HMAC secret, at least 32 characters>
+PINGRAM_SMS_SENDER_READY=false
+
+PROVIDER_SENDS_ENABLED=false
+PROVIDER_DELIVERY_MODE=qa
+PROVIDER_PRODUCTION_APPROVED=false
+PROVIDER_QA_RECIPIENT_ALLOWLIST=<explicit QA recipients only>
+```
+
+`PINGRAM_SMS_SENDER_READY` is a human-controlled readiness declaration; change it only after the selected Pingram workspace, sender, consent source, and webhook target have been reviewed. Keep `PROVIDER_SENDS_ENABLED=false` and each organization’s `provider_sends_enabled=false` until the intended environment has the transport-safety migration, signed-webhook proof, recipient preference and opt-in proof, a narrow QA allowlist, cost controls, and delivery reconciliation.
+
+Pingram posts signed events to `/api/provider-webhooks/pingram`. The route verifies the signature against the untouched raw body before parsing, rejects stale or malformed evidence, and derives lifecycle-scoped replay keys because Pingram may reuse its callback tracking identity across delivery states. A short database processing lease prevents concurrent duplicate handling, and a fast callback stays pending until its outbound tracking ID is recorded and reconciled. Verified `SMS_DELIVERED` and `SMS_FAILED` events update delivery evidence without collapsing provider acceptance, delivery, read, or recipient acknowledgment. Verified `SMS_UNSUBSCRIBE` and `SMS_SUBSCRIBE` events atomically persist organization/user STOP/START state using a keyed contact fingerprint rather than a raw phone number. STOP disables both organization- and team-scoped SMS preferences in that organization. The suppression decision is keyed to organization/user, so a phone change or digest-key rotation cannot silently bypass it. START clears only the provider STOP suppression and never silently opts a family back in. `SMS_INBOUND` is evidence only and does not trigger an automated reply.
+
+Pingram requests are sent once. A timeout, connection error, server-error response, oversized response, or malformed successful response is indeterminate because the provider may have accepted the request. The attempt is marked for reconciliation and is not automatically retried. Resolve it from a verified webhook or provider-console evidence before any manual retry so one family does not receive a duplicate message.
+
+Activation sequence:
+
+1. Apply and read back `supabase/migrations/20260727223340_pingram_sms_transport_safety.sql`, `supabase/migrations/20260727224549_pingram_sms_execution_authority.sql`, and `supabase/migrations/20260727230627_pingram_terminal_reconciliation.sql` in the named non-production environment.
+2. Configure Pingram secrets server-side, register the exact hosted webhook URL, and leave both provider-send gates off.
+3. Prove valid, invalid, stale, duplicate, delivered, failed, STOP, START, and unmatched webhook cases without real-family data.
+4. Set `PINGRAM_SMS_SENDER_READY=true`, keep `PROVIDER_DELIVERY_MODE=qa`, add only controlled test recipients, and enable the environment plus one test organization for a reviewed sandbox send.
+5. Reconcile provider acceptance, verified delivery/failure, local suppression, audit evidence, and cost/volume monitoring.
+6. Treat production activation as a separate approval: set `PROVIDER_DELIVERY_MODE=production` and `PROVIDER_PRODUCTION_APPROVED=true` only with an approved sender, consent/opt-out process, incident owner, and rollback plan.
 
 ## Prompt Workflow Companion
 
@@ -255,4 +293,4 @@ npm run supabase:oauth -- --apply
 
 The script derives the project ref from `SUPABASE_PROJECT_REF` or `NEXT_PUBLIC_SUPABASE_URL`, preserves existing redirect allow-list entries, adds the LeaguePilot callback URLs, and enables the Google/Facebook providers without printing secrets. The Google and Facebook developer consoles must also use the Supabase provider callback URL: `https://<project-ref>.supabase.co/auth/v1/callback`.
 
-For tenant onboarding, do not rely on anonymous raw signup emails as the only admin path until Supabase Auth SMTP/quota limits are configured and proven. Use existing admin accounts, QA/admin-created users, invite records, or the reviewed registration-approval flow for tenant setup. Live email/SMS/Web Push notifications remain draft/internal records until a provider-send worker, provider adapters, webhooks, suppression, retries, and hosted proof are implemented.
+For tenant onboarding, do not rely on anonymous raw signup emails as the only admin path until Supabase Auth SMTP/quota limits are configured and proven. Use existing admin accounts, QA/admin-created users, invite records, or the reviewed registration-approval flow for tenant setup. Live email/SMS/Web Push notifications remain draft/internal records until the intended provider is explicitly selected and its consent, suppression, allowlist, webhook, reconciliation, hosted configuration, and operational proof all pass.

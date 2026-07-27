@@ -42,6 +42,12 @@ describe("Supabase RLS policy coverage", () => {
   const rlsAuthInitplanOptimization = migration(
     "20260726182645_optimize_rls_auth_initplans.sql"
   );
+  const pingramSmsTransportSafety = migration(
+    "20260727223340_pingram_sms_transport_safety.sql"
+  );
+  const pingramSmsExecutionAuthority = migration(
+    "20260727224549_pingram_sms_execution_authority.sql"
+  );
   const packageJson = readFileSync(join(process.cwd(), "package.json"), "utf8");
   const rlsProof = readFileSync(join(process.cwd(), "scripts", "verify-rls-boundaries.mjs"), "utf8");
   const migrationPush = readFileSync(join(process.cwd(), "scripts", "supabase-push.mjs"), "utf8");
@@ -107,6 +113,47 @@ describe("Supabase RLS policy coverage", () => {
     expect(providerDeliveryApproval).toContain("'approved'");
     expect(providerDeliveryApproval).toContain("'rejected'");
     expect(providerDeliveryApproval).toContain("approved_by_user_id");
+  });
+
+  it("keeps Pingram attempts service-owned and STOP evidence fail-closed", () => {
+    expect(pingramSmsTransportSafety).toContain(
+      "alter table public.sms_contact_suppressions enable row level security"
+    );
+    expect(pingramSmsTransportSafety).toContain(
+      "users and organization admins read sms suppressions"
+    );
+    expect(pingramSmsTransportSafety).not.toContain("phone text");
+    expect(pingramSmsExecutionAuthority).toContain(
+      "revoke insert, update, delete"
+    );
+    expect(pingramSmsExecutionAuthority).toContain(
+      "drop policy if exists \"team managers create delivery attempts\""
+    );
+    expect(pingramSmsExecutionAuthority).toContain(
+      "review_notification_delivery_transaction"
+    );
+    expect(pingramSmsExecutionAuthority).toContain(
+      "apply_pingram_sms_contact_state_transaction"
+    );
+    expect(pingramSmsExecutionAuthority).toContain(
+      "on conflict (organization_id, user_id)"
+    );
+    expect(pingramSmsExecutionAuthority).toContain(
+      "team_id in ("
+    );
+    expect(pingramSmsExecutionAuthority).toContain(
+      "claim_provider_webhook_event"
+    );
+    expect(pingramSmsExecutionAuthority).toContain(
+      "processing_lease_id"
+    );
+    expect(pingramSmsExecutionAuthority).toContain(
+      "reconcile_pending_provider_webhook_evidence"
+    );
+    expect(pingramSmsExecutionAuthority).toContain(
+      "from public, anon, authenticated"
+    );
+    expect(pingramSmsExecutionAuthority).toContain("to service_role");
   });
 
   it("keeps the real-session RLS QA proof wired", () => {

@@ -1,5 +1,9 @@
 import { createSupabaseAdminClient } from "./admin";
 import { withSupabaseTimeout } from "./timeout";
+import type {
+  NotificationDeliveryRequestOutcome,
+  NotificationDeliveryTransportProvider
+} from "@/lib/services/notifications/types";
 
 type UnsafeSupabase = {
   // Notification evidence spans staged migrations. Keep this adapter dynamic
@@ -13,12 +17,15 @@ type UnsafeSupabase = {
 export interface NotificationDeliveryEvidence {
   attemptId?: string;
   provider?: "email" | "sms" | "web_push";
+  transportProvider?: NotificationDeliveryTransportProvider;
   attemptStatus: "not_requested" | "queued" | "sent" | "failed" | "suppressed";
+  requestOutcome?: NotificationDeliveryRequestOutcome;
   approvedAt?: string;
   providerAcceptedAt?: string;
   deliveredAt?: string;
   readAt?: string;
   acknowledgedAt?: string;
+  reconciliationRequiredAt?: string;
   errorMessage?: string;
 }
 
@@ -75,12 +82,15 @@ export interface NotificationReceipt {
 type NotificationAttemptRow = {
   id: string;
   provider: "email" | "sms" | "web_push";
+  transport_provider: NotificationDeliveryTransportProvider | null;
   status: "queued" | "sent" | "failed" | "suppressed";
+  request_outcome: NotificationDeliveryRequestOutcome | null;
   approved_at: string | null;
   provider_accepted_at: string | null;
   delivered_at: string | null;
   read_at: string | null;
   acknowledged_at: string | null;
+  reconciliation_required_at: string | null;
   error_message: string | null;
   attempted_at: string;
 };
@@ -157,12 +167,15 @@ export function mapNotificationReceipt(row: NotificationRow, approvedByName?: st
     evidence: {
       attemptId: attempt?.id,
       provider: attempt?.provider,
+      transportProvider: attempt?.transport_provider ?? undefined,
       attemptStatus: attempt?.status ?? "not_requested",
+      requestOutcome: attempt?.request_outcome ?? undefined,
       approvedAt: attempt?.approved_at ?? undefined,
       providerAcceptedAt: attempt?.provider_accepted_at ?? undefined,
       deliveredAt: attempt?.delivered_at ?? undefined,
       readAt: attempt?.read_at ?? undefined,
       acknowledgedAt: attempt?.acknowledged_at ?? undefined,
+      reconciliationRequiredAt: attempt?.reconciliation_required_at ?? undefined,
       errorMessage: attempt?.error_message ?? undefined
     }
   };
@@ -298,7 +311,7 @@ const receiptSelect = [
   "created_at",
   "sent_at",
   "read_at",
-  "notification_delivery_attempts(id,provider,status,approved_at,provider_accepted_at,delivered_at,read_at,acknowledged_at,error_message,attempted_at)"
+  "notification_delivery_attempts(id,provider,transport_provider,status,request_outcome,approved_at,provider_accepted_at,delivered_at,read_at,acknowledged_at,reconciliation_required_at,error_message,attempted_at)"
 ].join(",");
 
 export async function listParentNotificationReceipts(input: {

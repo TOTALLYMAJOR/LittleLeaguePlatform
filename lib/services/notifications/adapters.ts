@@ -4,6 +4,8 @@ import type {
   NotificationDeliverySendResult
 } from "./types";
 import { environmentFeatureEnabled } from "@/lib/services/feature-gates";
+import { createPingramMessagingAdapter } from "./pingram";
+import { resolveSmsProvider } from "./sms-provider";
 
 function allowlist(env: Partial<NodeJS.ProcessEnv>) {
   return new Set((env.PROVIDER_QA_RECIPIENT_ALLOWLIST ?? "")
@@ -27,6 +29,7 @@ function blockedResult(payload: NotificationDeliveryPayload, env: Partial<NodeJS
   if (!environmentFeatureEnabled("provider_sends", env)) {
     return {
       ok: false,
+      requestOutcome: "suppressed",
       retryable: false,
       errorCode: "provider_sends_kill_switch",
       errorMessage: "Provider sends are disabled by the environment kill switch."
@@ -35,6 +38,7 @@ function blockedResult(payload: NotificationDeliveryPayload, env: Partial<NodeJS
   if (payload.organizationProviderSendsEnabled !== true) {
     return {
       ok: false,
+      requestOutcome: "suppressed",
       retryable: false,
       errorCode: "organization_provider_sends_disabled",
       errorMessage: "Provider sends are disabled for this organization."
@@ -43,6 +47,7 @@ function blockedResult(payload: NotificationDeliveryPayload, env: Partial<NodeJS
   if (!isAllowlisted(payload, env)) {
     return {
       ok: false,
+      requestOutcome: "suppressed",
       retryable: false,
       errorCode: "recipient_not_allowlisted",
       errorMessage: "Recipient is not in the configured delivery allowlist."
@@ -54,6 +59,7 @@ function blockedResult(payload: NotificationDeliveryPayload, env: Partial<NodeJS
 export function createSendGridAdapter(env: Partial<NodeJS.ProcessEnv> = process.env): NotificationDeliveryAdapter {
   return {
     provider: "email",
+    transportProvider: "sendgrid",
     async send(payload) {
       const blocked = blockedResult(payload, env);
       if (blocked) return blocked;
@@ -104,6 +110,7 @@ export function createSendGridAdapter(env: Partial<NodeJS.ProcessEnv> = process.
 export function createTwilioMessagingAdapter(env: Partial<NodeJS.ProcessEnv> = process.env): NotificationDeliveryAdapter {
   return {
     provider: "sms",
+    transportProvider: "twilio",
     async send(payload) {
       const blocked = blockedResult(payload, env);
       if (blocked) return blocked;
@@ -126,6 +133,7 @@ export function createTwilioMessagingAdapter(env: Partial<NodeJS.ProcessEnv> = p
         });
         return {
           ok: true,
+          requestOutcome: "provider_accepted",
           providerMessageId: message.sid,
           providerStatus: `accepted:${message.status}`,
           providerResponse: { status: message.status, errorCode: message.errorCode }
@@ -147,10 +155,12 @@ export function createTwilioMessagingAdapter(env: Partial<NodeJS.ProcessEnv> = p
 export function createWebPushAdapter(env: Partial<NodeJS.ProcessEnv> = process.env): NotificationDeliveryAdapter {
   return {
     provider: "web_push",
+    transportProvider: "web_push",
     async send(payload) {
       const blocked = blockedResult(payload, env);
       if (blocked) return blocked;
-      if (!env.VAPID_PUBLIC_KEY || !env.VAPID_PRIVATE_KEY || !env.VAPID_SUBJECT
+      const vapidPublicKey = env.VAPID_PUBLIC_KEY || env.NEXT_PUBLIC_VAPID_PUBLIC_KEY;
+      if (!vapidPublicKey || !env.VAPID_PRIVATE_KEY || !env.VAPID_SUBJECT
         || !payload.recipient.pushEndpoint || !payload.recipient.pushP256dh || !payload.recipient.pushAuth) {
         return {
           ok: false,
@@ -161,7 +171,7 @@ export function createWebPushAdapter(env: Partial<NodeJS.ProcessEnv> = process.e
       }
       try {
         const webpush = await import("web-push");
-        webpush.setVapidDetails(env.VAPID_SUBJECT, env.VAPID_PUBLIC_KEY, env.VAPID_PRIVATE_KEY);
+        webpush.setVapidDetails(env.VAPID_SUBJECT, vapidPublicKey, env.VAPID_PRIVATE_KEY);
         const response = await webpush.sendNotification({
           endpoint: payload.recipient.pushEndpoint,
           keys: {
@@ -192,9 +202,30 @@ export function createWebPushAdapter(env: Partial<NodeJS.ProcessEnv> = process.e
 }
 
 export function createConfiguredNotificationAdapters(env: Partial<NodeJS.ProcessEnv> = process.env) {
+  const smsProvider = resolveSmsProvider(env);
+  const smsAdapter = smsProvider === "pingram"
+    ? createPingramMessagingAdapter(env, {
+      gate: (payload) => blockedResult(payload, env)
+    })
+    : smsProvider === "twilio"
+      ? createTwilioMessagingAdapter(env)
+      : {
+        provider: "sms" as const,
+        async send(payload: NotificationDeliveryPayload): Promise<NotificationDeliverySendResult> {
+          const blocked = blockedResult(payload, env);
+          if (blocked) return blocked;
+          return {
+            ok: false,
+            requestOutcome: "not_attempted",
+            retryable: false,
+            errorCode: "sms_provider_not_selected",
+            errorMessage: "SMS provider selection is unavailable."
+          };
+        }
+      };
   return [
     createSendGridAdapter(env),
-    createTwilioMessagingAdapter(env),
+    smsAdapter,
     createWebPushAdapter(env)
   ];
 }

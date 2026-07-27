@@ -486,8 +486,10 @@ describe("live action API routes", () => {
       attempt: {
         id: "attempt-1",
         provider: "email",
+        transport_provider: "sendgrid",
         channel: "email",
         status: "queued",
+        request_outcome: "not_attempted",
         attempted_at: "2026-06-23T12:00:00.000Z",
         idempotency_key: "notification-1:email",
         next_attempt_at: "2026-06-23T12:00:00.000Z",

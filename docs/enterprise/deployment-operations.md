@@ -61,7 +61,16 @@ docker compose down
 | `OFFLINE_WRITES_ENABLED` | Server | Offline replay kill switch; organization flag must also be true. |
 | `NEXT_PUBLIC_OFFLINE_WRITES_ENABLED` | Browser | Allows the approved device outbox UI; never replaces server authorization. |
 | `PROVIDER_SENDS_ENABLED` | Server | Provider execution kill switch; organization flag, human approval, consent, and allowlist still apply. |
+| `PROVIDER_DELIVERY_MODE` | Server | Use `qa` for controlled recipients; `production` still requires explicit production approval. |
+| `PROVIDER_PRODUCTION_APPROVED` | Server | Must be exactly `true` with production delivery mode before the QA allowlist may be bypassed. |
 | `PROVIDER_QA_RECIPIENT_ALLOWLIST` | Server | Comma-separated sandbox recipients; never expose to the browser. |
+| `SMS_PROVIDER` | Server | Exact SMS transport selector. Use `pingram`; `twilio` is rollback only. Missing or unknown values stay suppressed. |
+| `PINGRAM_API_KEY` | Server only | Pingram send credential; presence never enables sends. |
+| `PINGRAM_API_BASE_URL` | Server | Must resolve to an application-approved Pingram API origin. |
+| `PINGRAM_FROM_NUMBER` / `PINGRAM_SMS_TYPE` | Server | Reviewed sender/type configuration; recipients and configured sender numbers must be E.164. |
+| `PINGRAM_WEBHOOK_SECRET` | Server only | Verifies raw-body Pingram webhook signatures. |
+| `PINGRAM_CONTACT_DIGEST_SECRET` | Server only | HMAC key for local STOP/START contact fingerprints; never expose or log it. |
+| `PINGRAM_SMS_SENDER_READY` | Server | Human-reviewed sender/workspace readiness declaration; does not replace any provider gate. |
 | `MEDIA_UPLOADS_ENABLED` | Server | Private upload kill switch; organization flag and scan-adapter readiness still apply. |
 | `MEDIA_SCAN_ADAPTER_READY` | Server | Explicit production scanner readiness declaration. |
 | `PAYMENTS_ENABLED` | Server | Stripe execution kill switch; organization flag and connected-account readiness still apply. |
@@ -75,7 +84,7 @@ docker compose down
 | Health check | Hosted route smoke and `/admin/operations` screenshots. | Formal uptime monitor and alert routing. |
 | Auth/RLS proof | `npm run qa:rls-proof`. | Scheduled proof after migrations/env rotations. |
 | Browser proof | `QA_PROOF_BASE_URL=<url> npm run qa:session-proof`. | Coverage for remaining media, registration, team-builder admin writes. |
-| Provider proof | Provider rows, AI proof, brand proof. | Allowlisted SendGrid/Twilio/Web Push sandbox plus verified webhook proof if sends are approved. |
+| Provider proof | Provider rows, AI proof, brand proof, local Pingram adapter/signature/suppression/reconciliation tests, service-only atomic approval, and preview migration/RLS readback. | Apply/read back all three Pingram safety migrations, configure hosted secrets, and prove allowlisted Pingram delivery plus signed webhook lease/replay behavior, fast-callback reconciliation, STOP/START suppression, indeterminate reconciliation, cost controls, and monitoring before any live-SMS claim. Twilio remains rollback only. |
 | Payment proof | Local Stripe adapter and signed webhook tests. | Connected-account test-mode Checkout, replay, refund/dispute ownership, and hosted proof. |
 | Media proof | Local quarantine/consent/release policy. | Private storage RLS, production scanner, retention deletion, and family-visibility proof. |
 | Backups | Supabase project backups/provider controls. | Document restore drill and RPO/RTO. |
@@ -115,6 +124,6 @@ Draft requirements:
 - Formal monitoring and alerting owners.
 - Restore drill evidence.
 - Public intake rate-limit monitoring.
-- Provider send monitoring if live sends are approved.
+- Pingram delivery, STOP/START, indeterminate-reconciliation, volume, and cost monitoring if live SMS is approved.
 - Stripe webhook and reconciliation monitoring if live billing is approved.
 - Storage scanning/takedown monitoring if uploads are approved.
