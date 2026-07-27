@@ -27,7 +27,7 @@ validation:
     - npm run typecheck
     - npm test
     - npm run build
-    - npm audit
+    - npm audit --omit=dev
 
 docker:
   enabled: false

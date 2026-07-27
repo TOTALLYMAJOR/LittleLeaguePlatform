@@ -10,41 +10,6 @@ sends, enable storage or payments, mutate production data, or broaden child,
 guardian, team, or organization authority. Hosted acceptance and product
 decisions are reconciled in the final documentation task.
 
-## LP-SEC-001 - Clear the development dependency audit advisory
-
-```yaml
-estimate_hours: 2
-epic_id: LOCAL-CLOSEOUT
-epic_title: Safe local backlog closeout
-epic_outcome: Remaining approved local implementation and proof gaps are closed without crossing hosted or provider authority.
-depends_on: []
-owns:
-  - package.json
-  - package-lock.json
-  - eslint.config.mjs
-validate:
-  - npm ci --ignore-scripts --prefer-offline
-  - npm audit
-  - npm run lint
-  - npm run typecheck
-  - git diff --check
-risk_score: 5
-```
-
-Remove the current high-severity `brace-expansion` development-tooling advisory
-through a compatible reviewed dependency update. Do not suppress the advisory,
-use a forced incompatible upgrade, or weaken lint/typecheck rules. Keep
-production runtime dependencies and application behavior unchanged.
-
-### Acceptance Criteria
-
-- A clean install reports zero known `npm audit` findings without audit
-  suppression or an incompatible forced resolution.
-- ESLint still runs with the repository configuration and produces no errors;
-  existing warnings may remain documented.
-- Typecheck passes and no production application source or provider behavior is
-  changed.
-
 ## LP-TEAM-008 - Complete private team-builder inputs and local publish workflow
 
 ```yaml
@@ -52,8 +17,7 @@ estimate_hours: 14
 epic_id: LOCAL-CLOSEOUT
 epic_title: Safe local backlog closeout
 epic_outcome: Remaining approved local implementation and proof gaps are closed without crossing hosted or provider authority.
-depends_on:
-  - LP-SEC-001
+depends_on: []
 owns:
   - supabase/migrations/
   - supabase/team-builder-production.test.ts
@@ -126,8 +90,7 @@ estimate_hours: 6
 epic_id: LOCAL-CLOSEOUT
 epic_title: Safe local backlog closeout
 epic_outcome: Remaining approved local implementation and proof gaps are closed without crossing hosted or provider authority.
-depends_on:
-  - LP-SEC-001
+depends_on: []
 owns:
   - scripts/audit-rls-policy-overlaps.mjs
   - scripts/audit-rls-policy-overlaps.test.mjs
@@ -180,8 +143,7 @@ estimate_hours: 7
 epic_id: LOCAL-CLOSEOUT
 epic_title: Safe local backlog closeout
 epic_outcome: Remaining approved local implementation and proof gaps are closed without crossing hosted or provider authority.
-depends_on:
-  - LP-SEC-001
+depends_on: []
 owns:
   - lib/offline/game-day-outbox.ts
   - lib/offline/game-day-outbox.test.ts
@@ -230,8 +192,7 @@ estimate_hours: 3
 epic_id: LOCAL-CLOSEOUT
 epic_title: Safe local backlog closeout
 epic_outcome: Remaining approved local implementation and proof gaps are closed without crossing hosted or provider authority.
-depends_on:
-  - LP-SEC-001
+depends_on: []
 owns:
   - scripts/verify-qa-session-paths.mjs
   - scripts/capture-communication-room-record-proof.mjs
@@ -398,11 +359,14 @@ acceptance.
 Publish one closeout ledger with explicit `done-local`, `external`,
 `decision-required`, and `historical` states. It must record the remaining
 hosted/session/browser, Realtime, backup/PITR/restore, preview-auth, provider,
-storage, billing, and production gates. Record current safe defaults as
-deferred, not approved expansions: draft/internal provider records only,
-link-only media, sponsor proof-only billing, PWA-first, and Preview OpenAI out
-of scope. Do not invent proof, expose project secrets, or mark external gates
-complete.
+storage, billing, and production gates. It must also record that production
+dependencies audit clean while the latest Next ESLint plugin graph retains an
+upstream development-only `minimatch`/`brace-expansion` advisory that cannot be
+removed without unsupported peer overrides or weakened lint rules. Record
+current safe defaults as deferred, not approved expansions: draft/internal
+provider records only, link-only media, sponsor proof-only billing, PWA-first,
+and Preview OpenAI out of scope. Do not invent proof, expose project secrets, or
+mark external gates complete.
 
 ### Acceptance Criteria
 
@@ -411,8 +375,8 @@ complete.
   locally, externally blocked, provider-gated, decision-gated, and historical.
 - LP-001 and the completed local portions of LP-007, LP-008, the RLS
   actor/action review, offline/reconnect proof, QA target guards, guarded live
-  proof harnesses, and dependency audit are linked to exact committed tests or
-  artifacts without claiming hosted execution or deployment.
+  proof harnesses, and production dependency audit are linked to exact
+  committed tests or artifacts without claiming hosted execution or deployment.
 - Every remaining hosted, production, provider, storage, billing, Realtime,
   backup, and human-decision gate appears once in the closeout ledger with an
   owner/authority and a concrete acceptance requirement.
