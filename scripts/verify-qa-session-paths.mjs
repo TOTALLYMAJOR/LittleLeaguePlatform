@@ -2,9 +2,18 @@ import { existsSync, mkdirSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import { chromium } from "@playwright/test";
 import { createClient } from "@supabase/supabase-js";
+import {
+  assertIsolatedQaTarget,
+  assertQaApplicationTarget,
+  assertServiceRoleCredential,
+  captureQaAppInvocation,
+  preflightQaApplicationIdentity,
+  preflightServiceRoleCredential
+} from "./qa-target-guard.mjs";
 
 const envFile = ".env.local";
 const baseUrl = process.env.QA_PROOF_BASE_URL || "http://127.0.0.1:3020";
+const appInvocation = captureQaAppInvocation();
 const screenshotDir = "output/playwright";
 const qaIds = {
   organization: "11111111-1111-4111-8111-111111111111",
@@ -62,8 +71,8 @@ function requireServiceRoleKey() {
   return serviceRoleKey;
 }
 
-function createQaAdminClient() {
-  return createClient(requireEnv("NEXT_PUBLIC_SUPABASE_URL"), requireServiceRoleKey(), {
+function createQaAdminClient(url, serviceRoleKey) {
+  return createClient(url, serviceRoleKey, {
     auth: {
       autoRefreshToken: false,
       persistSession: false
@@ -700,7 +709,15 @@ async function proveParentLiveActions(browser, supabase) {
 async function main() {
   loadLocalEnv();
   requireAnonKey();
-  const supabase = createQaAdminClient();
+  const supabaseUrl = requireEnv("NEXT_PUBLIC_SUPABASE_URL");
+  const serviceRoleKey = requireServiceRoleKey();
+  const supabaseTarget = assertIsolatedQaTarget(supabaseUrl, "QA session proof");
+  assertQaApplicationTarget(baseUrl, appInvocation);
+  assertServiceRoleCredential(serviceRoleKey);
+  await preflightQaApplicationIdentity(baseUrl, supabaseTarget, { invocation: appInvocation });
+  await preflightServiceRoleCredential(supabaseUrl, serviceRoleKey);
+
+  const supabase = createQaAdminClient(supabaseUrl, serviceRoleKey);
   mkdirSync(screenshotDir, { recursive: true });
 
   const executablePath = chromiumExecutablePath();

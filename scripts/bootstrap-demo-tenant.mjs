@@ -2,6 +2,11 @@ import { appendFileSync, existsSync, readFileSync } from "node:fs";
 import { randomBytes } from "node:crypto";
 import { pathToFileURL } from "node:url";
 import { createClient } from "@supabase/supabase-js";
+import {
+  assertIsolatedQaTarget,
+  assertServiceRoleCredential,
+  preflightServiceRoleCredential
+} from "./qa-target-guard.mjs";
 
 const envFile = ".env.local";
 const confirmValue = "load-fictional-data";
@@ -1295,7 +1300,13 @@ async function seedDemoTenant(supabase, users) {
 
 async function main() {
   loadLocalEnv();
+  const url = requireEnv("NEXT_PUBLIC_SUPABASE_URL");
+  const serviceRoleKey = requireEnv("SUPABASE_SERVICE_ROLE_KEY");
+  assertIsolatedQaTarget(url, "Fictional demo tenant seed");
+  assertServiceRoleCredential(serviceRoleKey);
   requireSeedConfirmation();
+  await preflightServiceRoleCredential(url, serviceRoleKey);
+
   appendMissingEnv({
     DEMO_ADMIN_EMAIL: process.env.DEMO_ADMIN_EMAIL || "demo.admin.leaguepilot@example.com",
     DEMO_ADMIN_PASSWORD: process.env.DEMO_ADMIN_PASSWORD || generatedPassword(),
@@ -1309,8 +1320,6 @@ async function main() {
     DEMO_PARENT_TWO_PASSWORD: process.env.DEMO_PARENT_TWO_PASSWORD || generatedPassword()
   });
 
-  const url = requireEnv("NEXT_PUBLIC_SUPABASE_URL");
-  const serviceRoleKey = requireEnv("SUPABASE_SERVICE_ROLE_KEY");
   const supabase = createClient(url, serviceRoleKey, {
     auth: {
       autoRefreshToken: false,
