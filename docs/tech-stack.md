@@ -1,6 +1,6 @@
 # Tech Stack
 
-This file tracks the intended production stack for LeaguePilot, the public app at `https://www.leaguepilot.us`. The current app is a root Next.js scaffold with Supabase-backed production paths for several authenticated parent, coach, and admin workflows, plus typed seed fallback where live rows or auth context are unavailable. Production work should keep moving capabilities behind real auth, persistence, policies, and provider adapters without describing fallback state as production truth.
+This file tracks the intended production stack for LeaguePilot, the public app at `https://www.leaguepilot.us`. The current app is a root Next.js application with authenticated Supabase-backed parent, coach, and admin workflows, plus typed fallback states where live rows or auth context are unavailable. The [2026-07-27 closeout ledger](backlog-closeout-2026-07-27.md) is authoritative for local completion, external gates, decisions, and historical evidence; fallback state and committed code are not production acceptance.
 
 ## Direction
 
@@ -17,7 +17,7 @@ The first shippable mobile experience should be a responsive PWA from the existi
 | Web app | Next.js App Router, React, TypeScript | Already implemented; good fit for admin, coach, parent, PWA, and server/client boundaries. |
 | Styling | Current CSS with design tokens | Reuse existing styles, dark mode, team branding, and sport theme presets before adding a UI framework. |
 | Motion | Motion for React (`motion`) | Installed for targeted client-side animation. Use `motion/react` only in client components, animate transform/opacity, and respect reduced-motion preferences. No required workflow should depend on animation. |
-| Mobile first | PWA first, Expo later | Fastest reuse path. Native app should share domain contracts and policies if/when added. |
+| Mobile first | PWA first; Expo decision deferred | This is the current safe default, not approval to build native. Any later app must share domain contracts and policies. |
 | Database | Supabase Postgres | Fits teams, seasons, rosters, registrations, events, RSVPs, chat, notifications, sponsors, themes, and audits. |
 | Auth | Supabase Auth | Aligns with Supabase RLS and role-scoped parent/coach/admin access. |
 | Authorization | Supabase Row Level Security | Required for parent child/team scope, coach assigned-team scope, and org admin scope. |
@@ -25,9 +25,9 @@ The first shippable mobile experience should be a responsive PWA from the existi
 | Push notifications | Web Push for PWA; Expo Notifications for native | Start with explicit opt-in Web Push. Use Expo Notifications only if a native app is added. |
 | Maps | Google Maps Platform | Use API-backed embeds/markers later; current app can keep Google Maps links until provider setup. |
 | Weather | NWS first, Open-Meteo fallback, Tomorrow.io premium adapter | NWS is best free default for U.S. teams. Open-Meteo is useful fallback. Tomorrow.io is optional later for hyperlocal/premium weather. |
-| Media | Google Photos and YouTube links first | Reuse current MVP path. Drill videos store YouTube metadata references only through server-side Data API validation and official embeds; add upload/storage only when needed. |
-| Payments/sponsors | Local sponsor records first; Stripe later only if payments are real | Avoid payment complexity until sponsor billing/invoices are in scope. |
-| AI | Deterministic first; optional OpenAI Responses API rewrite path | Parent Replay remains deterministic local guidance. AI Coach Workspace can request server-side OpenAI rewrites only for assigned coaches/admins when provider env is configured; all generated learning plans remain draft/reviewed. |
+| Media | Link-only Google Photos and YouTube references | This is the deferred safe default. Private upload/storage requires the `DEC-MEDIA` decision and `EXT-STORAGE` acceptance gate. |
+| Payments/sponsors | Sponsor proof-only billing | This is the deferred safe default. Real collection requires the `DEC-BILLING` decision and `EXT-BILLING` acceptance gate. |
+| AI | Deterministic first; optional reviewed OpenAI Responses API rewrite | Parent Replay remains deterministic local guidance. Provider output is draft/review-only. Preview OpenAI configuration is explicitly out of scope pending `DEC-PREVIEW-OPENAI`. |
 | Deployment | Vercel or Docker-capable Node host | Current hosted path is Vercel plus Supabase HTTPS APIs. Do not require Vercel Static IP unless direct database IP allowlisting becomes an explicit fixed-egress requirement. Keep Next standalone build working. |
 
 ## Weather Provider Order

@@ -1,12 +1,14 @@
 # Production Audit Action Items
 
-Audit date: 2026-06-25
+Audit date: 2026-06-25; reconciled: 2026-07-27.
 
 ## Verdict
 
-The app is not ready for real-family production launch yet. The core scaffold, route coverage, authenticated mutation boundaries, Supabase-backed slices, deterministic AI Coach Workspace, and provider-safe draft flows are in place. The remaining work is mostly provider-delivery execution if approved, continued hosted proof after env rotation, and intentionally deferred product decisions.
+The app is not accepted for real-family production launch. The committed application, authenticated mutation boundaries, Supabase-backed slices, deterministic AI Coach Workspace, guarded local proof harnesses, and provider-safe draft flows are in place. Exact current gates and owners live in [`docs/backlog-closeout-2026-07-27.md`](backlog-closeout-2026-07-27.md); this file preserves dated audit evidence and risk context.
 
 ## Validation Run
+
+The commands and production URLs in the dated bullets below are historical observations, not current execution instructions. In particular, earlier production-alias `qa:session-proof` results predate LP-QA-GUARD-001. That mutating harness and Communication Room record proof are now isolated-QA-only. Production acceptance requires `EXT-PRODUCTION-READONLY`.
 
 - `npm test` passed: 10 files, 131 tests.
 - `npm run build` passed and generated 41 app routes.
@@ -27,6 +29,7 @@ The app is not ready for real-family production launch yet. The core scaffold, r
 - Tenant-readiness release validation on 2026-07-16 passed `git diff --check`, `npm test` (29 files, 231 tests), `npm run typecheck`, `npm run build`, and `npm audit` with 0 vulnerabilities.
 - Communication Room isolated QA proof on 2026-07-24 applied repository migrations through `0024` plus `20260724143554_security_definer_execution_hardening.sql` to a separate disposable Supabase project. Real parent, coach, and anonymous sessions passed RLS proof. A signed-in parent browser session proved two linked children across two teams, excluded an archived team, persisted a reply, acknowledged a critical record with attributed audit history, retained a suppressed delivery attempt, executed zero provider sends, and left schedule, RSVP, attendance, and transportation truth unchanged. The full release gate passed 311 tests, typecheck, production build, lint with no errors, and `npm audit` with 0 vulnerabilities.
 - Original audit worktree had only untracked local editor config; check current worktree state before release packaging.
+- The integrated dependency review reports production dependencies clean under `npm audit --omit=dev`. The supported Next 16.2.9 ESLint graph still retains a development-only `minimatch` 3.1.5 / `brace-expansion` 1.1.16 advisory path; removing it currently requires unsupported peer overrides or weaker lint rules. This docs task attempted a live audit, but registry DNS was unavailable, so release automation must rerun both production-only and full audits.
 
 ## P0 Launch Blockers
 
@@ -64,13 +67,12 @@ The app is not ready for real-family production launch yet. The core scaffold, r
 
 7. Add browser-level live action tests for key private writes.
    - Current truth: partially covered on 2026-07-02. Hosted QA browser proof now covers signed-out parent gates, signed-in parent/coach/admin read surfaces, parent RSVP save, snack claim, volunteer claim, notification preference save, coach weekly update draft, Parent Replay publish, and provider-delivery review against Supabase rows. New evidence screenshots include `output/playwright/parent-live-actions-qa-session-live.png`, `output/playwright/coach-weekly-update-qa-session-live.png`, `output/playwright/coach-parent-replay-private-write-live.png`, and `output/playwright/provider-delivery-review-qa-session-live.png`.
-   - Remaining action: add Playwright proofs for media report/moderation, registration/admin approval flows, and team-builder/admin publish flows.
+   - Remaining action: add isolated-QA Playwright proofs for media report/moderation, registration/admin approval, and team-builder/admin publish. Do not target the production alias.
    - Done when: CI screenshots or traces prove every release-critical signed-in browser write uses real Supabase sessions.
 
 8. Reconcile stale capability-matrix gaps.
    - Evidence: `docs/capability-matrix.md` still lists some gaps that later implementation covered, including team CRUD, division/season setup, coach assignment, roster lifecycle, tenant isolation, RSVP history UX, snack/volunteer reminders, caps, cancellation, and approval policies.
-   - Action: update the matrix to separate current shipped truth from remaining hosted/provider proof.
-   - Done when: `docs/capability-matrix.md`, `docs/Features.md`, and `docs/feature-fit-backlog.md` agree.
+   - Status: done locally 2026-07-27. The matrix, Features tracker, legacy backlogs, production board, tech stack, and closeout ledger now separate committed implementation/tests, external proof, decision gates, and historical evidence.
 
 9. Confirm admin operations are production-scoped on hosted data.
    - Current seams: `/admin/operations`, `/admin/security`, `/admin/teams`, `/admin/guardian-links`, `/admin/archive`.
@@ -108,8 +110,8 @@ The app is not ready for real-family production launch yet. The core scaffold, r
     - Remaining action: keep generated content draft/review-only until approval and audit gates are proven. Preview OpenAI env remains out of launch scope until a real non-production preview branch is chosen.
 
 16. Automatic team building foundation is now in scope.
-    - Current truth: roster maker readiness now includes balanced team-builder previews, sibling/guardian grouping, friend-request consideration, skill-balance scores, target roster warnings, Preview -> Edit -> Approve -> Publish workflow, and admin-only team-build plan tables.
-    - Remaining action before real roster publication: wire persisted Supabase team-build plan saves, add birthdate/age-band and explicit player evaluation fields, and run browser-level admin publish proof.
+    - Current truth: private birthdate-derived age/age-band, admin evaluation, sibling/guardian grouping, friend-request consideration, skill balance, locks, warnings, and Preview -> Edit -> Approve -> Publish persistence have committed domain/service/API/UI/migration/RLS tests.
+    - Remaining action before external closure: run signed-in isolated-QA admin publish/RLS/readback proof under `EXT-HOSTED-SESSION`; no production mutation is authorized.
 
 ## Hosting And Network Boundary
 
