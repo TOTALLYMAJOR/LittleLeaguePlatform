@@ -86,12 +86,12 @@ describe("RLS policy overlap source audit", () => {
     ).toThrow(/Unparsed policy-changing DDL/);
   });
 
-  it("reconstructs the committed migration-40 catalog deterministically", () => {
+  it("reconstructs the committed migration-41 catalog deterministically", () => {
     const first = reconstructCatalog(loadMigrationFiles(rootDir));
     const second = reconstructCatalog(loadMigrationFiles(rootDir));
 
     expect(verifyCatalog(first)).toEqual({
-      policies: 158,
+      policies: 157,
       overlapGroups: 35,
       selectGroups: 34,
       updateGroups: 1,

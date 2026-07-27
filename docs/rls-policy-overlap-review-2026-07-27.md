@@ -1,17 +1,22 @@
 # RLS permissive-policy actor/action review
 
 Date: 2026-07-27  
-Scope: committed migrations through `20260726182645_optimize_rls_auth_initplans.sql`  
+Scope: committed migrations through `20260727145702_complete_private_team_builder_publish.sql`
 Proof level: deterministic source reconstruction only; no hosted database was queried or changed
 
 ## Result
 
-The ordered 40-migration chain reconstructs to 158 final policies and 35
+The ordered 41-migration chain reconstructs to 157 final policies and 35
 permissive overlap groups: 34 `SELECT` groups and one `UPDATE` group. Every
 overlap is declared to PostgreSQL role `public`, so `public` is the effective
 static actor. Seven groups are on tables whose final migration state revokes
 browser-role privileges and grants service-role access; 28 groups remain on the
 RLS-governed Data API surface.
+
+Migration 41 deliberately removes the prior browser-facing
+`organization admins manage team build plans` policy and revokes browser-role
+table privileges; the private planning surface is service-role-only. That
+explains the one-policy decrease without changing the overlap-group totals.
 
 This is a review, not a policy-change proposal. It does not establish that a
 preview or production catalog matches the migrations, and it does not accept
