@@ -3,9 +3,7 @@ import { randomBytes } from "node:crypto";
 import { pathToFileURL } from "node:url";
 import { createClient } from "@supabase/supabase-js";
 import {
-  assertIsolatedQaTarget,
-  assertServiceRoleCredential,
-  preflightServiceRoleCredential
+  runGuardedQaMutation
 } from "./qa-target-guard.mjs";
 
 const envFile = ".env.local";
@@ -1298,16 +1296,18 @@ async function seedDemoTenant(supabase, users) {
   };
 }
 
-async function main() {
+export async function main({ guard = runGuardedQaMutation } = {}) {
   loadLocalEnv();
   const url = requireEnv("NEXT_PUBLIC_SUPABASE_URL");
   const serviceRoleKey = requireEnv("SUPABASE_SERVICE_ROLE_KEY");
-  assertIsolatedQaTarget(url, "Fictional demo tenant seed");
-  assertServiceRoleCredential(serviceRoleKey);
   requireSeedConfirmation();
-  await preflightServiceRoleCredential(url, serviceRoleKey);
 
-  appendMissingEnv({
+  return guard({
+    action: "Fictional demo tenant seed",
+    serviceRoleCredential: serviceRoleKey,
+    supabaseUrl: url
+  }, async () => {
+    appendMissingEnv({
     DEMO_ADMIN_EMAIL: process.env.DEMO_ADMIN_EMAIL || "demo.admin.leaguepilot@example.com",
     DEMO_ADMIN_PASSWORD: process.env.DEMO_ADMIN_PASSWORD || generatedPassword(),
     DEMO_COACH_EMAIL: process.env.DEMO_COACH_EMAIL || "demo.coach.leaguepilot@example.com",
@@ -1364,6 +1364,7 @@ async function main() {
   console.log("Fictional demo tenant is ready.");
   console.log(JSON.stringify(summary, null, 2));
   console.log("Demo credentials are stored in .env.local keys beginning with DEMO_.");
+  });
 }
 
 const isDirectRun = process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href;

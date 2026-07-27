@@ -5,6 +5,8 @@ const PROTECTED_PRODUCTION_HOSTS = new Set(["leaguepilot.us", "www.leaguepilot.u
 const LOOPBACK_HOSTS = new Set(["127.0.0.1", "localhost", "::1"]);
 const ALLOWED_QA_DEPLOYMENT_CLASSES = new Set(["development", "local", "preview", "qa", "test"]);
 const DEFAULT_PREFLIGHT_TIMEOUT_MS = 10_000;
+const SECRET_SERVICE_ROLE_KEY_PATTERN =
+  /^sb_secret_[A-Za-z0-9_-]{22}_[A-Za-z0-9_-]{8}$/;
 
 function parseUrl(value, label) {
   let parsed;
@@ -19,8 +21,16 @@ function parseUrl(value, label) {
   return parsed;
 }
 
+function normalizedHostname(hostname) {
+  const withoutTrailingDots = hostname.toLowerCase().replace(/\.+$/, "");
+  if (withoutTrailingDots.startsWith("[") && withoutTrailingDots.endsWith("]")) {
+    return withoutTrailingDots.slice(1, -1);
+  }
+  return withoutTrailingDots;
+}
+
 function isLoopback(hostname) {
-  return LOOPBACK_HOSTS.has(hostname.toLowerCase());
+  return LOOPBACK_HOSTS.has(normalizedHostname(hostname));
 }
 
 function projectRefFromApiUrl(value) {
@@ -33,19 +43,28 @@ function projectRefFromApiUrl(value) {
     if (!["http:", "https:"].includes(parsed.protocol)) {
       throw new Error("Local QA Supabase targets must use HTTP or HTTPS.");
     }
-    return { kind: "local", projectRef: null };
+    if (!parsed.port) {
+      throw new Error("Local QA Supabase targets must include an explicit port.");
+    }
+    return {
+      kind: "local",
+      projectRef: null,
+      targetId: `local:${parsed.origin.toLowerCase()}`
+    };
   }
 
   if (parsed.protocol !== "https:") {
     throw new Error("Hosted QA Supabase targets must use HTTPS.");
   }
 
-  const projectRef = parsed.hostname.match(/^([a-z0-9-]+)\.supabase\.co$/)?.[1];
+  const projectRef = normalizedHostname(parsed.hostname).match(
+    /^([a-z0-9-]+)\.supabase\.co$/
+  )?.[1];
   if (!projectRef) {
     throw new Error("Hosted QA must use an explicit Supabase project URL.");
   }
 
-  return { kind: "hosted", projectRef };
+  return { kind: "hosted", projectRef, targetId: `project:${projectRef}` };
 }
 
 function normalizedBaseUrl(value) {
@@ -107,7 +126,7 @@ export function assertIsolatedQaTarget(url, action = "QA mutation") {
 export function assertQaApplicationTarget(baseUrl, invocation = captureQaAppInvocation()) {
   const normalized = normalizedBaseUrl(baseUrl);
   const parsed = new URL(normalized);
-  const hostname = parsed.hostname.toLowerCase();
+  const hostname = normalizedHostname(parsed.hostname);
 
   if (PROTECTED_PRODUCTION_HOSTS.has(hostname)) {
     throw new Error("QA application mutations are forbidden on the canonical LeaguePilot production host.");
@@ -137,10 +156,20 @@ export function assertServiceRoleCredential(value) {
   if (value.startsWith("sb_publishable_")) {
     throw new Error("SUPABASE_SERVICE_ROLE_KEY cannot be a publishable key.");
   }
-  if (value.startsWith("sb_secret_")) return;
+  if (value.startsWith("sb_secret_")) {
+    if (!SECRET_SERVICE_ROLE_KEY_PATTERN.test(value)) {
+      throw new Error(
+        "SUPABASE_SERVICE_ROLE_KEY contains an invalid Supabase secret key."
+      );
+    }
+    return "secret";
+  }
 
   const segments = value.split(".");
-  if (segments.length !== 3) {
+  if (
+    segments.length !== 3 ||
+    segments.some((segment) => !segment || !/^[A-Za-z0-9_-]+$/.test(segment))
+  ) {
     throw new Error("SUPABASE_SERVICE_ROLE_KEY must be a service-role JWT or Supabase secret key.");
   }
 
@@ -149,6 +178,7 @@ export function assertServiceRoleCredential(value) {
     if (role !== "service_role") {
       throw new Error("SUPABASE_SERVICE_ROLE_KEY must carry the service_role claim.");
     }
+    return "legacy-jwt";
   } catch (error) {
     if (error instanceof Error && error.message.includes("service_role claim")) throw error;
     throw new Error("SUPABASE_SERVICE_ROLE_KEY contains an invalid JWT.");
@@ -160,17 +190,18 @@ export async function preflightServiceRoleCredential(
   credential,
   { fetchImpl = fetch, timeoutMs = DEFAULT_PREFLIGHT_TIMEOUT_MS } = {}
 ) {
-  assertServiceRoleCredential(credential);
+  const credentialKind = assertServiceRoleCredential(credential);
   const target = assertIsolatedQaTarget(supabaseUrl, "Service-role preflight");
   const endpoint = new URL("/auth/v1/admin/users?page=1&per_page=1", supabaseUrl);
+  const headers =
+    credentialKind === "secret"
+      ? { apikey: credential }
+      : { apikey: credential, Authorization: `Bearer ${credential}` };
   let response;
   try {
     response = await fetchImpl(endpoint, {
       method: "GET",
-      headers: {
-        apikey: credential,
-        Authorization: `Bearer ${credential}`
-      },
+      headers,
       cache: "no-store",
       redirect: "error",
       signal: timeoutSignal(timeoutMs)
@@ -231,9 +262,10 @@ export async function preflightQaApplicationIdentity(
       ? Object.keys(identity).sort()
       : [];
   if (
-    keys.join(",") !== "deploymentClass,supabaseProjectRef" ||
+    keys.join(",") !== "deploymentClass,supabaseProjectRef,supabaseTargetId" ||
     typeof identity.deploymentClass !== "string" ||
-    !(typeof identity.supabaseProjectRef === "string" || identity.supabaseProjectRef === null)
+    !(typeof identity.supabaseProjectRef === "string" || identity.supabaseProjectRef === null) ||
+    typeof identity.supabaseTargetId !== "string"
   ) {
     throw new Error("QA target identity route returned a malformed identity.");
   }
@@ -243,9 +275,46 @@ export async function preflightQaApplicationIdentity(
   ) {
     throw new Error("QA target identity route identified a production deployment.");
   }
-  if (identity.supabaseProjectRef !== supabaseTarget.projectRef) {
-    throw new Error("QA application and Supabase target project refs do not match.");
+  if (
+    identity.supabaseProjectRef !== supabaseTarget.projectRef ||
+    identity.supabaseTargetId !== supabaseTarget.targetId
+  ) {
+    throw new Error("QA application and Supabase target identities do not match.");
   }
 
   return { appTarget, identity };
+}
+
+export async function runGuardedQaMutation(
+  {
+    action = "QA mutation",
+    appBaseUrl,
+    appInvocation = captureQaAppInvocation(),
+    fetchImpl = fetch,
+    serviceRoleCredential,
+    supabaseUrl,
+    timeoutMs = DEFAULT_PREFLIGHT_TIMEOUT_MS
+  },
+  run
+) {
+  if (typeof run !== "function") {
+    throw new Error("Guarded QA mutation requires an injected callback.");
+  }
+
+  const supabaseTarget = assertIsolatedQaTarget(supabaseUrl, action);
+  assertServiceRoleCredential(serviceRoleCredential);
+  let appIdentity = null;
+  if (appBaseUrl) {
+    appIdentity = await preflightQaApplicationIdentity(appBaseUrl, supabaseTarget, {
+      invocation: appInvocation,
+      fetchImpl,
+      timeoutMs
+    });
+  }
+  await preflightServiceRoleCredential(supabaseUrl, serviceRoleCredential, {
+    fetchImpl,
+    timeoutMs
+  });
+
+  return run({ appIdentity, supabaseTarget });
 }

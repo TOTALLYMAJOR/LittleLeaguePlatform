@@ -1,14 +1,11 @@
 import { existsSync, mkdirSync, readFileSync } from "node:fs";
 import { join } from "node:path";
+import { pathToFileURL } from "node:url";
 import { chromium } from "@playwright/test";
 import { createClient } from "@supabase/supabase-js";
 import {
-  assertIsolatedQaTarget,
-  assertQaApplicationTarget,
-  assertServiceRoleCredential,
   captureQaAppInvocation,
-  preflightQaApplicationIdentity,
-  preflightServiceRoleCredential
+  runGuardedQaMutation
 } from "./qa-target-guard.mjs";
 
 const envFile = ".env.local";
@@ -64,11 +61,7 @@ function requireAnonKey() {
 }
 
 function requireServiceRoleKey() {
-  const serviceRoleKey = requireEnv("SUPABASE_SERVICE_ROLE_KEY");
-  if (jwtRole(serviceRoleKey) !== "service_role") {
-    throw new Error("SUPABASE_SERVICE_ROLE_KEY must be the Supabase service role key for QA row verification.");
-  }
-  return serviceRoleKey;
+  return requireEnv("SUPABASE_SERVICE_ROLE_KEY");
 }
 
 function createQaAdminClient(url, serviceRoleKey) {
@@ -706,17 +699,19 @@ async function proveParentLiveActions(browser, supabase) {
   }
 }
 
-async function main() {
+export async function main({ guard = runGuardedQaMutation } = {}) {
   loadLocalEnv();
   requireAnonKey();
   const supabaseUrl = requireEnv("NEXT_PUBLIC_SUPABASE_URL");
   const serviceRoleKey = requireServiceRoleKey();
-  const supabaseTarget = assertIsolatedQaTarget(supabaseUrl, "QA session proof");
-  assertQaApplicationTarget(baseUrl, appInvocation);
-  assertServiceRoleCredential(serviceRoleKey);
-  await preflightQaApplicationIdentity(baseUrl, supabaseTarget, { invocation: appInvocation });
-  await preflightServiceRoleCredential(supabaseUrl, serviceRoleKey);
 
+  return guard({
+    action: "QA session proof",
+    appBaseUrl: baseUrl,
+    appInvocation,
+    serviceRoleCredential: serviceRoleKey,
+    supabaseUrl
+  }, async () => {
   const supabase = createQaAdminClient(supabaseUrl, serviceRoleKey);
   mkdirSync(screenshotDir, { recursive: true });
 
@@ -810,9 +805,14 @@ async function main() {
   } finally {
     await browser.close();
   }
+  });
 }
 
-main().catch((error) => {
-  console.error(error instanceof Error ? error.message : error);
-  process.exit(1);
-});
+const isDirectRun =
+  process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href;
+if (isDirectRun) {
+  main().catch((error) => {
+    console.error(error instanceof Error ? error.message : error);
+    process.exit(1);
+  });
+}

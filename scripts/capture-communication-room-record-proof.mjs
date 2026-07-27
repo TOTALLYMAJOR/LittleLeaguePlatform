@@ -1,15 +1,12 @@
 import { randomUUID } from "node:crypto";
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
+import { pathToFileURL } from "node:url";
 import { chromium } from "@playwright/test";
 import { createClient } from "@supabase/supabase-js";
 import {
-  assertIsolatedQaTarget,
-  assertQaApplicationTarget,
-  assertServiceRoleCredential,
   captureQaAppInvocation,
-  preflightQaApplicationIdentity,
-  preflightServiceRoleCredential
+  runGuardedQaMutation
 } from "./qa-target-guard.mjs";
 
 const envFile = ".env.local";
@@ -158,15 +155,7 @@ async function addParentSession(context) {
   }]);
 }
 
-loadLocalEnv();
-const supabaseUrl = requireEnv("NEXT_PUBLIC_SUPABASE_URL");
-const serviceRoleKey = requireEnv("SUPABASE_SERVICE_ROLE_KEY");
-const supabaseTarget = assertIsolatedQaTarget(supabaseUrl, "Communication Room proof");
-assertQaApplicationTarget(baseUrl, appInvocation);
-assertServiceRoleCredential(serviceRoleKey);
-await preflightQaApplicationIdentity(baseUrl, supabaseTarget, { invocation: appInvocation });
-await preflightServiceRoleCredential(supabaseUrl, serviceRoleKey);
-
+async function runCommunicationRoomProof(supabaseUrl, serviceRoleKey) {
 mkdirSync(outputDir, { recursive: true });
 const db = createClient(
   supabaseUrl,
@@ -295,4 +284,28 @@ if (report.criticalAcknowledgment.status === "blocked") {
   process.exitCode = 2;
 } else {
   console.log("Communication Room populated-record proof passed.");
+}
+}
+
+export async function main({ guard = runGuardedQaMutation } = {}) {
+  loadLocalEnv();
+  const supabaseUrl = requireEnv("NEXT_PUBLIC_SUPABASE_URL");
+  const serviceRoleKey = requireEnv("SUPABASE_SERVICE_ROLE_KEY");
+
+  return guard({
+    action: "Communication Room proof",
+    appBaseUrl: baseUrl,
+    appInvocation,
+    serviceRoleCredential: serviceRoleKey,
+    supabaseUrl
+  }, () => runCommunicationRoomProof(supabaseUrl, serviceRoleKey));
+}
+
+const isDirectRun =
+  process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href;
+if (isDirectRun) {
+  main().catch((error) => {
+    console.error(error instanceof Error ? error.message : error);
+    process.exit(1);
+  });
 }
