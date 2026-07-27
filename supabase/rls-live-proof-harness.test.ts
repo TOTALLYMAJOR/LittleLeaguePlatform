@@ -1,20 +1,60 @@
 import { readFileSync } from "node:fs";
 import { afterEach, describe, expect, it, vi } from "vitest";
+// @ts-expect-error The executable MJS harness intentionally has no TS declaration.
 import * as actorModule from "../scripts/verify-rls-actor-action-matrix.mjs";
+// @ts-expect-error The executable MJS harness intentionally has no TS declaration.
 import * as realtimeModule from "../scripts/verify-realtime-boundaries.mjs";
 
+type ProofFixtureCounts = {
+  organizations: number;
+  teams: number;
+  families: number;
+  events?: number;
+  chatChannels?: number;
+  providerRecords: number;
+};
+
+type ProofCheck = [name: string, expected: "allow" | "deny", ...details: unknown[]];
+type GuardPreflight = (
+  url: string,
+  credential: string
+) => Promise<unknown>;
+type GuardResult = {
+  url: string;
+  target: { kind: string; projectRef: string };
+};
+type RealtimeChange = {
+  table: string;
+  id: string;
+  event: string;
+  version: string;
+};
+
 const actor = actorModule as unknown as {
-  buildActorActionPlan: () => any;
-  redactActorActionPlan: (plan: any) => any;
-  guardActorActionExecution: (env: NodeJS.ProcessEnv, options: { preflight: ReturnType<typeof vi.fn> }) => Promise<any>;
+  buildActorActionPlan: () => {
+    runId: string;
+    ids: { organizations: string[] };
+    fixtureCounts: ProofFixtureCounts;
+    cleanup: { strategy: string; status: string; order: string[] };
+    waves: Array<{ checks: ProofCheck[] }>;
+  };
+  guardActorActionExecution: (
+    env: NodeJS.ProcessEnv,
+    options: { preflight: GuardPreflight }
+  ) => Promise<GuardResult>;
   main: (argv?: string[]) => Promise<void>;
 };
 const realtime = realtimeModule as unknown as {
-  buildRealtimePlan: () => any;
-  redactRealtimePlan: (plan: any) => any;
-  guardRealtimeExecution: (env: NodeJS.ProcessEnv, options: { preflight: ReturnType<typeof vi.fn> }) => Promise<any>;
+  buildRealtimePlan: () => {
+    fixtureCounts: ProofFixtureCounts;
+    checks: ProofCheck[];
+  };
+  guardRealtimeExecution: (
+    env: NodeJS.ProcessEnv,
+    options: { preflight: GuardPreflight }
+  ) => Promise<GuardResult>;
   createVersionedChangeCollector: () => {
-    accept: (change: any) => { accepted: boolean; reason: string };
+    accept: (change: RealtimeChange) => { accepted: boolean; reason: string };
     count: () => number;
   };
   main: (argv?: string[]) => Promise<void>;
@@ -32,6 +72,7 @@ function jwtForRole(role: string) {
 
 function hostedEnv(kind: "actor" | "realtime"): NodeJS.ProcessEnv {
   return {
+    NODE_ENV: "test",
     NEXT_PUBLIC_SUPABASE_URL: QA_URL,
     SUPABASE_SERVICE_ROLE_KEY: jwtForRole("service_role"),
     SUPABASE_QA_TARGET_REF: QA_REF,
@@ -67,14 +108,14 @@ describe("live proof harness plans", () => {
     });
     expect(first.cleanup.order.at(-1)).toBe("auth.users");
 
-    const dimensions = first.waves.flatMap((wave: any) =>
-      wave.checks.map(([name]: [string]) => name)
+    const dimensions = first.waves.flatMap((wave) =>
+      wave.checks.map(([name]) => name)
     ).join(" ");
     expect(dimensions).toMatch(/wrong-role/);
     expect(dimensions).toMatch(/cross-team/);
     expect(dimensions).toMatch(/cross-family/);
     expect(dimensions).toMatch(/cross-organization/);
-    expect(first.waves.every((wave: any) => wave.checks.every((check: any) =>
+    expect(first.waves.every((wave) => wave.checks.every((check) =>
       ["allow", "deny"].includes(check[1])
     ))).toBe(true);
   });
@@ -97,7 +138,7 @@ describe("live proof harness plans", () => {
 
   it("enumerates Realtime auth, isolation, reconnect, and version checks separately from REST", () => {
     const plan = realtime.buildRealtimePlan();
-    const checks = plan.checks.map(([name]: [string]) => name).join(" ");
+    const checks = plan.checks.map(([name]) => name).join(" ");
     expect(plan.fixtureCounts).toMatchObject({
       organizations: 2,
       teams: 2,
