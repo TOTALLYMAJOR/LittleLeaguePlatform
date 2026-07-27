@@ -42,6 +42,10 @@ const actor = actorModule as unknown as {
     env: NodeJS.ProcessEnv,
     options: { preflight: GuardPreflight }
   ) => Promise<GuardResult>;
+  assertActorCredentialSeparation: (
+    anonKey: string,
+    serviceCredential: string
+  ) => void;
   main: (argv?: string[]) => Promise<void>;
 };
 const realtime = realtimeModule as unknown as {
@@ -53,6 +57,10 @@ const realtime = realtimeModule as unknown as {
     env: NodeJS.ProcessEnv,
     options: { preflight: GuardPreflight }
   ) => Promise<GuardResult>;
+  assertRealtimeCredentialSeparation: (
+    anonKey: string,
+    serviceCredential: string
+  ) => void;
   createVersionedChangeCollector: () => {
     accept: (change: RealtimeChange) => { accepted: boolean; reason: string };
     count: () => number;
@@ -230,6 +238,28 @@ describe("fail-closed execution guards", () => {
     expect(preflight).not.toHaveBeenCalled();
   });
 
+  it.each([
+    ["actor", actor.assertActorCredentialSeparation],
+    ["realtime", realtime.assertRealtimeCredentialSeparation]
+  ] as const)("rejects privileged or malformed browser credentials for %s", (_kind, guard) => {
+    const serviceCredential = jwtForRole("service_role");
+
+    expect(() => guard(jwtForRole("anon"), serviceCredential)).not.toThrow();
+    expect(() => guard("sb_publishable_qa_public", serviceCredential)).not.toThrow();
+    expect(() => guard(serviceCredential, serviceCredential)).toThrow(
+      "must differ"
+    );
+    expect(() => guard(jwtForRole("service_role"), "sb_secret_qa_service")).toThrow(
+      "anon JWT or publishable key"
+    );
+    expect(() => guard(jwtForRole("authenticated"), serviceCredential)).toThrow(
+      "must carry the anon role"
+    );
+    expect(() => guard("malformed-public-key", serviceCredential)).toThrow(
+      "must carry the anon role"
+    );
+  });
+
   it("imports Supabase and creates clients only after both guard calls", () => {
     for (const file of [
       "scripts/verify-rls-actor-action-matrix.mjs",
@@ -239,12 +269,17 @@ describe("fail-closed execution guards", () => {
       const isolated = source.indexOf("assertIsolatedQaTarget(url");
       const credential = source.indexOf("assertServiceRoleCredential(credential");
       const preflight = source.indexOf("await preflight(url, credential)");
+      const publicCredential = source.indexOf(
+        "CredentialSeparation(anonKey",
+        preflight
+      );
       const dynamicImport = source.indexOf('await import("@supabase/supabase-js")');
       const clientCreation = source.indexOf("createClient(guarded.url");
       expect(isolated).toBeGreaterThan(-1);
       expect(credential).toBeGreaterThan(isolated);
       expect(preflight).toBeGreaterThan(credential);
-      expect(dynamicImport).toBeGreaterThan(preflight);
+      expect(publicCredential).toBeGreaterThan(preflight);
+      expect(dynamicImport).toBeGreaterThan(publicCredential);
       expect(clientCreation).toBeGreaterThan(dynamicImport);
       expect(source).not.toContain('import { createClient } from "@supabase/supabase-js"');
     }

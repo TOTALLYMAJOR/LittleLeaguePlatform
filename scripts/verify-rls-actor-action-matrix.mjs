@@ -135,6 +135,34 @@ function requiredEnv(name, env) {
   return value;
 }
 
+function jwtRole(value) {
+  const segments = value.split(".");
+  if (segments.length !== 3) return undefined;
+  try {
+    return JSON.parse(Buffer.from(segments[1], "base64url").toString()).role;
+  } catch {
+    return undefined;
+  }
+}
+
+export function assertActorCredentialSeparation(anonKey, serviceCredential) {
+  if (anonKey === serviceCredential) {
+    throw new Error(
+      "NEXT_PUBLIC_SUPABASE_ANON_KEY must differ from SUPABASE_SERVICE_ROLE_KEY."
+    );
+  }
+  if (anonKey.startsWith("sb_secret_") || jwtRole(anonKey) === "service_role") {
+    throw new Error(
+      "NEXT_PUBLIC_SUPABASE_ANON_KEY must be an anon JWT or publishable key."
+    );
+  }
+  if (!anonKey.startsWith("sb_publishable_") && jwtRole(anonKey) !== "anon") {
+    throw new Error(
+      "NEXT_PUBLIC_SUPABASE_ANON_KEY must carry the anon role or be a publishable key."
+    );
+  }
+}
+
 function assertExecuteConfirmation(env) {
   if (env.RLS_PROOF_EXECUTE_CONFIRM !== EXECUTE_CONFIRMATION) {
     throw new Error(
@@ -419,6 +447,7 @@ export async function executeActorActionHarness({
   logger(JSON.stringify(redactActorActionPlan(plan), null, 2));
   const guarded = await guardActorActionExecution(env);
   const anonKey = requiredEnv("NEXT_PUBLIC_SUPABASE_ANON_KEY", env);
+  assertActorCredentialSeparation(anonKey, guarded.credential);
   const { createClient } = await import("@supabase/supabase-js");
   const service = createClient(guarded.url, guarded.credential, {
     auth: { autoRefreshToken: false, persistSession: false }
