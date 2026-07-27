@@ -65,6 +65,7 @@
     "@types/web-push": "^3.6.4",
     "eslint": "^9.39.2",
     "eslint-config-next": "^16.2.9",
+    "fake-indexeddb": "^6.2.5",
     "supabase": "2.109.1",
     "typescript": "^5.9.3",
     "vitest": "^3.2.6"

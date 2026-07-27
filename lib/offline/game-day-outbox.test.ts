@@ -1,6 +1,8 @@
-import { describe, expect, it, vi } from "vitest";
+import { IDBFactory } from "fake-indexeddb";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import {
   GameDayOutboxEngine,
+  IndexedDbGameDayOutboxStore,
   MemoryGameDayOutboxStore,
   classifyOfflineFailure,
   endpointForOfflineAction,
@@ -300,5 +302,128 @@ describe("game-day offline outbox policy", () => {
     const [receipt] = await engine.sync(scope, { actorId: "actor-1" }, async () => ({ ok: true, status: 200 }));
     expect(receipt).toMatchObject({ actionId: "action-1", syncedAt: expect.any(String) });
     expect(receipt).not.toHaveProperty("payload");
+  });
+});
+
+describe("IndexedDB game-day outbox adapter contract", () => {
+  const originalIndexedDb = Object.getOwnPropertyDescriptor(
+    globalThis,
+    "indexedDB"
+  );
+
+  beforeEach(() => {
+    Object.defineProperty(globalThis, "indexedDB", {
+      configurable: true,
+      value: new IDBFactory()
+    });
+  });
+
+  afterEach(() => {
+    if (originalIndexedDb) {
+      Object.defineProperty(globalThis, "indexedDB", originalIndexedDb);
+    } else {
+      Reflect.deleteProperty(globalThis, "indexedDB");
+    }
+  });
+
+  it("structurally clones records and atomically suppresses two-engine duplicate sends", async () => {
+    const store = new IndexedDbGameDayOutboxStore();
+    const first = new GameDayOutboxEngine(store, "indexed-tab-1");
+    const second = new GameDayOutboxEngine(store, "indexed-tab-2");
+    const input = action("indexed-action-1");
+    await first.queue(input, new Date("2026-07-19T10:00:00.000Z"));
+
+    (input.payload.nested as { answer: string }).answer = "changed";
+    const saved = await store.list(
+      scope,
+      new Date("2026-07-19T10:00:01.000Z")
+    );
+    expect(saved[0]?.payload).toEqual({ nested: { answer: "going" } });
+    (saved[0]!.payload.nested as { answer: string }).answer = "changed again";
+    expect((await store.list(
+      scope,
+      new Date("2026-07-19T10:00:02.000Z")
+    ))[0]?.payload).toEqual({ nested: { answer: "going" } });
+
+    const send = vi.fn(async () => ({ ok: true, status: 200 }));
+    await Promise.all([
+      first.sync(
+        scope,
+        { actorId: scope.actorId },
+        send,
+        new Date("2026-07-19T10:01:00.000Z")
+      ),
+      second.sync(
+        scope,
+        { actorId: scope.actorId },
+        send,
+        new Date("2026-07-19T10:01:00.000Z")
+      )
+    ]);
+
+    expect(send).toHaveBeenCalledTimes(1);
+    expect(await store.summary(
+      scope,
+      new Date("2026-07-19T10:02:00.000Z")
+    )).toMatchObject({ queued: 0, synced: 1 });
+  });
+
+  it("matches owner fencing, scoped clearing, expiration, and receipt reuse semantics", async () => {
+    const store = new IndexedDbGameDayOutboxStore();
+    const engine = new GameDayOutboxEngine(store, "indexed-tab-1");
+    const otherActor = { ...scope, actorId: "actor-2" };
+    const capturedGeneration = await engine.ownerGeneration(scope.actorId);
+
+    await store.enqueue(action("indexed-action-1"));
+    await store.enqueue({ ...action("indexed-action-2"), ...otherActor });
+    await store.clearOwner(scope.actorId);
+
+    await expect(engine.queue(
+      action("indexed-late-3"),
+      new Date("2026-07-19T10:01:00.000Z"),
+      capturedGeneration
+    )).rejects.toThrow(/owner changed/);
+    expect(await store.list(scope)).toHaveLength(0);
+    expect(await store.list(otherActor)).toHaveLength(1);
+
+    const expiringAction = action("indexed-expiring-4");
+    await engine.queue(
+      expiringAction,
+      new Date("2026-07-19T10:00:00.000Z")
+    );
+    const actionExpiry = new Date("2026-07-26T10:00:00.000Z");
+    const send = vi.fn(async () => ({ ok: true, status: 200 }));
+    expect(await engine.sync(
+      scope,
+      { actorId: scope.actorId },
+      send,
+      actionExpiry
+    )).toEqual([]);
+    expect(send).not.toHaveBeenCalled();
+
+    const receiptAction = action("indexed-receipt-5", {
+      queuedAt: "2026-07-26T10:01:00.000Z"
+    });
+    await engine.queue(
+      receiptAction,
+      new Date("2026-07-26T10:01:00.000Z")
+    );
+    await engine.sync(
+      scope,
+      { actorId: scope.actorId },
+      send,
+      new Date("2026-07-26T10:02:00.000Z")
+    );
+    const receiptExpiry = new Date("2026-08-25T10:02:00.000Z");
+    expect(await store.summary(scope, receiptExpiry)).toMatchObject({
+      synced: 0
+    });
+    await expect(engine.queue(
+      receiptAction,
+      receiptExpiry
+    )).resolves.toMatchObject({
+      actionId: "indexed-receipt-5",
+      state: "queued"
+    });
   });
 });
