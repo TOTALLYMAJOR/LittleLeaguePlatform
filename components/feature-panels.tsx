@@ -5,7 +5,8 @@ import { markLeaguePilotValueExperienced, useAppState } from "@/app/providers";
 import {
   queueOfflineGameDayAction,
   syncContextOutbox,
-  type OfflineGameDayAction
+  type OfflineGameDayAction,
+  type QueueOfflineGameDayActionInput
 } from "@/lib/offline/game-day-outbox";
 import {
   NOW,
@@ -961,6 +962,30 @@ async function authenticatedJsonFetch(url: string, payload: unknown, extraHeader
     headers,
     body: JSON.stringify(payload)
   });
+}
+
+async function getOfflineReplaySession(expectedActorId: string) {
+  try {
+    const supabase = createSupabaseBrowserClient();
+    const readSession = async () => {
+      const { data } = await supabase.auth.getSession();
+      const session = data.session;
+      return Boolean(
+        session?.user.id === expectedActorId
+        && session.expires_at
+        && session.expires_at * 1000 > Date.now()
+      );
+    };
+    const { data } = await supabase.auth.getSession();
+    if (!data.session || data.session.user.id !== expectedActorId || !data.session.expires_at) return null;
+    return {
+      actorId: data.session.user.id,
+      expiresAt: new Date(data.session.expires_at * 1000).toISOString(),
+      validate: readSession
+    };
+  } catch {
+    return null;
+  }
 }
 
 function mediaReviewPriority(item: MediaItem) {
@@ -2551,7 +2576,7 @@ export function ParentRsvpClient({ dashboardData }: { dashboardData?: ParentCoac
   const parentUserId = dashboardData?.parentUserId ?? "user-parent-jordan";
   const parentUser = displayState.users.find((user) => user.id === parentUserId);
   const dashboard = getParentDashboard(displayState, parentUserId, NOW);
-  const parentContextKey = `parent:${displayState.organization.id}:${displayState.activeSeason.id}:${dashboard.children.map(({ team }) => team.id).sort().join(",") || "none"}`;
+  const parentContextKey = `parent:${parentUserId}:${displayState.organization.id}:${displayState.activeSeason.id}:${dashboard.children.map(({ team }) => team.id).sort().join(",") || "none"}`;
   const offlineWritesEnabled = process.env.NEXT_PUBLIC_OFFLINE_WRITES_ENABLED === "true";
   const accessGate = privateAccessGate(dashboardData, "parent");
   const isArchivedSeason = displayState.activeSeason.status === "archived";
@@ -2567,8 +2592,16 @@ export function ParentRsvpClient({ dashboardData }: { dashboardData?: ParentCoac
       rsvp: displayState.rsvps.find((item) => item.eventId === event.id && item.playerId === player.id)
     })));
 
-  async function sendQueuedRsvp(action: OfflineGameDayAction) {
-    const response = await authenticatedJsonFetch(action.endpoint, action.payload, {
+  const parentOfflineScope = {
+    actorId: parentUserId,
+    organizationId: sourceState.organization.id,
+    seasonId: sourceState.activeSeason.id,
+    contextKey: parentContextKey,
+    familyId: parentUserId
+  };
+
+  async function sendQueuedRsvp(action: OfflineGameDayAction, endpoint: string) {
+    const response = await authenticatedJsonFetch(endpoint, action.payload, {
       "Idempotency-Key": action.actionId,
       "X-LeaguePilot-Offline-Replay": "true"
     });
@@ -2582,16 +2615,22 @@ export function ParentRsvpClient({ dashboardData }: { dashboardData?: ParentCoac
   useEffect(() => {
     if (!offlineWritesEnabled || typeof window === "undefined") return;
     const sync = () => {
-      void syncContextOutbox(parentContextKey, sendQueuedRsvp).then((results) => {
-        const conflict = results.find((result) => result.conflictDetail);
-        if (conflict) setMessage(`Sync conflict: ${conflict.conflictDetail}`);
-        else if (results.some((result) => result.succeededAt)) setMessage("Offline RSVP synced to current team records.");
+      void getOfflineReplaySession(parentUserId).then((session) => {
+        if (!session) {
+          setMessage("Sign-in required before saved RSVP actions can sync.");
+          return [];
+        }
+        return syncContextOutbox(parentOfflineScope, session, sendQueuedRsvp);
+      }).then((results) => {
+        const conflict = results.find((result) => "conflictDetail" in result && result.conflictDetail);
+        if (conflict && "conflictDetail" in conflict) setMessage(`Sync conflict: ${conflict.conflictDetail}`);
+        else if (results.some((result) => "syncedAt" in result)) setMessage("Offline RSVP synced to current team records.");
       }).catch(() => undefined);
     };
     if (navigator.onLine) sync();
     window.addEventListener("online", sync);
     return () => window.removeEventListener("online", sync);
-  }, [offlineWritesEnabled, parentContextKey]);
+  }, [offlineWritesEnabled, parentContextKey, parentUserId, sourceState.activeSeason.id, sourceState.organization.id]);
 
   function save(eventId: string, playerId: string, response: RsvpResponse) {
     startTransition(async () => {
@@ -2607,11 +2646,14 @@ export function ParentRsvpClient({ dashboardData }: { dashboardData?: ParentCoac
         expectedLockVersion: currentRsvp?.lockVersion ?? 0,
         expectedScheduleVersion: event?.scheduleVersion ?? 1
       };
-      const queuedAction: OfflineGameDayAction = {
+      const queuedAction: QueueOfflineGameDayActionInput = {
         actionId,
         actionType: "rsvp",
         contextKey: parentContextKey,
-        endpoint: "/api/rsvps",
+        actorId: parentUserId,
+        organizationId: sourceState.organization.id,
+        seasonId: sourceState.activeSeason.id,
+        familyId: parentUserId,
         payload,
         queuedAt: new Date().toISOString(),
         retryCount: 0,
@@ -2815,8 +2857,16 @@ export function CoachDashboardClient({ dashboardData }: { dashboardData?: Parent
     now: NOW
   });
 
-  async function sendQueuedFieldAction(action: OfflineGameDayAction) {
-    const response = await authenticatedJsonFetch(action.endpoint, action.payload, {
+  const coachOfflineScope = {
+    actorId: coachId,
+    organizationId: sourceState.organization.id,
+    seasonId: sourceState.activeSeason.id,
+    contextKey: coachContextKey,
+    teamId: primaryCoachTeam?.id ?? "none"
+  };
+
+  async function sendQueuedFieldAction(action: OfflineGameDayAction, endpoint: string) {
+    const response = await authenticatedJsonFetch(endpoint, action.payload, {
       "Idempotency-Key": action.actionId,
       "X-LeaguePilot-Offline-Replay": "true"
     });
@@ -2829,7 +2879,7 @@ export function CoachDashboardClient({ dashboardData }: { dashboardData?: Parent
 
   useEffect(() => {
     if (!nextAssignedEvent || typeof window === "undefined") return;
-    const packKey = `leaguepilot-context:${coachContextKey}:game-day-pack`;
+    const packKey = `leaguepilot-context:${coachId}:${coachContextKey}:game-day-pack`;
     try {
       localStorage.setItem(packKey, JSON.stringify({
         cachedAt: new Date().toISOString(),
@@ -2853,20 +2903,25 @@ export function CoachDashboardClient({ dashboardData }: { dashboardData?: Parent
   useEffect(() => {
     if (!offlineWritesEnabled || typeof window === "undefined") return;
     const sync = () => {
-      void syncContextOutbox(coachContextKey, sendQueuedFieldAction).then((results) => {
-        const conflict = results.find((result) => result.conflictDetail);
-        if (conflict) setActionMessage(`Sync conflict: ${conflict.conflictDetail}`);
-        else if (results.some((result) => result.succeededAt)) setActionMessage("Field Mode changes synced to team records.");
+      void getOfflineReplaySession(coachId).then((session) => {
+        if (!session) {
+          setActionMessage("Sign-in required before saved Field Mode actions can sync.");
+          return [];
+        }
+        return syncContextOutbox(coachOfflineScope, session, sendQueuedFieldAction);
+      }).then((results) => {
+        const conflict = results.find((result) => "conflictDetail" in result && result.conflictDetail);
+        if (conflict && "conflictDetail" in conflict) setActionMessage(`Sync conflict: ${conflict.conflictDetail}`);
+        else if (results.some((result) => "syncedAt" in result)) setActionMessage("Field Mode changes synced to team records.");
       }).catch(() => undefined);
     };
     if (navigator.onLine) sync();
     window.addEventListener("online", sync);
     return () => window.removeEventListener("online", sync);
-  }, [coachContextKey, offlineWritesEnabled]);
+  }, [coachContextKey, coachId, offlineWritesEnabled, primaryCoachTeam?.id, sourceState.activeSeason.id, sourceState.organization.id]);
 
   function submitFieldAction(input: {
     actionType: "attendance" | "coach_note";
-    endpoint: string;
     payload: Record<string, unknown>;
     playerId?: string;
     attendanceValue?: "present" | "absent" | "late";
@@ -2876,11 +2931,14 @@ export function CoachDashboardClient({ dashboardData }: { dashboardData?: Parent
       const actionId = typeof crypto !== "undefined" && "randomUUID" in crypto
         ? crypto.randomUUID()
         : `field-${Date.now()}-${Math.random().toString(16).slice(2)}`;
-      const action: OfflineGameDayAction = {
+      const action: QueueOfflineGameDayActionInput = {
         actionId,
         actionType: input.actionType,
         contextKey: coachContextKey,
-        endpoint: input.endpoint,
+        actorId: coachId,
+        organizationId: sourceState.organization.id,
+        seasonId: sourceState.activeSeason.id,
+        teamId: primaryCoachTeam?.id ?? "none",
         payload: input.payload,
         queuedAt: new Date().toISOString(),
         retryCount: 0,
@@ -2899,7 +2957,8 @@ export function CoachDashboardClient({ dashboardData }: { dashboardData?: Parent
         setActionMessage("Waiting to sync. This Field Mode change is saved on this device only.");
         return;
       }
-      const apiResponse = await authenticatedJsonFetch(input.endpoint, input.payload, { "Idempotency-Key": actionId })
+      const endpoint = input.actionType === "attendance" ? "/api/coach/attendance" : "/api/coach/event-notes";
+      const apiResponse = await authenticatedJsonFetch(endpoint, input.payload, { "Idempotency-Key": actionId })
         .catch(async () => {
           if (offlineWritesEnabled) await queueOfflineGameDayAction(action);
           return null;
@@ -2931,7 +2990,6 @@ export function CoachDashboardClient({ dashboardData }: { dashboardData?: Parent
     if (!nextAssignedEvent) return;
     submitFieldAction({
       actionType: "attendance",
-      endpoint: "/api/coach/attendance",
       playerId,
       attendanceValue,
       payload: {
@@ -2948,7 +3006,6 @@ export function CoachDashboardClient({ dashboardData }: { dashboardData?: Parent
     if (!nextAssignedEvent || !fieldNote.trim()) return;
     submitFieldAction({
       actionType: "coach_note",
-      endpoint: "/api/coach/event-notes",
       payload: {
         eventId: nextAssignedEvent.id,
         body: fieldNote,
