@@ -93,12 +93,12 @@ epic_outcome: Remaining approved local implementation and proof gaps are closed 
 depends_on: []
 owns:
   - scripts/audit-rls-policy-overlaps.mjs
-  - scripts/audit-rls-policy-overlaps.test.mjs
+  - tools/audit-rls-policy-overlaps.test.mjs
   - supabase/rls-policy-overlap-review.sql
   - docs/rls-policy-overlap-review-2026-07-27.md
 validate:
   - npm ci --ignore-scripts --prefer-offline
-  - npx vitest run scripts/audit-rls-policy-overlaps.test.mjs
+  - npx vitest run tools/audit-rls-policy-overlaps.test.mjs
   - node scripts/audit-rls-policy-overlaps.mjs --verify
   - git diff --check
 risk_score: 7
@@ -136,10 +136,10 @@ Do not edit any RLS policy or connect to preview/production in this task.
 - No migration, grant, policy, hosted project, provider, or production state is
   changed.
 
-## LP-OFFLINE-001 - Close deterministic offline and reconnect proof
+## LP-OFFLINE-001 - Close private, actor-bound offline and reconnect proof
 
 ```yaml
-estimate_hours: 7
+estimate_hours: 14
 epic_id: LOCAL-CLOSEOUT
 epic_title: Safe local backlog closeout
 epic_outcome: Remaining approved local implementation and proof gaps are closed without crossing hosted or provider authority.
@@ -149,79 +149,139 @@ owns:
   - lib/offline/game-day-outbox.test.ts
   - components/offline-sync-status.tsx
   - components/offline-sync-status.test.tsx
+  - components/ui/AppShell.tsx
+  - components/ui/AppShell.test.tsx
+  - components/feature-panels.tsx
+  - app/providers.tsx
   - app/offline/page.tsx
+  - public/offline.html
+  - public/sw.js
 validate:
   - npm ci --ignore-scripts --prefer-offline
-  - npx vitest run lib/offline/game-day-outbox.test.ts components/offline-sync-status.test.tsx app/routes-smoke.test.ts
+  - npx vitest run lib/offline/game-day-outbox.test.ts components/offline-sync-status.test.tsx components/ui/AppShell.test.tsx app/routes-smoke.test.ts
   - npm run typecheck
   - git diff --check
-risk_score: 6
+risk_score: 9
 ```
 
 Refactor the private game-day outbox around an injectable storage boundary so
 the real IndexedDB adapter and an in-memory proof adapter exercise the same
-reconciliation logic. Preserve the three approved low-authority action types
-only. Add deterministic proof for ordered replay, duplicate/idempotent replay,
-concurrent sync suppression, network retry, stale record or schedule conflict,
-conflict stop, successful removal, context-isolated cache clearing, and logout
-clearing.
+reconciliation and atomic-claim logic. Every queued action must be bound to the
+authenticated actor as well as organization, season, team or family context.
+Derive the only allowed endpoint from each of the three approved low-authority
+action types; never persist or trust a caller-provided endpoint.
+
+Use an atomic IndexedDB claim/lease or equivalent browser-wide lock so separate
+tabs, windows, and engine instances cannot send one action twice. Preserve
+causal queue order: a transient, authentication, authorization, validation, or
+conflict failure stops later actions in that context. Classify network, 429/5xx,
+400/404, 401/403, and 409/stale-version outcomes truthfully instead of labeling
+all failures as network retries. Add bounded retention, queue limits, and
+payload-free sync receipts so a real successful replay can be reported without
+retaining the private mutation payload.
+
+Wire an actual signed-in shell sign-out action. It must await an owner-scoped
+generation-fenced clear before Supabase sign-out and navigation so an in-flight
+request cannot resurrect private data. Actor changes and expired sessions must
+stop replay and hide or clear another actor's queue. Context clearing must be a
+single atomic operation and must not delete another actor or context.
 
 Expose an accessible offline status summary with truthful queued, retrying,
-conflict, and synced states. It must never display payload contents or private
-child details and must direct conflicts to online review instead of silently
-overwriting server truth. This task uses fakes only; it does not make hosted,
-provider, or production calls.
+conflict, sign-in-required, review-required, and synced states. It must never
+display payload contents or private child details.
+
+Replace the service worker's cached dynamic `/offline` response with a
+non-personalized static fallback. Do not cache server-rendered shell HTML that
+contains role, organization, season, or session context. The cold offline
+fallback must work before `/offline` has ever been opened online, use a new
+cache version, and may show only payload-free queue/receipt counts. This task
+uses fakes and local static checks only; it does not make hosted, provider, or
+production calls.
 
 ### Acceptance Criteria
 
-- The same storage-neutral sync engine is covered against deterministic
-  in-memory storage and remains wired to IndexedDB for the browser.
-- Concurrent sync calls cannot send one queued action twice, successful actions
-  are removed, transient failures remain retryable, and a 409/stale-version
-  conflict stops later actions in that context until human review.
-- Per-context clearing cannot delete another family/team context, logout
-  clearing removes all private outbox data, and unsupported high-authority
-  actions remain rejected.
-- The offline route communicates status and review actions accessibly without
-  exposing stored payloads or claiming that queued work has reached the server.
+- Memory and real IndexedDB adapters implement the same atomic claim, lease,
+  receipt, generation, and clear contract; tests use two engines sharing one
+  store to prove cross-tab duplicate suppression.
+- Actor ID is part of every queue and receipt key. Actor mismatch, session
+  expiry, arbitrary endpoint injection, and type-to-endpoint mismatch fail
+  before fetch. Nested payloads are structurally cloned in both adapters.
+- A transient failure preserves causal order and remains bounded/retryable;
+  400/404, 401/403, 409, 429, 5xx, and network outcomes have distinct terminal
+  or review states. No private payload has unbounded retention.
+- Owner/context clearing is atomic. Sign-out awaits a generation-fenced clear,
+  and an in-flight failure or completion cannot recreate cleared data.
+- A persisted payload-free receipt makes the synced state truthful. The online
+  route and cold static fallback communicate accessible status without
+  exposing payloads, child details, personalized shell HTML, or false delivery.
+- The service worker uses a new cache and a static non-personalized fallback;
+  tests prove it never caches dynamic `/offline` HTML or private route HTML.
 
 ## LP-QA-GUARD-001 - Guard every mutating QA script from production
 
 ```yaml
-estimate_hours: 3
+estimate_hours: 6
 epic_id: LOCAL-CLOSEOUT
 epic_title: Safe local backlog closeout
 epic_outcome: Remaining approved local implementation and proof gaps are closed without crossing hosted or provider authority.
 depends_on: []
 owns:
+  - scripts/qa-target-guard.mjs
   - scripts/verify-qa-session-paths.mjs
   - scripts/capture-communication-room-record-proof.mjs
   - scripts/bootstrap-demo-tenant.mjs
+  - app/api/qa-target-identity/route.ts
+  - app/api/qa-target-identity/route.test.ts
   - supabase/qa-target-guard.test.ts
 validate:
   - npm ci --ignore-scripts --prefer-offline
-  - npx vitest run supabase/qa-target-guard.test.ts
+  - npx vitest run supabase/qa-target-guard.test.ts app/api/qa-target-identity/route.test.ts
+  - node --check scripts/bootstrap-demo-tenant.mjs
+  - node --check scripts/capture-communication-room-record-proof.mjs
+  - node --check scripts/verify-qa-session-paths.mjs
   - npm run typecheck
   - git diff --check
-risk_score: 8
+risk_score: 10
 ```
 
 Close the local production-safety gap in three existing scripts that can perform
-service-role or browser/API mutations. Reuse the established
-`assertIsolatedQaTarget` and `assertServiceRoleCredential` contract before any
-Supabase client, browser session, service-role call, auth upsert, or application
-mutation is created. Preserve each script's existing explicit confirmation and
-cleanup semantics as defense in depth.
+service-role or browser/API mutations. Extend the established isolated-target
+contract so both the Supabase project and the application base URL are bound
+before any client, auth session, browser, output directory, service-role call,
+or application mutation is created.
+
+Add a read-only application target-identity route that defaults disabled and
+exposes only the deployment class and public Supabase project ref derived from
+server configuration. Mutating browser scripts must preflight that route and
+prove it matches the explicitly selected isolated QA project. Reject the
+canonical production host and protected production project unconditionally. A
+non-loopback app URL also requires HTTPS, an exact invocation-only URL match,
+and a distinct mutation confirmation. Missing, unreachable, timed-out,
+malformed, non-2xx, cross-origin redirected, mismatched, disabled, or production
+identity must fail closed before sign-in, seeding, output creation, or mutation.
+
+Reject arbitrary opaque credential strings. Before any mutation, perform a
+read-only service-role preflight against the guarded Supabase URL and prove the
+credential is accepted by that exact project without printing it. Preserve each
+script's existing confirmation and cleanup semantics as defense in depth.
 
 ### Acceptance Criteria
 
-- QA session proof, communication-record proof, and fictional demo bootstrap
-  reject the protected production project and a production-like target before
-  creating a client or making a mutable request.
-- Service-role scripts validate credential/project binding before mutation and
-  never print secret values.
-- Static guard coverage fails if any of the three entry points moves client
-  creation ahead of the isolated-target and credential checks.
+- QA session proof and Communication Room proof bind their application URL and
+  target-identity response to the same explicitly selected isolated QA project
+  before browser creation, sign-in, fetch, screenshot setup, seeding, or
+  application mutation. This identity check is required for loopback too.
+- All three scripts reject the protected production project. Browser scripts
+  also reject `leaguepilot.us`, `www.leaguepilot.us`, an unconfirmed hosted app,
+  target-ref mismatch, cross-origin redirect, malformed identity, and a
+  production or unreachable identity route before mutable work.
+- Service-role scripts reject browser keys and arbitrary opaque values, then
+  prove credential/project binding through a read-only preflight before
+  mutation. Secret values are never logged or returned.
+- Tests prove every rejected target leaves client, browser, auth, filesystem,
+  insert, and upsert spies untouched. Static ordering coverage fails if any
+  target, credential, app URL, identity, or preflight check moves behind those
+  side effects.
 - No QA, preview, production, provider, or hosted script is executed as part of
   this task.
 
@@ -336,6 +396,7 @@ depends_on:
   - LP-RLS-PROOF-002
   - LP-LIFECYCLE-PROOF-001
 owns:
+  - README.md
   - docs/Features.md
   - docs/capability-matrix.md
   - docs/feature-fit-backlog.md
@@ -344,6 +405,10 @@ owns:
   - docs/tech-stack.md
   - docs/backlog-now.md
   - docs/backlog-next.md
+  - docs/runbook.md
+  - docs/build-progress.md
+  - docs/enterprise/deployment-operations.md
+  - docs/enterprise/test-release-plan.md
   - docs/backlog-closeout-2026-07-27.md
 validate:
   - git diff --check
@@ -367,6 +432,11 @@ current safe defaults as deferred, not approved expansions: draft/internal
 provider records only, link-only media, sponsor proof-only billing, PWA-first,
 and Preview OpenAI out of scope. Do not invent proof, expose project secrets, or
 mark external gates complete.
+
+Remove or clearly retire every current instruction that runs a mutating
+`qa:session-proof` or Communication Room proof against the production alias.
+Production acceptance must use a separately named read-only harness; the
+mutating scripts are isolated-QA-only after LP-QA-GUARD-001.
 
 ### Acceptance Criteria
 
