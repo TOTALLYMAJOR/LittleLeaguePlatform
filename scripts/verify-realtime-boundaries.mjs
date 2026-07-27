@@ -17,6 +17,8 @@ export function buildRealtimePlan() {
       organizations: [randomUUID(), randomUUID()],
       seasons: [randomUUID(), randomUUID()],
       teams: [randomUUID(), randomUUID()],
+      players: [randomUUID(), randomUUID()],
+      guardians: [randomUUID(), randomUUID()],
       channels: [randomUUID(), randomUUID()],
       messages: [randomUUID(), randomUUID(), randomUUID()]
     },
@@ -30,14 +32,19 @@ export function buildRealtimePlan() {
       seasons: 2,
       teams: 2,
       families: 2,
+      players: 2,
+      guardianLinks: 2,
       realtimeActors: 4,
       providerRecords: 0
     },
     checks: [
       ["authorized parent subscription reaches SUBSCRIBED", "allow"],
       ["authorized coach subscription reaches SUBSCRIBED", "allow"],
+      ["authorized sibling-team parent subscription reaches SUBSCRIBED", "allow"],
       ["target-team INSERT reaches authorized parent and coach", "deliver"],
       ["wrong-team actor receives no target-team event", "absent"],
+      ["cross-organization coach receives no target-team event", "absent"],
+      ["sibling-team INSERT reaches its authorized parent", "deliver"],
       ["team filter excludes sibling-team INSERT", "absent"],
       ["target-team UPDATE reaches authorized parent and coach", "deliver"],
       ["disconnect stops delivery", "absent"],
@@ -50,6 +57,8 @@ export function buildRealtimePlan() {
       order: [
         "team_chat_messages",
         "team_chat_channels",
+        "player_guardians",
+        "players",
         "team_memberships",
         "organization_memberships",
         "teams",
@@ -162,13 +171,19 @@ export function createVersionedChangeCollector() {
   };
 }
 
+export function normalizeChangeVersion(value) {
+  if (typeof value !== "string") return value;
+  const parsed = Date.parse(value);
+  return Number.isNaN(parsed) ? value : new Date(parsed).toISOString();
+}
+
 function normalizedChange(payload) {
   const row = payload.new ?? {};
   return {
     table: "team_chat_messages",
     id: row.id,
     event: payload.eventType,
-    version: row.edited_at ?? row.created_at
+    version: normalizeChangeVersion(row.edited_at ?? row.created_at)
   };
 }
 
@@ -191,7 +206,29 @@ function delay(ms) {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
-async function subscribe(client, name, teamId, collector, statuses) {
+export async function assertCollectorCountsStable(
+  expectations,
+  label,
+  quiescenceMs = 300
+) {
+  await delay(quiescenceMs);
+  if (
+    expectations.some(
+      ({ collector, expectedCount }) => collector.count() !== expectedCount
+    )
+  ) {
+    throw new Error(label);
+  }
+}
+
+async function subscribe(
+  client,
+  name,
+  teamId,
+  collector,
+  statuses,
+  channelRegistrations
+) {
   const channel = client
     .channel(name)
     .on(
@@ -205,8 +242,25 @@ async function subscribe(client, name, teamId, collector, statuses) {
       (payload) => collector.accept(normalizedChange(payload))
     )
     .subscribe((status) => statuses.push(status));
+  channelRegistrations.push({ client, channel });
   await waitFor(() => statuses.includes("SUBSCRIBED"), `${name} subscription`);
   return channel;
+}
+
+export async function removeTrackedChannel(
+  channelRegistrations,
+  client,
+  channel
+) {
+  const status = await client.removeChannel(channel);
+  if (status !== "ok") {
+    throw new Error("Realtime channel removal was incomplete.");
+  }
+  const index = channelRegistrations.findIndex(
+    (registration) =>
+      registration.client === client && registration.channel === channel
+  );
+  if (index >= 0) channelRegistrations.splice(index, 1);
 }
 
 async function createRealtimeFixture(service, plan, users) {
@@ -226,6 +280,7 @@ async function createRealtimeFixture(service, plan, users) {
   const [orgA, orgB] = plan.ids.organizations;
   const [seasonA, seasonB] = plan.ids.seasons;
   const [teamA, teamB] = plan.ids.teams;
+  const [playerA, playerB] = plan.ids.players;
   const now = Date.now();
   const inserts = [
     ["organizations", [
@@ -240,6 +295,10 @@ async function createRealtimeFixture(service, plan, users) {
       { id: teamA, organization_id: orgA, season_id: seasonA, division: "QA", name: "Realtime A", coach_user_id: users.coachA },
       { id: teamB, organization_id: orgA, season_id: seasonA, division: "QA", name: "Realtime B" }
     ]],
+    ["players", [
+      { id: playerA, organization_id: orgA, season_id: seasonA, team_id: teamA, first_name: "Realtime", last_initial: "A" },
+      { id: playerB, organization_id: orgA, season_id: seasonA, team_id: teamB, first_name: "Realtime", last_initial: "B" }
+    ]],
     ["organization_memberships", [
       { organization_id: orgA, user_id: users.coachA, role: "coach", status: "active" },
       { organization_id: orgB, user_id: users.coachOtherOrg, role: "coach", status: "active" }
@@ -248,6 +307,10 @@ async function createRealtimeFixture(service, plan, users) {
       { team_id: teamA, user_id: users.coachA, role: "coach", status: "active" },
       { team_id: teamA, user_id: users.parentA, role: "parent", status: "active" },
       { team_id: teamB, user_id: users.parentWrongTeam, role: "parent", status: "active" }
+    ]],
+    ["player_guardians", [
+      { id: plan.ids.guardians[0], player_id: playerA, parent_user_id: users.parentA, relationship: "guardian", status: "active" },
+      { id: plan.ids.guardians[1], player_id: playerB, parent_user_id: users.parentWrongTeam, relationship: "guardian", status: "active" }
     ]],
     ["team_chat_channels", [
       { id: plan.ids.channels[0], organization_id: orgA, season_id: seasonA, team_id: teamA },
@@ -281,6 +344,8 @@ async function cleanupRealtime(service, plan, users) {
         table === "organizations" ? plan.ids.organizations
           : table === "seasons" ? plan.ids.seasons
             : table === "teams" ? plan.ids.teams
+              : table === "players" ? plan.ids.players
+                : table === "player_guardians" ? plan.ids.guardians
               : table === "team_chat_channels" ? plan.ids.channels
                 : table === "team_chat_messages" ? plan.ids.messages
                   : null;
@@ -317,8 +382,7 @@ export async function executeRealtimeHarness({
   const service = createClient(guarded.url, guarded.credential, {
     auth: { autoRefreshToken: false, persistSession: false }
   });
-  const clients = [];
-  const channels = [];
+  const channelRegistrations = [];
   let users = {};
   let cleanup = { status: "not-started" };
   let proofResult;
@@ -328,18 +392,66 @@ export async function executeRealtimeHarness({
     const parent = await signInClient(createClient, guarded.url, anonKey, actors.parentA);
     const coach = await signInClient(createClient, guarded.url, anonKey, actors.coachA);
     const wrongTeam = await signInClient(createClient, guarded.url, anonKey, actors.parentWrongTeam);
-    clients.push(parent, coach, wrongTeam);
+    const crossOrg = await signInClient(
+      createClient,
+      guarded.url,
+      anonKey,
+      actors.coachOtherOrg
+    );
 
     const collectors = {
       parent: createVersionedChangeCollector(),
       coach: createVersionedChangeCollector(),
-      wrongTeam: createVersionedChangeCollector()
+      wrongTeam: createVersionedChangeCollector(),
+      siblingTeam: createVersionedChangeCollector(),
+      crossOrg: createVersionedChangeCollector()
     };
-    const statuses = { parent: [], coach: [], wrongTeam: [] };
-    channels.push(
-      await subscribe(parent, `qa-parent-${plan.runId}`, plan.ids.teams[0], collectors.parent, statuses.parent),
-      await subscribe(coach, `qa-coach-${plan.runId}`, plan.ids.teams[0], collectors.coach, statuses.coach),
-      await subscribe(wrongTeam, `qa-wrong-${plan.runId}`, plan.ids.teams[0], collectors.wrongTeam, statuses.wrongTeam)
+    const statuses = {
+      parent: [],
+      coach: [],
+      wrongTeam: [],
+      siblingTeam: [],
+      crossOrg: []
+    };
+    const parentChannel = await subscribe(
+      parent,
+      `qa-parent-${plan.runId}`,
+      plan.ids.teams[0],
+      collectors.parent,
+      statuses.parent,
+      channelRegistrations
+    );
+    await subscribe(
+      coach,
+      `qa-coach-${plan.runId}`,
+      plan.ids.teams[0],
+      collectors.coach,
+      statuses.coach,
+      channelRegistrations
+    );
+    await subscribe(
+      wrongTeam,
+      `qa-wrong-${plan.runId}`,
+      plan.ids.teams[0],
+      collectors.wrongTeam,
+      statuses.wrongTeam,
+      channelRegistrations
+    );
+    await subscribe(
+      wrongTeam,
+      `qa-sibling-${plan.runId}`,
+      plan.ids.teams[1],
+      collectors.siblingTeam,
+      statuses.siblingTeam,
+      channelRegistrations
+    );
+    await subscribe(
+      crossOrg,
+      `qa-cross-org-${plan.runId}`,
+      plan.ids.teams[0],
+      collectors.crossOrg,
+      statuses.crossOrg,
+      channelRegistrations
     );
 
     const insertTime = new Date().toISOString();
@@ -352,8 +464,13 @@ export async function executeRealtimeHarness({
     });
     if (result.error) throw new Error("Target-team Realtime insert failed.");
     await waitFor(() => collectors.parent.count() === 1 && collectors.coach.count() === 1, "target-team INSERT delivery");
-    await delay(300);
-    if (collectors.wrongTeam.count() !== 0) throw new Error("Wrong-team actor received target-team event.");
+    await assertCollectorCountsStable(
+      [
+        { collector: collectors.wrongTeam, expectedCount: 0 },
+        { collector: collectors.crossOrg, expectedCount: 0 }
+      ],
+      "Wrong-team or cross-organization actor received target-team event."
+    );
 
     result = await service.from("team_chat_messages").insert({
       id: plan.ids.messages[1], organization_id: plan.ids.organizations[0],
@@ -362,10 +479,17 @@ export async function executeRealtimeHarness({
       author_role: "parent", message_kind: "message", body: "Ephemeral sibling-team proof"
     });
     if (result.error) throw new Error("Sibling-team Realtime insert failed.");
-    await delay(300);
-    if (collectors.parent.count() !== 1 || collectors.coach.count() !== 1) {
-      throw new Error("Team filter leaked sibling-team event.");
-    }
+    await waitFor(
+      () => collectors.siblingTeam.count() === 1,
+      "sibling-team INSERT delivery"
+    );
+    await assertCollectorCountsStable(
+      [
+        { collector: collectors.parent, expectedCount: 1 },
+        { collector: collectors.coach, expectedCount: 1 }
+      ],
+      "Team filter leaked sibling-team event."
+    );
 
     const version2 = new Date(Date.now() + 1_000).toISOString();
     result = await service.from("team_chat_messages")
@@ -379,7 +503,11 @@ export async function executeRealtimeHarness({
     };
     if (collectors.parent.accept(duplicate).accepted) throw new Error("Duplicate version was not ignored.");
 
-    await parent.removeChannel(channels[0]);
+    await removeTrackedChannel(
+      channelRegistrations,
+      parent,
+      parentChannel
+    );
     const beforeDisconnect = collectors.parent.count();
     const version3 = new Date(Date.now() + 2_000).toISOString();
     result = await service.from("team_chat_messages")
@@ -387,15 +515,16 @@ export async function executeRealtimeHarness({
       .eq("id", plan.ids.messages[0]);
     if (result.error) throw new Error("Disconnected update failed.");
     await waitFor(() => collectors.coach.count() === 3, "coach delivery during parent disconnect");
-    await delay(300);
-    if (collectors.parent.count() !== beforeDisconnect) throw new Error("Disconnected client received an event.");
+    await assertCollectorCountsStable(
+      [{ collector: collectors.parent, expectedCount: beforeDisconnect }],
+      "Disconnected client received an event."
+    );
 
     const reconnectStatuses = [];
-    const reconnected = await subscribe(
+    await subscribe(
       parent, `qa-parent-reconnect-${plan.runId}`, plan.ids.teams[0],
-      collectors.parent, reconnectStatuses
+      collectors.parent, reconnectStatuses, channelRegistrations
     );
-    channels[0] = reconnected;
     const version4 = new Date(Date.now() + 3_000).toISOString();
     result = await service.from("team_chat_messages")
       .update({ body: "Ephemeral reconnected update", edited_at: version4 })
@@ -407,11 +536,42 @@ export async function executeRealtimeHarness({
     }
     proofResult = { status: "passed", checkCount: plan.checks.length };
   } finally {
+    const registrationsToClose = [...channelRegistrations];
+    const trackedChannelCount = registrationsToClose.length;
+    const channelCleanupResults = await Promise.allSettled(
+      registrationsToClose.map(({ client, channel }) =>
+        removeTrackedChannel(channelRegistrations, client, channel)
+      )
+    );
+    const clientsRequiringDisconnect = [
+      ...new Set(
+        registrationsToClose
+          .filter(
+            (_registration, index) =>
+              channelCleanupResults[index]?.status === "rejected"
+          )
+          .map(({ client }) => client)
+      )
+    ];
     await Promise.allSettled(
-      clients.flatMap((client) => channels.map((channel) => client.removeChannel(channel)))
+      clientsRequiringDisconnect.map((client) =>
+        client.realtime.disconnect()
+      )
     );
     cleanup = await cleanupRealtime(service, plan, users);
+    cleanup.channelCleanup = {
+      status: channelCleanupResults.some(
+        (result) => result.status === "rejected"
+      )
+        ? "incomplete"
+        : "complete",
+      trackedChannelCount,
+      forcedDisconnectClientCount: clientsRequiringDisconnect.length
+    };
     logger(JSON.stringify({ cleanup }, null, 2));
+    if (cleanup.channelCleanup.status !== "complete") {
+      throw new Error("Realtime channel cleanup was incomplete.");
+    }
     if (cleanup.status !== "complete") throw new Error("Ephemeral fixture cleanup was incomplete.");
   }
   return { ...proofResult, cleanup };

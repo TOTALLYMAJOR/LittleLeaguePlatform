@@ -7,7 +7,14 @@ import {
 } from "./qa-target-guard.mjs";
 
 const EXECUTE_CONFIRMATION = "run-ephemeral-rls-proof";
-const ACTOR_NAMES = ["adminA", "coachA", "coachB", "parentA", "parentB", "parentOtherOrg"];
+const ACTOR_NAMES = [
+  "adminA",
+  "coachA",
+  "coachB",
+  "parentA",
+  "parentB",
+  "coachOtherOrg"
+];
 
 function fixtureId() {
   return randomUUID();
@@ -26,8 +33,8 @@ export function buildActorActionPlan() {
     players: [fixtureId(), fixtureId(), fixtureId()],
     events: [fixtureId(), fixtureId()],
     channels: [fixtureId(), fixtureId()],
-    messages: [fixtureId(), fixtureId(), fixtureId()],
-    handoffs: [fixtureId(), fixtureId()]
+    messages: [fixtureId(), fixtureId(), fixtureId(), fixtureId()],
+    emergencyContacts: [fixtureId(), fixtureId(), fixtureId()]
   };
 
   return Object.freeze({
@@ -58,6 +65,7 @@ export function buildActorActionPlan() {
           ["wrong-role parentA cannot update team", "deny"],
           ["cross-team coachA cannot read sibling team player", "deny"],
           ["cross-organization parentA cannot read other organization", "deny"],
+          ["coachOtherOrg reads own organization", "allow"],
           ["cross-organization adminA cannot update other organization season", "deny"]
         ]
       },
@@ -66,11 +74,11 @@ export function buildActorActionPlan() {
         checks: [
           ["coachA reads assigned-team player", "allow"],
           ["coachA updates assigned-team player", "allow"],
-          ["parentA reads linked family handoff", "allow"],
-          ["cross-family parentB cannot read parentA family handoff", "deny"],
-          ["cross-family parentA cannot create handoff for parentB player", "deny"],
+          ["parentA reads linked family emergency contact", "allow"],
+          ["cross-family parentB cannot read parentA emergency contact", "deny"],
+          ["cross-family parentA cannot create contact for parentB player", "deny"],
           ["cross-team coachA cannot update sibling-team player", "deny"],
-          ["cross-organization coachA cannot read other organization season", "deny"]
+          ["cross-organization coachOtherOrg cannot read organization A season", "deny"]
         ]
       },
       {
@@ -90,14 +98,14 @@ export function buildActorActionPlan() {
           ["parentA creates assigned-team message", "allow"],
           ["cross-team parentA cannot read sibling-team message", "deny"],
           ["cross-team coachA cannot create sibling-team message", "deny"],
-          ["cross-organization coachA cannot read other organization", "deny"]
+          ["cross-organization coachOtherOrg cannot read organization A", "deny"]
         ]
       }
     ],
     cleanup: {
       strategy: "delete-exact-randomized-fixtures-only",
       order: [
-        "family_event_handoffs",
+        "emergency_contacts",
         "team_chat_messages",
         "team_chat_channels",
         "events",
@@ -223,6 +231,22 @@ function assertDenied(result, label) {
   }
 }
 
+async function assertTrackedDeniedInsert(
+  client,
+  table,
+  row,
+  trackedIds,
+  label
+) {
+  if (!trackedIds.includes(row.id)) {
+    throw new Error(`${label}: denial fixture ID is not tracked for cleanup.`);
+  }
+  assertDenied(
+    await client.from(table).insert(row).select("id"),
+    label
+  );
+}
+
 async function insertRows(client, table, rows) {
   const result = await client.from(table).insert(rows);
   assertNoError(result, `fixture insert ${table}`);
@@ -284,7 +308,7 @@ async function createFixture(client, plan, users) {
     { organization_id: orgA, user_id: users.adminA, role: "admin", status: "active" },
     { organization_id: orgA, user_id: users.coachA, role: "coach", status: "active" },
     { organization_id: orgA, user_id: users.coachB, role: "coach", status: "active" },
-    { organization_id: orgB, user_id: users.parentOtherOrg, role: "coach", status: "active" }
+    { organization_id: orgB, user_id: users.coachOtherOrg, role: "coach", status: "active" }
   ]);
   await insertRows(client, "team_memberships", [
     { team_id: teamA, user_id: users.coachA, role: "coach", status: "active" },
@@ -332,14 +356,22 @@ async function createFixture(client, plan, users) {
       message_kind: "message", body: "Ephemeral proof row"
     }
   ]);
-  await insertRows(client, "family_event_handoffs", [
+  await insertRows(client, "emergency_contacts", [
     {
-      id: plan.ids.handoffs[0], organization_id: orgA, team_id: teamA, event_id: eventA,
-      player_id: playerA, requested_by_user_id: users.parentA, caregiver_label: "Ephemeral guardian"
+      id: plan.ids.emergencyContacts[0],
+      player_id: playerA,
+      name: "Ephemeral Contact A",
+      phone: "555-0100",
+      relationship: "guardian",
+      created_by_user_id: users.parentA
     },
     {
-      id: plan.ids.handoffs[1], organization_id: orgA, team_id: teamA, event_id: eventA,
-      player_id: playerSameTeam, requested_by_user_id: users.parentB, caregiver_label: "Ephemeral guardian"
+      id: plan.ids.emergencyContacts[1],
+      player_id: playerSameTeam,
+      name: "Ephemeral Contact B",
+      phone: "555-0101",
+      relationship: "guardian",
+      created_by_user_id: users.parentB
     }
   ]);
   return users;
@@ -358,7 +390,7 @@ async function actorClient(createClient, url, anonKey, actor) {
 }
 
 async function runMatrix(clients, plan, users) {
-  const { adminA, coachA, parentA, parentB } = clients;
+  const { adminA, coachA, parentA, parentB, coachOtherOrg } = clients;
   const [orgA, orgB] = plan.ids.organizations;
   const [teamA, teamB] = plan.ids.teams;
   const [playerA, playerSameTeam, playerOtherTeam] = plan.ids.players;
@@ -369,18 +401,50 @@ async function runMatrix(clients, plan, users) {
   assertDenied(await parentA.from("teams").update({ mascot: "Denied" }).eq("id", teamA).select("id"), "wrong-role team write");
   assertDenied(await coachA.from("players").select("id").eq("id", playerOtherTeam), "cross-team player read");
   assertDenied(await parentA.from("organizations").select("id").eq("id", orgB), "cross-organization read");
+  assertAllowed(
+    await coachOtherOrg.from("organizations").select("id").eq("id", orgB),
+    "other-organization coach own organization read"
+  );
   assertDenied(await adminA.from("seasons").update({ name: "Denied" }).eq("id", plan.ids.seasons[1]).select("id"), "cross-organization season write");
 
   assertAllowed(await coachA.from("players").select("id").eq("id", playerA), "coach player read");
   assertAllowed(await coachA.from("players").update({ jersey: "QA" }).eq("id", playerA).select("id"), "coach player write");
-  assertAllowed(await parentA.from("family_event_handoffs").select("id").eq("id", plan.ids.handoffs[0]), "own-family handoff read");
-  assertDenied(await parentB.from("family_event_handoffs").select("id").eq("id", plan.ids.handoffs[0]), "cross-family handoff read");
-  assertDenied(await parentA.from("family_event_handoffs").insert({
-    organization_id: orgA, team_id: teamA, event_id: eventA, player_id: playerSameTeam,
-    requested_by_user_id: users.parentA, caregiver_label: "Denied guardian"
-  }).select("id"), "cross-family handoff write");
+  assertAllowed(
+    await parentA
+      .from("emergency_contacts")
+      .select("id")
+      .eq("id", plan.ids.emergencyContacts[0]),
+    "own-family emergency contact read"
+  );
+  assertDenied(
+    await parentB
+      .from("emergency_contacts")
+      .select("id")
+      .eq("id", plan.ids.emergencyContacts[0]),
+    "cross-family emergency contact read"
+  );
+  await assertTrackedDeniedInsert(
+    parentA,
+    "emergency_contacts",
+    {
+      id: plan.ids.emergencyContacts[2],
+      player_id: playerSameTeam,
+      name: "Denied Contact",
+      phone: "555-0199",
+      relationship: "guardian",
+      created_by_user_id: users.parentA
+    },
+    plan.ids.emergencyContacts,
+    "cross-family emergency contact write"
+  );
   assertDenied(await coachA.from("players").update({ jersey: "Denied" }).eq("id", playerOtherTeam).select("id"), "cross-team player write");
-  assertDenied(await coachA.from("seasons").select("id").eq("id", plan.ids.seasons[1]), "cross-organization season read");
+  assertDenied(
+    await coachOtherOrg
+      .from("seasons")
+      .select("id")
+      .eq("id", plan.ids.seasons[0]),
+    "cross-organization season read"
+  );
 
   assertAllowed(await parentA.from("events").select("id").eq("id", eventA), "parent event read");
   assertAllowed(await coachA.from("events").update({ location_name: "Ephemeral QA" }).eq("id", eventA).select("id"), "coach event write");
@@ -396,12 +460,22 @@ async function runMatrix(clients, plan, users) {
     message_kind: "message", body: "Ephemeral actor/action proof"
   }).select("id"), "parent chat write");
   assertDenied(await parentA.from("team_chat_messages").select("id").eq("id", plan.ids.messages[1]), "cross-team chat read");
-  assertDenied(await coachA.from("team_chat_messages").insert({
-    organization_id: orgA, season_id: plan.ids.seasons[0], team_id: teamB,
-    channel_id: plan.ids.channels[1], author_user_id: users.coachA,
-    author_role: "coach", message_kind: "message", body: "Denied proof row"
-  }).select("id"), "cross-team chat write");
-  assertDenied(await coachA.from("organizations").select("id").eq("id", orgB), "cross-organization chat-scope read");
+  await assertTrackedDeniedInsert(
+    coachA,
+    "team_chat_messages",
+    {
+      id: plan.ids.messages[3],
+      organization_id: orgA, season_id: plan.ids.seasons[0], team_id: teamB,
+      channel_id: plan.ids.channels[1], author_user_id: users.coachA,
+      author_role: "coach", message_kind: "message", body: "Denied proof row"
+    },
+    plan.ids.messages,
+    "cross-team chat write"
+  );
+  assertDenied(
+    await coachOtherOrg.from("organizations").select("id").eq("id", orgA),
+    "cross-organization chat-scope read"
+  );
 }
 
 async function cleanupFixture(client, plan, users) {
@@ -416,7 +490,7 @@ async function cleanupFixture(client, plan, users) {
                 : table === "events" ? plan.ids.events
                   : table === "team_chat_channels" ? plan.ids.channels
                     : table === "team_chat_messages" ? plan.ids.messages
-                      : table === "family_event_handoffs" ? plan.ids.handoffs
+                      : table === "emergency_contacts" ? plan.ids.emergencyContacts
                         : null;
       const query = client.from(table).delete();
       const userColumn = table === "player_guardians" ? "parent_user_id" : "user_id";

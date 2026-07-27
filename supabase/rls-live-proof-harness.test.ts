@@ -9,12 +9,25 @@ type ProofFixtureCounts = {
   organizations: number;
   teams: number;
   families: number;
+  players?: number;
+  guardianLinks?: number;
   events?: number;
   chatChannels?: number;
   providerRecords: number;
 };
 
-type ProofCheck = [name: string, expected: "allow" | "deny", ...details: unknown[]];
+type ProofExpectation =
+  | "allow"
+  | "deny"
+  | "deliver"
+  | "absent"
+  | "deduplicate"
+  | "apply";
+type ProofCheck = [
+  name: string,
+  expected: ProofExpectation,
+  ...details: unknown[]
+];
 type GuardPreflight = (
   url: string,
   credential: string
@@ -65,6 +78,20 @@ const realtime = realtimeModule as unknown as {
     accept: (change: RealtimeChange) => { accepted: boolean; reason: string };
     count: () => number;
   };
+  normalizeChangeVersion: (value: unknown) => unknown;
+  assertCollectorCountsStable: (
+    expectations: Array<{
+      collector: { count: () => number };
+      expectedCount: number;
+    }>,
+    label: string,
+    quiescenceMs?: number
+  ) => Promise<void>;
+  removeTrackedChannel: (
+    registrations: Array<{ client: unknown; channel: unknown }>,
+    client: { removeChannel: (channel: unknown) => Promise<string> },
+    channel: unknown
+  ) => Promise<void>;
   main: (argv?: string[]) => Promise<void>;
 };
 
@@ -128,6 +155,55 @@ describe("live proof harness plans", () => {
     ))).toBe(true);
   });
 
+  it("uses a browser-granted family table and tracks every denied insert for cleanup", () => {
+    const actorSource = readFileSync(
+      new URL(
+        "../scripts/verify-rls-actor-action-matrix.mjs",
+        import.meta.url
+      ),
+      "utf8"
+    );
+    const grants = readFileSync(
+      new URL(
+        "./migrations/20260726134836_data_api_service_role_grants.sql",
+        import.meta.url
+      ),
+      "utf8"
+    );
+    const browserGrantBlock =
+      grants.match(
+        /grant select, insert, update, delete on table([\s\S]*?)to anon, authenticated, service_role;/
+      )?.[1] ?? "";
+    const serverOnlyRevokeBlock =
+      grants.match(
+        /revoke all on table([\s\S]*?)from public, anon, authenticated;/
+      )?.[1] ?? "";
+
+    expect(browserGrantBlock).toContain("public.emergency_contacts");
+    expect(serverOnlyRevokeBlock).not.toContain("public.emergency_contacts");
+    expect(serverOnlyRevokeBlock).toContain("public.family_event_handoffs");
+    expect(actorSource).toContain('.from("emergency_contacts")');
+    expect(actorSource).not.toContain('.from("family_event_handoffs")');
+    expect(actorSource).toContain("users.coachOtherOrg");
+    expect(actorSource).toContain(
+      "parentB, coachOtherOrg } = clients"
+    );
+    expect(actorSource).not.toContain("parentOtherOrg");
+
+    expect(actorSource).toContain(
+      "if (!trackedIds.includes(row.id))"
+    );
+    expect(actorSource).toContain(
+      "denial fixture ID is not tracked for cleanup"
+    );
+    expect(
+      actorSource.match(/await assertTrackedDeniedInsert\(/g)
+    ).toHaveLength(2);
+    expect(actorSource).not.toMatch(
+      /assertDenied\(\s*await[^;]*\.insert\(\{/
+    );
+  });
+
   it("keeps dry-run output redacted and never contacts a hosted target", async () => {
     const log = vi.spyOn(console, "log").mockImplementation(() => undefined);
     const fetchSpy = vi.spyOn(globalThis, "fetch");
@@ -151,17 +227,83 @@ describe("live proof harness plans", () => {
       organizations: 2,
       teams: 2,
       families: 2,
+      players: 2,
+      guardianLinks: 2,
       providerRecords: 0
     });
     expect(checks).toMatch(/authorized parent subscription/);
     expect(checks).toMatch(/authorized coach subscription/);
     expect(checks).toMatch(/wrong-team actor/);
+    expect(checks).toMatch(/cross-organization coach/);
+    expect(checks).toMatch(/sibling-team INSERT reaches its authorized parent/);
     expect(checks).toMatch(/team filter/);
     expect(checks).toMatch(/disconnect/);
     expect(checks).toMatch(/reconnect/);
     expect(checks).toMatch(/duplicate event version/);
     expect(checks).toMatch(/new change version/);
     expect(checks).not.toMatch(/REST/i);
+  });
+
+  it("tracks each Realtime channel before awaiting subscription and removes it with its owner", () => {
+    const source = readFileSync(
+      new URL("../scripts/verify-realtime-boundaries.mjs", import.meta.url),
+      "utf8"
+    );
+    const subscribeStart = source.indexOf("async function subscribe(");
+    const subscribeEnd = source.indexOf(
+      "async function removeTrackedChannel(",
+      subscribeStart
+    );
+    const subscribeBody = source.slice(subscribeStart, subscribeEnd);
+
+    expect(subscribeBody.indexOf("channelRegistrations.push")).toBeGreaterThan(
+      -1
+    );
+    expect(subscribeBody.indexOf("channelRegistrations.push")).toBeLessThan(
+      subscribeBody.indexOf("await waitFor")
+    );
+    expect(source).toContain(
+      "registrationsToClose.map(({ client, channel }) =>"
+    );
+    expect(source).toContain(
+      'throw new Error("Realtime channel removal was incomplete.")'
+    );
+    expect(source).toContain("client.realtime.disconnect()");
+    expect(source).not.toContain("clients.flatMap");
+  });
+
+  it("retains failed channel removals and rejects delayed isolation leaks", async () => {
+    const channel = { name: "tracked-channel" };
+    const removeChannel = vi.fn().mockResolvedValue("timed out");
+    const client = { removeChannel };
+    const registrations = [{ client, channel }];
+
+    await expect(
+      realtime.removeTrackedChannel(registrations, client, channel)
+    ).rejects.toThrow("removal was incomplete");
+    expect(registrations).toEqual([{ client, channel }]);
+
+    removeChannel.mockResolvedValue("ok");
+    await expect(
+      realtime.removeTrackedChannel(registrations, client, channel)
+    ).resolves.toBeUndefined();
+    expect(registrations).toEqual([]);
+
+    vi.useFakeTimers();
+    try {
+      let count = 0;
+      const stable = realtime.assertCollectorCountsStable(
+        [{ collector: { count: () => count }, expectedCount: 0 }],
+        "delayed leak",
+        300
+      );
+      const rejected = expect(stable).rejects.toThrow("delayed leak");
+      count = 1;
+      await vi.advanceTimersByTimeAsync(300);
+      await rejected;
+    } finally {
+      vi.useRealTimers();
+    }
   });
 
   it("deduplicates exact event versions while accepting later versions", () => {
@@ -179,6 +321,10 @@ describe("live proof harness plans", () => {
       reason: "new-version"
     });
     expect(collector.count()).toBe(2);
+    expect(
+      realtime.normalizeChangeVersion("2026-07-27T15:00:00+00:00")
+    ).toBe("2026-07-27T15:00:00.000Z");
+    expect(realtime.normalizeChangeVersion("v2")).toBe("v2");
   });
 });
 
