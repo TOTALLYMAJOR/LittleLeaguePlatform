@@ -678,21 +678,15 @@ begin
   from public.teams team
   where team.organization_id = plan_row.organization_id
     and team.season_id = plan_row.season_id
-    and team.division = plan_row.division
   order by team.id
   for update;
 
   perform player.id
   from public.players player
-  join public.teams source_team
-    on source_team.organization_id = player.organization_id
-   and source_team.season_id = player.season_id
-   and source_team.id = player.team_id
-   and source_team.division = plan_row.division
   where player.organization_id = plan_row.organization_id
     and player.season_id = plan_row.season_id
   order by player.id
-  for update of player;
+  for update;
 
   select count(*) into assignment_count
   from jsonb_array_elements(plan_row.assignments);
@@ -700,18 +694,43 @@ begin
     or assignment_count <> (
       select count(distinct (item->>'playerId')::uuid)
       from jsonb_array_elements(plan_row.assignments) item
-    )
-    or assignment_count <> (
-      select count(*)
-      from public.players player
-      join public.teams source_team on source_team.id = player.team_id
-      where player.organization_id = plan_row.organization_id
-        and player.season_id = plan_row.season_id
-        and source_team.organization_id = plan_row.organization_id
-        and source_team.season_id = plan_row.season_id
-        and source_team.division = plan_row.division
-        and coalesce(player.roster_status, 'active') = 'active'
     ) then
+    raise exception 'Approved assignments no longer match the in-scope active roster.';
+  end if;
+  if exists (
+    select 1
+    from jsonb_array_elements(plan_row.assignments) item
+    left join public.players player
+      on player.id = (item->>'playerId')::uuid
+     and player.organization_id = plan_row.organization_id
+     and player.season_id = plan_row.season_id
+    left join public.teams source_team
+      on source_team.id = player.team_id
+     and source_team.organization_id = plan_row.organization_id
+     and source_team.season_id = plan_row.season_id
+     and source_team.division = plan_row.division
+     and source_team.status = 'active'
+    where player.id is null
+       or coalesce(player.roster_status, 'active') <> 'active'
+       or source_team.id is null
+  ) or exists (
+    select 1
+    from public.players player
+    join public.teams source_team
+      on source_team.id = player.team_id
+     and source_team.organization_id = plan_row.organization_id
+     and source_team.season_id = plan_row.season_id
+     and source_team.division = plan_row.division
+     and source_team.status = 'active'
+    where player.organization_id = plan_row.organization_id
+      and player.season_id = plan_row.season_id
+      and coalesce(player.roster_status, 'active') = 'active'
+      and not exists (
+        select 1
+        from jsonb_array_elements(plan_row.assignments) item
+        where (item->>'playerId')::uuid = player.id
+      )
+  ) then
     raise exception 'Approved assignments no longer match the in-scope active roster.';
   end if;
   if assignment_count <> (

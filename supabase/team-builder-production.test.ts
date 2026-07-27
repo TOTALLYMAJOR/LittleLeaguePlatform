@@ -21,6 +21,18 @@ function functionSql(name: string) {
   return match?.[0] ?? "";
 }
 
+function approvedPlayerSetMatchesCurrent(
+  approvedPlayerIds: string[],
+  currentPlayerIds: string[]
+) {
+  const approved = new Set(approvedPlayerIds);
+  const current = new Set(currentPlayerIds);
+
+  return approved.size === approvedPlayerIds.length
+    && approved.size === current.size
+    && [...approved].every((playerId) => current.has(playerId));
+}
+
 describe("private team-builder production contract", () => {
   it("removes direct browser access to private profiles and plans", () => {
     expect(migrationName).toMatch(/^\d{14}_complete_private_team_builder_publish\.sql$/);
@@ -154,13 +166,16 @@ describe("private team-builder production contract", () => {
     }
   });
 
-  it("locks the publish scope deterministically before validation and rechecks target teams", () => {
+  it("locks the complete season scope and requires exact roster-set equality before publish", () => {
     const publishSql = functionSql("publish_team_build_plan");
     const seasonLock = publishSql.indexOf("select season.status");
     const teamLock = publishSql.indexOf("perform team.id");
     const playerLock = publishSql.indexOf("perform player.id");
     const assignmentValidation = publishSql.indexOf("select count(*) into assignment_count");
     const playerUpdate = publishSql.indexOf("update public.players player");
+    const teamLockSql = publishSql.slice(teamLock, playerLock);
+    const playerLockSql = publishSql.slice(playerLock, assignmentValidation);
+    const validationSql = publishSql.slice(assignmentValidation, playerUpdate);
 
     expect(seasonLock).toBeGreaterThan(-1);
     expect(teamLock).toBeGreaterThan(seasonLock);
@@ -168,13 +183,42 @@ describe("private team-builder production contract", () => {
     expect(assignmentValidation).toBeGreaterThan(playerLock);
     expect(playerUpdate).toBeGreaterThan(assignmentValidation);
     expect(publishSql).toMatch(/order by team\.id\s+for update/);
-    expect(publishSql).toMatch(/order by player\.id\s+for update of player/);
+    expect(publishSql).toMatch(/order by player\.id\s+for update/);
+    expect(teamLockSql).toMatch(
+      /team\.organization_id = plan_row\.organization_id[\s\S]*team\.season_id = plan_row\.season_id/
+    );
+    expect(teamLockSql).not.toContain("team.division = plan_row.division");
+    expect(playerLockSql).toMatch(
+      /player\.organization_id = plan_row\.organization_id[\s\S]*player\.season_id = plan_row\.season_id/
+    );
+    expect(playerLockSql).not.toContain("join public.teams");
+    expect(validationSql).toMatch(
+      /from jsonb_array_elements\(plan_row\.assignments\) item[\s\S]*left join public\.players player[\s\S]*left join public\.teams source_team[\s\S]*source_team\.division = plan_row\.division[\s\S]*source_team\.status = 'active'[\s\S]*where player\.id is null[\s\S]*source_team\.id is null/
+    );
+    expect(validationSql).toMatch(
+      /from public\.players player[\s\S]*join public\.teams source_team[\s\S]*source_team\.division = plan_row\.division[\s\S]*source_team\.status = 'active'[\s\S]*and not exists \([\s\S]*from jsonb_array_elements\(plan_row\.assignments\) item[\s\S]*where \(item->>'playerId'\)::uuid = player\.id/
+    );
     expect(publishSql.slice(playerUpdate)).toMatch(
       /exists \(\s*select 1\s*from public\.teams target_team[\s\S]*target_team\.id = assignment\.team_id[\s\S]*target_team\.status = 'active'/
     );
     expect(publishSql).toContain(
       "Atomic publish did not update the complete approved assignment set."
     );
+  });
+
+  it("rejects a same-count player swap in the roster-set regression model", () => {
+    expect(approvedPlayerSetMatchesCurrent(
+      ["approved-player"],
+      ["replacement-player"]
+    )).toBe(false);
+    expect(approvedPlayerSetMatchesCurrent(
+      ["approved-player"],
+      ["approved-player"]
+    )).toBe(true);
+    expect(approvedPlayerSetMatchesCurrent(
+      ["approved-player", "approved-player"],
+      ["approved-player"]
+    )).toBe(false);
   });
 
   it("makes private profile persistence and audit one service-only transaction", () => {
