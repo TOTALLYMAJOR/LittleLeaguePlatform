@@ -98,13 +98,20 @@ describe("API mutation auth boundaries", () => {
 
   it("keeps OAuth callback scoped to Supabase code exchange and auth landing", () => {
     const callback = source("app/auth/callback/route.ts");
+    const authPage = source("app/auth/page.tsx");
     const panel = source("components/feature-panels.tsx");
 
     expect(callback).toContain("exchangeCodeForSession");
     expect(callback).toContain("/auth?oauth=complete");
+    expect(callback).toContain('url.searchParams.get("provider")');
+    expect(callback).toContain('url.searchParams.get("error_description")');
+    expect(callback).toContain("oauth_exchange_failed");
+    expect(authPage).toContain('input.oauth === "complete"');
+    expect(authPage).toContain("initialMessage={message}");
     expect(panel).toContain("signInWithOAuth");
     expect(panel).toContain("provider,");
-    expect(panel).toContain("getSupabaseEmailRedirectTo(`/auth/callback");
+    expect(panel).toContain("`/auth/callback?provider=${provider}");
+    expect(panel).toContain("getSupabaseEmailRedirectTo(callbackPath)");
     expect(panel).toContain("encodeURIComponent(returnTo)");
     expect(panel).toContain("/api/auth/session-landing");
   });

@@ -1005,12 +1005,17 @@ function mergeRegistrationRequests(localRequests: RegistrationRequest[], serverR
   });
 }
 
-export function AuthClient({ returnTo = "" }: { returnTo?: string }) {
+interface AuthClientProps {
+  returnTo?: string;
+  initialMessage?: string;
+}
+
+export function AuthClient({ returnTo = "", initialMessage }: AuthClientProps) {
   type SocialAuthProvider = "google" | "facebook";
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [message, setMessage] = useState("");
+  const [message, setMessage] = useState(initialMessage ?? "");
   const [isPending, startTransition] = useTransition();
   const authConfigStatus = getSupabaseBrowserConfigStatus();
 
@@ -1082,10 +1087,13 @@ export function AuthClient({ returnTo = "" }: { returnTo?: string }) {
     startTransition(async () => {
       try {
         const supabase = createSupabaseBrowserClient();
+        const callbackPath = returnTo
+          ? `/auth/callback?provider=${provider}&returnTo=${encodeURIComponent(returnTo)}`
+          : `/auth/callback?provider=${provider}`;
         const { error } = await supabase.auth.signInWithOAuth({
           provider,
           options: {
-            redirectTo: getSupabaseEmailRedirectTo(`/auth/callback${returnTo ? `?returnTo=${encodeURIComponent(returnTo)}` : ""}`)
+            redirectTo: getSupabaseEmailRedirectTo(callbackPath)
           }
         });
 

@@ -1,12 +1,31 @@
 import { existsSync, readFileSync } from "node:fs";
 
 const envFiles = [".env.local", ".env"];
-const defaultRedirectUrls = [
-  "https://www.leaguepilot.us/auth/callback",
-  "https://leaguepilot.us/auth/callback",
-  "http://localhost:3000/auth/callback",
-  "http://127.0.0.1:3000/auth/callback"
-];
+const defaultRedirectUrls = (() => {
+  const ports = unique([
+    process.env.APP_PORT?.trim() || "",
+    process.env.APP_ALT_PORT?.trim() || "",
+    "3000"
+  ]).filter(Boolean);
+  const localRedirects = ports.flatMap((port) => [
+    `http://localhost:${port}/auth/callback`,
+    `http://127.0.0.1:${port}/auth/callback`
+  ]);
+  const appUrl = env("NEXT_PUBLIC_APP_URL");
+  const appRedirect = appUrl ? (() => {
+    try {
+      return `${new URL(appUrl).origin}/auth/callback`;
+    } catch {
+      return "";
+    }
+  })() : "";
+  return unique([
+    "https://www.leaguepilot.us/auth/callback",
+    "https://leaguepilot.us/auth/callback",
+    appRedirect,
+    ...localRedirects
+  ]).filter(Boolean);
+})();
 
 function parseEnvLine(line) {
   if (!line || line.trim().startsWith("#")) return null;
