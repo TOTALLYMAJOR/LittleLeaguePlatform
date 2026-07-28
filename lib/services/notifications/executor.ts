@@ -9,11 +9,13 @@ import {
 export async function executeApprovedNotificationBatch(input: {
   workerId: string;
   limit?: number;
+  expectedAttemptId?: string;
   env?: Partial<NodeJS.ProcessEnv>;
 }) {
   const claimed = await claimQueuedNotificationDeliveries({
     workerId: input.workerId,
     limit: input.limit,
+    expectedAttemptId: input.expectedAttemptId,
     env: input.env
   });
   if (!claimed.ok) {

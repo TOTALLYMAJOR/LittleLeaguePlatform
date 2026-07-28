@@ -731,6 +731,7 @@ export async function claimQueuedNotificationDeliveries(input: {
   workerId: string;
   limit?: number;
   now?: string;
+  expectedAttemptId?: string;
   env?: Partial<NodeJS.ProcessEnv>;
 }) {
   const workerId = input.workerId.trim();
@@ -740,12 +741,16 @@ export async function claimQueuedNotificationDeliveries(input: {
     const db = adminDb();
     const now = input.now ?? new Date().toISOString();
     const env = input.env ?? process.env;
-    const { data, error } = await withSupabaseTimeout(db
+    let queueQuery = db
       .from("notification_delivery_attempts")
       .select("id,notification_id,provider,transport_provider,channel,status,request_outcome,approved_at,idempotency_key,retry_count,max_retries,next_attempt_at,reconciliation_required_at,dead_lettered_at,locked_at,locked_by,notifications(id,organization_id,recipient_user_id,team_id,notification_type,channel,status,provider_approval_status,approved_at,title,body)")
       .eq("status", "queued")
       .is("locked_at", null)
-      .lte("next_attempt_at", now)
+      .lte("next_attempt_at", now);
+    if (input.expectedAttemptId) {
+      queueQuery = queueQuery.eq("id", input.expectedAttemptId);
+    }
+    const { data, error } = await withSupabaseTimeout(queueQuery
       .order("next_attempt_at", { ascending: true })
       .limit(Math.min(Math.max(input.limit ?? 10, 1), 50)), 7000) as {
         data: DeliveryAttemptRow[] | null;
@@ -768,6 +773,19 @@ export async function claimQueuedNotificationDeliveries(input: {
       if (!lockedAttempt) continue;
       const payload = await mapAttemptPayload(db, lockedAttempt, env);
       if (payload) claimed.push(payload);
+    }
+    if (
+      input.expectedAttemptId &&
+      (
+        claimed.length !== 1 ||
+        claimed[0]?.attemptId !== input.expectedAttemptId
+      )
+    ) {
+      return {
+        ok: false,
+        message: "The expected notification delivery attempt could not be claimed for execution.",
+        attempts: [] as NotificationDeliveryPayload[]
+      };
     }
 
     return {

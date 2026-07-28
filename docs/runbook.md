@@ -192,7 +192,12 @@ Provider-specific server variables are read only by their adapters:
 - Web Push: VAPID subject/public/private keys.
 - Stripe: restricted/test server key and endpoint webhook secret.
 - Media scanner: `MEDIA_SCAN_ENDPOINT`, `MEDIA_SCAN_TOKEN`, and `MEDIA_SCAN_PROVIDER`.
-- Internal notification worker: `NOTIFICATION_WORKER_TOKEN`.
+- Internal notification worker: `NOTIFICATION_WORKER_TOKEN`. Every execution
+  request must include the reviewed delivery attempt as `expectedAttemptId`;
+  the claim query is filtered to that exact UUID and fails closed if it cannot
+  claim exactly that row. The token-protected `GET` readback returns only the
+  hosted Supabase project reference and requested organization gate state for
+  environment-authority proof; it does not expose keys or execute delivery.
 
 Keep production execution disabled until sandbox/allowlist tests, duplicate-webhook tests, failure/retry behavior, RLS, hosted configuration, cost controls, and monitoring are proven. Provider acceptance is not delivery; Checkout return is not payment confirmation; upload completion is not family release.
 

@@ -9,6 +9,7 @@ vi.mock("./admin", () => ({
 }));
 
 import {
+  claimQueuedNotificationDeliveries,
   getProviderDeliveryReadiness,
   providerChannel,
   recheckNotificationDeliveryAuthority
@@ -83,6 +84,8 @@ function queryBuilder(result: unknown) {
   const builder = {
     select: vi.fn(() => builder),
     eq: vi.fn(() => builder),
+    is: vi.fn(() => builder),
+    lte: vi.fn(() => builder),
     order: vi.fn(() => builder),
     limit: vi.fn(() => builder),
     maybeSingle: vi.fn(() => Promise.resolve(result)),
@@ -326,6 +329,27 @@ describe("provider delivery hardening", () => {
       status: "suppressed",
       requestOutcome: "suppressed",
       errorCode: "delivery_authority_unavailable"
+    });
+  });
+
+  it("binds a targeted worker claim to the exact expected attempt id", async () => {
+    const builder = queryBuilder({ data: [], error: null });
+    mocks.createSupabaseAdminClient.mockReturnValue({
+      from: vi.fn(() => builder)
+    });
+    const expectedAttemptId = "11111111-1111-4111-8111-111111111111";
+
+    const result = await claimQueuedNotificationDeliveries({
+      workerId: "worker-1",
+      limit: 1,
+      expectedAttemptId,
+      now: "2026-07-27T22:31:00.000Z"
+    });
+
+    expect(builder.eq).toHaveBeenCalledWith("id", expectedAttemptId);
+    expect(result).toMatchObject({
+      ok: false,
+      attempts: []
     });
   });
 });
