@@ -198,7 +198,7 @@ Keep production execution disabled until sandbox/allowlist tests, duplicate-webh
 
 ## Pingram SMS Transport
 
-Current state on 2026-07-27: Pingram is the intended SMS transport in code. The named `codex/ui-ux-100-shell-chat` Vercel branch Preview has server-only Pingram sender, webhook, contact-digest, and worker configuration bound to isolated Supabase preview `gmrvnnkxksqkcxcmydhr`; all send gates remain off and no live SMS has been sent. Production remains untouched. See `docs/pingram-preview-activation-2026-07-27.md`. Twilio remains an explicit rollback transport only. Do not treat a local API key, adapter tests, a queued attempt, provider acceptance, or a deployed webhook route as delivery proof.
+Current state on 2026-07-27: Pingram is the intended SMS transport in code. The named `codex/ui-ux-100-shell-chat` Vercel branch Preview has server-only Pingram sender, webhook, contact-digest, and worker configuration bound to isolated Supabase preview `gmrvnnkxksqkcxcmydhr`; Vercel Authentication currently intercepts the registered callback before LeaguePilot signature verification. Sender readiness, all send gates, and the demo-organization gate remain off, and no live SMS has been sent. Production remains untouched. See `docs/pingram-preview-activation-2026-07-27.md`. Twilio remains an explicit rollback transport only. Do not treat a local API key, adapter tests, a queued attempt, provider acceptance, or a deployed webhook route as delivery proof.
 
 The worker selects SMS transport only from the exact server value `SMS_PROVIDER=pingram` or `SMS_PROVIDER=twilio`; a missing or unknown value remains suppressed. Pingram also requires all general provider gates plus its own readiness:
 

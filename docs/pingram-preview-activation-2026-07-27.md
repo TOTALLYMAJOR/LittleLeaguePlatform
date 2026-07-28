@@ -32,20 +32,32 @@ Production Vercel configuration, production Supabase project
   `20260727223340_pingram_sms_transport_safety`,
   `20260727224549_pingram_sms_execution_authority`, and
   `20260727230627_pingram_terminal_reconciliation`.
-- The hosted callback rejects unsigned requests with `401`.
+- Public requests to the callback are currently intercepted by Vercel
+  Authentication with `401 Protected deployment` before LeaguePilot signature
+  verification runs. Hosted signed-callback and replay proof is therefore not
+  complete.
 
 ## Gates retained
 
 - `PROVIDER_SENDS_ENABLED=false`
 - `PROVIDER_DELIVERY_MODE=qa`
 - `PROVIDER_PRODUCTION_APPROVED=false`
+- `PINGRAM_SMS_SENDER_READY=false`
 - no `PROVIDER_QA_RECIPIENT_ALLOWLIST`
 - demo organization `provider_sends_enabled=false`
 
 No SMS was attempted. Provider acceptance and carrier delivery therefore remain
 unproven.
 
-## Remaining QA-send blocker
+## Remaining QA-send blockers
+
+The branch Preview is protected by Vercel Authentication. Pingram's webhook
+contract accepts a URL and event list but no custom bypass header. Vercel
+documents a query-parameter automation bypass for third-party webhooks, but
+that credential is project-wide rather than path-scoped: disclosure would
+bypass authentication for every protected Preview route in this project. Do
+not create or register that bypass without explicit security-setting approval,
+or place the webhook on a separately isolated public host.
 
 The repository contains fictional seed contacts only, and the seeded preview
 parents do not have a phone number suitable for carrier delivery. Pingram's
@@ -53,7 +65,8 @@ sandbox uses real carrier paths; it does not document a magic non-delivery test
 recipient. A single adult-controlled E.164 number with explicit consent is
 required before the allowlist and organization gate can be enabled.
 
-After that recipient is supplied privately, the operator must:
+After callback reachability is safely resolved and that recipient is supplied
+privately, the operator must:
 
 1. store it only on one demo-parent preview profile and create an enabled SMS
    preference with a non-null opt-in timestamp;
