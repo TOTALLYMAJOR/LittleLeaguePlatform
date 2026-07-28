@@ -155,6 +155,9 @@ describe("AuthClient", () => {
       expect(html).toContain("Continue with Facebook");
       expect(html).toContain("Private team access still requires league approval");
       expect(html).toContain("Request Team Access");
+      expect(html).toContain("auth-page");
+      expect(html).toContain("auth-submit");
+      expect(html).toContain("auth-support-copy");
       expect(html).not.toContain("Create account");
       expect(html).not.toContain("Coach Taylor");
       expect(html).not.toContain("coach.taylor@example.com");

@@ -1103,8 +1103,8 @@ export function AuthClient({ returnTo = "" }: { returnTo?: string }) {
   }
 
   return (
-    <div className="page">
-      <section className="hero">
+    <div className="page auth-page">
+      <section className="hero auth-hero">
         <span className="eyebrow">Existing members</span>
         <h1>Sign in to your LeaguePilot account.</h1>
         <p className="lead">Use the email connected to your approved parent, coach, or league role.</p>
@@ -1113,14 +1113,14 @@ export function AuthClient({ returnTo = "" }: { returnTo?: string }) {
       {!authConfigStatus.ok ? <p className="notice warning">Sign-in services are not connected in this environment.</p> : null}
       {message ? <p className="notice">{message}</p> : null}
 
-      <section className="grid two">
-        <article className="card stack">
+      <section className="grid two auth-grid">
+        <article className="card stack auth-card auth-form-card">
           <label>Email<input autoComplete="email" type="email" value={email} onChange={(event) => setEmail(event.target.value)} /></label>
           <label>Password<input autoComplete="current-password" type="password" value={password} onChange={(event) => setPassword(event.target.value)} /></label>
-          <button onClick={submitAuth} disabled={!authConfigStatus.ok || isPending || password.length < 6}>{isPending ? "Signing in..." : "Sign in"}</button>
+          <button className="auth-submit" onClick={submitAuth} disabled={!authConfigStatus.ok || isPending || password.length < 6}>{isPending ? "Signing in..." : "Sign in"}</button>
 
           <div className="auth-provider-panel" aria-label="Social sign in providers">
-            <p className="muted">Google and Facebook confirm identity only. Private team access still requires league approval.</p>
+            <p className="auth-support-copy">Google and Facebook confirm identity only. Private team access still requires league approval.</p>
             <div className="auth-provider-actions">
               <button type="button" className="secondary" onClick={() => submitSocialAuth("google")} disabled={!authConfigStatus.ok || isPending}>Continue with Google</button>
               <button type="button" className="secondary" onClick={() => submitSocialAuth("facebook")} disabled={!authConfigStatus.ok || isPending}>Continue with Facebook</button>
@@ -1128,11 +1128,11 @@ export function AuthClient({ returnTo = "" }: { returnTo?: string }) {
           </div>
         </article>
 
-        <article className="card stack">
+        <article className="card stack auth-card auth-access-card">
           <h2>Need access to a team?</h2>
-          <p>Tell us which child and team you are connected to. A league administrator checks the match before private details appear.</p>
+          <p className="auth-body-copy">Tell us which child and team you are connected to. A league administrator checks the match before private details appear.</p>
           <a className="button secondary" href="/registration">Request Team Access</a>
-          <p className="muted">Children do not create accounts. Signing in confirms identity, but it never grants team access by itself.</p>
+          <p className="auth-support-copy">Children do not create accounts. Signing in confirms identity, but it never grants team access by itself.</p>
         </article>
       </section>
     </div>

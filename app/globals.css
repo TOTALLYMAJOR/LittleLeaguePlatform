@@ -237,6 +237,57 @@ code, .mono {
   gap: var(--sp-2);
   grid-template-columns: repeat(2, minmax(0, 1fr));
 }
+.auth-page {
+  --auth-copy: #26344c;
+  --auth-secondary-copy: #465166;
+}
+.auth-hero .lead {
+  color: var(--auth-secondary-copy);
+  font-weight: 550;
+}
+.auth-grid {
+  align-items: stretch;
+}
+.auth-card {
+  color: var(--auth-copy);
+}
+.auth-card label {
+  color: #334155;
+}
+.auth-card input {
+  border-color: #cfc4b5;
+}
+.auth-body-copy {
+  color: var(--auth-copy);
+}
+.auth-support-copy {
+  color: var(--auth-secondary-copy);
+  font-size: var(--text-sm);
+  line-height: 1.55;
+}
+.auth-card button:disabled {
+  opacity: 1;
+}
+.auth-form-card .auth-submit:disabled {
+  background: #ead9cf;
+  border: 1px solid #d4b7a7;
+  box-shadow: none;
+  color: #6a3722;
+}
+.auth-provider-actions button.secondary:disabled {
+  background: #f1ede8;
+  border-color: #c8beb3;
+  color: #514b45;
+}
+
+@media (max-width: 640px) {
+  .auth-page {
+    gap: var(--sp-5);
+  }
+  .auth-provider-actions {
+    grid-template-columns: 1fr;
+  }
+}
 
 
 /* ─────────────────────────────────────────────────────────────────────────────
@@ -6317,6 +6368,27 @@ button.month-calendar-day:hover {
   button.secondary:hover:not(:disabled),
   .icon-btn:hover {
     background: #20466f;
+  }
+
+  .auth-page {
+    --auth-copy: #f0f4f8;
+    --auth-secondary-copy: #d2dae5;
+  }
+  .auth-card label {
+    color: #e1e7ee;
+  }
+  .auth-card input {
+    border-color: rgba(159, 192, 232, 0.48);
+  }
+  .auth-form-card .auth-submit:disabled {
+    background: #343e4a;
+    border-color: #566575;
+    color: #e5e9ee;
+  }
+  .auth-provider-actions button.secondary:disabled {
+    background: #293847;
+    border-color: #566575;
+    color: #d5dde6;
   }
 
   .badge.warning {
