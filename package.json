@@ -34,7 +34,8 @@
     "check:skills": "node scripts/check-agent-skills.mjs",
     "supabase:oauth": "node scripts/configure-supabase-oauth.mjs",
     "codex:spec": "node tools/prompt-api/cli.mjs spec",
-    "codex:debug": "node tools/prompt-api/cli.mjs debug"
+    "codex:debug": "node tools/prompt-api/cli.mjs debug",
+    "seed:demo-showcase": "node scripts/bootstrap-demo-showcase.mjs"
   },
   "dependencies": {
     "@sendgrid/mail": "^8.1.6",

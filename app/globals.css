@@ -238,8 +238,15 @@ code, .mono {
   grid-template-columns: repeat(2, minmax(0, 1fr));
 }
 .auth-page {
-  --auth-copy: #26344c;
-  --auth-secondary-copy: #465166;
+  --auth-copy: #1f3a63;
+  --auth-secondary-copy: #365a88;
+  color: var(--auth-copy);
+}
+.auth-page h1,
+.auth-page h2,
+.auth-page h3,
+.auth-page .eyebrow {
+  color: var(--auth-copy);
 }
 .auth-hero .lead {
   color: var(--auth-secondary-copy);
@@ -252,10 +259,11 @@ code, .mono {
   color: var(--auth-copy);
 }
 .auth-card label {
-  color: #334155;
+  color: var(--auth-copy);
 }
 .auth-card input {
   border-color: #cfc4b5;
+  color: var(--auth-copy);
 }
 .auth-body-copy {
   color: var(--auth-copy);
@@ -12883,6 +12891,16 @@ caption {
 
   .sponsor-hub-action-list > button {
     grid-template-columns: 42px minmax(0, 1fr) 18px;
+  }
+
+  .sponsor-hub-action-list > button > span {
+    min-width: 0;
+  }
+
+  .sponsor-hub-action-list > button strong,
+  .sponsor-hub-action-list > button small {
+    overflow-wrap: anywhere;
+    white-space: normal;
   }
 
   .sponsor-hub-action-link {

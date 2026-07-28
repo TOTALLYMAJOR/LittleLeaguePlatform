@@ -299,3 +299,19 @@ npm run supabase:oauth -- --apply
 The script derives the project ref from `SUPABASE_PROJECT_REF` or `NEXT_PUBLIC_SUPABASE_URL`, preserves existing redirect allow-list entries, adds the LeaguePilot callback URLs, and enables the Google/Facebook providers without printing secrets. The Google and Facebook developer consoles must also use the Supabase provider callback URL: `https://<project-ref>.supabase.co/auth/v1/callback`.
 
 For tenant onboarding, do not rely on anonymous raw signup emails as the only admin path until Supabase Auth SMTP/quota limits are configured and proven. Use existing admin accounts, QA/admin-created users, invite records, or the reviewed registration-approval flow for tenant setup. Live email/SMS/Web Push notifications remain draft/internal records until the intended provider is explicitly selected and its consent, suppression, allowlist, webhook, reconciliation, hosted configuration, and operational proof all pass.
+
+## Expanded fictional showcase tenant
+
+Load or refresh the complete demo tenant with:
+
+```bash
+DEMO_TENANT_SEED_CONFIRM=load-fictional-data npm run seed:demo-showcase
+```
+
+The command first refreshes the existing guarded base tenant, then adds the Stars and Foxes teams, two more coaches, two more approved parents, four players, four games, four visible chat messages, four approved media links, and one authenticated visitor with no protected grants. New fictional account values are written as `DEMO_*` keys in `.env.local`; do not publish that file.
+
+For hosted UI evidence after loading:
+
+```bash
+DEMO_TENANT_BASE_URL=https://www.leaguepilot.us npm run qa:demo-tenant-proof
+```

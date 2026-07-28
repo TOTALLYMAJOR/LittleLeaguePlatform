@@ -415,3 +415,21 @@ Parents can see what matters immediately.
 Admins can detect launch problems before families complain.
 
 That gives the product a strong operational foundation before adding more advanced media, chat, payments, or tournament features.
+
+## Demo showcase bootstrap
+
+The guarded `seed:demo-showcase` workflow expands the fixed fictional `LeaguePilot Demo League` tenant to at least four teams, four parent memberships, nine players, seven scheduled events, eight chat messages, and six moderated media links. It also creates an unaffiliated visitor identity with zero organization, team, coach, or guardian grants so authentication can be demonstrated separately from protected team access.
+
+Run it only against the intended Supabase project:
+
+```bash
+DEMO_TENANT_SEED_CONFIRM=load-fictional-data npm run seed:demo-showcase
+```
+
+The workflow is idempotent, uses `.env.local` for Supabase and fictional demo-account credentials, performs no email/SMS/push/social provider sends, and does not turn public social signup into a team-access grant. Media remains approved link-based demo content; private upload/storage and provider delivery are not implied.
+
+This slice maps to the Tenant Onboarding Readiness lane in `docs/production-task-board.md`. Tenant scope is the fixed fictional organization and season; actor scope is service-role seeding plus role-bound demo users; isolation remains enforced by active memberships/guardian links and RLS; failure recovery is fixed-ID upsert reruns; the primary abuse case is an authenticated but unapproved identity attempting to reach team data.
+
+## Authentication and Sponsor Hub polish
+
+The authentication surface uses scoped LeaguePilot blue typography while preserving semantic notice colors and enabled-button contrast. Sponsor Hub attention-list copy wraps within the mobile viewport instead of widening the protected admin route.

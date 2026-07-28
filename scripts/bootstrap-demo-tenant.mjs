@@ -319,14 +319,14 @@ async function seedDemoTenant(supabase, users) {
     user_id: adminId,
     role: "admin",
     status: "active"
-  }, { onConflict: "organization_id,user_id,role" });
+  }, { onConflict: "id" });
   await upsertOrThrow(supabase, "organization_memberships", {
     id: ids.coachOrgMembership,
     organization_id: ids.organization,
     user_id: coachId,
     role: "coach",
     status: "active"
-  }, { onConflict: "organization_id,user_id,role" });
+  }, { onConflict: "id" });
 
   await upsertOrThrow(supabase, "seasons", {
     id: ids.season,
@@ -370,28 +370,28 @@ async function seedDemoTenant(supabase, users) {
     user_id: coachId,
     role: "coach",
     status: "active"
-  }, { onConflict: "team_id,user_id,role" });
+  }, { onConflict: "id" });
   await upsertOrThrow(supabase, "team_memberships", {
     id: ids.assistantWavesMembership,
     team_id: ids.teamWaves,
     user_id: assistantId,
     role: "coach",
     status: "active"
-  }, { onConflict: "team_id,user_id,role" });
+  }, { onConflict: "id" });
   await upsertOrThrow(supabase, "team_memberships", {
     id: ids.parentRocketsMembership,
     team_id: ids.teamRockets,
     user_id: parentId,
     role: "parent",
     status: "active"
-  }, { onConflict: "team_id,user_id,role" });
+  }, { onConflict: "id" });
   await upsertOrThrow(supabase, "team_memberships", {
     id: ids.parentWavesMembership,
     team_id: ids.teamWaves,
     user_id: parentTwoId,
     role: "parent",
     status: "active"
-  }, { onConflict: "team_id,user_id,role" });
+  }, { onConflict: "id" });
 
   const players = [
     { id: ids.players.mason, teamId: ids.teamRockets, firstName: "Mason", lastInitial: "T", jersey: "7" },
@@ -473,7 +473,7 @@ async function seedDemoTenant(supabase, users) {
         allowed: true,
         note: "Demo authorization for fictional tenant proof.",
         reviewed_by_user_id: adminId
-      }, { onConflict: "player_guardian_id,authorization_type" });
+      }, { onConflict: "id" });
     }
   }
 
@@ -865,20 +865,20 @@ async function seedDemoTenant(supabase, users) {
     root_message_id: ids.chatMessages.parentQuestion,
     title: "Game day supplies",
     status: "open"
-  }, { onConflict: "root_message_id" });
+  }, { onConflict: "id" });
   await updateOrThrow(supabase, "team_chat_messages", { thread_id: ids.chatThread }, "id", ids.chatMessages.parentQuestion);
   await upsertOrThrow(supabase, "team_chat_message_reads", {
     id: "ad000000-0000-4000-8000-000000000001",
     message_id: ids.chatMessages.pinned,
     user_id: parentId,
     read_at: createdAt
-  }, { onConflict: "message_id,user_id" });
+  }, { onConflict: "id" });
   await upsertOrThrow(supabase, "team_chat_reactions", {
     id: "ad000000-0000-4000-8000-000000000002",
     message_id: ids.chatMessages.pinned,
     user_id: parentId,
     reaction: "thanks"
-  }, { onConflict: "message_id,user_id,reaction" });
+  }, { onConflict: "id" });
   await upsertOrThrow(supabase, "team_chat_reports", {
     id: "ad000000-0000-4000-8000-000000000003",
     message_id: ids.chatMessages.hidden,
@@ -888,7 +888,7 @@ async function seedDemoTenant(supabase, users) {
     status: "action_taken",
     reviewed_by_user_id: adminId,
     reviewed_at: createdAt
-  }, { onConflict: "message_id,reporter_user_id" });
+  }, { onConflict: "id" });
   await upsertOrThrow(supabase, "chat_moderation_audit_events", {
     id: "ad000000-0000-4000-8000-000000000004",
     message_id: ids.chatMessages.hidden,
@@ -1040,7 +1040,7 @@ async function seedDemoTenant(supabase, users) {
     created_by_user_id: adminId,
     published_by_user_id: adminId,
     published_at: createdAt
-  }, { onConflict: "team_id" });
+  }, { onConflict: "id" });
   await upsertOrThrow(supabase, "team_brand_surface_validation_runs", {
     id: ids.brandValidation,
     organization_id: ids.organization,
@@ -1251,7 +1251,7 @@ async function seedDemoTenant(supabase, users) {
     auth_secret: "demo-auth-secret",
     user_agent: "LeaguePilot demo seed",
     enabled: false
-  }, { onConflict: "user_id,endpoint" });
+  }, { onConflict: "id" });
 
   await upsertOrThrow(supabase, "support_requests", {
     id: "ea000000-0000-4000-8000-000000000001",
