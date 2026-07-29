@@ -123,6 +123,20 @@ Passing this command proves local repository readiness proof only. It does not c
 
 Real sandbox email, SMS, and Web Push sends, provider dashboard setup, provider secrets, adult QA recipient approval, signed webhook endpoint registration, hosted worker execution, cost monitoring, and production-send approval remain open gates. Before any operator sends real sandbox traffic, document one adult-consented QA allowlist recipient per channel, a cost cap, monitoring owner, suppression rollback, and the rollback transport or kill-switch path.
 
+## Local Native App Decision Readiness Proof
+
+Run the no-mutation source verifier before any LPM-012 mobile browser, usage-metrics, push, offline/reconnect, native approval, Expo architecture, app-store, accessibility, or production-native proof:
+
+```bash
+npm run qa:native-app-decision-readiness
+```
+
+The verifier reads repository files only. It checks that LeaguePilot remains PWA-first, install promotion stays value-gated, standalone launches and install prompt outcomes are measured, `/api/mobile-usage-events` accepts native app interest as a telemetry signal without approval, public mobile telemetry remains rate-limited and anonymous-safe, the manifest/service worker/App Shell keep explicit bounded offline behavior, route-smoke/API tests cover the local wiring, and any future Expo/native path must reuse existing domain contracts, Supabase session/RLS boundaries, provider gates, and child privacy rules.
+
+Passing `qa:native-app-decision-readiness` proves local repository readiness proof only. It does not call Supabase, sign in, run Playwright, seed data, mutate hosted records, collect real analytics, request push permissions, register app stores, scaffold Expo, send providers, upload media, deploy, configure secrets, or claim PWA/mobile browser, production usage, push-provider, app-store, native, or production acceptance.
+
+The remaining open gates are mobile browser proof, production usage metrics review, push permission proof, offline/reconnect proof, native product approval, Expo architecture review, app-store compliance review, accessibility proof, and production native acceptance. Expo remains deferred until approved evidence shows the responsive PWA cannot satisfy the mobile requirement.
+
 ## Local Sponsor Stripe Readiness Proof
 
 Run the no-mutation source verifier before any LPM-009 Stripe sandbox, webhook, hosted-admin, reconciliation, refund/failure, or production payment proof:
