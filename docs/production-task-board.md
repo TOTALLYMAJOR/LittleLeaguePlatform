@@ -42,6 +42,7 @@ Task-specific checks are required only when the surface is touched:
 - Baseline ledger: LPM-001 records the current local proof boundary in `docs/production-proof-baseline-2026-07-29.md`. Treat that ledger as local documentation/repository proof only; it does not close hosted role browser proof, provider sends, Stripe settlement, private media storage/scanning, production Realtime, backup/PITR/restore, native app distribution, or production acceptance.
 - Prompt workflow: `docs/prompt-evolution-timeline.md` and `tools/prompt-api/` encode the four-system prompt patterns. `npm run codex:spec` and `npm run codex:debug` print prompts only.
 - Validation: `npm run check:skills`; `npm run typecheck`; `npm test`; `npm run build`; `npm audit`; `npm run qa:rls-proof`; role-browser screenshots at 375, 390, 768, and 1440.
+- Admin proof closure verifier: `npm run qa:admin-proof-readiness` is a local repository-source gate for the LPM-004 seams only. It reads files and names missing contracts before hosted QA; it does not sign in, call Supabase, run Playwright, seed data, mutate hosted records, send providers, deploy, configure edge/firewall controls, or close production acceptance.
 
 ### Active Goal - Approved Family Experience Execution
 
@@ -98,7 +99,7 @@ Task-specific checks are required only when the surface is touched:
 - Seams: `/parent`, `/team-portal`, `/api/media/report`, `lib/supabase/media-governance.ts`.
 - Done when: signed-in QA parent reports approved team media from a parent-visible surface, Supabase reflects report count/status change, and unrelated team media remains invisible.
 - SaaS constants focus: tenant isolation, child/media privacy, state transition, audit event, abuse prevention.
-- Validation: focused route/browser proof plus `npm test` if route code changes.
+- Validation: `npm run qa:admin-proof-readiness`; focused route/browser proof plus `npm test` if route code changes.
 
 ### LP-004 - Prove Media Moderation Browser Write
 
@@ -107,7 +108,7 @@ Task-specific checks are required only when the surface is touched:
 - Seams: `/admin`, `/api/media/moderation`, `lib/supabase/media-governance.ts`.
 - Done when: signed-in admin or assigned coach hides/restores/removes a QA media item through browser UI and parent/team reads honor the moderation state.
 - SaaS constants focus: tenant isolation, reviewer role, moderation state, auditability, support/admin action risk.
-- Validation: browser proof with Supabase readback; `npm test` if code changes.
+- Validation: `npm run qa:admin-proof-readiness`; browser proof with Supabase readback; `npm test` if code changes.
 
 ### LP-005 - Prove Registration Approval Browser Flow
 
@@ -134,7 +135,7 @@ Task-specific checks are required only when the surface is touched:
 - Seams: `/admin`, `/admin/teams`, team-builder domain/service code, `team_build_plans`.
 - Done when: QA admin previews, edits/approves, and publishes a team-build plan through the browser with persisted plan/audit evidence and no cross-org writes.
 - SaaS constants focus: tenant scope, lifecycle state, idempotency, concurrency, audit log, migration compatibility.
-- Validation: browser proof with Supabase readback and `npm run qa:rls-proof` if policies change.
+- Validation: `npm run qa:admin-proof-readiness`; browser proof with Supabase readback and `npm run qa:rls-proof` if policies change.
 
 ### LP-008 - Add Team-Builder Production Data Fields
 
