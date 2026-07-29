@@ -53,72 +53,75 @@ Completed baseline:
 - LPM-013A integrated in AgentFlow build
   `build_e15b91b4-66e7-4ce9-833b-ebed388ac25c` at integration commit
   `1a9141a7da17ad8d69bd478859497d1a01cc399f`.
+- LPM-014 integrated in AgentFlow build
+  `build_f5e9ab21-386a-4aa4-b769-68a9b980a8f9` at integration commit
+  `495c6d7480b9044abd591b652145e155fef8713f`.
 
-## LPM-014 - Add team-builder player age and evaluation metadata
+## LPM-015 - Add weather provider action readiness verifier
 
 ```yaml
 estimate_hours: 4
 depends_on: []
 owns:
-  - lib/domain/season-planning.ts
-  - lib/domain/contracts.ts
-  - lib/domain/domain.test.ts
-  - components/feature-panels.tsx
-  - components/feature-panels.test.tsx
-  - supabase/migrations/0034_team_builder_player_metadata.sql
+  - package.json
+  - scripts/verify-weather-provider-readiness.mjs
+  - scripts/verify-weather-provider-readiness.test.mjs
   - docs/Features.md
   - docs/capability-matrix.md
   - docs/missing-production-slices-work-plan.md
   - docs/production-task-board.md
+  - docs/runbook.md
   - docs/agentflow-missing-production-backlog.md
 validate:
   - npm ci --ignore-scripts --prefer-offline
   - npm run check:skills
-  - npm test -- lib/domain/domain.test.ts components/feature-panels.test.tsx supabase/rls-policy.test.ts
+  - npm run qa:weather-provider-readiness
+  - node --test scripts/verify-weather-provider-readiness.test.mjs
+  - npm test -- lib/services/weather/weather.test.ts lib/supabase/weather-draft.test.ts app/api-live-actions.test.ts app/provider-boundary.test.ts
   - npm run typecheck
   - npm run build
   - git diff --check
 produces:
-  - name: team-builder-player-metadata-contract
-    type: local-product-contract
+  - name: weather-provider-readiness-contract
+    type: local-proof-contract
     version: 1.0.0
-    path: lib/domain/season-planning.ts
+    path: scripts/verify-weather-provider-readiness.mjs
 consumes: []
 ```
 
-Implement LP-008 as a local repository slice by adding explicit Team Builder
-player age and evaluation metadata to the automatic team-builder contract. The
-current preview already supports sibling/guardian grouping, friend requests,
-target-roster warnings, skill-balance scoring, and admin-only publish authority,
-but it still says skill ratings default until imported and age is represented by
-division only. Replace that gap with typed, admin-scoped metadata that can inform
-preview ordering and review notes without exposing private child detail to
-parents or claiming hosted team-builder proof.
+Implement LP-016 as a local repository-readiness slice by adding a weather
+provider and action verifier that checks the existing weather service, draft
+route, Supabase persistence seam, tests, and docs before hosted credential proof
+is attempted. The app already has NWS, Open-Meteo, and optional Tomorrow.io
+provider adapters plus draft weather-alert creation, but the production board
+still treats hosted credential readiness, credential fallback, parent delivery,
+and provider proof as open. Add a fail-closed verifier and test suite that makes
+those boundaries executable without making network calls.
 
-This task may add a local Supabase migration file, domain types, route-surface
-display copy, tests, and documentation. It must not apply migrations to any
-hosted database, seed or mutate Supabase data, run browser proof, push, deploy,
-create provider sends, touch Stripe, upload media, configure secrets, or claim
-hosted/provider/production acceptance.
+This task may add a package script, verifier, verifier tests, and documentation.
+It must not call weather providers, Supabase, Vercel, provider dashboards, email,
+SMS, push, or Stripe; configure secrets; seed or mutate hosted records; run
+browser proof; deploy; push; or claim hosted/provider/production acceptance.
 
 ### Acceptance Criteria
 
-- Domain contracts accept explicit age-band, birthdate-derived age label, and
-  player evaluation inputs without requiring private full birthdates in preview
-  output.
-- `previewBalancedTeamBuild` uses explicit evaluation ratings when supplied,
-  keeps sibling/friend groups together, surfaces age-band and evaluation review
-  notes per player, and removes stale warnings that age/skill are unavailable
-  once metadata exists.
-- Admin UI copy shows the metadata as a review input for roster fairness while
-  keeping public/family display limited to privacy-safe player names and
-  non-sensitive notes.
-- A new migration extends team-builder persistence for player metadata or plan
-  constraints in an idempotent, admin-only, backward-compatible way; it does not
-  weaken existing RLS or expose child data.
-- Tests prove evaluation and age-band metadata influence local preview output,
-  publish still requires an organization admin, and privacy-safe display remains
-  first name plus last initial.
-- Docs move LP-008 from an open production gap to local implementation complete
-  while keeping hosted browser publish proof, Supabase readback, migration apply,
-  cross-org proof, and production acceptance open.
+- `package.json` exposes `qa:weather-provider-readiness` and the command runs
+  without credentials, network access, Supabase calls, browser automation,
+  provider sends, provider dashboard calls, deployment, or hosted mutation.
+- The verifier checks that the weather provider order stays NWS first,
+  Open-Meteo fallback, Tomorrow.io optional/premium, and every provider result is
+  forced back to draft alert state before persistence.
+- The verifier checks the weather draft route derives the reviewer from the
+  authenticated session and the Supabase operation enforces coach/admin
+  authority, event/team scope, provider fallback, idempotent/auditable draft
+  creation, and provider-send separation.
+- The verifier checks docs clearly state hosted weather credential proof,
+  fallback behavior, signed-in coach/admin draft proof, Supabase readback, parent
+  delivery, provider sandbox/webhook proof, realtime/offline behavior,
+  accessibility, and production acceptance remain open gates.
+- Tests cover the passing repository-source fixture plus failure modes for
+  provider order drift, loss of draft enforcement, caller-supplied reviewer
+  authority, missing provider-send separation, and missing open-gate docs.
+- Docs move LP-016 to local readiness complete while preserving the distinction
+  between local source proof, hosted credential proof, provider delivery proof,
+  and production acceptance.
