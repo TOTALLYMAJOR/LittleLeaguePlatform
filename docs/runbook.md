@@ -104,9 +104,18 @@ The local empty-database migration and transactional workflow smoke proves SQL i
 
 `qa:public-family-proof` verifies signed-out Home, Schedule, Request Team Access, and Sign In at 320, 390, 768, and 1440 pixels. It checks CTA/copy contracts, empty forms, canonical-organization and current-team exposure, calendar-provider actions, value-gated installation, 44px controls, document overflow, and browser errors, then writes screenshots plus `proof.json` under `output/playwright/public-family-phase0/`. Set `PUBLIC_FAMILY_BASE_URL` for a non-default local or hosted target. Hosted environments must configure `PUBLIC_ORGANIZATION_ID` and `PUBLIC_ACCESS_REVIEW_WINDOW`; local fallback organization selection is deterministic but is not a production configuration claim.
 
-Hosted tenant-readiness proof must be rerun after deployment before a real organization is invited:
+Before hosted public and tenant readiness browser proof, run the no-mutation hosted readiness preflight with the intended hosted URL, the target public organization configuration, the public access review-window copy, and QA admin command inputs:
 
 ```bash
+QA_PROOF_BASE_URL=https://www.leaguepilot.us PUBLIC_ORGANIZATION_ID=<organization-uuid> PUBLIC_ACCESS_REVIEW_WINDOW='within two business days' NEXT_PUBLIC_SUPABASE_URL=https://<project-ref>.supabase.co NEXT_PUBLIC_SUPABASE_ANON_KEY=<anon-key> QA_ADMIN_EMAIL=<qa-admin@example.com> QA_ADMIN_PASSWORD=<qa-admin-password> npm run qa:hosted-readiness-preflight
+```
+
+The preflight only validates inputs and prints the follow-on proof commands. It does not deploy, bypass Vercel Authentication, seed Supabase, write hosted data, send providers, write payments, upload media, run migrations, or establish production acceptance. Passing it clears obvious blockers before browser proof; it is not hosted acceptance.
+
+Hosted public and tenant-readiness proof must be rerun after deployment before a real organization is invited:
+
+```bash
+PUBLIC_FAMILY_BASE_URL=https://www.leaguepilot.us QA_PROOF_BASE_URL=https://www.leaguepilot.us npm run qa:public-family-proof
 QA_PROOF_BASE_URL=https://www.leaguepilot.us npm run qa:tenant-readiness-proof
 ```
 

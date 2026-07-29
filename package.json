@@ -28,6 +28,7 @@
     "qa:family-replay-proof": "node scripts/capture-family-parent-replay-proof.mjs",
     "qa:season-transition-proof": "node scripts/capture-season-transition-proof.mjs",
     "qa:communication-room-record-proof": "node scripts/capture-communication-room-record-proof.mjs",
+    "qa:hosted-readiness-preflight": "node scripts/verify-hosted-readiness-preflight.mjs",
     "qa:public-family-proof": "node scripts/capture-public-family-phase0-proof.mjs",
     "qa:registration-invitation-proof": "node scripts/capture-registration-invitation-proof.mjs",
     "qa:rls-proof": "node scripts/verify-rls-boundaries.mjs",
