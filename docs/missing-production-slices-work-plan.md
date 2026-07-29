@@ -118,7 +118,7 @@ The preflight is a blocker-clearing gate only. It performs no deploy, Vercel Aut
 
 ## LPM-003 - Access and Registration Lifecycle Proof
 
-Status: `planned`
+Status: `planned - local authority verifier added`
 Priority: P0
 Depends on: LPM-001
 Governing rows: LP-005, LP-006; Family access activation; Parent invitation issuance and acceptance; Additional guardian review.
@@ -128,6 +128,7 @@ Prove that registration, invite acceptance, guardian repair, additional guardian
 
 Acceptance criteria:
 
+- AC-000: `npm run qa:access-lifecycle-authority` passes as local repository-source proof that the access lifecycle authority contracts are still present. This verifier performs no Supabase call, browser sign-in, provider send, seed/write, deployment, hosted mutation, or production acceptance.
 - AC-001: QA admin approves and rejects temporary registration requests from hosted UI with cleanup and Supabase readback.
 - AC-002: Existing-parent and invited-parent paths are proven, including one-time-display, wrong-account, expired, revoked, already-accepted, replay, and cross-tenant cases.
 - AC-003: Guardian repair requires active organization-admin authority, existing parent profile, and bounded verification evidence.
@@ -135,7 +136,10 @@ Acceptance criteria:
 - AC-005: No provider messages are sent during access flows.
 
 Validation:
-Hosted Playwright proof with Supabase readback; `npm test -- app/api-registration-review.test.ts app/api-invite-acceptance.test.ts app/api-additional-guardians.test.ts lib/supabase/registration-approvals.test.ts lib/supabase/invite-acceptance.test.ts lib/supabase/additional-guardians.test.ts`.
+`npm run qa:access-lifecycle-authority`; `node --test scripts/verify-access-lifecycle-authority.test.mjs`; hosted Playwright proof with Supabase readback; `npm test -- app/api-registration-review.test.ts app/api-invite-acceptance.test.ts app/api-additional-guardians.test.ts lib/supabase/registration-approvals.test.ts lib/supabase/invite-acceptance.test.ts lib/supabase/additional-guardians.test.ts lib/supabase/guardian-links.test.ts`.
+
+Boundary:
+The authority verifier is a local source-contract gate only. It does not replace populated hosted UI proof, real-session RLS, Supabase readback, provider sandbox proof, deployment evidence, or production acceptance.
 
 ## LPM-004 - Admin Proof Closure
 
