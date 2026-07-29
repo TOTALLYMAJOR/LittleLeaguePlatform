@@ -59,73 +59,80 @@ Completed baseline:
 - LPM-015 integrated in AgentFlow build
   `build_ad6a0617-4f9b-4736-be48-1f6022264149` at integration commit
   `b2a25e822b0c9f08f41901807d3010075cb2dd9d`.
+- LPM-016 integrated in AgentFlow build
+  `build_56df39d6-071b-47ae-8b81-f00ce8853c1b` at integration commit
+  `12a0aa5db04a269b9efab7d76dcca671865820ae`.
 
-## LPM-016 - Reconcile sponsor local readiness status
+## LPM-017 - Keep the readiness ledger valid during continued execution
 
 ```yaml
-estimate_hours: 2
+estimate_hours: 3
 depends_on: []
 owns:
-  - docs/Features.md
-  - docs/capability-matrix.md
+  - docs/agentflow-missing-production-backlog.md
+  - scripts/verify-local-readiness-ledger.mjs
+  - scripts/verify-local-readiness-ledger.test.mjs
   - docs/missing-production-slices-work-plan.md
   - docs/production-task-board.md
   - docs/runbook.md
-  - docs/agentflow-missing-production-backlog.md
 validate:
   - npm ci --ignore-scripts --prefer-offline
   - npm run check:skills
-  - npm run qa:sponsor-stripe-readiness
-  - npm run qa:sponsor-fulfillment-readiness
-  - node --test scripts/verify-sponsor-stripe-readiness.test.mjs
-  - node --test scripts/verify-sponsor-fulfillment-readiness.test.mjs
-  - npm test -- lib/supabase/sponsors.test.ts lib/supabase/sponsor-operations.test.ts components/sponsor-hub.test.tsx app/api-live-actions.test.ts app/provider-boundary.test.ts
+  - npm run qa:local-readiness-ledger
+  - node --test scripts/verify-local-readiness-ledger.test.mjs
   - npm run typecheck
   - npm run build
   - git diff --check
 produces:
-  - name: sponsor-local-readiness-ledger
-    type: documentation-status-ledger
+  - name: continued-execution-ledger-contract
+    type: local-proof-contract
     version: 1.0.0
-    path: docs/missing-production-slices-work-plan.md
+    path: scripts/verify-local-readiness-ledger.mjs
 consumes: []
 ```
 
-Reconcile the sponsor backlog status after confirming that both sponsor local
-readiness verifiers already exist and pass. LPM-009 and LPM-010 should move from
-planned to local readiness complete only for the source contracts proven by
-`qa:sponsor-stripe-readiness`, `qa:sponsor-fulfillment-readiness`, their
-failure-mode tests, and focused sponsor API/service/UI tests.
+Repair the LPM-013A local-readiness ledger so continued one-task-at-a-time
+AgentFlow execution does not invalidate the already integrated LPM-001 through
+LPM-012 baseline. The current verifier hard-codes LPM-013A as the only allowed
+executable queue heading, so the legitimate LPM-016 queue makes
+`qa:local-readiness-ledger` fail even though all required baseline evidence and
+external proof boundaries remain present.
 
-This task may update documentation and status ledgers only. It must not change
-payment, provider, sponsor, Supabase, UI, API, migration, or verifier runtime
-code; call Stripe, Supabase, Vercel, provider dashboards, email, SMS, push, or
-weather providers; configure secrets; seed or mutate hosted records; run browser
-proof; deploy; push; or claim sandbox/hosted/provider/finance/production
+Keep the completed baseline requirement through LPM-012 unchanged. Permit
+exactly one executable queue heading when it is LPM-013A or a later numbered
+task, reject any attempt to re-execute LPM-001 through LPM-012, and continue to
+require the active task to run the ledger verifier and its direct Node test.
+Update the governing docs only as needed to describe this continued-execution
+invariant and the LPM-016 integration evidence.
+
+This task must not alter product UI, APIs, Supabase adapters, domain rules,
+migrations, providers, payments, storage, archive behavior, native behavior, or
+runtime delivery. It must not call Supabase, Stripe, Vercel, provider
+dashboards, email, SMS, push, weather providers, storage/scanner services, or
+app stores; configure secrets; seed or mutate hosted records; run browser proof;
+deploy; push; or claim hosted/provider/payment/storage/accessibility/production
 acceptance.
 
 ### Acceptance Criteria
 
-- Docs explicitly say LPM-009 sponsor Stripe readiness is local repository
-  readiness complete for the existing proof-only versus sandbox boundary,
-  server-side Checkout Session contract, server-only key handling, webhook
-  settlement truth, admin/public privacy separation, and open payment gates.
-- Docs explicitly say LPM-010 sponsor fulfillment readiness is local repository
-  readiness complete for approved active placement filters, Team Portal scope,
-  admin placement authority, approved logo reads, submitted-logo review queues,
-  fail-closed sponsor data, fulfillment/report separation, renewal delivery
-  gates, public and parent privacy, and open fulfillment gates.
-- Docs preserve Stripe sandbox account setup, restricted key creation, webhook
-  endpoint registration, signing-secret configuration, sandbox Checkout Session
-  proof, signed webhook replay/duplicate proof, refund/failure proof, hosted
-  admin proof, finance reconciliation, and production payment approval as open
-  gates.
-- Docs preserve hosted public/admin browser proof, observed placement-rendering
-  proof, approved logo asset proof, sponsor recap/report artifact proof, renewal
-  email sandbox proof, public placement leak QA, accessibility proof, finance
-  reconciliation, and production sponsor acceptance as open gates.
-- Documentation does not claim live Stripe collection, provider sends, hosted
-  proof, observed placement rendering, approved logo asset proof, finance
-  reconciliation, production payment approval, or production sponsor acceptance.
-- The local sponsor readiness verifiers, verifier tests, focused sponsor tests,
-  typecheck, build, and whitespace check pass after the reconciliation.
+- The queue records LPM-016 with AgentFlow build
+  `build_56df39d6-071b-47ae-8b81-f00ce8853c1b` and integration commit
+  `12a0aa5db04a269b9efab7d76dcca671865820ae`.
+- The ledger still requires completed AgentFlow build and integration-commit
+  records for every canonical baseline item from LPM-001 through LPM-012.
+- The ledger accepts exactly one executable queue heading when that heading is
+  LPM-013A or a task numbered LPM-014 or later.
+- The ledger rejects zero executable headings, multiple executable headings,
+  and any executable LPM-001 through LPM-012 task or A-variant.
+- The ledger continues to require `npm run qa:local-readiness-ledger` and
+  `node --test scripts/verify-local-readiness-ledger.test.mjs` in the active
+  task validation list.
+- Direct Node tests cover the current repository fixture and failure modes for
+  missing, multiple, and baseline-reexecution headings without network access or
+  credentials.
+- Governing docs continue to identify LPM-001 through LPM-012 as local
+  repository readiness only and preserve hosted browser, Supabase/RLS, provider,
+  Stripe, storage/scanner, sponsor fulfillment, archive/restore, native/app
+  store, accessibility, and production acceptance as open gates.
+- `npm run qa:local-readiness-ledger`, its direct Node tests, skill check,
+  typecheck, build, and whitespace check pass.
