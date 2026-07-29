@@ -4,6 +4,7 @@ import test from "node:test";
 import {
   EXTERNAL_OPEN_GATES,
   LOCAL_READINESS_SCRIPTS,
+  LOCAL_READY_EXTERNAL_OPEN_STATUS,
   formatLocalReadinessLedgerReport,
   readRepositorySources,
   verifyLocalReadinessLedger
@@ -35,6 +36,11 @@ function replaceActiveValidationCommand(sources, command, replacement) {
   sources.queue = sources.queue.replace(`  - ${command}`, `  - ${replacement}`);
 }
 
+function replaceWorkPlanStatus(sources, taskId, replacement) {
+  const taskPattern = new RegExp("(## " + taskId + " -[\\s\\S]*?^Status: )`[^`]+`", "m");
+  sources.workPlan = sources.workPlan.replace(taskPattern, `$1\`${replacement}\``);
+}
+
 test("passes against repository fixtures without hosted credentials or network access", () => {
   const result = verifyLocalReadinessLedger(cloneSources());
   const report = formatLocalReadinessLedgerReport(result);
@@ -43,6 +49,7 @@ test("passes against repository fixtures without hosted credentials or network a
   assert.deepEqual(result.blockers, []);
   assert.match(report, /local repository readiness proof only/);
   assert.match(report, /LPM-001/);
+  assert.match(report, new RegExp(LOCAL_READY_EXTERNAL_OPEN_STATUS));
   assert.match(report, /qa:local-readiness-ledger/);
   assert.match(report, /production acceptance/);
 });
@@ -69,17 +76,17 @@ test("accepts LPM-013A as the sole executable queue task for ledger repair rerun
   assert.equal(result.ok, true);
 });
 
-test("fails when the LPM-016 integration evidence is missing", () => {
+test("fails when the LPM-018 integration evidence is missing", () => {
   const sources = cloneSources();
   sources.queue = sources.queue.replace(
-    "`12a0aa5db04a269b9efab7d76dcca671865820ae`",
-    "`missing-lpm-016-sha`"
+    "`50e56d2d33cd04dc869483a1f99b6583fd9cc36b`",
+    "`missing-lpm-018-sha`"
   );
 
   const result = verifyLocalReadinessLedger(sources);
 
   assert.equal(result.ok, false);
-  assert.ok(codesFor(result, "agentflow-queue").includes("LPM_016_INTEGRATION_RECORD_MISSING"));
+  assert.ok(codesFor(result, "agentflow-queue").includes("LPM_018_INTEGRATION_RECORD_MISSING"));
 });
 
 test("fails when the executable queue heading is missing", () => {
@@ -143,6 +150,47 @@ test("accepts the exact active task validation commands", () => {
 
   assert.equal(result.ok, true);
   assert.deepEqual(codesFor(result, "agentflow-queue"), []);
+});
+
+test("accepts the local-readiness-with-external-proof-open work-plan statuses", () => {
+  const result = verifyLocalReadinessLedger(cloneSources());
+
+  assert.equal(result.ok, true);
+  assert.deepEqual(codesFor(result, "work-plan-status"), []);
+});
+
+test("fails when an LPM-002 through LPM-012 work-plan row returns to plain planned", () => {
+  const sources = cloneSources();
+  replaceWorkPlanStatus(sources, "LPM-002", "planned");
+
+  const result = verifyLocalReadinessLedger(sources);
+
+  assert.equal(result.ok, false);
+  assert.ok(codesFor(result, "work-plan-status").includes("LPM_002_WORK_PLAN_STATUS_PLAIN_PLANNED"));
+});
+
+test("fails when an LPM-002 through LPM-012 work-plan row is overstated as end-to-end done", () => {
+  const sources = cloneSources();
+  replaceWorkPlanStatus(sources, "LPM-011", "done");
+
+  const result = verifyLocalReadinessLedger(sources);
+
+  assert.equal(result.ok, false);
+  assert.ok(codesFor(result, "work-plan-status").includes("LPM_011_WORK_PLAN_STATUS_END_TO_END_DONE_OVERSTATED"));
+});
+
+test("fails when an LPM-002 through LPM-012 work-plan row loses external-proof language", () => {
+  const sources = cloneSources();
+  replaceWorkPlanStatus(sources, "LPM-012", "local repository readiness complete");
+
+  const result = verifyLocalReadinessLedger(sources);
+
+  assert.equal(result.ok, false);
+  assert.ok(
+    codesFor(result, "work-plan-status").includes(
+      "LPM_012_WORK_PLAN_STATUS_EXTERNAL_PROOF_DISTINCTION_MISSING"
+    )
+  );
 });
 
 for (const { label, command, blocker, nearMatches } of [
@@ -230,12 +278,12 @@ test("fails when governing docs overstate production acceptance", () => {
 
 test("fails when checkout and AgentFlow HEAD boundary records are missing", () => {
   const sources = cloneSources();
-  removeFromDocs(sources, "Final AgentFlow HEAD through LPM-012", "Final local note");
+  removeFromDocs(sources, "Final integration commit through LPM-018", "Final local note");
 
   const result = verifyLocalReadinessLedger(sources);
 
   assert.equal(result.ok, false);
-  assert.ok(codesFor(result, "checkout-boundary").some((code) => code.includes("FINAL_AGENTFLOW_HEAD_THROUGH_LPM_012")));
+  assert.ok(codesFor(result, "checkout-boundary").some((code) => code.includes("FINAL_INTEGRATION_COMMIT_THROUGH_LPM_018")));
 });
 
 test("fails when the ledger script gains an external side-effect call", () => {
