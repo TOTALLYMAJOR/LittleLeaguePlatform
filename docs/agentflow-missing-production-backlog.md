@@ -56,16 +56,16 @@ Completed baseline:
 - LPM-014 integrated in AgentFlow build
   `build_f5e9ab21-386a-4aa4-b769-68a9b980a8f9` at integration commit
   `495c6d7480b9044abd591b652145e155fef8713f`.
+- LPM-015 integrated in AgentFlow build
+  `build_ad6a0617-4f9b-4736-be48-1f6022264149` at integration commit
+  `b2a25e822b0c9f08f41901807d3010075cb2dd9d`.
 
-## LPM-015 - Add weather provider action readiness verifier
+## LPM-016 - Reconcile sponsor local readiness status
 
 ```yaml
-estimate_hours: 4
+estimate_hours: 2
 depends_on: []
 owns:
-  - package.json
-  - scripts/verify-weather-provider-readiness.mjs
-  - scripts/verify-weather-provider-readiness.test.mjs
   - docs/Features.md
   - docs/capability-matrix.md
   - docs/missing-production-slices-work-plan.md
@@ -75,53 +75,57 @@ owns:
 validate:
   - npm ci --ignore-scripts --prefer-offline
   - npm run check:skills
-  - npm run qa:weather-provider-readiness
-  - node --test scripts/verify-weather-provider-readiness.test.mjs
-  - npm test -- lib/services/weather/weather.test.ts lib/supabase/weather-draft.test.ts app/api-live-actions.test.ts app/provider-boundary.test.ts
+  - npm run qa:sponsor-stripe-readiness
+  - npm run qa:sponsor-fulfillment-readiness
+  - node --test scripts/verify-sponsor-stripe-readiness.test.mjs
+  - node --test scripts/verify-sponsor-fulfillment-readiness.test.mjs
+  - npm test -- lib/supabase/sponsors.test.ts lib/supabase/sponsor-operations.test.ts components/sponsor-hub.test.tsx app/api-live-actions.test.ts app/provider-boundary.test.ts
   - npm run typecheck
   - npm run build
   - git diff --check
 produces:
-  - name: weather-provider-readiness-contract
-    type: local-proof-contract
+  - name: sponsor-local-readiness-ledger
+    type: documentation-status-ledger
     version: 1.0.0
-    path: scripts/verify-weather-provider-readiness.mjs
+    path: docs/missing-production-slices-work-plan.md
 consumes: []
 ```
 
-Implement LP-016 as a local repository-readiness slice by adding a weather
-provider and action verifier that checks the existing weather service, draft
-route, Supabase persistence seam, tests, and docs before hosted credential proof
-is attempted. The app already has NWS, Open-Meteo, and optional Tomorrow.io
-provider adapters plus draft weather-alert creation, but the production board
-still treats hosted credential readiness, credential fallback, parent delivery,
-and provider proof as open. Add a fail-closed verifier and test suite that makes
-those boundaries executable without making network calls.
+Reconcile the sponsor backlog status after confirming that both sponsor local
+readiness verifiers already exist and pass. LPM-009 and LPM-010 should move from
+planned to local readiness complete only for the source contracts proven by
+`qa:sponsor-stripe-readiness`, `qa:sponsor-fulfillment-readiness`, their
+failure-mode tests, and focused sponsor API/service/UI tests.
 
-This task may add a package script, verifier, verifier tests, and documentation.
-It must not call weather providers, Supabase, Vercel, provider dashboards, email,
-SMS, push, or Stripe; configure secrets; seed or mutate hosted records; run
-browser proof; deploy; push; or claim hosted/provider/production acceptance.
+This task may update documentation and status ledgers only. It must not change
+payment, provider, sponsor, Supabase, UI, API, migration, or verifier runtime
+code; call Stripe, Supabase, Vercel, provider dashboards, email, SMS, push, or
+weather providers; configure secrets; seed or mutate hosted records; run browser
+proof; deploy; push; or claim sandbox/hosted/provider/finance/production
+acceptance.
 
 ### Acceptance Criteria
 
-- `package.json` exposes `qa:weather-provider-readiness` and the command runs
-  without credentials, network access, Supabase calls, browser automation,
-  provider sends, provider dashboard calls, deployment, or hosted mutation.
-- The verifier checks that the weather provider order stays NWS first,
-  Open-Meteo fallback, Tomorrow.io optional/premium, and every provider result is
-  forced back to draft alert state before persistence.
-- The verifier checks the weather draft route derives the reviewer from the
-  authenticated session and the Supabase operation enforces coach/admin
-  authority, event/team scope, provider fallback, idempotent/auditable draft
-  creation, and provider-send separation.
-- The verifier checks docs clearly state hosted weather credential proof,
-  fallback behavior, signed-in coach/admin draft proof, Supabase readback, parent
-  delivery, provider sandbox/webhook proof, realtime/offline behavior,
-  accessibility, and production acceptance remain open gates.
-- Tests cover the passing repository-source fixture plus failure modes for
-  provider order drift, loss of draft enforcement, caller-supplied reviewer
-  authority, missing provider-send separation, and missing open-gate docs.
-- Docs move LP-016 to local readiness complete while preserving the distinction
-  between local source proof, hosted credential proof, provider delivery proof,
-  and production acceptance.
+- Docs explicitly say LPM-009 sponsor Stripe readiness is local repository
+  readiness complete for the existing proof-only versus sandbox boundary,
+  server-side Checkout Session contract, server-only key handling, webhook
+  settlement truth, admin/public privacy separation, and open payment gates.
+- Docs explicitly say LPM-010 sponsor fulfillment readiness is local repository
+  readiness complete for approved active placement filters, Team Portal scope,
+  admin placement authority, approved logo reads, submitted-logo review queues,
+  fail-closed sponsor data, fulfillment/report separation, renewal delivery
+  gates, public and parent privacy, and open fulfillment gates.
+- Docs preserve Stripe sandbox account setup, restricted key creation, webhook
+  endpoint registration, signing-secret configuration, sandbox Checkout Session
+  proof, signed webhook replay/duplicate proof, refund/failure proof, hosted
+  admin proof, finance reconciliation, and production payment approval as open
+  gates.
+- Docs preserve hosted public/admin browser proof, observed placement-rendering
+  proof, approved logo asset proof, sponsor recap/report artifact proof, renewal
+  email sandbox proof, public placement leak QA, accessibility proof, finance
+  reconciliation, and production sponsor acceptance as open gates.
+- Documentation does not claim live Stripe collection, provider sends, hosted
+  proof, observed placement rendering, approved logo asset proof, finance
+  reconciliation, production payment approval, or production sponsor acceptance.
+- The local sponsor readiness verifiers, verifier tests, focused sponsor tests,
+  typecheck, build, and whitespace check pass after the reconciliation.
