@@ -603,4 +603,4 @@ This backlog translates the pasted feature inventory into repo-fit work. It is n
 1. Run live QA proof with valid Supabase anon/user secrets: `npm run supabase:qa-users`, `npm run qa:rls-proof`, and `npm run qa:session-proof`.
 2. Add browser-level action proof for parent RSVP, snack, volunteer, coach weather draft, provider review, and admin approval flows once QA credentials are valid.
 3. Add hosted provider credential proof for the weather provider order and notification provider readiness.
-4. Add real provider send workers only after hosted credentials, recipient preferences, approval records, retry behavior, and webhooks are proven.
+4. Run hosted credential/sandbox proof for the implemented provider send workers after recipient preferences, approval records, retry behavior, and webhooks are proven in the target environment.

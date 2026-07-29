@@ -31,6 +31,8 @@
     "qa:public-family-proof": "node scripts/capture-public-family-phase0-proof.mjs",
     "qa:registration-invitation-proof": "node scripts/capture-registration-invitation-proof.mjs",
     "qa:rls-proof": "node scripts/verify-rls-boundaries.mjs",
+    "qa:pwa-cache-proof": "node scripts/verify-pwa-cache-proof.mjs",
+    "qa:contrast-proof": "node scripts/verify-theme-contrast-proof.mjs",
     "check:skills": "node scripts/check-agent-skills.mjs",
     "supabase:oauth": "node scripts/configure-supabase-oauth.mjs",
     "codex:spec": "node tools/prompt-api/cli.mjs spec",

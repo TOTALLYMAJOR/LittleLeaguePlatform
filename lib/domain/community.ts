@@ -33,7 +33,7 @@ export function getVolunteerRoleCaps(state: AppState, teamId: string) {
   return Array.from(new Set(roles.map((signup) => signup.role))).map((role) => ({
     role,
     filled: roles.filter((signup) => signup.role === role && signup.status === "filled").length,
-    cap: 1
+    cap: Math.max(...roles.filter((signup) => signup.role === role).map((signup) => signup.roleCap ?? 1))
   }));
 }
 
@@ -43,7 +43,7 @@ export function getVolunteerReminders(state: AppState, teamId: string) {
     .map((signup) => ({
       id: `volunteer-reminder-${signup.id}`,
       title: signup.status === "open" ? "Volunteer role open" : "Volunteer reminder",
-      detail: `${signup.role} is ${signup.status}.`
+      detail: `${signup.role} is ${signup.status}; drafted ${signup.reminderDraftCount ?? 0}; cap ${signup.roleCap ?? 1}.`
     }));
 }
 

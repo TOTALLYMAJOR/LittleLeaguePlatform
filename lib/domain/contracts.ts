@@ -543,6 +543,12 @@ export interface SnackScheduleSlot {
   assignedParentUserId?: string;
   item: string;
   status: SnackScheduleSlotStatus;
+  slotCap?: number;
+  reminderDraftCount?: number;
+  reminderLastDraftedAt?: string;
+  unclaimedAt?: string;
+  unclaimedByUserId?: string;
+  cancellationReason?: string;
 }
 
 export interface VolunteerSignup {
@@ -552,6 +558,12 @@ export interface VolunteerSignup {
   role: string;
   assignedUserId?: string;
   status: VolunteerSignupStatus;
+  roleCap?: number;
+  reminderDraftCount?: number;
+  reminderLastDraftedAt?: string;
+  unclaimedAt?: string;
+  unclaimedByUserId?: string;
+  cancellationReason?: string;
 }
 
 export interface Sponsor {
@@ -609,6 +621,7 @@ export interface TeamChatMessage {
   moderatedAt?: string;
   moderatedByUserId?: string;
   moderationReason?: string;
+  reportedCount?: number;
 }
 
 export interface ChatModerationAuditEvent {

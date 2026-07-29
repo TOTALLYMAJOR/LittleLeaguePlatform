@@ -9,7 +9,7 @@ export async function GET(request: Request) {
   }
 
   const url = new URL(request.url);
-  const result = await listFieldLocations(url.searchParams.get("organizationId") ?? undefined);
+  const result = await listFieldLocations(url.searchParams.get("organizationId") ?? undefined, auth.user.id);
   return NextResponse.json(result, { status: result.ok ? 200 : 400 });
 }
 
@@ -24,12 +24,18 @@ export async function POST(request: Request) {
   }
 
   const result = await upsertFieldLocation({
+    actorUserId: auth.user.id,
     organizationId: String(body.organizationId ?? ""),
     name: String(body.name ?? ""),
     address: String(body.address ?? ""),
     latitude: body.latitude === undefined ? undefined : Number(body.latitude),
     longitude: body.longitude === undefined ? undefined : Number(body.longitude),
-    googlePlaceId: body.googlePlaceId ? String(body.googlePlaceId) : undefined
+    googlePlaceId: body.googlePlaceId ? String(body.googlePlaceId) : undefined,
+    mapUrl: body.mapUrl ? String(body.mapUrl) : undefined,
+    mapEmbedUrl: body.mapEmbedUrl ? String(body.mapEmbedUrl) : undefined,
+    fieldLabel: body.fieldLabel ? String(body.fieldLabel) : undefined,
+    notes: body.notes ? String(body.notes) : undefined,
+    status: body.status === "inactive" ? "inactive" : "active"
   });
 
   return NextResponse.json(result, { status: result.ok ? 201 : 400 });

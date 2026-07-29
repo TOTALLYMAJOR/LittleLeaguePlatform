@@ -10,9 +10,9 @@ import { pingramDeliveryConfigurationReady } from "@/lib/services/notifications/
 import { resolveSmsProvider } from "@/lib/services/notifications/sms-provider";
 import { normalizeSmsRecipient } from "@/lib/services/notifications/sms-contact-suppression";
 
-type ProviderDeliveryReviewDecision = "approved" | "rejected";
-type ProviderDeliveryProvider = "email" | "sms" | "web_push";
-type ProviderDeliveryChannel = "push" | "email" | "sms";
+export type ProviderDeliveryReviewDecision = "approved" | "rejected";
+export type ProviderDeliveryProvider = "email" | "sms" | "web_push";
+export type ProviderDeliveryChannel = "push" | "email" | "sms";
 type ProviderDeliveryAttemptStatus = "queued" | "sent" | "failed" | "suppressed";
 const DEFAULT_DELIVERY_MAX_RETRIES = 3;
 

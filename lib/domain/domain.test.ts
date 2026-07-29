@@ -47,7 +47,10 @@ import {
   getArrivalInstructions,
   getMapFallbackUx,
   getVenueIntelligence,
+  isApprovedGoogleMapsEmbedUrl,
+  isApprovedGoogleMapsUrl,
   highlightLocationChange,
+  validateVenueMetadata,
   getWeatherAlertHistory,
   getWeatherApprovalQueue,
   getWeatherProviderRetryLogs,
@@ -818,21 +821,58 @@ describe("weather policy", () => {
 describe("venue intelligence", () => {
   it("builds embedded map, markers, quota status, and field layout metadata", () => {
     const event = seedState.events.find((item) => item.id === "event-tigers-game")!;
-    const map = getEmbeddedMapUi(event);
-    const markers = getVenueMarkers(seedState.events.filter((item) => item.teamId === "team-tigers"));
+    const venueMetadata = [{
+      id: "field-1",
+      name: "Field 1",
+      address: "100 League Way",
+      latitude: 40.7128,
+      longitude: -74.006,
+      mapUrl: "https://www.google.com/maps/search/?api=1&query=Field%201",
+      mapEmbedUrl: "https://www.google.com/maps/embed/v1/place?key=browser-key&q=Field%201",
+      fieldLabel: "North diamond",
+      notes: "Use the north parking lot.",
+      status: "active" as const
+    }];
+    const fallbackMap = getEmbeddedMapUi(event);
+    const map = getEmbeddedMapUi(event, venueMetadata);
+    const markers = getVenueMarkers(seedState.events.filter((item) => item.teamId === "team-tigers"), venueMetadata);
     const quota = getMapQuotaStatus({ requestsToday: 90, dailyLimit: 100 });
-    const layout = getFieldLayoutMetadata(event);
+    const layout = getFieldLayoutMetadata(event, venueMetadata);
 
-    expect(map.embedUrl).toContain("output=embed");
+    expect(fallbackMap.embedUrl).toBe("");
+    expect(fallbackMap.boundary).toContain("No route tracking");
+    expect(map.embedUrl).toContain("/maps/embed");
+    expect(map.boundary).toContain("no route tracking");
     expect(markers).toHaveLength(2);
+    expect(markers[0]?.label).toBe("North diamond");
+    expect(markers[0]?.metadataStatus).toBe("managed");
     expect(quota.status).toBe("warning");
     expect(layout.entrance).toContain("Main gate");
+    expect(layout.notes).toContain("north parking");
     expect(getVenuePage(event).path).toBe("/venues/field-1");
     expect(getVenueAmenityNotes(event).restrooms).toContain("Restrooms");
     expect(getArrivalInstructions(event)).toContain("Arrive 20 minutes");
     expect(getVenueIntelligence(event).confidence).toBe("ready");
     expect(getMapFallbackUx({ quotaStatus: "danger", directionsUrl: "https://maps.example" }).useFallback).toBe(true);
+    expect(getMapFallbackUx({ quotaStatus: "danger", directionsUrl: "https://maps.example" }).trackingBoundary).toContain("does not enable route tracking");
     expect(highlightLocationChange("Field 1", "Field 3").changed).toBe(true);
+  });
+
+  it("validates managed map metadata before embeds and markers are saved", () => {
+    expect(isApprovedGoogleMapsUrl("https://www.google.com/maps/search/?api=1&query=Field%201")).toBe(true);
+    expect(isApprovedGoogleMapsEmbedUrl("https://www.google.com/maps/embed/v1/place?key=browser-key&q=Field%201")).toBe(true);
+    expect(validateVenueMetadata({
+      name: "Field 1",
+      address: "100 League Way",
+      latitude: 91,
+      longitude: -74.006,
+      mapEmbedUrl: "https://www.google.com/maps/embed/v1/place?key=browser-key&q=Field%201"
+    }).message).toContain("valid latitude");
+    expect(validateVenueMetadata({
+      name: "Field 1",
+      address: "100 League Way",
+      mapEmbedUrl: "https://tracking.example.com/embed/field-1"
+    }).message).toContain("approved Google Maps embed");
   });
 });
 

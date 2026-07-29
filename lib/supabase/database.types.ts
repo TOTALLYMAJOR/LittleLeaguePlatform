@@ -524,6 +524,10 @@ export interface Database {
           pinned: boolean;
           moderation_status: "visible" | "hidden" | "deleted";
           read_by_user_ids: RowId[];
+          thread_id: RowId | null;
+          reply_to_message_id: RowId | null;
+          retained_until: Timestamp | null;
+          reported_count: number;
           created_at: Timestamp;
           edited_at: Timestamp | null;
           deleted_at: Timestamp | null;
@@ -546,6 +550,10 @@ export interface Database {
           pinned?: boolean;
           moderation_status?: "visible" | "hidden" | "deleted";
           read_by_user_ids?: RowId[];
+          thread_id?: RowId | null;
+          reply_to_message_id?: RowId | null;
+          retained_until?: Timestamp | null;
+          reported_count?: number;
           created_at?: Timestamp;
           edited_at?: Timestamp | null;
           deleted_at?: Timestamp | null;
@@ -554,6 +562,32 @@ export interface Database {
           moderation_reason?: string | null;
         };
         Update: Partial<Database["public"]["Tables"]["team_chat_messages"]["Insert"]>;
+        Relationships: [];
+      };
+      team_chat_reports: {
+        Row: {
+          id: RowId;
+          message_id: RowId;
+          team_id: RowId;
+          reporter_user_id: RowId;
+          reason: string;
+          status: "open" | "reviewed" | "dismissed" | "action_taken";
+          reviewed_by_user_id: RowId | null;
+          reviewed_at: Timestamp | null;
+          created_at: Timestamp;
+        };
+        Insert: {
+          id?: RowId;
+          message_id: RowId;
+          team_id: RowId;
+          reporter_user_id: RowId;
+          reason: string;
+          status?: "open" | "reviewed" | "dismissed" | "action_taken";
+          reviewed_by_user_id?: RowId | null;
+          reviewed_at?: Timestamp | null;
+          created_at?: Timestamp;
+        };
+        Update: Partial<Database["public"]["Tables"]["team_chat_reports"]["Insert"]>;
         Relationships: [];
       };
       chat_moderation_audit_events: {
@@ -605,7 +639,7 @@ export interface Database {
           recipient_user_id: RowId;
           team_id: RowId;
           event_id: RowId | null;
-          notification_type: "schedule_changed" | "event_cancelled" | "new_event" | "invite_sent" | "invite_recovered" | "parent_replay_ready";
+          notification_type: "schedule_changed" | "event_cancelled" | "new_event" | "invite_sent" | "invite_recovered" | "parent_replay_ready" | "team_broadcast" | "weather_alert" | "chat_announcement" | "volunteer_reminder" | "snack_reminder";
           title: string;
           body: string;
           channel: "push" | "email" | "sms";
@@ -620,7 +654,7 @@ export interface Database {
           recipient_user_id: RowId;
           team_id: RowId;
           event_id?: RowId | null;
-          notification_type: "schedule_changed" | "event_cancelled" | "new_event" | "invite_sent" | "invite_recovered" | "parent_replay_ready";
+          notification_type: "schedule_changed" | "event_cancelled" | "new_event" | "invite_sent" | "invite_recovered" | "parent_replay_ready" | "team_broadcast" | "weather_alert" | "chat_announcement" | "volunteer_reminder" | "snack_reminder";
           title: string;
           body: string;
           channel: "push" | "email" | "sms";

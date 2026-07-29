@@ -67,13 +67,14 @@ Acceptance:
 ## 6. PWA And Mobile Hardening
 
 - Add install prompt UX and offline fallback route.
-- Test manifest/service worker from standalone build and Docker.
-- Add Web Push subscription storage behind explicit opt-in.
+- Test manifest/service worker from standalone build, Docker, and `npm run qa:pwa-cache-proof`.
+- Verify Web Push subscription storage behind explicit opt-in in hosted QA.
 - Keep Expo native app as later work unless PWA usage proves insufficient.
 
 Acceptance:
 - PWA install works in Chrome/Edge mobile and desktop.
 - Offline fallback is understandable and does not imply stale data is current.
+- Service-worker, manifest, and brand/icon asset revisions are bumped before deploys that change app-shell or branding assets.
 - No push send occurs without opt-in and provider configuration.
 
 ## 7. Validation And CI
