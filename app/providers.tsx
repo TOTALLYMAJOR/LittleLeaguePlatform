@@ -2,6 +2,7 @@
 
 import { createContext, useContext, useEffect, useMemo, useReducer, useRef, useState } from "react";
 import { appReducer, seedState, type AppAction, type AppState } from "@/lib/domain";
+import { PWA_CACHE_VERSION, versionedPwaAsset } from "@/lib/domain/pwa-cache";
 
 interface AppStateContextValue {
   state: AppState;
@@ -71,13 +72,16 @@ export function AppStateProvider({ children }: { children: React.ReactNode }) {
       if ("caches" in window) {
         void caches.keys()
           .then((keys) => Promise.all(keys
-            .filter((key) => key.startsWith("little-league-hq-shell-"))
+            .filter((key) => key.startsWith("little-league-hq-shell-") || key.startsWith("little-league-hq-runtime-"))
             .map((key) => caches.delete(key))))
           .catch(() => undefined);
       }
       return;
     }
-    navigator.serviceWorker.register("/sw.js").catch(() => undefined);
+    navigator.serviceWorker
+      .register(versionedPwaAsset("/sw.js", PWA_CACHE_VERSION), { updateViaCache: "none" })
+      .then((registration) => registration.update().catch(() => undefined))
+      .catch(() => undefined);
   }, []);
 
   useEffect(() => {

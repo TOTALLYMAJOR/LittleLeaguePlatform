@@ -9,9 +9,9 @@ describe("PWA cache versioning", () => {
   });
 
   it("adds cache-busting revision parameters without dropping existing query params", () => {
-    expect(versionedPwaAsset("/sw.js", PWA_CACHE_VERSION)).toBe("/sw.js?v=2026.07.16.14");
+    expect(versionedPwaAsset("/sw.js", PWA_CACHE_VERSION)).toBe("/sw.js?v=2026.07.29.1");
     expect(versionedPwaAsset("/manifest.webmanifest?source=layout", PWA_MANIFEST_REVISION)).toBe(
-      "/manifest.webmanifest?source=layout&v=2026.07.16.14"
+      "/manifest.webmanifest?source=layout&v=2026.07.29.1"
     );
   });
 });

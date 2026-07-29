@@ -4179,6 +4179,60 @@ export function AdminDashboardClient({ registrationRequests, sponsorData, mediaD
       "player-ella": 4,
       "player-liam": 2
     },
+    playerMetadata: {
+      "player-mason": {
+        playerId: "player-mason",
+        ageBand: "3U",
+        birthdateDerivedAgeLabel: "Age 3 on league cutoff",
+        evaluation: {
+          rating: 4,
+          source: "coach_evaluation",
+          label: "Confident throwing and listening"
+        },
+        reviewNotes: ["Admin review input only; family preview keeps safe roster name."]
+      },
+      "player-avery": {
+        playerId: "player-avery",
+        ageBand: "3U",
+        birthdateDerivedAgeLabel: "Age 3 on league cutoff",
+        evaluation: {
+          rating: 3,
+          source: "guardian_questionnaire",
+          label: "New player, comfortable with friends"
+        },
+        reviewNotes: ["Use with sibling/friend constraints before publishing."]
+      },
+      "player-noah": {
+        playerId: "player-noah",
+        ageBand: "3U",
+        birthdateDerivedAgeLabel: "Age 3 on league cutoff",
+        evaluation: {
+          rating: 3,
+          source: "imported_roster",
+          label: "Balanced beginner"
+        }
+      },
+      "player-ella": {
+        playerId: "player-ella",
+        ageBand: "5U",
+        birthdateDerivedAgeLabel: "Age 5 on league cutoff",
+        evaluation: {
+          rating: 4,
+          source: "coach_evaluation",
+          label: "Ready for older division pace"
+        }
+      },
+      "player-liam": {
+        playerId: "player-liam",
+        ageBand: "6U",
+        birthdateDerivedAgeLabel: "Age 6 on league cutoff",
+        evaluation: {
+          rating: 2,
+          source: "guardian_questionnaire",
+          label: "Needs extra practice support"
+        }
+      }
+    },
     friendRequests: [
       { playerId: "player-mason", friendPlayerId: "player-avery" }
     ]
@@ -4548,11 +4602,15 @@ export function AdminDashboardClient({ registrationRequests, sponsorData, mediaD
             <h3>Automatic team builder preview</h3>
             <p className="muted"><strong>Workflow:</strong> {teamBuildPreview.workflow.join(" -> ")}</p>
             <p className="muted"><strong>Sibling/friend constraints:</strong> sibling groups stay together and friend requests are considered before roster balance.</p>
+            <p className="muted"><strong>Admin review inputs:</strong> age bands, cutoff-age labels, and player evaluations inform fairness review without showing full birthdates or private child detail to families.</p>
             <p className="muted"><strong>Publish boundary:</strong> {teamBuildPreview.publishBoundary}</p>
             {teamBuildPreview.teams.map((team) => (
               <p key={team.teamId}>
                 <strong>{team.teamName}</strong><br />
                 <span className="muted">{team.playerCount} player(s), skill-balance score {team.averageSkill}: {team.players.map((player) => player.name).join(", ") || "No players"}</span>
+                {team.players.length ? (
+                  <span className="muted"><br />Review metadata: {team.players.map((player) => `${player.name} ${player.ageBand}, ${player.birthdateDerivedAgeLabel}, eval ${player.skillRating}`).join("; ")}</span>
+                ) : null}
               </p>
             ))}
             {teamBuildPreview.warnings.slice(0, 3).map((warning) => <p className="notice" key={warning}>{warning}</p>)}
@@ -5621,12 +5679,17 @@ export function AdminThemesClient({ initialData }: { initialData: AdminThemeData
 }
 
 interface RegistrationClientProps {
+  proofMetadata?: {
+    publicOrganizationFingerprint?: string;
+    reviewWindowConfigured: boolean;
+  };
   registrationRequests?: RegistrationRequest[];
   reviewWindow?: string;
   teamOptions?: RegistrationTeamOption[];
 }
 
 export function RegistrationClient({
+  proofMetadata,
   registrationRequests,
   reviewWindow = "within two business days",
   teamOptions
@@ -5671,7 +5734,11 @@ export function RegistrationClient({
   }
 
   return (
-    <div className="page">
+    <div
+      className="page"
+      data-public-organization-fingerprint={proofMetadata?.publicOrganizationFingerprint}
+      data-access-review-window-configured={proofMetadata ? String(proofMetadata.reviewWindowConfigured) : undefined}
+    >
       <section className="hero">
         <span className="eyebrow">Request Team Access</span>
         <h1>Connect your family to the right team.</h1>

@@ -1,4 +1,5 @@
 import type { AppState, AuditEvent } from "./types";
+import type { TeamBuilderAgeBand, TeamBuilderPlayerMetadata } from "./contracts";
 
 type DivisionBalanceStatus = "balanced" | "needs_players" | "uneven";
 
@@ -56,6 +57,7 @@ export interface BalancedTeamBuildInput {
   now: string;
   skillRatings?: Record<string, number>;
   playerProfiles?: Record<string, TeamBuilderPlayerProfileInput>;
+  playerMetadata?: Record<string, TeamBuilderPlayerMetadata>;
   friendRequests?: TeamBuildFriendRequest[];
 }
 
@@ -74,11 +76,13 @@ export interface BalancedTeamBuildPreview {
     players: Array<{
       playerId: string;
       name: string;
+      ageBand: TeamBuilderAgeBand;
+      birthdateDerivedAgeLabel: string;
       skillRating: number;
-      ageBand: string;
-      ageBandSource: "explicit" | "division_default";
-      evaluationSource: "explicit" | "legacy_override" | "defaulted";
+      ageBandSource: "metadata" | "explicit" | "division_default";
+      evaluationSource: string;
       birthDateStatus: "recorded" | "missing";
+      evaluationNotes: string[];
       constraintNotes: string[];
     }>;
   }>;
@@ -184,23 +188,68 @@ function guardianGroupKey(roster: TeamBuilderRosterContext, playerId: string) {
   return roster.players.find((player) => player.id === playerId)?.guardianGroupId ?? playerId;
 }
 
+function validRating(value: number | null | undefined) {
+  if (typeof value !== "number" || !Number.isFinite(value) || value < 1 || value > 5) {
+    return null;
+  }
+  return Math.round(value * 10) / 10;
+}
+
 function normalizedEvaluation(input: BalancedTeamBuildInput, playerId: string) {
-  const explicit = input.playerProfiles?.[playerId]?.evaluationRating;
-  if (typeof explicit === "number" && Number.isInteger(explicit) && explicit >= 1 && explicit <= 5) {
-    return { value: explicit, source: "explicit" as const };
+  const metadata = input.playerMetadata?.[playerId]?.evaluation;
+  const metadataRating = validRating(metadata?.rating);
+  if (metadata && metadataRating !== null) {
+    return { value: metadataRating, source: metadata.source };
   }
-  const legacy = input.skillRatings?.[playerId];
-  if (typeof legacy === "number" && Number.isInteger(legacy) && legacy >= 1 && legacy <= 5) {
-    return { value: legacy, source: "legacy_override" as const };
+  const explicit = validRating(input.playerProfiles?.[playerId]?.evaluationRating);
+  if (explicit !== null) {
+    return { value: explicit, source: "explicit" };
   }
-  return { value: 3, source: "defaulted" as const };
+  const legacy = validRating(input.skillRatings?.[playerId]);
+  if (legacy !== null) {
+    return { value: legacy, source: "legacy_override" };
+  }
+  return { value: 3, source: "defaulted" };
 }
 
 function normalizedAgeBand(input: BalancedTeamBuildInput, playerId: string) {
+  const metadata = input.playerMetadata?.[playerId]?.ageBand?.trim();
+  if (metadata) {
+    return { value: metadata as TeamBuilderAgeBand, source: "metadata" as const };
+  }
   const explicit = input.playerProfiles?.[playerId]?.ageBand?.trim();
   return explicit
-    ? { value: explicit, source: "explicit" as const }
-    : { value: input.division, source: "division_default" as const };
+    ? { value: explicit as TeamBuilderAgeBand, source: "explicit" as const }
+    : { value: input.division as TeamBuilderAgeBand, source: "division_default" as const };
+}
+
+function ageBandScore(ageBand: string) {
+  const match = ageBand.match(/\d+/);
+  return match ? Number(match[0]) : 0;
+}
+
+function getPlayerMetadata(input: BalancedTeamBuildInput, playerId: string) {
+  const metadata = input.playerMetadata?.[playerId];
+  const profile = input.playerProfiles?.[playerId];
+  const ageBand = normalizedAgeBand(input, playerId);
+  const evaluation = normalizedEvaluation(input, playerId);
+
+  return {
+    ageBand: ageBand.value,
+    ageBandSource: ageBand.source,
+    birthdateDerivedAgeLabel: metadata?.birthdateDerivedAgeLabel?.trim() || `Division ${ageBand.value}`,
+    skillRating: evaluation.value,
+    evaluationSource: evaluation.source,
+    evaluationNotes: [
+      ...(metadata?.evaluation?.label ? [metadata.evaluation.label] : []),
+      ...(metadata?.evaluation?.notes ?? []),
+      ...(metadata?.reviewNotes ?? [])
+    ],
+    birthDateStatus: profile?.birthDate || metadata?.birthdateDerivedAgeLabel
+      ? "recorded" as const
+      : "missing" as const,
+    profileMissing: !profile && !metadata
+  };
 }
 
 function mergeFriendGroups(groups: Map<string, string[]>, playerToGroup: Map<string, string>, friendRequests: TeamBuildFriendRequest[]) {
@@ -243,9 +292,12 @@ export function previewBalancedTeamBuildRoster(roster: TeamBuilderRosterContext,
 
   const teamAssignments = new Map(teams.map((team) => [team.id, [] as string[]]));
   const orderedGroups = Array.from(groups.values()).sort((left, right) => {
-    const leftSkill = Math.max(...left.map((playerId) => normalizedEvaluation(input, playerId).value));
-    const rightSkill = Math.max(...right.map((playerId) => normalizedEvaluation(input, playerId).value));
+    const leftSkill = Math.max(...left.map((playerId) => getPlayerMetadata(input, playerId).skillRating));
+    const rightSkill = Math.max(...right.map((playerId) => getPlayerMetadata(input, playerId).skillRating));
+    const leftAge = Math.max(...left.map((playerId) => ageBandScore(getPlayerMetadata(input, playerId).ageBand)));
+    const rightAge = Math.max(...right.map((playerId) => ageBandScore(getPlayerMetadata(input, playerId).ageBand)));
     return rightSkill - leftSkill
+      || rightAge - leftAge
       || right.length - left.length
       || [...left].sort().join(":").localeCompare([...right].sort().join(":"));
   });
@@ -255,21 +307,22 @@ export function previewBalancedTeamBuildRoster(roster: TeamBuilderRosterContext,
       .map((team) => ({
         team,
         count: teamAssignments.get(team.id)!.length,
-        averageSkill: average(teamAssignments.get(team.id)!.map((playerId) => normalizedEvaluation(input, playerId).value))
+        averageSkill: average(teamAssignments.get(team.id)!.map((playerId) => getPlayerMetadata(input, playerId).skillRating)),
+        averageAge: average(teamAssignments.get(team.id)!.map((playerId) => ageBandScore(getPlayerMetadata(input, playerId).ageBand)))
       }))
-      .sort((left, right) => left.count - right.count || left.averageSkill - right.averageSkill || left.team.name.localeCompare(right.team.name))[0]!.team;
+      .sort((left, right) => left.count - right.count || left.averageSkill - right.averageSkill || left.averageAge - right.averageAge || left.team.name.localeCompare(right.team.name))[0]!.team;
     teamAssignments.get(targetTeam.id)!.push(...group);
   }
 
   const teamRows = teams.map((team) => {
     const assignedPlayerIds = [...(teamAssignments.get(team.id) ?? [])].sort((left, right) => {
-      const evaluationDifference = normalizedEvaluation(input, right).value - normalizedEvaluation(input, left).value;
+      const evaluationDifference = getPlayerMetadata(input, right).skillRating - getPlayerMetadata(input, left).skillRating;
       return evaluationDifference
-        || normalizedAgeBand(input, left).value.localeCompare(normalizedAgeBand(input, right).value)
+        || getPlayerMetadata(input, left).ageBand.localeCompare(getPlayerMetadata(input, right).ageBand)
         || left.localeCompare(right);
     });
     const ageBandCounts = assignedPlayerIds.reduce<Record<string, number>>((counts, playerId) => {
-      const ageBand = normalizedAgeBand(input, playerId).value;
+      const ageBand = getPlayerMetadata(input, playerId).ageBand;
       counts[ageBand] = (counts[ageBand] ?? 0) + 1;
       return counts;
     }, {});
@@ -277,53 +330,54 @@ export function previewBalancedTeamBuildRoster(roster: TeamBuilderRosterContext,
       teamId: team.id,
       teamName: team.name,
       playerCount: assignedPlayerIds.length,
-      averageSkill: average(assignedPlayerIds.map((playerId) => normalizedEvaluation(input, playerId).value)),
+      averageSkill: average(assignedPlayerIds.map((playerId) => getPlayerMetadata(input, playerId).skillRating)),
       ageBandCounts,
-      missingProfileCount: assignedPlayerIds.filter((playerId) => !input.playerProfiles?.[playerId]).length,
-      defaultedEvaluationCount: assignedPlayerIds.filter((playerId) => normalizedEvaluation(input, playerId).source === "defaulted").length,
+      missingProfileCount: assignedPlayerIds.filter((playerId) => getPlayerMetadata(input, playerId).profileMissing).length,
+      defaultedEvaluationCount: assignedPlayerIds.filter((playerId) => getPlayerMetadata(input, playerId).evaluationSource === "defaulted").length,
       players: assignedPlayerIds.map((playerId) => {
         const player = roster.players.find((item) => item.id === playerId)!;
         const guardianKey = guardianGroupKey(roster, playerId);
+        const metadata = getPlayerMetadata(input, playerId);
         const siblingCount = groups.get(guardianKey)?.length ?? 1;
         const hasFriendRequest = (input.friendRequests ?? []).some((request) => request.playerId === playerId || request.friendPlayerId === playerId);
-        const evaluation = normalizedEvaluation(input, playerId);
-        const ageBand = normalizedAgeBand(input, playerId);
-        const birthDateStatus = input.playerProfiles?.[playerId]?.birthDate ? "recorded" as const : "missing" as const;
         return {
           playerId,
           name: `${player.firstName} ${player.lastInitial}.`,
-          skillRating: evaluation.value,
-          ageBand: ageBand.value,
-          ageBandSource: ageBand.source,
-          evaluationSource: evaluation.source,
-          birthDateStatus,
+          ageBand: metadata.ageBand,
+          birthdateDerivedAgeLabel: metadata.birthdateDerivedAgeLabel,
+          skillRating: metadata.skillRating,
+          ageBandSource: metadata.ageBandSource,
+          evaluationSource: metadata.evaluationSource,
+          birthDateStatus: metadata.birthDateStatus,
+          evaluationNotes: metadata.evaluationNotes,
           constraintNotes: [
-            `Age band: ${ageBand.value} (${ageBand.source === "explicit" ? "explicit" : "division default"})`,
-            `Evaluation: ${evaluation.value} (${evaluation.source.replace("_", " ")})`,
-            `Birth date: ${birthDateStatus}`,
+            `Age band: ${metadata.ageBand} (${metadata.ageBandSource.replaceAll("_", " ")})`,
+            `Age label: ${metadata.birthdateDerivedAgeLabel}`,
+            `Evaluation: ${metadata.skillRating} (${metadata.evaluationSource.replaceAll("_", " ")})`,
+            `Age eligibility source: ${metadata.birthDateStatus === "recorded" ? "private evidence recorded" : "missing"}`,
             siblingCount > 1 ? "Sibling/guardian group kept together" : "No sibling grouping required",
-            hasFriendRequest ? "Friend request considered" : "No friend request"
+            hasFriendRequest ? "Friend request considered" : "No friend request",
+            ...(metadata.evaluationNotes.length ? metadata.evaluationNotes.map((note) => `Review note: ${note}`) : ["Review note: No private child detail shown"])
           ]
         };
       })
     };
   });
 
+  const playerRows = teamRows.flatMap((team) => team.players);
+  const missingProfileCount = playerRows.filter((player) => (
+    !input.playerProfiles?.[player.playerId] && !input.playerMetadata?.[player.playerId]
+  )).length;
+  const defaultedEvaluationCount = playerRows.filter((player) => player.evaluationSource === "defaulted").length;
+  const defaultedAgeBandCount = playerRows.filter((player) => player.ageBandSource === "division_default").length;
+  const missingAgeEvidenceCount = playerRows.filter((player) => player.birthDateStatus === "missing").length;
   const warnings = [
     ...teamRows.filter((team) => team.playerCount > input.targetRosterSize).map((team) => `${team.teamName} exceeds target roster size ${input.targetRosterSize}.`),
     ...teamRows.filter((team) => team.playerCount === 0).map((team) => `${team.teamName} has no assigned players in this preview.`),
-    ...(players.some((player) => !input.playerProfiles?.[player.id])
-      ? [`${players.filter((player) => !input.playerProfiles?.[player.id]).length} player(s) have no private team-builder profile.`]
-      : []),
-    ...(players.some((player) => normalizedEvaluation(input, player.id).source === "defaulted")
-      ? [`${players.filter((player) => normalizedEvaluation(input, player.id).source === "defaulted").length} player evaluation(s) defaulted to 3.`]
-      : []),
-    ...(players.some((player) => normalizedAgeBand(input, player.id).source === "division_default")
-      ? [`${players.filter((player) => normalizedAgeBand(input, player.id).source === "division_default").length} player age band(s) defaulted to division ${input.division}.`]
-      : []),
-    ...(players.some((player) => !input.playerProfiles?.[player.id]?.birthDate)
-      ? [`${players.filter((player) => !input.playerProfiles?.[player.id]?.birthDate).length} player birth date(s) are missing.`]
-      : [])
+    ...(missingProfileCount ? [`${missingProfileCount} player(s) have no private team-builder profile or review metadata.`] : []),
+    ...(defaultedEvaluationCount ? [`${defaultedEvaluationCount} player evaluation(s) defaulted to 3.`] : []),
+    ...(defaultedAgeBandCount ? [`${defaultedAgeBandCount} player age band(s) defaulted to division ${input.division}.`] : []),
+    ...(missingAgeEvidenceCount ? [`${missingAgeEvidenceCount} player age eligibility source(s) are missing.`] : [])
   ];
 
   return {
@@ -332,7 +386,7 @@ export function previewBalancedTeamBuildRoster(roster: TeamBuilderRosterContext,
     workflow,
     teams: teamRows,
     warnings,
-    auditSummary: `Balanced team preview for ${input.division}: ${players.length} player(s), ${teams.length} team(s), target roster ${input.targetRosterSize}; ${players.filter((player) => !input.playerProfiles?.[player.id]).length} missing profile(s), ${players.filter((player) => normalizedEvaluation(input, player.id).source === "defaulted").length} defaulted evaluation(s).`,
+    auditSummary: `Balanced team preview for ${input.division}: ${players.length} player(s), ${teams.length} team(s), target roster ${input.targetRosterSize}; ${missingProfileCount} missing profile(s), ${defaultedEvaluationCount} defaulted evaluation(s).`,
     publishBoundary: "Preview does not update player.teamId. Admin must edit, approve, and publish before roster assignments change."
   };
 }

@@ -6283,8 +6283,8 @@ button.month-calendar-day:hover {
     --accent:         #9fc0e8;
     --accent-strong:  #d9e9fb;
     --accent-soft:    rgba(159, 192, 232, 0.14);
-    --action:         #d7662e;
-    --action-strong:  #ef824d;
+    --action:         #b8470f;
+    --action-strong:  #923509;
     --action-soft:    rgba(215, 102, 46, 0.15);
     --ok:             #78dfa6;
     --ok-soft:        rgba(120, 223, 166, 0.15);
@@ -8761,6 +8761,12 @@ caption {
   border-color: var(--accent);
   background: var(--accent-soft);
   color: var(--accent-strong);
+}
+
+@media (prefers-color-scheme: dark) {
+  .public-brand-mark {
+    color: #111821;
+  }
 }
 
 .public-main {

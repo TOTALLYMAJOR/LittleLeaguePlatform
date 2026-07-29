@@ -1104,6 +1104,94 @@ describe("start-of-season planning", () => {
     expect(preview.auditSummary).toContain("missing profile");
     expect(preview.teams.every((team) => typeof team.ageBandCounts === "object")).toBe(true);
   });
+
+  it("uses age-band and evaluation metadata without exposing private birthdates", () => {
+    const preview = previewBalancedTeamBuild(seedState, {
+      division: "3U",
+      targetRosterSize: 10,
+      actorUserId: "user-admin",
+      now: NOW,
+      skillRatings: {
+        "player-mason": 1,
+        "player-avery": 1,
+        "player-noah": 1
+      },
+      playerMetadata: {
+        "player-mason": {
+          playerId: "player-mason",
+          ageBand: "3U",
+          birthdateDerivedAgeLabel: "Age 3 on league cutoff",
+          evaluation: {
+            rating: 5,
+            source: "coach_evaluation",
+            label: "Advanced coordination"
+          }
+        },
+        "player-avery": {
+          playerId: "player-avery",
+          ageBand: "3U",
+          birthdateDerivedAgeLabel: "Age 3 on league cutoff",
+          evaluation: {
+            rating: 3,
+            source: "guardian_questionnaire",
+            label: "New player"
+          },
+          reviewNotes: ["Keep with requested friend when roster size allows."]
+        },
+        "player-noah": {
+          playerId: "player-noah",
+          ageBand: "4U",
+          birthdateDerivedAgeLabel: "Age 4 on league cutoff",
+          evaluation: {
+            rating: 2,
+            source: "imported_roster",
+            label: "Needs throwing reps"
+          }
+        }
+      },
+      friendRequests: [{ playerId: "player-mason", friendPlayerId: "player-avery" }]
+    });
+    const players = preview.teams.flatMap((team) => team.players);
+    const mason = players.find((player) => player.playerId === "player-mason");
+    const avery = players.find((player) => player.playerId === "player-avery");
+    const notes = players.flatMap((player) => player.constraintNotes).join(" ");
+    const displayNames = players.map((player) => player.name).join(" ");
+
+    expect(mason?.skillRating).toBe(5);
+    expect(avery?.evaluationNotes).toContain("Keep with requested friend when roster size allows.");
+    expect(notes).toContain("Age band: 4U");
+    expect(notes).toContain("Age label: Age 3 on league cutoff");
+    expect(notes).toContain("Evaluation: 5 (coach evaluation)");
+    expect(notes).not.toContain("birthdate");
+    expect(preview.warnings.join(" ")).not.toContain("Skill ratings default");
+    expect(preview.warnings.join(" ")).not.toContain("Age is represented by division");
+    expect(displayNames).toContain("Mason T.");
+    expect(displayNames).not.toContain("Mason Taylor");
+  });
+
+  it("keeps automatic team-builder publish authority admin-only", () => {
+    const coachPublish = publishBalancedTeamBuild(seedState, {
+      division: "3U",
+      targetRosterSize: 10,
+      actorUserId: "user-coach-taylor",
+      now: NOW,
+      playerMetadata: {
+        "player-mason": {
+          playerId: "player-mason",
+          ageBand: "3U",
+          birthdateDerivedAgeLabel: "Age 3 on league cutoff",
+          evaluation: {
+            rating: 4,
+            source: "coach_evaluation"
+          }
+        }
+      }
+    });
+
+    expect(coachPublish.ok).toBe(false);
+    expect(coachPublish.message).toContain("Only org admins");
+    expect(coachPublish.state.players).toEqual(seedState.players);
+  });
 });
 
 describe("safe team chat access", () => {

@@ -7,6 +7,7 @@ import { createPendingRegistration } from "@/lib/supabase/registrations";
 import { recordMobileUsageEvent } from "@/lib/supabase/operations";
 import { findFamilyAccessStatus, requestInvitationRecovery } from "@/lib/supabase/access-activation";
 import { resetPublicIntakeRateLimits } from "@/lib/public-intake/rate-limit";
+import { resetPublicRateLimitFallbackForTests } from "@/lib/supabase/public-rate-limit";
 
 vi.mock("@/lib/supabase/registrations", () => ({
   createPendingRegistration: vi.fn(),
@@ -41,6 +42,7 @@ describe("public intake abuse controls", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     resetPublicIntakeRateLimits();
+    resetPublicRateLimitFallbackForTests();
     createPendingRegistrationMock.mockResolvedValue({
       ok: true,
       message: "Registration request saved.",
@@ -145,15 +147,15 @@ describe("public intake abuse controls", () => {
     );
 
     expect(response.status).toBe(201);
-    expect(response.headers.get("X-RateLimit-Limit")).toBe("60");
-    expect(response.headers.get("X-RateLimit-Remaining")).toBe("59");
+    expect(response.headers.get("X-RateLimit-Limit")).toBe("120");
+    expect(response.headers.get("X-RateLimit-Remaining")).toBe("119");
     expect(recordMobileUsageEventMock).toHaveBeenCalledOnce();
   });
 
   it("throttles anonymous mobile telemetry bursts per client IP", async () => {
     const body = { eventType: "install_prompt_shown" };
 
-    for (let attempt = 0; attempt < 60; attempt += 1) {
+    for (let attempt = 0; attempt < 120; attempt += 1) {
       expect(
         (
           await postMobileUsageEvent(
@@ -173,9 +175,9 @@ describe("public intake abuse controls", () => {
       ok: false,
       message: "Too many usage events. Please try again later.",
     });
-    expect(response.headers.get("X-RateLimit-Limit")).toBe("60");
+    expect(response.headers.get("X-RateLimit-Limit")).toBe("120");
     expect(response.headers.get("X-RateLimit-Remaining")).toBe("0");
     expect(response.headers.get("Retry-After")).toBeTruthy();
-    expect(recordMobileUsageEventMock).toHaveBeenCalledTimes(60);
+    expect(recordMobileUsageEventMock).toHaveBeenCalledTimes(120);
   });
 });

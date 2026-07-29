@@ -4,11 +4,11 @@ LeaguePilot uses explicit PWA revision strings so service-worker shell routes, m
 
 ## Current Contract
 
-- `PWA_CACHE_VERSION`: `2026.07.16.14`
-- `PWA_MANIFEST_REVISION`: `2026.07.16.14`
-- `PWA_BRAND_ASSET_REVISION`: `brand-2026.07.16.14`
-- Service-worker shell cache: `little-league-hq-shell-2026.07.16.14`
-- Service-worker runtime cache: `little-league-hq-runtime-2026.07.16.14`
+- `PWA_CACHE_VERSION`: `2026.07.29.1`
+- `PWA_MANIFEST_REVISION`: `2026.07.29.1`
+- `PWA_BRAND_ASSET_REVISION`: `brand-2026.07.29.1`
+- Service-worker shell cache: `little-league-hq-shell-2026.07.29.1`
+- Service-worker runtime cache: `little-league-hq-runtime-2026.07.29.1`
 
 The source contract lives in `lib/domain/pwa-cache.ts`. The static worker and manifest must carry the same values because browsers load them from `public/`.
 
@@ -21,10 +21,11 @@ The source contract lives in `lib/domain/pwa-cache.ts`. The static worker and ma
 
 ## Runtime Behavior
 
-- `app/providers.tsx` registers `/sw.js?v=2026.07.16.14` with `updateViaCache: "none"` and calls `registration.update()` after registration.
-- `public/sw.js` precaches shell routes and revisioned branding assets under cache names that include `PWA_CACHE_VERSION`.
+- `app/providers.tsx` registers `/sw.js?v=2026.07.29.1` with `updateViaCache: "none"` and calls `registration.update()` after registration.
+- `public/sw.js` precaches only the actor-neutral static offline shell and revisioned branding assets under cache names that include `PWA_CACHE_VERSION`.
 - Service-worker activation deletes any cache whose name is not in the current cache set.
-- Navigation requests are network-first and fall back to the cached shell route or `/offline`, which avoids serving stale route HTML after a deployment.
+- Navigation requests are network-only and fall back to actor-neutral `/offline.html`; authenticated and role-scoped route HTML is never cached.
+- Same-origin Next.js static assets use the versioned runtime cache.
 - Manifest, favicon, and `/favicons/*` requests are treated as brand assets and use stale-while-revalidate with revisioned URLs.
 
 ## Stale-Brand Avoidance

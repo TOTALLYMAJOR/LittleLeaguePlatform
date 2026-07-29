@@ -65,6 +65,139 @@ docker compose up -d --build
 curl -fsSI http://localhost:8081/
 ```
 
+## Local Readiness Completion Ledger
+
+Run the no-mutation ledger before any external proof, hosted run, provider sandbox, payment, storage, browser, analytics, app-store, backup/restore, accessibility, deploy, or production-acceptance lane:
+
+```bash
+npm run qa:local-readiness-ledger
+```
+
+The AgentFlow missing-production sequence is locally complete through LPM-012 as local repository readiness proof only. LPM-002 through LPM-012 are reconciled as `local repository readiness complete - external proof open`; this is not end-to-end `done` and does not close hosted, Supabase, RLS, provider, Stripe, storage/scanner, sponsor, archive/restore, native/app-store, accessibility, or production acceptance. LPM-013A is a ledger/verifier only; it reads repository files, checks the AgentFlow queue, package scripts, verifier tests, and governing docs, then prints named blockers when the local sequence is incomplete, inconsistent, or overstated. The continued-execution invariant is that continued one-task-at-a-time execution accepts exactly one executable queue heading, either LPM-013A or LPM-014 or later; LPM-001 through LPM-012 remain completed records only and their A-variants must not be re-executed. LPM-018 is integrated in AgentFlow build `build_faa1c28e-cc9d-4912-9529-0df1240963da` at integration commit `50e56d2d33cd04dc869483a1f99b6583fd9cc36b`; external proof and production acceptance remain separate authorized follow-up lanes.
+
+- Protected source checkout boundary: `/home/administrator/projects/youth-sports-platform-mvp-v3`.
+- Clean AgentFlow execution checkout: `/home/administrator/projects/leaguepilot-missing-production-agentflow-20260729`.
+- Both checkout rule: both checkout states must be re-read before every task.
+- no-push/no-deploy/no-provider/no-production-mutation boundary: the ledger does not push, deploy, call providers, configure secrets, seed, mutate hosted records, upload or download media, collect analytics, run browser proof, run archive close, or claim production acceptance.
+- Final integration commit through LPM-018: `50e56d2d33cd04dc869483a1f99b6583fd9cc36b`. This is historical integration evidence through LPM-018, not the queue commit and not a future final HEAD.
+- Open external gate families after LPM-012: hosted browser proof open; Supabase readback open; RLS open; provider sandbox/webhooks open; Stripe settlement open; private media storage/scanner open; sponsor rendering/report/finance open; archive retention/restore open; native/app-store open; accessibility open; production acceptance open.
+
+## Local Access Lifecycle Authority Proof
+
+Run the no-mutation source verifier before hosted LPM-003 browser proof:
+
+```bash
+npm run qa:access-lifecycle-authority
+```
+
+The verifier reads repository files only. It checks that registration review, parent invite preview/acceptance, guardian-link repair, and additional-guardian review remain session-derived, review-gated, scope-bounded, audited where consequential, and provider-free. It does not call Supabase, sign in, run Playwright, seed data, send providers, deploy, mutate hosted records, or establish hosted acceptance. Passing this command only proves the local source authority contract; hosted UI proof and Supabase readback remain separate open gates.
+
+## Local Game-Day Communication Readiness Proof
+
+Run the no-mutation source verifier before hosted LPM-005 browser and Supabase readback proof:
+
+```bash
+npm run qa:game-day-communication-readiness
+```
+
+The verifier reads repository files only. It checks that game-day resolution routes derive the actor from `requireAuthenticatedRouteUser`, keep the bounded monitor/confirm/delay/cancel decision set, forward idempotency, and rely on assigned-coach or organization-admin service/RPC authority. It also checks event/schedule-version evidence, durable review/audit rows, pending-only recipient records, official publish/correction/withdrawal version binding, immutable official versions, current-version family readback, projection counts, correction history, acknowledgment boundaries, and offline/reconnect conflict seams. It does not call Supabase, sign in, run Playwright, seed data, mutate hosted records, create provider sends, deploy, configure realtime/provider infrastructure, or establish hosted acceptance.
+
+Passing this command proves only the local repository readiness contract. Hosted browser proof, Supabase readback, populated one-version family projection, provider sandbox/webhook proof, realtime/offline production behavior, and production acceptance remain open gates.
+
+## Local Family Season Continuity Readiness Proof
+
+Run the no-mutation source verifier before hosted LPM-006 browser and Supabase readback proof:
+
+```bash
+npm run qa:family-season-continuity-readiness
+```
+
+The verifier reads repository files only. It checks that private Parent Replay reads require signed-in parent access, active guardian links, current child/team scope, queued published Replay status, first-name plus last-initial child labels, and draft/coach/admin leakage prevention. It also checks consent-aware media publication and read-time revocation/deletion suppression, private provider-free engagement, organization-admin season transition proposals, every-current-guardian review, lock-version and expiration gates, fixed carry-forward/reset fields, audit evidence, source-roster archival, provenance-linked target rows, downstream refusal, and service-only correction seams.
+
+Passing this command proves only the local repository readiness contract. Hosted browser proof, Supabase readback, populated media consent/revocation proof, multi-guardian transition concurrency proof, storage/scanner proof, provider sandbox proof, and production acceptance remain open gates. The verifier does not call Supabase, sign in, run Playwright, seed data, mutate hosted records, create provider sends, upload media, create storage objects, deploy, configure storage/scanner/realtime/provider infrastructure, or claim hosted acceptance.
+
+## Local Private Media Storage Readiness Proof
+
+Run the no-mutation source verifier before any LPM-008 private storage, scanner, consent, deletion, hosted, or production proof:
+
+```bash
+npm run qa:private-media-storage-readiness
+```
+
+The verifier reads repository files only. It checks that private media upload initiation and completion use authenticated route users, assigned coach or organization-admin authority, the `MEDIA_UPLOADS_ENABLED` server kill switch, the organization `media_uploads_enabled` flag, and proven scanner configuration before a signed storage token or scan path can succeed. It also checks organization/team quarantine object paths, allowed image extensions, quarantine-vs-family-visible copy, size/type/SHA-256/magic-byte evidence, image decode, rotation/re-encode with EXIF stripping, scanner endpoint/token/provider readiness, clean scan evidence id, processed-path writes, original quarantine removal before `scan_completed_at`, family release consent/moderation/accessibility requirements, family read suppression, retention/deletion evidence, reports, and moderation/takedown APIs.
+
+Passing this command proves only the local repository readiness contract. It does not call Supabase, sign in, run Playwright, seed data, mutate hosted records, upload media, create storage objects, download objects, call a scanner, call provider dashboards, configure secrets, deploy, or claim hosted, storage-provider, scanner-provider, or production acceptance. The remaining open gates are storage-provider setup, scanner-provider setup, hosted signed-upload proof, hosted scan proof, populated consent/revocation proof, deletion/retention proof, abuse/takedown proof, accessibility proof, and production acceptance.
+
+## Local Provider Sandbox Readiness Proof
+
+Run the no-mutation source verifier before any LPM-007 real provider sandbox proof:
+
+```bash
+npm run qa:provider-sandbox-readiness
+```
+
+The verifier reads repository files only. It checks that provider delivery review requires assigned-coach or organization-admin authority, provider/channel matching, organization feature gates, recipient preference checks, durable attempt rows, and no external send during review. It also checks that worker execution claims queued approved attempts, rechecks durable authority, binds attempt, notification, channel, provider, transport provider, idempotency key, retry count, and adapter selection before any adapter send can run.
+
+Passing this command proves local repository readiness proof only. It does not call Supabase, sign in, run Playwright, seed data, mutate hosted records, send email, SMS, or Web Push, call SendGrid, Twilio, Pingram, Web Push, or provider dashboards, configure secrets, deploy, or claim sandbox, hosted, provider, or production acceptance.
+
+Real sandbox email, SMS, and Web Push sends, provider dashboard setup, provider secrets, adult QA recipient approval, signed webhook endpoint registration, hosted worker execution, cost monitoring, and production-send approval remain open gates. Before any operator sends real sandbox traffic, document one adult-consented QA allowlist recipient per channel, a cost cap, monitoring owner, suppression rollback, and the rollback transport or kill-switch path.
+
+## Local Weather Provider Readiness Proof
+
+Run the no-mutation source verifier before any LP-016 hosted weather credential proof, signed-in draft proof, provider delivery proof, realtime/offline proof, accessibility proof, or production acceptance lane:
+
+```bash
+npm run qa:weather-provider-readiness
+```
+
+The verifier reads repository files only. It checks that the weather provider chain stays National Weather Service first, Open-Meteo fallback, and Tomorrow.io optional/premium; every provider result is forced back into draft alert state before persistence; the draft route derives reviewer authority from the authenticated Supabase session; and the Supabase seam keeps event/team scope, provider fallback, reviewer audit fields, idempotent/auditable draft creation boundary, and provider-send separation visible.
+
+Passing this command proves local repository readiness proof only. It does not call Supabase, sign in, run Playwright, seed data, mutate hosted records, call weather providers, call provider dashboards, create provider sends, send email, SMS, push, or Stripe requests, configure secrets, deploy, or claim hosted, provider, or production acceptance.
+
+Hosted weather credential proof, fallback behavior, signed-in coach/admin draft proof, Supabase readback, parent delivery, provider sandbox/webhook proof, realtime/offline behavior, accessibility, and production acceptance remain open gates.
+
+## Local Native App Decision Readiness Proof
+
+Run the no-mutation source verifier before any LPM-012 mobile browser, usage-metrics, push, offline/reconnect, native approval, Expo architecture, app-store, accessibility, or production-native proof:
+
+```bash
+npm run qa:native-app-decision-readiness
+```
+
+The verifier reads repository files only. It checks that LeaguePilot remains PWA-first, install promotion stays value-gated, standalone launches and install prompt outcomes are measured, `/api/mobile-usage-events` accepts native app interest as a telemetry signal without approval, public mobile telemetry remains rate-limited and anonymous-safe, the manifest/service worker/App Shell keep explicit bounded offline behavior, route-smoke/API tests cover the local wiring, and any future Expo/native path must reuse existing domain contracts, Supabase session/RLS boundaries, provider gates, and child privacy rules.
+
+Passing `qa:native-app-decision-readiness` proves local repository readiness proof only. It does not call Supabase, sign in, run Playwright, seed data, mutate hosted records, collect real analytics, request push permissions, register app stores, scaffold Expo, send providers, upload media, deploy, configure secrets, or claim PWA/mobile browser, production usage, push-provider, app-store, native, or production acceptance.
+
+The remaining open gates are mobile browser proof, production usage metrics review, push permission proof, offline/reconnect proof, native product approval, Expo architecture review, app-store compliance review, accessibility proof, and production native acceptance. Expo remains deferred until approved evidence shows the responsive PWA cannot satisfy the mobile requirement.
+
+## Local Sponsor Stripe Readiness Proof
+
+Run the no-mutation source verifier before any LPM-009 Stripe sandbox, webhook, hosted-admin, reconciliation, refund/failure, or production payment proof:
+
+```bash
+npm run qa:sponsor-stripe-readiness
+```
+
+The verifier reads repository files only. It checks that sponsor billing records, invoice readiness, payment-proof state, placement, fulfillment, and public display remain separate; proof-only status and browser return messages do not claim Stripe settlement; one-time sponsor collection uses server-side Checkout Sessions when enabled; Stripe keys stay server-side; missing Stripe configuration fails closed; and signature-verified webhooks remain the only settlement truth. It also checks that docs prefer restricted API keys, separate environments, and that no Stripe secret or restricted key values are stored in source.
+
+Passing `qa:sponsor-stripe-readiness` is the LPM-009 local repository readiness completion gate for the existing proof-only versus sandbox boundary, server-side Checkout Session contract, server-only key handling, webhook settlement truth, admin/public privacy separation, and open payment gates. It is local repository readiness proof only. It does not call Stripe, Supabase, sign in, run Playwright, seed data, mutate hosted records, create Checkout Sessions, configure API keys or webhook secrets, register webhook endpoints, charge or refund payments, call provider dashboards, deploy, or claim sandbox, hosted, provider, finance, production payment, or production acceptance.
+
+The remaining open gates are Stripe sandbox account setup, restricted key creation, webhook endpoint registration, signing-secret configuration, sandbox Checkout Session proof, signed webhook replay/duplicate proof, refund/failure proof, hosted admin proof, finance reconciliation, and production payment approval. Keep restricted API keys in environment-specific server secret storage with separate environments for sandbox/preview/production. No Stripe secret or restricted key values are stored in source.
+
+## Local Sponsor Fulfillment Readiness Proof
+
+Run the no-mutation source verifier before any LPM-010 hosted public/admin browser proof, placement rendering proof, logo asset proof, report proof, renewal delivery proof, or production sponsor acceptance:
+
+```bash
+npm run qa:sponsor-fulfillment-readiness
+```
+
+The verifier reads repository files only. It checks that public sponsor placement helpers filter active sponsors to approved placement keys, Team Portal placement stays team-scoped, admin sponsor saves reject invalid placement keys and cross-organization assignments, Supabase sponsor reads expose only approved logo assets, submitted logo URLs remain pending review inputs, unavailable sponsor data fails closed, Sponsor Hub and revenue summaries separate configured placement, reviewed logo metadata, billing/payment proof, renewal review, report export, delivered-placement proof, and unproven impact, renewal email remains human-reviewed and provider-disconnected, and public/parent surfaces avoid child, parent-contact, private media, billing, redemption, and sponsor-attributed impact leaks.
+
+Passing this command is the LPM-010 local repository readiness completion gate for approved active placement filters, Team Portal scope, admin placement authority, approved logo reads, submitted-logo review queues, fail-closed sponsor data, fulfillment/report separation, renewal delivery gates, public and parent privacy, and open fulfillment gates. It proves local repository readiness only. It does not call Supabase, sign in, run Playwright, seed data, mutate hosted records, send renewal email, call email/SMS/push providers, call Stripe, create or refund payments, upload files, fetch external logo assets, call provider dashboards, deploy, or claim hosted, observed-rendering, provider, finance, accessibility, production, or production sponsor acceptance.
+
+The remaining open gates are hosted public/admin browser proof, observed placement-rendering proof, approved logo asset proof, sponsor recap/report artifact proof, renewal email sandbox proof, public placement leak QA, accessibility proof, finance reconciliation, and production sponsor acceptance. Passing local readiness does not prove public placement actually rendered, that approved logo assets load from storage/CDN, that a recap/report artifact is acceptable, that renewal email sandbox delivery has consent and webhook proof, or that finance and production acceptance are complete.
+
 ## Supabase QA Proof
 
 Use these checks only after selecting a local or explicitly isolated QA Supabase project and a matching non-production app:
@@ -106,9 +239,26 @@ The local empty-database migration and transactional workflow smoke proves SQL i
 
 `qa:communication-room-record-proof` persists a fictional parent reply and acknowledgment, performs service-role readback, and cleans exact fixture state. It is isolated-QA-only. The shared guard rejects protected production and the canonical production host, requires explicit target identity, and preserves provider suppression. A missing schema capability is a failure, never inferred success.
 
-`qa:public-family-proof` verifies signed-out Home, Schedule, Request Team Access, and Sign In at 320, 390, 768, and 1440 pixels. It checks CTA/copy contracts, empty forms, canonical-organization and current-team exposure, calendar-provider actions, value-gated installation, 44px controls, document overflow, and browser errors, then writes screenshots plus `proof.json` under `output/playwright/public-family-phase0/`. Set `PUBLIC_FAMILY_BASE_URL` for a non-default local or hosted target. Hosted environments must configure `PUBLIC_ORGANIZATION_ID` and `PUBLIC_ACCESS_REVIEW_WINDOW`; local fallback organization selection is deterministic but is not a production configuration claim.
+`qa:public-family-proof` verifies signed-out Home, Schedule, Request Team Access, and Sign In at 320, 390, 768, and 1440 pixels. It checks CTA/copy contracts, empty forms, canonical-organization and current-team exposure, calendar-provider actions, value-gated installation, 44px controls, document overflow, and browser errors, then writes screenshots plus `proof.json` under `output/playwright/public-family-phase0/`. Set `PUBLIC_FAMILY_BASE_URL` for a non-default local or hosted target. Loopback and `.local` targets are classified as local and may run without hosted expectation variables. Hosted targets require `PUBLIC_ORGANIZATION_ID` and `PUBLIC_ACCESS_REVIEW_WINDOW`; after the LPM-020 code is deployed, the harness also verifies the rendered registration evidence matches the expected short SHA-256 organization fingerprint, proves the review-window configured state, and checks that the expected review-window copy rendered. `proof.json` records only the fingerprint and boolean/match results for this configuration proof, not the raw organization UUID or credentials. Local fallback organization selection is deterministic but is not a production configuration claim.
 
-Local or isolated-QA tenant-readiness proof only demonstrates the selected checkout, app deployment, and guarded Supabase project. Production acceptance must use the separately named read-only harness required by `EXT-PRODUCTION-READONLY`; it must not reuse a mutating QA command.
+Before hosted public and tenant readiness browser proof, run the no-mutation hosted readiness preflight with the intended hosted URL, the target public organization configuration, the public access review-window copy, and QA admin command inputs:
+
+```bash
+QA_PROOF_BASE_URL=https://www.leaguepilot.us PUBLIC_ORGANIZATION_ID=<organization-uuid> PUBLIC_ACCESS_REVIEW_WINDOW='within two business days' NEXT_PUBLIC_SUPABASE_URL=https://<project-ref>.supabase.co NEXT_PUBLIC_SUPABASE_ANON_KEY=<anon-key> QA_ADMIN_EMAIL=<qa-admin@example.com> QA_ADMIN_PASSWORD=<qa-admin-password> npm run qa:hosted-readiness-preflight
+```
+
+The preflight only validates inputs and prints the follow-on proof commands. It does not deploy, bypass Vercel Authentication, seed Supabase, write hosted data, send providers, write payments, upload media, run migrations, or establish production acceptance. Passing it clears obvious blockers before browser proof; it is not hosted acceptance.
+
+Hosted public and tenant-readiness proof must be rerun after deployment before a real organization is invited:
+
+```bash
+PUBLIC_FAMILY_BASE_URL=https://www.leaguepilot.us QA_PROOF_BASE_URL=https://www.leaguepilot.us PUBLIC_ORGANIZATION_ID=<organization-uuid> PUBLIC_ACCESS_REVIEW_WINDOW='within two business days' npm run qa:public-family-proof
+QA_PROOF_BASE_URL=https://www.leaguepilot.us npm run qa:tenant-readiness-proof
+```
+
+Local tenant-readiness proof only demonstrates the current checkout and configured Supabase project. Hosted proof is the evidence that production aliases, auth cookies, Supabase env values, and signed-in admin route wrappers all agree after deployment.
+
+Local or isolated-QA proof demonstrates only the selected checkout, deployment, and guarded Supabase project. The hosted commands above must remain read-only when pointed at production. Mutating session, seed, lifecycle, provider, payment, media, or migration proof stays on isolated QA; production acceptance must use the separately named read-only harness required by `EXT-PRODUCTION-READONLY`.
 
 CI runs source validation in `.github/workflows/static-smoke.yml`. Live Supabase QA proof is manual through `.github/workflows/supabase-qa-proof.yml` because it requires project secrets and mutates seeded QA rows. Configure these required secrets in the `qa` GitHub Actions environment: `QA_SUPABASE_URL`, `QA_SUPABASE_ANON_KEY`, `QA_SUPABASE_SERVICE_ROLE_KEY`, and `QA_SUPABASE_PROJECT_REF`. The workflow maps them into the runtime names expected by the app scripts: `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`, and `SUPABASE_SERVICE_ROLE_KEY`.
 
@@ -158,6 +308,30 @@ OPENAI_AI_COACH_MODEL=gpt-5.5
 Keep `OPENAI_API_KEY` out of `NEXT_PUBLIC_*` variables. Provider requests use `store: false`, local privacy filters, source evidence, and review-only output. Generated provider drafts do not publish, queue notifications, or send provider messages.
 
 The dated production AI proof recorded in historical trackers is not a current execution instruction. Any new provider proof requires an approved named environment and provider authority. Preview OpenAI remains out of scope under `DEC-PREVIEW-OPENAI`; generated output remains draft/review-only.
+
+## Admin Proof Closure Readiness
+
+Use the local verifier before LPM-004 hosted QA:
+
+```bash
+npm run qa:admin-proof-readiness
+```
+
+The verifier reads repository source only. It checks that media report, media moderation, team-builder publish, broader admin export scope, and public intake abuse-control contracts remain present in route handlers, Supabase adapters, migrations, and focused tests.
+
+Passing this command is not hosted acceptance. It does not call Supabase, sign in, run Playwright, seed data, mutate hosted records, send providers, deploy, or configure edge/firewall controls. Hosted signed-in browser proof, Supabase readback, and deployed edge/shared-store rate-limit proof remain required before LPM-004 closure.
+
+## Reporting Archive Readiness
+
+Use the local verifier before LPM-011 hosted export and archive QA:
+
+```bash
+npm run qa:reporting-archive-readiness
+```
+
+The verifier reads repository source only. It checks active organization-admin export authority, the eight supported export kinds, selected-organization and derived-ID export scoping, narrowed profile joins before contact data is joined, CSV/audit/fail-closed export generation, admin-only archive routes, archived-season readable and mutation-locked contracts, local archive fallback labeling, and separation between non-chat season preservation and chat-retention deletion proof.
+
+Passing this command is local repository readiness proof only. It does not call Supabase, sign in, run Playwright, seed data, mutate hosted records, run archive close, delete chat records, call provider dashboards, upload or download files, deploy, configure secrets, or claim hosted RLS, browser, retention, restore, or production acceptance. Hosted RLS/admin export proof, hosted archive smoke proof, real season-close proof, chat-retention cleanup proof, deleted-chat readback proof, backup/PITR/restore proof, accessibility proof, and production archive acceptance remain open gates.
 
 ## Operational-Truth Feature Gates
 

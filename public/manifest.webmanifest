@@ -3,7 +3,7 @@
   "short_name": "League HQ",
   "description": "Private youth sports team operations, parent replay, schedules, chat, and registration.",
   "id": "/",
-  "version": "2026.07.16.14",
+  "version": "2026.07.29.1",
   "start_url": "/",
   "scope": "/",
   "display": "standalone",
@@ -12,18 +12,18 @@
   "orientation": "portrait-primary",
   "icons": [
     {
-      "src": "/favicon.ico?v=brand-2026.07.16.14",
+      "src": "/favicon.ico?v=brand-2026.07.29.1",
       "sizes": "48x48",
       "type": "image/x-icon"
     },
     {
-      "src": "/favicons/favicon-option-1-shield.png?v=brand-2026.07.16.14",
+      "src": "/favicons/favicon-option-1-shield.png?v=brand-2026.07.29.1",
       "sizes": "512x512",
       "type": "image/png",
       "purpose": "any maskable"
     },
     {
-      "src": "/favicons/favicon-option-4-team-chat.png?v=brand-2026.07.16.14",
+      "src": "/favicons/favicon-option-4-team-chat.png?v=brand-2026.07.29.1",
       "sizes": "512x512",
       "type": "image/png",
       "purpose": "any"

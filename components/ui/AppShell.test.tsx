@@ -191,7 +191,7 @@ describe("private-safe service worker behavior", () => {
 
     await expect(harness.dispatchFetch(request)).resolves.toBe(networkResponse);
     expect(harness.cacheMatch).toHaveBeenCalledWith(request);
-    expect(harness.cacheOpen).toHaveBeenCalledWith("little-league-hq-static-v5");
+    expect(harness.cacheOpen).toHaveBeenCalledWith("little-league-hq-runtime-2026.07.29.1");
     expect(harness.cachePut).toHaveBeenCalledTimes(1);
     expect(harness.cachePut.mock.calls[0]?.[0]).toBe(request);
     expect(harness.cachePut.mock.calls[0]?.[1]).toMatchObject({

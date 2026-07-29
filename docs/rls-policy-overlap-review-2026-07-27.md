@@ -1,12 +1,12 @@
 # RLS permissive-policy actor/action review
 
 Date: 2026-07-29 (updated from the 2026-07-27 review)
-Scope: committed migrations through `20260729144505_team_chat_retention_scope.sql`
+Scope: committed migrations through `20260729144506_team_builder_player_metadata.sql`
 Proof level: deterministic source reconstruction only; no hosted database was queried or changed
 
 ## Result
 
-The ordered 49-migration chain reconstructs to 156 final policies and 35
+The ordered 50-migration chain reconstructs to 156 final policies and 35
 permissive overlap groups: 34 `SELECT` groups and one `UPDATE` group. Every
 overlap is declared to PostgreSQL role `public`, so `public` is the effective
 static actor. Seven groups are on tables whose final migration state revokes
@@ -25,7 +25,7 @@ Migration 43 then revokes browser mutation privileges and removes
 acknowledgments remain mediated by service-owned transactions and the
 service-only receipt RPC. The two removals and one addition reduce the
 migration-41 count from 157 to 156 without changing the overlap-group totals.
-Migrations 44 through 49 do not add or remove RLS policies.
+Migrations 44 through 50 do not add or remove RLS policies.
 
 This is a review, not a policy-change proposal. It does not establish that a
 preview or production catalog matches the migrations, and it does not accept

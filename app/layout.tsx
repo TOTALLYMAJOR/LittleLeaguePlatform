@@ -3,6 +3,7 @@ import { Fredoka, Geist } from "next/font/google";
 import "./globals.css";
 import "./parent/parent-weekly.css";
 import { AppShell } from "@/components/ui/AppShell";
+import { PWA_BRAND_ASSET_REVISION, PWA_MANIFEST_REVISION, versionedPwaAsset } from "@/lib/domain/pwa-cache";
 import { getServerShellAccess, toClientShellAccess } from "@/lib/supabase/shell-access";
 
 const parentSans = Geist({
@@ -17,9 +18,12 @@ const parentDisplay = Fredoka({
   variable: "--font-parent-display"
 });
 
+const shieldIconUrl = versionedPwaAsset("/favicons/favicon-option-1-shield.png", PWA_BRAND_ASSET_REVISION);
+const shieldSvgUrl = versionedPwaAsset("/favicons/favicon-option-1-shield.svg", PWA_BRAND_ASSET_REVISION);
+
 const criticalShellCss = `
 html,body{margin:0;min-height:100%}
-body{background:#fdf8f1;color:#1c2438;font-family:var(--font-parent-sans),Geist,ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",Helvetica,Arial,sans-serif;line-height:1.55}
+body{background:var(--bg,#fdf8f1);color:var(--text,#1c2438);font-family:var(--font-parent-sans),Geist,ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",Helvetica,Arial,sans-serif;line-height:1.55}
 *,*::before,*::after{box-sizing:border-box}
 .shell.app-shell{display:grid;grid-template-columns:minmax(260px,280px) minmax(0,1fr);min-height:100dvh}
 .main{min-width:0;padding:28px clamp(20px,3vw,44px) 72px}
@@ -41,13 +45,13 @@ export const metadata: Metadata = {
     template: "%s | LeaguePilot"
   },
   description: "Private youth sports operations for families, coaches, and league admins.",
-  manifest: "/manifest.webmanifest",
+  manifest: versionedPwaAsset("/manifest.webmanifest", PWA_MANIFEST_REVISION),
   icons: {
     icon: [
-      { url: "/favicons/favicon-option-1-shield.svg", type: "image/svg+xml" },
-      { url: "/favicons/favicon-option-1-shield.png", sizes: "512x512", type: "image/png" }
+      { url: shieldSvgUrl, type: "image/svg+xml" },
+      { url: shieldIconUrl, sizes: "512x512", type: "image/png" }
     ],
-    apple: [{ url: "/favicons/favicon-option-1-shield.png", sizes: "512x512", type: "image/png" }]
+    apple: [{ url: shieldIconUrl, sizes: "512x512", type: "image/png" }]
   },
   appleWebApp: {
     capable: true,

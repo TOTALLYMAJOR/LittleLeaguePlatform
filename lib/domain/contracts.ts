@@ -229,6 +229,27 @@ export type AiCoachWorkspaceToolId = (typeof AI_COACH_WORKSPACE_TOOL_IDS)[number
 export const DIVISION_BALANCE_STATUSES = ["balanced", "needs_players", "uneven"] as const;
 export type DivisionBalanceStatus = (typeof DIVISION_BALANCE_STATUSES)[number];
 
+export const TEAM_BUILDER_AGE_BANDS = ["3U", "4U", "5U", "6U", "7U", "8U", "9U", "10U", "11U", "12U", "13U+"] as const;
+export type TeamBuilderAgeBand = (typeof TEAM_BUILDER_AGE_BANDS)[number] | (string & {});
+
+export const TEAM_BUILDER_EVALUATION_SOURCES = ["coach_evaluation", "guardian_questionnaire", "imported_roster", "admin_override"] as const;
+export type TeamBuilderEvaluationSource = (typeof TEAM_BUILDER_EVALUATION_SOURCES)[number];
+
+export interface TeamBuilderPlayerEvaluation {
+  rating: number;
+  label?: string;
+  source: TeamBuilderEvaluationSource;
+  notes?: string[];
+}
+
+export interface TeamBuilderPlayerMetadata {
+  playerId: string;
+  ageBand: TeamBuilderAgeBand;
+  birthdateDerivedAgeLabel?: string;
+  evaluation?: TeamBuilderPlayerEvaluation;
+  reviewNotes?: string[];
+}
+
 export const ASSISTIVE_SUGGESTION_SURFACES = ["admin", "coach", "parent"] as const;
 export type AssistiveSuggestionSurface = (typeof ASSISTIVE_SUGGESTION_SURFACES)[number];
 
@@ -1053,6 +1074,7 @@ export interface BalancedTeamBuildInput {
   now: string;
   skillRatings?: Record<string, number>;
   playerProfiles?: Record<string, TeamBuilderPlayerProfileInput>;
+  playerMetadata?: Record<string, TeamBuilderPlayerMetadata>;
   friendRequests?: TeamBuildFriendRequest[];
 }
 
@@ -1071,11 +1093,13 @@ export interface BalancedTeamBuildPreview {
     players: Array<{
       playerId: string;
       name: string;
+      ageBand: TeamBuilderAgeBand;
+      birthdateDerivedAgeLabel: string;
       skillRating: number;
-      ageBand: string;
-      ageBandSource: "explicit" | "division_default";
-      evaluationSource: "explicit" | "legacy_override" | "defaulted";
+      ageBandSource: "metadata" | "explicit" | "division_default";
+      evaluationSource: string;
       birthDateStatus: "recorded" | "missing";
+      evaluationNotes: string[];
       constraintNotes: string[];
     }>;
   }>;

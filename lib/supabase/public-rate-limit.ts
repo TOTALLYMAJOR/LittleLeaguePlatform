@@ -39,6 +39,10 @@ export const PUBLIC_RATE_LIMITS = {
 
 const memoryBuckets = new Map<string, { hitCount: number; expiresAtMs: number }>();
 
+export function resetPublicRateLimitFallbackForTests() {
+  memoryBuckets.clear();
+}
+
 function adminDb() {
   return createSupabaseAdminClient() as unknown as UnsafeSupabase;
 }
