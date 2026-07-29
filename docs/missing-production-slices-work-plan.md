@@ -93,16 +93,17 @@ Provider sends, Stripe collection, media uploads, native app work, production mu
 
 ## LPM-002 - Hosted Public and Tenant Readiness Proof
 
-Status: `planned`
+Status: `planned - preflight gate added`
 Priority: P0
 Depends on: LPM-001
 Governing rows: Tenant Onboarding Readiness Lane; Public family discovery.
 
 Objective:
-Prove public routes and tenant readiness against the intended hosted URL with correct environment configuration.
+Clear hosted-proof blockers, then prove public routes and tenant readiness against the intended hosted URL with correct environment configuration.
 
 Acceptance criteria:
 
+- AC-000: `npm run qa:hosted-readiness-preflight` validates explicit hosted URL, public organization, review-window, and QA admin command inputs before any browser proof is attempted.
 - AC-001: `PUBLIC_ORGANIZATION_ID` and `PUBLIC_ACCESS_REVIEW_WINDOW` are configured for the target environment.
 - AC-002: `/`, `/schedule`, `/registration`, `/auth`, and `/sponsors` render hosted public states without private records, demo identities, horizontal overflow, or undersized primary controls.
 - AC-003: `/admin/health` and `/admin/teams` prove tenant readiness with signed-in QA admin and Supabase readback.
@@ -110,7 +111,10 @@ Acceptance criteria:
 - AC-005: Provider sends remain zero.
 
 Validation:
-`QA_PROOF_BASE_URL=<hosted-url> npm run qa:public-family-proof`; `QA_PROOF_BASE_URL=<hosted-url> npm run qa:tenant-readiness-proof`; `npm test -- app/routes-smoke.test.ts lib/navigation/route-topology.test.ts lib/supabase/tenant-readiness.test.ts`.
+`QA_PROOF_BASE_URL=<hosted-url> PUBLIC_ORGANIZATION_ID=<organization-uuid> PUBLIC_ACCESS_REVIEW_WINDOW='<review-window>' NEXT_PUBLIC_SUPABASE_URL=<supabase-url> NEXT_PUBLIC_SUPABASE_ANON_KEY=<anon-key> QA_ADMIN_EMAIL=<qa-admin-email> QA_ADMIN_PASSWORD=<qa-admin-password> npm run qa:hosted-readiness-preflight`; `PUBLIC_FAMILY_BASE_URL=<hosted-url> QA_PROOF_BASE_URL=<hosted-url> npm run qa:public-family-proof`; `QA_PROOF_BASE_URL=<hosted-url> npm run qa:tenant-readiness-proof`; `npm test -- app/routes-smoke.test.ts lib/navigation/route-topology.test.ts lib/supabase/tenant-readiness.test.ts`.
+
+Boundary:
+The preflight is a blocker-clearing gate only. It performs no deploy, Vercel Authentication bypass, Supabase seed/write, provider send, payment write, media upload, migration, or production acceptance; hosted acceptance still requires the browser proof commands and operator evidence after credentials and the hosted URL are confirmed.
 
 ## LPM-003 - Access and Registration Lifecycle Proof
 
