@@ -203,6 +203,7 @@ Prove private family Parent Replay, media consent/revocation, private engagement
 
 Acceptance criteria:
 
+- AC-000: `npm run qa:family-season-continuity-readiness` passes as local repository-source proof that private family Replay reads, media consent/revocation, private engagement, season transition authority, apply/revert, and downstream refusal seams remain present and bounded. This verifier performs no Supabase call, browser sign-in, Playwright run, seed/write, hosted mutation, provider send, media upload, storage object creation, deployment, storage/scanner/realtime/provider configuration, or production acceptance.
 - AC-001: Draft Parent Replay content is excluded from family reads until approved and published.
 - AC-002: Published family reads are guardian-scoped and cross-family/team negative checks pass.
 - AC-003: Media attach/revoke requires current consent from every active guardian and hides media after revocation.
@@ -210,7 +211,10 @@ Acceptance criteria:
 - AC-005: Season transition handles multi-guardian concurrency, expiration, apply/revert/downstream refusal, and historical-season behavior.
 
 Validation:
-`npm run qa:family-replay-proof`; `npm run qa:season-transition-proof`; `npm test -- lib/supabase/family-replays.test.ts lib/supabase/season-transitions.test.ts components/family-parent-replay.test.tsx components/season-transition-review.test.tsx`.
+`npm run qa:family-season-continuity-readiness`; `node --test scripts/verify-family-season-continuity-readiness.test.mjs`; `npm run qa:family-replay-proof`; `npm run qa:season-transition-proof`; `npm test -- lib/supabase/family-replays.test.ts lib/supabase/season-transitions.test.ts components/family-parent-replay.test.tsx components/season-transition-review.test.tsx app/api-family-replays.test.ts app/api-season-transitions.test.ts`.
+
+Boundary:
+The readiness verifier is a local source-contract gate only. It does not replace hosted browser proof, Supabase readback, populated media consent/revocation proof, multi-guardian transition concurrency proof, storage/scanner proof, provider sandbox proof, deployment evidence, or production acceptance.
 
 ## LPM-007 - Provider Sends Sandbox
 

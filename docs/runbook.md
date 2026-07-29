@@ -85,6 +85,18 @@ The verifier reads repository files only. It checks that game-day resolution rou
 
 Passing this command proves only the local repository readiness contract. Hosted browser proof, Supabase readback, populated one-version family projection, provider sandbox/webhook proof, realtime/offline production behavior, and production acceptance remain open gates.
 
+## Local Family Season Continuity Readiness Proof
+
+Run the no-mutation source verifier before hosted LPM-006 browser and Supabase readback proof:
+
+```bash
+npm run qa:family-season-continuity-readiness
+```
+
+The verifier reads repository files only. It checks that private Parent Replay reads require signed-in parent access, active guardian links, current child/team scope, queued published Replay status, first-name plus last-initial child labels, and draft/coach/admin leakage prevention. It also checks consent-aware media publication and read-time revocation/deletion suppression, private provider-free engagement, organization-admin season transition proposals, every-current-guardian review, lock-version and expiration gates, fixed carry-forward/reset fields, audit evidence, source-roster archival, provenance-linked target rows, downstream refusal, and service-only correction seams.
+
+Passing this command proves only the local repository readiness contract. Hosted browser proof, Supabase readback, populated media consent/revocation proof, multi-guardian transition concurrency proof, storage/scanner proof, provider sandbox proof, and production acceptance remain open gates. The verifier does not call Supabase, sign in, run Playwright, seed data, mutate hosted records, create provider sends, upload media, create storage objects, deploy, configure storage/scanner/realtime/provider infrastructure, or claim hosted acceptance.
+
 ## Supabase QA Proof
 
 Use these checks after migrations are applied to a Supabase QA or preview project:
