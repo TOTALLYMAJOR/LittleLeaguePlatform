@@ -235,7 +235,7 @@ The local empty-database migration and transactional workflow smoke proves SQL i
 
 `qa:communication-room-record-proof` signs in with the fictional QA parent, proves three linked children across two teams without exposing an archived team, persists a parent reply with service-role readback, and proves critical-message acknowledgment plus audit readback when migrations `0023` and `0024` are present. It refuses non-`example.com` parent identities, creates only a provider-suppressed QA notification, and writes `output/playwright/communication-room/populated-record-proof.json`. A missing delivery-evidence column or acknowledgment RPC is reported as a blocking migration gap rather than inferred as success.
 
-`qa:public-family-proof` verifies signed-out Home, Schedule, Request Team Access, and Sign In at 320, 390, 768, and 1440 pixels. It checks CTA/copy contracts, empty forms, canonical-organization and current-team exposure, calendar-provider actions, value-gated installation, 44px controls, document overflow, and browser errors, then writes screenshots plus `proof.json` under `output/playwright/public-family-phase0/`. Set `PUBLIC_FAMILY_BASE_URL` for a non-default local or hosted target. Hosted environments must configure `PUBLIC_ORGANIZATION_ID` and `PUBLIC_ACCESS_REVIEW_WINDOW`; local fallback organization selection is deterministic but is not a production configuration claim.
+`qa:public-family-proof` verifies signed-out Home, Schedule, Request Team Access, and Sign In at 320, 390, 768, and 1440 pixels. It checks CTA/copy contracts, empty forms, canonical-organization and current-team exposure, calendar-provider actions, value-gated installation, 44px controls, document overflow, and browser errors, then writes screenshots plus `proof.json` under `output/playwright/public-family-phase0/`. Set `PUBLIC_FAMILY_BASE_URL` for a non-default local or hosted target. Loopback and `.local` targets are classified as local and may run without hosted expectation variables. Hosted targets require `PUBLIC_ORGANIZATION_ID` and `PUBLIC_ACCESS_REVIEW_WINDOW`; after the LPM-020 code is deployed, the harness also verifies the rendered registration evidence matches the expected short SHA-256 organization fingerprint, proves the review-window configured state, and checks that the expected review-window copy rendered. `proof.json` records only the fingerprint and boolean/match results for this configuration proof, not the raw organization UUID or credentials. Local fallback organization selection is deterministic but is not a production configuration claim.
 
 Before hosted public and tenant readiness browser proof, run the no-mutation hosted readiness preflight with the intended hosted URL, the target public organization configuration, the public access review-window copy, and QA admin command inputs:
 
@@ -248,7 +248,7 @@ The preflight only validates inputs and prints the follow-on proof commands. It 
 Hosted public and tenant-readiness proof must be rerun after deployment before a real organization is invited:
 
 ```bash
-PUBLIC_FAMILY_BASE_URL=https://www.leaguepilot.us QA_PROOF_BASE_URL=https://www.leaguepilot.us npm run qa:public-family-proof
+PUBLIC_FAMILY_BASE_URL=https://www.leaguepilot.us QA_PROOF_BASE_URL=https://www.leaguepilot.us PUBLIC_ORGANIZATION_ID=<organization-uuid> PUBLIC_ACCESS_REVIEW_WINDOW='within two business days' npm run qa:public-family-proof
 QA_PROOF_BASE_URL=https://www.leaguepilot.us npm run qa:tenant-readiness-proof
 ```
 

@@ -5544,12 +5544,17 @@ export function AdminThemesClient({ initialData }: { initialData: AdminThemeData
 }
 
 interface RegistrationClientProps {
+  proofMetadata?: {
+    publicOrganizationFingerprint?: string;
+    reviewWindowConfigured: boolean;
+  };
   registrationRequests?: RegistrationRequest[];
   reviewWindow?: string;
   teamOptions?: RegistrationTeamOption[];
 }
 
 export function RegistrationClient({
+  proofMetadata,
   registrationRequests,
   reviewWindow = "within two business days",
   teamOptions
@@ -5594,7 +5599,11 @@ export function RegistrationClient({
   }
 
   return (
-    <div className="page">
+    <div
+      className="page"
+      data-public-organization-fingerprint={proofMetadata?.publicOrganizationFingerprint}
+      data-access-review-window-configured={proofMetadata ? String(proofMetadata.reviewWindowConfigured) : undefined}
+    >
       <section className="hero">
         <span className="eyebrow">Request Team Access</span>
         <h1>Connect your family to the right team.</h1>

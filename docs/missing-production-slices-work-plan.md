@@ -119,12 +119,13 @@ Acceptance criteria:
 - AC-000: `npm run qa:hosted-readiness-preflight` validates explicit hosted URL, public organization, review-window, and QA admin command inputs before any browser proof is attempted.
 - AC-001: `PUBLIC_ORGANIZATION_ID` and `PUBLIC_ACCESS_REVIEW_WINDOW` are configured for the target environment.
 - AC-002: `/`, `/schedule`, `/registration`, `/auth`, and `/sponsors` render hosted public states without private records, demo identities, horizontal overflow, or undersized primary controls.
+- AC-002A: After the LPM-020 code is deployed, hosted `/registration` renders passive server-derived proof metadata for the expected public-organization fingerprint and configured review window; `qa:public-family-proof` fails closed if the fingerprint, configured-state evidence, or expected review-window copy is absent or mismatched. Local proof remains local proof and may run without hosted expectation variables.
 - AC-003: `/admin/health` and `/admin/teams` prove tenant readiness with signed-in QA admin and Supabase readback.
 - AC-004: Vercel Authentication or preview bypass status is recorded; if blocked, exact blocker and next provider action are documented.
 - AC-005: Provider sends remain zero.
 
 Validation:
-`QA_PROOF_BASE_URL=<hosted-url> PUBLIC_ORGANIZATION_ID=<organization-uuid> PUBLIC_ACCESS_REVIEW_WINDOW='<review-window>' NEXT_PUBLIC_SUPABASE_URL=<supabase-url> NEXT_PUBLIC_SUPABASE_ANON_KEY=<anon-key> QA_ADMIN_EMAIL=<qa-admin-email> QA_ADMIN_PASSWORD=<qa-admin-password> npm run qa:hosted-readiness-preflight`; `PUBLIC_FAMILY_BASE_URL=<hosted-url> QA_PROOF_BASE_URL=<hosted-url> npm run qa:public-family-proof`; `QA_PROOF_BASE_URL=<hosted-url> npm run qa:tenant-readiness-proof`; `npm test -- app/routes-smoke.test.ts lib/navigation/route-topology.test.ts lib/supabase/tenant-readiness.test.ts`.
+`QA_PROOF_BASE_URL=<hosted-url> PUBLIC_ORGANIZATION_ID=<organization-uuid> PUBLIC_ACCESS_REVIEW_WINDOW='<review-window>' NEXT_PUBLIC_SUPABASE_URL=<supabase-url> NEXT_PUBLIC_SUPABASE_ANON_KEY=<anon-key> QA_ADMIN_EMAIL=<qa-admin-email> QA_ADMIN_PASSWORD=<qa-admin-password> npm run qa:hosted-readiness-preflight`; `PUBLIC_FAMILY_BASE_URL=<hosted-url> QA_PROOF_BASE_URL=<hosted-url> PUBLIC_ORGANIZATION_ID=<organization-uuid> PUBLIC_ACCESS_REVIEW_WINDOW='<review-window>' npm run qa:public-family-proof`; `QA_PROOF_BASE_URL=<hosted-url> npm run qa:tenant-readiness-proof`; `npm test -- app/routes-smoke.test.ts lib/navigation/route-topology.test.ts lib/supabase/tenant-readiness.test.ts`.
 
 Boundary:
 The preflight is a blocker-clearing gate only. It performs no deploy, Vercel Authentication bypass, Supabase seed/write, provider send, payment write, media upload, migration, or production acceptance; hosted acceptance still requires the browser proof commands and operator evidence after credentials and the hosted URL are confirmed.
