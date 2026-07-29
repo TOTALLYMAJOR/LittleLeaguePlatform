@@ -50,84 +50,75 @@ Completed baseline:
 - LPM-012A integrated in AgentFlow build
   `build_35560bcd-d714-4bbf-ad4b-bd555c7337fc` at integration commit
   `f1c27e47ce0fd32cb88ac440544b37271b6b0e88`.
+- LPM-013A integrated in AgentFlow build
+  `build_e15b91b4-66e7-4ce9-833b-ebed388ac25c` at integration commit
+  `1a9141a7da17ad8d69bd478859497d1a01cc399f`.
 
-## LPM-013A - Add local readiness completion ledger
+## LPM-014 - Add team-builder player age and evaluation metadata
 
 ```yaml
 estimate_hours: 4
 depends_on: []
 owns:
-  - package.json
-  - scripts/verify-local-readiness-ledger.mjs
-  - scripts/verify-local-readiness-ledger.test.mjs
-  - docs/agentflow-missing-production-backlog.md
-  - docs/runbook.md
+  - lib/domain/season-planning.ts
+  - lib/domain/contracts.ts
+  - lib/domain/domain.test.ts
+  - components/feature-panels.tsx
+  - components/feature-panels.test.tsx
+  - supabase/migrations/0034_team_builder_player_metadata.sql
+  - docs/Features.md
+  - docs/capability-matrix.md
   - docs/missing-production-slices-work-plan.md
   - docs/production-task-board.md
+  - docs/agentflow-missing-production-backlog.md
 validate:
   - npm ci --ignore-scripts --prefer-offline
   - npm run check:skills
-  - npm run qa:local-readiness-ledger
-  - node --test scripts/verify-local-readiness-ledger.test.mjs
-  - npm test -- app/routes-smoke.test.ts app/api-auth.test.ts app/api-live-actions.test.ts app/provider-boundary.test.ts
+  - npm test -- lib/domain/domain.test.ts components/feature-panels.test.tsx supabase/rls-policy.test.ts
   - npm run typecheck
   - npm run build
   - git diff --check
 produces:
-  - name: local-readiness-completion-ledger
-    type: local-readiness-proof
+  - name: team-builder-player-metadata-contract
+    type: local-product-contract
     version: 1.0.0
-    path: scripts/verify-local-readiness-ledger.mjs
+    path: lib/domain/season-planning.ts
 consumes: []
 ```
 
-Implement a no-mutation local completion ledger for the AgentFlow
-missing-production sequence. The ledger must prove, from repository source, that
-LPM-001 through LPM-012 have local readiness artifacts, scripts, tests,
-documentation, and AgentFlow integration commits recorded, while also proving
-that every hosted, provider, payment, storage, browser, analytics, app-store,
-backup/restore, accessibility, and production acceptance gate remains explicitly
-open unless separately proven outside this local sequence.
+Implement LP-008 as a local repository slice by adding explicit Team Builder
+player age and evaluation metadata to the automatic team-builder contract. The
+current preview already supports sibling/guardian grouping, friend requests,
+target-roster warnings, skill-balance scoring, and admin-only publish authority,
+but it still says skill ratings default until imported and age is represented by
+division only. Replace that gap with typed, admin-scoped metadata that can inform
+preview ordering and review notes without exposing private child detail to
+parents or claiming hosted team-builder proof.
 
-The tool must not call Supabase, sign in, run Playwright, seed data, mutate
-hosted records, call providers, send notifications, create payments, upload or
-download media, run archive close, delete records, collect analytics, deploy,
-configure secrets, push, open a pull request, or claim hosted/provider/production
-acceptance. Its job is to make the local execution boundary auditable before any
-operator chooses a separate external proof or production-acceptance run.
+This task may add a local Supabase migration file, domain types, route-surface
+display copy, tests, and documentation. It must not apply migrations to any
+hosted database, seed or mutate Supabase data, run browser proof, push, deploy,
+create provider sends, touch Stripe, upload media, configure secrets, or claim
+hosted/provider/production acceptance.
 
 ### Acceptance Criteria
 
-- A new `qa:local-readiness-ledger` script reads only repository files and
-  fails with named blockers when the local readiness sequence is incomplete,
-  internally inconsistent, or overstated.
-- The verifier checks that the AgentFlow queue records LPM-001 through LPM-012
-  as completed baseline items with build ids and integration commit SHAs, and
-  that LPM-013A is the only executable task in the queue.
-- The verifier checks that all local readiness scripts added by the sequence
-  are present in `package.json`, have corresponding `scripts/*.mjs` files, and
-  have direct `node --test` coverage where applicable.
-- The verifier checks that `docs/missing-production-slices-work-plan.md`,
-  `docs/production-task-board.md`, and `docs/runbook.md` describe the sequence
-  as local repository readiness proof only and do not claim hosted/provider,
-  payment, storage, mobile, backup/restore, accessibility, or production
-  acceptance.
-- The verifier checks that every LPM-002 through LPM-012 external gate family is
-  still named as open, including hosted browser proof, Supabase readback, RLS,
-  provider sandbox/webhooks, Stripe settlement, private media storage/scanner,
-  sponsor rendering/report/finance, archive retention/restore, native/app-store,
-  accessibility, and production acceptance.
-- The verifier checks that the source checkout dirty-tree boundary, clean
-  sibling worktree path, no-push/no-deploy/no-provider/no-production-mutation
-  boundary, and final AgentFlow HEAD are recorded in docs.
-- Tests cover passing fixtures and at least one missing-contract failure for
-  each readiness family without requiring hosted credentials, network access,
-  Supabase, browser automation, provider dashboard access, app-store access,
-  push-provider access, analytics dashboards, Stripe, storage, native builds,
-  media uploads, backup systems, restore drills, deployment, or external device
-  requests.
-- `docs/runbook.md`, `docs/missing-production-slices-work-plan.md`, and
-  `docs/production-task-board.md` identify the sequence as locally complete
-  through LPM-012, identify LPM-013A as a ledger/verifier only, and keep
-  external proof and production acceptance as separate authorized follow-up
-  lanes.
+- Domain contracts accept explicit age-band, birthdate-derived age label, and
+  player evaluation inputs without requiring private full birthdates in preview
+  output.
+- `previewBalancedTeamBuild` uses explicit evaluation ratings when supplied,
+  keeps sibling/friend groups together, surfaces age-band and evaluation review
+  notes per player, and removes stale warnings that age/skill are unavailable
+  once metadata exists.
+- Admin UI copy shows the metadata as a review input for roster fairness while
+  keeping public/family display limited to privacy-safe player names and
+  non-sensitive notes.
+- A new migration extends team-builder persistence for player metadata or plan
+  constraints in an idempotent, admin-only, backward-compatible way; it does not
+  weaken existing RLS or expose child data.
+- Tests prove evaluation and age-band metadata influence local preview output,
+  publish still requires an organization admin, and privacy-safe display remains
+  first name plus last initial.
+- Docs move LP-008 from an open production gap to local implementation complete
+  while keeping hosted browser publish proof, Supabase readback, migration apply,
+  cross-org proof, and production acceptance open.
