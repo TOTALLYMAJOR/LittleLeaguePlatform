@@ -116,6 +116,7 @@ export function SponsorHub({ initialData }: { initialData: SponsorAdminData }) {
   const confirmedBillingRecords = initialData.billingRecords.filter((record) => (
     record.paymentProofStatus === "paid" && Boolean(record.confirmedAt)
   ));
+  const paidSponsorIds = new Set(confirmedBillingRecords.map((record) => record.sponsorId));
   const verifiedRevenueCents = confirmedBillingRecords.reduce((total, record) => total + record.amountCents, 0);
   const filteredSponsors = useMemo(() => sponsors.filter((sponsor) => {
     const matchesQuery = `${sponsor.name} ${sponsor.url}`.toLowerCase().includes(query.trim().toLowerCase());
@@ -384,7 +385,13 @@ export function SponsorHub({ initialData }: { initialData: SponsorAdminData }) {
               </div>
               <button className="secondary" type="button" onClick={() => setView("sponsors")}>Manage sponsors</button>
             </header>
-            <SponsorRoster sponsors={sponsors.slice(0, 4)} teams={initialData.teams} onEdit={openSponsorEditor} />
+            <SponsorRoster
+              sponsors={sponsors.slice(0, 4)}
+              teams={initialData.teams}
+              onEdit={openSponsorEditor}
+              paidSponsorIds={paidSponsorIds}
+              billingKnown={initialData.isSupabaseBacked}
+            />
           </section>
         </>
       ) : null}
@@ -416,7 +423,13 @@ export function SponsorHub({ initialData }: { initialData: SponsorAdminData }) {
               </select>
             </label>
           </div>
-          <SponsorRoster sponsors={filteredSponsors} teams={initialData.teams} onEdit={openSponsorEditor} />
+          <SponsorRoster
+            sponsors={filteredSponsors}
+            teams={initialData.teams}
+            onEdit={openSponsorEditor}
+            paidSponsorIds={paidSponsorIds}
+            billingKnown={initialData.isSupabaseBacked}
+          />
         </section>
       ) : null}
 
@@ -547,22 +560,50 @@ export function SponsorHub({ initialData }: { initialData: SponsorAdminData }) {
   );
 }
 
-function SponsorRoster({ sponsors, teams, onEdit }: { sponsors: Sponsor[]; teams: Team[]; onEdit: (sponsor: Sponsor) => void }) {
+function sponsorSubStatuses(sponsor: Sponsor, paidSponsorIds: Set<string>, billingKnown: boolean): string[] {
+  if (sponsor.status === "expired") return [];
+  const waiting: string[] = [];
+  if (!sponsor.logoUrl) waiting.push("Awaiting logo");
+  if (billingKnown && !paidSponsorIds.has(sponsor.id)) waiting.push("Awaiting payment proof");
+  return waiting;
+}
+
+function SponsorRoster({
+  sponsors,
+  teams,
+  onEdit,
+  paidSponsorIds,
+  billingKnown
+}: {
+  sponsors: Sponsor[];
+  teams: Team[];
+  onEdit: (sponsor: Sponsor) => void;
+  paidSponsorIds: Set<string>;
+  billingKnown: boolean;
+}) {
   if (!sponsors.length) return <SponsorEmpty />;
   return (
     <div className="sponsor-hub-roster-list">
-      {sponsors.map((sponsor) => (
-        <button type="button" key={sponsor.id} onClick={() => onEdit(sponsor)}>
-          <span className="sponsor-hub-logo">{sponsorInitials(sponsor.name)}</span>
-          <span className="sponsor-hub-roster-name">
-            <strong>{sponsor.name}</strong>
-            <small>{sponsor.level === "team" ? teams.find((team) => team.id === sponsor.teamId)?.name ?? "Team sponsor" : "League sponsor"}</small>
-          </span>
-          <span className={`sponsor-hub-status is-${sponsor.status}`}>{statusLabel(sponsor.status)}</span>
-          <span className="sponsor-hub-placement">{sponsor.placementKey ? placementLabels[sponsor.placementKey] : "Placement needed"}</span>
-          <ChevronRight aria-hidden="true" size={18} />
-        </button>
-      ))}
+      {sponsors.map((sponsor) => {
+        const waiting = sponsorSubStatuses(sponsor, paidSponsorIds, billingKnown);
+        return (
+          <button type="button" key={sponsor.id} onClick={() => onEdit(sponsor)}>
+            <span className="sponsor-hub-logo">{sponsorInitials(sponsor.name)}</span>
+            <span className="sponsor-hub-roster-name">
+              <strong>{sponsor.name}</strong>
+              <small>{sponsor.level === "team" ? teams.find((team) => team.id === sponsor.teamId)?.name ?? "Team sponsor" : "League sponsor"}</small>
+              {waiting.length ? (
+                <span className="sponsor-hub-substatus">
+                  {waiting.map((label) => <span key={label}>{label}</span>)}
+                </span>
+              ) : null}
+            </span>
+            <span className={`sponsor-hub-status is-${sponsor.status}`}>{statusLabel(sponsor.status)}</span>
+            <span className="sponsor-hub-placement">{sponsor.placementKey ? placementLabels[sponsor.placementKey] : "Placement needed"}</span>
+            <ChevronRight aria-hidden="true" size={18} />
+          </button>
+        );
+      })}
     </div>
   );
 }

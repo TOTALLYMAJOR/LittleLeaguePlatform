@@ -49,6 +49,50 @@ describe("Sponsor Hub route and presentation", () => {
     expect(html).not.toContain("$3,500.00");
   });
 
+  it("shows awaiting-logo and awaiting-payment-proof sub-statuses per sponsor", () => {
+    const [confirmedSponsor, awaitingSponsor] = seedState.sponsors;
+    const html = renderToStaticMarkup(<SponsorHub initialData={{
+      organizationId: seedState.organization.id,
+      teams: seedState.teams,
+      sponsors: [
+        { ...confirmedSponsor!, logoUrl: "https://example.com/logo.png" },
+        awaitingSponsor!
+      ],
+      billingRecords: [{
+        id: "billing-1",
+        sponsorId: confirmedSponsor!.id,
+        invoiceReference: "invoice-proof-1",
+        amountCents: 250_000,
+        currency: "usd",
+        status: "payment_recorded",
+        paymentProofStatus: "paid",
+        confirmedAt: "2026-07-26T12:00:00.000Z"
+      }],
+      isSupabaseBacked: true,
+      message: "Sponsor records and proof records are loaded from Supabase."
+    }} />);
+
+    // The confirmed sponsor has a logo and settled payment: no waiting chips.
+    // The second sponsor is missing both.
+    expect(html).toContain("Awaiting logo");
+    expect(html).toContain("Awaiting payment proof");
+    expect((html.match(/Awaiting logo/g) ?? []).length).toBe(1);
+    expect((html.match(/Awaiting payment proof/g) ?? []).length).toBe(1);
+  });
+
+  it("never claims a payment-proof gap when billing records are unavailable", () => {
+    const html = renderToStaticMarkup(<SponsorHub initialData={{
+      organizationId: seedState.organization.id,
+      teams: seedState.teams,
+      sponsors: seedState.sponsors,
+      billingRecords: [],
+      isSupabaseBacked: false,
+      message: "Sponsor records could not be loaded safely."
+    }} />);
+
+    expect(html).not.toContain("Awaiting payment proof");
+  });
+
   it("fails closed without editable seed rows when sponsor data is unavailable", () => {
     const html = renderToStaticMarkup(<SponsorHub initialData={{
       organizationId: "org-unavailable",

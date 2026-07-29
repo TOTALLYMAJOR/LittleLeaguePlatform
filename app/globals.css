@@ -12579,6 +12579,23 @@ caption {
   color: var(--ok);
 }
 
+.sponsor-hub-substatus {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  margin-top: 3px;
+}
+
+.sponsor-hub-substatus > span {
+  border: 1px solid var(--warning);
+  border-radius: var(--radius-pill);
+  color: var(--warning);
+  font-size: 0.66rem;
+  font-weight: 800;
+  padding: 1px 7px;
+  white-space: nowrap;
+}
+
 .sponsor-hub-status.is-pending {
   background: var(--warning-soft);
   color: var(--warning);
