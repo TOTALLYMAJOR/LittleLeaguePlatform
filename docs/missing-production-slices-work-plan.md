@@ -11,7 +11,7 @@ This work plan turns the known missing or gated pieces into dependency-aware exe
 
 ## Local Readiness Completion Ledger
 
-The AgentFlow missing-production sequence is locally complete through LPM-012 as local repository readiness proof only. LPM-013A is a ledger/verifier only; it reads repository files and records blockers before any operator chooses a separate proof run. LP-016 now has a local repository readiness verifier through LPM-015; external proof and production acceptance remain separate authorized follow-up lanes.
+The AgentFlow missing-production sequence is locally complete through LPM-012 as local repository readiness proof only. LPM-009 and LPM-010 are reconciled as local repository readiness complete only for the source contracts covered by their no-mutation verifiers, verifier failure-mode tests, and focused sponsor API/service/UI tests; they are not sandbox, hosted, provider, finance, or production acceptance. LPM-013A is a ledger/verifier only; it reads repository files and records blockers before any operator chooses a separate proof run. LP-016 now has a local repository readiness verifier through LPM-015; external proof and production acceptance remain separate authorized follow-up lanes.
 
 - Source checkout dirty-tree boundary: the original source checkout is `/home/administrator/projects/youth-sports-platform-mvp-v3`, and its unrelated dirty tree is outside this local ledger.
 - Clean sibling worktree path: `/home/administrator/.agentflow/worktrees/repo_80ec8817-7c48-4066-a53c-6a5aa57d31c8/build_e15b91b4-66e7-4ce9-833b-ebed388ac25c/tasks/task_lpm-013_c314ec41-5691-487b-9a43-cfeade0636ae`.
@@ -308,7 +308,7 @@ Boundary:
 
 ## LPM-009 - Sponsor Stripe Decision and Sandbox
 
-Status: `planned`
+Status: `local repository readiness complete`
 Priority: P2 gated
 Depends on: LPM-001
 Governing rows: LP-020; Family Balance and Stripe; Sponsor management; Money + sponsors community commerce.
@@ -326,9 +326,9 @@ Acceptance criteria:
 - AC-006: Public and parent surfaces never expose billing state, child profiles, parent contacts, private media, or redemption proof.
 
 Validation:
-`qa:sponsor-stripe-readiness` is local repository readiness proof only. It reads repository files and checks the sponsor billing/payment boundary, server-side Checkout Session contract, server-only key handling, webhook settlement truth, admin/public privacy separation, and open payment gates. It does not call Stripe, Supabase, sign in, run Playwright, seed data, mutate hosted records, create Checkout Sessions, configure API keys or webhook secrets, register webhook endpoints, charge or refund payments, call provider dashboards, deploy, or claim sandbox, hosted, provider, finance, production payment, or production acceptance.
+`qa:sponsor-stripe-readiness` is the LPM-009 local repository readiness completion gate for the existing proof-only versus sandbox boundary, server-side Checkout Session contract, server-only key handling, webhook settlement truth, admin/public privacy separation, and open payment gates. It is local repository readiness proof only and reads repository files only. It does not call Stripe, Supabase, sign in, run Playwright, seed data, mutate hosted records, create Checkout Sessions, configure API keys or webhook secrets, register webhook endpoints, charge or refund payments, call provider dashboards, deploy, or claim sandbox, hosted, provider, finance, production payment, or production acceptance.
 
-Stripe sandbox tests, webhook tests, `npm test -- lib/supabase/sponsors.test.ts lib/supabase/sponsor-operations.test.ts app/api-live-actions.test.ts`, hosted proof if implemented.
+Covered local evidence is limited to `qa:sponsor-stripe-readiness`, `node --test scripts/verify-sponsor-stripe-readiness.test.mjs`, and focused sponsor API/service/UI tests. Stripe sandbox tests, webhook tests, hosted admin proof, finance reconciliation, and production payment approval remain external follow-up gates.
 
 Out of scope:
 Production payment collection without sandbox/webhook proof and explicit go-live approval.
@@ -338,7 +338,7 @@ Stripe sandbox account setup, restricted key creation, webhook endpoint registra
 
 ## LPM-010 - Sponsor Fulfillment Proof
 
-Status: `planned`
+Status: `local repository readiness complete`
 Priority: P2
 Depends on: LPM-009
 Governing rows: Sponsor management; Money + sponsors community commerce.
@@ -355,9 +355,9 @@ Acceptance criteria:
 - AC-005: Public display QA proves no child, parent contact, private media, billing, or redemption leakage.
 
 Validation:
-`qa:sponsor-fulfillment-readiness` is local repository readiness proof only. It reads repository files and checks approved active placement filters, Team Portal team scope, admin placement authority, approved logo asset reads, submitted-logo review queues, fail-closed sponsor data, fulfillment/report separation, renewal delivery gates, public and parent privacy, and open fulfillment gates. It does not call Supabase, sign in, run Playwright, seed data, mutate hosted records, send renewal email, call email/SMS/push providers, call Stripe, create or refund payments, upload files, fetch external logo assets, call provider dashboards, deploy, or claim hosted, observed-rendering, provider, finance, accessibility, production, or production sponsor acceptance.
+`qa:sponsor-fulfillment-readiness` is the LPM-010 local repository readiness completion gate for approved active placement filters, Team Portal team scope, admin placement authority, approved logo asset reads, submitted-logo review queues, fail-closed sponsor data, fulfillment/report separation, renewal delivery gates, public and parent privacy, and open fulfillment gates. It reads repository files only. It does not call Supabase, sign in, run Playwright, seed data, mutate hosted records, send renewal email, call email/SMS/push providers, call Stripe, create or refund payments, upload files, fetch external logo assets, call provider dashboards, deploy, or claim hosted, observed-rendering, provider, finance, accessibility, production, or production sponsor acceptance.
 
-Sponsor component and service tests; hosted public/admin/browser proof after local readiness is green.
+Covered local evidence is limited to `qa:sponsor-fulfillment-readiness`, `node --test scripts/verify-sponsor-fulfillment-readiness.test.mjs`, and focused sponsor API/service/UI tests. Hosted public/admin browser proof, observed placement-rendering proof, approved logo asset proof, sponsor recap/report artifact proof, renewal email sandbox proof, public placement leak QA, accessibility proof, finance reconciliation, and production sponsor acceptance remain external follow-up gates.
 
 Open gates:
 Hosted public/admin browser proof, observed placement-rendering proof, approved logo asset proof, sponsor recap/report artifact proof, renewal email sandbox proof, public placement leak QA, accessibility proof, finance reconciliation, and production sponsor acceptance.
