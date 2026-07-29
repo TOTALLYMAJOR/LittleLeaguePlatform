@@ -362,13 +362,16 @@ Decide whether Expo/native app work is justified by evidence instead of preferen
 
 Acceptance criteria:
 
+- AC-000: `npm run qa:native-app-decision-readiness` passes as local repository readiness proof that the PWA-first/native-decision contract remains present. This verifier reads repository files only and performs no hosted, provider, browser, app-store, native, analytics, media, deployment, or Supabase action.
 - AC-001: PWA install, standalone launch, push permission, offline, and mobile workflow metrics are reviewed.
 - AC-002: Native need is justified by app-store, camera/media, stronger push, OS integration, or offline requirements that PWA cannot meet.
 - AC-003: If approved, native architecture reuses existing domain models, Supabase session/RLS boundaries, provider gates, and child privacy rules.
 - AC-004: If not approved, Expo remains deferred and PWA backlog is updated with the next mobile hardening tasks.
 
 Validation:
-PWA/mobile browser proof; usage metrics; product decision record.
+`npm run qa:native-app-decision-readiness`; `node --test scripts/verify-native-app-decision-readiness.test.mjs`; PWA/mobile browser proof; production usage metrics review; push permission proof; offline/reconnect proof; native product approval; Expo architecture review; app-store compliance review; accessibility proof; production native acceptance; product decision record.
+
+`qa:native-app-decision-readiness` is local repository readiness proof only. It reads repository files and checks PWA-first posture, value-gated install promotion, standalone/install prompt measurement, native-interest telemetry without product approval, public-intake rate limiting, bounded manifest/service-worker/offline/App Shell wiring, route-smoke/API coverage, and future Expo guardrails that reuse domain contracts, Supabase session/RLS boundaries, provider gates, and child privacy rules. It does not call Supabase, sign in, run Playwright, seed data, mutate hosted records, collect real analytics, request push permissions, register app stores, scaffold Expo, send providers, upload media, deploy, configure secrets, or claim PWA/mobile browser, production usage, push-provider, app-store, native, or production acceptance. Mobile browser proof, production usage metrics review, push permission proof, offline/reconnect proof, native product approval, Expo architecture review, app-store compliance review, accessibility proof, and production native acceptance remain open gates.
 
 ## Current Execution Log
 
