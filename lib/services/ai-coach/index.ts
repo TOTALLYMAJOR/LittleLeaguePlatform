@@ -1,3 +1,6 @@
+import OpenAI from "openai";
+import { zodTextFormat } from "openai/helpers/zod";
+import { z } from "zod";
 import type { AiCoachWorkspaceDraft } from "../../domain";
 
 export interface AiCoachProviderConfig {
@@ -23,28 +26,29 @@ export interface AiCoachProviderResult {
   source: "openai" | "deterministic";
   draft: AiCoachWorkspaceDraft;
   reviewNotes: string[];
+  refusalText?: string;
+  validationError?: string;
+  trust: {
+    includedSources: string[];
+    excludedSources: string[];
+    generatedAt?: string;
+    model: string;
+    humanReviewRequired: true;
+  };
 }
 
-interface OpenAiResponsesPayload {
-  output_text?: string;
-  output?: Array<{
-    content?: Array<{
-      type?: string;
-      text?: string;
-    }>;
-  }>;
-}
-
-interface ProviderDraftPayload {
-  title?: unknown;
-  body?: unknown;
-  reviewNotes?: unknown;
-}
+const ProviderDraftSchema = z.object({
+  title: z.string().min(1).max(160),
+  body: z.string().min(1).max(5000),
+  reviewNotes: z.array(z.string().min(1).max(240)).max(6)
+});
 
 const DEFAULT_MODEL = "gpt-5.5";
 const DEFAULT_ENDPOINT = "https://api.openai.com/v1/responses";
 const CONTACT_PATTERN = /(?:\b[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}\b|\b(?:\+?1[-.\s]?)?(?:\(?\d{3}\)?[-.\s]?)\d{3}[-.\s]?\d{4}\b)/i;
 const PRIVATE_DETAIL_PATTERN = /\b(?:medical|diagnosis|allergy|custody|billing proof|payment proof|private rsvp note|private note|hidden message|home address)\b/i;
+const UNSUPPORTED_AUTOMATION_PATTERN = /\b(?:was|were|has been|have been|is|are)\s+(?:already\s+)?(?:sent|delivered|published|emailed|texted|pushed)\s+(?:to|for)\b|\b(?:sent|delivered|published|emailed|texted|pushed)\s+to\s+(?:families|parents|guardians|the team)\b|\b(?:send|email|text|push|publish|deliver)\s+(?:this|it|now|to all|to families|to parents)\b/i;
+const UNSOURCED_CLAIM_PATTERN = /\b(?:i inferred|i found online|i checked email|i looked up|according to parents|medical record|private note says)\b/i;
 
 export function getAiCoachProviderConfigFromEnv(env: NodeJS.ProcessEnv = process.env): AiCoachProviderConfig {
   return {
@@ -98,6 +102,20 @@ export function scanAiCoachDraftForProvider(draft: AiCoachWorkspaceDraft) {
     };
   }
 
+  if (UNSUPPORTED_AUTOMATION_PATTERN.test(content)) {
+    return {
+      ok: false,
+      message: "Draft claims a provider send, publish, or delivery action that the AI provider cannot perform."
+    };
+  }
+
+  if (UNSOURCED_CLAIM_PATTERN.test(content)) {
+    return {
+      ok: false,
+      message: "Draft appears to rely on unsourced private or external claims and cannot be sent to an AI provider."
+    };
+  }
+
   return { ok: true, message: "Draft is provider-safe." };
 }
 
@@ -114,7 +132,8 @@ export async function enhanceAiCoachWorkspaceDraft(
       model: readiness.model,
       source: "deterministic",
       draft,
-      reviewNotes: ["Provider call skipped; deterministic draft is unchanged."]
+      reviewNotes: ["Provider call skipped; deterministic draft is unchanged."],
+      trust: buildTrustEvidence(draft, readiness.model)
     };
   }
 
@@ -127,32 +146,98 @@ export async function enhanceAiCoachWorkspaceDraft(
       model: readiness.model,
       source: "deterministic",
       draft,
-      reviewNotes: ["Provider call blocked by local privacy filter."]
+      reviewNotes: ["Provider call blocked by local privacy filter."],
+      validationError: safety.message,
+      trust: buildTrustEvidence(draft, readiness.model)
     };
   }
 
-  const fetcher = config.fetcher ?? fetch;
-  const response = await fetcher(config.endpoint ?? DEFAULT_ENDPOINT, {
-    method: "POST",
-    headers: {
-      authorization: `Bearer ${config.apiKey}`,
-      "content-type": "application/json"
-    },
-    body: JSON.stringify({
+  try {
+    const client = new OpenAI({
+      apiKey: config.apiKey,
+      baseURL: providerBaseUrl(config.endpoint),
+      fetch: config.fetcher
+    });
+    const response = await client.responses.parse({
       model: readiness.model,
       store: false,
       instructions: providerInstructions(),
-      input: JSON.stringify({
+      input: [{
+        role: "user",
+        content: JSON.stringify({
         title: draft.title,
         body: draft.body,
         sourceEvidence: draft.sourceEvidence,
         workflow: draft.workflow,
         boundary: draft.boundary
-      })
-    })
-  });
+        })
+      }],
+      text: {
+        format: zodTextFormat(ProviderDraftSchema, "leaguepilot_ai_coach_draft")
+      }
+    });
+    const refusalText = extractRefusal(response.output);
+    if (refusalText) {
+      return {
+        ok: false,
+        message: "AI provider declined the draft. The deterministic draft is unchanged.",
+        provider: "openai",
+        model: readiness.model,
+        source: "deterministic",
+        draft,
+        reviewNotes: ["Provider refusal recorded for authorized review."],
+        refusalText,
+        trust: buildTrustEvidence(draft, readiness.model)
+      };
+    }
+    const providerDraft = response.output_parsed;
+    const validation = ProviderDraftSchema.safeParse(providerDraft);
+    if (!validation.success) {
+      return {
+        ok: false,
+        message: "AI provider returned an invalid structured draft. The deterministic draft is unchanged.",
+        provider: "openai",
+        model: readiness.model,
+        source: "deterministic",
+        draft,
+        reviewNotes: ["Structured output did not pass the required schema."],
+        validationError: z.prettifyError(validation.error),
+        trust: buildTrustEvidence(draft, readiness.model)
+      };
+    }
 
-  if (!response.ok) {
+    const nextDraft: AiCoachWorkspaceDraft = {
+      ...draft,
+      title: validation.data.title.trim(),
+      body: validation.data.body.trim(),
+      sourceEvidence: [...draft.sourceEvidence, "OpenAI Responses API structured draft"],
+      boundary: `${draft.boundary} AI provider output remains coach-reviewed and cannot publish automatically.`
+    };
+    const outputSafety = scanAiCoachDraftForProvider(nextDraft);
+    if (!outputSafety.ok) {
+      return {
+        ok: false,
+        message: "AI provider output failed the local privacy filter. The deterministic draft is unchanged.",
+        provider: "openai",
+        model: readiness.model,
+        source: "deterministic",
+        draft,
+        reviewNotes: ["Provider output was discarded."],
+        validationError: outputSafety.message,
+        trust: buildTrustEvidence(draft, readiness.model)
+      };
+    }
+    return {
+      ok: true,
+      message: "AI provider draft created for coach review. Nothing was published or sent.",
+      provider: "openai",
+      model: readiness.model,
+      source: "openai",
+      draft: nextDraft,
+      reviewNotes: validation.data.reviewNotes,
+      trust: buildTrustEvidence(draft, readiness.model, response.created_at)
+    };
+  } catch (error) {
     return {
       ok: false,
       message: "AI provider request failed; deterministic draft is unchanged.",
@@ -160,54 +245,11 @@ export async function enhanceAiCoachWorkspaceDraft(
       model: readiness.model,
       source: "deterministic",
       draft,
-      reviewNotes: [`Provider HTTP status ${response.status}.`]
+      reviewNotes: ["Provider request failed closed."],
+      validationError: error instanceof Error ? error.message.slice(0, 500) : "Unknown provider error.",
+      trust: buildTrustEvidence(draft, readiness.model)
     };
   }
-
-  const payload = await response.json().catch(() => null) as OpenAiResponsesPayload | null;
-  const providerDraft = parseProviderDraft(extractOutputText(payload));
-  if (!providerDraft) {
-    return {
-      ok: false,
-      message: "AI provider returned an unreadable draft; deterministic draft is unchanged.",
-      provider: "openai",
-      model: readiness.model,
-      source: "deterministic",
-      draft,
-      reviewNotes: ["Provider output did not match the expected JSON shape."]
-    };
-  }
-
-  const nextDraft: AiCoachWorkspaceDraft = {
-    ...draft,
-    title: providerDraft.title,
-    body: providerDraft.body,
-    sourceEvidence: [...draft.sourceEvidence, "OpenAI Responses API draft rewrite"],
-    boundary: `${draft.boundary} AI provider output remains coach-reviewed and cannot publish automatically.`
-  };
-
-  const outputSafety = scanAiCoachDraftForProvider(nextDraft);
-  if (!outputSafety.ok) {
-    return {
-      ok: false,
-      message: "AI provider output failed the local privacy filter; deterministic draft is unchanged.",
-      provider: "openai",
-      model: readiness.model,
-      source: "deterministic",
-      draft,
-      reviewNotes: ["Provider output was discarded."]
-    };
-  }
-
-  return {
-    ok: true,
-    message: "AI provider draft created for coach review. Nothing was published or sent.",
-    provider: "openai",
-    model: readiness.model,
-    source: "openai",
-    draft: nextDraft,
-    reviewNotes: providerDraft.reviewNotes
-  };
 }
 
 function providerInstructions() {
@@ -220,37 +262,36 @@ function providerInstructions() {
   ].join(" ");
 }
 
-function extractOutputText(payload: OpenAiResponsesPayload | null) {
-  if (!payload) return "";
-  if (typeof payload.output_text === "string") return payload.output_text;
-  return payload.output
-    ?.flatMap((item) => item.content ?? [])
-    .map((content) => content.text)
-    .filter((text): text is string => Boolean(text))
-    .join("\n") ?? "";
+function providerBaseUrl(endpoint?: string) {
+  const value = endpoint ?? DEFAULT_ENDPOINT;
+  return value.replace(/\/responses\/?$/, "");
 }
 
-function parseProviderDraft(outputText: string) {
-  const cleaned = outputText
-    .trim()
-    .replace(/^```(?:json)?\s*/i, "")
-    .replace(/\s*```$/i, "");
-
-  let parsed: ProviderDraftPayload;
-  try {
-    parsed = JSON.parse(cleaned) as ProviderDraftPayload;
-  } catch {
-    return null;
+function extractRefusal(output: OpenAI.Responses.ResponseOutputItem[]) {
+  for (const item of output) {
+    if (item.type !== "message") continue;
+    for (const content of item.content) {
+      if (content.type === "refusal") return content.refusal;
+    }
   }
+  return undefined;
+}
 
-  if (typeof parsed.title !== "string" || typeof parsed.body !== "string") return null;
-  const reviewNotes = Array.isArray(parsed.reviewNotes)
-    ? parsed.reviewNotes.filter((note): note is string => typeof note === "string").slice(0, 6)
-    : [];
-
+function buildTrustEvidence(
+  draft: AiCoachWorkspaceDraft,
+  model: string,
+  createdAtSeconds?: number
+): AiCoachProviderResult["trust"] {
   return {
-    title: parsed.title.trim().slice(0, 160),
-    body: parsed.body.trim().slice(0, 5000),
-    reviewNotes
+    includedSources: [...draft.sourceEvidence],
+    excludedSources: [
+      "Private parent notes",
+      "Contact details",
+      "Unapproved media",
+      "Deleted or cross-team messages"
+    ],
+    generatedAt: createdAtSeconds ? new Date(createdAtSeconds * 1000).toISOString() : undefined,
+    model,
+    humanReviewRequired: true
   };
 }

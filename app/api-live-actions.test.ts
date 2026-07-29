@@ -9,6 +9,8 @@ import { GET as getProviderDeliveryRetryPlan } from "./api/provider-delivery/ret
 import { POST as postParentReplay } from "./api/coach/parent-replay/route";
 import { POST as postWeeklyUpdate } from "./api/coach/weekly-update/route";
 import { POST as postSponsorSave } from "./api/admin/sponsors/route";
+import { GET as getAdminRevenueSummary } from "./api/admin/revenue-summary/route";
+import { GET as getFamilyWallet } from "./api/parent/family-wallet/route";
 import { POST as postAdminTeam } from "./api/admin/teams/route";
 import { POST as postAdminSeason } from "./api/admin/seasons/route";
 import { POST as postAdminRoster } from "./api/admin/rosters/route";
@@ -23,7 +25,10 @@ import { POST as postSnackClaim } from "./api/snack-slots/claim/route";
 import { POST as postVolunteerClaim } from "./api/volunteer-signups/claim/route";
 import { POST as postWeatherDraft } from "./api/weather-alerts/draft/route";
 import { POST as postTeamMembership } from "./api/admin/team-memberships/route";
-import type { ParentReplayDraft } from "@/lib/domain";
+import { seedState, type ParentReplayDraft } from "@/lib/domain";
+import { createSupabaseAdminClient } from "@/lib/supabase/admin";
+import { requireActiveOrganizationAdmin } from "@/lib/supabase/access-control";
+import { listParentCoachDashboardData } from "@/lib/supabase/dashboard-data";
 import { updateTenantThemeDefaults } from "@/lib/supabase/team-branding";
 import { createTeamMembership } from "@/lib/supabase/memberships";
 import { recordRosterImportAudit } from "@/lib/supabase/roster-imports";
@@ -32,9 +37,9 @@ import { saveScheduleEvent } from "@/lib/supabase/schedule-management";
 import { repairGuardianLink } from "@/lib/supabase/guardian-links";
 import { createAdminExport } from "@/lib/supabase/reporting";
 import { listProviderDeliveryRetryQueue, reviewNotificationDelivery } from "@/lib/supabase/provider-delivery";
+import { listSponsorAdminData } from "@/lib/supabase/sponsors";
 import {
   claimSnackSlot,
-  claimVolunteerRole,
   createWeatherAlertDraft,
   saveCoachWeeklyUpdate,
   saveSponsor,
@@ -47,14 +52,31 @@ import {
   updateParentRsvp
 } from "@/lib/supabase/operations";
 import { requireAuthenticatedRouteUser } from "@/lib/supabase/route-auth";
+import { claimVolunteerRoleSafely } from "@/lib/supabase/volunteer-marketplace";
+import { listFamilyBalanceSummary } from "@/lib/supabase/family-balance";
 
 vi.mock("@/lib/supabase/route-auth", () => ({
   requireAuthenticatedRouteUser: vi.fn()
 }));
 
+vi.mock("@/lib/supabase/admin", () => ({
+  createSupabaseAdminClient: vi.fn()
+}));
+
+vi.mock("@/lib/supabase/access-control", () => ({
+  requireActiveOrganizationAdmin: vi.fn()
+}));
+
+vi.mock("@/lib/supabase/dashboard-data", () => ({
+  listParentCoachDashboardData: vi.fn()
+}));
+
+vi.mock("@/lib/supabase/sponsors", () => ({
+  listSponsorAdminData: vi.fn()
+}));
+
 vi.mock("@/lib/supabase/operations", () => ({
   claimSnackSlot: vi.fn(),
-  claimVolunteerRole: vi.fn(),
   createWeatherAlertDraft: vi.fn(),
   saveCoachWeeklyUpdate: vi.fn(),
   saveSponsor: vi.fn(),
@@ -65,6 +87,14 @@ vi.mock("@/lib/supabase/operations", () => ({
   submitParentSupportRequest: vi.fn(),
   updateNotificationPreference: vi.fn(),
   updateParentRsvp: vi.fn()
+}));
+
+vi.mock("@/lib/supabase/volunteer-marketplace", () => ({
+  claimVolunteerRoleSafely: vi.fn()
+}));
+
+vi.mock("@/lib/supabase/family-balance", () => ({
+  listFamilyBalanceSummary: vi.fn()
 }));
 
 vi.mock("@/lib/supabase/team-branding", () => ({
@@ -103,9 +133,14 @@ vi.mock("@/lib/supabase/provider-delivery", () => ({
 }));
 
 const authMock = vi.mocked(requireAuthenticatedRouteUser);
+const createSupabaseAdminClientMock = vi.mocked(createSupabaseAdminClient);
+const requireActiveOrganizationAdminMock = vi.mocked(requireActiveOrganizationAdmin);
+const listParentCoachDashboardDataMock = vi.mocked(listParentCoachDashboardData);
+const listSponsorAdminDataMock = vi.mocked(listSponsorAdminData);
 const updateParentRsvpMock = vi.mocked(updateParentRsvp);
 const claimSnackSlotMock = vi.mocked(claimSnackSlot);
-const claimVolunteerRoleMock = vi.mocked(claimVolunteerRole);
+const claimVolunteerRoleMock = vi.mocked(claimVolunteerRoleSafely);
+const listFamilyBalanceSummaryMock = vi.mocked(listFamilyBalanceSummary);
 const createWeatherAlertDraftMock = vi.mocked(createWeatherAlertDraft);
 const saveCoachWeeklyUpdateMock = vi.mocked(saveCoachWeeklyUpdate);
 const saveSponsorMock = vi.mocked(saveSponsor);
@@ -127,14 +162,24 @@ const createAdminExportMock = vi.mocked(createAdminExport);
 const listProviderDeliveryRetryQueueMock = vi.mocked(listProviderDeliveryRetryQueue);
 const reviewNotificationDeliveryMock = vi.mocked(reviewNotificationDelivery);
 
-function jsonRequest(body: unknown) {
+function jsonRequest(body: unknown, headers?: Record<string, string>) {
   return new Request("http://localhost/api/test", {
     method: "POST",
     headers: {
       authorization: "Bearer live-session",
-      "content-type": "application/json"
+      "content-type": "application/json",
+      ...headers
     },
     body: JSON.stringify(body)
+  });
+}
+
+function getRequest() {
+  return new Request("http://localhost/api/test", {
+    method: "GET",
+    headers: {
+      authorization: "Bearer live-session"
+    }
   });
 }
 
@@ -142,6 +187,56 @@ describe("live action API routes", () => {
   beforeEach(() => {
     vi.resetAllMocks();
     authMock.mockResolvedValue({ ok: true, user: { id: "user-live-session", email: "parent@example.com" } });
+    const adminQuery = (data: Array<Record<string, string>>) => {
+      const query = {
+        select: vi.fn(),
+        eq: vi.fn(),
+        order: vi.fn(),
+        limit: vi.fn(),
+        then: (
+          resolve: (value: { data: Array<Record<string, string>>; error: null }) => unknown,
+          reject: (reason: unknown) => unknown
+        ) => Promise.resolve({ data, error: null }).then(resolve, reject)
+      };
+      query.select.mockReturnValue(query);
+      query.eq.mockReturnValue(query);
+      query.order.mockReturnValue(query);
+      query.limit.mockReturnValue(query);
+      return query;
+    };
+    createSupabaseAdminClientMock.mockReturnValue({
+      from: vi.fn((table: string) => adminQuery(table === "seasons"
+        ? [{ id: seedState.activeSeason.id }]
+        : [{ organization_id: seedState.organization.id }]))
+    } as unknown as ReturnType<typeof createSupabaseAdminClient>);
+    requireActiveOrganizationAdminMock.mockResolvedValue({ ok: true, message: "Access allowed.", organizationId: seedState.organization.id });
+    listParentCoachDashboardDataMock.mockResolvedValue({
+      state: {
+        ...seedState,
+        guardianLinks: seedState.guardianLinks.map((link) => ({ ...link, parentUserId: link.parentUserId === "user-parent-jordan" ? "user-live-session" : link.parentUserId }))
+      },
+      parentUserId: "user-live-session",
+      coachUserId: "",
+      isSupabaseBacked: true,
+      accessStatus: "live",
+      message: "Showing Supabase roster, guardian, schedule, RSVP, and media rows."
+    });
+    listSponsorAdminDataMock.mockResolvedValue({
+      organizationId: seedState.organization.id,
+      teams: seedState.teams,
+      sponsors: seedState.sponsors,
+      billingRecords: [],
+      isSupabaseBacked: true,
+      message: "Sponsor records, active placements, approved logos, and payment-proof records are loaded from Supabase."
+    });
+    listFamilyBalanceSummaryMock.mockResolvedValue({
+      ok: true,
+      message: "No evidence-backed family obligations are recorded.",
+      items: [],
+      totalDueCents: 0,
+      confirmedCents: 0,
+      proofBoundary: "Only verified records can confirm payment."
+    });
   });
 
   it("uses the authenticated parent session for RSVP writes", async () => {
@@ -151,8 +246,10 @@ describe("live action API routes", () => {
       eventId: "event-1",
       playerId: "player-1",
       response: "going",
+      expectedLockVersion: 2,
+      expectedScheduleVersion: 4,
       parentUserId: "client-spoof"
-    }));
+    }, { "idempotency-key": "rsvp-action-1" }));
     const payload = await response.json();
 
     expect(response.status).toBe(200);
@@ -162,8 +259,30 @@ describe("live action API routes", () => {
       playerId: "player-1",
       parentUserId: "user-live-session",
       response: "going",
-      note: undefined
+      note: undefined,
+      expectedLockVersion: 2,
+      expectedScheduleVersion: 4,
+      clientActionId: "rsvp-action-1"
     });
+  });
+
+  it("returns a conflict when the schedule changed before RSVP save", async () => {
+    updateParentRsvpMock.mockResolvedValue({
+      ok: false,
+      code: "schedule_changed",
+      message: "The event changed after this RSVP was opened."
+    });
+
+    const response = await postRsvp(jsonRequest({
+      eventId: "event-1",
+      playerId: "player-1",
+      response: "going",
+      expectedLockVersion: 0,
+      expectedScheduleVersion: 3
+    }, { "idempotency-key": "rsvp-action-stale" }));
+
+    expect(response.status).toBe(409);
+    expect((await response.json()).code).toBe("schedule_changed");
   });
 
   it("uses the authenticated parent session for snack claims", async () => {
@@ -204,12 +323,16 @@ describe("live action API routes", () => {
   it("uses the authenticated user session for volunteer claims", async () => {
     claimVolunteerRoleMock.mockResolvedValue({ ok: true, message: "Volunteer saved.", signup: { id: "volunteer-1" } });
 
-    const response = await postVolunteerClaim(jsonRequest({ signupId: "volunteer-1", userId: "client-spoof" }));
+    const response = await postVolunteerClaim(jsonRequest(
+      { signupId: "volunteer-1", userId: "client-spoof" },
+      { "idempotency-key": "volunteer-action-1" }
+    ));
 
     expect(response.status).toBe(200);
     expect(claimVolunteerRoleMock).toHaveBeenCalledWith({
       signupId: "volunteer-1",
-      userId: "user-live-session"
+      userId: "user-live-session",
+      actionId: "volunteer-action-1"
     });
   });
 
@@ -360,7 +483,19 @@ describe("live action API routes", () => {
       ok: true,
       message: "Provider delivery approved.",
       notification: { id: "notification-1", provider_approval_status: "approved", approved_at: "2026-06-23T12:00:00.000Z" },
-      attempt: { id: "attempt-1", provider: "email", channel: "email", status: "queued", attempted_at: "2026-06-23T12:00:00.000Z" }
+      attempt: {
+        id: "attempt-1",
+        provider: "email",
+        transport_provider: "sendgrid",
+        channel: "email",
+        status: "queued",
+        request_outcome: "not_attempted",
+        attempted_at: "2026-06-23T12:00:00.000Z",
+        idempotency_key: "notification-1:email",
+        next_attempt_at: "2026-06-23T12:00:00.000Z",
+        retry_count: 0,
+        max_retries: 3
+      }
     });
 
     const response = await postProviderDeliveryReview(jsonRequest({
@@ -529,17 +664,18 @@ describe("live action API routes", () => {
   it("uses the authenticated admin session for sponsor saves", async () => {
     saveSponsorMock.mockResolvedValue({
       ok: true,
+      partial: false,
       message: "Sponsor saved.",
       sponsor: {
         id: "sponsor-1",
         organizationId: "org-1",
         name: "Local Pizza",
-        level: "league",
+        level: "league" as const,
         teamId: undefined,
         url: "https://sponsor.example",
-        status: "active",
-        placementKey: "team_portal",
-        logoUrl: "https://sponsor.example/logo.png"
+        status: "active" as const,
+        placementKey: "team_portal" as const,
+        logoUrl: undefined
       }
     });
 
@@ -567,6 +703,95 @@ describe("live action API routes", () => {
       status: "active",
       placementKey: "team_portal",
       logoUrl: "https://sponsor.example/logo.png"
+    });
+  });
+
+  it("returns Family Balance Summary reads scoped to the authenticated guardian session", async () => {
+    const response = await getFamilyWallet(getRequest());
+    const payload = await response.json();
+
+    expect(response.status).toBe(200);
+    expect(listFamilyBalanceSummaryMock).toHaveBeenCalledWith("user-live-session");
+    expect(payload.balance.ok).toBe(true);
+    expect(payload.deprecated).toBe(true);
+  });
+
+  it("returns admin-only revenue summaries after organization admin access", async () => {
+    listSponsorAdminDataMock.mockResolvedValue({
+      organizationId: seedState.organization.id,
+      teams: seedState.teams,
+      sponsors: seedState.sponsors,
+      billingRecords: [
+        {
+          id: "billing-invoice",
+          sponsorId: seedState.sponsors[0]!.id,
+          invoiceReference: "inv_pending",
+          amountCents: 10000,
+          currency: "usd",
+          status: "invoice_ready",
+          paymentProofStatus: "awaiting_invoice"
+        },
+        {
+          id: "billing-paid",
+          sponsorId: seedState.sponsors[0]!.id,
+          invoiceReference: "inv_paid",
+          amountCents: 25000,
+          currency: "usd",
+          status: "payment_recorded",
+          paymentProofStatus: "paid",
+          confirmedAt: "2026-07-26T15:00:00.000Z"
+        },
+        {
+          id: "billing-draft",
+          sponsorId: seedState.sponsors[0]!.id,
+          invoiceReference: "draft",
+          amountCents: 99000,
+          currency: "usd",
+          status: "draft",
+          paymentProofStatus: "not_requested"
+        }
+      ],
+      isSupabaseBacked: true,
+      message: "Sponsor records are loaded."
+    });
+
+    const response = await getAdminRevenueSummary(getRequest());
+    const payload = await response.json();
+
+    expect(response.status).toBe(200);
+    expect(requireActiveOrganizationAdminMock).toHaveBeenCalledWith({
+      db: expect.anything(),
+      organizationId: seedState.organization.id,
+      userId: "user-live-session",
+      action: "view league revenue"
+    });
+    expect(payload.revenueSummary.sponsorInvoiceCents).toBe(35000);
+    expect(payload.revenueSummary.confirmedSponsorPaymentCents).toBe(25000);
+    expect(payload.revenueSummary.organizationId).toBe(seedState.organization.id);
+    expect(payload.revenueSummary.seasonId).toBe(seedState.activeSeason.id);
+    expect(payload.revenueSummary.registrationFeeCents).toBeNull();
+    expect(payload.sponsorOpportunities).toEqual([]);
+    expect(payload.sponsorOpportunityBoundary).toContain("organization-scoped");
+    expect(payload.message).toContain("webhook-proof gated");
+  });
+
+  it("fails the revenue summary closed when scoped sponsor evidence is unavailable", async () => {
+    listSponsorAdminDataMock.mockResolvedValue({
+      organizationId: seedState.organization.id,
+      teams: [],
+      sponsors: [],
+      billingRecords: [],
+      isSupabaseBacked: false,
+      message: "Sponsor records could not be loaded safely."
+    });
+
+    const response = await getAdminRevenueSummary(getRequest());
+    const payload = await response.json();
+
+    expect(response.status).toBe(503);
+    expect(payload).toEqual({
+      ok: false,
+      message: "Sponsor records could not be loaded safely."
     });
   });
 
@@ -832,7 +1057,8 @@ describe("live action API routes", () => {
       actorUserId: "client-spoof",
       playerId: "player-1",
       parentUserId: "parent-1",
-      relationship: "guardian"
+      relationship: "guardian",
+      verificationNote: "Confirmed with family access records."
     }));
 
     expect(response.status).toBe(200);
@@ -841,7 +1067,20 @@ describe("live action API routes", () => {
       actorUserId: "user-live-session",
       playerId: "player-1",
       parentUserId: "parent-1",
-      relationship: "guardian"
+      relationship: "guardian",
+      verificationNote: "Confirmed with family access records."
     });
+  });
+
+  it("rejects guardian link repair without verification evidence", async () => {
+    const response = await postGuardianRepair(jsonRequest({
+      organizationId: "org-1",
+      playerId: "player-1",
+      parentUserId: "parent-1",
+      relationship: "guardian"
+    }));
+
+    expect(response.status).toBe(400);
+    expect(repairGuardianLinkMock).not.toHaveBeenCalled();
   });
 });

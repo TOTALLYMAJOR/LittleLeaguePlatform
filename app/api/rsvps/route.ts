@@ -18,14 +18,35 @@ export async function POST(request: Request) {
   if (!responses.has(response)) {
     return NextResponse.json({ ok: false, message: "Unsupported RSVP response." }, { status: 400 });
   }
+  const clientActionId = request.headers.get("idempotency-key")?.trim() ?? "";
+  const expectedLockVersion = Number(body.expectedLockVersion);
+  const expectedScheduleVersion = Number(body.expectedScheduleVersion);
+  if (!clientActionId || !Number.isInteger(expectedLockVersion) || expectedLockVersion < 0
+    || !Number.isInteger(expectedScheduleVersion) || expectedScheduleVersion < 1) {
+    return NextResponse.json({
+      ok: false,
+      message: "RSVP requires an action receipt and current record versions."
+    }, { status: 400 });
+  }
 
   const result = await updateParentRsvp({
     eventId: String(body.eventId ?? ""),
     playerId: String(body.playerId ?? ""),
     parentUserId: auth.user.id,
     response: response as "going" | "not_going" | "maybe" | "cancelled",
-    note: body.note ? String(body.note) : undefined
+    note: body.note ? String(body.note) : undefined,
+    expectedLockVersion,
+    expectedScheduleVersion,
+    clientActionId,
+    ...(request.headers.get("x-leaguepilot-offline-replay") === "true"
+      ? { offlineReplay: true }
+      : {})
   });
 
-  return NextResponse.json(result, { status: result.ok ? 200 : 400 });
+  const status = result.ok
+    ? 200
+    : result.code === "schedule_changed" || result.code === "guardian_conflict"
+      ? 409
+      : 400;
+  return NextResponse.json(result, { status });
 }

@@ -1,8 +1,10 @@
 # Tech Stack
 
-This file tracks the intended production stack for Little League HQ. The current app remains a local Next.js scaffold with typed seed data and browser-session reducer state. Production work should reuse the current code and move capabilities behind real auth, persistence, policies, and provider adapters.
+This file tracks the intended production stack for LeaguePilot, the public app at `https://www.leaguepilot.us`. The current app is a root Next.js scaffold with Supabase-backed production paths for several authenticated parent, coach, and admin workflows, plus typed seed fallback where live rows or auth context are unavailable. Production work should keep moving capabilities behind real auth, persistence, policies, and provider adapters without describing fallback state as production truth.
 
 ## Direction
+
+Use `LeaguePilot` for public product naming and `leaguepilot.us` as the public production app surface. Legacy Little League HQ wording is historical/internal unless a specific existing artifact still depends on it.
 
 Build mobile-first.
 
@@ -14,6 +16,7 @@ The first shippable mobile experience should be a responsive PWA from the existi
 | --- | --- | --- |
 | Web app | Next.js App Router, React, TypeScript | Already implemented; good fit for admin, coach, parent, PWA, and server/client boundaries. |
 | Styling | Current CSS with design tokens | Reuse existing styles, dark mode, team branding, and sport theme presets before adding a UI framework. |
+| Motion | Motion for React (`motion`) | Installed for targeted client-side animation. Use `motion/react` only in client components, animate transform/opacity, and respect reduced-motion preferences. No required workflow should depend on animation. |
 | Mobile first | PWA first, Expo later | Fastest reuse path. Native app should share domain contracts and policies if/when added. |
 | Database | Supabase Postgres | Fits teams, seasons, rosters, registrations, events, RSVPs, chat, notifications, sponsors, themes, and audits. |
 | Auth | Supabase Auth | Aligns with Supabase RLS and role-scoped parent/coach/admin access. |
@@ -22,7 +25,7 @@ The first shippable mobile experience should be a responsive PWA from the existi
 | Push notifications | Web Push for PWA; Expo Notifications for native | Start with explicit opt-in Web Push. Use Expo Notifications only if a native app is added. |
 | Maps | Google Maps Platform | Use API-backed embeds/markers later; current app can keep Google Maps links until provider setup. |
 | Weather | NWS first, Open-Meteo fallback, Tomorrow.io premium adapter | NWS is best free default for U.S. teams. Open-Meteo is useful fallback. Tomorrow.io is optional later for hyperlocal/premium weather. |
-| Media | Google Photos and YouTube links first | Reuse current MVP path. Add validation, moderation, and optional storage only when needed. |
+| Media | Google Photos and YouTube links first | Reuse current MVP path. Drill videos store YouTube metadata references only through server-side Data API validation and official embeds; add upload/storage only when needed. |
 | Payments/sponsors | Local sponsor records first; Stripe later only if payments are real | Avoid payment complexity until sponsor billing/invoices are in scope. |
 | AI | Deterministic first; optional OpenAI Responses API rewrite path | Parent Replay remains deterministic local guidance. AI Coach Workspace can request server-side OpenAI rewrites only for assigned coaches/admins when provider env is configured; all generated learning plans remain draft/reviewed. |
 | Deployment | Vercel or Docker-capable Node host | Current hosted path is Vercel plus Supabase HTTPS APIs. Do not require Vercel Static IP unless direct database IP allowlisting becomes an explicit fixed-egress requirement. Keep Next standalone build working. |

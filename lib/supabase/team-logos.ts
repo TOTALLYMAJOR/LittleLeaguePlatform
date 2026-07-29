@@ -36,19 +36,55 @@ export async function saveTeamLogoAsset(input: {
     });
     if (!access.ok) return { ok: false, message: access.message };
 
+    if (input.teamId) {
+      const { data: team, error: teamError } = await withSupabaseTimeout(db
+        .from("teams")
+        .select("id,organization_id")
+        .eq("id", input.teamId)
+        .single(), 7000) as {
+          data: { id: string; organization_id: string } | null;
+          error: { message?: string } | null;
+        };
+
+      if (teamError || !team || team.organization_id !== input.organizationId) {
+        return { ok: false, message: "Logo asset team must belong to the selected organization." };
+      }
+    }
+
+    const policyNotes = input.policyNotes ?? "Pending logo asset review.";
     const { data, error } = await withSupabaseTimeout(db.from("team_logo_assets").insert({
       organization_id: input.organizationId,
       team_id: input.teamId ?? null,
       uploaded_by_user_id: input.actorUserId,
       url: input.url.trim(),
       status: "pending",
-      policy_notes: input.policyNotes ?? "Pending logo asset review."
-    }).select("id,url,status,created_at").single(), 7000) as {
-      data: { id: string; url: string; status: string; created_at: string } | null;
+      policy_notes: policyNotes
+    }).select("id,organization_id,team_id,uploaded_by_user_id,url,status,policy_notes,created_at,reviewed_at,reviewed_by_user_id").single(), 7000) as {
+      data: {
+        id: string;
+        organization_id: string;
+        team_id: string | null;
+        uploaded_by_user_id: string | null;
+        url: string;
+        status: "pending" | "approved" | "rejected" | "removed";
+        policy_notes: string | null;
+        created_at: string;
+        reviewed_at: string | null;
+        reviewed_by_user_id: string | null;
+      } | null;
       error: { message?: string } | null;
     };
 
     if (error || !data) return { ok: false, message: "Logo asset could not be saved." };
+
+    const { data: organization } = await withSupabaseTimeout(db.from("organizations")
+      .update({ logo_status: "queued" })
+      .eq("id", input.organizationId)
+      .select("logo_status")
+      .single(), 7000) as {
+        data: { logo_status: "queued" | "approved" | "not_configured" } | null;
+        error: { message?: string } | null;
+      };
 
     await withSupabaseTimeout(db.from("audit_events").insert({
       organization_id: input.organizationId,
@@ -59,7 +95,23 @@ export async function saveTeamLogoAsset(input: {
       summary: "Team logo asset submitted for brand governance review."
     }), 7000);
 
-    return { ok: true, message: "Logo asset saved for review.", logoAsset: data };
+    return {
+      ok: true,
+      message: "Logo asset saved for review.",
+      tenantLogoStatus: organization?.logo_status,
+      logoAsset: {
+        id: data.id,
+        organizationId: data.organization_id,
+        teamId: data.team_id ?? undefined,
+        uploadedByUserId: data.uploaded_by_user_id ?? undefined,
+        url: data.url,
+        status: data.status,
+        policyNotes: data.policy_notes ?? undefined,
+        createdAt: data.created_at,
+        reviewedAt: data.reviewed_at ?? undefined,
+        reviewedByUserId: data.reviewed_by_user_id ?? undefined
+      }
+    };
   } catch {
     return { ok: false, message: "Logo asset could not reach Supabase." };
   }

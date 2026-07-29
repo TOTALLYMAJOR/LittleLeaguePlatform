@@ -37,8 +37,12 @@ export async function POST(request: Request) {
     teamId: String(body.teamId ?? ""),
     actorUserId: auth.user.id,
     focusAreas: requestedFocusAreas as PracticeFocusArea[],
-    draft: body.draft
+    draft: body.draft,
+    practiceRunId: body.practiceRunId ? String(body.practiceRunId) : undefined
   });
 
-  return NextResponse.json(result, { status: result.ok ? 201 : 400 });
+  return NextResponse.json({
+    ...result,
+    compatibility: "This route now saves a draft only. Approval and publication are separate operations."
+  }, { status: result.ok ? 201 : 400 });
 }

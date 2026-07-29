@@ -1,10 +1,11 @@
-import { MembershipAdminClient } from "@/components/feature-panels";
-import { listAdminMembershipData } from "@/lib/supabase/memberships";
+import { AdminMembershipsSurface } from "../_surfaces";
 
 export const dynamic = "force-dynamic";
 
 export default async function MembershipAdminPage() {
-  const data = await listAdminMembershipData();
-
-  return <MembershipAdminClient initialData={data} />;
+  return <AdminMembershipsSurface />;
 }
+
+export const metadata = {
+  title: "Memberships"
+};

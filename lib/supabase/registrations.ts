@@ -1,5 +1,6 @@
 import { seedState, type RegistrationRequest } from "@/lib/domain";
 import { createSupabaseAdminClient } from "./admin";
+import { isCurrentTeamRow, selectCurrentTeamsOrAll, type TeamLifecycleRow } from "./team-lifecycle";
 import { withSupabaseTimeout } from "./timeout";
 
 export interface PublicRegistrationInput {
@@ -22,26 +23,19 @@ export interface RegistrationServiceResult {
   request?: RegistrationRequest;
 }
 
-function normalizeRegistrationInput(input: PublicRegistrationInput) {
-  return {
-    teamId: input.teamId.trim(),
-    parentName: input.parentName.trim(),
-    parentEmail: input.parentEmail.trim().toLowerCase(),
-    playerFirstName: input.playerFirstName.trim(),
-    playerLastInitial: input.playerLastInitial.trim().slice(0, 1).toUpperCase()
-  };
-}
+type RegistrationTeamRow = TeamLifecycleRow & {
+  id: string;
+  name: string;
+  division: string;
+};
 
-function validateRegistrationInput(input: ReturnType<typeof normalizeRegistrationInput>) {
-  if (!input.teamId) return "Registration requires a team.";
-  if (!input.parentName || !input.playerFirstName || !input.playerLastInitial) {
-    return "Parent name, player first name, and player last initial are required.";
-  }
-  if (!input.parentEmail.includes("@")) return "Enter a valid parent email.";
-  return null;
-}
+type RegistrationTeamAccessRow = TeamLifecycleRow & {
+  id: string;
+  organization_id: string;
+  season_id: string;
+};
 
-function mapRegistrationRow(row: {
+type RegistrationRequestRow = {
   id: string;
   organization_id: string;
   season_id: string;
@@ -54,7 +48,35 @@ function mapRegistrationRow(row: {
   created_at: string;
   reviewed_at: string | null;
   reviewed_by_user_id: string | null;
-}): RegistrationRequest {
+};
+
+type UnsafeSupabase = {
+  // Lifecycle columns landed after generated database types; keep this adapter
+  // dynamic until the generated types are refreshed.
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  from(table: string): any;
+};
+
+function normalizeRegistrationInput(input: PublicRegistrationInput) {
+  return {
+    teamId: input.teamId.trim(),
+    parentName: input.parentName.trim(),
+    parentEmail: input.parentEmail.trim().toLowerCase(),
+    playerFirstName: input.playerFirstName.trim(),
+    playerLastInitial: input.playerLastInitial.trim().slice(0, 1).toUpperCase()
+  };
+}
+
+function validateRegistrationInput(input: ReturnType<typeof normalizeRegistrationInput>) {
+  if (!input.teamId) return "Choose the team your child is connected to.";
+  if (!input.parentName || !input.playerFirstName || !input.playerLastInitial) {
+    return "Enter your name, your child’s first name, and your child’s last initial.";
+  }
+  if (!input.parentEmail.includes("@")) return "Enter a valid email address.";
+  return null;
+}
+
+function mapRegistrationRow(row: RegistrationRequestRow): RegistrationRequest {
   return {
     id: row.id,
     organizationId: row.organization_id,
@@ -81,15 +103,29 @@ function fallbackTeamOptions(): RegistrationTeamOption[] {
 
 export async function listRegistrationTeamOptions(): Promise<RegistrationTeamOption[]> {
   try {
-    const supabase = createSupabaseAdminClient();
+    const supabase = createSupabaseAdminClient() as unknown as UnsafeSupabase;
+    const configuredOrganizationId = (
+      process.env.PUBLIC_ORGANIZATION_ID
+      ?? process.env.PUBLIC_SCHEDULE_ORGANIZATION_ID
+    )?.trim();
+    let organizationQuery = supabase.from("organizations").select("id,created_at");
+    organizationQuery = configuredOrganizationId
+      ? organizationQuery.eq("id", configuredOrganizationId)
+      : organizationQuery.order("created_at", { ascending: true });
+    const { data: organizations } = await withSupabaseTimeout(organizationQuery.limit(1)) as {
+      data: Array<{ id: string; created_at: string }> | null;
+    };
+    const organizationId = organizations?.[0]?.id;
+    if (!organizationId) return fallbackTeamOptions();
     const { data, error } = await withSupabaseTimeout(supabase
       .from("teams")
-      .select("id,name,division")
+      .select("id,name,division,status,seasons(status)")
+      .eq("organization_id", organizationId)
       .order("division", { ascending: true })
-      .order("name", { ascending: true }));
+      .order("name", { ascending: true })) as { data: RegistrationTeamRow[] | null; error: unknown };
 
     if (error || !data?.length) return fallbackTeamOptions();
-    return data.map((team) => ({
+    return selectCurrentTeamsOrAll(data as RegistrationTeamRow[]).map((team) => ({
       id: team.id,
       name: team.name,
       division: team.division
@@ -120,15 +156,18 @@ export async function createPendingRegistration(input: PublicRegistrationInput):
   if (validationMessage) return { ok: false, message: validationMessage };
 
   try {
-    const supabase = createSupabaseAdminClient();
+    const supabase = createSupabaseAdminClient() as unknown as UnsafeSupabase;
     const { data: team, error: teamError } = await withSupabaseTimeout(supabase
       .from("teams")
-      .select("id,organization_id,season_id")
+      .select("id,organization_id,season_id,status,seasons(status)")
       .eq("id", normalized.teamId)
-      .single(), 7000);
+      .single(), 7000) as { data: RegistrationTeamAccessRow | null; error: unknown };
 
     if (teamError || !team) {
-      return { ok: false, message: "Registration requires a known team." };
+      return { ok: false, message: "We could not find that team. Choose another team or contact the league." };
+    }
+    if (!isCurrentTeamRow(team)) {
+      return { ok: false, message: "That team is not accepting access requests right now. Contact the league for help." };
     }
 
     const { data, error } = await withSupabaseTimeout(supabase
@@ -144,19 +183,19 @@ export async function createPendingRegistration(input: PublicRegistrationInput):
         status: "pending"
       })
       .select("id,organization_id,season_id,team_id,parent_name,parent_email,player_first_name,player_last_initial,status,created_at,reviewed_at,reviewed_by_user_id")
-      .single(), 7000);
+      .single(), 7000) as { data: RegistrationRequestRow | null; error: unknown };
 
     if (error || !data) {
-      return { ok: false, message: "Registration could not be saved. Please try again." };
+      return { ok: false, message: "We could not send your request right now. Your entries are still here so you can try again." };
     }
 
     return {
       ok: true,
-      message: "Registration request saved for admin review. No account access was granted.",
+      message: "Your request was received. A league administrator will review the match before private team details appear.",
       request: mapRegistrationRow(data)
     };
   } catch {
-    return { ok: false, message: "Registration could not reach the server. Please try again." };
+    return { ok: false, message: "We could not send your request right now. Check your connection and try again." };
   }
 }
 

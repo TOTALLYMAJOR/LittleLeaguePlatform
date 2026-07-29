@@ -1,88 +1,106 @@
-# Little League HQ — MVP Prototype v3
+# LeaguePilot
 
-A stronger runnable static prototype for a private youth sports organization platform.
+LeaguePilot is the public app and product identity for this youth sports operations platform. The production public domain is `https://www.leaguepilot.us`, with `https://leaguepilot.us` kept as the apex alias.
 
-## What improved in v3
+The app is private software for league admins, coaches, and parent/guardian accounts. The current repo is a root-level Next.js App Router + TypeScript app with Supabase-backed production paths for several authenticated workflows and typed seed fallbacks where live rows or auth context are unavailable.
 
-- Added parent/coach friendly My Team home screen
-- Added onboarding checklist
-- Added invite sender simulation
-- Added invite status tracking
-- Added role permission matrix
-- Added production roadmap screen
-- Added calendar-style schedule cards
-- Added clearer launch readiness signals
-- Kept v2 improvements including prototype login screen
-- Added parent self-registration flow
-- Added registration review queue
-- Added roster management screen
-- Added player edit/add modals
-- Added roster CSV export
-- Added notification center
-- Added push notification preferences
-- Added stronger child privacy banner
-- Added YouTube in-app embed preview
-- Added Google Photos in-app browser placeholder
-- Added more role-aware permissions
-- Added cleaner mobile navigation and privacy-first copy
+The original static MVP prototype remains available under `public/prototype/` and can be viewed at `/prototype/index.html`.
 
-## Included MVP screens
+## Current Product Truth
 
-- Login / role preview
-- Dashboard
-- Teams
-- Rosters
-- Master schedule
-- Admin-only score entry
-- Standings
-- Team group chat
-- Coach-parent private messaging
-- Google Photos + YouTube media links
-- Parent registration queue
-- CSV roster import validation
-- CSV schedule import validation
-- Notification preferences and log
-- Read-only season archive simulation
-- Chat deletion after season archive
+- Public-facing copy should use `LeaguePilot` as the app name. Treat legacy `Little League HQ` wording as historical/internal prototype language unless a specific doc or migration still needs it.
+- Children do not log in. Parent/guardian accounts own child access.
+- Player display names stay privacy-preserving outside admin-only contexts.
+- Parent, coach, and admin routes use role-aware shells and scoped server data.
+- Supabase Auth, route handlers, service adapters, and RLS enforce production boundaries where slices are connected.
+- Notification, weather, Parent Replay, AI Coach, sponsor billing, and provider-delivery records are draft/review/proof surfaces unless a provider slice explicitly enables live sends, payments, uploads, or native distribution.
+- Enterprise planning artifacts are tracked under `docs/enterprise/`.
 
-## Product assumptions baked into this prototype
+## Run Locally
 
-- One organization only.
-- Divisions are 3U, 4U, 5U, and 6U.
-- Players are children, so they do not log in.
-- Parent/guardian accounts represent child players.
-- Player display name should be first name + last initial.
-- Team spaces require login in the real app.
-- Parents, coaches, and org admin can add Google Photos and YouTube links.
-- Media opens inside the app in the production build.
-- Org admin uploads rosters and schedule CSV files.
-- Coaches can edit assigned rosters.
-- Only org admin can enter scores.
-- Standings are visible to all logged-in parents and coaches.
-- Chat history is deleted after the season.
-- Archived seasons preserve non-chat records and become read-only.
+Install dependencies:
 
-## Run locally
+```bash
+npm install
+```
 
-Open `index.html` in a browser.
+Start the Next.js dev server:
 
-No build step is required.
+```bash
+npm run dev
+```
 
-## Suggested production stack
+Open `http://localhost:3000/`.
 
-- Web/admin app: Next.js + TypeScript
-- Mobile app: Expo React Native
-- Backend: Supabase Postgres
-- Auth: Supabase Auth
-- Realtime chat: Supabase Realtime
-- Push notifications: Expo Notifications
-- Email/SMS: provider integration such as SendGrid/Postmark + Twilio
-- Media MVP: store only Google Photos and YouTube links
+## Verify
 
-## Next production milestone
+Core local checks:
 
-Turn this static prototype into a real Supabase-backed application with authentication, row-level security, database migrations, server-side CSV imports, push tokens, invite links, and deployed web/mobile builds.
+```bash
+npm run typecheck
+npm test
+npm run build
+npm audit
+```
 
-## v3 focus
+Docker smoke:
 
-This version is better for showing the idea to a league director, coach, or potential developer because it explains what is already simulated, what the real app permissions should be, and what production phases come next.
+```bash
+docker compose up -d --build
+curl -I http://localhost:8081/
+docker compose down
+```
+
+Preferred make targets:
+
+```bash
+make validate
+make up
+make smoke
+make down
+```
+
+## Hosted And QA Proof
+
+Supabase QA proof uses seeded QA users and environment-specific secrets:
+
+```bash
+npm run supabase:qa-users
+npm run qa:rls-proof
+npm run qa:session-proof
+npm run qa:brand-proof
+```
+
+Hosted proof can target the deployed app:
+
+```bash
+QA_PROOF_BASE_URL=https://www.leaguepilot.us npm run qa:session-proof
+QA_PROOF_BASE_URL=https://www.leaguepilot.us npm run qa:ai-coach-proof
+QA_PROOF_BASE_URL=https://www.leaguepilot.us npm run qa:brand-proof
+```
+
+Keep `SUPABASE_SERVICE_ROLE_KEY` server-side or CI-only. Keep provider keys out of `NEXT_PUBLIC_*`.
+
+## Documentation Map
+
+| Area | Source |
+| --- | --- |
+| Feature truth | `docs/Features.md` |
+| Capability and production gaps | `docs/capability-matrix.md` |
+| Enterprise artifact packet | `docs/enterprise/README.md` |
+| Supabase schema and RLS shape | `docs/supabase-data-model.md`, `supabase/migrations/` |
+| API contract draft | `docs/api/openapi.yaml`, `docs/enterprise/api-specification.md` |
+| Architecture and agent boundaries | `docs/agentic-architecture.md`, `docs/adr/` |
+| Production task board | `docs/production-task-board.md` |
+| Operations and QA proof | `docs/runbook.md`, `docs/production-audit-action-items.md` |
+| Privacy and provider rules | `docs/privacy-security.md`, `docs/codex-rules.md` |
+
+## Agent Skill Baseline
+
+Check the local skill baseline before changing agent workflow, React/Next.js surfaces, Supabase/API runtime seams, hosted proof, browser evidence, or publish flow:
+
+```bash
+npm run check:skills
+```
+
+The repo-local runtime skill lives at `.agents/skills/leaguepilot-api-runtime-resilience/SKILL.md` and preserves this app's Next.js, Supabase, RLS, provider-boundary, and child-privacy rules.

@@ -1,0 +1,41 @@
+{
+  "generatedAt": "2026-07-24T14:44:03.440Z",
+  "baseUrl": "http://127.0.0.1:3021",
+  "supabaseProjectRef": "zgrcyhronrjojslxvkrw",
+  "proofBoundary": "Signed-in local browser against fixed fictional QA records. No provider send, official schedule mutation, or real-family identity is used.",
+  "qaOrganization": "Little League HQ",
+  "multiChildContext": {
+    "status": "passed",
+    "children": [
+      "Mason T.",
+      "Sam R."
+    ],
+    "linkedTeams": [
+      "Tiny Tigers",
+      "Rookie Rockets"
+    ],
+    "excludedTeams": [
+      "Archived Tigers"
+    ]
+  },
+  "replyPersistence": {
+    "status": "passed",
+    "messageId": "83d62919-3258-4458-9013-8c605243d7b8",
+    "teamId": "33333333-3333-4333-8333-333333333332",
+    "authorMatchesSignedInParent": true,
+    "providerSendsExecuted": 0
+  },
+  "criticalAcknowledgment": {
+    "status": "passed",
+    "notificationId": "56f2d309-023b-4014-8a20-bd1176e31bcd",
+    "attemptId": "d7a89b40-ec2b-44b8-8e19-5a29d061a7b6",
+    "attemptStatus": "suppressed",
+    "providerAccepted": false,
+    "delivered": false,
+    "acknowledged": true,
+    "auditEventId": "0e327110-c2e9-437a-8721-677c0b3780f7",
+    "attendanceChanged": false,
+    "transportationChanged": false,
+    "providerSendsExecuted": 0
+  }
+}

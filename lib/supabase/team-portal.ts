@@ -19,6 +19,7 @@ type UnsafeSupabase = {
   // Team Portal reads staged media moderation columns until generated types are refreshed.
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   from(table: string): any;
+  storage: ReturnType<typeof createSupabaseAdminClient>["storage"];
 };
 
 export interface TeamPortalData {
@@ -147,7 +148,7 @@ export async function listTeamPortalData(): Promise<TeamPortalData | null> {
         .order("starts_at", { ascending: true }),
       unsafeSupabase
         .from("media_items")
-        .select("id,team_id,title,media_type,url,created_at,moderation_status,report_count")
+        .select("id,team_id,title,media_type,url,created_at,moderation_status,report_count,private_object_path,scan_completed_at,family_release_approved_at")
         .eq("moderation_status", "approved")
         .order("created_at", { ascending: false }),
       supabase
@@ -248,7 +249,11 @@ export async function listTeamPortalData(): Promise<TeamPortalData | null> {
         createdAt: event.created_at,
         updatedAt: event.updated_at
       })),
-      mediaItems: (mediaItemsResult.data ?? []).map((item: {
+      mediaItems: (await Promise.all((mediaItemsResult.data ?? []).filter((item: {
+        private_object_path: string | null;
+        scan_completed_at: string | null;
+        family_release_approved_at: string | null;
+      }) => !item.private_object_path || Boolean(item.scan_completed_at && item.family_release_approved_at)).map(async (item: {
         id: string;
         team_id: string;
         title: string;
@@ -256,17 +261,25 @@ export async function listTeamPortalData(): Promise<TeamPortalData | null> {
         url: string;
         moderation_status: MediaItem["moderationStatus"];
         report_count: number;
+        private_object_path: string | null;
+        scan_completed_at: string | null;
+        family_release_approved_at: string | null;
         created_at: string;
-      }) => ({
-        id: item.id,
-        teamId: item.team_id,
-        title: item.title,
-        type: item.media_type,
-        url: item.url,
-        moderationStatus: item.moderation_status,
-        reportCount: item.report_count ?? 0,
-        createdAt: item.created_at
-      })),
+      }) => {
+        const signed = item.private_object_path
+          ? await unsafeSupabase.storage.from("leaguepilot-private-media").createSignedUrl(item.private_object_path, 300)
+          : null;
+        return {
+          id: item.id,
+          teamId: item.team_id,
+          title: item.title,
+          type: item.media_type,
+          url: signed?.data?.signedUrl ?? (item.private_object_path ? "" : item.url),
+          moderationStatus: item.moderation_status,
+          reportCount: item.report_count ?? 0,
+          createdAt: item.created_at
+        };
+      }))).filter((item) => Boolean(item.url)),
       parentReplays: (parentReplaysResult.data ?? []).map((replay) => ({
         id: replay.id,
         organizationId: replay.organization_id,

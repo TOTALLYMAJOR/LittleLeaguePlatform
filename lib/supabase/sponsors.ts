@@ -1,4 +1,4 @@
-import { seedState, type Sponsor, type Team, type User } from "@/lib/domain";
+import type { Sponsor, Team } from "@/lib/domain";
 import { createSupabaseAdminClient } from "./admin";
 import { withSupabaseTimeout } from "./timeout";
 
@@ -11,18 +11,32 @@ type UnsafeSupabase = {
 export interface SponsorAdminData {
   organizationId: string;
   teams: Team[];
-  users: User[];
   sponsors: Sponsor[];
+  billingRecords: SponsorBillingRecord[];
   isSupabaseBacked: boolean;
   message: string;
 }
 
-function fallbackSponsorData(message = "Showing local sponsor records until Supabase sponsor rows are available."): SponsorAdminData {
+export interface SponsorBillingRecord {
+  id: string;
+  sponsorId: string;
+  invoiceReference: string;
+  amountCents: number;
+  currency: "usd";
+  status: "draft" | "invoice_ready" | "payment_recorded";
+  paymentProofStatus: "not_requested" | "awaiting_invoice" | "paid";
+  confirmedAt?: string;
+}
+
+function unavailableSponsorData(
+  organizationId: string,
+  message = "Sponsor records are unavailable for the selected organization. No preview rows are editable."
+): SponsorAdminData {
   return {
-    organizationId: seedState.organization.id,
-    teams: seedState.teams,
-    users: seedState.users,
-    sponsors: seedState.sponsors,
+    organizationId,
+    teams: [],
+    sponsors: [],
+    billingRecords: [],
     isSupabaseBacked: false,
     message
   };
@@ -32,31 +46,79 @@ function adminDb() {
   return createSupabaseAdminClient() as unknown as UnsafeSupabase;
 }
 
-export async function listSponsorAdminData(): Promise<SponsorAdminData> {
+export async function listSponsorAdminData(input: {
+  organizationId: string;
+}): Promise<SponsorAdminData> {
+  const organizationId = input.organizationId.trim();
+  if (!organizationId) {
+    return unavailableSponsorData("", "An authorized organization is required before sponsor records can be loaded.");
+  }
+
   try {
     const db = adminDb();
     const [
       organizationsResult,
       teamsResult,
-      profilesResult,
-      sponsorsResult,
-      placementsResult,
-      assetsResult
+      sponsorsResult
     ] = await withSupabaseTimeout(Promise.all([
-      db.from("organizations").select("id,name").order("created_at", { ascending: true }).limit(1),
-      db.from("teams").select("id,organization_id,season_id,division,name,coach_user_id,mascot,primary_color,secondary_color,theme_key").order("division", { ascending: true }),
-      db.from("profiles").select("id,display_name,email,phone,default_role").order("display_name", { ascending: true }),
-      db.from("sponsors").select("id,organization_id,name,level,team_id,url,status").order("created_at", { ascending: false }),
-      db.from("sponsor_placements").select("sponsor_id,placement_key,status").eq("status", "active"),
-      db.from("sponsor_assets").select("sponsor_id,url,status").eq("asset_type", "logo").order("created_at", { ascending: false })
+      db.from("organizations").select("id,name").eq("id", organizationId).maybeSingle(),
+      db.from("teams")
+        .select("id,organization_id,season_id,division,name,coach_user_id,mascot,primary_color,secondary_color,theme_key")
+        .eq("organization_id", organizationId)
+        .order("division", { ascending: true }),
+      db.from("sponsors")
+        .select("id,organization_id,name,level,team_id,url,status")
+        .eq("organization_id", organizationId)
+        .order("created_at", { ascending: false })
     ]), 7000);
 
-    if (organizationsResult.error || teamsResult.error || profilesResult.error || sponsorsResult.error) {
-      return fallbackSponsorData("Supabase sponsor rows are not available yet.");
+    if (organizationsResult.error || teamsResult.error || sponsorsResult.error) {
+      return unavailableSponsorData(organizationId, "Supabase sponsor rows are not available for this organization.");
     }
 
-    const organization = organizationsResult.data?.[0];
-    if (!organization) return fallbackSponsorData("Supabase organization rows are not available yet.");
+    const organization = organizationsResult.data;
+    if (!organization) {
+      return unavailableSponsorData(organizationId, "The selected organization is not available.");
+    }
+
+    const sponsorIds = (sponsorsResult.data ?? []).map((sponsor: { id: string }) => sponsor.id);
+    const emptyResult = Promise.resolve({ data: [], error: null });
+    const [
+      placementsResult,
+      assetsResult,
+      billingResult
+    ] = await withSupabaseTimeout(Promise.all([
+      sponsorIds.length
+        ? db.from("sponsor_placements")
+          .select("sponsor_id,placement_key,status,created_at")
+          .eq("organization_id", organizationId)
+          .in("sponsor_id", sponsorIds)
+          .eq("status", "active")
+          .order("created_at", { ascending: false })
+        : emptyResult,
+      sponsorIds.length
+        ? db.from("sponsor_assets")
+          .select("sponsor_id,url,status,created_at")
+          .in("sponsor_id", sponsorIds)
+          .eq("asset_type", "logo")
+          .eq("status", "approved")
+          .order("created_at", { ascending: false })
+        : emptyResult,
+      sponsorIds.length
+        ? db.from("sponsor_billing_records")
+          .select("id,sponsor_id,invoice_reference,amount_cents,currency,status,payment_proof_status,confirmed_at")
+          .eq("organization_id", organizationId)
+          .in("sponsor_id", sponsorIds)
+          .order("created_at", { ascending: false })
+        : emptyResult
+    ]), 7000);
+
+    if (placementsResult.error || assetsResult.error || billingResult.error) {
+      return unavailableSponsorData(
+        organizationId,
+        "Sponsor placement, reviewed-logo, or payment-proof records could not be loaded safely."
+      );
+    }
 
     const teams: Team[] = (teamsResult.data ?? []).map((team: {
       id: string;
@@ -82,28 +144,16 @@ export async function listSponsorAdminData(): Promise<SponsorAdminData> {
       themeKey: team.theme_key
     }));
 
-    const users: User[] = (profilesResult.data ?? []).map((profile: {
-      id: string;
-      display_name: string;
-      email: string;
-      phone: string | null;
-      default_role: User["role"];
-    }) => ({
-      id: profile.id,
-      role: profile.default_role,
-      name: profile.display_name,
-      email: profile.email,
-      phone: profile.phone ?? undefined
-    }));
-
     const placementBySponsorId = new Map<string, Sponsor["placementKey"]>();
     for (const placement of placementsResult.data ?? []) {
-      placementBySponsorId.set(placement.sponsor_id, placement.placement_key);
+      if (!placementBySponsorId.has(placement.sponsor_id)) {
+        placementBySponsorId.set(placement.sponsor_id, placement.placement_key);
+      }
     }
 
     const logoBySponsorId = new Map<string, string>();
     for (const asset of assetsResult.data ?? []) {
-      if (asset.url && asset.status !== "rejected" && !logoBySponsorId.has(asset.sponsor_id)) {
+      if (asset.url && !logoBySponsorId.has(asset.sponsor_id)) {
         logoBySponsorId.set(asset.sponsor_id, asset.url);
       }
     }
@@ -128,15 +178,35 @@ export async function listSponsorAdminData(): Promise<SponsorAdminData> {
       logoUrl: logoBySponsorId.get(sponsor.id)
     }));
 
+    const billingRecords: SponsorBillingRecord[] = (billingResult.data ?? []).map((record: {
+      id: string;
+      sponsor_id: string;
+      invoice_reference: string;
+      amount_cents: number;
+      currency: "usd";
+      status: SponsorBillingRecord["status"];
+      payment_proof_status: SponsorBillingRecord["paymentProofStatus"];
+      confirmed_at: string | null;
+    }) => ({
+      id: record.id,
+      sponsorId: record.sponsor_id,
+      invoiceReference: record.invoice_reference,
+      amountCents: record.amount_cents,
+      currency: record.currency,
+      status: record.status,
+      paymentProofStatus: record.payment_proof_status,
+      confirmedAt: record.confirmed_at ?? undefined
+    }));
+
     return {
       organizationId: organization.id,
       teams,
-      users,
       sponsors,
+      billingRecords,
       isSupabaseBacked: true,
-      message: "Sponsor records, placements, and logo assets are loaded from Supabase."
+      message: "Sponsor records, active placements, approved logos, and payment-proof records are loaded from Supabase."
     };
   } catch {
-    return fallbackSponsorData("Supabase sponsor rows could not be loaded.");
+    return unavailableSponsorData(organizationId, "Supabase sponsor records could not be loaded safely.");
   }
 }

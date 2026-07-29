@@ -5,6 +5,7 @@ import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import { requireAuthenticatedRouteUser } from "@/lib/supabase/route-auth";
 import { enhanceAiCoachWorkspaceDraft } from "@/lib/services/ai-coach";
 import type { AiCoachWorkspaceDraft } from "@/lib/domain";
+import { recordAiCoachGenerationEvidence } from "@/lib/supabase/ai-generation-evidence";
 
 vi.mock("@/lib/supabase/route-auth", () => ({
   requireAuthenticatedRouteUser: vi.fn()
@@ -22,10 +23,15 @@ vi.mock("@/lib/services/ai-coach", () => ({
   enhanceAiCoachWorkspaceDraft: vi.fn()
 }));
 
+vi.mock("@/lib/supabase/ai-generation-evidence", () => ({
+  recordAiCoachGenerationEvidence: vi.fn()
+}));
+
 const authMock = vi.mocked(requireAuthenticatedRouteUser);
 const adminClientMock = vi.mocked(createSupabaseAdminClient);
 const accessMock = vi.mocked(requireActiveTeamCoachOrOrgAdmin);
 const enhanceMock = vi.mocked(enhanceAiCoachWorkspaceDraft);
+const evidenceMock = vi.mocked(recordAiCoachGenerationEvidence);
 
 function request(body: unknown) {
   return new Request("http://localhost/api/coach/ai-workspace", {
@@ -54,6 +60,11 @@ describe("/api/coach/ai-workspace", () => {
     authMock.mockResolvedValue({ ok: true, user: { id: "user-coach", email: "coach@example.com" } });
     adminClientMock.mockReturnValue({ from: vi.fn() } as never);
     accessMock.mockResolvedValue({ ok: true, message: "Access allowed.", team: { id: "team-tigers", organization_id: "org-1" } });
+    evidenceMock.mockResolvedValue({
+      ok: true,
+      message: "AI source manifest and review evidence recorded.",
+      generationRun: { id: "run-1", created_at: "2026-07-19T10:00:00.000Z", review_status: "draft" }
+    });
     enhanceMock.mockResolvedValue({
       ok: true,
       message: "AI provider draft created for coach review. Nothing was published or sent.",
@@ -61,7 +72,14 @@ describe("/api/coach/ai-workspace", () => {
       model: "gpt-5.5",
       source: "openai",
       draft,
-      reviewNotes: ["review-only"]
+      reviewNotes: ["review-only"],
+      trust: {
+        includedSources: ["visible team chat"],
+        excludedSources: ["Private parent notes"],
+        generatedAt: "2026-07-19T10:00:00.000Z",
+        model: "gpt-5.5",
+        humanReviewRequired: true
+      }
     });
   });
 
@@ -76,6 +94,11 @@ describe("/api/coach/ai-workspace", () => {
       action: "draft AI Coach Workspace provider copy"
     });
     expect(enhanceMock).toHaveBeenCalledWith(expect.objectContaining({ id: "team_onboarding_brief" }));
+    expect(evidenceMock).toHaveBeenCalledWith(expect.objectContaining({
+      organizationId: "org-1",
+      teamId: "team-tigers",
+      actorUserId: "user-coach"
+    }));
   });
 
   it("blocks unauthorized team access without calling the provider", async () => {

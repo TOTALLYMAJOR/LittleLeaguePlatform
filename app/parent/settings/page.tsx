@@ -1,0 +1,11 @@
+import { ParentSettingsSurface } from "../_surfaces";
+
+export const dynamic = "force-dynamic";
+
+export default async function ParentSettingsPage() {
+  return <ParentSettingsSurface />;
+}
+
+export const metadata = {
+  title: "Family Settings"
+};

@@ -1,0 +1,31 @@
+{
+  "capturedAt": "2026-07-24T16:27:00-05:00",
+  "baseUrl": "http://127.0.0.1:3100",
+  "viewport": {
+    "width": 390,
+    "height": 844
+  },
+  "parent": {
+    "route": "/parent/family-access",
+    "session": "signed-in QA parent",
+    "state": "migration unavailable",
+    "message": "Additional guardian review is temporarily unavailable. Existing family access is unchanged.",
+    "formEnabled": false,
+    "documentScrollWidth": 390,
+    "documentClientWidth": 390,
+    "primaryControlHeight": 48,
+    "consoleErrors": 0,
+    "screenshot": "parent-mobile-degraded.png"
+  },
+  "admin": {
+    "route": "/admin/guardian-links",
+    "session": "signed-in QA administrator",
+    "state": "migration unavailable",
+    "message": "Additional guardian review is temporarily unavailable. Existing family access is unchanged.",
+    "documentScrollWidth": 390,
+    "documentClientWidth": 390,
+    "consoleErrors": 0,
+    "screenshot": "admin-mobile-degraded.png"
+  },
+  "scope": "Local signed-in degraded-state browser proof only. Migration 0027, populated lifecycle, cross-family RLS, provider-send count, and hosted behavior remain separate proof gates."
+}

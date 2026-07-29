@@ -1,5 +1,11 @@
-import { ImportsClient } from "@/components/feature-panels";
+import { AdminImportsSurface } from "../_surfaces";
 
-export default function AdminImportsPage() {
-  return <ImportsClient />;
+export const dynamic = "force-dynamic";
+
+export default async function AdminImportsPage() {
+  return <AdminImportsSurface />;
 }
+
+export const metadata = {
+  title: "Imports"
+};

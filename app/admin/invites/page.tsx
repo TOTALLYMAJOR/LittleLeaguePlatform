@@ -1,5 +1,11 @@
-import { AdminInvitesClient } from "@/components/feature-panels";
+import { AdminInvitesSurface } from "../_surfaces";
 
-export default function AdminInvitesPage() {
-  return <AdminInvitesClient />;
+export const dynamic = "force-dynamic";
+
+export default async function AdminInvitesPage() {
+  return <AdminInvitesSurface />;
 }
+
+export const metadata = {
+  title: "Invites"
+};

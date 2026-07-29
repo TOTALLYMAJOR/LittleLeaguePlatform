@@ -1,52 +1,64 @@
+import Image from "next/image";
 import Link from "next/link";
-import { FeatureTierHubClient } from "@/components/feature-panels";
+import { getServerShellAccess, toClientShellAccess } from "@/lib/supabase/shell-access";
 
-const featureLinks = [
-  ["Parent Replay", "/coach/parent-replay", "Coach clicks practice focus areas and generates home activities, a coach video, parent tip, skill cards, and a team quest."],
-  ["Team-specific portal", "/team-portal", "One team surface for weekly digest, Game Day Mode, field maps, learning, memories, volunteers, and skill progress."],
-  ["Coach dashboard", "/coach", "Coach view for assigned teams, RSVP summaries, weather drafts, snacks, volunteers, and Parent Replay."],
-  ["Admin dashboard", "/admin", "League operations view for teams, registration queue, sponsors, notifications, and launch readiness."],
-  ["Archive vault", "/admin/archive", "Review archived seasons, export proof, and read-only boundaries."],
-  ["Guardian links", "/admin/guardian-links", "Repair missing parent-player links and activate team access."],
-  ["Admin operations", "/admin/operations", "Review organization settings, provider inventory, approval queues, and audit logs."],
-  ["Team setup", "/admin/teams", "Manage organization-scoped team records by season and division."],
-  ["Security proof", "/admin/security", "Track RLS, cross-team denial, archived read-only behavior, and production audit evidence."],
-  ["Registration system", "/registration", "Parent self-registration request flow with admin review before account or child access."],
-  ["CSV duplicate detection", "/admin/imports", "Validate roster imports, separate blocking errors from warnings, and simulate an audited commit."],
-  ["Smart invite recovery", "/invite/recover", "Recover pending parent invites without exposing raw tokens or sending real provider messages."],
-  ["Admin health dashboard", "/admin/health", "See launch readiness problems before families report them."],
-  ["Parent dashboard", "/parent", "Show each parent the schedule, coach updates, RSVP needs, and recent media that matter."],
-  ["One-tap RSVP", "/parent/rsvp", "Let parents answer going, not going, or maybe for linked children only."],
-  ["Schedule change alerts", "/schedule", "Queue push, email, and urgent SMS notification records without real sends."],
-  ["Team Chat", "/team-chat", "Give assigned parents and coaches a safe, private space for coach notes and game-day questions."]
-] as const;
+export const dynamic = "force-dynamic";
 
-export default function HomePage() {
+export default async function HomePage() {
+  const access = toClientShellAccess(await getServerShellAccess());
+  const accountHref = access.canParent
+    ? "/parent"
+    : access.canCoach
+      ? "/coach"
+      : access.canAdmin
+        ? "/admin"
+        : access.signedIn
+          ? "/account"
+          : "/auth";
+  const accountLabel = access.signedIn ? "Open my home" : "Sign in";
+
   return (
-    <div className="page">
-      <section className="hero">
-        <span className="eyebrow">Production scaffold</span>
-        <h1>Private youth sports operations, with Parent Replay as the coaching loop.</h1>
-        <p className="lead">
-          This root Next.js app implements MVP feature slices with typed local data. Parent Replay is the signature feature: it helps parents support their kids between practices, not just manage schedules.
-          The original static prototype remains available as a reference at <Link href="/prototype/index.html">/prototype/index.html</Link>.
-        </p>
-      </section>
+    <div className="landing-gateway">
+      <section className="landing-gateway-hero" aria-labelledby="landing-title">
+        <div className="landing-gateway-copy">
+          <p className="landing-gateway-kicker">LeaguePilot</p>
+          <h1 id="landing-title">Your season, organized.</h1>
+          <p className="landing-gateway-summary">
+            Schedules, team access, and local support—clear from the first click.
+          </p>
+          <p className="landing-gateway-privacy">
+            Private by default. Children do not create accounts.
+          </p>
+        </div>
 
-      <section className="grid three">
-        {featureLinks.map(([title, href, body]) => (
-          <Link className="card stack" href={href} key={href}>
-            <h2>{title}</h2>
-            <p className="muted">{body}</p>
+        <div className="landing-gateway-media" aria-hidden="true">
+          <Image
+            alt=""
+            fill
+            priority
+            sizes="(max-width: 760px) 100vw, 58vw"
+            src="/images/leaguepilot-community-game-day-hero.png"
+          />
+        </div>
+
+        <nav className="landing-gateway-actions" aria-label="Get started">
+          <Link className="landing-gateway-action" href="/schedule">
+            <span>Schedule</span>
+            <strong>Games and field updates</strong>
+            <small>View public schedule</small>
           </Link>
-        ))}
+          <Link className="landing-gateway-action" href="/sponsors">
+            <span>Sponsors</span>
+            <strong>Support local youth sports</strong>
+            <small>View sponsor information</small>
+          </Link>
+          <Link className="landing-gateway-action is-primary" href={accountHref}>
+            <span>Account</span>
+            <strong>{accountLabel}</strong>
+            <small>{access.signedIn ? "Continue in your approved role" : "For approved families and staff"}</small>
+          </Link>
+        </nav>
       </section>
-
-      <section className="notice">
-        <strong>Production boundary:</strong> this scaffold uses session-only local state. It does not send email, SMS, or push notifications, does not grant real access, and does not persist production data.
-      </section>
-
-      <FeatureTierHubClient />
     </div>
   );
 }

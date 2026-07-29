@@ -12,9 +12,13 @@ jobs:
     environment: qa
     env:
       QA_SUPABASE_PROJECT_REF: ${{ secrets.QA_SUPABASE_PROJECT_REF }}
+      SUPABASE_QA_TARGET_REF: ${{ secrets.QA_SUPABASE_PROJECT_REF }}
+      SUPABASE_QA_PARENT_PROJECT_REF: dkwghvvlbdnnwzbnscvu
+      SUPABASE_QA_TARGET_CONFIRM: seed-isolated-qa-target
       NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.QA_SUPABASE_URL }}
       NEXT_PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.QA_SUPABASE_ANON_KEY }}
       SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.QA_SUPABASE_SERVICE_ROLE_KEY }}
+      PROVIDER_SENDS_ENABLED: "false"
       QA_PROOF_BASE_URL: http://127.0.0.1:3020
     steps:
       - uses: actions/checkout@v4

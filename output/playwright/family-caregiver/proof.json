@@ -1,0 +1,120 @@
+{
+  "baseUrl": "http://localhost:3002",
+  "capturedAt": "2026-07-24T17:34:24.804Z",
+  "proofs": [
+    {
+      "role": "parent-caregiver",
+      "path": "/parent/family-access",
+      "signedIn": true,
+      "matchedText": "Choose exactly what one adult may see and do.",
+      "firstViewportText": "Skip to main content Family tools: Family Access Signed in ROLE parent ORGANIZATION Little League HQ SEASON Spring 2026 TEAM Tiny Tigers ACCESS Current access FAMILY ACCESS Ask the league to connect another trusted adult. Choose one child and team. A league administrator verifies the request before any invitation exists. Most reviews should take one to two business days. Additional guardian review is temporarily unavailable. Existing family access is unchanged. 1 · PROPOSE AN ADULT Who needs access? Child and team No linked children available Adult email Relationship to child Guardian Mother Father Other trusted adult Standard linked-guardian access See this child’s team schedule and official updates Respond for this child and view eligible Parent Replay moments Participate in the family-facing team conversation This does not grant custody authority, medical access, transportation responsibility, schedule editing, roster management, or permission to publish team communication. I confirm this adult should be reviewed for this child and this team only. Send for league review The adult will not receive an invitation from this step. Your email and theirs are visible only to authorized league administrators handling access. 2 · TRACK REVIEW What happens next The league checks your guardian link, the adult identity, and the exact child/team scope. An administrator approves or declines with visible attribution and audit history. If approved, the administrator securely shares a seven-day, one-time sign-in link. The adult must sign in with the exact invited email before access activates. A league administrator can revoke approved access. Corrections do not change custody records, medical information, or the truth of attendance and transportation. REQUEST HISTORY Additional guardian requests No requests yet When you propose another adult, review status will appear here. TEMPORARY CAREGIVER ACCESS Choose exactly what one adult may see and do. Temporary care is separate from guardian access. It covers one child, selected events, a maximum 14-day window, and only the actions you review. Caregiver acceptance required Temporary caregiver access is temporarily unavailable. Existing permissions are unchanged. 1 · PERSON AND CHILD Who needs temporary access? Child and team No linked children available Caregiver email The adult must sign in with this exact email. No guardian membership or team-wide access is created. 2 · EVENTS AND TIME When does access apply? Selected events No upcoming events are available for this child. Access starts Access expires Both fields begin blank. The window must include every selected event and cannot exceed 14 days. 3 · ALLOWED ACTIONS Minimum necessary access View current Event Passports for selected events only Allow pickup for selected events during this window Pickup permission fails closed when a restriction is recorded. The system does not reveal the restriction. Contact league staff who handle family access for review. ALWAYS PROHIBITED Temporary care never includes Medical or health information and medical decisions Custody authority or guardian membership RSVP or attendance changes Official schedule changes or team communication publishing Roster, other-child, or team-wide access Passing this access to another person No medical notes, custody details, home address, general team conversation, or other child records are included. 4 · REVIEW AND CREATE ACCESS Confirm the exact temporary scope ADULT Not entered CHILD/TEAM Not selected EVENTS None selected WINDOW Not set PICKUP Not allowed ACTIVATION Only after exact-email caregiver acceptance I reviewed the child, selected events, time window, allowed actions, and prohibited actions. I understand this does not send a message. Create temporary caregiver access After saving, copy the one-time review link and share it yourself. No email, SMS, push, or team message is sent automatically. TEMPORARY-CARE HISTORY Current and past temporary care No temporary caregiver access Reviewed scope, acceptance, expiry, and revocation will appear here. HM Today SC Schedule MS Messages FA Team ST More Route ready",
+      "browserErrors": [],
+      "viewports": [
+        {
+          "name": "mobile-375",
+          "width": 375,
+          "height": 812,
+          "clientWidth": 375,
+          "scrollWidth": 375
+        },
+        {
+          "name": "mobile-390",
+          "width": 390,
+          "height": 844,
+          "clientWidth": 390,
+          "scrollWidth": 390
+        },
+        {
+          "name": "tablet-768",
+          "width": 768,
+          "height": 1024,
+          "clientWidth": 768,
+          "scrollWidth": 768
+        },
+        {
+          "name": "desktop-1440",
+          "width": 1440,
+          "height": 1100,
+          "clientWidth": 1440,
+          "scrollWidth": 1440
+        }
+      ]
+    },
+    {
+      "role": "caregiver-acceptance",
+      "path": "/caregiver/accept",
+      "signedIn": true,
+      "matchedText": "Review every permission before accepting.",
+      "firstViewportText": "Skip to main content Account help: Accept temporary care Signed in PRIVACY Private team details stay hidden on this page TEMPORARY CAREGIVER INVITATION Review every permission before accepting. The link proves the guardian-reviewed scope. Your exact-email sign-in proves who accepts it. Time-bound access Open the caregiver link or paste its one-time code. Check invitation One-time caregiver code Check temporary scope The code is short-lived, single-use, removed from the URL, and excluded from analytics. What you will review Masked identity, child/team, selected events, window, allowed actions, prohibited actions, and current state appear after verification. Route ready",
+      "browserErrors": [],
+      "viewports": [
+        {
+          "name": "mobile-375",
+          "width": 375,
+          "height": 812,
+          "clientWidth": 375,
+          "scrollWidth": 375
+        },
+        {
+          "name": "mobile-390",
+          "width": 390,
+          "height": 844,
+          "clientWidth": 390,
+          "scrollWidth": 390
+        },
+        {
+          "name": "tablet-768",
+          "width": 768,
+          "height": 1024,
+          "clientWidth": 768,
+          "scrollWidth": 768
+        },
+        {
+          "name": "desktop-1440",
+          "width": 1440,
+          "height": 1100,
+          "clientWidth": 1440,
+          "scrollWidth": 1440
+        }
+      ]
+    },
+    {
+      "role": "caregiver-portal",
+      "path": "/caregiver",
+      "signedIn": true,
+      "matchedText": "No current temporary access.",
+      "firstViewportText": "Skip to main content Account help: Temporary caregiver Signed in PRIVACY Private team details stay hidden on this page TEMPORARY CAREGIVER VIEW No current temporary access. Temporary caregiver access is temporarily unavailable. Existing permissions are unchanged. Access inactive Private caregiver data is unavailable Revoked, expired, missing, or unavailable access reveals no child or event details. Any caregiver-specific web cache is cleared at this contact. Check another invitation Route ready",
+      "browserErrors": [],
+      "viewports": [
+        {
+          "name": "mobile-375",
+          "width": 375,
+          "height": 812,
+          "clientWidth": 375,
+          "scrollWidth": 375
+        },
+        {
+          "name": "mobile-390",
+          "width": 390,
+          "height": 844,
+          "clientWidth": 390,
+          "scrollWidth": 390
+        },
+        {
+          "name": "tablet-768",
+          "width": 768,
+          "height": 1024,
+          "clientWidth": 768,
+          "scrollWidth": 768
+        },
+        {
+          "name": "desktop-1440",
+          "width": 1440,
+          "height": 1100,
+          "clientWidth": 1440,
+          "scrollWidth": 1440
+        }
+      ]
+    }
+  ]
+}

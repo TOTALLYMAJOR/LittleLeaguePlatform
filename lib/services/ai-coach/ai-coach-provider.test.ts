@@ -16,6 +16,43 @@ const baseDraft: AiCoachWorkspaceDraft = {
   boundary: "Coach or admin must review before sharing; no provider send occurs."
 };
 
+function responsePayload(output: Record<string, unknown>) {
+  return {
+    id: "resp_test",
+    object: "response",
+    created_at: 1784476800,
+    status: "completed",
+    error: null,
+    incomplete_details: null,
+    instructions: null,
+    max_output_tokens: null,
+    model: "gpt-5.5",
+    output: [{
+      id: "msg_test",
+      type: "message",
+      status: "completed",
+      role: "assistant",
+      content: [{
+        type: "output_text",
+        annotations: [],
+        logprobs: [],
+        text: JSON.stringify(output)
+      }]
+    }],
+    parallel_tool_calls: true,
+    previous_response_id: null,
+    reasoning: { effort: null, summary: null },
+    store: false,
+    temperature: 1,
+    tool_choice: "auto",
+    tools: [],
+    top_p: 1,
+    truncation: "disabled",
+    usage: null,
+    metadata: {}
+  };
+}
+
 describe("AI Coach provider", () => {
   it("stays disabled until the provider flag and API key are present", () => {
     expect(getAiCoachProviderReadiness({ apiKey: "key", enabled: false }).configured).toBe(false);
@@ -25,16 +62,18 @@ describe("AI Coach provider", () => {
   it("blocks contact and private details before a provider call", () => {
     expect(scanAiCoachDraftForProvider({ ...baseDraft, body: `${baseDraft.body}\nCall 555-123-4567.` }).ok).toBe(false);
     expect(scanAiCoachDraftForProvider({ ...baseDraft, body: `${baseDraft.body}\nPrivate RSVP note: running late.` }).ok).toBe(false);
+    expect(scanAiCoachDraftForProvider({ ...baseDraft, body: `${baseDraft.body}\nThis was sent to families by email.` }).ok).toBe(false);
+    expect(scanAiCoachDraftForProvider({ ...baseDraft, body: `${baseDraft.body}\nI inferred this from a private note.` }).ok).toBe(false);
   });
 
   it("calls the Responses API with store disabled and returns a coach-reviewed draft", async () => {
-    const fetcher = vi.fn<typeof fetch>().mockResolvedValue(new Response(JSON.stringify({
-      output_text: JSON.stringify({
+    const fetcher = vi.fn<typeof fetch>().mockResolvedValue(new Response(JSON.stringify(
+      responsePayload({
         title: "AI-refined Tiny Tigers onboarding brief",
         body: "Use this as a coach-reviewed onboarding brief. Blue jersey and arrival reminders are the only sourced discussion items.",
         reviewNotes: ["Used only supplied source evidence.", "Kept output review-only."]
       })
-    }), { status: 200 }));
+    ), { status: 200, headers: { "content-type": "application/json" } }));
 
     const result = await enhanceAiCoachWorkspaceDraft(baseDraft, {
       apiKey: "test-key",
@@ -51,6 +90,32 @@ describe("AI Coach provider", () => {
     const requestBody = JSON.parse(String(fetcher.mock.calls[0]?.[1]?.body));
     expect(requestBody.model).toBe("gpt-5.5");
     expect(requestBody.store).toBe(false);
-    expect(requestBody.input).toContain("guardian-link aggregate");
+    expect(requestBody.instructions).toContain("Use only supplied source evidence");
+    expect(requestBody.instructions).toContain("Do not say it was sent, published, approved, or delivered");
+    expect(JSON.stringify(requestBody.input)).toContain("guardian-link aggregate");
+    expect(requestBody.text.format.type).toBe("json_schema");
+    expect(requestBody.text.format.strict).toBe(true);
+  });
+
+  it("discards provider output that claims publishing or delivery happened", async () => {
+    const fetcher = vi.fn<typeof fetch>().mockResolvedValue(new Response(JSON.stringify(
+      responsePayload({
+        title: "Tiny Tigers onboarding brief",
+        body: "This was sent to families by email. Everyone should arrive early.",
+        reviewNotes: ["Claimed a provider send."]
+      })
+    ), { status: 200, headers: { "content-type": "application/json" } }));
+
+    const result = await enhanceAiCoachWorkspaceDraft(baseDraft, {
+      apiKey: "test-key",
+      enabled: true,
+      model: "gpt-5.5",
+      fetcher
+    });
+
+    expect(result.ok).toBe(false);
+    expect(result.source).toBe("deterministic");
+    expect(result.draft).toBe(baseDraft);
+    expect(result.reviewNotes).toContain("Provider output was discarded.");
   });
 });

@@ -1,6 +1,7 @@
 import { seedState, type ProgramThemeKey } from "@/lib/domain";
 import { requireActiveOrganizationAdmin } from "./access-control";
 import { createSupabaseAdminClient } from "./admin";
+import { verifySeasonArchiveImpactPreview } from "./impact-preview";
 import { withSupabaseTimeout } from "./timeout";
 
 type UnsafeSupabase = {
@@ -73,6 +74,9 @@ export interface SaveAdminSeasonInput {
   startsAt: string;
   endsAt: string;
   status?: "active" | "archived";
+  archiveReason?: string;
+  previewHash?: string;
+  previewExpiresAt?: string;
 }
 
 export interface SaveRosterPlayerInput {
@@ -85,6 +89,10 @@ export interface SaveRosterPlayerInput {
   lastInitial: string;
   jersey?: string;
   rosterStatus?: "active" | "inactive" | "archived";
+}
+
+export interface AdminTeamManagementReadOptions {
+  organizationIds?: string[];
 }
 
 function fallbackTeamManagementData(): AdminTeamManagementData {
@@ -128,31 +136,84 @@ function fallbackTeamManagementData(): AdminTeamManagementData {
   };
 }
 
-export async function listAdminTeamManagementData(): Promise<AdminTeamManagementData> {
+function scopedQuery(query: ReturnType<UnsafeSupabase["from"]>, organizationIds: string[]) {
+  return organizationIds.length === 1
+    ? query.eq("organization_id", organizationIds[0])
+    : query.in("organization_id", organizationIds);
+}
+
+function scopedOrganizationQuery(query: ReturnType<UnsafeSupabase["from"]>, organizationIds: string[]) {
+  return organizationIds.length === 1
+    ? query.eq("id", organizationIds[0])
+    : query.in("id", organizationIds);
+}
+
+function unique(values: Array<string | null | undefined>) {
+  return Array.from(new Set(values.filter((value): value is string => Boolean(value))));
+}
+
+export async function listAdminTeamManagementData(options: AdminTeamManagementReadOptions = {}): Promise<AdminTeamManagementData> {
   try {
     const db = createSupabaseAdminClient() as unknown as UnsafeSupabase;
+    const organizationIds = options.organizationIds?.filter(Boolean) ?? [];
+    if (!organizationIds.length) return fallbackTeamManagementData();
+
     const [
       { data: organizations },
       { data: seasons },
       { data: teams },
-      { data: players },
-      { data: coaches }
+      { data: players }
     ] = await withSupabaseTimeout(Promise.all([
-      db.from("organizations").select("id,name").limit(1),
-      db.from("seasons").select("id,name,status,starts_at,ends_at").order("starts_at", { ascending: false }),
-      db.from("teams").select("id,name,division,season_id,coach_user_id,mascot,theme_key,status").order("division", { ascending: true }).order("name", { ascending: true }),
-      db.from("players").select("id,team_id,season_id,first_name,last_initial,jersey,roster_status").order("first_name", { ascending: true }),
-      db.from("profiles").select("id,display_name,email,default_role").in("default_role", ["coach", "admin"]).order("display_name", { ascending: true })
+      scopedOrganizationQuery(db.from("organizations").select("id,name"), organizationIds).limit(1),
+      scopedQuery(db.from("seasons").select("id,name,status,starts_at,ends_at,organization_id"), organizationIds).order("starts_at", { ascending: false }),
+      scopedQuery(db.from("teams").select("id,name,division,season_id,coach_user_id,mascot,theme_key,status,organization_id"), organizationIds).order("division", { ascending: true }).order("name", { ascending: true }),
+      scopedQuery(db.from("players").select("id,team_id,season_id,first_name,last_initial,jersey,roster_status,organization_id"), organizationIds).order("first_name", { ascending: true })
     ]), 7000) as [
       { data: Array<{ id: string; name: string }> | null },
       { data: Array<{ id: string; name: string; status: "active" | "archived"; starts_at: string; ends_at: string }> | null },
       { data: Array<{ id: string; name: string; division: string; season_id: string; coach_user_id: string | null; mascot: string; theme_key: ProgramThemeKey; status?: "active" | "archived" }> | null },
-      { data: Array<{ id: string; team_id: string; season_id: string; first_name: string; last_initial: string; jersey: string | null; roster_status?: "active" | "inactive" | "archived" }> | null },
-      { data: Array<{ id: string; display_name: string; email: string; default_role: "admin" | "coach" | "parent" }> | null }
+      { data: Array<{ id: string; team_id: string; season_id: string; first_name: string; last_initial: string; jersey: string | null; roster_status?: "active" | "inactive" | "archived" }> | null }
     ];
 
     const organization = organizations?.[0];
     if (!organization || !seasons?.length || !teams) return fallbackTeamManagementData();
+    const teamIds = teams.map((team) => team.id);
+    const [
+      { data: organizationMemberships },
+      { data: teamMemberships }
+    ] = await withSupabaseTimeout(Promise.all([
+      scopedQuery(db
+        .from("organization_memberships")
+        .select("user_id,role,status,organization_id")
+        .in("role", ["admin", "coach"])
+        .eq("status", "active"), organizationIds),
+      teamIds.length
+        ? db
+          .from("team_memberships")
+          .select("user_id,team_id,role,status")
+          .in("team_id", teamIds)
+          .eq("role", "coach")
+          .eq("status", "active")
+        : Promise.resolve({ data: [] })
+    ]), 7000) as [
+      { data: Array<{ user_id: string; role: "admin" | "coach"; status: string; organization_id: string }> | null },
+      { data: Array<{ user_id: string; team_id: string; role: "coach"; status: string }> | null }
+    ];
+    const coachUserIds = unique([
+      ...(organizationMemberships ?? []).map((membership) => membership.user_id),
+      ...(teamMemberships ?? []).map((membership) => membership.user_id),
+      ...teams.map((team) => team.coach_user_id)
+    ]);
+    const { data: coaches } = coachUserIds.length
+      ? await withSupabaseTimeout(db
+        .from("profiles")
+        .select("id,display_name,email,default_role")
+        .in("id", coachUserIds)
+        .in("default_role", ["coach", "admin"])
+        .order("display_name", { ascending: true }), 7000) as {
+          data: Array<{ id: string; display_name: string; email: string; default_role: "admin" | "coach" | "parent" }> | null;
+        }
+      : { data: [] };
     const seasonById = new Map(seasons.map((season) => [season.id, season]));
     const rosterCountByTeamId = new Map<string, number>();
     for (const player of players ?? []) {
@@ -222,6 +283,20 @@ export async function saveAdminSeason(input: SaveAdminSeasonInput) {
       action: "manage organization seasons"
     });
     if (!access.ok) return { ok: false, message: access.message };
+    let archiveImpact:
+      | Awaited<ReturnType<typeof verifySeasonArchiveImpactPreview>>
+      | undefined;
+    if (input.status === "archived") {
+      archiveImpact = await verifySeasonArchiveImpactPreview({
+        organizationId: input.organizationId,
+        seasonId: input.seasonId ?? "",
+        actorUserId: input.actorUserId,
+        reason: input.archiveReason ?? "",
+        previewHash: input.previewHash ?? "",
+        previewExpiresAt: input.previewExpiresAt ?? "",
+      });
+      if (!archiveImpact.ok) return { ok: false, message: archiveImpact.message };
+    }
 
     const archivedAt = input.status === "archived" ? new Date().toISOString() : null;
     const { data: season, error } = await withSupabaseTimeout(db
@@ -249,7 +324,9 @@ export async function saveAdminSeason(input: SaveAdminSeasonInput) {
       action: input.status === "archived" ? "season_archived" : input.seasonId ? "season_updated" : "season_created",
       target_type: "season",
       target_id: season.id,
-      summary: `${season.name} saved with ${season.status} lifecycle status.`
+      summary: input.status === "archived" && archiveImpact?.ok
+        ? `${season.name} archived after impact preview for ${archiveImpact.preview.affectedCount} records. Reason: ${input.archiveReason?.trim()}`
+        : `${season.name} saved with ${season.status} lifecycle status.`
     }), 7000);
 
     return { ok: true, message: "Season setup saved by an active organization admin.", season };

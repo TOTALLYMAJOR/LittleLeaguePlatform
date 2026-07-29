@@ -1,0 +1,39 @@
+version: 1
+
+repository:
+  name: LeaguePilot Missing Production Slices
+  base_branch: codex/ui-ux-100-shell-chat
+
+backlog:
+  path: docs/agentflow-missing-production-backlog.md
+
+workers:
+  maximum: 1
+
+contracts:
+  roots:
+    - lib/domain/
+    - lib/supabase/
+    - supabase/migrations/
+
+validation:
+  task_default:
+    - npm run check:skills
+    - npm run typecheck
+    - git diff --check
+  integration:
+    - npm run check:skills
+    - npm run typecheck
+    - npm test
+    - npm run build
+    - git diff --check
+
+docker:
+  enabled: false
+  compose_file: docker-compose.yml
+
+git:
+  remote: origin
+  push_task_branches: false
+  push_integration_branch: false
+  open_integration_pull_request: false

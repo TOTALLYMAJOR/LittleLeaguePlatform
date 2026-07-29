@@ -12,6 +12,7 @@ import {
   publishBalancedTeamBuild,
   createScheduleEvent,
   createRegistrationRequest,
+  validateRegistrationRequestInput,
   createParentReplay,
   defaultTeamCommunicationCopy,
   detectScheduleConflicts,
@@ -64,6 +65,7 @@ import {
   queueTeamCommunication,
   applyNotificationUnsubscribe,
   recipientAllowsNotification,
+  effectiveNotificationDecision,
   smsUrgencyAllowed,
   sampleRosterCsv,
   seedState,
@@ -106,6 +108,15 @@ import {
   getEmailSponsorPlacement,
   getBannerSponsorPlacement,
   buildSponsorBillingProofs,
+  buildFamilyWalletSummary,
+  buildLeagueRevenueSummary,
+  buildLocalBusinessTeamPage,
+  buildSponsorOpportunities,
+  buildVolunteerMarketplace,
+  buildEquipmentExchange,
+  buildWeatherSafetyDecisionAssistant,
+  buildSponsorSafeMediaGallery,
+  buildFamilyAvailabilityIntelligence,
   buildBrandLaunchValidation,
   buildTeamBrandProfile,
   validateBrandProfile,
@@ -116,6 +127,9 @@ import {
   getAccessibilityContrastChecks,
   getPromptEvalHarness,
   getPrivacyFilters,
+  buildNextLevelCommandCenter,
+  buildDrillVideoCollections,
+  getScheduleConflictSummary,
   getInviteAcceptanceRate,
   getAverageInviteToAccountTimeHours,
   getFailedInviteCount,
@@ -132,6 +146,7 @@ import {
   getMediaEngagementRate,
   getNotificationOptOutRate,
   buildAiCoachWorkspaceDrafts,
+  generateRookieCoachAssist,
   assertNotificationStartsAsDraft,
   assertNotificationTransition,
   assertParentReplayOutputTransition,
@@ -217,6 +232,104 @@ describe("runtime transition guards", () => {
       to: "sent",
       actorRole: "admin"
     })).toThrow("queued -> sent by admin");
+  });
+});
+
+describe("next-level command center", () => {
+  it("builds the top 12 role modules with review-safe provider boundaries", () => {
+    const center = buildNextLevelCommandCenter(seedState, {
+      role: "admin",
+      now: NOW
+    });
+
+    expect(center.modules).toHaveLength(12);
+    expect(center.modules.map((module) => module.id)).toEqual([
+      "today_dashboard",
+      "guided_onboarding",
+      "admin_command_center",
+      "registration_review",
+      "coach_practice_planner",
+      "drill_video_collections",
+      "parent_recap_timeline",
+      "family_notification_center",
+      "provider_review",
+      "mobile_pwa_install",
+      "push_preferences",
+      "schedule_conflict_detector"
+    ]);
+    expect(center.providerBoundary).toContain("Provider sends remain human-approved records only");
+    expect(center.today.some((action) => action.href === "/admin/registrations")).toBe(true);
+  });
+
+  it("summarizes drill videos into coach library collections", () => {
+    const collections = buildDrillVideoCollections([
+      {
+        id: "drill-throwing-1",
+        organizationId: seedState.organization.id,
+        provider: "youtube",
+        externalVideoId: "abc12345678",
+        canonicalUrl: "https://www.youtube.com/watch?v=abc12345678",
+        title: "Beginner throwing",
+        thumbnailUrl: "https://img.youtube.com/vi/abc12345678/default.jpg",
+        sport: "baseball",
+        skillCategory: "throwing",
+        ageBand: "6U",
+        difficulty: "beginner",
+        sourceChannel: "Coach Channel",
+        approvalStatus: "approved",
+        embeddable: true,
+        createdAt: NOW,
+        updatedAt: NOW
+      },
+      {
+        id: "drill-throwing-2",
+        organizationId: seedState.organization.id,
+        provider: "youtube",
+        externalVideoId: "def12345678",
+        canonicalUrl: "https://www.youtube.com/watch?v=def12345678",
+        title: "Intermediate throwing",
+        thumbnailUrl: "https://img.youtube.com/vi/def12345678/default.jpg",
+        sport: "baseball",
+        skillCategory: "throwing",
+        ageBand: "6U",
+        difficulty: "intermediate",
+        sourceChannel: "Coach Channel",
+        approvalStatus: "pending",
+        embeddable: true,
+        createdAt: NOW,
+        updatedAt: NOW
+      }
+    ]);
+
+    expect(collections).toHaveLength(1);
+    expect(collections[0]).toMatchObject({
+      label: "baseball / throwing / 6U",
+      count: 2,
+      approvedCount: 1,
+      beginnerCount: 1
+    });
+  });
+
+  it("flags team or venue schedule conflicts for human review", () => {
+    const summary = getScheduleConflictSummary({
+      ...seedState,
+      events: [
+        ...seedState.events,
+        {
+          ...seedState.events[0]!,
+          id: "event-tigers-overlap",
+          title: "Tiny Tigers Extra Practice",
+          startsAt: "2026-04-04T09:30:00.000Z",
+          endsAt: "2026-04-04T10:30:00.000Z",
+          createdAt: NOW,
+          updatedAt: NOW
+        }
+      ]
+    }, NOW);
+
+    expect(summary.total).toBeGreaterThan(0);
+    expect(summary.conflicts[0]?.reasons).toContain("team overlap");
+    expect(summary.conflicts[0]?.reasons).toContain("venue overlap");
   });
 });
 
@@ -623,6 +736,38 @@ describe("schedule changes and admin health", () => {
     expect(getAlertOpenRateTracking(telemetryState).openRate).toBe(50);
   });
 
+  it("applies consent, quiet hours, urgency policy, and digest preferences in precedence order", () => {
+    expect(effectiveNotificationDecision({
+      legalOrSafetyRequired: true,
+      organizationMarksUrgent: true,
+      organizationAllowsQuietHoursBypass: true,
+      channelConsent: false,
+      isWithinQuietHours: true,
+      digestOnly: false,
+      fallbackAvailable: true
+    })).toMatchObject({ allowed: false, fallbackRequired: true });
+
+    expect(effectiveNotificationDecision({
+      legalOrSafetyRequired: true,
+      organizationMarksUrgent: true,
+      organizationAllowsQuietHoursBypass: true,
+      channelConsent: true,
+      isWithinQuietHours: true,
+      digestOnly: true,
+      fallbackAvailable: false
+    })).toMatchObject({ allowed: true, quietHoursBypassed: true });
+
+    expect(effectiveNotificationDecision({
+      legalOrSafetyRequired: false,
+      organizationMarksUrgent: false,
+      organizationAllowsQuietHoursBypass: false,
+      channelConsent: true,
+      isWithinQuietHours: true,
+      digestOnly: false,
+      fallbackAvailable: false
+    })).toMatchObject({ allowed: false, quietHoursBypassed: false });
+  });
+
   it("computes launch readiness card counts", () => {
     const cards = computeAdminHealth(seedState, NOW);
     const missingCoaches = cards.find((card) => card.id === "missing-coaches");
@@ -764,6 +909,61 @@ describe("sponsor placement", () => {
     expect(getCacheInvalidationPolicy().strategy).toBe("stale_while_revalidate");
     expect(getManualDarkToggleState(true).label).toBe("Dark mode on");
     expect(getAccessibilityContrastChecks()).toHaveLength(3);
+  });
+
+  it("builds proof-safe family wallet, revenue, sponsor match, and local business page models", () => {
+    const wallet = buildFamilyWalletSummary(seedState, "user-parent-jordan");
+    expect(wallet.items.map((item) => item.kind)).toContain("registration_fee");
+    expect(wallet.items.map((item) => item.kind)).not.toContain("sponsor_discount");
+    expect(wallet.netDueCents).toBe(0);
+    expect(wallet.proofBoundary).toContain("never infers");
+
+    const opportunities = buildSponsorOpportunities(seedState);
+    expect(opportunities.map((opportunity) => opportunity.need)).toContain("scholarships");
+    expect(opportunities[0]?.status).toBe("suggested");
+    expect(opportunities.map((opportunity) => opportunity.sponsorFit).join(" ")).toContain("Local");
+
+    const revenue = buildLeagueRevenueSummary(seedState);
+    expect(revenue.sponsorInvoiceCents).toBe(0);
+    expect(revenue.registrationFeeCents).toBe(0);
+    expect(revenue.unpaidFamilyBalanceCents).toBe(0);
+    expect(revenue.proofBoundary).toContain("not settlement");
+
+    const localBusinessPage = buildLocalBusinessTeamPage(seedState, "team-tigers");
+    expect(localBusinessPage.sponsors.map((sponsor) => sponsor.name)).toContain("Corner Pizza");
+    expect(localBusinessPage.privacyBoundary).toContain("do not expose child profiles");
+  });
+
+  it("builds follow-on community, safety, media, and availability surfaces without privacy leakage", () => {
+    const marketplace = buildVolunteerMarketplace(seedState, "team-tigers");
+    expect(marketplace.map((job) => job.category)).toContain("snack_duty");
+    expect(marketplace.map((job) => job.category)).toContain("scorekeeper");
+    expect(marketplace.map((job) => job.category)).toContain("field_prep");
+    expect(marketplace.map((job) => job.category)).toContain("fundraising");
+    expect(marketplace.map((job) => job.category)).toContain("carpool");
+    expect(marketplace.map((job) => job.category)).toContain("team_parent");
+    expect(marketplace.map((job) => job.category)).toContain("backup_volunteer");
+    expect(marketplace.find((job) => job.actionStatus === "claimable")?.claimEndpoint).toMatch(/claim/);
+
+    const parentEquipment = buildEquipmentExchange(seedState, "team-tigers", "parent");
+    expect(parentEquipment.every((listing) => listing.moderationLabel === "family_visible")).toBe(true);
+    expect(parentEquipment.map((listing) => listing.detail).join(" ")).toContain("no child name or parent contact");
+    const adminEquipment = buildEquipmentExchange(seedState, "team-tigers", "admin");
+    expect(adminEquipment.map((listing) => listing.moderationLabel)).toContain("admin_review");
+
+    const safetyDecision = buildWeatherSafetyDecisionAssistant(seedState, "team-tigers", NOW);
+    expect(safetyDecision.conditions.map((condition) => condition.label)).toEqual(["Heat", "Lightning", "Air quality", "Rain"]);
+    expect(safetyDecision.fieldClosureDraft).toContain("Coach/admin approval is required");
+    expect(safetyDecision.boundary).toContain("Staff approval");
+
+    const gallery = buildSponsorSafeMediaGallery(seedState, "team-tigers");
+    expect(gallery.approvedItems.map((item) => item.title)).toContain("Opening Day Album");
+    expect(gallery.approvedItems[0]?.safeCaption).toContain("no child profile");
+    expect(gallery.boundary).toContain("do not target children");
+
+    const availability = buildFamilyAvailabilityIntelligence(seedState, "team-tigers", NOW);
+    expect(availability.missingRsvpCount).toBeGreaterThan(0);
+    expect(availability.boundary).toContain("never ranks");
   });
 });
 
@@ -1135,6 +1335,145 @@ describe("Parent Replay", () => {
     expect(drafts.every((draft) => draft.workflow.join(" -> ") === "Preview -> Edit -> Approve -> Publish")).toBe(true);
     expect(drafts.every((draft) => draft.boundary.toLowerCase().includes("coach") || draft.boundary.toLowerCase().includes("provider"))).toBe(true);
   });
+
+  it("keeps hidden media, hidden messages, and cross-team context out of AI Coach Workspace drafts", () => {
+    const state = {
+      ...seedState,
+      mediaItems: [
+        ...seedState.mediaItems,
+        {
+          id: "media-hidden-ai-proof",
+          teamId: "team-tigers",
+          title: "Hidden injury photo",
+          type: "google_photos" as const,
+          url: "https://photos.google.com/share/hidden-ai-proof",
+          moderationStatus: "hidden" as const,
+          visibility: "team" as const,
+          reportCount: 1,
+          createdAt: NOW
+        },
+        {
+          id: "media-cross-team-ai-proof",
+          teamId: "team-other",
+          title: "Other team celebration",
+          type: "google_photos" as const,
+          url: "https://photos.google.com/share/other-team-ai-proof",
+          moderationStatus: "approved" as const,
+          visibility: "team" as const,
+          reportCount: 0,
+          createdAt: NOW
+        }
+      ],
+      chatMessages: [
+        ...seedState.chatMessages,
+        {
+          ...seedState.chatMessages[0]!,
+          id: "chat-hidden-ai-proof",
+          body: "Hidden message with parent contact 555-123-4567.",
+          moderationStatus: "hidden" as const
+        },
+        {
+          ...seedState.chatMessages[0]!,
+          id: "chat-cross-team-ai-proof",
+          teamId: "team-other",
+          body: "Other team private context.",
+          moderationStatus: "visible" as const
+        }
+      ]
+    };
+
+    const drafts = buildAiCoachWorkspaceDrafts(state, {
+      teamId: "team-tigers",
+      coachUserId: "user-coach-taylor",
+      focusAreas: ["throwing", "catching", "teamwork"],
+      now: NOW
+    });
+    const content = drafts.map((draft) => [draft.title, draft.body, draft.sourceEvidence.join(" ")].join("\n")).join("\n");
+
+    expect(content).not.toContain("Hidden injury photo");
+    expect(content).not.toContain("555-123-4567");
+    expect(content).not.toContain("Other team celebration");
+    expect(content).not.toContain("Other team private context");
+    expect(content).toContain("2 approved media item(s)");
+  });
+});
+
+describe("Rookie Coach Assist", () => {
+  it("generates every required coach-reviewed practice section without provider or publish behavior", () => {
+    const plan = generateRookieCoachAssist({
+      ageBand: "3-4",
+      sport: "baseball",
+      experienceLevel: "first_time",
+      challenge: "fear_of_ball",
+      motivationStrategy: "animal_mode",
+      practicePersonality: "wild_today",
+      focusAreas: ["confidence with ball", "throwing"]
+    });
+
+    expect(plan.practiceTitle).toContain("baseball");
+    expect(plan.coachObjective).toContain("First-time coach".toLowerCase());
+    expect(plan.practiceBlocks).toHaveLength(3);
+    expect(plan.practiceBlocks[1]?.activity).toContain("Shrink the drill");
+    expect(plan.chaosReset.callAndResponse).toContain("Ready feet");
+    expect(plan.chaosReset.waterBreak).toContain("water sip");
+    expect(plan.chaosReset.regroupPhrase).toBe("Show me ready feet. We launch in 3, 2, 1.");
+    expect(plan.voiceCoach.insteadOf).toBe("Stop messing around.");
+    expect(plan.voiceCoach.say).toBe("Show me ready feet. We launch in 3, 2, 1.");
+    expect(plan.personalityAdjustment.label).toBe("Wild today");
+    expect(plan.exactCoachScript).toContain("Team, come to your station");
+    expect(plan.attentionReset).toContain("Ball down");
+    expect(plan.doSayPhrases).toHaveLength(4);
+    expect(plan.avoidSayingPhrases).toHaveLength(4);
+    expect(plan.ageSpecificExplanation).toContain("Ages 3-4");
+    expect(plan.incentiveStrategy).toContain("group choose");
+    expect(plan.parentReplaySeed.focusAreas).toEqual(["catching", "throwing", "teamwork"]);
+    expect(plan.parentReinforcementLoop.today).toContain("catching, throwing, and teamwork");
+    expect(plan.parentReinforcementLoop.atHome).toContain("3 soft tosses");
+    expect(plan.parentReinforcementLoop.praise).toBe("Praise the brave try, not the result.");
+    expect(plan.parentReinforcementLoop.deliveryBoundary).toContain("no external parent send");
+    expect(plan.parentMessageDraft).toContain("At home");
+    expect(plan.sourceEvidence).toContain("Parent Replay seed uses existing PracticeFocusArea values only");
+    expect(plan.sourceEvidence).toContain("Team energy: Wild today");
+    expect(plan.safetyBoundary).toContain("local preview copy only");
+  });
+
+  it("adapts deterministic copy by age band, challenge, and motivation strategy", () => {
+    const plan = generateRookieCoachAssist({
+      ageBand: "5-6",
+      sport: "soccer",
+      experienceLevel: "new_to_age_group",
+      challenge: "high_energy",
+      motivationStrategy: "treasure_map",
+      practicePersonality: "mixed_skill",
+      focusAreas: ["spacing", "listening reset"]
+    });
+
+    expect(plan.practiceTitle).toBe("soccer rookie practice: High energy reset");
+    expect(plan.coachObjective).toContain("new to ages 3-6");
+    expect(plan.attentionReset).toContain("marker");
+    expect(plan.ageSpecificExplanation).toContain("Ages 5-6");
+    expect(plan.incentiveStrategy).toContain("map stop");
+    expect(plan.personalityAdjustment.label).toBe("Mixed skill");
+    expect(plan.personalityAdjustment.drillChange).toContain("easy, middle, and challenge targets");
+    expect(plan.voiceCoach.say).toContain("Pick the target");
+    expect(plan.parentReplaySeed.focusAreas).toEqual(["listening", "spacing", "teamwork"]);
+  });
+
+  it("keeps guidance away from medical, ranking, food reward, and harsh discipline language", () => {
+    const plan = generateRookieCoachAssist({
+      ageBand: "5-6",
+      sport: "basketball",
+      experienceLevel: "new_to_sport",
+      challenge: "trying_again",
+      motivationStrategy: "high_five_challenge",
+      focusAreas: ["teamwork", "trying again"]
+    });
+    const output = JSON.stringify(plan).toLowerCase();
+
+    expect(output).not.toMatch(/candy|bribe|leaderboard|public ranking|return to play|diagnos|shame|punish/);
+    expect(plan.safetyBoundary).toContain("no provider send");
+    expect(plan.safetyBoundary).toContain("no automatic publish");
+  });
 });
 
 describe("assistive suggestions", () => {
@@ -1225,6 +1564,22 @@ describe("team portal branding", () => {
 });
 
 describe("registration system", () => {
+  it("validates server-backed registration teams without requiring seed team ids", () => {
+    const result = validateRegistrationRequestInput({
+      teamId: "supabase-team-uuid",
+      parentName: "Taylor Parent",
+      parentEmail: "Taylor@Example.com",
+      playerFirstName: "Parker",
+      playerLastInitial: "parent",
+      now: NOW
+    }, ["supabase-team-uuid"]);
+
+    expect(result.ok).toBe(true);
+    expect(result.normalized?.parentEmail).toBe("taylor@example.com");
+    expect(result.normalized?.playerLastInitial).toBe("P");
+    expect(result.message).toContain("Private team details remain protected");
+  });
+
   it("queues parent registration requests for admin review without granting access", () => {
     const result = createRegistrationRequest(seedState, {
       teamId: "team-tigers",
@@ -1238,7 +1593,7 @@ describe("registration system", () => {
     expect(result.ok).toBe(true);
     expect(result.request?.status).toBe("pending");
     expect(result.state.registrationRequests).toHaveLength(seedState.registrationRequests.length + 1);
-    expect(result.message).toContain("No account access was granted");
+    expect(result.message).toContain("Private team details remain protected");
   });
 
   it("rejects invalid registration emails", () => {
@@ -1252,6 +1607,6 @@ describe("registration system", () => {
     });
 
     expect(result.ok).toBe(false);
-    expect(result.message).toContain("valid parent email");
+    expect(result.message).toContain("valid email address");
   });
 });

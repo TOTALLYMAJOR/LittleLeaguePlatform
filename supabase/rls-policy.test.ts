@@ -23,8 +23,34 @@ describe("Supabase RLS policy coverage", () => {
   const rsvpCancellations = migration("0016_rsvp_cancellations.sql");
   const sponsorBillingAndTeamBuilder = migration("0017_sponsor_billing_and_team_builder.sql");
   const teamBrandProfilesMonitoring = migration("0018_team_brand_profiles_monitoring.sql");
+  const guardianVerification = migration("0020_guardian_verification_policy.sql");
+  const drillVideoReferences = migration("0022_drill_video_references.sql");
+  const coordinationLoops = migration("0024_coordination_loops.sql");
+  const transportation = migration("0028_transportation_responsibility.sql");
+  const securityDefinerHardening = migration("20260724143554_security_definer_execution_hardening.sql");
+  const dataApiServiceRoleGrants = migration("20260726134836_data_api_service_role_grants.sql");
+  const extensionHardening = migration("20260726142404_relocate_btree_gist_extension.sql");
+  const guardianRevocationFix = migration(
+    "20260726143452_fix_additional_guardian_revocation_ambiguity.sql"
+  );
+  const rlsHelperExecution = migration(
+    "20260726143938_restrict_rls_helper_execution.sql"
+  );
+  const anonymousRlsPolicyEvaluation = migration(
+    "20260726144407_restore_anon_rls_policy_evaluation.sql"
+  );
+  const rlsAuthInitplanOptimization = migration(
+    "20260726182645_optimize_rls_auth_initplans.sql"
+  );
+  const pingramSmsTransportSafety = migration(
+    "20260727223340_pingram_sms_transport_safety.sql"
+  );
+  const pingramSmsExecutionAuthority = migration(
+    "20260727224549_pingram_sms_execution_authority.sql"
+  );
   const packageJson = readFileSync(join(process.cwd(), "package.json"), "utf8");
   const rlsProof = readFileSync(join(process.cwd(), "scripts", "verify-rls-boundaries.mjs"), "utf8");
+  const migrationPush = readFileSync(join(process.cwd(), "scripts", "supabase-push.mjs"), "utf8");
 
   it("keeps parent, coach, and admin team boundaries explicit", () => {
     expect(core).toContain("create policy \"team members can read players\"");
@@ -89,6 +115,47 @@ describe("Supabase RLS policy coverage", () => {
     expect(providerDeliveryApproval).toContain("approved_by_user_id");
   });
 
+  it("keeps Pingram attempts service-owned and STOP evidence fail-closed", () => {
+    expect(pingramSmsTransportSafety).toContain(
+      "alter table public.sms_contact_suppressions enable row level security"
+    );
+    expect(pingramSmsTransportSafety).toContain(
+      "users and organization admins read sms suppressions"
+    );
+    expect(pingramSmsTransportSafety).not.toContain("phone text");
+    expect(pingramSmsExecutionAuthority).toContain(
+      "revoke insert, update, delete"
+    );
+    expect(pingramSmsExecutionAuthority).toContain(
+      "drop policy if exists \"team managers create delivery attempts\""
+    );
+    expect(pingramSmsExecutionAuthority).toContain(
+      "review_notification_delivery_transaction"
+    );
+    expect(pingramSmsExecutionAuthority).toContain(
+      "apply_pingram_sms_contact_state_transaction"
+    );
+    expect(pingramSmsExecutionAuthority).toContain(
+      "on conflict (organization_id, user_id)"
+    );
+    expect(pingramSmsExecutionAuthority).toContain(
+      "team_id in ("
+    );
+    expect(pingramSmsExecutionAuthority).toContain(
+      "claim_provider_webhook_event"
+    );
+    expect(pingramSmsExecutionAuthority).toContain(
+      "processing_lease_id"
+    );
+    expect(pingramSmsExecutionAuthority).toContain(
+      "reconcile_pending_provider_webhook_evidence"
+    );
+    expect(pingramSmsExecutionAuthority).toContain(
+      "from public, anon, authenticated"
+    );
+    expect(pingramSmsExecutionAuthority).toContain("to service_role");
+  });
+
   it("keeps the real-session RLS QA proof wired", () => {
     expect(packageJson).toContain("\"qa:rls-proof\": \"node scripts/verify-rls-boundaries.mjs\"");
     expect(rlsProof).toContain("signInWithPassword");
@@ -97,6 +164,21 @@ describe("Supabase RLS policy coverage", () => {
     expect(rlsProof).toContain("parent cannot read cross-team players");
     expect(rlsProof).toContain("coach cannot update archived-season events");
     expect(rlsProof).toContain("anonymous cannot read private teams");
+  });
+
+  it("keeps migration promotion target-bound, dry-run-first, and seed-opt-in", () => {
+    expect(packageJson).toContain("\"supabase:plan\": \"node scripts/supabase-push.mjs --dry-run\"");
+    expect(migrationPush).toContain("SUPABASE_MIGRATION_TARGET_REF");
+    expect(migrationPush).toContain("SUPABASE_MIGRATION_TARGET_ENV");
+    expect(migrationPush).toContain("SUPABASE_MIGRATION_CONFIRM");
+    expect(migrationPush).toContain("\"--dry-run\"");
+    expect(migrationPush).toContain("SUPABASE_MIGRATION_INCLUDE_SEED");
+    expect(migrationPush).toContain("Seed data is forbidden for production migration promotion.");
+    expect(migrationPush).toContain("const pushArgs = [");
+    expect(migrationPush).toContain('runSupabase([...pushArgs, "--dry-run"])');
+    expect(migrationPush).toContain('runSupabase([...pushArgs, "--yes"])');
+    expect(migrationPush).toContain("transaction-pooler URLs (port 6543)");
+    expect(migrationPush).toContain("\"--no-install\", \"supabase\"");
   });
 
   it("keeps archived seasons readable but mutation-locked", () => {
@@ -132,6 +214,13 @@ describe("Supabase RLS policy coverage", () => {
     expect(sponsorBillingAndTeamBuilder).toContain("organization admins manage team build plans");
   });
 
+  it("keeps registration approval guardian access admin-reviewed with evidence", () => {
+    expect(guardianVerification).toContain("membership.role = 'admin'");
+    expect(guardianVerification).not.toContain("membership.role = 'coach'");
+    expect(guardianVerification).toContain("registration_approval_actions_evidence_note_check");
+    expect(guardianVerification).toContain("length(trim(coalesce(note, ''))) >= 10");
+  });
+
   it("keeps team brand profiles coach/admin managed with monitoring proof", () => {
     expect(teamBrandProfilesMonitoring).toContain("create table if not exists public.team_brand_profiles");
     expect(teamBrandProfilesMonitoring).toContain("logo_url text");
@@ -146,5 +235,199 @@ describe("Supabase RLS policy coverage", () => {
     expect(teamBrandProfilesMonitoring).toContain("coaches and admins manage team brand profiles");
     expect(teamBrandProfilesMonitoring).toContain("team members read published brand profiles");
     expect(teamBrandProfilesMonitoring).toContain("public.current_user_can_manage_team(team_id)");
+  });
+
+  it("keeps drill video references admin-reviewed and coach-planning only", () => {
+    expect(drillVideoReferences).toContain("create table if not exists public.drill_videos");
+    expect(drillVideoReferences).toContain("create table if not exists public.drill_video_sources");
+    expect(drillVideoReferences).toContain("create table if not exists public.drill_video_assignments");
+    expect(drillVideoReferences).toContain("approval_status in ('pending', 'approved', 'rejected', 'retired')");
+    expect(drillVideoReferences).toContain("visible_to_families boolean not null default false check (visible_to_families = false)");
+    expect(drillVideoReferences).toContain("org admins manage drill video sources");
+    expect(drillVideoReferences).toContain("coaches submit drill videos for their organizations");
+    expect(drillVideoReferences).toContain("coaches read approved drill videos");
+    expect(drillVideoReferences).toContain("org admins review drill videos");
+    expect(drillVideoReferences).toContain("coaches manage coach-only drill assignments");
+    expect(drillVideoReferences).toContain("membership.role = 'coach'");
+  });
+
+  it("keeps all five coordination loops role-scoped and human-reviewed", () => {
+    expect(coordinationLoops).toContain("create table if not exists public.practice_run_receipts");
+    expect(coordinationLoops).toContain("coaches and admins manage practice run receipts");
+    expect(coordinationLoops).toContain("create table if not exists public.family_event_handoffs");
+    expect(coordinationLoops).toContain("guardian.parent_user_id = auth.uid()");
+    expect(coordinationLoops).toContain("create table if not exists public.game_day_resolution_reviews");
+    expect(coordinationLoops).toContain("p_decision not in ('monitor', 'confirm_on_time', 'delay', 'cancel')");
+    expect(coordinationLoops).toContain("Only assigned coaches or organization admins can resolve a game-day event.");
+    expect(coordinationLoops).toContain("create or replace function public.commit_roster_import");
+    expect(coordinationLoops).toContain("create or replace function public.rollback_roster_import");
+    expect(coordinationLoops).toContain("'providerSendsExecuted', 0");
+    expect(coordinationLoops).toContain("grant execute on function public.apply_game_day_resolution");
+  });
+
+  it("keeps privileged security-definer entry points server-only", () => {
+    expect(securityDefinerHardening).toContain(
+      "revoke all on function public.approve_registration_request(uuid, uuid, text)"
+    );
+    expect(securityDefinerHardening).toContain(
+      "revoke all on function public.reject_registration_request(uuid, uuid, text)"
+    );
+    expect(securityDefinerHardening).toContain(
+      "revoke all on function public.purge_expired_team_chat_messages(timestamptz)"
+    );
+    expect(securityDefinerHardening).toContain("from public, anon, authenticated");
+    expect(securityDefinerHardening).toContain("to service_role");
+    expect(securityDefinerHardening).toContain("set search_path = pg_catalog, public");
+  });
+
+  it("keeps transportation tables and mutual-acceptance RPCs service-only", () => {
+    expect(transportation).toContain("alter table public.transportation_requests enable row level security");
+    expect(transportation).toContain("alter table public.transportation_offers enable row level security");
+    expect(transportation).toContain("alter table public.transportation_assignments enable row level security");
+    expect(transportation).toContain("from public, anon, authenticated");
+    expect(transportation).toContain("to service_role");
+    expect(transportation).toContain("transportation_pickup_restriction_exists");
+    expect(transportation).toContain("requester_accepted_at = now()");
+    expect(transportation).toContain("idx_transportation_assignments_one_assigned");
+    expect(transportation).toContain("where status = 'assigned'");
+    expect(transportation).toContain("Another mutually accepted offer was selected.");
+  });
+
+  it("keeps migration-backed server tables available only to the service adapter role", () => {
+    const serverOnlyGrants = dataApiServiceRoleGrants.split(
+      "-- Server-adapter-only tables from migrations 0022-0024."
+    )[1];
+    expect(dataApiServiceRoleGrants).toContain(
+      "grant select, insert, update, delete on table"
+    );
+    expect(dataApiServiceRoleGrants).toContain("to anon, authenticated, service_role");
+    expect(dataApiServiceRoleGrants).not.toContain("grant all on table");
+    expect(dataApiServiceRoleGrants).toContain("public.profiles");
+    expect(dataApiServiceRoleGrants).toContain("public.support_requests");
+    expect(serverOnlyGrants).toBeTruthy();
+    expect(serverOnlyGrants).toContain("public.drill_videos");
+    expect(serverOnlyGrants).toContain("public.offline_action_receipts");
+    expect(serverOnlyGrants).toContain("public.practice_run_receipts");
+    expect(serverOnlyGrants).toContain("public.game_day_resolution_reviews");
+    expect(serverOnlyGrants).toContain("from public, anon, authenticated");
+    expect(serverOnlyGrants).toContain("to service_role");
+    expect(serverOnlyGrants).not.toContain("to authenticated");
+    expect(serverOnlyGrants).not.toContain("to anon");
+  });
+
+  it("avoids PostgreSQL reserved words as transportation and caregiver aliases", () => {
+    const caregiver = migration("0029_temporary_caregiver_authorizations.sql");
+    expect(transportation).not.toContain("guardian_authorizations authorization");
+    expect(caregiver).not.toContain("temporary_caregiver_authorizations authorization");
+  });
+
+  it("keeps relocatable extensions out of the exposed public schema", () => {
+    expect(extensionHardening).toContain("create schema if not exists extensions");
+    expect(extensionHardening).toContain("alter extension btree_gist set schema extensions");
+  });
+
+  it("keeps additional-guardian revocation executable and service-only", () => {
+    expect(guardianRevocationFix).toContain("revocation_reason = trim($3)");
+    expect(guardianRevocationFix).toContain(
+      "revoke all on function public.revoke_additional_guardian_access(uuid, uuid, text)"
+    );
+    expect(guardianRevocationFix).toContain("from public, anon, authenticated");
+    expect(guardianRevocationFix).toContain("to service_role");
+  });
+
+  it("removes broad RLS-helper execution while retaining required API policy evaluation", () => {
+    expect(rlsHelperExecution).toContain(
+      "revoke execute on function public.current_user_can_access_team(uuid) from public, anon"
+    );
+    expect(rlsHelperExecution).toContain(
+      "grant execute on function public.current_user_can_access_team(uuid) to authenticated, service_role"
+    );
+    expect(rlsHelperExecution.match(/revoke execute on function/g)).toHaveLength(8);
+    expect(rlsHelperExecution.match(/grant execute on function/g)).toHaveLength(8);
+    expect(anonymousRlsPolicyEvaluation).toContain(
+      "grant execute on function public.current_user_can_access_team(uuid) to anon"
+    );
+    expect(anonymousRlsPolicyEvaluation.match(/grant execute on function/g)).toHaveLength(8);
+    expect(anonymousRlsPolicyEvaluation).not.toContain("to public");
+  });
+
+  it("caches request-constant user identity without changing RLS policy scope", () => {
+    const executableSql = rlsAuthInitplanOptimization.replace(/--.*$/gm, "");
+    const optimizedPolicies = Array.from(
+      executableSql.matchAll(
+        /^alter policy "([^"]+)"\s+on public\.([a-z_]+)/gm
+      ),
+      ([, policy, table]) => `${table}:${policy}`
+    );
+
+    expect(optimizedPolicies).toEqual([
+      "coach_event_notes:team staff manage coach event notes",
+      "drill_video_sources:coaches read reviewed drill video sources",
+      "drill_videos:coaches read approved drill videos",
+      "drill_videos:coaches submit drill videos for their organizations",
+      "event_attendance:linked families and team staff read attendance",
+      "family_event_handoffs:guardians create own family handoff plans",
+      "family_event_handoffs:guardians read own family handoff plans",
+      "family_event_handoffs:guardians update own family handoff plans",
+      "family_obligations:guardians and admins read family obligations",
+      "fee_definitions:organization admins manage fee definitions",
+      "game_day_resolution_reviews:coaches and admins manage game day resolution reviews",
+      "media_review_history:team staff create media review history",
+      "mobile_usage_events:organization admins read mobile usage events",
+      "mobile_usage_events:users create own mobile usage events",
+      "notification_delivery_attempts:notification recipients and team managers read delivery attempt",
+      "notification_preferences:users manage own notification preferences",
+      "notifications:users can mark own notifications read",
+      "notifications:users can read own notifications",
+      "offline_action_receipts:actors create scoped offline action receipts",
+      "offline_action_receipts:actors read own offline action receipts",
+      "organization_memberships:members can read their org memberships",
+      "organizations:organization members can read organizations",
+      "parent_replay_engagement:parents read own replay engagement",
+      "payment_evidence:guardians and admins read payment evidence",
+      "player_media_consents:guardians and staff read media consent",
+      "player_media_consents:guardians manage own media consent",
+      "practice_run_receipts:coaches and admins manage practice run receipts",
+      "profiles:profiles can insert own profile",
+      "profiles:profiles can update own basic profile",
+      "push_subscriptions:users manage own push subscriptions",
+      "rsvp_change_logs:parents and staff read rsvp change logs",
+      "rsvp_change_logs:parents insert own rsvp change logs",
+      "rsvps:parents can upsert active linked child rsvps",
+      "seasons:members can read seasons",
+      "support_requests:parents and staff read support requests",
+      "support_requests:parents create own support requests",
+      "team_chat_attachments:team members create chat attachments",
+      "team_chat_message_reads:users manage own chat reads",
+      "team_chat_messages:authors can edit own visible chat messages",
+      "team_chat_messages:team members can create chat messages",
+      "team_chat_reactions:users manage own chat reactions",
+      "team_chat_reports:team members create chat reports",
+      "team_memberships:members can read team memberships",
+      "volunteer_transfer_requests:requesters and staff update volunteer transfers",
+      "volunteer_transfer_requests:users and team staff read volunteer transfers",
+      "volunteer_transfer_requests:users request own volunteer transfers",
+      "volunteer_waitlist_entries:users and team staff read volunteer waitlists",
+      "volunteer_waitlist_entries:users join own volunteer waitlists",
+      "volunteer_waitlist_entries:users withdraw own volunteer waitlists"
+    ]);
+    const declaredDeliveryAttemptPolicy =
+      "notification recipients and team managers read delivery attempts";
+    expect(Buffer.byteLength(declaredDeliveryAttemptPolicy, "utf8")).toBe(64);
+    expect(
+      Buffer.from(declaredDeliveryAttemptPolicy, "utf8")
+        .subarray(0, 63)
+        .toString("utf8")
+    ).toBe(
+      "notification recipients and team managers read delivery attempt"
+    );
+    expect(executableSql.match(/^alter policy /gm)).toHaveLength(49);
+    expect(executableSql.match(/\(select auth\.uid\(\)\)/g)).toHaveLength(72);
+    expect(executableSql).not.toMatch(/(?<!select )auth\.uid\(\)/);
+    expect(executableSql).not.toMatch(/\b(?:create|drop)\s+policy\b/i);
+    expect(executableSql).not.toMatch(
+      /\bto\s+(?:public|anon|authenticated|service_role)\b/i
+    );
+    expect(executableSql).not.toMatch(/disable row level security/i);
   });
 });

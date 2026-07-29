@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { claimVolunteerRole } from "@/lib/supabase/operations";
+import { claimVolunteerRoleSafely } from "@/lib/supabase/volunteer-marketplace";
 import { requireAuthenticatedRouteUser } from "@/lib/supabase/route-auth";
 
 export async function POST(request: Request) {
@@ -12,10 +12,16 @@ export async function POST(request: Request) {
     return NextResponse.json({ ok: false, message: "Volunteer claim body is required." }, { status: 400 });
   }
 
-  const result = await claimVolunteerRole({
+  const actionId = request.headers.get("idempotency-key")?.trim() ?? "";
+  if (!actionId) {
+    return NextResponse.json({ ok: false, message: "Volunteer claim requires an action receipt." }, { status: 400 });
+  }
+  const result = await claimVolunteerRoleSafely({
     signupId: String(body.signupId ?? ""),
-    userId: auth.user.id
+    userId: auth.user.id,
+    actionId
   });
 
-  return NextResponse.json(result, { status: result.ok ? 200 : 400 });
+  const code = "code" in result ? String(result.code ?? "") : "";
+  return NextResponse.json(result, { status: result.ok ? 200 : code === "already_claimed" ? 409 : 400 });
 }

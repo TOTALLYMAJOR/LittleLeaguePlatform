@@ -1,12 +1,13 @@
 import { existsSync, readFileSync } from "node:fs";
 import { createClient } from "@supabase/supabase-js";
+import { assertIsolatedQaTarget } from "./qa-target-guard.mjs";
 
 const envFile = ".env.local";
 
 const ids = {
   playerMason: "44444444-4444-4444-8444-444444444441",
   playerAvery: "44444444-4444-4444-8444-444444444442",
-  playerOtherTeam: "44444444-4444-4444-8444-444444444443",
+  playerArchivedTeam: "44444444-4444-4444-8444-444444444444",
   game: "55555555-5555-4555-8555-555555555551",
   archivedGame: "55555555-5555-4555-8555-555555555553",
   weather: "cccccccc-cccc-4ccc-8ccc-ccccccccccc1"
@@ -87,6 +88,7 @@ function assertDenied(result, label) {
 
 async function main() {
   loadLocalEnv();
+  assertIsolatedQaTarget(requireEnv("NEXT_PUBLIC_SUPABASE_URL"), "RLS proof");
 
   const parent = await signIn("QA_PARENT_EMAIL", "QA_PARENT_PASSWORD");
   const coach = await signIn("QA_COACH_EMAIL", "QA_COACH_PASSWORD");
@@ -108,7 +110,7 @@ async function main() {
   const parentOtherTeamPlayerRead = await parent
     .from("players")
     .select("id,first_name")
-    .eq("id", ids.playerOtherTeam);
+    .eq("id", ids.playerArchivedTeam);
   assertNoError(parentOtherTeamPlayerRead.error, "parent cross-team player read denial");
   assertRows(parentOtherTeamPlayerRead.data, 0, "parent cannot read cross-team players");
 

@@ -84,6 +84,10 @@ function visibleTeamMessages(state: AppState, teamId: string) {
   return state.chatMessages.filter((message) => message.teamId === teamId && message.moderationStatus === "visible");
 }
 
+function approvedTeamMediaItems(state: AppState, teamId: string) {
+  return state.mediaItems.filter((item) => item.teamId === teamId && (item.moderationStatus ?? "approved") === "approved");
+}
+
 function recentDiscussionItems(state: AppState, teamId: string) {
   return visibleTeamMessages(state, teamId)
     .sort((left, right) => Date.parse(right.createdAt) - Date.parse(left.createdAt))
@@ -216,6 +220,7 @@ export function buildAiCoachWorkspaceDrafts(state: AppState, input: AiCoachWorks
   const volunteers = volunteerNeeds(state, input.teamId);
   const snacks = snackNeeds(state, input.teamId);
   const messages = visibleTeamMessages(state, input.teamId);
+  const approvedMedia = approvedTeamMediaItems(state, input.teamId);
   const discussionItems = recentDiscussionItems(state, input.teamId);
   const roster = rosterItems(state, input.teamId);
   const focusAreas: PracticeFocusArea[] = input.focusAreas?.length ? input.focusAreas : ["throwing", "catching", "teamwork"];
@@ -299,7 +304,7 @@ export function buildAiCoachWorkspaceDrafts(state: AppState, input: AiCoachWorks
   const timelineItems = [
     ...events.map((event) => `${formatEventDate(event.startsAt)} - ${event.title}`),
     ...(announcement ? [`${formatEventDate(announcement.createdAt)} - Coach note: ${announcement.title}`] : []),
-    ...state.mediaItems.filter((item) => item.teamId === input.teamId).map((item) => `${formatEventDate(item.createdAt)} - Media: ${item.title}`),
+    ...approvedMedia.map((item) => `${formatEventDate(item.createdAt)} - Media: ${item.title}`),
     ...(replayDraft ? [`${formatEventDate(replayDraft.generatedAt)} - Practice Replay: ${replayDraft.focusAreas.join(", ")}`] : [])
   ].slice(0, 8);
   const knowledgeEntries = coachKnowledgeEntries(state, input.teamId);
@@ -311,7 +316,7 @@ export function buildAiCoachWorkspaceDrafts(state: AppState, input: AiCoachWorks
     `This season began with ${state.players.filter((player) => player.teamId === input.teamId).length} players learning how to work together.`,
     announcement ? `Coach note: ${announcement.title} - ${announcement.body}` : undefined,
     replayDraft ? `Practice growth: ${replayDraft.summary}` : undefined,
-    state.mediaItems.some((item) => item.teamId === input.teamId) ? "Family memories include approved team media and volunteer moments." : undefined,
+    approvedMedia.length ? "Family memories include approved team media and volunteer moments." : undefined,
     "Coach review decides which photos, achievements, and milestones appear in the downloadable keepsake."
   ].filter(Boolean).join("\n");
 
@@ -431,7 +436,7 @@ export function buildAiCoachWorkspaceDrafts(state: AppState, input: AiCoachWorks
       sourceEvidence: evidence([
         `${events.length} schedule item(s)`,
         announcement ? "coach announcement" : undefined,
-        `${state.mediaItems.filter((item) => item.teamId === input.teamId).length} media item(s)`,
+        `${approvedMedia.length} approved media item(s)`,
         replayDraft ? "practice replay focus areas" : undefined
       ]),
       workflow: reviewWorkflow,
@@ -481,7 +486,7 @@ export function buildAiCoachWorkspaceDrafts(state: AppState, input: AiCoachWorks
       body: storybookBody,
       sourceEvidence: evidence([
         `${events.length} event(s)`,
-        `${state.mediaItems.filter((item) => item.teamId === input.teamId).length} approved media item(s)`,
+        `${approvedMedia.length} approved media item(s)`,
         announcement ? "coach announcement" : undefined,
         replayDraft ? "practice replay draft" : undefined
       ]),

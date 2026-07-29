@@ -1,0 +1,12 @@
+# Local agent state and historical environment snapshots are never deployment inputs.
+.agents/
+.codex/
+.history/
+.playwright-cli/
+
+# QA screenshots and proof artifacts are retained outside the runtime bundle.
+output/
+
+# Local database and compiler state.
+supabase/.temp/
+*.tsbuildinfo

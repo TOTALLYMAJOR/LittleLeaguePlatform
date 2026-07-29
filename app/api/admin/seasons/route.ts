@@ -20,7 +20,16 @@ export async function POST(request: Request) {
     name: String((body as { name?: unknown }).name ?? ""),
     startsAt: String((body as { startsAt?: unknown }).startsAt ?? ""),
     endsAt: String((body as { endsAt?: unknown }).endsAt ?? ""),
-    status: (body as { status?: unknown }).status === "archived" ? "archived" : "active"
+    status: (body as { status?: unknown }).status === "archived" ? "archived" : "active",
+    ...((body as { archiveReason?: unknown }).archiveReason
+      ? { archiveReason: String((body as { archiveReason?: unknown }).archiveReason) }
+      : {}),
+    ...((body as { previewHash?: unknown }).previewHash
+      ? { previewHash: String((body as { previewHash?: unknown }).previewHash) }
+      : {}),
+    ...((body as { previewExpiresAt?: unknown }).previewExpiresAt
+      ? { previewExpiresAt: String((body as { previewExpiresAt?: unknown }).previewExpiresAt) }
+      : {})
   });
 
   return NextResponse.json(result, { status: result.ok ? 201 : 400 });

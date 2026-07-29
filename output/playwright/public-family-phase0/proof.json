@@ -1,0 +1,182 @@
+{
+  "generatedAt": "2026-07-27T04:05:50.642Z",
+  "baseUrl": "http://127.0.0.1:3022",
+  "proof": [
+    {
+      "routeName": "home",
+      "path": "/",
+      "viewportName": "reflow-320",
+      "width": 320,
+      "height": 800,
+      "screenshot": "home-reflow-320.png",
+      "documentOverflow": false,
+      "undersizedInteractiveCount": 0,
+      "pageErrors": []
+    },
+    {
+      "routeName": "schedule",
+      "path": "/schedule",
+      "viewportName": "reflow-320",
+      "width": 320,
+      "height": 800,
+      "screenshot": "schedule-reflow-320.png",
+      "documentOverflow": false,
+      "undersizedInteractiveCount": 0,
+      "pageErrors": []
+    },
+    {
+      "routeName": "request-access",
+      "path": "/registration",
+      "viewportName": "reflow-320",
+      "width": 320,
+      "height": 800,
+      "screenshot": "request-access-reflow-320.png",
+      "documentOverflow": false,
+      "undersizedInteractiveCount": 0,
+      "pageErrors": []
+    },
+    {
+      "routeName": "sign-in",
+      "path": "/auth",
+      "viewportName": "reflow-320",
+      "width": 320,
+      "height": 800,
+      "screenshot": "sign-in-reflow-320.png",
+      "documentOverflow": false,
+      "undersizedInteractiveCount": 0,
+      "pageErrors": []
+    },
+    {
+      "routeName": "home",
+      "path": "/",
+      "viewportName": "mobile-390",
+      "width": 390,
+      "height": 844,
+      "screenshot": "home-mobile-390.png",
+      "documentOverflow": false,
+      "undersizedInteractiveCount": 0,
+      "pageErrors": []
+    },
+    {
+      "routeName": "schedule",
+      "path": "/schedule",
+      "viewportName": "mobile-390",
+      "width": 390,
+      "height": 844,
+      "screenshot": "schedule-mobile-390.png",
+      "documentOverflow": false,
+      "undersizedInteractiveCount": 0,
+      "pageErrors": []
+    },
+    {
+      "routeName": "request-access",
+      "path": "/registration",
+      "viewportName": "mobile-390",
+      "width": 390,
+      "height": 844,
+      "screenshot": "request-access-mobile-390.png",
+      "documentOverflow": false,
+      "undersizedInteractiveCount": 0,
+      "pageErrors": []
+    },
+    {
+      "routeName": "sign-in",
+      "path": "/auth",
+      "viewportName": "mobile-390",
+      "width": 390,
+      "height": 844,
+      "screenshot": "sign-in-mobile-390.png",
+      "documentOverflow": false,
+      "undersizedInteractiveCount": 0,
+      "pageErrors": []
+    },
+    {
+      "routeName": "home",
+      "path": "/",
+      "viewportName": "tablet-768",
+      "width": 768,
+      "height": 1024,
+      "screenshot": "home-tablet-768.png",
+      "documentOverflow": false,
+      "undersizedInteractiveCount": 0,
+      "pageErrors": []
+    },
+    {
+      "routeName": "schedule",
+      "path": "/schedule",
+      "viewportName": "tablet-768",
+      "width": 768,
+      "height": 1024,
+      "screenshot": "schedule-tablet-768.png",
+      "documentOverflow": false,
+      "undersizedInteractiveCount": 0,
+      "pageErrors": []
+    },
+    {
+      "routeName": "request-access",
+      "path": "/registration",
+      "viewportName": "tablet-768",
+      "width": 768,
+      "height": 1024,
+      "screenshot": "request-access-tablet-768.png",
+      "documentOverflow": false,
+      "undersizedInteractiveCount": 0,
+      "pageErrors": []
+    },
+    {
+      "routeName": "sign-in",
+      "path": "/auth",
+      "viewportName": "tablet-768",
+      "width": 768,
+      "height": 1024,
+      "screenshot": "sign-in-tablet-768.png",
+      "documentOverflow": false,
+      "undersizedInteractiveCount": 0,
+      "pageErrors": []
+    },
+    {
+      "routeName": "home",
+      "path": "/",
+      "viewportName": "desktop-1440",
+      "width": 1440,
+      "height": 1100,
+      "screenshot": "home-desktop-1440.png",
+      "documentOverflow": false,
+      "undersizedInteractiveCount": 0,
+      "pageErrors": []
+    },
+    {
+      "routeName": "schedule",
+      "path": "/schedule",
+      "viewportName": "desktop-1440",
+      "width": 1440,
+      "height": 1100,
+      "screenshot": "schedule-desktop-1440.png",
+      "documentOverflow": false,
+      "undersizedInteractiveCount": 0,
+      "pageErrors": []
+    },
+    {
+      "routeName": "request-access",
+      "path": "/registration",
+      "viewportName": "desktop-1440",
+      "width": 1440,
+      "height": 1100,
+      "screenshot": "request-access-desktop-1440.png",
+      "documentOverflow": false,
+      "undersizedInteractiveCount": 0,
+      "pageErrors": []
+    },
+    {
+      "routeName": "sign-in",
+      "path": "/auth",
+      "viewportName": "desktop-1440",
+      "width": 1440,
+      "height": 1100,
+      "screenshot": "sign-in-desktop-1440.png",
+      "documentOverflow": false,
+      "undersizedInteractiveCount": 0,
+      "pageErrors": []
+    }
+  ]
+}

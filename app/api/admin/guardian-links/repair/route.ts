@@ -20,11 +20,17 @@ export async function POST(request: Request) {
     return NextResponse.json({ ok: false, message: "Unsupported guardian relationship." }, { status: 400 });
   }
 
+  const verificationNote = String((body as { verificationNote?: unknown }).verificationNote ?? "").trim();
+  if (verificationNote.length < 10 || verificationNote.length > 500) {
+    return NextResponse.json({ ok: false, message: "Guardian repair verification note must be 10-500 characters." }, { status: 400 });
+  }
+
   const result = await repairGuardianLink({
     organizationId: String((body as { organizationId?: unknown }).organizationId ?? ""),
     actorUserId: auth.user.id,
     playerId: String((body as { playerId?: unknown }).playerId ?? ""),
     parentUserId: String((body as { parentUserId?: unknown }).parentUserId ?? ""),
+    verificationNote,
     relationship: relationship as "mother" | "father" | "guardian" | "other"
   });
 

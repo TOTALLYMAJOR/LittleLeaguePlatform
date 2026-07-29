@@ -1,0 +1,78 @@
+{
+  "generatedAt": "2026-07-24T18:27:42.328Z",
+  "baseUrl": "http://127.0.0.1:3022",
+  "proof": [
+    {
+      "name": "parent-mobile-375",
+      "path": "/parent/family-access",
+      "width": 375,
+      "height": 812,
+      "documentOverflow": false,
+      "undersizedInteractiveCount": 0,
+      "pageErrors": []
+    },
+    {
+      "name": "parent-mobile-390",
+      "path": "/parent/family-access",
+      "width": 390,
+      "height": 844,
+      "documentOverflow": false,
+      "undersizedInteractiveCount": 0,
+      "pageErrors": []
+    },
+    {
+      "name": "parent-tablet-768",
+      "path": "/parent/family-access",
+      "width": 768,
+      "height": 1024,
+      "documentOverflow": false,
+      "undersizedInteractiveCount": 0,
+      "pageErrors": []
+    },
+    {
+      "name": "parent-desktop-1440",
+      "path": "/parent/family-access",
+      "width": 1440,
+      "height": 1100,
+      "documentOverflow": false,
+      "undersizedInteractiveCount": 0,
+      "pageErrors": []
+    },
+    {
+      "name": "admin-mobile-375",
+      "path": "/admin/health",
+      "width": 375,
+      "height": 812,
+      "documentOverflow": false,
+      "undersizedInteractiveCount": 0,
+      "pageErrors": []
+    },
+    {
+      "name": "admin-mobile-390",
+      "path": "/admin/health",
+      "width": 390,
+      "height": 844,
+      "documentOverflow": false,
+      "undersizedInteractiveCount": 0,
+      "pageErrors": []
+    },
+    {
+      "name": "admin-tablet-768",
+      "path": "/admin/health",
+      "width": 768,
+      "height": 1024,
+      "documentOverflow": false,
+      "undersizedInteractiveCount": 0,
+      "pageErrors": []
+    },
+    {
+      "name": "admin-desktop-1440",
+      "path": "/admin/health",
+      "width": 1440,
+      "height": 1100,
+      "documentOverflow": false,
+      "undersizedInteractiveCount": 0,
+      "pageErrors": []
+    }
+  ]
+}

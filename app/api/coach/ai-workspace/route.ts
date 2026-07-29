@@ -5,6 +5,7 @@ import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import { requireActiveTeamCoachOrOrgAdmin } from "@/lib/supabase/access-control";
 import { requireAuthenticatedRouteUser } from "@/lib/supabase/route-auth";
 import { enhanceAiCoachWorkspaceDraft } from "@/lib/services/ai-coach";
+import { recordAiCoachGenerationEvidence } from "@/lib/supabase/ai-generation-evidence";
 
 const toolIds = new Set<string>(AI_COACH_WORKSPACE_TOOL_IDS);
 const workflowSteps = ["Preview", "Edit", "Approve", "Publish"] as const;
@@ -38,8 +39,25 @@ export async function POST(request: Request) {
   }
 
   const result = await enhanceAiCoachWorkspaceDraft(draft);
+  const evidence = await recordAiCoachGenerationEvidence({
+    organizationId: access.team?.organization_id ?? "",
+    teamId,
+    actorUserId: auth.user.id,
+    sourceDraft: draft,
+    result
+  });
+  if (!evidence.ok) {
+    return NextResponse.json({
+      ok: false,
+      message: "AI output was withheld because its source and review evidence could not be recorded.",
+      provider: result.provider,
+      model: result.model,
+      source: "deterministic",
+      trust: result.trust
+    }, { status: 503 });
+  }
   const status = result.ok ? 200 : result.source === "deterministic" ? 503 : 400;
-  return NextResponse.json(result, { status });
+  return NextResponse.json({ ...result, generationRun: evidence.generationRun }, { status });
 }
 
 function parseAiCoachWorkspaceDraft(value: unknown): AiCoachWorkspaceDraft | null {

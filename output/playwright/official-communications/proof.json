@@ -1,0 +1,42 @@
+{
+  "generatedAt": "2026-07-24T17:53:56.838Z",
+  "baseUrl": "http://127.0.0.1:3022",
+  "proof": [
+    {
+      "name": "mobile-375",
+      "path": "/admin/communications",
+      "width": 375,
+      "height": 812,
+      "documentOverflow": false,
+      "undersizedInteractiveCount": 0,
+      "pageErrors": []
+    },
+    {
+      "name": "mobile-390",
+      "path": "/admin/communications",
+      "width": 390,
+      "height": 844,
+      "documentOverflow": false,
+      "undersizedInteractiveCount": 0,
+      "pageErrors": []
+    },
+    {
+      "name": "tablet-768",
+      "path": "/admin/communications",
+      "width": 768,
+      "height": 1024,
+      "documentOverflow": false,
+      "undersizedInteractiveCount": 0,
+      "pageErrors": []
+    },
+    {
+      "name": "desktop-1440",
+      "path": "/admin/communications",
+      "width": 1440,
+      "height": 1100,
+      "documentOverflow": false,
+      "undersizedInteractiveCount": 0,
+      "pageErrors": []
+    }
+  ]
+}

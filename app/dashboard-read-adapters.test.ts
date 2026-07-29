@@ -11,11 +11,19 @@ describe("parent and coach dashboard Supabase reads", () => {
     for (const route of ["app/parent/page.tsx", "app/parent/rsvp/page.tsx", "app/coach/page.tsx"]) {
       const file = source(route);
 
-      expect(file, `${route} should resolve the signed-in Supabase server user`).toContain("getSupabaseServerUser");
-      expect(file, `${route} should load persisted dashboard rows`).toContain("listParentCoachDashboardData");
-      expect(file, `${route} should pass dashboard data into the client`).toContain("dashboardData={dashboardData}");
+      expect(file, `${route} should render through a guarded route surface`).toContain("Surface");
       expect(file, `${route} should not prerender live Supabase reads at build time`).toContain("force-dynamic");
     }
+
+    const parentSurfaces = source("app/parent/_surfaces.tsx");
+    const coachSurfaces = source("app/coach/_surfaces.tsx");
+
+    expect(parentSurfaces).toContain("requireParentPageAccess");
+    expect(parentSurfaces).toContain("listParentCoachDashboardData");
+    expect(parentSurfaces).toContain("dashboardData={dashboardData}");
+    expect(coachSurfaces).toContain("requireCoachPageAccess");
+    expect(coachSurfaces).toContain("listParentCoachDashboardData");
+    expect(coachSurfaces).toContain("dashboardData={dashboardData}");
   });
 
   it("keeps the shared adapter reading the rows that drive parent and coach action payloads", () => {
@@ -39,6 +47,9 @@ describe("parent and coach dashboard Supabase reads", () => {
     expect(adapter).toContain("viewerUserId");
     expect(adapter).toContain("scopeParentState");
     expect(adapter).toContain("scopeCoachState");
+    expect(adapter).toContain("readWithSchemaFallback");
+    expect(adapter).toContain("confirmed_schedule_version,lock_version,last_updated_by_user_id,client_action_id");
+    expect(adapter).toContain("private_object_path,scan_completed_at,family_release_approved_at");
     expect(adapter).toContain("snackScheduleSlots: state.snackScheduleSlots.filter((slot) => teamIds.has(slot.teamId))");
     expect(adapter).toContain("volunteerSignups: state.volunteerSignups.filter((signup) => teamIds.has(signup.teamId))");
   });

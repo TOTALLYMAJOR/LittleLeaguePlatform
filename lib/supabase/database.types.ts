@@ -13,6 +13,10 @@ export interface Database {
           email: string;
           phone: string | null;
           default_role: "admin" | "coach" | "parent";
+          preferred_language: string;
+          translation_enabled: boolean;
+          shared_device_previews: boolean;
+          onboarding_completed_at: Timestamp | null;
           created_at: Timestamp;
           updated_at: Timestamp;
         };
@@ -22,6 +26,10 @@ export interface Database {
           email: string;
           phone?: string | null;
           default_role: "admin" | "coach" | "parent";
+          preferred_language?: string;
+          translation_enabled?: boolean;
+          shared_device_previews?: boolean;
+          onboarding_completed_at?: Timestamp | null;
           created_at?: Timestamp;
           updated_at?: Timestamp;
         };
@@ -188,6 +196,7 @@ export interface Database {
           last_sent_at: Timestamp | null;
           expires_at: Timestamp;
           accepted_at: Timestamp | null;
+          accepted_by_user_id: RowId | null;
           created_at: Timestamp;
           updated_at: Timestamp;
         };
@@ -206,6 +215,7 @@ export interface Database {
           last_sent_at?: Timestamp | null;
           expires_at: Timestamp;
           accepted_at?: Timestamp | null;
+          accepted_by_user_id?: RowId | null;
           created_at?: Timestamp;
           updated_at?: Timestamp;
         };
@@ -234,6 +244,58 @@ export interface Database {
           updated_at?: Timestamp;
         };
         Update: Partial<Database["public"]["Tables"]["player_guardians"]["Insert"]>;
+        Relationships: [];
+      };
+      additional_guardian_requests: {
+        Row: {
+          id: RowId;
+          organization_id: RowId;
+          team_id: RowId;
+          player_id: RowId;
+          proposed_by_user_id: RowId;
+          proposed_email: string;
+          relationship: "mother" | "father" | "guardian" | "other";
+          requested_scope: string[];
+          requested_at: Timestamp;
+          reviewed_at: Timestamp | null;
+          reviewed_by_user_id: RowId | null;
+          approved_at: Timestamp | null;
+          rejected_at: Timestamp | null;
+          cancelled_at: Timestamp | null;
+          revoked_at: Timestamp | null;
+          revoked_by_user_id: RowId | null;
+          decision_reason: string | null;
+          revocation_reason: string | null;
+          parent_invite_id: RowId | null;
+          manual_link_issued_at: Timestamp | null;
+          created_at: Timestamp;
+          updated_at: Timestamp;
+        };
+        Insert: {
+          id?: RowId;
+          organization_id: RowId;
+          team_id: RowId;
+          player_id: RowId;
+          proposed_by_user_id: RowId;
+          proposed_email: string;
+          relationship: "mother" | "father" | "guardian" | "other";
+          requested_scope?: string[];
+          requested_at?: Timestamp;
+          reviewed_at?: Timestamp | null;
+          reviewed_by_user_id?: RowId | null;
+          approved_at?: Timestamp | null;
+          rejected_at?: Timestamp | null;
+          cancelled_at?: Timestamp | null;
+          revoked_at?: Timestamp | null;
+          revoked_by_user_id?: RowId | null;
+          decision_reason?: string | null;
+          revocation_reason?: string | null;
+          parent_invite_id?: RowId | null;
+          manual_link_issued_at?: Timestamp | null;
+          created_at?: Timestamp;
+          updated_at?: Timestamp;
+        };
+        Update: Partial<Database["public"]["Tables"]["additional_guardian_requests"]["Insert"]>;
         Relationships: [];
       };
       events: {
@@ -602,6 +664,63 @@ export interface Database {
           target_registration_request_id: RowId;
           reviewer_user_id: RowId;
           review_note?: string | null;
+        };
+        Returns: Json;
+      };
+      complete_family_first_sign_in: {
+        Args: {
+          target_user_id: RowId;
+          selected_language: string;
+          selected_critical_channel: string;
+          selected_routine_channel: string;
+          selected_quiet_hours_start: string;
+          selected_quiet_hours_end: string;
+          selected_timezone: string;
+          enable_translation: boolean;
+          enable_shared_device_previews: boolean;
+        };
+        Returns: Json;
+      };
+      accept_parent_invite_by_hash: {
+        Args: { target_invite_token_hash: string; accepting_user_id: RowId };
+        Returns: Json;
+      };
+      request_additional_guardian: {
+        Args: {
+          target_player_id: RowId;
+          proposing_user_id: RowId;
+          adult_email: string;
+          adult_relationship: string;
+        };
+        Returns: Json;
+      };
+      cancel_additional_guardian_request: {
+        Args: { target_request_id: RowId; cancelling_user_id: RowId };
+        Returns: Json;
+      };
+      reject_additional_guardian_request: {
+        Args: {
+          target_request_id: RowId;
+          reviewing_user_id: RowId;
+          review_reason: string;
+        };
+        Returns: Json;
+      };
+      approve_additional_guardian_request: {
+        Args: {
+          target_request_id: RowId;
+          reviewing_user_id: RowId;
+          review_reason: string;
+          target_invite_token_hash: string;
+          target_expires_at: Timestamp;
+        };
+        Returns: Json;
+      };
+      revoke_additional_guardian_access: {
+        Args: {
+          target_request_id: RowId;
+          revoking_user_id: RowId;
+          revocation_reason: string;
         };
         Returns: Json;
       };

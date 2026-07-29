@@ -1,22 +1,25 @@
 "use client";
 
-import { useEffect, useMemo, useState, useTransition, type CSSProperties } from "react";
-import { useAppState } from "@/app/providers";
+import { useEffect, useMemo, useState, useTransition, type CSSProperties, type ChangeEvent, type ReactNode } from "react";
+import { markLeaguePilotValueExperienced, useAppState } from "@/app/providers";
+import {
+  queueOfflineGameDayAction,
+  syncContextOutbox,
+  type OfflineGameDayAction
+} from "@/lib/offline/game-day-outbox";
 import {
   NOW,
   analyzeRosterCsv,
   applyScheduleChange,
   buildAdminAssistiveSuggestions,
+  buildPublicEventCalendarActions,
   buildCoachAssistiveSuggestions,
-  buildParentAssistiveSuggestions,
   canUpdateTeamPortalBranding,
   communicationTemplates,
   computeAdminHealth,
   computeSeasonPlanningMetrics,
-  createRegistrationRequest,
   defaultTeamCommunicationCopy,
   detectScheduleConflicts,
-  evaluateInviteRecovery,
   getCoachRsvpReliability,
   getCoachRsvpSummaries,
   getParentDashboard,
@@ -64,14 +67,14 @@ import {
   previewTeamCommunication,
   previewScheduleChangeImpact,
   previewRecurringEvents,
+  publicArrivalLabel,
   programThemePresets,
   roleLabel,
   sampleRosterCsv,
   setRsvp,
   updateTeamPortalBranding,
+  validateRegistrationRequestInput,
   validateMediaUrl,
-  approveMediaItem,
-  rejectMediaItem,
   getMediaReportingSummary,
   getUploadStorageProviderStatus,
   getFamilyFacingModerationQueue,
@@ -81,7 +84,6 @@ import {
   getPerPlayerMediaConsent,
   getPhotoVisibilityFlags,
   getPrivateTeamAlbum,
-  createMediaTakedownRequest,
   getParentSubmittedMoments,
   getVolunteerMoments,
   exportSeasonMemories,
@@ -105,34 +107,37 @@ import {
   getEmailSponsorPlacement,
   getBannerSponsorPlacement,
   buildSponsorBillingProofs,
+  buildFamilyBalanceSummary,
+  buildLeagueRevenueSummary,
+  buildLocalBusinessTeamPage,
+  buildSponsorOpportunities,
+  buildVolunteerMarketplace,
+  buildEquipmentExchange,
+  buildWeatherSafetyDecisionAssistant,
+  buildSponsorSafeMediaGallery,
+  buildFamilyAvailabilityIntelligence,
   previewBalancedTeamBuild,
   getTouchTargetQa,
   getOfflineStateSummary,
-  getCacheInvalidationPolicy,
-  getManualDarkToggleState,
   getAccessibilityContrastChecks,
   getPromptEvalHarness,
   getPrivacyFilters,
-  getInviteAcceptanceRate,
-  getAverageInviteToAccountTimeHours,
-  getFailedInviteCount,
-  getParentLinkCompletionRate,
-  getRsvpResponseRate,
-  getScheduleAlertOpenRate,
-  getWeeklyActiveParents,
-  getSupportRequestsPerTeam,
-  getCsvImportErrorRate,
-  getCoachWeeklyUpdateSendRate,
-  getGameDayCalmModeUsage,
-  getParentReplayCompletionRate,
-  getMicroCoachingStreakRate,
-  getMediaEngagementRate,
-  getNotificationOptOutRate,
+  youtubePrivacyEmbedUrl,
   buildAiCoachWorkspaceDrafts,
+  generateRookieCoachAssist,
+  rookieCoachAgeBandOptions,
+  rookieCoachChallengeOptions,
+  rookieCoachExperienceOptions,
+  rookieCoachMotivationStrategyOptions,
+  rookieCoachPracticePersonalityOptions,
   buildBrandLaunchValidation,
   type AiCoachWorkspaceDraft,
   type ChatAnnouncementTopic,
   type CommunicationTemplate,
+  type DrillVideo,
+  type DrillVideoAssignment,
+  type DrillVideoDifficulty,
+  type DrillVideoSource,
   type EventType,
   type EventStatus,
   type LeagueEvent,
@@ -143,21 +148,76 @@ import {
   type PracticeFocusArea,
   type ProgramThemeKey,
   type RegistrationRequest,
+  type RookieCoachAgeBand,
+  type RookieCoachChallenge,
+  type RookieCoachExperienceLevel,
+  type RookieCoachMotivationStrategy,
+  type RookieCoachPracticePersonality,
   type RsvpResponse,
   type Sponsor,
   type Team,
   type UserRole
 } from "@/lib/domain";
-import { createSupabaseBrowserClient } from "@/lib/supabase/browser";
+import { createSupabaseBrowserClient, getSupabaseBrowserConfigStatus, getSupabaseEmailRedirectTo } from "@/lib/supabase/browser";
+import type { DrillVideoLibraryData } from "@/lib/supabase/drill-videos";
 import type { MediaGovernanceData } from "@/lib/supabase/media-governance";
 import type { RegistrationReviewData } from "@/lib/supabase/registration-approvals";
 import type { SponsorAdminData } from "@/lib/supabase/sponsors";
 import type { TeamPortalData } from "@/lib/supabase/team-portal";
-import type { AdminThemeData, TeamThemeAudit, TenantThemeDefaults } from "@/lib/supabase/team-branding";
+import type { AdminThemeData, TeamLogoAsset, TeamThemeAudit, TenantThemeDefaults } from "@/lib/supabase/team-branding";
 import type { TeamChatData } from "@/lib/supabase/team-chat";
+import type { TenantReadinessData, TenantReadinessCheckStatus } from "@/lib/supabase/tenant-readiness";
 import type { ParentCoachDashboardData } from "@/lib/supabase/dashboard-data";
+import type { PracticeRunReceipt } from "@/lib/supabase/practice-runs";
 import type { AdminTeamManagementData } from "@/lib/supabase/team-management";
 import type { ScheduleOperationsData } from "@/lib/supabase/schedule-management";
+import {
+  buildAdminSeasonCertaintyView,
+  buildCoachSeasonCertaintyView,
+  buildParentSeasonCertaintyView
+} from "@/lib/season-certainty";
+import {
+  ActionChecklist,
+  AttendanceRosterCard,
+  CoachUpdateCard,
+  DraftsToReviewCard,
+  EventReadinessCard,
+  LeagueHealthSummaryCard,
+  MessagesSummaryCard,
+  NextEventCard,
+  PendingActionsPanel,
+  PhotosSummaryCard,
+  PracticeRecapCard,
+  PrivacyIndicator,
+  RegistrationQueueCard,
+  SecurityStatusCard,
+  TeamStatusTable,
+  WeatherFieldCard,
+  WhatChangedCard
+} from "@/components/season-certainty-cards";
+import {
+  CoachAnnouncementTicker,
+  CoachGameDayRadar,
+  ParentSeasonStory,
+  SponsorCommunityProofLedger,
+  type ParentSeasonStoryEntry,
+  type SponsorProofLedgerRow
+} from "@/components/role-dashboard-experiences";
+import {
+  AvatarStack,
+  BreadcrumbTrail,
+  BroadcastMode,
+  Chip,
+  Divider,
+  EmptyState,
+  PageHeader,
+  PinnedMessagesBar,
+  ReadReceipt,
+  StatusBadge,
+  Tooltip,
+  Toggle,
+  TypingIndicator
+} from "@/components/ui/primitives";
 
 interface RegistrationTeamOption {
   id: string;
@@ -184,6 +244,270 @@ function formatDate(value: string) {
   return new Date(value).toLocaleString("en-US", {
     month: "short",
     day: "numeric",
+    hour: "numeric",
+    minute: "2-digit"
+  });
+}
+
+function formatCents(value: number) {
+  return `$${(value / 100).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+}
+
+function formatCalendarMonth(value?: string) {
+  const date = value ? new Date(value) : new Date();
+  return date.toLocaleDateString("en-US", { month: "long", year: "numeric" });
+}
+
+function getDateKey(value: string | Date) {
+  const date = value instanceof Date ? value : new Date(value);
+  return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`;
+}
+
+function buildCalendarDays(events: LeagueEvent[], selectedEventId: string) {
+  const sortedEvents = [...events].sort((left, right) => Date.parse(left.startsAt) - Date.parse(right.startsAt));
+  const selectedEvent = sortedEvents.find((item) => item.id === selectedEventId) ?? sortedEvents[0];
+  const anchor = selectedEvent ? new Date(selectedEvent.startsAt) : new Date();
+  const monthStart = new Date(anchor.getFullYear(), anchor.getMonth(), 1);
+  const gridStart = new Date(monthStart);
+  gridStart.setDate(monthStart.getDate() - monthStart.getDay());
+  const monthEnd = new Date(anchor.getFullYear(), anchor.getMonth() + 1, 0);
+  const gridEnd = new Date(monthEnd);
+  gridEnd.setDate(monthEnd.getDate() + (6 - monthEnd.getDay()));
+
+  const eventsByDay = new Map<string, LeagueEvent[]>();
+  sortedEvents.forEach((event) => {
+    const key = getDateKey(event.startsAt);
+    eventsByDay.set(key, [...(eventsByDay.get(key) ?? []), event]);
+  });
+
+  const days: Array<{
+    key: string;
+    day: number;
+    inMonth: boolean;
+    events: LeagueEvent[];
+  }> = [];
+  for (const cursor = new Date(gridStart); cursor <= gridEnd; cursor.setDate(cursor.getDate() + 1)) {
+    const day = new Date(cursor);
+    days.push({
+      key: getDateKey(day),
+      day: day.getDate(),
+      inMonth: day.getMonth() === anchor.getMonth(),
+      events: eventsByDay.get(getDateKey(day)) ?? []
+    });
+  }
+
+  return {
+    monthLabel: formatCalendarMonth(anchor.toISOString()),
+    days
+  };
+}
+
+function getDefaultScheduleEventId(events: LeagueEvent[]) {
+  const nowMs = Date.parse(NOW);
+  const sortedEvents = [...events].sort((left, right) => Date.parse(left.startsAt) - Date.parse(right.startsAt));
+  return sortedEvents.find((event) => event.status === "scheduled" && Date.parse(event.startsAt) >= nowMs)?.id
+    ?? sortedEvents.find((event) => event.status === "scheduled")?.id
+    ?? sortedEvents[0]?.id
+    ?? "";
+}
+
+function publicEventDateParts(value: string) {
+  const date = new Date(value);
+  return {
+    date: date.toLocaleDateString("en-US", { weekday: "short", month: "short", day: "numeric" }),
+    time: date.toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" })
+  };
+}
+
+function PublicScheduleAgenda({
+  event,
+  events,
+  onSelectEvent,
+  teams
+}: {
+  event?: LeagueEvent;
+  events: LeagueEvent[];
+  onSelectEvent: (eventId: string) => void;
+  teams: Team[];
+}) {
+  const teamNameById = useMemo(() => new Map(teams.map((team) => [team.id, team.name])), [teams]);
+  const sortedEvents = useMemo(
+    () => [...events].sort((left, right) => Date.parse(left.startsAt) - Date.parse(right.startsAt)),
+    [events]
+  );
+  const selectedTeamName = event ? teamNameById.get(event.teamId) ?? "Team" : "Team";
+  const selectedActions = event ? buildPublicEventCalendarActions(event, selectedTeamName) : null;
+  const directionsUrl = event
+    ? `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent([event.locationName, event.locationAddress].filter(Boolean).join(", "))}`
+    : "";
+
+  function chooseEvent(eventId: string) {
+    onSelectEvent(eventId);
+  }
+
+  return (
+    <section className="public-agenda-layout" aria-label="Public league schedule">
+      <div className="public-agenda-list">
+        <header>
+          <div>
+            <span className="eyebrow">Agenda</span>
+            <h2>League events</h2>
+          </div>
+          <span className="badge">{sortedEvents.length} event(s)</span>
+        </header>
+        {sortedEvents.length ? sortedEvents.map((item) => {
+          const dateParts = publicEventDateParts(item.startsAt);
+          const teamName = teamNameById.get(item.teamId) ?? "Team";
+          return (
+            <article className={`public-agenda-row${item.id === event?.id ? " selected" : ""}`} key={item.id}>
+              <time dateTime={item.startsAt}>
+                <strong>{dateParts.date}</strong>
+                <span>{dateParts.time}</span>
+              </time>
+              <div className="public-agenda-primary">
+                <span>{teamName}</span>
+                <h3>{item.title}</h3>
+                <p>{item.eventType.replace(/_/g, " ")}{item.opponent ? ` against ${item.opponent}` : ""}</p>
+              </div>
+              <dl>
+                <div><dt>Arrival</dt><dd>{publicArrivalLabel(item)}</dd></div>
+                <div><dt>Venue</dt><dd>{item.locationAddress || "Not published"}</dd></div>
+                <div><dt>Field</dt><dd>{item.locationName || "Not published"}</dd></div>
+              </dl>
+              <div className="public-agenda-action">
+                <span className={`season-status state-${item.status === "cancelled" ? "error" : item.status === "completed" ? "ready" : "needs_attention"}`}>{item.status}</span>
+                <button
+                  aria-current={item.id === event?.id ? "true" : undefined}
+                  className="secondary"
+                  data-analytics-event="public_schedule_event_opened"
+                  onClick={() => chooseEvent(item.id)}
+                  type="button"
+                >
+                  View event
+                </button>
+              </div>
+            </article>
+          );
+        }) : <p className="notice">No public events are available yet. Check again after the league publishes its schedule.</p>}
+      </div>
+
+      <aside className="public-event-passport" aria-labelledby="public-event-passport-title">
+        {event && selectedActions ? (
+          <>
+            <div className="public-event-passport-heading">
+              <div>
+                <span className="eyebrow">Event details</span>
+                <h2 id="public-event-passport-title">{event.title}</h2>
+              </div>
+              <span className={`season-status state-${event.status === "cancelled" ? "error" : event.status === "completed" ? "ready" : "needs_attention"}`}>{event.status}</span>
+            </div>
+            <dl className="public-event-facts">
+              <div><dt>Team</dt><dd>{selectedTeamName}</dd></div>
+              <div><dt>Activity</dt><dd>{event.eventType.replace(/_/g, " ")}</dd></div>
+              <div><dt>Date and time</dt><dd>{publicEventDateParts(event.startsAt).date}, {publicEventDateParts(event.startsAt).time}</dd></div>
+              <div><dt>Arrival time</dt><dd>{publicArrivalLabel(event)}</dd></div>
+              <div><dt>Opponent</dt><dd>{event.opponent ?? "Not applicable"}</dd></div>
+              <div><dt>Venue</dt><dd>{event.locationAddress || "Not published"}</dd></div>
+              <div><dt>Field</dt><dd>{event.locationName || "Not published"}</dd></div>
+            </dl>
+            {event.status === "cancelled" ? (
+              <p className="notice danger">This event is cancelled. Do not rely on a saved calendar copy for current status.</p>
+            ) : (
+              <p className="notice">Arrival guidance has not been published for this event. Confirm current details before leaving.</p>
+            )}
+            <div className="public-calendar-actions" aria-label="Add this event to a calendar">
+              <a data-analytics-event="calendar_add_apple" download={selectedActions.fileName} href={selectedActions.appleUrl}>Apple Calendar</a>
+              <a data-analytics-event="calendar_add_google" href={selectedActions.googleUrl} rel="noreferrer" target="_blank">Google Calendar</a>
+              <a data-analytics-event="calendar_add_outlook" href={selectedActions.outlookUrl} rel="noreferrer" target="_blank">Outlook</a>
+              <a data-analytics-event="calendar_download" download={selectedActions.fileName} href={selectedActions.downloadUrl}>Download calendar</a>
+            </div>
+            <a className="button secondary" href={directionsUrl} rel="noreferrer" target="_blank">Open directions</a>
+            <small>Saved calendar copies do not update official LeaguePilot schedule truth.</small>
+          </>
+        ) : (
+          <p className="notice">Choose an event to see its public details.</p>
+        )}
+      </aside>
+    </section>
+  );
+}
+
+function ScheduleMonthCalendar({
+  events,
+  teams,
+  selectedEventId,
+  onSelectEvent
+}: {
+  events: LeagueEvent[];
+  teams: Team[];
+  selectedEventId: string;
+  onSelectEvent: (eventId: string) => void;
+}) {
+  const calendar = useMemo(() => buildCalendarDays(events, selectedEventId), [events, selectedEventId]);
+  const teamNameById = useMemo(() => new Map(teams.map((team) => [team.id, team.name])), [teams]);
+
+  return (
+    <article className="card stack calendar-month-card">
+      <div className="card-header">
+        <div>
+          <span className="eyebrow">Calendar</span>
+          <h2>{calendar.monthLabel}</h2>
+        </div>
+        <span className="badge warning">{events.length} event(s)</span>
+      </div>
+      <div className="month-calendar" role="grid" aria-label={`${calendar.monthLabel} schedule`}>
+        {["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"].map((day) => (
+          <span className="month-calendar-head" role="columnheader" key={day}>{day}</span>
+        ))}
+        {calendar.days.map((day) => {
+          const firstEvent = day.events[0];
+          const isSelectedDay = day.events.some((item) => item.id === selectedEventId);
+          const content = (
+            <>
+              <span className="month-calendar-date">{day.day}</span>
+              {day.events.slice(0, 2).map((item) => (
+                <span className="month-calendar-event" key={item.id}>
+                  {item.title}
+                  <small>{teamNameById.get(item.teamId) ?? "Team"}</small>
+                </span>
+              ))}
+              {day.events.length > 2 ? <span className="month-calendar-more">+{day.events.length - 2} more</span> : null}
+            </>
+          );
+
+          return firstEvent ? (
+            <button
+              aria-pressed={isSelectedDay}
+              className={`month-calendar-day has-event${day.inMonth ? "" : " outside-month"}`}
+              key={day.key}
+              onClick={() => onSelectEvent(firstEvent.id)}
+              type="button"
+            >
+              {content}
+            </button>
+          ) : (
+            <span className={`month-calendar-day${day.inMonth ? "" : " outside-month"}`} key={day.key} role="gridcell">
+              {content}
+            </span>
+          );
+        })}
+      </div>
+    </article>
+  );
+}
+
+function formatShortDay(value?: string) {
+  if (!value) return "No date set";
+  return new Date(value).toLocaleDateString("en-US", {
+    weekday: "short",
+    month: "short",
+    day: "numeric"
+  });
+}
+
+function formatShortTime(value?: string) {
+  if (!value) return "Time pending";
+  return new Date(value).toLocaleTimeString("en-US", {
     hour: "numeric",
     minute: "2-digit"
   });
@@ -234,7 +558,7 @@ function privateAccessGate(
         <span className="eyebrow">Access required</span>
         <h2>{copy.title}</h2>
         <p>{copy.body}</p>
-        <a href={copy.actionHref}>{copy.actionLabel}</a>
+        <a className="button" href={copy.actionHref}>{copy.actionLabel}</a>
       </article>
       <article className="card stack">
         <h2>{surface === "coach" ? "Coach role access checklist" : "What stays protected"}</h2>
@@ -245,11 +569,247 @@ function privateAccessGate(
   );
 }
 
-function formatArrivalTime(value: string) {
-  return new Date(Date.parse(value) - 20 * 60 * 1000).toLocaleTimeString("en-US", {
-    hour: "numeric",
-    minute: "2-digit"
-  });
+function CompactDisclosure({
+  id,
+  title,
+  summary,
+  badge,
+  className = "",
+  defaultOpen = false,
+  children
+}: {
+  id?: string;
+  title: string;
+  summary: string;
+  badge?: string;
+  className?: string;
+  defaultOpen?: boolean;
+  children: ReactNode;
+}) {
+  return (
+    <details className={`compact-disclosure ${className}`.trim()} id={id} open={defaultOpen}>
+      <summary>
+        <span>
+          <strong>{title}</strong>
+          <small>{summary}</small>
+        </span>
+        {badge ? <em>{badge}</em> : null}
+      </summary>
+      <div className="compact-disclosure-body">
+        {children}
+      </div>
+    </details>
+  );
+}
+
+type GameDayChecklistItem = {
+  id: string;
+  label: string;
+  detail: string;
+  checked: boolean;
+};
+
+type GameDayPlanItem = {
+  id: string;
+  label: string;
+  detail: string;
+  href?: string;
+  actionLabel?: string;
+};
+
+function ParentGameDayCalmCard({
+  eventTitle,
+  eventMeta,
+  eventStartsAt,
+  eventKind,
+  teamLabel,
+  teamInitials,
+  badge,
+  location,
+  directionsUrl,
+  rsvpCopy,
+  rsvpRequired,
+  playerLabel,
+  weatherCopy,
+  helpCopy,
+  coachCopy,
+  primaryHref,
+  primaryLabel,
+  arrivalPlan,
+  packList,
+  fieldPlan,
+  playerPlan,
+  copyStatus,
+  onCopyPlan,
+  onTogglePackItem
+}: {
+  eventTitle: string;
+  eventMeta: string;
+  eventStartsAt?: string;
+  eventKind: string;
+  teamLabel: string;
+  teamInitials: string;
+  badge: string;
+  location: string;
+  directionsUrl?: string;
+  rsvpCopy: string;
+  rsvpRequired: boolean;
+  playerLabel: string;
+  weatherCopy: string;
+  helpCopy: string;
+  coachCopy: string;
+  primaryHref: string;
+  primaryLabel: string;
+  arrivalPlan: GameDayPlanItem[];
+  packList: GameDayChecklistItem[];
+  fieldPlan: GameDayPlanItem[];
+  playerPlan: GameDayPlanItem[];
+  copyStatus: string;
+  onCopyPlan: () => void;
+  onTogglePackItem: (id: string) => void;
+}) {
+  const eventDate = eventStartsAt ? new Date(eventStartsAt) : null;
+  const dayLabel = eventDate
+    ? eventDate.toLocaleDateString("en-US", { weekday: "short" }).toUpperCase()
+    : "TBD";
+  const dateLabel = eventDate
+    ? eventDate.toLocaleDateString("en-US", { month: "short", day: "numeric" }).toUpperCase()
+    : "DATE";
+
+  return (
+    <section className="stack game-day-calm-card">
+      <div className="certainty-band certainty-band-parent">
+        <span className="certainty-band-icon" aria-hidden="true">{rsvpCopy.startsWith("RSVP needed") ? "!" : "✓"}</span>
+        <span>
+          <strong>{rsvpCopy.startsWith("RSVP needed") ? "RSVP needed" : "Next event confirmed"}</strong>
+          <small>{rsvpCopy.startsWith("RSVP needed") ? rsvpCopy : `${eventTitle} is next on your family schedule.`}</small>
+        </span>
+        <span className={`season-status ${rsvpCopy.startsWith("RSVP needed") ? "state-needs_attention" : "state-ready"}`}>{badge}</span>
+      </div>
+
+      <div className="parent-event-group">
+        <header className="parent-event-group-heading">
+          <h2>{badge === "Today" ? "Today" : "This week"}</h2>
+          <span>1 event <span aria-hidden="true">⌃</span></span>
+        </header>
+
+        <article className="parent-schedule-card">
+          <header className="parent-schedule-team">
+            <span className="team-mark" aria-hidden="true">{teamInitials}</span>
+            <strong>{teamLabel}</strong>
+          </header>
+
+          <div className="parent-schedule-event">
+            <div className="parent-schedule-date" aria-label={`${dayLabel} ${dateLabel}`}>
+              <span>{dayLabel}</span>
+              <strong>{dateLabel}</strong>
+              <small>{eventKind}</small>
+            </div>
+            <div className="parent-schedule-details">
+              <h1>{eventTitle}</h1>
+              <strong className="game-day-time">{eventMeta}</strong>
+              <p>
+                <span className="parent-location-mark" aria-hidden="true" />
+                <span>{location}</span>
+              </p>
+              <div className="parent-schedule-links">
+                {directionsUrl ? <a href={directionsUrl} target="_blank" rel="noreferrer">Directions</a> : null}
+                <a className={rsvpRequired ? "parent-rsvp-glow compact" : undefined} href={primaryHref}>{primaryLabel}</a>
+              </div>
+            </div>
+          </div>
+
+          {rsvpRequired ? (
+            <div className="parent-inline-rsvp">
+              <span className="parent-player-avatar" aria-hidden="true">{playerLabel.slice(0, 1).toUpperCase()}</span>
+              <p><strong>Is {playerLabel} going?</strong><small>Choose on the RSVP screen.</small></p>
+              <div className="parent-inline-rsvp-actions" aria-label={`RSVP options for ${playerLabel}`}>
+                <a href="/parent/rsvp" aria-label={`Open RSVP and answer yes for ${playerLabel}`} title="Open RSVP and answer yes">✓</a>
+                <a href="/parent/rsvp" aria-label={`Open RSVP and answer no for ${playerLabel}`} title="Open RSVP and answer no">×</a>
+              </div>
+            </div>
+          ) : (
+            <div className="parent-inline-rsvp parent-inline-rsvp-confirmed">
+              <span className="parent-player-avatar" aria-hidden="true">✓</span>
+              <p><strong>RSVP answered</strong><small>{rsvpCopy}</small></p>
+              <a className="parent-rsvp-change" href="/parent/rsvp">Change</a>
+            </div>
+          )}
+        </article>
+      </div>
+
+      <div className="parent-event-support-grid">
+        <p><strong>Weather</strong><span>{weatherCopy}</span></p>
+        <p><strong>Family help</strong><span>{helpCopy}</span></p>
+      </div>
+      <details className="game-day-details">
+        <summary>Arrival, field, and pack details</summary>
+        <div className="game-day-deep-grid">
+        <section className="game-day-panel" aria-label="Arrival timeline">
+          <h3>Arrival timeline</h3>
+          <div className="game-day-arrival-list">
+            {arrivalPlan.map((item) => (
+              <p key={item.id}>
+                <span>{item.label}</span>
+                <strong>{item.detail}</strong>
+              </p>
+            ))}
+          </div>
+        </section>
+        <section className="game-day-panel" aria-label="Pack check">
+          <h3>Pack check</h3>
+          <div className="game-day-checklist">
+            {packList.map((item) => (
+              <label className="game-day-check-row" key={item.id}>
+                <input
+                  type="checkbox"
+                  checked={item.checked}
+                  onChange={() => onTogglePackItem(item.id)}
+                />
+                <span>
+                  <strong>{item.label}</strong>
+                  <small>{item.detail}</small>
+                </span>
+              </label>
+            ))}
+          </div>
+        </section>
+        <section className="game-day-panel" aria-label="Field plan">
+          <h3>Field plan</h3>
+          <div className="game-day-field-list">
+            {fieldPlan.map((item) => (
+              <p key={item.id}>
+                <span>
+                  <strong>{item.label}</strong>
+                  <small>{item.detail}</small>
+                </span>
+                {item.href ? <a href={item.href} target="_blank" rel="noreferrer">{item.actionLabel ?? "Open"}</a> : null}
+              </p>
+            ))}
+          </div>
+        </section>
+        <section className="game-day-panel" aria-label="Player readiness">
+          <h3>Player readiness</h3>
+          <div className="game-day-field-list">
+            {playerPlan.map((item) => (
+              <p key={item.id}>
+                <span>
+                  <strong>{item.label}</strong>
+                  <small>{item.detail}</small>
+                </span>
+              </p>
+            ))}
+          </div>
+        </section>
+        </div>
+      </details>
+      <p className="notice ok"><strong>Latest coach update:</strong> {coachCopy}</p>
+      <div className="game-day-copy-row">
+        <button className="secondary" type="button" onClick={onCopyPlan}>Copy game plan</button>
+      </div>
+      <p className="muted" aria-live="polite">{copyStatus || "Local checklist only. It does not save attendance or send alerts."}</p>
+    </section>
+  );
 }
 
 function formatTopic(value?: string) {
@@ -321,8 +881,71 @@ function themeQaStatus(primaryColor: string, secondaryColor: string) {
   };
 }
 
-async function authenticatedJsonFetch(url: string, payload: unknown) {
-  const headers: Record<string, string> = { "Content-Type": "application/json" };
+type TenantEnvironmentSurfaceId = "app" | "portal" | "mobile" | "communications" | "commerce" | "governance";
+
+interface TenantEnvironmentSurface {
+  id: TenantEnvironmentSurfaceId;
+  label: string;
+  status: string;
+  detail: string;
+}
+
+const tenantEnvironmentSurfaces: TenantEnvironmentSurface[] = [
+  {
+    id: "app",
+    label: "App shell",
+    status: "Menus and labels",
+    detail: "League navigation, role home labels, and dashboard accents."
+  },
+  {
+    id: "portal",
+    label: "Team portals",
+    status: "Family-facing",
+    detail: "Roster, schedule, RSVP, media, chat, and Parent Replay surfaces."
+  },
+  {
+    id: "mobile",
+    label: "Mobile view",
+    status: "Small-screen QA",
+    detail: "Header, quick action bar, badges, and contrast-critical touch targets."
+  },
+  {
+    id: "communications",
+    label: "Messages",
+    status: "Provider-gated",
+    detail: "Invite, digest, reminder, and push identity previews before delivery."
+  },
+  {
+    id: "commerce",
+    label: "Sponsor docs",
+    status: "Admin-only proof",
+    detail: "Sponsor invoice references, receipts, and public placement separation."
+  },
+  {
+    id: "governance",
+    label: "Safety rules",
+    status: "Human review",
+    detail: "Logo review, child-privacy defaults, audit trail, and fallback rendering."
+  }
+];
+
+const tenantAppMenuPreview = ["Home", "Schedule", "RSVP", "Messages", "Photos"];
+
+function initialsFromName(value: string) {
+  return value
+    .split(/\s+/)
+    .filter(Boolean)
+    .map((part) => part[0])
+    .join("")
+    .slice(0, 3)
+    .toUpperCase();
+}
+
+async function authenticatedJsonFetch(url: string, payload: unknown, extraHeaders?: Record<string, string>) {
+  const headers: Record<string, string> = {
+    "Content-Type": "application/json",
+    ...extraHeaders
+  };
   try {
     const supabase = createSupabaseBrowserClient();
     const { data } = await supabase.auth.getSession();
@@ -340,6 +963,39 @@ async function authenticatedJsonFetch(url: string, payload: unknown) {
   });
 }
 
+function mediaReviewPriority(item: MediaItem) {
+  if (item.moderationStatus === "pending") return 0;
+  if ((item.reportCount ?? 0) > 0) return 1;
+  if (item.moderationStatus === "hidden") return 2;
+  if (item.moderationStatus === "rejected" || item.moderationStatus === "removed") return 3;
+  return 4;
+}
+
+function getMediaReviewCopy(item: MediaItem) {
+  const reports = item.reportCount ?? 0;
+  if (item.moderationStatus === "pending" && reports > 0) {
+    return `Review request: ${reports} family report(s); staff approval is required before family visibility changes.`;
+  }
+  if (item.moderationStatus === "pending") {
+    return "Review request: pending staff approval before this appears to families.";
+  }
+  if (reports > 0) {
+    return `Review request: ${reports} family report(s); content remains under staff review.`;
+  }
+  return "Review request: none open.";
+}
+
+function getMediaVisibilityCopy(item: MediaItem) {
+  const visibilityFlags = getPhotoVisibilityFlags(item);
+  const familyVisible = canViewMediaByRole(item, "parent");
+  if (familyVisible && visibilityFlags.organizationVisible) return "Visible to eligible organization views.";
+  if (familyVisible && visibilityFlags.teamVisible) return "Visible to linked team parents.";
+  if (item.moderationStatus === "removed") return "Removed from coach/admin and family-facing surfaces.";
+  if (item.moderationStatus === "rejected") return "Rejected and excluded from family-facing views.";
+  if (visibilityFlags.privateAlbumOnly) return "Hidden from families while review is open.";
+  return "Not family-facing under the current role policy.";
+}
+
 function mergeRegistrationRequests(localRequests: RegistrationRequest[], serverRequests: RegistrationRequest[]) {
   const seen = new Set<string>();
   return [...serverRequests, ...localRequests].filter((request) => {
@@ -349,89 +1005,142 @@ function mergeRegistrationRequests(localRequests: RegistrationRequest[], serverR
   });
 }
 
-export function AuthClient() {
-  const [mode, setMode] = useState<"sign-in" | "sign-up">("sign-in");
-  const [displayName, setDisplayName] = useState("Coach Taylor");
-  const [email, setEmail] = useState("coach.taylor@example.com");
+interface AuthClientProps {
+  returnTo?: string;
+  initialMessage?: string;
+}
+
+export function AuthClient({ returnTo = "", initialMessage }: AuthClientProps) {
+  type SocialAuthProvider = "google" | "facebook";
+
+  const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [defaultRole, setDefaultRole] = useState<"admin" | "coach" | "parent">("coach");
-  const [message, setMessage] = useState("");
+  const [message, setMessage] = useState(initialMessage ?? "");
   const [isPending, startTransition] = useTransition();
+  const authConfigStatus = getSupabaseBrowserConfigStatus();
+
+  useEffect(() => {
+    if (!authConfigStatus.ok) return;
+
+    let cancelled = false;
+    async function routeExistingSession() {
+      try {
+        const supabase = createSupabaseBrowserClient();
+        const { data, error } = await supabase.auth.getSession();
+        if (cancelled || error || !data.session) return;
+        setMessage("Signed in. Opening the right dashboard.");
+        if (returnTo) {
+          if (!cancelled) window.location.assign(returnTo);
+          return;
+        }
+        const landingResponse = await fetch("/api/auth/session-landing", { cache: "no-store" }).catch(() => null);
+        const landing = await landingResponse?.json().catch(() => null) as { href?: string } | null;
+        if (!cancelled) window.location.assign(landing?.href ?? "/account");
+      } catch {
+        // Keep the form usable if session inspection is unavailable.
+      }
+    }
+
+    void routeExistingSession();
+    return () => {
+      cancelled = true;
+    };
+  }, [authConfigStatus.ok, returnTo]);
 
   function submitAuth() {
     setMessage("");
+    if (!authConfigStatus.ok) {
+      setMessage("Sign-in services are not connected in this environment.");
+      return;
+    }
+
     startTransition(async () => {
       try {
         const supabase = createSupabaseBrowserClient();
-        if (mode === "sign-up") {
-          const { error } = await supabase.auth.signUp({
-            email,
-            password,
-            options: {
-              data: {
-                display_name: displayName,
-                default_role: defaultRole
-              }
-            }
-          });
+        const { error } = await supabase.auth.signInWithPassword({ email, password });
+        if (error) {
+          setMessage(error.message);
+          return;
+        }
+        setMessage("Signed in. Opening the right dashboard.");
+        if (returnTo) {
+          window.location.assign(returnTo);
+          return;
+        }
+        const landingResponse = await fetch("/api/auth/session-landing", { cache: "no-store" }).catch(() => null);
+        const landing = await landingResponse?.json().catch(() => null) as { href?: string } | null;
+        window.location.assign(landing?.href ?? "/account");
+      } catch (error) {
+        void error;
+        setMessage("Sign in could not be completed. Try again or contact your league administrator.");
+      }
+    });
+  }
 
-          if (error) {
-            setMessage(error.message);
-            return;
+  function submitSocialAuth(provider: SocialAuthProvider) {
+    setMessage("");
+    if (!authConfigStatus.ok) {
+      setMessage("Sign-in services are not connected in this environment.");
+      return;
+    }
+
+    startTransition(async () => {
+      try {
+        const supabase = createSupabaseBrowserClient();
+        const callbackPath = returnTo
+          ? `/auth/callback?provider=${provider}&returnTo=${encodeURIComponent(returnTo)}`
+          : `/auth/callback?provider=${provider}`;
+        const { error } = await supabase.auth.signInWithOAuth({
+          provider,
+          options: {
+            redirectTo: getSupabaseEmailRedirectTo(callbackPath)
           }
+        });
 
-          setMessage("Signup submitted. If email confirmation is enabled, confirm the email before signing in.");
+        if (error) {
+          setMessage("That sign-in provider could not be opened. Try again or use email.");
           return;
         }
 
-        const { error } = await supabase.auth.signInWithPassword({ email, password });
-        setMessage(error ? error.message : "Signed in. Role-scoped dashboards can now use Supabase session state.");
-      } catch {
-        setMessage("Supabase Auth is not reachable from this app environment yet.");
+        setMessage(`Opening ${provider === "google" ? "Google" : "Facebook"} sign in.`);
+      } catch (error) {
+        void error;
+        setMessage("That sign-in provider could not be opened. Try again or use email.");
       }
     });
   }
 
   return (
-    <div className="page">
-      <section className="hero">
-        <span className="eyebrow">Supabase Auth</span>
-        <h1>Mobile-first sign in for admins, coaches, and parents.</h1>
-        <p className="lead">Signup creates a Supabase Auth user and the database trigger creates a matching profile. Team access still requires membership records; signup alone does not grant private team or child access.</p>
+    <div className="page auth-page">
+      <section className="hero auth-hero">
+        <span className="eyebrow">Existing members</span>
+        <h1>Sign in to your LeaguePilot account.</h1>
+        <p className="lead">Use the email connected to your approved parent, coach, or league role.</p>
       </section>
 
+      {!authConfigStatus.ok ? <p className="notice warning">Sign-in services are not connected in this environment.</p> : null}
       {message ? <p className="notice">{message}</p> : null}
 
-      <section className="grid two">
-        <article className="card stack">
-          <div className="segmented" aria-label="Authentication mode">
-            <button className={mode === "sign-in" ? undefined : "secondary"} onClick={() => setMode("sign-in")}>Sign in</button>
-            <button className={mode === "sign-up" ? undefined : "secondary"} onClick={() => setMode("sign-up")}>Sign up</button>
+      <section className="grid two auth-grid">
+        <article className="card stack auth-card auth-form-card">
+          <label>Email<input autoComplete="email" type="email" value={email} onChange={(event) => setEmail(event.target.value)} /></label>
+          <label>Password<input autoComplete="current-password" type="password" value={password} onChange={(event) => setPassword(event.target.value)} /></label>
+          <button className="auth-submit" onClick={submitAuth} disabled={!authConfigStatus.ok || isPending || password.length < 6}>{isPending ? "Signing in..." : "Sign in"}</button>
+
+          <div className="auth-provider-panel" aria-label="Social sign in providers">
+            <p className="auth-support-copy">Google and Facebook confirm identity only. Private team access still requires league approval.</p>
+            <div className="auth-provider-actions">
+              <button type="button" className="secondary" onClick={() => submitSocialAuth("google")} disabled={!authConfigStatus.ok || isPending}>Continue with Google</button>
+              <button type="button" className="secondary" onClick={() => submitSocialAuth("facebook")} disabled={!authConfigStatus.ok || isPending}>Continue with Facebook</button>
+            </div>
           </div>
-
-          {mode === "sign-up" ? (
-            <>
-              <label>Display name<input value={displayName} onChange={(event) => setDisplayName(event.target.value)} /></label>
-              <label>Starting role
-                <select value={defaultRole} onChange={(event) => setDefaultRole(event.target.value as "admin" | "coach" | "parent")}>
-                  <option value="coach">Coach</option>
-                  <option value="parent">Parent</option>
-                  <option value="admin">Admin</option>
-                </select>
-              </label>
-            </>
-          ) : null}
-
-          <label>Email<input type="email" value={email} onChange={(event) => setEmail(event.target.value)} /></label>
-          <label>Password<input type="password" value={password} onChange={(event) => setPassword(event.target.value)} /></label>
-          <button onClick={submitAuth} disabled={isPending || password.length < 6}>{isPending ? "Working..." : mode === "sign-up" ? "Create account" : "Sign in"}</button>
         </article>
 
-        <article className="card stack">
-          <h2>Access boundary</h2>
-          <p>Auth proves identity only. Private team data requires `organization_memberships` or `team_memberships` rows.</p>
-          <p>Parents manage child access through guardian links. Children do not log in.</p>
-          <p>Admin and coach roles still need an approved membership before privileged actions should appear.</p>
+        <article className="card stack auth-card auth-access-card">
+          <h2>Need access to a team?</h2>
+          <p className="auth-body-copy">Tell us which child and team you are connected to. A league administrator checks the match before private details appear.</p>
+          <a className="button secondary" href="/registration">Request Team Access</a>
+          <p className="auth-support-copy">Children do not create accounts. Signing in confirms identity, but it never grants team access by itself.</p>
         </article>
       </section>
     </div>
@@ -447,6 +1156,12 @@ interface AccountProfile {
 interface AccountMembership {
   team_id: string;
   role: "coach" | "parent";
+  status: "active" | "invited" | "removed";
+}
+
+interface AccountOrganizationMembership {
+  organization_id: string;
+  role: "admin" | "coach";
   status: "active" | "invited" | "removed";
 }
 
@@ -470,7 +1185,8 @@ interface MembershipAdminData {
 export function AccountClient() {
   const [profile, setProfile] = useState<AccountProfile | null>(null);
   const [memberships, setMemberships] = useState<AccountMembership[]>([]);
-  const [message, setMessage] = useState("Checking Supabase session...");
+  const [organizationMemberships, setOrganizationMemberships] = useState<AccountOrganizationMembership[]>([]);
+  const [message, setMessage] = useState("Checking your account...");
 
   useEffect(() => {
     let cancelled = false;
@@ -481,11 +1197,15 @@ export function AccountClient() {
         const { data: userData, error: userError } = await supabase.auth.getUser();
 
         if (userError || !userData.user) {
-          if (!cancelled) setMessage("No active Supabase session. Sign in before checking role access.");
+          if (!cancelled) setMessage("No active sign-in. Sign in before checking role access.");
           return;
         }
 
-        const [{ data: profileData, error: profileError }, { data: membershipData, error: membershipError }] = await Promise.all([
+        const [
+          { data: profileData, error: profileError },
+          { data: membershipData, error: membershipError },
+          { data: organizationMembershipData, error: organizationMembershipError }
+        ] = await Promise.all([
           supabase
             .from("profiles")
             .select("display_name,email,default_role")
@@ -495,6 +1215,12 @@ export function AccountClient() {
             .from("team_memberships")
             .select("team_id,role,status")
             .eq("user_id", userData.user.id)
+            .eq("status", "active"),
+          supabase
+            .from("organization_memberships")
+            .select("organization_id,role,status")
+            .eq("user_id", userData.user.id)
+            .eq("status", "active")
         ]);
 
         if (cancelled) return;
@@ -506,9 +1232,13 @@ export function AccountClient() {
 
         setProfile(profileData);
         setMemberships(membershipError ? [] : membershipData ?? []);
-        setMessage(membershipData?.length ? "Role-scoped membership is visible." : "Signed in. No team membership has been granted yet.");
-      } catch {
-        if (!cancelled) setMessage("Supabase account data is not reachable from this app environment yet.");
+        setOrganizationMemberships(organizationMembershipError ? [] : organizationMembershipData ?? []);
+        setMessage(membershipData?.length || organizationMembershipData?.length
+          ? "Role-scoped membership is visible."
+          : "Signed in. No team or organization membership has been granted yet.");
+      } catch (error) {
+        void error;
+        if (!cancelled) setMessage("Account access could not be checked. Try signing in again.");
       }
     }
 
@@ -529,7 +1259,7 @@ export function AccountClient() {
 
       <p className="notice">{message}</p>
 
-      <section className="grid two">
+      <section className="grid three">
         <article className="card stack">
           <h2>Profile</h2>
           {profile ? (
@@ -540,6 +1270,17 @@ export function AccountClient() {
           ) : (
             <p className="muted">No profile loaded.</p>
           )}
+        </article>
+
+        <article className="card stack">
+          <h2>Organization memberships</h2>
+          {organizationMemberships.map((membership) => (
+            <p key={`${membership.organization_id}-${membership.role}`}>
+              <strong>{roleLabel(membership.role)}</strong><br />
+              <span className="muted">{membership.organization_id} - {membership.status}</span>
+            </p>
+          ))}
+          {organizationMemberships.length === 0 ? <p className="muted">No active organization memberships yet.</p> : null}
         </article>
 
         <article className="card stack">
@@ -616,7 +1357,7 @@ export function MembershipAdminClient({ initialData }: { initialData: Membership
             </select>
           </label>
           <button onClick={saveMembership} disabled={isPending || !userId || !teamId}>{isPending ? "Saving..." : "Save membership"}</button>
-          {initialData.profiles.length === 0 ? <p className="muted">No Supabase profiles are visible yet. Create an account first.</p> : null}
+          {initialData.profiles.length === 0 ? <p className="muted">No account profiles are visible yet. Create an account first.</p> : null}
         </article>
 
         <article className="card stack">
@@ -742,68 +1483,6 @@ export function ImportsClient() {
   );
 }
 
-export function InviteRecoveryClient() {
-  const { state, dispatch } = useAppState();
-  const [identifier, setIdentifier] = useState("sam@example.com");
-  const [submitted, setSubmitted] = useState<string | null>(null);
-  const result = submitted ? evaluateInviteRecovery(state, submitted, NOW) : null;
-
-  return (
-    <div className="page">
-      <section className="hero">
-        <span className="eyebrow">Smart invite recovery</span>
-        <h1>Recover parent invites without exposing raw tokens.</h1>
-        <p className="lead">Parents can enter an email or phone. The system checks whether the invite exists, is expired, was already accepted, and is within resend limits.</p>
-      </section>
-
-      <section className="grid two">
-        <article className="card stack">
-          <h2>Resend invite</h2>
-          <label>
-            Parent email or phone
-            <input value={identifier} onChange={(event) => setIdentifier(event.target.value)} />
-          </label>
-          <button
-            onClick={() => {
-              setSubmitted(identifier);
-              const evaluation = evaluateInviteRecovery(state, identifier, NOW);
-              if (evaluation.canResend) {
-                dispatch({ type: "recoverInvite", identifier, now: new Date().toISOString() });
-              }
-            }}
-          >
-            Request recovery
-          </button>
-          <p className="muted">Try sam@example.com, pat@example.com, jordan@example.com, limit@example.com, or 555-0000.</p>
-        </article>
-
-        <article className="card stack">
-          <div className="card-header">
-            <h2>Recovery result</h2>
-            {result ? <span className={`badge ${statusClass(result.code)}`}>{result.code}</span> : null}
-          </div>
-          {result ? (
-            <>
-              <h3>{result.title}</h3>
-              <p>{result.message}</p>
-              {result.invite ? (
-                <ul className="list">
-                  <li>Status: {result.invite.status}</li>
-                  <li>Sent count: {result.invite.sentCount}</li>
-                  <li>Expires: {formatDate(result.invite.expiresAt)}</li>
-                  <li>Token storage: hashed only</li>
-                </ul>
-              ) : null}
-            </>
-          ) : (
-            <p className="muted">Submit an email or phone to run recovery checks.</p>
-          )}
-        </article>
-      </section>
-    </div>
-  );
-}
-
 export function AdminInvitesClient() {
   const { state } = useAppState();
 
@@ -853,17 +1532,89 @@ export function AdminInvitesClient() {
   );
 }
 
-export function AdminHealthClient() {
+function tenantReadinessStatusClass(status: TenantReadinessCheckStatus) {
+  if (status === "ready") return "ok";
+  if (status === "blocked") return "danger";
+  return "warning";
+}
+
+export function AdminHealthClient({ tenantReadinessData }: { tenantReadinessData?: TenantReadinessData | null } = {}) {
   const { state } = useAppState();
   const cards = computeAdminHealth(state, NOW);
+  const readyTenantCount = tenantReadinessData?.tenants.filter((tenant) => tenant.readyToInviteFamilies).length ?? 0;
+  const tenantBlockerCount = tenantReadinessData?.tenants.reduce((total, tenant) => total + tenant.blockingCount, 0) ?? 0;
 
   return (
     <div className="page">
       <section className="hero">
         <span className="eyebrow">Admin health dashboard</span>
         <h1>Launch readiness issues before parents complain.</h1>
-        <p className="lead">Health cards are computed from the typed local adapter and update after import, invite, RSVP, and schedule actions.</p>
+        <p className="lead">Health cards combine local workflow checks with tenant setup readiness from Supabase for the signed-in organization admin.</p>
       </section>
+
+      {tenantReadinessData ? (
+        <>
+          <p className={`notice ${tenantReadinessData.source === "supabase" ? "" : "warning"}`.trim()}>{tenantReadinessData.message}</p>
+          <section className="grid three">
+            <article className="card metric">
+              <span className="muted">Tenants visible</span>
+              <strong>{tenantReadinessData.tenants.length}</strong>
+            </article>
+            <article className="card metric">
+              <span className="muted">Ready to invite</span>
+              <strong>{readyTenantCount}</strong>
+            </article>
+            <article className="card metric">
+              <span className="muted">Blocking setup gaps</span>
+              <strong>{tenantBlockerCount}</strong>
+            </article>
+          </section>
+
+          <section className="grid two" aria-label="Tenant setup readiness">
+            {tenantReadinessData.tenants.map((tenant) => (
+              <article className="card stack" key={tenant.organizationId}>
+                <div className="card-header">
+                  <div>
+                    <span className="eyebrow">{tenant.activeSeasonName ?? "No active season"}</span>
+                    <h2>{tenant.organizationName}</h2>
+                  </div>
+                  <span className={`badge ${tenant.readiness === "ready_to_invite" ? "ok" : tenant.readiness === "blocked" ? "danger" : "warning"}`}>
+                    {tenant.readiness === "ready_to_invite" ? "ready to invite" : tenant.readiness === "blocked" ? "blocked" : "needs setup"}
+                  </span>
+                </div>
+                <div className="grid three compact-grid">
+                  <p><strong>{tenant.activeTeamCount}</strong><br /><span className="muted">team(s)</span></p>
+                  <p><strong>{tenant.rosteredPlayerCount}</strong><br /><span className="muted">player(s)</span></p>
+                  <p><strong>{tenant.scheduledEventCount}</strong><br /><span className="muted">event(s)</span></p>
+                </div>
+                {tenant.checks.map((item) => (
+                  <div className="readiness-rule" key={item.id}>
+                    <p>
+                      <span className={`badge ${tenantReadinessStatusClass(item.status)}`}>{item.status.replace("_", " ")}</span>{" "}
+                      <strong>{item.label}</strong><br />
+                      <span className="muted">{item.detail}</span><br />
+                      <a href={item.actionHref}>{item.actionLabel}</a>
+                    </p>
+                    <details>
+                      <summary data-analytics-event="readiness_rule_opened">Why this status</summary>
+                      <p><strong>Source of truth:</strong> {item.sourceOfTruth}</p>
+                      <p><strong>Responsible authority:</strong> {item.responsibleAuthority}</p>
+                      <p><strong>Privacy boundary:</strong> {item.privacyBoundary}</p>
+                      <p className="muted">{item.explanation}</p>
+                    </details>
+                  </div>
+                ))}
+              </article>
+            ))}
+            {!tenantReadinessData.tenants.length ? (
+              <article className="card stack">
+                <h2>No tenant scope loaded.</h2>
+                <p className="muted">Sign in as an active organization admin and confirm Supabase access before inviting families.</p>
+              </article>
+            ) : null}
+          </section>
+        </>
+      ) : null}
 
       <section className="grid three">
         {cards.map((card) => (
@@ -884,6 +1635,8 @@ export function AdminHealthClient() {
 export function ParentDashboardClient({ dashboardData }: { dashboardData?: ParentCoachDashboardData | null } = {}) {
   const { state } = useAppState();
   const [helpMessage, setHelpMessage] = useState("");
+  const [checkedGameDayItems, setCheckedGameDayItems] = useState<Record<string, boolean>>({});
+  const [gameDayCopyStatus, setGameDayCopyStatus] = useState("");
   const [scheduleTypeFilter, setScheduleTypeFilter] = useState<"all" | EventType>("all");
   const [mediaTypeFilter, setMediaTypeFilter] = useState<"all" | MediaItem["type"]>("all");
   const [supportTopic, setSupportTopic] = useState("schedule");
@@ -893,7 +1646,7 @@ export function ParentDashboardClient({ dashboardData }: { dashboardData?: Paren
   const parentUserId = dashboardData?.parentUserId ?? "user-parent-jordan";
   const parentUser = sourceState.users.find((user) => user.id === parentUserId);
   const dashboard = getParentDashboard(sourceState, parentUserId, NOW);
-  const parentSuggestions = buildParentAssistiveSuggestions(sourceState, parentUserId, NOW);
+  const familyBalance = buildFamilyBalanceSummary(sourceState, parentUserId);
   const accessGate = privateAccessGate(dashboardData, "parent");
   const parentTeamIds = new Set(dashboard.children.map(({ team }) => team.id));
   const primaryTeamId = dashboard.children[0]?.team.id;
@@ -907,15 +1660,246 @@ export function ParentDashboardClient({ dashboardData }: { dashboardData?: Paren
   const filteredMediaFeed = mediaFeed.filter((item) => mediaTypeFilter === "all" || item.type === mediaTypeFilter);
   const familyModerationQueue = getFamilyFacingModerationQueue(sourceState.mediaItems.filter((item) => parentTeamIds.has(item.teamId)));
   const mediaConsentControls = getMediaConsentControls();
-  const onboardingSteps = [
-    { label: "Confirm guardian link", done: dashboard.children.length > 0 },
-    { label: "Review upcoming schedule", done: dashboard.nextEvents.length > 0 },
-    { label: "Set notification preferences", done: sourceState.notificationPreferences.some((item) => item.userId === parentUserId) },
-    { label: "Answer open RSVPs", done: dashboard.rsvpNeeded.length === 0 }
-  ];
   const openSnackSlots = sourceState.snackScheduleSlots.filter((slot) => parentTeamIds.has(slot.teamId) && slot.status === "open");
   const openVolunteerSignups = sourceState.volunteerSignups.filter((signup) => parentTeamIds.has(signup.teamId) && signup.status === "open");
   const eventById = new Map(sourceState.events.map((event) => [event.id, event]));
+  const nextParentEvent = dashboard.nextEvents[0];
+  const primaryFamilyRow = dashboard.children[0];
+  const primaryTeam = primaryFamilyRow?.team;
+  const primaryPlayer = primaryFamilyRow?.player;
+  const parentVolunteerMarketplace = primaryTeamId ? buildVolunteerMarketplace(sourceState, primaryTeamId) : [];
+  const parentEquipmentExchange = primaryTeamId ? buildEquipmentExchange(sourceState, primaryTeamId, "parent") : [];
+  const parentAvailabilityIntelligence = primaryTeamId ? buildFamilyAvailabilityIntelligence(sourceState, primaryTeamId, NOW) : undefined;
+  const teamName = primaryTeam?.name ?? "Team home";
+  const teamDivision = primaryTeam?.division ?? "Division pending";
+  const teamInitials = teamName
+    .split(" ")
+    .map((part) => part[0])
+    .join("")
+    .slice(0, 2)
+    .toUpperCase() || "LH";
+  const parentTeamStyle = primaryTeam ? teamBrandStyle(primaryTeam.primaryColor, primaryTeam.secondaryColor) : undefined;
+  const nextParentRsvp = nextParentEvent ? dashboard.rsvpNeeded.find((item) => item.event.id === nextParentEvent.id) : undefined;
+  const nextParentRsvpCopy = nextParentRsvp
+    ? `RSVP needed for ${nextParentRsvp.player.firstName} ${nextParentRsvp.player.lastInitial}.`
+    : nextParentEvent
+      ? "RSVP is answered for linked players."
+      : "No RSVP is open yet.";
+  const nextWeatherAlert = nextParentEvent
+    ? sourceState.weatherAlerts.find((alert) => alert.eventId === nextParentEvent.id && parentTeamIds.has(alert.teamId))
+    : undefined;
+  const directionsUrl = nextParentEvent?.locationAddress
+    ? `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(`${nextParentEvent.locationName} ${nextParentEvent.locationAddress}`)}`
+    : "";
+  const nextEventTime = nextParentEvent ? new Date(nextParentEvent.startsAt).getTime() : 0;
+  const nowTime = new Date(NOW).getTime();
+  const isToday = nextParentEvent
+    ? new Date(nextParentEvent.startsAt).toDateString() === new Date(NOW).toDateString()
+    : false;
+  const isSoon = nextParentEvent ? nextEventTime >= nowTime && nextEventTime - nowTime <= 48 * 60 * 60 * 1000 : false;
+  const nextEventBadge = isToday ? "Today" : isSoon ? "Coming up soon" : "Next event";
+  const parentHelpCount = openSnackSlots.length + openVolunteerSignups.length;
+  const latestChangeCopy = dashboard.latestAnnouncement
+    ? `${dashboard.latestAnnouncement.title}: ${dashboard.latestAnnouncement.body}`
+    : "No coach update has been posted yet.";
+  const parentCoachAnnouncements = sourceState.announcements
+    .filter((announcement) => parentTeamIds.has(announcement.teamId))
+    .sort((left, right) => new Date(right.createdAt).getTime() - new Date(left.createdAt).getTime())
+    .slice(0, 3);
+  const parentAnnouncementItems = parentCoachAnnouncements.map((announcement) => ({
+    id: announcement.id,
+    title: announcement.title,
+    body: announcement.body,
+    teamName: sourceState.teams.find((team) => team.id === announcement.teamId)?.name
+  }));
+  const parentSeasonStoryEntries: ParentSeasonStoryEntry[] = [
+    ...parentCoachAnnouncements.map((announcement) => ({
+      id: announcement.id,
+      dateLabel: new Date(announcement.createdAt).toLocaleDateString("en-US", { month: "short", day: "numeric" }),
+      title: announcement.title,
+      detail: announcement.body,
+      meta: "Coach update",
+      tone: "coach" as const,
+      sortAt: new Date(announcement.createdAt).getTime()
+    })),
+    ...allParentEvents.slice(0, 3).map((event, index) => ({
+      id: event.id,
+      dateLabel: new Date(event.startsAt).toLocaleDateString("en-US", { month: "short", day: "numeric" }),
+      title: event.title,
+      detail: `${formatShortTime(event.startsAt)} at ${event.locationName}`,
+      meta: event.eventType.replaceAll("_", " "),
+      tone: index === 0 ? "next" as const : "event" as const,
+      sortAt: new Date(event.startsAt).getTime()
+    }))
+  ]
+    .sort((left, right) => left.sortAt - right.sortAt)
+    .slice(0, 4)
+    .map((entry) => ({
+      id: entry.id,
+      dateLabel: entry.dateLabel,
+      title: entry.title,
+      detail: entry.detail,
+      meta: entry.meta,
+      tone: entry.tone
+    }));
+  const parentChanges = dashboard.latestAnnouncement
+    ? [`Coach posted ${dashboard.latestAnnouncement.title} (${formatDate(dashboard.latestAnnouncement.createdAt)})`]
+    : [];
+  let parentUnreadCount = 0;
+  try {
+    parentUnreadCount = primaryTeamId ? getTeamChatView(sourceState, parentUserId, primaryTeamId, NOW).unreadCount : 0;
+  } catch {
+    parentUnreadCount = 0;
+  }
+  const latestMediaItem = mediaFeed[0];
+  const firstMissingRsvp = nextParentRsvp ?? dashboard.rsvpNeeded[0];
+  const parentPrimaryAction = firstMissingRsvp
+    ? { href: "/parent/rsvp", label: "RSVP now" }
+    : directionsUrl
+      ? { href: directionsUrl, label: "Directions" }
+      : { href: "/parent/schedule", label: "View schedule" };
+  const parentWeatherCopy = nextWeatherAlert
+    ? `${nextWeatherAlert.headline}: ${nextWeatherAlert.detail}`
+    : "No weather alert is waiting for this event.";
+  const parentHelpCopy = parentHelpCount
+    ? `${openSnackSlots.length} snack and ${openVolunteerSignups.length} volunteer opening(s).`
+    : "Snacks and volunteers look covered.";
+  const gameDayArrivalPlan: GameDayPlanItem[] = nextParentEvent
+    ? [
+      { id: "leave", label: "Leave by", detail: "Not planned" },
+      { id: "arrive", label: "Arrive by", detail: "Not published" },
+      { id: "warmup", label: "Warm-up", detail: "Not published" },
+      { id: "start", label: "Start", detail: formatShortTime(nextParentEvent.startsAt) }
+    ]
+    : [
+      { id: "leave", label: "Leave by", detail: "Pending" },
+      { id: "arrive", label: "Arrive by", detail: "Pending" },
+      { id: "warmup", label: "Warm-up", detail: "Pending" },
+      { id: "start", label: "Start", detail: "Pending" }
+    ];
+  const gameDayPackDefaults: Record<string, boolean> = {
+    uniform: false,
+    water: false,
+    gear: false,
+    familyHelp: parentHelpCount === 0
+  };
+  const gameDayPackItems: GameDayChecklistItem[] = [
+    {
+      id: "uniform",
+      label: "Uniform",
+      detail: "League bring list not published.",
+      checked: checkedGameDayItems.uniform ?? gameDayPackDefaults.uniform
+    },
+    {
+      id: "water",
+      label: "Water",
+      detail: "Family-added checklist item; not an official instruction.",
+      checked: checkedGameDayItems.water ?? gameDayPackDefaults.water
+    },
+    {
+      id: "gear",
+      label: "Gear",
+      detail: "League bring list not published.",
+      checked: checkedGameDayItems.gear ?? gameDayPackDefaults.gear
+    },
+    {
+      id: "familyHelp",
+      label: "Family help",
+      detail: parentHelpCopy,
+      checked: checkedGameDayItems.familyHelp ?? gameDayPackDefaults.familyHelp
+    }
+  ];
+  const gameDayFieldPlan: GameDayPlanItem[] = [
+    {
+      id: "field",
+      label: "Field",
+      detail: nextParentEvent ? `${nextParentEvent.locationName}, ${nextParentEvent.locationAddress}` : "Location pending"
+    },
+    {
+      id: "parking",
+      label: "Parking",
+      detail: "Not published"
+    },
+    {
+      id: "meet",
+      label: "Meet",
+      detail: "Not published"
+    },
+    {
+      id: "map",
+      label: "Map",
+      detail: directionsUrl ? "Open directions before leaving." : "Directions appear after the location is set.",
+      href: directionsUrl || undefined,
+      actionLabel: "Directions"
+    }
+  ];
+  const playerName = primaryPlayer ? `${primaryPlayer.firstName} ${primaryPlayer.lastInitial}.` : "Linked player";
+  const gameDayPlayerPlan: GameDayPlanItem[] = [
+    {
+      id: "player",
+      label: playerName,
+      detail: primaryPlayer ? `Jersey #${primaryPlayer.jersey}, ${teamDivision}` : teamDivision
+    },
+    {
+      id: "rsvp",
+      label: "RSVP",
+      detail: nextParentRsvpCopy
+    },
+    {
+      id: "weather",
+      label: "Weather",
+      detail: parentWeatherCopy
+    },
+    {
+      id: "help",
+      label: "Help",
+      detail: parentHelpCopy
+    }
+  ];
+  const gameDayPlanText = [
+    `${nextParentEvent?.title ?? "Next event"} - ${nextParentEvent ? `${formatShortDay(nextParentEvent.startsAt)} at ${formatShortTime(nextParentEvent.startsAt)}` : "schedule pending"}`,
+    `Team: ${teamName}`,
+    `Leave by: ${gameDayArrivalPlan[0]?.detail ?? "Pending"}`,
+    `Arrive by: ${gameDayArrivalPlan[1]?.detail ?? "Pending"}`,
+    `Field: ${gameDayFieldPlan[0]?.detail ?? "Location pending"}`,
+    "Meet: Not published",
+    `RSVP: ${nextParentRsvpCopy}`,
+    `Weather: ${parentWeatherCopy}`,
+    `Family help: ${parentHelpCopy}`,
+    "Local checklist only. It does not save attendance or send alerts."
+  ].join("\n");
+  const pendingParentActions = [
+    ...(firstMissingRsvp ? [{
+      id: "missing-rsvp",
+      label: `Confirm whether ${firstMissingRsvp.player.firstName} is coming ${formatShortDay(firstMissingRsvp.event.startsAt)}`,
+      cta: "RSVP now",
+      href: "/parent/rsvp"
+    }] : []),
+    ...(openSnackSlots[0] ? [{
+      id: "snack-open",
+      label: `${openSnackSlots[0].item} is still open for ${eventById.get(openSnackSlots[0].eventId)?.title ?? "a team event"}`,
+      cta: "View snacks",
+      href: "#family-help"
+    }] : []),
+    ...(openVolunteerSignups[0] ? [{
+      id: "volunteer-open",
+      label: `${openVolunteerSignups.length} volunteer slot${openVolunteerSignups.length === 1 ? "" : "s"} open for your team`,
+      cta: "Sign up",
+      href: "#family-help"
+    }] : []),
+    ...(!sourceState.notificationPreferences.some((item) => item.userId === parentUserId && item.notificationType === "schedule_changed") ? [{
+      id: "notification-preference",
+      label: "Set schedule alert preferences for this team",
+      cta: "Set up",
+      href: "#schedule-alerts"
+    }] : []),
+    ...(dashboard.children.length === 0 ? [{
+      id: "guardian-link",
+      label: "Your family access is not yet verified",
+      cta: "Verify now",
+      href: "/registration"
+    }] : [])
+  ].slice(0, 3);
   const actionChecklist = [
     {
       label: "Check the family calendar",
@@ -940,7 +1924,7 @@ export function ParentDashboardClient({ dashboardData }: { dashboardData?: Paren
     {
       label: "Set schedule notification rules",
       done: sourceState.notificationPreferences.some((item) => item.userId === parentUserId && item.notificationType === "schedule_changed"),
-      detail: "Provider sends still require opted-in channels and adapter checks."
+      detail: "Family messages still require opted-in channels and an approved delivery connection."
     }
   ];
   const schedulePreferences = (["push", "email", "sms"] as const).map((channel) => {
@@ -958,6 +1942,14 @@ export function ParentDashboardClient({ dashboardData }: { dashboardData?: Paren
         : "8:30 PM-7:00 AM"
     };
   });
+  const parentSeasonView = buildParentSeasonCertaintyView({
+    state: sourceState,
+    parentUserId,
+    accessStatus: dashboardData?.accessStatus ?? "live",
+    message: dashboardData?.message ?? "Preview details are shown until approved family access is available.",
+    isSupabaseBacked: dashboardData?.isSupabaseBacked ?? false,
+    now: NOW
+  });
 
   function claimFamilyHelp(url: string, payload: unknown) {
     if (!dashboardData?.isSupabaseBacked) {
@@ -966,7 +1958,12 @@ export function ParentDashboardClient({ dashboardData }: { dashboardData?: Paren
     }
 
     startHelpTransition(async () => {
-      const response = await authenticatedJsonFetch(url, payload);
+      const actionId = typeof crypto !== "undefined" && "randomUUID" in crypto
+        ? crypto.randomUUID()
+        : `family-help-${Date.now()}-${Math.random().toString(16).slice(2)}`;
+      const response = await authenticatedJsonFetch(url, payload, {
+        "Idempotency-Key": actionId
+      });
       const result = await response.json().catch(() => null) as { ok?: boolean; message?: string } | null;
       setHelpMessage(result?.message ?? (response.ok ? "Claim saved." : "Claim could not be saved."));
     });
@@ -993,6 +1990,26 @@ export function ParentDashboardClient({ dashboardData }: { dashboardData?: Paren
     });
   }
 
+  function toggleGameDayPackItem(id: string) {
+    setCheckedGameDayItems((current) => ({
+      ...current,
+      [id]: !(current[id] ?? gameDayPackDefaults[id] ?? false)
+    }));
+  }
+
+  async function copyGameDayPlan() {
+    try {
+      if (typeof navigator !== "undefined" && navigator.clipboard?.writeText) {
+        await navigator.clipboard.writeText(gameDayPlanText);
+        setGameDayCopyStatus("Game day plan copied locally.");
+        return;
+      }
+      setGameDayCopyStatus("Copy is not available in this browser. Use the visible plan above.");
+    } catch {
+      setGameDayCopyStatus("Copy was blocked by the browser. Use the visible plan above.");
+    }
+  }
+
   function submitSupportRequest() {
     if (!supportDetail.trim()) {
       setHelpMessage("Add a short support request before submitting.");
@@ -1015,49 +2032,92 @@ export function ParentDashboardClient({ dashboardData }: { dashboardData?: Paren
   }
 
   return (
-    <div className="page">
-      <section className="hero">
-        <span className="eyebrow">Parent dashboard</span>
-        <h1>One place for the next thing a parent needs to know.</h1>
-        <p className="lead">This dashboard is scoped to {parentUser?.name ?? "the selected parent"} and only shows linked child, team, schedule, RSVP, media, and coach update records.</p>
+    <div className="page parent-team-home-page" style={parentTeamStyle}>
+      <section className="season-certainty-home parent-certainty-home" aria-label="Parent home">
+        {accessGate ? <NextEventCard view={parentSeasonView} /> : (
+          <>
+            <CoachAnnouncementTicker announcements={parentAnnouncementItems} />
+            <ParentSeasonStory
+              seasonName={sourceState.activeSeason.name}
+              teamName={teamName}
+              childLabel={playerName}
+              entries={parentSeasonStoryEntries}
+              nextEventTitle={nextParentEvent?.title ?? "No upcoming event"}
+              nextEventMeta={nextParentEvent ? `${formatShortDay(nextParentEvent.startsAt)} at ${formatShortTime(nextParentEvent.startsAt)}` : "Schedule pending"}
+              location={nextParentEvent?.locationName ?? "Location pending"}
+              rsvpCopy={nextParentRsvpCopy}
+              weatherCopy={parentWeatherCopy}
+              familyHelpCopy={parentHelpCopy}
+              primaryHref={parentPrimaryAction.href}
+              primaryLabel={parentPrimaryAction.label}
+            />
+            <CompactDisclosure
+              id="parent-game-day-plan"
+              title="Game-day plan"
+              summary="Arrival, field, pack, player, and local checklist details."
+              badge={nextEventBadge}
+            >
+              <ParentGameDayCalmCard
+                eventTitle={nextParentEvent?.title ?? "No upcoming event"}
+                eventMeta={nextParentEvent ? `${formatShortDay(nextParentEvent.startsAt)} at ${formatShortTime(nextParentEvent.startsAt)}` : "Schedule pending"}
+                eventStartsAt={nextParentEvent?.startsAt}
+                eventKind={(nextParentEvent?.eventType ?? "event").replaceAll("_", " ")}
+                teamLabel={`${teamName} - ${teamDivision}`}
+                teamInitials={teamInitials}
+                badge={nextEventBadge}
+                location={nextParentEvent ? `${nextParentEvent.locationName}${nextParentEvent.locationAddress ? `, ${nextParentEvent.locationAddress}` : ""}` : "Location pending"}
+                directionsUrl={directionsUrl}
+                rsvpCopy={nextParentRsvpCopy}
+                rsvpRequired={Boolean(nextParentRsvp)}
+                playerLabel={nextParentRsvp?.player.firstName ?? primaryPlayer?.firstName ?? "your player"}
+                weatherCopy={parentWeatherCopy}
+                helpCopy={parentHelpCopy}
+                coachCopy={latestChangeCopy}
+                primaryHref={parentPrimaryAction.href}
+                primaryLabel={parentPrimaryAction.label}
+                arrivalPlan={gameDayArrivalPlan}
+                packList={gameDayPackItems}
+                fieldPlan={gameDayFieldPlan}
+                playerPlan={gameDayPlayerPlan}
+                copyStatus={gameDayCopyStatus}
+                onCopyPlan={copyGameDayPlan}
+                onTogglePackItem={toggleGameDayPackItem}
+              />
+            </CompactDisclosure>
+            <CompactDisclosure
+              title="More event context"
+              summary="Tasks, changes, coach update, messages, photos, and privacy."
+              badge={`${parentSeasonView.actions.length} item(s)`}
+            >
+              <ActionChecklist actions={parentSeasonView.actions} />
+              <WhatChangedCard changes={parentSeasonView.changes} />
+              <CoachUpdateCard view={parentSeasonView} />
+              <MessagesSummaryCard unreadCount={parentSeasonView.messages.unreadCount} href={parentSeasonView.messages.href} />
+              <PhotosSummaryCard count={parentSeasonView.photos.newApprovedCount} latestTitle={parentSeasonView.photos.latestTitle} href="#team-media" />
+              <PrivacyIndicator href="/parent/settings" />
+            </CompactDisclosure>
+          </>
+        )}
       </section>
 
       <p className={`notice ${dashboardData?.isSupabaseBacked ? "ok" : "warning"}`}>
-        {dashboardData?.message ?? "Showing local seed fallback until Supabase has linked parent and coach records."}
+        {dashboardData?.isSupabaseBacked
+          ? "Team details are current and scoped to your approved family access."
+          : "Preview details are shown here. Sign in with approved family access to save changes."}
       </p>
       {helpMessage ? <p className="notice">{helpMessage}</p> : null}
       {accessGate ?? (
         <>
-
-      <section className="grid one">
-        <article className="card stack">
-          <span className="eyebrow">Parent help assistant</span>
-          <h2>{parentSuggestions[0]?.title ?? "Scoped help"}</h2>
-          {parentSuggestions.map((suggestion) => (
-            <div className="stack compact" key={suggestion.id}>
-              <p><strong>{suggestion.body}</strong></p>
-              <p>{suggestion.recommendation}</p>
-              <p className="muted">{suggestion.boundary}</p>
-            </div>
-          ))}
-        </article>
-      </section>
-
-      <section className="card stack">
-        <h2>Parent onboarding</h2>
-        {onboardingSteps.map((step) => (
-          <p key={step.label}>
-            <span className={`badge ${step.done ? "ok" : "warning"}`}>{step.done ? "Done" : "Next"}</span>{" "}
-            {step.label}
-          </p>
-        ))}
-      </section>
-
-      <section className="card stack">
+      <CompactDisclosure
+        id="more-parent-actions"
+        title="Needs action"
+        summary="Open family tasks without showing the full operations feed."
+        badge={`${actionChecklist.filter((item) => !item.done).length} open`}
+      >
         <div className="card-header">
-          <div>
-            <span className="eyebrow">Parent action checklist</span>
-            <h2>Next family actions</h2>
+            <div>
+              <span className="eyebrow">More family tasks</span>
+              <h2>All pending items</h2>
           </div>
           <span className="badge">{actionChecklist.filter((item) => !item.done).length} open</span>
         </div>
@@ -1068,66 +2128,117 @@ export function ParentDashboardClient({ dashboardData }: { dashboardData?: Paren
             <span className="muted">{item.detail}</span>
           </p>
         ))}
-      </section>
+      </CompactDisclosure>
 
-      <section className="grid two">
-        <article className="card stack">
-          <h2>My Child</h2>
-          {dashboard.children.map(({ player, team }) => (
-            <div key={player.id}>
-              <strong>{player.firstName} {player.lastInitial}.</strong>
-              <p className="muted">{team.name} · Jersey {player.jersey}</p>
-            </div>
-          ))}
-          <span className="badge ok">{dashboard.completionStatus}</span>
-        </article>
-
-        <article className="card stack">
-          <h2>Coach Updates</h2>
-          {dashboard.latestAnnouncement ? (
-            <>
-              <strong>{dashboard.latestAnnouncement.title}</strong>
-              <p>{dashboard.latestAnnouncement.body}</p>
-              <p className="muted">{dashboard.latestAnnouncement.teamName} · {formatDate(dashboard.latestAnnouncement.createdAt)}</p>
-            </>
-          ) : <p className="muted">No announcements yet.</p>}
-        </article>
-      </section>
-
-      <section className="grid three">
-        <article className="card stack">
-          <h2>Upcoming Schedule</h2>
-          {dashboard.nextEvents.map((event) => (
-            <p key={event.id}><strong>{event.title}</strong><br /><span className="muted">{formatDate(event.startsAt)} · {event.locationName}</span></p>
-          ))}
-        </article>
-        <article className="card stack">
-          <h2>RSVP Needed</h2>
-          {dashboard.rsvpNeeded.length ? dashboard.rsvpNeeded.map(({ event, player }) => (
-            <p key={`${event.id}-${player.id}`}>{player.firstName} {player.lastInitial}. · {event.title}</p>
-          )) : <p className="muted">No RSVP needed right now.</p>}
-        </article>
-        <article className="card stack">
-          <h2>Recent Media</h2>
-          {dashboard.recentMedia.map((item) => {
-            const validation = validateMediaUrl(item.type, item.url);
-            return (
-              <div className="stack compact" key={item.id}>
-                <p><strong>{item.title}</strong><br /><span className="muted">{item.type.replace("_", " ")} · {validation.message}</span></p>
-                <button
-                  className="secondary"
-                  disabled={isHelpPending}
-                  onClick={() => claimFamilyHelp("/api/media/report", { mediaItemId: item.id, reason: "Family reported this media link for review." })}
-                >
-                  Report media
-                </button>
+      <CompactDisclosure
+        title="Family Balance Summary"
+        summary="Evidence-backed fee status, payment links, processing, confirmation, failure, and credits."
+        badge={familyBalance.items.every((item) => item.amountCents === 0) ? "Status unavailable" : formatCents(familyBalance.netDueCents)}
+      >
+        <section className="grid two">
+          <div className="stack compact">
+            <div className="card-header">
+              <div>
+                <span className="eyebrow">Family finance evidence</span>
+                <h2>Family Balance Summary</h2>
               </div>
-            );
-          })}
-          {!dashboard.recentMedia.length ? <p className="muted">No media links yet.</p> : null}
-        </article>
-      </section>
+              <span className="badge warning">Proof-gated</span>
+            </div>
+            <div className="grid three">
+              <div className="metric"><span className="muted">Obligations</span><strong>{formatCents(familyBalance.unpaidCents)}</strong></div>
+              <div className="metric"><span className="muted">Verified credits</span><strong>{formatCents(familyBalance.creditsCents)}</strong></div>
+              <div className="metric"><span className="muted">Evidence-backed due</span><strong>{formatCents(familyBalance.netDueCents)}</strong></div>
+            </div>
+            <p className="notice">{familyBalance.proofBoundary}</p>
+          </div>
+          <div className="stack compact">
+            <div className="card-header">
+              <div>
+                <span className="eyebrow">Balance evidence</span>
+                <h2>Fee and payment status</h2>
+              </div>
+              <span className="badge">{familyBalance.items.length} item(s)</span>
+            </div>
+            {familyBalance.items.slice(0, 5).map((item) => (
+              <p key={item.id}>
+                <strong>{item.label}</strong><br />
+                <span className="muted">{item.direction === "credit" ? "Credit" : "Charge"} {formatCents(item.amountCents)} - {item.proofState.replaceAll("_", " ")}. {item.note}</span>
+              </p>
+            ))}
+            {!familyBalance.items.length ? <p className="muted">No family balance records are visible until a parent account has active guardian links.</p> : null}
+          </div>
+        </section>
+      </CompactDisclosure>
 
+      <CompactDisclosure
+        title="Family snapshot"
+        summary="Child, coach update, schedule, RSVP, and recent media details."
+        badge={`${dashboard.children.length} child link(s)`}
+      >
+        <section className="grid two">
+          <article className="card stack">
+            <h2>My Child</h2>
+            {dashboard.children.map(({ player, team }) => (
+              <div key={player.id}>
+                <strong>{player.firstName} {player.lastInitial}.</strong>
+                <p className="muted">{team.name} - Jersey {player.jersey}</p>
+              </div>
+            ))}
+            <span className="badge ok">{dashboard.completionStatus}</span>
+          </article>
+
+          <article className="card stack">
+            <h2>Coach updates</h2>
+            {dashboard.latestAnnouncement ? (
+              <>
+                <strong>{dashboard.latestAnnouncement.title}</strong>
+                <p>{dashboard.latestAnnouncement.body}</p>
+                <p className="muted">{dashboard.latestAnnouncement.teamName} - {formatDate(dashboard.latestAnnouncement.createdAt)}</p>
+              </>
+            ) : <p className="muted">No announcements yet.</p>}
+          </article>
+        </section>
+
+        <section className="grid three">
+          <article className="card stack">
+            <h2>Upcoming Schedule</h2>
+            {dashboard.nextEvents.map((event) => (
+              <p key={event.id}><strong>{event.title}</strong><br /><span className="muted">{formatDate(event.startsAt)} - {event.locationName}</span></p>
+            ))}
+          </article>
+          <article className="card stack">
+            <h2>RSVP Needed</h2>
+            {dashboard.rsvpNeeded.length ? dashboard.rsvpNeeded.map(({ event, player }) => (
+              <p key={`${event.id}-${player.id}`}>{player.firstName} {player.lastInitial}. - {event.title}</p>
+            )) : <p className="muted">No RSVP needed right now.</p>}
+          </article>
+          <article className="card stack" id="team-media">
+            <h2>Recent Media</h2>
+            {dashboard.recentMedia.map((item) => {
+              const validation = validateMediaUrl(item.type, item.url);
+              return (
+                <div className="stack compact" key={item.id}>
+                  <p><strong>{item.title}</strong><br /><span className="muted">{item.type.replace("_", " ")} - {validation.message}</span></p>
+                  <button
+                    className="secondary"
+                    disabled={isHelpPending}
+                    onClick={() => claimFamilyHelp("/api/media/report", { mediaItemId: item.id, reason: "Family reported this media link for review." })}
+                  >
+                    Report media
+                  </button>
+                </div>
+              );
+            })}
+            {!dashboard.recentMedia.length ? <p className="muted">No media links yet.</p> : null}
+          </article>
+        </section>
+      </CompactDisclosure>
+
+      <CompactDisclosure
+        title="Media and privacy"
+        summary="Moderation, consent controls, and approved media links."
+        badge={`${familyModerationQueue.length} review`}
+      >
       <section className="grid two">
         <article className="card stack">
           <div className="card-header">
@@ -1153,12 +2264,18 @@ export function ParentDashboardClient({ dashboardData }: { dashboardData?: Paren
           ))}
         </article>
       </section>
+      </CompactDisclosure>
 
+      <CompactDisclosure
+        title="Calendar and team media"
+        summary="Full family calendar and filterable team media feed."
+        badge={`${filteredParentEvents.length} event(s)`}
+      >
       <section className="grid two">
         <article className="card stack">
           <div className="card-header">
             <div>
-              <span className="eyebrow">Parent calendar view</span>
+              <span className="eyebrow">Family calendar</span>
               <h2>Family calendar</h2>
             </div>
             <span className="badge">{filteredParentEvents.length} event(s)</span>
@@ -1177,8 +2294,8 @@ export function ParentDashboardClient({ dashboardData }: { dashboardData?: Paren
           {filteredParentEvents.map((event) => (
             <p key={event.id}>
               <span className="badge">{event.eventType.replace("_", " ")}</span>{" "}
-              <strong>{event.title}</strong><br />
-              <span className="muted">{formatDate(event.startsAt)} · Arrive {formatArrivalTime(event.startsAt)} · {event.locationName}</span>
+                <strong>{event.title}</strong><br />
+              <span className="muted">{formatDate(event.startsAt)} · Arrival not published · {event.locationName}</span>
             </p>
           ))}
           {!filteredParentEvents.length ? <p className="muted">No family events match this filter.</p> : null}
@@ -1187,7 +2304,7 @@ export function ParentDashboardClient({ dashboardData }: { dashboardData?: Paren
         <article className="card stack">
           <div className="card-header">
             <div>
-              <span className="eyebrow">Parent media feed</span>
+              <span className="eyebrow">Team media</span>
               <h2>Team media</h2>
             </div>
             <span className="badge">{filteredMediaFeed.length} item(s)</span>
@@ -1221,8 +2338,73 @@ export function ParentDashboardClient({ dashboardData }: { dashboardData?: Paren
           {!filteredMediaFeed.length ? <p className="muted">No media links match this filter.</p> : null}
         </article>
       </section>
+      </CompactDisclosure>
 
+      <CompactDisclosure
+        title="Family logistics"
+        summary="Snack openings, volunteer roles, and notification preferences."
+        badge={`${parentHelpCount} open`}
+        defaultOpen={parentHelpCount > 0}
+      >
       <section className="grid two">
+        <div className="stack compact">
+          <div className="card-header">
+            <div>
+              <span className="eyebrow">One-Tap Volunteer Marketplace</span>
+              <h2>Team help board</h2>
+            </div>
+            <span className="badge">{parentVolunteerMarketplace.filter((job) => job.actionStatus === "claimable").length} claimable</span>
+          </div>
+          {parentVolunteerMarketplace.slice(0, 7).map((job) => (
+            <div className="stack compact" key={job.id}>
+              <p><strong>{job.title}</strong><br /><span className="muted">{job.category.replace("_", " ")} - {job.detail} {job.reminderBoundary}</span></p>
+              <button
+                className="secondary"
+                disabled={isHelpPending || job.actionStatus !== "claimable" || !job.claimEndpoint || !job.claimPayload}
+                onClick={() => job.claimEndpoint && job.claimPayload ? claimFamilyHelp(job.claimEndpoint, job.claimPayload) : undefined}
+              >
+                {job.actionLabel}
+              </button>
+            </div>
+          ))}
+        </div>
+        <div className="stack compact">
+          <div className="card-header">
+            <div>
+              <span className="eyebrow">Equipment Exchange</span>
+              <h2>Moderated gear board</h2>
+            </div>
+            <span className="badge">{parentEquipmentExchange.length} visible</span>
+          </div>
+          {parentEquipmentExchange.map((listing) => (
+            <p key={listing.id}>
+              <strong>{listing.title}</strong><br />
+              <span className="muted">{listing.kind} - {listing.sizeOrAge} - {listing.condition}. {listing.detail}</span>
+            </p>
+          ))}
+          {!parentEquipmentExchange.length ? <p className="muted">No approved gear listings are visible for this team yet.</p> : null}
+          <p className="notice">Gear exchange listings are moderated and do not expose parent contact details publicly.</p>
+        </div>
+      </section>
+
+      {parentAvailabilityIntelligence ? (
+        <section className="grid one">
+          <div className="stack compact">
+            <div className="card-header">
+              <div>
+                <span className="eyebrow">Family Availability Intelligence</span>
+                <h2>{parentAvailabilityIntelligence.eventTitle}</h2>
+              </div>
+              <span className={`badge ${parentAvailabilityIntelligence.signal === "ready" ? "ok" : "warning"}`}>{parentAvailabilityIntelligence.signal.replace("_", " ")}</span>
+            </div>
+            <p>{parentAvailabilityIntelligence.summary}</p>
+            <p className="muted">Response rate {parentAvailabilityIntelligence.responseRate}%; schedule conflicts {parentAvailabilityIntelligence.scheduleConflictCount}.</p>
+            <p className="notice">{parentAvailabilityIntelligence.boundary}</p>
+          </div>
+        </section>
+      ) : null}
+
+      <section className="grid two" id="family-help">
         <article className="card stack">
           <div className="card-header">
             <div>
@@ -1268,6 +2450,13 @@ export function ParentDashboardClient({ dashboardData }: { dashboardData?: Paren
                 >
                   Claim volunteer role
                 </button>
+                <button
+                  className="secondary"
+                  disabled={isHelpPending}
+                  onClick={() => claimFamilyHelp("/api/volunteer-signups/waitlist", { signupId: signup.id })}
+                >
+                  Join backup list
+                </button>
               </div>
             );
           })}
@@ -1275,14 +2464,14 @@ export function ParentDashboardClient({ dashboardData }: { dashboardData?: Paren
         </article>
       </section>
 
-      <section className="grid two">
+      <section className="grid two" id="schedule-alerts">
         <article className="card stack">
           <div className="card-header">
             <div>
-              <span className="eyebrow">Notification preference center</span>
+              <span className="eyebrow">Schedule alerts</span>
               <h2>Family alert rules</h2>
             </div>
-            <span className={`badge ${dashboardData?.isSupabaseBacked ? "ok" : "warning"}`}>{dashboardData?.isSupabaseBacked ? "Persisted" : "Local preview"}</span>
+            <span className={`badge ${dashboardData?.isSupabaseBacked ? "ok" : "warning"}`}>{dashboardData?.isSupabaseBacked ? "Saved" : "Preview only"}</span>
           </div>
           {schedulePreferences.map((preference) => (
             <div className="stack compact" key={preference.channel}>
@@ -1305,7 +2494,7 @@ export function ParentDashboardClient({ dashboardData }: { dashboardData?: Paren
               </div>
             </div>
           ))}
-          <p className="muted">Saving preferences updates Supabase only. Provider sends still require opt-in, policy checks, and approved delivery adapters.</p>
+          <p className="muted">Saving updates your family alert rules. Messages still require opt-in, league policy checks, and an approved delivery connection.</p>
         </article>
         <article className="card stack">
           <h2>Respectful messaging boundary</h2>
@@ -1313,15 +2502,21 @@ export function ParentDashboardClient({ dashboardData }: { dashboardData?: Paren
           <p className="notice">Urgent alerts can still be drafted for review, but production sending must honor quiet hours and fallback settings.</p>
         </article>
       </section>
+      </CompactDisclosure>
 
+      <CompactDisclosure
+        title="Support"
+        summary="Ask league staff for help when family access or team details need review."
+        badge={dashboardData?.isSupabaseBacked ? "saved" : "preview"}
+      >
       <section className="grid two">
         <article className="card stack">
           <div className="card-header">
             <div>
-              <span className="eyebrow">Parent support request flow</span>
+              <span className="eyebrow">Ask for help</span>
               <h2>Ask league staff for help</h2>
             </div>
-            <span className={`badge ${dashboardData?.isSupabaseBacked ? "ok" : "warning"}`}>{dashboardData?.isSupabaseBacked ? "Persisted" : "Local preview"}</span>
+            <span className={`badge ${dashboardData?.isSupabaseBacked ? "ok" : "warning"}`}>{dashboardData?.isSupabaseBacked ? "Saved" : "Preview only"}</span>
           </div>
           <label>
             Topic
@@ -1347,6 +2542,7 @@ export function ParentDashboardClient({ dashboardData }: { dashboardData?: Paren
           <p className="muted">Staff should see team, child, RSVP, and notification context before replying.</p>
         </article>
       </section>
+      </CompactDisclosure>
         </>
       )}
     </div>
@@ -1363,6 +2559,8 @@ export function ParentRsvpClient({ dashboardData }: { dashboardData?: ParentCoac
   const parentUserId = dashboardData?.parentUserId ?? "user-parent-jordan";
   const parentUser = displayState.users.find((user) => user.id === parentUserId);
   const dashboard = getParentDashboard(displayState, parentUserId, NOW);
+  const parentContextKey = `parent:${displayState.organization.id}:${displayState.activeSeason.id}:${dashboard.children.map(({ team }) => team.id).sort().join(",") || "none"}`;
+  const offlineWritesEnabled = process.env.NEXT_PUBLIC_OFFLINE_WRITES_ENABLED === "true";
   const accessGate = privateAccessGate(dashboardData, "parent");
   const isArchivedSeason = displayState.activeSeason.status === "archived";
   const rsvpHistory = displayState.rsvps
@@ -1377,12 +2575,91 @@ export function ParentRsvpClient({ dashboardData }: { dashboardData?: ParentCoac
       rsvp: displayState.rsvps.find((item) => item.eventId === event.id && item.playerId === player.id)
     })));
 
+  async function sendQueuedRsvp(action: OfflineGameDayAction) {
+    const response = await authenticatedJsonFetch(action.endpoint, action.payload, {
+      "Idempotency-Key": action.actionId,
+      "X-LeaguePilot-Offline-Replay": "true"
+    });
+    return {
+      ok: response.ok,
+      status: response.status,
+      body: await response.json().catch(() => null) as Record<string, unknown> | null
+    };
+  }
+
+  useEffect(() => {
+    if (!offlineWritesEnabled || typeof window === "undefined") return;
+    const sync = () => {
+      void syncContextOutbox(parentContextKey, sendQueuedRsvp).then((results) => {
+        const conflict = results.find((result) => result.conflictDetail);
+        if (conflict) setMessage(`Sync conflict: ${conflict.conflictDetail}`);
+        else if (results.some((result) => result.succeededAt)) setMessage("Offline RSVP synced to current team records.");
+      }).catch(() => undefined);
+    };
+    if (navigator.onLine) sync();
+    window.addEventListener("online", sync);
+    return () => window.removeEventListener("online", sync);
+  }, [offlineWritesEnabled, parentContextKey]);
+
   function save(eventId: string, playerId: string, response: RsvpResponse) {
     startTransition(async () => {
-      const apiResponse = await authenticatedJsonFetch("/api/rsvps", { eventId, playerId, response });
-      const result = await apiResponse.json().catch(() => null) as { ok?: boolean; message?: string } | null;
+      const event = displayState.events.find((item) => item.id === eventId);
+      const currentRsvp = displayState.rsvps.find((item) => item.eventId === eventId && item.playerId === playerId);
+      const actionId = typeof crypto !== "undefined" && "randomUUID" in crypto
+        ? crypto.randomUUID()
+        : `rsvp-${Date.now()}-${Math.random().toString(16).slice(2)}`;
+      const payload = {
+        eventId,
+        playerId,
+        response,
+        expectedLockVersion: currentRsvp?.lockVersion ?? 0,
+        expectedScheduleVersion: event?.scheduleVersion ?? 1
+      };
+      const queuedAction: OfflineGameDayAction = {
+        actionId,
+        actionType: "rsvp",
+        contextKey: parentContextKey,
+        endpoint: "/api/rsvps",
+        payload,
+        queuedAt: new Date().toISOString(),
+        retryCount: 0,
+        baseRecordVersion: currentRsvp?.lockVersion ?? 0,
+        baseScheduleVersion: event?.scheduleVersion ?? 1
+      };
+      if (typeof navigator !== "undefined" && !navigator.onLine) {
+        if (!offlineWritesEnabled) {
+          setMessage("RSVP needs an online connection. Offline writes are disabled for this league.");
+          return;
+        }
+        await queueOfflineGameDayAction(queuedAction);
+        setMessage("Waiting to sync. Your RSVP is saved on this device, not yet in team records.");
+        return;
+      }
+      const apiResponse = await authenticatedJsonFetch("/api/rsvps", payload, { "Idempotency-Key": actionId })
+        .catch(async () => {
+          if (offlineWritesEnabled) await queueOfflineGameDayAction(queuedAction);
+          return null;
+        });
+      if (!apiResponse) {
+        setMessage(offlineWritesEnabled
+          ? "Waiting to sync. Your RSVP is saved on this device, not yet in team records."
+          : "Team records are unavailable. Offline writes are disabled for this league.");
+        return;
+      }
+      const result = await apiResponse.json().catch(() => null) as {
+        ok?: boolean;
+        code?: string;
+        message?: string;
+        currentResponse?: RsvpResponse;
+      } | null;
       setMessage(result?.message ?? "RSVP could not be saved.");
+      if (apiResponse.status === 409) {
+        setMessage(result?.code === "schedule_changed"
+          ? "The event time or details changed after this RSVP opened. Review the current schedule, then confirm again."
+          : `Another guardian updated this RSVP${result?.currentResponse ? ` to ${result.currentResponse.replace("_", " ")}` : ""}. Review it before retrying.`);
+      }
       if (!result?.ok) return;
+      markLeaguePilotValueExperienced("parent_rsvp_confirmed");
 
       const input = { eventId, playerId, parentUserId, response, now: new Date().toISOString() };
       const preview = setRsvp(displayState, input);
@@ -1400,11 +2677,11 @@ export function ParentRsvpClient({ dashboardData }: { dashboardData?: ParentCoac
       <section className="hero">
         <span className="eyebrow">One-tap RSVP</span>
         <h1>Parents answer attendance for linked children only.</h1>
-        <p className="lead">This view is scoped to {parentUser?.name ?? "the selected parent"}. It enforces the same parent-child permission rule used by the domain tests.</p>
+        <p className="lead">This view is scoped to {parentUser?.name ?? "the selected parent"}. Only linked children appear here.</p>
       </section>
 
       <p className={`notice ${dashboardData?.isSupabaseBacked ? "ok" : "warning"}`}>
-        {dashboardData?.accessStatus === "live" ? "RSVP rows and button payloads are loaded from Supabase." : dashboardData?.message ?? "Showing local seed fallback until Supabase has linked parent and coach records."}
+        {dashboardData?.accessStatus === "live" ? "RSVP details are current for your approved family access." : "Preview details are shown until approved family access is available."}
       </p>
       {isArchivedSeason ? <p className="notice warning">Archived RSVP read-only mode is active. Past attendance remains visible, but edits are locked.</p> : null}
       {message ? <p className="notice">{message}</p> : null}
@@ -1449,6 +2726,10 @@ export function CoachDashboardClient({ dashboardData }: { dashboardData?: Parent
   const { state } = useAppState();
   const [actionMessage, setActionMessage] = useState("");
   const [isActionPending, startActionTransition] = useTransition();
+  const [fieldMode, setFieldMode] = useState(false);
+  const [fieldNote, setFieldNote] = useState("");
+  const [fieldAttendance, setFieldAttendance] = useState<Record<string, "present" | "absent" | "late">>({});
+  const [fieldAttendanceVersions, setFieldAttendanceVersions] = useState<Record<string, number>>({});
   const sourceState = dashboardData?.state ?? state;
   const coachId = dashboardData?.coachUserId ?? "user-coach-taylor";
   const coachUser = sourceState.users.find((user) => user.id === coachId);
@@ -1463,12 +2744,18 @@ export function CoachDashboardClient({ dashboardData }: { dashboardData?: Parent
   const teamIds = new Set(teams.map((team) => team.id));
   const assignedEvents = sourceState.events.filter((event) => teamIds.has(event.teamId) && event.status === "scheduled");
   const nextAssignedEvent = assignedEvents[0];
+  const primaryCoachTeam = teams.find((team) => team.id === nextAssignedEvent?.teamId)
+    ?? teams.find((team) => team.seasonId === sourceState.activeSeason.id)
+    ?? teams[0];
+  const fieldPlayers = sourceState.players.filter((player) => player.teamId === nextAssignedEvent?.teamId);
+  const coachContextKey = `coach:${sourceState.organization.id}:${sourceState.activeSeason.id}:${primaryCoachTeam?.id ?? "none"}`;
+  const offlineWritesEnabled = process.env.NEXT_PUBLIC_OFFLINE_WRITES_ENABLED === "true";
   const weatherAlerts = sourceState.weatherAlerts.filter((alert) => teamIds.has(alert.teamId));
   const weatherApprovalQueue = getWeatherApprovalQueue(sourceState).filter((item) => teamIds.has(item.alert.teamId));
   const weatherRetryLogs = getWeatherProviderRetryLogs(sourceState).filter((item) => teamIds.has(item.alert.teamId));
   const weatherAlertHistory = getWeatherAlertHistory(sourceState).filter((item) => teamIds.has(item.alert.teamId));
   const sportWeatherThresholds = getSportWeatherThresholds("baseball");
-  const leagueWeatherThresholds = getLeagueWeatherThresholds(teams[0]?.division ?? "3U");
+  const leagueWeatherThresholds = getLeagueWeatherThresholds(primaryCoachTeam?.division ?? "3U");
   const weatherThresholdReview = evaluateWeatherThresholds({
     heatIndex: 91,
     lightningMiles: 8,
@@ -1486,6 +2773,32 @@ export function CoachDashboardClient({ dashboardData }: { dashboardData?: Parent
   const volunteerNeeds = sourceState.volunteerSignups.filter((signup) => teamIds.has(signup.teamId) && signup.status === "open");
   const snackNeeds = sourceState.snackScheduleSlots.filter((slot) => teamIds.has(slot.teamId) && slot.status === "open");
   const accessGate = privateAccessGate(dashboardData, "coach");
+  const nextCoachSummary = summaries[0];
+  const nextCoachEvent = nextCoachSummary?.event ?? nextAssignedEvent;
+  const coachReviewCount = (nextCoachSummary?.noResponse ?? 0) + weatherApprovalQueue.length + snackNeeds.length + volunteerNeeds.length;
+  const coachReviewItems = [
+    nextCoachSummary?.noResponse ? `${nextCoachSummary.noResponse} RSVP response${nextCoachSummary.noResponse === 1 ? "" : "s"} still missing.` : "No RSVP gaps on the next event.",
+    weatherApprovalQueue.length ? `${weatherApprovalQueue.length} weather draft${weatherApprovalQueue.length === 1 ? "" : "s"} need review.` : "No weather draft needs review.",
+    snackNeeds.length || volunteerNeeds.length ? `${snackNeeds.length + volunteerNeeds.length} snack or volunteer item${snackNeeds.length + volunteerNeeds.length === 1 ? "" : "s"} open.` : "Family help coverage looks set."
+  ];
+  const coachAnnouncements = sourceState.announcements
+    .filter((announcement) => teamIds.has(announcement.teamId))
+    .sort((left, right) => new Date(right.createdAt).getTime() - new Date(left.createdAt).getTime())
+    .slice(0, 3)
+    .map((announcement) => ({
+      id: announcement.id,
+      title: announcement.title,
+      body: announcement.body,
+      teamName: sourceState.teams.find((team) => team.id === announcement.teamId)?.name
+    }));
+  const coachRosterCount = nextCoachSummary?.totalPlayers ?? fieldPlayers.length;
+  const respondedRsvpCount = Math.max(0, coachRosterCount - (nextCoachSummary?.noResponse ?? coachRosterCount));
+  const assignedCoachCount = sourceState.teamMemberships.filter((membership) => (
+    membership.teamId === primaryCoachTeam?.id && membership.role === "coach" && membership.status === "active"
+  )).length;
+  const nextCoachWeatherAlert = weatherAlerts.find((alert) => alert.eventId === nextCoachEvent?.id);
+  const coachWeatherSummary = nextCoachWeatherAlert?.headline
+    ?? (weatherApprovalQueue.length ? "Review needed" : "No draft");
   const coachOnboardingSteps = [
     { label: "Active coach membership", done: teams.length > 0, detail: teams.map((team) => team.name).join(", ") || "No assigned teams." },
     { label: "Review attendance snapshot", done: summaries.length > 0, detail: `${summaries.length} upcoming assigned event(s).` },
@@ -1501,49 +2814,313 @@ export function CoachDashboardClient({ dashboardData }: { dashboardData?: Parent
     "Announcement: Please review RSVP and game-day details before the next event."
   ];
   const [weeklyUpdateBody, setWeeklyUpdateBody] = useState(weeklyUpdateDraft.join("\n"));
+  const coachSeasonView = buildCoachSeasonCertaintyView({
+    state: sourceState,
+    coachUserId: coachId,
+    accessStatus: dashboardData?.accessStatus ?? "live",
+    message: dashboardData?.message ?? "Preview details are shown until an approved coach assignment is available.",
+    isSupabaseBacked: dashboardData?.isSupabaseBacked ?? false,
+    now: NOW
+  });
+
+  async function sendQueuedFieldAction(action: OfflineGameDayAction) {
+    const response = await authenticatedJsonFetch(action.endpoint, action.payload, {
+      "Idempotency-Key": action.actionId,
+      "X-LeaguePilot-Offline-Replay": "true"
+    });
+    return {
+      ok: response.ok,
+      status: response.status,
+      body: await response.json().catch(() => null) as Record<string, unknown> | null
+    };
+  }
+
+  useEffect(() => {
+    if (!nextAssignedEvent || typeof window === "undefined") return;
+    const packKey = `leaguepilot-context:${coachContextKey}:game-day-pack`;
+    try {
+      localStorage.setItem(packKey, JSON.stringify({
+        cachedAt: new Date().toISOString(),
+        event: {
+          id: nextAssignedEvent.id,
+          title: nextAssignedEvent.title,
+          startsAt: nextAssignedEvent.startsAt,
+          locationName: nextAssignedEvent.locationName,
+          scheduleVersion: nextAssignedEvent.scheduleVersion ?? 1
+        },
+        players: fieldPlayers.map((player) => ({
+          id: player.id,
+          displayName: `${player.firstName} ${player.lastInitial}.`
+        }))
+      }));
+    } catch {
+      // Field Mode remains online-only when private cache storage is unavailable.
+    }
+  }, [coachContextKey, fieldPlayers, nextAssignedEvent]);
+
+  useEffect(() => {
+    if (!offlineWritesEnabled || typeof window === "undefined") return;
+    const sync = () => {
+      void syncContextOutbox(coachContextKey, sendQueuedFieldAction).then((results) => {
+        const conflict = results.find((result) => result.conflictDetail);
+        if (conflict) setActionMessage(`Sync conflict: ${conflict.conflictDetail}`);
+        else if (results.some((result) => result.succeededAt)) setActionMessage("Field Mode changes synced to team records.");
+      }).catch(() => undefined);
+    };
+    if (navigator.onLine) sync();
+    window.addEventListener("online", sync);
+    return () => window.removeEventListener("online", sync);
+  }, [coachContextKey, offlineWritesEnabled]);
+
+  function submitFieldAction(input: {
+    actionType: "attendance" | "coach_note";
+    endpoint: string;
+    payload: Record<string, unknown>;
+    playerId?: string;
+    attendanceValue?: "present" | "absent" | "late";
+  }) {
+    if (!nextAssignedEvent) return;
+    startActionTransition(async () => {
+      const actionId = typeof crypto !== "undefined" && "randomUUID" in crypto
+        ? crypto.randomUUID()
+        : `field-${Date.now()}-${Math.random().toString(16).slice(2)}`;
+      const action: OfflineGameDayAction = {
+        actionId,
+        actionType: input.actionType,
+        contextKey: coachContextKey,
+        endpoint: input.endpoint,
+        payload: input.payload,
+        queuedAt: new Date().toISOString(),
+        retryCount: 0,
+        baseRecordVersion: input.playerId ? fieldAttendanceVersions[input.playerId] ?? 0 : undefined,
+        baseScheduleVersion: nextAssignedEvent.scheduleVersion ?? 1
+      };
+      if (typeof navigator !== "undefined" && !navigator.onLine) {
+        if (!offlineWritesEnabled) {
+          setActionMessage("Offline writes are disabled for this league. Cached game-day details remain available.");
+          return;
+        }
+        await queueOfflineGameDayAction(action);
+        if (input.playerId && input.attendanceValue) {
+          setFieldAttendance((current) => ({ ...current, [input.playerId!]: input.attendanceValue! }));
+        }
+        setActionMessage("Waiting to sync. This Field Mode change is saved on this device only.");
+        return;
+      }
+      const apiResponse = await authenticatedJsonFetch(input.endpoint, input.payload, { "Idempotency-Key": actionId })
+        .catch(async () => {
+          if (offlineWritesEnabled) await queueOfflineGameDayAction(action);
+          return null;
+        });
+      if (!apiResponse) {
+        setActionMessage(offlineWritesEnabled
+          ? "Waiting to sync. This Field Mode change is saved on this device only."
+          : "Team records are unavailable. Offline writes are disabled for this league.");
+        return;
+      }
+      const result = await apiResponse.json().catch(() => null) as {
+        ok?: boolean;
+        message?: string;
+        attendance?: { lock_version?: number };
+      } | null;
+      setActionMessage(result?.message ?? "Field Mode action could not be saved.");
+      if (!result?.ok) return;
+      if (input.playerId && input.attendanceValue) {
+        setFieldAttendance((current) => ({ ...current, [input.playerId!]: input.attendanceValue! }));
+        if (result.attendance?.lock_version) {
+          setFieldAttendanceVersions((current) => ({ ...current, [input.playerId!]: result.attendance!.lock_version! }));
+        }
+      }
+      if (input.actionType === "coach_note") setFieldNote("");
+    });
+  }
+
+  function saveFieldAttendance(playerId: string, attendanceValue: "present" | "absent" | "late") {
+    if (!nextAssignedEvent) return;
+    submitFieldAction({
+      actionType: "attendance",
+      endpoint: "/api/coach/attendance",
+      playerId,
+      attendanceValue,
+      payload: {
+        eventId: nextAssignedEvent.id,
+        playerId,
+        attendanceValue,
+        expectedLockVersion: fieldAttendanceVersions[playerId] ?? 0,
+        expectedScheduleVersion: nextAssignedEvent.scheduleVersion ?? 1
+      }
+    });
+  }
+
+  function saveFieldNote() {
+    if (!nextAssignedEvent || !fieldNote.trim()) return;
+    submitFieldAction({
+      actionType: "coach_note",
+      endpoint: "/api/coach/event-notes",
+      payload: {
+        eventId: nextAssignedEvent.id,
+        body: fieldNote,
+        expectedScheduleVersion: nextAssignedEvent.scheduleVersion ?? 1
+      }
+    });
+  }
 
   function runCoachAction(url: string, payload: unknown) {
     setActionMessage("");
     startActionTransition(async () => {
-      const response = await authenticatedJsonFetch(url, payload);
+      const actionId = typeof crypto !== "undefined" && "randomUUID" in crypto
+        ? crypto.randomUUID()
+        : `coach-action-${Date.now()}-${Math.random().toString(16).slice(2)}`;
+      const response = await authenticatedJsonFetch(
+        url,
+        payload,
+        url.includes("/volunteer-signups/") ? { "Idempotency-Key": actionId } : undefined
+      );
       const result = await response.json().catch(() => null) as { ok?: boolean; message?: string } | null;
       setActionMessage(result?.message ?? (response.ok ? "Action saved." : "Action could not be saved."));
     });
   }
 
   function saveWeeklyUpdate() {
-    const teamId = teams[0]?.id;
-    if (!teamId) {
+    if (!primaryCoachTeam) {
       setActionMessage("An assigned team is required before saving a weekly update.");
       return;
     }
 
     runCoachAction("/api/coach/weekly-update", {
-      teamId,
-      title: `Weekly update for ${teams[0]?.name ?? "team"}`,
+      teamId: primaryCoachTeam.id,
+      title: `Weekly update for ${primaryCoachTeam.name}`,
       body: weeklyUpdateBody
     });
   }
 
   function draftRsvpReminder(parentName: string, noResponse: number) {
-    setActionMessage(`RSVP reminder draft queued for ${parentName}: ${noResponse} missing response(s). Provider sending remains approval-gated.`);
+    setActionMessage(`RSVP reminder saved as a draft for ${parentName}: ${noResponse} missing response(s). No message was sent.`);
   }
+  const firstRsvpReminder = rsvpReminderQueue[0];
 
   return (
     <div className="page">
-      <section className="hero">
-        <span className="eyebrow">Coach dashboard</span>
-        <h1>{coachUser?.name ?? "Coach"}&apos;s week, attendance, replay, and team help in one view.</h1>
-        <p className="lead">This view is scoped to assigned teams and now sends weather, snack, and volunteer actions through the private Supabase APIs when a coach is signed in.</p>
+      <section className="season-home season-coach-home" aria-label="Coach home">
+        {accessGate ? <EventReadinessCard view={coachSeasonView} /> : (
+          <>
+            <CoachAnnouncementTicker announcements={coachAnnouncements} />
+            <CoachGameDayRadar
+              teamName={primaryCoachTeam?.name ?? "Assigned team"}
+              eventTitle={nextCoachEvent?.title ?? "No scheduled event"}
+              eventMeta={nextCoachEvent ? `${formatShortDay(nextCoachEvent.startsAt)} at ${formatShortTime(nextCoachEvent.startsAt)}` : "Schedule pending"}
+              location={nextCoachEvent?.locationName ?? "Location pending"}
+              respondedRsvpCount={respondedRsvpCount}
+              rosterCount={coachRosterCount}
+              coachCount={assignedCoachCount}
+              missingRsvpCount={nextCoachSummary?.noResponse ?? 0}
+              snackCount={snackNeeds.length}
+              volunteerCount={volunteerNeeds.length}
+              weatherReviewCount={weatherApprovalQueue.length}
+              reviewCount={coachReviewCount}
+              weatherSummary={coachWeatherSummary}
+              isPending={isActionPending}
+              canDraftWeather={Boolean(nextAssignedEvent)}
+              onNudgeRsvp={() => draftRsvpReminder(firstRsvpReminder?.parentUser?.name ?? "linked family", firstRsvpReminder?.noResponse ?? nextCoachSummary?.noResponse ?? 0)}
+              onDraftWeather={() => nextAssignedEvent ? runCoachAction("/api/weather-alerts/draft", { eventId: nextAssignedEvent.id }) : undefined}
+              onSaveWeeklyUpdate={saveWeeklyUpdate}
+            />
+            <CompactDisclosure
+              title="More coach context"
+              summary="Attendance, recent changes, fields, drafts, and practice recaps."
+              badge={`${coachReviewCount} review`}
+            >
+              <div className="season-card-grid">
+                <AttendanceRosterCard view={coachSeasonView} />
+                <WhatChangedCard changes={coachSeasonView.changes} title="Recent changes" href="/coach/schedule" />
+                <WeatherFieldCard view={coachSeasonView} />
+                <DraftsToReviewCard view={coachSeasonView} />
+                <PracticeRecapCard view={coachSeasonView} />
+              </div>
+            </CompactDisclosure>
+          </>
+        )}
       </section>
 
       <p className={`notice ${dashboardData?.isSupabaseBacked ? "ok" : "warning"}`}>
-        {dashboardData?.message ?? "Showing local seed fallback until Supabase has linked parent and coach records."}
+        {dashboardData?.isSupabaseBacked
+          ? "Team details are current and scoped to your approved coach assignment."
+          : "Preview details are shown here. Sign in with an approved coach assignment to save drafts."}
       </p>
       {actionMessage ? <p className="notice">{actionMessage}</p> : null}
       {accessGate ?? (
         <>
-
+      <section className={`field-mode ${fieldMode ? "field-mode-active" : ""}`} aria-label="Coach Field Mode">
+        <header className="field-mode-header">
+          <div>
+            <span className="eyebrow">Sideline command board</span>
+            <h2>{fieldMode ? "Field Mode active" : "Field Mode"}</h2>
+            <p>{nextAssignedEvent ? `${nextAssignedEvent.title} at ${formatShortTime(nextAssignedEvent.startsAt)}` : "No assigned event is ready."}</p>
+          </div>
+          <button
+            type="button"
+            className={fieldMode ? "field-mode-toggle active" : "field-mode-toggle"}
+            onClick={() => setFieldMode((current) => !current)}
+            aria-pressed={fieldMode}
+          >
+            {fieldMode ? "Exit Field Mode" : "Open Field Mode"}
+          </button>
+        </header>
+        {fieldMode ? (
+          <>
+            <div className="field-mode-metrics">
+              <p><strong>{Object.values(fieldAttendance).filter((value) => value === "present").length}</strong><span>Present</span></p>
+              <p><strong>{nextCoachSummary?.noResponse ?? 0}</strong><span>No RSVP</span></p>
+              <p><strong>{snackNeeds.length + volunteerNeeds.length}</strong><span>Open help</span></p>
+              <p><strong>{weatherApprovalQueue.length}</strong><span>Weather review</span></p>
+            </div>
+            <p className="field-mode-sync">
+              {offlineWritesEnabled
+                ? "Attendance and operational notes can wait on this device when connection drops."
+                : "Cached details are available. Offline writes remain disabled until league and environment gates are enabled."}
+            </p>
+            <div className="field-mode-roster">
+              {fieldPlayers.map((player) => (
+                <div className="field-mode-player" key={player.id}>
+                  <strong>{player.firstName} {player.lastInitial}.</strong>
+                  <div role="group" aria-label={`Attendance for ${player.firstName} ${player.lastInitial}.`}>
+                    {(["present", "late", "absent"] as const).map((value) => (
+                      <button
+                        type="button"
+                        key={value}
+                        className={fieldAttendance[player.id] === value ? "selected" : "secondary"}
+                        disabled={isActionPending}
+                        onClick={() => saveFieldAttendance(player.id, value)}
+                      >
+                        {value === "present" ? "Here" : value === "late" ? "Late" : "Absent"}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              ))}
+              {!fieldPlayers.length ? <p>No assigned roster is available in this context.</p> : null}
+            </div>
+            <label className="field-mode-note">
+              Operational coach note
+              <textarea
+                rows={3}
+                value={fieldNote}
+                onChange={(event) => setFieldNote(event.target.value)}
+                placeholder="Private event note for assigned staff"
+              />
+            </label>
+            <button type="button" disabled={isActionPending || !fieldNote.trim()} onClick={saveFieldNote}>
+              Save private note
+            </button>
+            <p className="muted">Notes are not Parent Replay, announcements, or provider messages.</p>
+          </>
+        ) : null}
+      </section>
+      <CompactDisclosure
+        title="Coach readiness details"
+        summary="Assigned teams, setup checks, attendance, weather, and assistive suggestions."
+        badge={`${coachReviewCount} review`}
+      >
       <section className="grid three">
         <article className="card metric"><span className="muted">Assigned teams</span><strong>{teams.length}</strong></article>
         <article className="card metric"><span className="muted">Open volunteer roles</span><strong>{volunteerNeeds.length}</strong></article>
@@ -1552,9 +3129,9 @@ export function CoachDashboardClient({ dashboardData }: { dashboardData?: Parent
 
       <section className="card stack">
         <div className="card-header">
-          <div>
-            <span className="eyebrow">Coach onboarding</span>
-            <h2>Assigned-team setup checklist</h2>
+            <div>
+              <span className="eyebrow">Coach setup</span>
+              <h2>Team setup checklist</h2>
           </div>
           <span className="badge">{coachOnboardingSteps.filter((step) => !step.done).length} open</span>
         </div>
@@ -1570,7 +3147,7 @@ export function CoachDashboardClient({ dashboardData }: { dashboardData?: Parent
       <section className="grid two">
         {coachSuggestions.map((suggestion) => (
           <article className="card stack" key={suggestion.id}>
-            <span className="eyebrow">Coach assistant</span>
+            <span className="eyebrow">Coach notes</span>
             <h2>{suggestion.title}</h2>
             <p><strong>{suggestion.body}</strong></p>
             <p>{suggestion.recommendation}</p>
@@ -1602,7 +3179,13 @@ export function CoachDashboardClient({ dashboardData }: { dashboardData?: Parent
           {!weatherAlerts.length ? <p className="muted">No weather alerts drafted for assigned teams.</p> : null}
         </article>
       </section>
+      </CompactDisclosure>
 
+      <CompactDisclosure
+        title="Weather policy details"
+        summary="Thresholds, field closure drafts, escalation rules, and provider retry proof."
+        badge={`${weatherApprovalQueue.length} draft(s)`}
+      >
       <section className="grid two">
         <article className="card stack">
           <div className="card-header">
@@ -1756,7 +3339,13 @@ export function CoachDashboardClient({ dashboardData }: { dashboardData?: Parent
           <p className="muted">Thresholds create coach/admin review prompts only; parent weather delivery remains deferred.</p>
         </article>
       </section>
+      </CompactDisclosure>
 
+      <CompactDisclosure
+        title="Family response details"
+        summary="RSVP reliability patterns and no-response reminder drafts."
+        badge={`${rsvpReminderQueue.length} queued`}
+      >
       <section className="grid two">
         <article className="card stack">
           <div className="card-header">
@@ -1796,10 +3385,16 @@ export function CoachDashboardClient({ dashboardData }: { dashboardData?: Parent
             </div>
           ))}
           {!rsvpReminderQueue.length ? <p className="muted">No RSVP reminder drafts are needed.</p> : null}
-          <p className="muted">Provider sending remains approval-gated. Queueing here is a coach draft status only; email, SMS, and push delivery stay behind provider approval rules.</p>
+          <p className="muted">This saves a coach draft only. Email, SMS, and push remain unsent until a reviewer approves the message and delivery is connected.</p>
         </article>
       </section>
+      </CompactDisclosure>
 
+      <CompactDisclosure
+        title="Drafts and team help"
+        summary="Weekly update draft, practice recap, snack, and volunteer controls."
+        badge="drafts"
+      >
       <section className="grid two">
         <article className="card stack">
           <div className="card-header">
@@ -1817,9 +3412,9 @@ export function CoachDashboardClient({ dashboardData }: { dashboardData?: Parent
 
       <section className="grid three">
         <article className="card stack">
-          <h2>Parent Replay</h2>
+          <h2>Practice Recaps</h2>
           <p>Use the recap builder after practice to generate parent activities and team quests.</p>
-          <a href="/coach/parent-replay">Open Parent Replay</a>
+          <a href="/coach/practice-recaps">Open practice recaps</a>
         </article>
         <article className="card stack">
           <h2>Snacks</h2>
@@ -1856,6 +3451,7 @@ export function CoachDashboardClient({ dashboardData }: { dashboardData?: Parent
           ))}
         </article>
       </section>
+      </CompactDisclosure>
         </>
       )}
     </div>
@@ -1867,6 +3463,7 @@ export function AdminTeamManagementClient({ data }: { data: AdminTeamManagementD
   const [seasons, setSeasons] = useState(data.seasons);
   const [players, setPlayers] = useState(data.players);
   const [message, setMessage] = useState("");
+  const [archiveReason, setArchiveReason] = useState("");
   const [isPending, startTransition] = useTransition();
   const [seasonDraft, setSeasonDraft] = useState({
     seasonId: data.seasons[0]?.id ?? "",
@@ -1900,6 +3497,49 @@ export function AdminTeamManagementClient({ data }: { data: AdminTeamManagementD
   const selectedRosterSeason = seasons.find((season) => season.id === playerDraft.seasonId);
   const teamSeasonArchived = selectedTeamSeason?.status === "archived";
   const rosterSeasonArchived = selectedRosterSeason?.status === "archived";
+  const activeSeasons = seasons.filter((season) => season.status === "active");
+  const activeSeasonId = activeSeasons[0]?.id ?? seasons[0]?.id ?? "";
+  const activeTeams = teams.filter((team) => team.status === "active" && team.seasonStatus === "active");
+  const activeRosteredPlayers = players.filter((player) => player.rosterStatus === "active");
+  const coachCoveredTeams = activeTeams.filter((team) => Boolean(team.coachUserId));
+
+  function startNewSeason() {
+    setSeasonDraft({
+      seasonId: "",
+      name: "Spring 2026",
+      startsAt: "2026-03-01T00:00:00.000Z",
+      endsAt: "2026-06-30T23:59:59.000Z",
+      status: "active"
+    });
+  }
+
+  function startNewTeam() {
+    setTeamDraft({
+      teamId: "",
+      seasonId: activeSeasonId,
+      name: "New Team",
+      division: data.divisions[0] ?? "6U",
+      mascot: "Team",
+      themeKey: "baseball",
+      primaryColor: "#1d4ed8",
+      secondaryColor: "#f97316",
+      coachUserId: "",
+      status: "active"
+    });
+  }
+
+  function startNewPlayer() {
+    const team = activeTeams[0] ?? teams[0];
+    setPlayerDraft({
+      playerId: "",
+      teamId: team?.id ?? "",
+      seasonId: team?.seasonId ?? activeSeasonId,
+      firstName: "Player",
+      lastInitial: "A",
+      jersey: "",
+      rosterStatus: "active"
+    });
+  }
 
   function selectTeam(teamId: string) {
     const team = teams.find((item) => item.id === teamId);
@@ -1933,13 +3573,59 @@ export function AdminTeamManagementClient({ data }: { data: AdminTeamManagementD
   function saveSeason() {
     setMessage("");
     startTransition(async () => {
+      let archiveProof: { previewHash: string; expiresAt: string } | undefined;
+      if (seasonDraft.status === "archived") {
+        if (!seasonDraft.seasonId || archiveReason.trim().length < 8) {
+          setMessage("Archiving requires an existing season and a reason of at least 8 characters.");
+          return;
+        }
+        const previewResponse = await authenticatedJsonFetch("/api/admin/impact-preview", {
+          targetType: "season_archive",
+          organizationId: data.organizationId,
+          seasonId: seasonDraft.seasonId,
+          reason: archiveReason,
+        });
+        const previewResult = await previewResponse.json().catch(() => null) as {
+          ok?: boolean;
+          message?: string;
+          preview?: {
+            affectedCount: number;
+            counts: { teams: number; players: number; events: number };
+            consequences: string[];
+            previewHash: string;
+            expiresAt: string;
+          };
+        } | null;
+        if (!previewResult?.ok || !previewResult.preview) {
+          setMessage(previewResult?.message ?? "Archive impact preview could not be created.");
+          return;
+        }
+        const accepted = window.confirm([
+          `Archive this season and make ${previewResult.preview.affectedCount} related records read-only?`,
+          `${previewResult.preview.counts.teams} teams, ${previewResult.preview.counts.players} players, ${previewResult.preview.counts.events} events.`,
+          ...previewResult.preview.consequences,
+        ].join("\n\n"));
+        if (!accepted) {
+          setMessage("Season archive cancelled. No records changed.");
+          return;
+        }
+        archiveProof = {
+          previewHash: previewResult.preview.previewHash,
+          expiresAt: previewResult.preview.expiresAt,
+        };
+      }
       const response = await authenticatedJsonFetch("/api/admin/seasons", {
         organizationId: data.organizationId,
         seasonId: seasonDraft.seasonId || undefined,
         name: seasonDraft.name,
         startsAt: seasonDraft.startsAt,
         endsAt: seasonDraft.endsAt,
-        status: seasonDraft.status
+        status: seasonDraft.status,
+        ...(archiveProof ? {
+          archiveReason,
+          previewHash: archiveProof.previewHash,
+          previewExpiresAt: archiveProof.expiresAt,
+        } : {})
       });
       const result = await response.json().catch(() => null) as {
         ok?: boolean;
@@ -2050,6 +3736,43 @@ export function AdminTeamManagementClient({ data }: { data: AdminTeamManagementD
     <>
       {message ? <p className="notice">{message}</p> : null}
 
+      <section className="card stack">
+        <div className="card-header">
+          <div>
+            <span className="eyebrow">Tenant setup guide</span>
+            <h2>Get this organization ready before inviting families.</h2>
+          </div>
+          <span className={`badge ${activeSeasons.length && activeTeams.length && activeRosteredPlayers.length ? "ok" : "warning"}`}>
+            {activeSeasons.length && activeTeams.length && activeRosteredPlayers.length ? "setup started" : "needs setup"}
+          </span>
+        </div>
+        <div className="grid three">
+          <p><strong>{activeSeasons.length}</strong><br /><span className="muted">active season(s)</span></p>
+          <p><strong>{activeTeams.length}</strong><br /><span className="muted">active team(s)</span></p>
+          <p><strong>{coachCoveredTeams.length}</strong><br /><span className="muted">coach-covered team(s)</span></p>
+          <p><strong>{activeRosteredPlayers.length}</strong><br /><span className="muted">active player(s)</span></p>
+          <p><strong>{data.coaches.length}</strong><br /><span className="muted">coach/admin profile(s)</span></p>
+        </div>
+        <div className="grid three">
+          <p>
+            <span className={`badge ${activeSeasons.length ? "ok" : "warning"}`}>{activeSeasons.length ? "ready" : "next"}</span>{" "}
+            <strong>1. Create an active season</strong><br />
+            <span className="muted">Every tenant needs one active season before teams, rosters, and schedules are useful.</span>
+          </p>
+          <p>
+            <span className={`badge ${activeTeams.length ? "ok" : "warning"}`}>{activeTeams.length ? "ready" : "next"}</span>{" "}
+            <strong>2. Add teams and coaches</strong><br />
+            <span className="muted">{activeSeasons.length ? "Create teams, then assign coach profiles or memberships." : "Create an active season first."}</span>
+          </p>
+          <p>
+            <span className={`badge ${activeRosteredPlayers.length ? "ok" : "warning"}`}>{activeRosteredPlayers.length ? "ready" : "next"}</span>{" "}
+            <strong>3. Add rostered players</strong><br />
+            <span className="muted">{activeTeams.length ? "Roster players before registration approval or parent invites." : "Add at least one active team first."}</span>
+          </p>
+        </div>
+        <p className="muted">After these basics are in place, use registration review or guardian-link repair to grant family access. Children still do not log in.</p>
+      </section>
+
       <section className="grid three">
         <article className="card stack">
           <div className="card-header">
@@ -2059,6 +3782,7 @@ export function AdminTeamManagementClient({ data }: { data: AdminTeamManagementD
             </div>
             <span className="badge">{seasons.length} season(s)</span>
           </div>
+          <button className="secondary" disabled={isPending} onClick={startNewSeason}>Start new season</button>
           <label>Existing season<select value={seasonDraft.seasonId} onChange={(event) => {
             const season = seasons.find((item) => item.id === event.target.value);
             setSeasonDraft({
@@ -2079,6 +3803,17 @@ export function AdminTeamManagementClient({ data }: { data: AdminTeamManagementD
             <option value="active">Active</option>
             <option value="archived">Archived</option>
           </select></label>
+          {seasonDraft.status === "archived" ? (
+            <label>
+              Archive reason
+              <textarea
+                rows={3}
+                value={archiveReason}
+                onChange={(event) => setArchiveReason(event.target.value)}
+                placeholder="Explain why this season should become read-only."
+              />
+            </label>
+          ) : null}
           <button disabled={isPending || !seasonDraft.name.trim()} onClick={saveSeason}>Save season</button>
         </article>
 
@@ -2090,6 +3825,8 @@ export function AdminTeamManagementClient({ data }: { data: AdminTeamManagementD
             </div>
             <span className={`badge ${teamSeasonArchived ? "warning" : "ok"}`}>{teamSeasonArchived ? "Read-only" : "Editable"}</span>
           </div>
+          <button className="secondary" disabled={isPending || !activeSeasonId} onClick={startNewTeam}>Start new team</button>
+          {!activeSeasonId ? <p className="notice warning">Create an active season before adding teams.</p> : null}
           <label>Team<select value={teamDraft.teamId} onChange={(event) => selectTeam(event.target.value)}>
             <option value="">New team</option>
             {teams.map((team) => <option key={team.id} value={team.id}>{team.name}</option>)}
@@ -2106,7 +3843,7 @@ export function AdminTeamManagementClient({ data }: { data: AdminTeamManagementD
             <option value="active">Active</option>
             <option value="archived">Archived</option>
           </select></label>
-          <button disabled={isPending || teamSeasonArchived || !teamDraft.name.trim()} onClick={saveTeam}>Save team</button>
+          <button disabled={isPending || teamSeasonArchived || !teamDraft.seasonId || !teamDraft.name.trim()} onClick={saveTeam}>Save team</button>
         </article>
 
         <article className="card stack">
@@ -2117,6 +3854,8 @@ export function AdminTeamManagementClient({ data }: { data: AdminTeamManagementD
             </div>
             <span className={`badge ${rosterSeasonArchived ? "warning" : "ok"}`}>{rosterSeasonArchived ? "Read-only" : "Editable"}</span>
           </div>
+          <button className="secondary" disabled={isPending || !activeTeams.length} onClick={startNewPlayer}>Start new player</button>
+          {!activeTeams.length ? <p className="notice warning">Create an active team before adding rostered players.</p> : null}
           <label>Player<select value={playerDraft.playerId} onChange={(event) => selectPlayer(event.target.value)}>
             <option value="">New player</option>
             {players.map((player) => <option key={player.id} value={player.id}>{player.firstName} {player.lastInitial}.</option>)}
@@ -2133,7 +3872,7 @@ export function AdminTeamManagementClient({ data }: { data: AdminTeamManagementD
             <option value="inactive">Inactive</option>
             <option value="archived">Archived</option>
           </select></label>
-          <button disabled={isPending || rosterSeasonArchived || !playerDraft.firstName.trim()} onClick={saveRosterPlayer}>Save roster player</button>
+          <button disabled={isPending || rosterSeasonArchived || !playerDraft.teamId || !playerDraft.firstName.trim() || !playerDraft.lastInitial.trim()} onClick={saveRosterPlayer}>Save roster player</button>
         </article>
       </section>
 
@@ -2158,21 +3897,47 @@ interface AdminDashboardClientProps {
   registrationRequests?: RegistrationRequest[];
   sponsorData?: SponsorAdminData;
   mediaData?: MediaGovernanceData;
+  drillVideoData?: DrillVideoLibraryData;
+  surface?: AdminDashboardSurfaceMode;
 }
 
-export function AdminDashboardClient({ registrationRequests, sponsorData, mediaData }: AdminDashboardClientProps = {}) {
+export type AdminDashboardSurfaceMode = "overview" | "media" | "sponsors";
+
+export function AdminDashboardClient({ registrationRequests, sponsorData, mediaData, drillVideoData, surface = "overview" }: AdminDashboardClientProps = {}) {
   const { state, dispatch } = useAppState();
+  const showOverview = surface === "overview";
+  const showMedia = surface === "overview" || surface === "media";
+  const showSponsors = surface === "overview" || surface === "sponsors";
+  const focusedSurfaceCopy = surface === "media"
+    ? {
+      eyebrow: "Media review",
+      title: "Review reported media and visibility before families see it.",
+      body: "Moderation keeps reported, hidden, rejected, removed, or unapproved drill video references out of family-facing views until staff review is complete."
+    }
+    : surface === "sponsors"
+      ? {
+        eyebrow: "Sponsor operations",
+        title: "Manage sponsor records without exposing billing state to families.",
+        body: "Admin sponsor workflows keep placements, logo metadata, and Stripe readiness records separate from child-facing display."
+      }
+      : null;
   const healthCards = computeAdminHealth(state, NOW);
   const adminSuggestions = buildAdminAssistiveSuggestions(state, NOW);
   const visibleRegistrations = registrationRequests ?? state.registrationRequests;
   const pendingRegistrations = visibleRegistrations.filter((request) => request.status === "pending");
-  const sponsorTeams = sponsorData?.teams.length ? sponsorData.teams : state.teams;
+  const sponsorTeams = sponsorData ? sponsorData.teams : state.teams;
   const mediaTeams = mediaData?.teams.length ? mediaData.teams : state.teams;
-  const initialSponsors = sponsorData?.sponsors.length ? sponsorData.sponsors : state.sponsors;
+  const drillTeams = drillVideoData?.teams.length ? drillVideoData.teams : state.teams;
+  const initialSponsors = sponsorData ? sponsorData.sponsors : state.sponsors;
   const initialMediaItems = mediaData?.mediaItems.length ? mediaData.mediaItems : state.mediaItems;
+  const initialDrillVideos = drillVideoData?.drillVideos ?? [];
+  const initialDrillSources = drillVideoData?.sources ?? [];
   const [sponsors, setSponsors] = useState<Sponsor[]>(initialSponsors);
   const [mediaItems, setMediaItems] = useState<MediaItem[]>(initialMediaItems);
+  const [drillVideos, setDrillVideos] = useState<DrillVideo[]>(initialDrillVideos);
+  const [drillSources, setDrillSources] = useState<DrillVideoSource[]>(initialDrillSources);
   const mediaReportingSummary = getMediaReportingSummary(mediaItems);
+  const mediaReviewQueue = [...mediaItems].sort((first, second) => mediaReviewPriority(first) - mediaReviewPriority(second));
   const uploadStorageProvider = getUploadStorageProviderStatus(false);
   const mediaRetentionPolicy = getMediaRetentionPolicy();
   const parentVisibleMediaCount = mediaItems.filter((item) => canViewMediaByRole(item, "parent")).length;
@@ -2183,27 +3948,55 @@ export function AdminDashboardClient({ registrationRequests, sponsorData, mediaD
   const emailSponsorPlacement = getEmailSponsorPlacement(sponsors);
   const bannerSponsorPlacement = getBannerSponsorPlacement(sponsors);
   const sponsorBillingProofs = buildSponsorBillingProofs(sponsors);
+  const sponsorProofRows: SponsorProofLedgerRow[] = sponsors.map((sponsor) => {
+    const billingProof = sponsorBillingProofs.find((proof) => proof.sponsorId === sponsor.id);
+    const placementLabel = sponsor.status === "active" && sponsor.placementKey
+      ? sponsor.placementKey.replaceAll("_", " ")
+      : "Not public";
+    const billingLabel = billingProof
+      ? billingProof.invoiceReference === "not-issued"
+        ? `${billingProof.billingStatus.replaceAll("_", " ")}; no invoice issued`
+        : `${billingProof.paymentProofStatus.replaceAll("_", " ")}; invoice referenced`
+      : "No billing record";
+
+    return {
+      id: sponsor.id,
+      name: sponsor.name,
+      level: sponsor.level === "team" ? "Team sponsor" : "League sponsor",
+      status: sponsor.status,
+      placementLabel,
+      billingLabel,
+      logoLabel: sponsor.logoUrl ? "On file" : "Not attached",
+      evidenceCount: 1 + Number(Boolean(sponsor.placementKey)) + Number(Boolean(sponsor.logoUrl))
+    };
+  });
+  const moneySponsorsState = useMemo(() => ({ ...state, sponsors }), [sponsors, state]);
+  const leagueRevenueSummary = useMemo(() => buildLeagueRevenueSummary(moneySponsorsState), [moneySponsorsState]);
+  const sponsorOpportunities = useMemo(() => buildSponsorOpportunities(moneySponsorsState), [moneySponsorsState]);
+  const adminCommunityTeamId = state.teams[0]?.id ?? sponsorTeams[0]?.id ?? "";
+  const adminVolunteerMarketplace = adminCommunityTeamId ? buildVolunteerMarketplace(state, adminCommunityTeamId) : [];
+  const adminEquipmentExchange = adminCommunityTeamId ? buildEquipmentExchange(state, adminCommunityTeamId, "admin") : [];
+  const adminWeatherSafety = adminCommunityTeamId ? buildWeatherSafetyDecisionAssistant(state, adminCommunityTeamId, NOW) : undefined;
+  const adminSponsorSafeGallery = adminCommunityTeamId ? buildSponsorSafeMediaGallery(moneySponsorsState, adminCommunityTeamId) : undefined;
+  const adminAvailabilityIntelligence = adminCommunityTeamId ? buildFamilyAvailabilityIntelligence(state, adminCommunityTeamId, NOW) : undefined;
   const touchTargetQa = getTouchTargetQa();
   const offlineStateSummary = getOfflineStateSummary();
-  const cacheInvalidationPolicy = getCacheInvalidationPolicy();
-  const manualDarkToggle = getManualDarkToggleState(false);
   const contrastChecks = getAccessibilityContrastChecks();
   const privacyFilters = getPrivacyFilters();
-  const inviteAcceptanceRate = getInviteAcceptanceRate(state);
-  const averageInviteToAccountTime = getAverageInviteToAccountTimeHours(state);
-  const failedInviteCount = getFailedInviteCount(state);
-  const parentLinkCompletionRate = getParentLinkCompletionRate(state);
-  const rsvpResponseRate = getRsvpResponseRate(state);
-  const scheduleAlertOpenRate = getScheduleAlertOpenRate(state);
-  const weeklyActiveParents = getWeeklyActiveParents(state);
-  const supportRequestsPerTeam = getSupportRequestsPerTeam(state);
-  const csvImportErrorRate = getCsvImportErrorRate(state);
-  const coachWeeklyUpdateSendRate = getCoachWeeklyUpdateSendRate(state);
-  const gameDayCalmModeUsage = getGameDayCalmModeUsage(state);
-  const parentReplayCompletionRate = getParentReplayCompletionRate(state);
-  const microCoachingStreakRate = getMicroCoachingStreakRate(state);
-  const mediaEngagementRate = getMediaEngagementRate(state);
-  const notificationOptOutRate = getNotificationOptOutRate(state);
+  const teamsWithUpcomingEvents = new Set(state.events
+    .filter((event) => event.status === "scheduled" && new Date(event.startsAt).getTime() >= new Date(NOW).getTime())
+    .map((event) => event.teamId));
+  const teamHelpRows = state.teams.map((team) => {
+    const issues = [
+      !team.coachUserId ? "coach" : undefined,
+      !teamsWithUpcomingEvents.has(team.id) ? "event" : undefined
+    ].filter(Boolean) as string[];
+    return { team, issues };
+  }).filter((row) => row.issues.length > 0);
+  const pendingSponsorReviews = sponsors.filter((sponsor) => sponsor.status === "pending").length;
+  const pendingDrillReviews = drillVideos.filter((video) => video.approvalStatus === "pending").length +
+    drillSources.filter((source) => source.approvalStatus === "pending").length;
+  const pendingReviewCount = pendingRegistrations.length + mediaReportingSummary.pendingReview + pendingSponsorReviews + pendingDrillReviews;
   const [communicationTeamId, setCommunicationTeamId] = useState("team-tigers");
   const [communicationChannel, setCommunicationChannel] = useState<AdminCommunicationChannel>("email");
   const [communicationTemplate, setCommunicationTemplate] = useState<CommunicationTemplate>("weekly_digest");
@@ -2219,13 +4012,15 @@ export function AdminDashboardClient({ registrationRequests, sponsorData, mediaD
   const [sponsorStatus, setSponsorStatus] = useState<Sponsor["status"]>(initialSponsors[0]?.status ?? "pending");
   const [sponsorPlacementKey, setSponsorPlacementKey] = useState<Sponsor["placementKey"] | "none">(initialSponsors[0]?.placementKey ?? "team_portal");
   const [sponsorLogoUrl, setSponsorLogoUrl] = useState(initialSponsors[0]?.logoUrl ?? "");
-  const [sponsorMessage, setSponsorMessage] = useState(sponsorData?.message ?? "Showing local sponsor records until Supabase sponsor rows are available.");
+  const [sponsorMessage, setSponsorMessage] = useState(sponsorData?.message ?? "Sponsor preview records are shown.");
   const [isSponsorPending, startSponsorTransition] = useTransition();
-  const [mediaMessage, setMediaMessage] = useState(mediaData?.message ?? "Showing local media records until Supabase media rows are available.");
+  const [mediaMessage, setMediaMessage] = useState(mediaData ? "Media review records are current for this organization." : "Media review preview records are shown.");
+  const [drillVideoMessage, setDrillVideoMessage] = useState(drillVideoData ? "Drill video review records are current." : "Drill video review preview records are shown.");
   const [mediaVisibilityDrafts, setMediaVisibilityDrafts] = useState<Record<string, "team" | "organization">>(() => Object.fromEntries(
     initialMediaItems.map((item) => [item.id, item.visibility ?? "team"])
   ));
   const [isMediaPending, startMediaTransition] = useTransition();
+  const [isDrillReviewPending, startDrillReviewTransition] = useTransition();
   const [lineupTeamId, setLineupTeamId] = useState("team-tigers");
   const [draggedPlayerId, setDraggedPlayerId] = useState("");
   const [targetRosterSize, setTargetRosterSize] = useState(10);
@@ -2267,6 +4062,14 @@ export function AdminDashboardClient({ registrationRequests, sponsorData, mediaD
   const lineupPlayers = state.players.filter((player) => player.teamId === lineupTeam.id);
   const assignedPlayerIds = new Set(Object.values(lineupPositions).filter(Boolean));
   const unassignedLineupPlayers = lineupPlayers.filter((player) => !assignedPlayerIds.has(player.id));
+  const adminSeasonView = buildAdminSeasonCertaintyView({
+    state,
+    registrationRequests: visibleRegistrations,
+    sponsors,
+    mediaItems,
+    message: "Admin overview is scoped by the active organization admin guard before this client renders.",
+    now: NOW
+  });
 
   function applyCommunicationDefaults(teamId: string, template: CommunicationTemplate) {
     const copy = defaultTeamCommunicationCopy(state, teamId, template);
@@ -2298,6 +4101,10 @@ export function AdminDashboardClient({ registrationRequests, sponsorData, mediaD
 
   function saveSponsorDraft() {
     setSponsorMessage("");
+    if (sponsorData && !sponsorData.isSupabaseBacked) {
+      setSponsorMessage("Live organization records are required before sponsor changes can be saved.");
+      return;
+    }
     startSponsorTransition(async () => {
       const response = await authenticatedJsonFetch("/api/admin/sponsors", {
         organizationId: sponsorData?.organizationId ?? state.organization.id,
@@ -2358,6 +4165,50 @@ export function AdminDashboardClient({ registrationRequests, sponsorData, mediaD
     });
   }
 
+  function reviewDrillSource(source: DrillVideoSource, status: "approved" | "blocked") {
+    setDrillVideoMessage("");
+    startDrillReviewTransition(async () => {
+      const response = await authenticatedJsonFetch("/api/admin/drill-video-sources/review", {
+        sourceId: source.id,
+        status,
+        reviewNotes: status === "approved" ? "Approved for club drill video library." : "Blocked from club drill video library."
+      });
+      const result = await response.json().catch(() => null) as {
+        ok?: boolean;
+        message?: string;
+        source?: DrillVideoSource;
+      } | null;
+
+      if (result?.ok && result.source) {
+        setDrillSources((current) => current.map((item) => item.id === source.id ? result.source! : item));
+      }
+
+      setDrillVideoMessage(result?.message ?? "Drill video source review could not be saved.");
+    });
+  }
+
+  function reviewDrillVideo(video: DrillVideo, status: "approved" | "rejected" | "retired") {
+    setDrillVideoMessage("");
+    startDrillReviewTransition(async () => {
+      const response = await authenticatedJsonFetch("/api/admin/drill-videos/review", {
+        drillVideoId: video.id,
+        status,
+        reviewNotes: status === "approved" ? "Approved for coach planning library." : "Not approved for coach planning library."
+      });
+      const result = await response.json().catch(() => null) as {
+        ok?: boolean;
+        message?: string;
+        drillVideo?: DrillVideo;
+      } | null;
+
+      if (result?.ok && result.drillVideo) {
+        setDrillVideos((current) => current.map((item) => item.id === video.id ? result.drillVideo! : item));
+      }
+
+      setDrillVideoMessage(result?.message ?? "Drill video review could not be saved.");
+    });
+  }
+
   function queueCommunication() {
     if (!communicationPreview.ok) {
       setCommunicationMessage(communicationPreview.message);
@@ -2377,7 +4228,7 @@ export function AdminDashboardClient({ registrationRequests, sponsorData, mediaD
         now: new Date().toISOString()
       }
     });
-    setCommunicationMessage(`${communicationPreview.notificationCount} ${communicationChannel.toUpperCase()} automation record(s) queued. Provider delivery is still disconnected.`);
+    setCommunicationMessage(`${communicationPreview.notificationCount} ${communicationChannel.toUpperCase()} message draft record(s) queued. Provider delivery is still disconnected.`);
   }
 
   function assignLineupPlayer(positionId: LineupPositionId) {
@@ -2394,12 +4245,38 @@ export function AdminDashboardClient({ registrationRequests, sponsorData, mediaD
 
   return (
     <div className="page">
-      <section className="hero">
-        <span className="eyebrow">Admin dashboard</span>
-        <h1>League operations across teams, registrations, sponsors, notifications, and readiness.</h1>
-        <p className="lead">Admin actions remain local and review-oriented. Provider sends, account grants, and payment/sponsor billing are not connected.</p>
+      {focusedSurfaceCopy ? (
+        <section className="hero admin-focus-hero">
+          <span className="eyebrow">{focusedSurfaceCopy.eyebrow}</span>
+          <h1>{focusedSurfaceCopy.title}</h1>
+          <p className="lead">{focusedSurfaceCopy.body}</p>
+        </section>
+      ) : null}
+
+      {showOverview ? (
+        <>
+      <section className="season-home season-admin-home" aria-labelledby="admin-home-title">
+        <div className="season-admin-context" aria-label="Current admin context">
+          <span><small>Organization</small><strong>{state.organization.name}</strong></span>
+          <span><small>Season</small><strong>{state.activeSeason.name}</strong></span>
+          <span><small>Role</small><strong>League admin</strong></span>
+        </div>
+        <div className="season-admin-topgrid">
+          <LeagueHealthSummaryCard view={adminSeasonView} />
+          <PendingActionsPanel view={adminSeasonView} />
+        </div>
+        <TeamStatusTable view={adminSeasonView} />
+        <div className="season-card-grid">
+          <RegistrationQueueCard view={adminSeasonView} />
+          <SecurityStatusCard view={adminSeasonView} />
+        </div>
       </section>
 
+      <CompactDisclosure
+        title="Operations workspace"
+        summary="Open planning, team management, message drafts, and lineup tools."
+        badge="Admin tools"
+      >
       <section className="grid three">
         <article className="card metric"><span className="muted">Teams</span><strong>{state.teams.length}</strong></article>
         <article className="card metric"><span className="muted">Pending registrations</span><strong>{pendingRegistrations.length}</strong></article>
@@ -2409,7 +4286,7 @@ export function AdminDashboardClient({ registrationRequests, sponsorData, mediaD
       <section className="grid two">
         {adminSuggestions.map((suggestion) => (
           <article className="card stack" key={suggestion.id}>
-            <span className="eyebrow">Admin copilot</span>
+            <span className="eyebrow">Suggested reviews</span>
             <h2>{suggestion.title}</h2>
             <p><strong>{suggestion.body}</strong></p>
             <p>{suggestion.recommendation}</p>
@@ -2429,8 +4306,8 @@ export function AdminDashboardClient({ registrationRequests, sponsorData, mediaD
         <article className="card stack">
           <div className="card-header">
             <div>
-              <span className="eyebrow">Email automation and mass SMS</span>
-              <h2>Communication console</h2>
+              <span className="eyebrow">Family message drafts</span>
+              <h2>Message draft review</h2>
             </div>
             <span className={`badge ${communicationPreview.ok ? "ok" : "warning"}`}>{communicationPreview.notificationCount} recipient(s)</span>
           </div>
@@ -2446,7 +4323,7 @@ export function AdminDashboardClient({ registrationRequests, sponsorData, mediaD
               </select>
             </label>
             <label>
-              Automation
+              Message type
               <select value={communicationTemplate} onChange={(event) => {
                 const template = event.target.value as CommunicationTemplate;
                 setCommunicationTemplate(template);
@@ -2458,8 +4335,8 @@ export function AdminDashboardClient({ registrationRequests, sponsorData, mediaD
             <label>
               Channel
               <select value={communicationChannel} onChange={(event) => setCommunicationChannel(event.target.value as AdminCommunicationChannel)}>
-                <option value="email">Email automation</option>
-                <option value="sms">Mass SMS</option>
+                <option value="email">Email draft</option>
+                <option value="sms">SMS draft</option>
               </select>
             </label>
             <label>
@@ -2478,7 +4355,7 @@ export function AdminDashboardClient({ registrationRequests, sponsorData, mediaD
               <span className="badge" key={recipient.id}>{recipient.name}</span>
             ))}
           </div>
-          <button disabled={!communicationPreview.ok} onClick={queueCommunication}>Queue automation records</button>
+          <button disabled={!communicationPreview.ok} onClick={queueCommunication}>Queue message drafts</button>
           {communicationMessage ? <p className="notice">{communicationMessage}</p> : null}
         </article>
       </section>
@@ -2620,10 +4497,15 @@ export function AdminDashboardClient({ registrationRequests, sponsorData, mediaD
           )) : <p className="muted">Every rostered player has a position.</p>}
         </article>
       </section>
+      </CompactDisclosure>
+        </>
+      ) : null}
 
-      <section className="grid three">
+      <section className={showOverview ? "grid three" : "grid two admin-focus-grid"}>
+        {showOverview ? (
+          <>
         <article className="card stack">
-          <h2>Queued communication records</h2>
+          <h2>Queued message records</h2>
           <p>{state.notifications.length} local notification records queued across push, email, and SMS channels.</p>
           {state.notifications.slice(0, 4).map((notification) => (
             <p key={notification.id}><strong>{notification.title}</strong><br /><span className="muted">{notification.channel} - {notification.status}</span></p>
@@ -2637,7 +4519,10 @@ export function AdminDashboardClient({ registrationRequests, sponsorData, mediaD
           ))}
           {visibleRegistrations.length === 0 ? <p className="muted">No registration requests yet.</p> : null}
         </article>
-        <article className="card stack">
+          </>
+        ) : null}
+        {showMedia ? (
+        <article className="card stack admin-focus-card media-review-card">
           <div className="card-header">
             <div>
               <span className="eyebrow">Visibility and moderation</span>
@@ -2646,62 +4531,160 @@ export function AdminDashboardClient({ registrationRequests, sponsorData, mediaD
             <span className="badge warning">Coach/Admin</span>
           </div>
           <p className="notice">{mediaMessage}</p>
-          <div className="grid three">
-            <div className="metric"><span className="muted">Media reports</span><strong>{mediaReportingSummary.totalReports}</strong></div>
+          <div className="grid three media-review-summary">
+            <div className="metric"><span className="muted">Family reports</span><strong>{mediaReportingSummary.totalReports}</strong></div>
             <div className="metric"><span className="muted">Pending review</span><strong>{mediaReportingSummary.pendingReview}</strong></div>
-            <div className="metric"><span className="muted">Upload storage</span><strong>{uploadStorageProvider.provider}</strong></div>
+            <div className="metric"><span className="muted">Upload storage</span><strong>{uploadStorageProvider.configured ? uploadStorageProvider.provider : "Link-based only"}</strong></div>
           </div>
-          <p className="muted">{uploadStorageProvider.detail}</p>
-          <p><strong>Role-based media visibility:</strong> {parentVisibleMediaCount} item(s) currently visible to parents.</p>
-          <p className="muted">Media retention policy: {mediaRetentionPolicy.seasonMedia}</p>
-          {mediaItems.map((item) => {
+          <div className="media-review-policy">
+            <p><strong>Role-based media visibility:</strong> {parentVisibleMediaCount} item(s) currently visible to parents.</p>
+            <p className="muted">{uploadStorageProvider.configured ? uploadStorageProvider.detail : "Upload storage is not connected; staff are reviewing Google Photos and YouTube links only."}</p>
+            <p className="muted">Retention: {mediaRetentionPolicy.seasonMedia}</p>
+          </div>
+          <div className="media-review-list" aria-label="Media moderation queue">
+          {mediaReviewQueue.map((item) => {
             const team = mediaTeams.find((candidate) => candidate.id === item.teamId);
             const status = item.moderationStatus ?? "approved";
-            const visibilityFlags = getPhotoVisibilityFlags(item);
-            const takedownRequest = createMediaTakedownRequest(item, "Family requested media review.");
+            const visibility = mediaVisibilityDrafts[item.id] ?? item.visibility ?? "team";
+            const needsReview = item.moderationStatus === "pending" || (item.reportCount ?? 0) > 0;
             return (
-              <div className="stack compact" key={item.id}>
-                <p>
-                  <strong>{item.title}</strong><br />
-                  <span className="muted">{team?.name ?? "Unknown team"} - {item.type.replace("_", " ")} - {status} - {item.reportCount ?? 0} report(s)</span>
-                </p>
-                <p className="muted">Photo visibility flags: team {visibilityFlags.teamVisible ? "yes" : "no"}, org {visibilityFlags.organizationVisible ? "yes" : "no"}, private album {visibilityFlags.privateAlbumOnly ? "yes" : "no"}.</p>
-                <p className="muted">{takedownRequest.title} - {takedownRequest.status}</p>
-                <label>
-                  Team/org visibility
-                  <select
-                    value={mediaVisibilityDrafts[item.id] ?? item.visibility ?? "team"}
-                    onChange={(event) => setMediaVisibilityDrafts((current) => ({
-                      ...current,
-                      [item.id]: event.target.value as "team" | "organization"
-                    }))}
-                  >
-                    <option value="team">Team only</option>
-                    <option value="organization">Organization</option>
-                  </select>
-                </label>
-                <div className="button-row">
-                  <button className="secondary" disabled={isMediaPending} onClick={() => {
-                    const approved = approveMediaItem(item);
-                    setMediaItems((current) => current.map((candidate) => candidate.id === item.id ? approved : candidate));
-                    setMediaMessage(`${item.title} approved for ${mediaVisibilityDrafts[item.id] ?? item.visibility ?? "team"} visibility.`);
-                  }}>Approve media</button>
-                  <button className="secondary" disabled={isMediaPending} onClick={() => {
-                    const rejected = rejectMediaItem(item);
-                    setMediaItems((current) => current.map((candidate) => candidate.id === item.id ? rejected.item : candidate));
-                    setMediaMessage(rejected.auditSummary);
-                  }}>Reject media</button>
-                  <button className="secondary" disabled={isMediaPending} onClick={() => runMediaModeration(item, "hidden", "Hidden pending coach/admin review.")}>Hide media</button>
-                  <button className="secondary" disabled={isMediaPending} onClick={() => runMediaModeration(item, "approved", "Restored after review.")}>Restore media</button>
-                  <button className="secondary" disabled={isMediaPending} onClick={() => runMediaModeration(item, "removed", "Removed by coach/admin moderation.")}>Remove media</button>
+              <div className="media-review-item" data-review={needsReview ? "pending" : status} key={item.id}>
+                <div className="media-review-item-header">
+                  <div>
+                    <span className="eyebrow">{team?.name ?? "Unknown team"} / {item.type.replace("_", " ")}</span>
+                    <h3>{item.title}</h3>
+                  </div>
+                  <span className={needsReview ? "badge warning" : "badge"}>{needsReview ? "Needs review" : status}</span>
+                </div>
+                <div className="media-review-meta">
+                  <span className="chip">Visibility: {visibility === "team" ? "Team only" : "Organization"}</span>
+                  <span className="chip">Reports: {item.reportCount ?? 0}</span>
+                  <span className="chip">Status: {status}</span>
+                </div>
+                <div className="media-review-copy">
+                  <p><strong>Family visibility:</strong> {getMediaVisibilityCopy({ ...item, visibility })}</p>
+                  <p className="muted">{getMediaReviewCopy(item)}</p>
+                </div>
+                <div className="media-review-controls">
+                  <label>
+                    Team/org visibility
+                    <select
+                      value={visibility}
+                      onChange={(event) => setMediaVisibilityDrafts((current) => ({
+                        ...current,
+                        [item.id]: event.target.value as "team" | "organization"
+                      }))}
+                    >
+                      <option value="team">Team only</option>
+                      <option value="organization">Organization</option>
+                    </select>
+                  </label>
+                  <div className="button-row media-review-actions">
+                    <button className="secondary" disabled={isMediaPending} onClick={() => runMediaModeration(item, "approved", `Approved for ${visibility} visibility.`)}>Approve media</button>
+                    <button className="secondary" disabled={isMediaPending} onClick={() => runMediaModeration(item, "rejected", "Rejected by coach/admin review.")}>Reject media</button>
+                    <button className="secondary" disabled={isMediaPending} onClick={() => runMediaModeration(item, "hidden", "Hidden pending coach/admin review.")}>Hide media</button>
+                    <button className="secondary" disabled={isMediaPending} onClick={() => runMediaModeration(item, "approved", "Restored after review.")}>Restore media</button>
+                    <button className="secondary" disabled={isMediaPending} onClick={() => {
+                      if (window.confirm(`Remove ${item.title} from media access?`)) {
+                        runMediaModeration(item, "removed", "Removed by coach/admin moderation.");
+                      }
+                    }}>Remove media</button>
+                    <a className="secondary" href={item.url} target="_blank" rel="noreferrer">Open source link</a>
+                  </div>
                 </div>
               </div>
             );
-          })}
-          {mediaItems.length === 0 ? <p className="muted">No media links yet.</p> : null}
-          <p className="muted">Reported or hidden media is excluded from parent-visible dashboards until it is restored by an assigned coach or organization admin.</p>
-        </article>
-        <article className="card stack">
+	          })}
+          </div>
+	          {mediaItems.length === 0 ? <p className="muted">No media links yet.</p> : null}
+	          <section className="grid two">
+	            <div className="stack compact">
+	              <div className="card-header">
+	                <div>
+	                  <span className="eyebrow">Sponsor-Safe Media Gallery</span>
+	                  <h3>Approved recap framing</h3>
+	                </div>
+	                <span className="badge">{adminSponsorSafeGallery?.approvedItems.length ?? 0} approved</span>
+	              </div>
+	              {(adminSponsorSafeGallery?.approvedItems ?? []).slice(0, 3).map((item) => (
+	                <p key={item.id}><strong>{item.recapLabel}</strong><br /><span className="muted">{item.sponsorFrame}. {item.safeCaption}</span></p>
+	              ))}
+	              <p className="notice">{adminSponsorSafeGallery?.boundary ?? "Sponsor-safe gallery needs a team before recap framing can render."}</p>
+	            </div>
+	            <div className="stack compact">
+	              <div className="card-header">
+	                <div>
+	                  <span className="eyebrow">Equipment Exchange</span>
+	                  <h3>Moderation queue</h3>
+	                </div>
+	                <span className="badge warning">{adminEquipmentExchange.filter((listing) => listing.moderationLabel === "admin_review").length} review</span>
+	              </div>
+	              {adminEquipmentExchange.map((listing) => (
+	                <p key={listing.id}><strong>{listing.title}</strong><br /><span className="muted">{listing.kind} - {listing.sizeOrAge} - {listing.moderationLabel.replace("_", " ")}. {listing.detail}</span></p>
+	              ))}
+	              <p className="notice">Equipment listings are team-scoped, moderated, and do not publish parent contact details.</p>
+	            </div>
+	          </section>
+	          <div className="stack compact drill-review-panel">
+	            <div className="card-header">
+	              <div>
+	                <span className="eyebrow">Coach drill videos</span>
+	                <h3>Reference review</h3>
+	              </div>
+	              <span className={`badge ${drillVideoData?.providerConfigured ? "ok" : "warning"}`}>YouTube metadata {drillVideoData?.providerConfigured ? "configured" : "missing"}</span>
+	            </div>
+	            <p className="notice">{drillVideoMessage}</p>
+	            <div className="grid three">
+	              <div className="metric"><span className="muted">Pending videos</span><strong>{drillVideos.filter((video) => video.approvalStatus === "pending").length}</strong></div>
+	              <div className="metric"><span className="muted">Allowlisted sources</span><strong>{drillSources.filter((source) => source.approvalStatus === "approved").length}</strong></div>
+	              <div className="metric"><span className="muted">Assignments</span><strong>{drillVideoData?.assignments.length ?? 0}</strong></div>
+	            </div>
+	            <p className="muted">Approval requires validated YouTube metadata, embeddability, and an approved source channel. Videos stay coach-planning only in this version.</p>
+	            {drillSources.map((source) => (
+	              <div className="stack compact" key={source.id}>
+	                <p><strong>{source.title}</strong><br /><span className="muted">YouTube channel {source.externalChannelId} - {source.approvalStatus}</span></p>
+	                <div className="button-row">
+	                  <button className="secondary" disabled={isDrillReviewPending} onClick={() => reviewDrillSource(source, "approved")}>Approve source</button>
+	                  <button className="secondary" disabled={isDrillReviewPending} onClick={() => reviewDrillSource(source, "blocked")}>Block source</button>
+	                </div>
+	              </div>
+	            ))}
+	            {drillSources.length === 0 ? <p className="muted">No YouTube drill video sources are waiting for review.</p> : null}
+	            {drillVideos.map((video) => {
+	              const source = drillSources.find((item) => item.externalChannelId === video.sourceChannelId);
+	              const teamNames = drillTeams.filter((team) => team.organizationId === video.organizationId).map((team) => team.name).slice(0, 3);
+	              return (
+	                <div className="stack compact" key={video.id}>
+	                  <p>
+	                    <strong>{video.title}</strong><br />
+	                    <span className="muted">{video.sport} - {video.skillCategory} - {video.ageBand} - {video.difficulty} - {video.approvalStatus}</span>
+	                  </p>
+	                  <p className="muted">Source: {video.sourceChannel ?? "Unknown channel"} ({source?.approvalStatus ?? "not reviewed"}) - teams: {teamNames.join(", ") || "organization library"}</p>
+	                  <p className="muted">Made for Kids: {video.madeForKidsStatus === undefined ? "unknown" : video.madeForKidsStatus ? "yes" : "no"} - embeddable: {video.embeddable ? "yes" : "no"} - last validated {video.lastValidatedAt ? formatDate(video.lastValidatedAt) : "not validated"}</p>
+	                  <div className="button-row">
+	                    <button className="secondary" disabled={isDrillReviewPending} onClick={() => reviewDrillVideo(video, "approved")}>Approve video</button>
+	                    <button className="secondary" disabled={isDrillReviewPending} onClick={() => reviewDrillVideo(video, "rejected")}>Reject video</button>
+	                    <button className="secondary" disabled={isDrillReviewPending} onClick={() => reviewDrillVideo(video, "retired")}>Retire video</button>
+	                  </div>
+	                </div>
+	              );
+	            })}
+	            {drillVideos.length === 0 ? <p className="muted">No drill video references have been submitted yet.</p> : null}
+	          </div>
+	          <p className="muted">Reported or hidden media is excluded from parent-visible dashboards until it is restored by an assigned coach or organization admin.</p>
+	        </article>
+        ) : null}
+        {showSponsors ? (
+        <>
+        {surface === "sponsors" ? (
+          <SponsorCommunityProofLedger
+            rows={sponsorProofRows}
+            selectedSponsorId={sponsorId === "new" ? sponsorProofRows[0]?.id ?? "" : sponsorId}
+            publicRecapCount={adminSponsorSafeGallery?.approvedItems.length ?? 0}
+            onSelectSponsor={selectSponsor}
+          />
+        ) : null}
+        <article className="card stack admin-focus-card" id="sponsor-record-editor">
           <div className="card-header">
             <div>
               <span className="eyebrow">Sponsor CRUD</span>
@@ -2712,6 +4695,40 @@ export function AdminDashboardClient({ registrationRequests, sponsorData, mediaD
           <p className="notice">{sponsorMessage}</p>
           <p><strong>Public display policy:</strong> {sponsorDisplayPolicy.status} - {sponsorDisplayPolicy.detail}</p>
           <p className="muted">Schedule sponsor placement: {scheduleSponsorPlacement.length}; media gallery sponsor placement: {mediaGallerySponsorPlacement.length}; email sponsor placement: {emailSponsorPlacement.length}; banner sponsor placement: {bannerSponsorPlacement.length}.</p>
+          <section className="grid two">
+            <div className="stack compact">
+              <div className="card-header">
+                <div>
+                  <span className="eyebrow">League Revenue Dashboard</span>
+                  <h3>Season funding proof</h3>
+                </div>
+                <span className="badge warning">Admin-only</span>
+              </div>
+              <div className="grid three">
+                <div className="metric"><span className="muted">Registration</span><strong>{formatCents(leagueRevenueSummary.registrationFeeCents)}</strong></div>
+                <div className="metric"><span className="muted">Sponsor invoices</span><strong>{formatCents(leagueRevenueSummary.sponsorInvoiceCents)}</strong></div>
+                <div className="metric"><span className="muted">Unpaid families</span><strong>{formatCents(leagueRevenueSummary.unpaidFamilyBalanceCents)}</strong></div>
+              </div>
+              <p className="muted">Active sponsors {leagueRevenueSummary.activeSponsorCount}; pending sponsors {leagueRevenueSummary.pendingSponsorCount}; scholarship support {formatCents(leagueRevenueSummary.scholarshipCreditCents)}.</p>
+              <p className="notice">{leagueRevenueSummary.proofBoundary}</p>
+            </div>
+            <div className="stack compact">
+              <div className="card-header">
+                <div>
+                  <span className="eyebrow">Community Sponsor Matchmaker</span>
+                  <h3>Suggested sponsor opportunities</h3>
+                </div>
+                <span className="badge">{sponsorOpportunities.length} lead(s)</span>
+              </div>
+              {sponsorOpportunities.slice(0, 4).map((opportunity) => (
+                <p key={opportunity.id}>
+                  <strong>{opportunity.title}</strong><br />
+                  <span className="muted">{opportunity.need.replace("_", " ")} - {formatCents(opportunity.targetAmountCents)} target - {opportunity.status}. {opportunity.sponsorFit}. {opportunity.evidence}</span>
+                </p>
+              ))}
+              <p className="notice">Sponsor suggestions are leads for admin review. They are not contracts, public placements, provider sends, or payment claims.</p>
+            </div>
+          </section>
           <div className="grid two">
             <label>
               Sponsor record
@@ -2765,15 +4782,15 @@ export function AdminDashboardClient({ registrationRequests, sponsorData, mediaD
               <input value={sponsorLogoUrl} onChange={(event) => setSponsorLogoUrl(event.target.value)} placeholder="https://..." />
             </label>
           </div>
-          <button disabled={isSponsorPending} onClick={saveSponsorDraft}>Save sponsor</button>
-          <p className="muted">Stripe live collection is not connected. Sponsor billing proof stays separate from registration, RSVP, schedule, safety, and child-facing sponsor display.</p>
+          <button disabled={isSponsorPending || Boolean(sponsorData && !sponsorData.isSupabaseBacked)} onClick={saveSponsorDraft}>Save sponsor</button>
+          <p className="muted">Stripe live collection is not connected. Sponsor billing records stay separate from registration, RSVP, schedule, safety, and child-facing sponsor display.</p>
           <div className="stack compact">
-            <h3>Sponsor billing proof</h3>
-            <p className="muted">Stripe Product/Price, invoice proof, and payment proof are admin-only readiness records. Public sponsor placement does not depend on or reveal payment status.</p>
+            <h3>Sponsor billing records</h3>
+            <p className="muted">Stripe Product/Price, invoice reference, and payment status are admin-only records. Public sponsor placement does not depend on or reveal payment status.</p>
             {sponsorBillingProofs.slice(0, 3).map((proof) => (
               <p key={proof.sponsorId}>
                 <strong>{proof.sponsorName}</strong><br />
-                <span className="muted">Stripe Product/Price: {proof.priceLookupKey}; Invoice proof: {proof.invoiceReference}; Payment proof: {proof.paymentProofStatus}; ${(proof.amountCents / 100).toFixed(2)} {proof.currency.toUpperCase()}.</span>
+                <span className="muted">Stripe Product/Price: {proof.priceLookupKey}; invoice reference: {proof.invoiceReference}; payment status: {proof.paymentProofStatus}; ${(proof.amountCents / 100).toFixed(2)} {proof.currency.toUpperCase()}.</span>
               </p>
             ))}
             <p className="notice">Sponsor billing stays separate from child-facing display. Stripe keys must stay server-side and preferably use restricted keys.</p>
@@ -2787,33 +4804,40 @@ export function AdminDashboardClient({ registrationRequests, sponsorData, mediaD
             ))}
           </div>
         </article>
+        </>
+        ) : null}
+        {showOverview ? (
         <article className="card stack">
           <h2>Readiness</h2>
-          {healthCards.slice(0, 3).map((card) => (
-            <p key={card.id}>{card.title}: {card.count}</p>
+          {healthCards.slice(0, 4).map((card) => (
+            <p key={card.id}><strong>{card.title}:</strong> {card.count}<br /><span className="muted">{card.detail}</span></p>
           ))}
-          <p><strong>Touch Target QA:</strong> {touchTargetQa.status} · {touchTargetQa.minimumPixels}px minimum.</p>
-          <p><strong>Offline states:</strong> {offlineStateSummary.status} · {offlineStateSummary.detail}</p>
-          <p><strong>Cache invalidation policy:</strong> {cacheInvalidationPolicy.strategy} · {cacheInvalidationPolicy.detail}</p>
-          <p><strong>Manual dark toggle:</strong> {manualDarkToggle.label}</p>
-          <p><strong>Accessibility contrast checks:</strong> {contrastChecks.length} reviewed surface(s).</p>
+          <p><strong>Touch target check:</strong> {touchTargetQa.status}, {touchTargetQa.minimumPixels}px minimum.</p>
+          <p><strong>Offline label:</strong> {offlineStateSummary.status}. {offlineStateSummary.detail}</p>
+          <p><strong>Contrast checks:</strong> {contrastChecks.length} reviewed surface(s).</p>
           <p><strong>Privacy filters:</strong> {privacyFilters.length} active filter(s).</p>
-          <p><strong>Invite acceptance rate:</strong> {inviteAcceptanceRate}%</p>
-          <p><strong>Average invite-to-account time:</strong> {averageInviteToAccountTime} hour(s)</p>
-          <p><strong>Failed invite count:</strong> {failedInviteCount}</p>
-          <p><strong>Parent link completion rate:</strong> {parentLinkCompletionRate}%</p>
-          <p><strong>RSVP response rate:</strong> {rsvpResponseRate}%</p>
-          <p><strong>Schedule alert open rate:</strong> {scheduleAlertOpenRate}%</p>
-          <p><strong>Weekly active parents:</strong> {weeklyActiveParents}</p>
-          <p><strong>Support requests per team:</strong> {supportRequestsPerTeam.length} team(s) tracked</p>
-          <p><strong>CSV import error rate:</strong> {csvImportErrorRate}%</p>
-          <p><strong>Coach weekly update send rate:</strong> {coachWeeklyUpdateSendRate}%</p>
-          <p><strong>Game Day Calm Mode usage:</strong> {gameDayCalmModeUsage} game(s)</p>
-          <p><strong>Parent Replay completion rate:</strong> {parentReplayCompletionRate}%</p>
-          <p><strong>Micro-Coaching streak rate:</strong> {microCoachingStreakRate}%</p>
-          <p><strong>Media engagement rate:</strong> {mediaEngagementRate}%</p>
-          <p><strong>Notification opt-out rate:</strong> {notificationOptOutRate}%</p>
+          {adminWeatherSafety ? (
+            <div className="stack compact">
+              <h3>Weather + Safety Decision Assistant</h3>
+              <p><strong>{adminWeatherSafety.eventTitle}</strong> - {adminWeatherSafety.recommendation.replaceAll("_", " ")}</p>
+              {adminWeatherSafety.conditions.map((condition) => (
+                <p key={condition.label}><span className={`badge ${condition.status === "ok" ? "ok" : "warning"}`}>{condition.status}</span> <strong>{condition.label}</strong> <span className="muted">{condition.value}</span></p>
+              ))}
+              <p className="muted">{adminWeatherSafety.fieldClosureDraft}</p>
+              <p className="notice">{adminWeatherSafety.boundary}</p>
+            </div>
+          ) : null}
+          {adminAvailabilityIntelligence ? (
+            <div className="stack compact">
+              <h3>Family Availability Intelligence</h3>
+              <p>{adminAvailabilityIntelligence.teamName}: {adminAvailabilityIntelligence.summary}</p>
+              <p className="muted">Response rate {adminAvailabilityIntelligence.responseRate}%; volunteer marketplace {adminVolunteerMarketplace.filter((job) => job.actionStatus === "claimable").length} claimable role(s).</p>
+              <p className="notice">{adminAvailabilityIntelligence.boundary}</p>
+            </div>
+          ) : null}
+          <p className="muted">Engagement and delivery-rate metrics stay out of this home card until they are backed by production reporting.</p>
         </article>
+        ) : null}
       </section>
     </div>
   );
@@ -2822,8 +4846,20 @@ export function AdminDashboardClient({ registrationRequests, sponsorData, mediaD
 export function AdminThemesClient({ initialData }: { initialData: AdminThemeData }) {
   const [teams, setTeams] = useState(initialData.teams);
   const [audits, setAudits] = useState<TeamThemeAudit[]>(initialData.audits);
+  const [logoAssets, setLogoAssets] = useState<TeamLogoAsset[]>(initialData.logoAssets);
   const [tenantDefaults, setTenantDefaults] = useState<TenantThemeDefaults>(initialData.tenantDefaults);
   const [teamId, setTeamId] = useState(initialData.teams[0]?.id ?? "");
+  const [logoTeamId, setLogoTeamId] = useState(initialData.teams[0]?.id ?? "");
+  const [logoUrl, setLogoUrl] = useState("");
+  const [logoPolicyNotes, setLogoPolicyNotes] = useState("Pending logo asset review.");
+  const [mascotPreviewDataUrl, setMascotPreviewDataUrl] = useState("");
+  const [mascotUploadLabel, setMascotUploadLabel] = useState("");
+  const [previewElements, setPreviewElements] = useState({
+    mascotMark: true,
+    mobileHeader: true,
+    gameDayBand: true
+  });
+  const [activeEnvironmentSurface, setActiveEnvironmentSurface] = useState<TenantEnvironmentSurfaceId>("app");
   const [actorUserId, setActorUserId] = useState(initialData.users.find((user) => user.role === "admin")?.id ?? initialData.users[0]?.id ?? "");
   const [drafts, setDrafts] = useState<Record<string, Pick<Team, "mascot" | "primaryColor" | "secondaryColor" | "themeKey">>>({});
   const [message, setMessage] = useState("");
@@ -2839,6 +4875,19 @@ export function AdminThemesClient({ initialData }: { initialData: AdminThemeData
   const selectedActorId = actors.some((user) => user.id === actorUserId) ? actorUserId : actors[0]?.id ?? actorUserId;
   const selectedContrast = draft ? contrastStatus(draft.primaryColor, draft.secondaryColor) : null;
   const brandLaunchValidation = useMemo(() => buildBrandLaunchValidation(teams), [teams]);
+  const teamsUsingDefaults = teams.filter((item) => item.themeKey === tenantDefaults.themeKey &&
+    item.mascot === tenantDefaults.mascot &&
+    item.primaryColor.toLowerCase() === tenantDefaults.primaryColor.toLowerCase() &&
+    item.secondaryColor.toLowerCase() === tenantDefaults.secondaryColor.toLowerCase()).length;
+  const pendingLogoAssets = logoAssets.filter((asset) => asset.status === "pending").length;
+  const approvedLogoAssets = logoAssets.filter((asset) => asset.status === "approved").length;
+  const themeQaPassCount = teams.filter((item) => themeQaStatus(item.primaryColor, item.secondaryColor).className === "ok").length;
+  const logoTargetTeam = teams.find((item) => item.id === logoTeamId);
+  const environmentSurface = tenantEnvironmentSurfaces.find((surface) => surface.id === activeEnvironmentSurface) ?? tenantEnvironmentSurfaces[0]!;
+  const activePreset = draft ? getProgramThemePreset(draft.themeKey) : null;
+  const teamInitials = team ? initialsFromName(team.name) : "LP";
+  const selectedThemeQa = draft ? themeQaStatus(draft.primaryColor, draft.secondaryColor) : null;
+  const coveredBrandSurfaces = brandLaunchValidation.surfaceChecks.filter((check) => check.status === "covered").length;
 
   function updateDraft(field: "mascot" | "primaryColor" | "secondaryColor" | "themeKey", value: string) {
     if (!team || !draft) return;
@@ -2922,15 +4971,241 @@ export function AdminThemesClient({ initialData }: { initialData: AdminThemeData
     });
   }
 
+  function saveLogoAsset() {
+    if (!logoUrl.trim()) return;
+    setMessage("");
+    startTransition(async () => {
+      const response = await authenticatedJsonFetch("/api/admin/team-logos", {
+        organizationId: tenantDefaults.organizationId,
+        teamId: logoTeamId || undefined,
+        url: logoUrl,
+        policyNotes: logoPolicyNotes
+      });
+      const result = await response.json().catch(() => null) as {
+        ok?: boolean;
+        message?: string;
+        tenantLogoStatus?: TenantThemeDefaults["logoStatus"];
+        logoAsset?: TeamLogoAsset;
+      } | null;
+
+      if (result?.ok && result.logoAsset) {
+        setLogoAssets((current) => [result.logoAsset!, ...current].slice(0, 25));
+        setLogoUrl("");
+        if (result.tenantLogoStatus) {
+          setTenantDefaults((current) => ({ ...current, logoStatus: result.tenantLogoStatus! }));
+        }
+      }
+
+      setMessage(result?.message ?? "Logo asset could not be queued for review.");
+    });
+  }
+
+  function previewMascotUpload(event: ChangeEvent<HTMLInputElement>) {
+    const file = event.target.files?.[0];
+    if (!file) return;
+    if (!file.type.startsWith("image/")) {
+      setMessage("Mascot upload preview requires an image file.");
+      return;
+    }
+    if (file.size > 2 * 1024 * 1024) {
+      setMessage("Mascot upload preview is limited to 2 MB until storage policy is configured.");
+      return;
+    }
+
+    const reader = new FileReader();
+    reader.onload = () => {
+      const result = typeof reader.result === "string" ? reader.result : "";
+      setMascotPreviewDataUrl(result);
+      setMascotUploadLabel(`${file.name} (${Math.max(1, Math.round(file.size / 1024))} KB)`);
+      setLogoPolicyNotes(`Mascot art preview selected: ${file.name}. Storage provider required before binary persistence.`);
+      setMessage("Mascot artwork is previewed locally. Queue an HTTPS asset URL after storage review.");
+    };
+    reader.readAsDataURL(file);
+  }
+
+  function togglePreviewElement(key: keyof typeof previewElements) {
+    setPreviewElements((current) => ({
+      ...current,
+      [key]: !current[key]
+    }));
+  }
+
+  function renderEnvironmentPreview() {
+    if (!team || !draft || !activePreset) {
+      return <p className="muted">No team records are available for tenant environment preview.</p>;
+    }
+
+    if (activeEnvironmentSurface === "portal") {
+      return (
+        <div className="tenant-preview-portal" style={teamBrandStyle(draft.primaryColor, draft.secondaryColor)}>
+          <div className="tenant-preview-hero">
+            <strong>{team.name}</strong>
+            <span>{draft.mascot} families see schedule, RSVP, roster, photos, messages, and Parent Replay under one published brand.</span>
+          </div>
+          <div className="tenant-preview-card-grid">
+            <span>Next game</span>
+            <span>Coach note</span>
+            <span>Roster</span>
+            <span>Photos</span>
+          </div>
+        </div>
+      );
+    }
+
+    if (activeEnvironmentSurface === "mobile") {
+      return (
+        <div className="tenant-preview-phone" style={teamBrandStyle(draft.primaryColor, draft.secondaryColor)}>
+          <div className="tenant-preview-phone-top">
+            <strong>{teamInitials}</strong>
+            <span>{team.name}</span>
+          </div>
+          <div className="tenant-preview-phone-action">RSVP for Saturday</div>
+          <div className="tenant-preview-phone-list">
+            <span>Arrive 20 min early</span>
+            <span>Field 2 updated</span>
+            <span>{selectedThemeQa?.mobileLabel ?? "Mobile QA pending"}</span>
+          </div>
+        </div>
+      );
+    }
+
+    if (activeEnvironmentSurface === "communications") {
+      return (
+        <div className="tenant-preview-document" style={teamBrandStyle(draft.primaryColor, draft.secondaryColor)}>
+          <div className="tenant-preview-document-header">
+            <strong>{team.name} weekly digest</strong>
+            <span>{teamInitials}</span>
+          </div>
+          <p>Game reminder, RSVP status, coach note, and portal link preview use the same team tokens.</p>
+          <p className="muted">Email, SMS, and push sends stay provider-gated until review approval and delivery logs exist.</p>
+        </div>
+      );
+    }
+
+    if (activeEnvironmentSurface === "commerce") {
+      return (
+        <div className="tenant-preview-document" style={teamBrandStyle(draft.primaryColor, draft.secondaryColor)}>
+          <div className="tenant-preview-document-header">
+            <strong>Sponsor invoice preview</strong>
+            <span>{teamInitials}</span>
+          </div>
+          <div className="tenant-preview-line"><span>Placement</span><strong>Team portal</strong></div>
+          <div className="tenant-preview-line"><span>Receipt reference</span><strong>Admin-only</strong></div>
+          <p className="muted">Sponsor billing proof stays separate from child-facing sponsor display and registration flows.</p>
+        </div>
+      );
+    }
+
+    if (activeEnvironmentSurface === "governance") {
+      return (
+        <div className="tenant-preview-governance">
+          <p><strong>Write boundary:</strong> Admin theme saves and logo queue requests use verified Supabase sessions.</p>
+          <p><strong>Provider boundary:</strong> Binary storage, email rendering, push identity, and public cache invalidation require separate proof.</p>
+          <p><strong>Child privacy:</strong> Player names, guardian access, media visibility, and direct messaging stay role-scoped.</p>
+        </div>
+      );
+    }
+
+    return (
+      <div className="tenant-preview-app" style={teamBrandStyle(draft.primaryColor, draft.secondaryColor)}>
+        <aside className="tenant-preview-nav">
+          <strong>{teamInitials}</strong>
+          {tenantAppMenuPreview.map((item) => (
+            <span key={item} className={item === "Home" ? "active" : undefined}>{item}</span>
+          ))}
+        </aside>
+        <main className="tenant-preview-main">
+          <div className="tenant-preview-topbar">
+            <strong>{team.name}</strong>
+            <span>{activePreset.label}</span>
+          </div>
+          <div className="tenant-preview-banner">
+            <strong>{draft.mascot} Game Day</strong>
+            <span>{activePreset.fieldLabel}, RSVP, schedule, and coach update preview.</span>
+          </div>
+          <div className="tenant-preview-card-grid">
+            <span>Schedule</span>
+            <span>Roster</span>
+            <span>Messages</span>
+          </div>
+        </main>
+      </div>
+    );
+  }
+
   return (
     <div className="page admin-themes-page">
       <section className="hero">
-        <span className="eyebrow">Admin theme console</span>
+        <span className="eyebrow">Admin customization workbench</span>
         <h1>First-class team branding control across every portal.</h1>
-        <p className="lead">Update mascot, sport theme, and team colors from Supabase-backed records. The console shows mobile and dark previews, basic contrast checks, and audit evidence for saved changes.</p>
+        <p className="lead">Update team identity, tenant defaults, logo review metadata, and launch proof from Supabase-backed admin controls.</p>
+        <p className="muted">Admin theme console writes still derive the acting user from the verified Supabase session. Preview controls do not grant access.</p>
       </section>
 
       {message ? <p className="notice">{message}</p> : null}
+
+      <section className="admin-workbench-grid" aria-label="Customization modules">
+        <article className="card stack workbench-module active">
+          <span className="badge ok">Live editor</span>
+          <h2>Identity and colors</h2>
+          <p className="muted">{teams.length} team theme records. {themeQaPassCount} pass the current contrast QA checks.</p>
+        </article>
+        <article className="card stack workbench-module">
+          <span className="badge info">Tenant baseline</span>
+          <h2>Future team defaults</h2>
+          <p className="muted">{teamsUsingDefaults} team(s) match the current default preset. Logo status is {tenantDefaults.logoStatus.replace("_", " ")}.</p>
+        </article>
+        <article className="card stack workbench-module">
+          <span className="badge warning">Review queue</span>
+          <h2>Logo assets</h2>
+          <p className="muted">{pendingLogoAssets} pending and {approvedLogoAssets} approved metadata record(s). Binary storage remains provider-gated.</p>
+        </article>
+        <article className="card stack workbench-module">
+          <span className={`badge ${brandLaunchValidation.coveragePercent === 100 ? "ok" : "warning"}`}>{brandLaunchValidation.coveragePercent}% covered</span>
+          <h2>Launch proof</h2>
+          <p className="muted">20 target brand surfaces, monitoring events, alert rules, and coach feedback checks.</p>
+        </article>
+      </section>
+
+      <section className="card stack tenant-environment-studio" aria-label="Tenant environment studio">
+        <div className="card-header">
+          <div>
+            <span className="eyebrow">Tenant environment studio</span>
+            <h2>One control surface for every branded tenant touchpoint.</h2>
+          </div>
+          <span className="badge ok">{coveredBrandSurfaces} / {brandLaunchValidation.surfaceChecks.length} surfaces mapped</span>
+        </div>
+        <p className="muted">Select an environment area to preview how team identity, menu labels, portal copy, logo fallback, messages, sponsor documents, and safety rules fit together before saving.</p>
+        <div className="tenant-studio-layout">
+          <div className="tenant-surface-rail" aria-label="Tenant customization surfaces">
+            {tenantEnvironmentSurfaces.map((surface) => (
+              <button
+                type="button"
+                key={surface.id}
+                className={`tenant-surface-button ${activeEnvironmentSurface === surface.id ? "active" : ""}`}
+                aria-pressed={activeEnvironmentSurface === surface.id}
+                onClick={() => setActiveEnvironmentSurface(surface.id)}
+              >
+                <strong>{surface.label}</strong>
+                <span>{surface.status}</span>
+                <em>{surface.detail}</em>
+              </button>
+            ))}
+          </div>
+          <div className="tenant-live-preview" aria-label={`${environmentSurface.label} preview`}>
+            <div className="tenant-live-preview-header">
+              <div>
+                <strong>{environmentSurface.label}</strong>
+                <span>{environmentSurface.detail}</span>
+              </div>
+              <span className={`badge ${selectedThemeQa?.className ?? "neutral"}`}>
+                {selectedThemeQa?.label ?? "Theme QA pending"}
+              </span>
+            </div>
+            {renderEnvironmentPreview()}
+          </div>
+        </div>
+      </section>
 
       <section className="grid two">
         <article className="card stack">
@@ -2941,13 +5216,15 @@ export function AdminThemesClient({ initialData }: { initialData: AdminThemeData
             </div>
             {selectedContrast ? <span className={`badge ${selectedContrast.className}`}>{selectedContrast.label}</span> : null}
           </div>
+          <p className="muted">Customization editor for mascot, sport preset, and portal colors. The private API ignores client-supplied actor IDs and uses the signed-in session.</p>
           <label>
-            Acting admin or coach
+            Preview actor
             <select value={selectedActorId} onChange={(event) => setActorUserId(event.target.value)}>
               {actors.map((user) => (
                 <option key={user.id} value={user.id}>{user.name} - {roleLabel(user.role)}</option>
               ))}
             </select>
+            <span className="field-hint">For admin review context only. Authorization is checked server-side.</span>
           </label>
           <label>
             Team
@@ -2971,6 +5248,21 @@ export function AdminThemesClient({ initialData }: { initialData: AdminThemeData
                 Mascot
                 <input value={draft.mascot} onChange={(event) => updateDraft("mascot", event.target.value)} />
               </label>
+              <fieldset className="brand-element-fieldset">
+                <legend>Element visibility</legend>
+                <label className="checkbox-row">
+                  <input type="checkbox" checked={previewElements.mascotMark} onChange={() => togglePreviewElement("mascotMark")} />
+                  Mascot mark
+                </label>
+                <label className="checkbox-row">
+                  <input type="checkbox" checked={previewElements.mobileHeader} onChange={() => togglePreviewElement("mobileHeader")} />
+                  Mobile header
+                </label>
+                <label className="checkbox-row">
+                  <input type="checkbox" checked={previewElements.gameDayBand} onChange={() => togglePreviewElement("gameDayBand")} />
+                  Game Day band
+                </label>
+              </fieldset>
               <label>
                 Primary color
                 <input type="color" value={draft.primaryColor} onChange={(event) => updateDraft("primaryColor", event.target.value)} />
@@ -2988,20 +5280,94 @@ export function AdminThemesClient({ initialData }: { initialData: AdminThemeData
         {team && draft ? (
           <article className="card stack">
             <span className="eyebrow">Preview</span>
-            <div className="team-branding-preview" style={teamBrandStyle(draft.primaryColor, draft.secondaryColor)}>
-              <strong>{draft.mascot}</strong>
+            <div className="team-branding-preview brand-studio-preview" style={teamBrandStyle(draft.primaryColor, draft.secondaryColor)}>
+              {previewElements.mascotMark ? (
+                <strong className="mascot-preview-mark">
+                  {mascotPreviewDataUrl ? <img src={mascotPreviewDataUrl} alt="" /> : draft.mascot.slice(0, 2)}
+                </strong>
+              ) : null}
               <span>{team.name} portal</span>
             </div>
-            <div className="team-branding-preview mobile-preview" style={teamBrandStyle(draft.primaryColor, draft.secondaryColor)}>
-              <strong>{draft.mascot.slice(0, 1)}</strong>
-              <span>{team.name} mobile</span>
-            </div>
+            {previewElements.mobileHeader ? (
+              <div className="team-branding-preview mobile-preview brand-mobile-preview" style={teamBrandStyle(draft.primaryColor, draft.secondaryColor)}>
+                <strong>{mascotPreviewDataUrl ? <img src={mascotPreviewDataUrl} alt="" /> : draft.mascot.slice(0, 1)}</strong>
+                <span>{team.name} mobile</span>
+              </div>
+            ) : null}
+            {previewElements.gameDayBand ? (
+              <div className="brand-game-day-band" style={teamBrandStyle(draft.primaryColor, draft.secondaryColor)}>
+                <strong>Game Day Calm Mode</strong>
+                <span>{draft.mascot} identity, field status, RSVP, and coach update preview.</span>
+              </div>
+            ) : null}
             <p className="muted">Contrast ratio: {selectedContrast?.ratio.toFixed(2)}. Use Pass for text-heavy portal headers.</p>
+            {mascotUploadLabel ? <p className="notice ok">Mascot upload preview: {mascotUploadLabel}</p> : null}
             <div className="notice">
               <strong>Tenant defaults:</strong> {getProgramThemePreset(tenantDefaults.themeKey).label} - {tenantDefaults.mascot} - logo {tenantDefaults.logoStatus.replace("_", " ")}
             </div>
           </article>
         ) : null}
+      </section>
+
+      <section className="grid two">
+        <article className="card stack admin-logo-workbench">
+          <div className="card-header">
+            <div>
+              <span className="eyebrow">Logo asset review</span>
+              <h2>Queue logo metadata for customization</h2>
+            </div>
+            <span className={`badge ${tenantDefaults.logoStatus === "approved" ? "ok" : tenantDefaults.logoStatus === "queued" ? "warning" : "neutral"}`}>
+              {tenantDefaults.logoStatus.replace("_", " ")}
+            </span>
+          </div>
+          <p className="muted">Admins can register an HTTPS logo URL for review. This does not upload a binary file, publish a family-facing logo, or connect provider storage.</p>
+          <div className="grid two">
+            <label>
+              Logo applies to
+              <select value={logoTeamId} onChange={(event) => setLogoTeamId(event.target.value)}>
+                <option value="">Tenant default logo</option>
+                {teams.map((item) => (
+                  <option key={item.id} value={item.id}>{item.name} - {item.division}</option>
+                ))}
+              </select>
+            </label>
+            <label>
+              HTTPS logo URL
+              <input type="url" value={logoUrl} onChange={(event) => setLogoUrl(event.target.value)} placeholder="https://assets.example.com/logo.png" />
+            </label>
+            <label>
+              Upload mascot artwork for preview
+              <input type="file" accept="image/png,image/jpeg,image/webp,image/svg+xml" onChange={previewMascotUpload} />
+              <span className="field-hint">Local preview only. Persistence still requires reviewed storage or an HTTPS asset URL.</span>
+            </label>
+            <label>
+              Policy notes
+              <textarea value={logoPolicyNotes} onChange={(event) => setLogoPolicyNotes(event.target.value)} />
+              <span className="field-hint">Use notes for child-safety, sponsor-separation, and contrast review evidence.</span>
+            </label>
+          </div>
+          <button onClick={saveLogoAsset} disabled={isPending || !logoUrl.trim()}>{isPending ? "Queueing..." : "Queue logo review"}</button>
+          <p className="muted">Current target: {logoTargetTeam ? `${logoTargetTeam.name} team logo` : "tenant default logo"}. Sponsor logos stay in sponsor records.</p>
+        </article>
+
+        <article className="card stack">
+          <h2>Logo review queue</h2>
+          {logoAssets.map((asset) => {
+            const assetTeam = teams.find((item) => item.id === asset.teamId);
+            return (
+              <p key={asset.id} className="logo-asset-row">
+                <strong>{assetTeam?.name ?? "Tenant default logo"}</strong>
+                <br />
+                <span className="muted">{asset.url}</span>
+                <br />
+                <span className={`badge ${statusClass(asset.status)}`}>{asset.status}</span>
+                <span className="muted"> Submitted {formatDate(asset.createdAt)}{asset.policyNotes ? ` - ${asset.policyNotes}` : ""}</span>
+              </p>
+            );
+          })}
+          {!logoAssets.length ? <p className="muted">No logo assets queued yet.</p> : null}
+          <p className="notice">Binary upload, public rendering, and email/push logo use still require provider configuration, review approval, and browser proof.</p>
+        </article>
       </section>
 
       <section className="grid two">
@@ -3021,13 +5387,15 @@ export function AdminThemesClient({ initialData }: { initialData: AdminThemeData
                 <span className="theme-swatch" style={{ background: item.secondaryColor }} />
                 <strong>{item.name}</strong>
                 <span>{getProgramThemePreset(item.themeKey).label} - {item.mascot}</span>
-                <span>Logo: {tenantDefaults.logoStatus.replace("_", " ")}</span>
-                <span>{lastAudit ? formatDate(lastAudit.createdAt) : "No audit yet"}</span>
-                {usesTenantDefaults ? <span className="badge ok">Default</span> : null}
-                <span className={`badge ${status.className}`}>{status.label}</span>
-                <span className={`badge ${qa.className}`}>{qa.label}</span>
-                <span>Dark: {qa.darkLabel}</span>
-                <span>Mobile: {qa.mobileLabel}</span>
+                <span className="theme-row-meta">
+                  <span>Logo: {tenantDefaults.logoStatus.replace("_", " ")}</span>
+                  <span>{lastAudit ? formatDate(lastAudit.createdAt) : "No audit yet"}</span>
+                  {usesTenantDefaults ? <span className="badge ok">Default</span> : null}
+                  <span className={`badge ${status.className}`}>{status.label}</span>
+                  <span className={`badge ${qa.className}`}>{qa.label}</span>
+                  <span>Dark: {qa.darkLabel}</span>
+                  <span>Mobile: {qa.mobileLabel}</span>
+                </span>
               </button>
             );
           })}
@@ -3119,26 +5487,31 @@ export function AdminThemesClient({ initialData }: { initialData: AdminThemeData
 
 interface RegistrationClientProps {
   registrationRequests?: RegistrationRequest[];
+  reviewWindow?: string;
   teamOptions?: RegistrationTeamOption[];
 }
 
-export function RegistrationClient({ registrationRequests, teamOptions }: RegistrationClientProps = {}) {
-  const { state, dispatch } = useAppState();
+export function RegistrationClient({
+  registrationRequests,
+  reviewWindow = "within two business days",
+  teamOptions
+}: RegistrationClientProps = {}) {
+  const { state } = useAppState();
   const teams = teamOptions?.length
     ? teamOptions
     : state.teams.map((team) => ({ id: team.id, name: team.name, division: team.division }));
-  const visibleRegistrations = mergeRegistrationRequests(state.registrationRequests, registrationRequests ?? []);
-  const [teamId, setTeamId] = useState(teams[0]?.id ?? "team-tigers");
-  const [parentName, setParentName] = useState("Casey Morgan");
-  const [parentEmail, setParentEmail] = useState("casey@example.com");
-  const [playerFirstName, setPlayerFirstName] = useState("Mia");
-  const [playerLastInitial, setPlayerLastInitial] = useState("M");
+  const [submittedRegistrationRequests, setSubmittedRegistrationRequests] = useState(registrationRequests ?? []);
+  const [teamId, setTeamId] = useState("");
+  const [parentName, setParentName] = useState("");
+  const [parentEmail, setParentEmail] = useState("");
+  const [playerFirstName, setPlayerFirstName] = useState("");
+  const [playerLastInitial, setPlayerLastInitial] = useState("");
   const [message, setMessage] = useState("");
   const [isPending, startTransition] = useTransition();
 
   function submitRegistration() {
     const input = { teamId, parentName, parentEmail, playerFirstName, playerLastInitial, now: new Date().toISOString() };
-    const preview = createRegistrationRequest(state, input);
+    const preview = validateRegistrationRequestInput(input, teams.map((team) => team.id));
     setMessage(preview.message);
     if (!preview.ok) return;
 
@@ -3148,11 +5521,13 @@ export function RegistrationClient({ registrationRequests, teamOptions }: Regist
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(input)
       });
-      const result = await response.json().catch(() => null) as { ok?: boolean; message?: string } | null;
+      const result = await response.json().catch(() => null) as { ok?: boolean; message?: string; request?: RegistrationRequest } | null;
 
       if (result?.ok) {
-        dispatch({ type: "createRegistrationRequest", input });
-        setMessage(result.message ?? "Registration request saved for admin review. No account access was granted.");
+        if (result.request) {
+          setSubmittedRegistrationRequests((current) => mergeRegistrationRequests([result.request!], current));
+        }
+        setMessage(result.message ?? "Your request was received. A league administrator will review the match before private team details appear.");
         return;
       }
 
@@ -3163,26 +5538,34 @@ export function RegistrationClient({ registrationRequests, teamOptions }: Regist
   return (
     <div className="page">
       <section className="hero">
-        <span className="eyebrow">Registration system</span>
-        <h1>Parent self-registration request with admin review before access.</h1>
-        <p className="lead">This form creates a pending local registration request only. It does not create a login, invite token, or guardian-child access grant.</p>
+        <span className="eyebrow">Request Team Access</span>
+        <h1>Connect your family to the right team.</h1>
+        <p className="lead">Share only what the league needs to check your connection. Private team details stay hidden during review.</p>
       </section>
       {message ? <p className="notice">{message}</p> : null}
       <section className="grid two">
         <article className="card stack">
-          <label>Team<select value={teamId} onChange={(event) => setTeamId(event.target.value)}>{teams.map((team) => <option key={team.id} value={team.id}>{team.name} ({team.division})</option>)}</select></label>
-          <label>Parent name<input value={parentName} onChange={(event) => setParentName(event.target.value)} /></label>
-          <label>Parent email<input value={parentEmail} onChange={(event) => setParentEmail(event.target.value)} /></label>
-          <label>Player first name<input value={playerFirstName} onChange={(event) => setPlayerFirstName(event.target.value)} /></label>
-          <label>Player last initial<input value={playerLastInitial} onChange={(event) => setPlayerLastInitial(event.target.value)} maxLength={1} /></label>
-          <button onClick={submitRegistration} disabled={isPending}>{isPending ? "Saving..." : "Submit for review"}</button>
+          <label>Team<select value={teamId} onChange={(event) => setTeamId(event.target.value)}><option value="">Choose a team</option>{teams.map((team) => <option key={team.id} value={team.id}>{team.name} ({team.division})</option>)}</select></label>
+          <label>Your name<input autoComplete="name" value={parentName} onChange={(event) => setParentName(event.target.value)} /></label>
+          <label>Your email<input autoComplete="email" type="email" value={parentEmail} onChange={(event) => setParentEmail(event.target.value)} /></label>
+          <label>Child&apos;s first name<input autoComplete="off" value={playerFirstName} onChange={(event) => setPlayerFirstName(event.target.value)} /></label>
+          <label>Child&apos;s last initial<input autoComplete="off" value={playerLastInitial} onChange={(event) => setPlayerLastInitial(event.target.value)} maxLength={1} /></label>
+          <button onClick={submitRegistration} disabled={isPending}>{isPending ? "Sending request..." : "Request Team Access"}</button>
+          <p className="muted">This request does not open private team information. It gives the league enough detail to review the match.</p>
         </article>
-        <article className="card stack">
-          <h2>Pending requests</h2>
-          {visibleRegistrations.map((request) => (
-            <p key={request.id}><strong>{request.playerFirstName} {request.playerLastInitial}.</strong><br /><span className="muted">{request.parentName} - {request.status}</span></p>
+        <article className="card stack access-review-timeline">
+          <h2>What happens next</h2>
+          <ol>
+            <li><strong>We receive your request</strong><span>You will see a confirmation here. Keep the reference if you contact league support.</span></li>
+            <li><strong>The league checks the match</strong><span>An administrator compares your details with current registration or roster records. The usual review target is {reviewWindow}.</span></li>
+            <li><strong>You receive the next step</strong><span>The league sends an invitation, asks for more information, or explains how to resolve the request safely.</span></li>
+          </ol>
+          <p className="notice">Privacy promise: children do not create LeaguePilot accounts. Other families cannot see your request or its status.</p>
+          <h3>Your request receipt</h3>
+          {submittedRegistrationRequests.map((request) => (
+            <p key={request.id}><strong>{request.playerFirstName} {request.playerLastInitial}.</strong><br /><span className="muted">{request.parentName} - {request.status}<br />Reference: {request.id}</span><br /><a href={`/access/status?reference=${encodeURIComponent(request.id)}`}>Check request status</a></p>
           ))}
-          {visibleRegistrations.length === 0 ? <p className="muted">No registration requests yet.</p> : null}
+          {submittedRegistrationRequests.length === 0 ? <p className="muted">After you send the form, only your request receipt appears here. The private review queue stays hidden.</p> : null}
         </article>
       </section>
     </div>
@@ -3192,76 +5575,102 @@ export function RegistrationClient({ registrationRequests, teamOptions }: Regist
 export function RegistrationReviewClient({ initialData }: { initialData: RegistrationReviewData }) {
   const [requests, setRequests] = useState(initialData.registrationRequests);
   const [actions, setActions] = useState(initialData.actions);
-  const [reviewerUserId, setReviewerUserId] = useState(initialData.reviewers[0]?.id ?? "");
-  const [note, setNote] = useState("Reviewed from the admin registration queue.");
+  const [note, setNote] = useState("");
   const [message, setMessage] = useState("");
+  const [invitation, setInvitation] = useState<{ url: string; expiresAt: string } | null>(null);
   const [busyRequestId, setBusyRequestId] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
 
   function reviewRequest(requestId: string, action: "approve" | "reject") {
     setMessage("");
+    setInvitation(null);
     setBusyRequestId(requestId);
     startTransition(async () => {
-      const response = await fetch(`/api/admin/registration-requests/${requestId}/${action}`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ reviewerUserId, note })
-      });
-      const result = await response.json().catch(() => null) as { ok?: boolean; message?: string } | null;
-      setMessage(result?.message ?? "Registration review failed.");
+      try {
+        const response = await authenticatedJsonFetch(`/api/admin/registration-requests/${requestId}/${action}`, { note });
+        const result = await response.json().catch(() => null) as {
+          ok?: boolean;
+          message?: string;
+          invitationPath?: string;
+          expiresAt?: string;
+        } | null;
+        setMessage(result?.message ?? "Registration review failed.");
 
-      if (result?.ok) {
-        const nextStatus = action === "approve" ? "approved" : "rejected";
-        setRequests((current) => current.map((request) => (
-          request.id === requestId
-            ? { ...request, status: nextStatus, reviewedByUserId: reviewerUserId, reviewedAt: new Date().toISOString() }
-            : request
-        )));
-        setActions((current) => [{
-          id: `local-${requestId}-${action}-${Date.now()}`,
-          registrationRequestId: requestId,
-          action: action === "approve" ? "approved" : "rejected",
-          note,
-          createdAt: new Date().toISOString()
-        }, ...current]);
+        if (result?.ok) {
+          const nextStatus = action === "approve" ? "approved" : "rejected";
+          setRequests((current) => current.map((request) => (
+            request.id === requestId
+              ? { ...request, status: nextStatus, reviewedAt: new Date().toISOString() }
+              : request
+          )));
+          setActions((current) => [{
+            id: `local-${requestId}-${action}-${Date.now()}`,
+            registrationRequestId: requestId,
+            action: action === "approve" ? "approved" : "rejected",
+            note,
+            createdAt: new Date().toISOString()
+          }, ...current]);
+          if (result.invitationPath && result.expiresAt) {
+            setInvitation({
+              url: `${window.location.origin}${result.invitationPath}`,
+              expiresAt: result.expiresAt
+            });
+          }
+        }
+      } catch {
+        setMessage("Registration review could not reach the server.");
+      } finally {
+        setBusyRequestId(null);
       }
-
-      setBusyRequestId(null);
     });
   }
 
   const pendingRequests = requests.filter((request) => request.status === "pending");
 
+  async function copyInvitation() {
+    if (!invitation) return;
+    try {
+      await navigator.clipboard.writeText(invitation.url);
+      setMessage("One-time invitation copied. Share it only with the verified adult.");
+    } catch {
+      setMessage("Copy was blocked. Select the one-time link and copy it manually.");
+    }
+  }
+
   return (
-    <div className="page">
+    <div className="page registration-review-page">
       <section className="hero">
         <span className="eyebrow">Registration review</span>
-        <h1>Approve a request into player, guardian, invite, membership, and audit records.</h1>
-        <p className="lead">Approval is server-side and atomic. If the parent already has a matching profile, the workflow creates active guardian and team membership records. Otherwise it queues a parent invite and invited guardian link.</p>
+        <h1>Verify the family match, then issue the right next step.</h1>
+        <p className="lead">Your signed-in administrator identity and review note are recorded. Existing verified parents receive scoped access; other approved adults receive a one-time link for manual handoff.</p>
       </section>
 
-      {message ? <p className="notice">{message}</p> : null}
+      {message ? <p className="notice" aria-live="polite">{message}</p> : null}
+      {invitation ? (
+        <article className="card stack one-time-link" role="status">
+          <span className="eyebrow">Copy now · shown once</span>
+          <h2>Approved parent invitation</h2>
+          <p className="break-anywhere">{invitation.url}</p>
+          <p className="muted">Expires {new Date(invitation.expiresAt).toLocaleString()}. No email, SMS, push, or chat message was sent.</p>
+          <button type="button" onClick={copyInvitation}>Copy one-time link</button>
+          <p className="muted">The exact invited email must sign in before this link can activate the reviewed child and team scope.</p>
+        </article>
+      ) : null}
 
       <section className="grid two">
         <article className="card stack">
-          <h2>Reviewer</h2>
-          <label>Acting reviewer
-            <select value={reviewerUserId} onChange={(event) => setReviewerUserId(event.target.value)}>
-              {initialData.reviewers.map((reviewer) => (
-                <option key={reviewer.id} value={reviewer.id}>{reviewer.displayName} - {reviewer.email}</option>
-              ))}
-            </select>
+          <h2>Verification record</h2>
+          <p className="notice">The server uses your verified signed-in administrator identity. You cannot choose another reviewer.</p>
+          <label>What evidence did you review?
+            <textarea maxLength={1000} placeholder="Describe the roster, registration, or league record used to verify this adult-child-team match." value={note} onChange={(event) => setNote(event.target.value)} />
           </label>
-          <label>Review note
-            <textarea value={note} onChange={(event) => setNote(event.target.value)} />
-          </label>
-          {initialData.reviewers.length === 0 ? <p className="notice">No reviewer profiles have active admin or coach membership yet. Create an account, then grant team membership before approving requests.</p> : null}
         </article>
 
         <article className="card stack">
           <h2>Workflow boundary</h2>
           <p>Public registration remains a pending request only.</p>
-          <p>Approval creates durable records and a `registration_approval_actions` trail.</p>
+          <p>Approval creates durable records and a visible review history.</p>
+          <p>A one-time link is returned only to this signed-in admin and is not sent automatically.</p>
           <p>Rejected requests never create player, guardian, membership, or invite records.</p>
         </article>
       </section>
@@ -3281,14 +5690,14 @@ export function RegistrationReviewClient({ initialData }: { initialData: Registr
               <div className="toolbar">
                 <button
                   onClick={() => reviewRequest(request.id, "approve")}
-                  disabled={isPending || busyRequestId === request.id || !reviewerUserId}
+                  disabled={isPending || busyRequestId === request.id || note.trim().length < 10}
                 >
-                  {busyRequestId === request.id ? "Reviewing..." : "Approve"}
+                  {busyRequestId === request.id ? "Reviewing..." : "Approve and issue next step"}
                 </button>
                 <button
                   className="secondary"
                   onClick={() => reviewRequest(request.id, "reject")}
-                  disabled={isPending || busyRequestId === request.id || !reviewerUserId || !note.trim()}
+                  disabled={isPending || busyRequestId === request.id || note.trim().length < 10}
                 >
                   Reject
                 </button>
@@ -3314,18 +5723,29 @@ export function RegistrationReviewClient({ initialData }: { initialData: Registr
   );
 }
 
-export function CoachRsvpsClient() {
+export function CoachRsvpsClient({ dashboardData }: { dashboardData?: ParentCoachDashboardData | null } = {}) {
   const { state } = useAppState();
-  const summaries = getCoachRsvpSummaries(state, "user-coach-taylor", NOW);
+  const sourceState = dashboardData?.state ?? state;
+  const coachId = dashboardData?.coachUserId ?? "user-coach-taylor";
+  const accessGate = privateAccessGate(dashboardData, "coach");
+  const summaries = getCoachRsvpSummaries(sourceState, coachId, NOW);
 
   return (
     <div className="page">
       <section className="hero">
         <span className="eyebrow">Coach attendance view</span>
         <h1>Attendance summaries for assigned teams.</h1>
-        <p className="lead">Coach Taylor sees only assigned team events and aggregate RSVP counts.</p>
+        <p className="lead">Assigned coaches see only their team events and aggregate RSVP counts.</p>
       </section>
 
+      {dashboardData ? (
+        <p className={`notice ${dashboardData.isSupabaseBacked ? "ok" : "warning"}`}>
+          {dashboardData.isSupabaseBacked
+            ? "Attendance is current for your assigned teams."
+            : "Preview attendance is shown until an approved coach assignment is available."}
+        </p>
+      ) : null}
+      {accessGate ?? (
       <section className="grid two">
         {summaries.map((summary) => (
           <article className="card stack" key={summary.event.id}>
@@ -3340,18 +5760,678 @@ export function CoachRsvpsClient() {
           </article>
         ))}
       </section>
+      )}
     </div>
   );
 }
 
-export function ScheduleAlertsClient({ scheduleData }: { scheduleData?: ScheduleOperationsData | null } = {}) {
+function formatParentScheduleTimeRange(event: LeagueEvent) {
+  const time = new Intl.DateTimeFormat("en-US", { hour: "numeric", minute: "2-digit" });
+  return `${time.format(new Date(event.startsAt))} - ${time.format(new Date(event.endsAt))}`;
+}
+
+function getParentScheduleDateParts(value: string) {
+  const date = new Date(value);
+  return {
+    day: date.toLocaleDateString("en-US", { weekday: "short" }).toUpperCase(),
+    date: date.toLocaleDateString("en-US", { month: "short", day: "numeric" }).toUpperCase()
+  };
+}
+
+function getScheduleDateKey(value: string | Date) {
+  const date = value instanceof Date ? value : new Date(value);
+  return [
+    date.getFullYear(),
+    String(date.getMonth() + 1).padStart(2, "0"),
+    String(date.getDate()).padStart(2, "0")
+  ].join("-");
+}
+
+function getTeamInitials(team?: Team) {
+  if (!team) return "TM";
+  return team.name
+    .split(/\s+/)
+    .map((word) => word[0])
+    .join("")
+    .slice(0, 2)
+    .toUpperCase();
+}
+
+function ParentScheduleFeed({
+  scheduleState,
+  scheduleData,
+  parentDashboardData
+}: {
+  scheduleState: ParentCoachDashboardData["state"];
+  scheduleData?: ScheduleOperationsData | null;
+  parentDashboardData?: ParentCoachDashboardData | null;
+}) {
+  const parentState = parentDashboardData?.state ?? scheduleState;
+  const parentUserId = parentDashboardData?.parentUserId || "user-parent-jordan";
+  const [selectedDateKey, setSelectedDateKey] = useState("");
+  const [commandEventId, setCommandEventId] = useState("");
+  const now = new Date(NOW);
+  const todayStart = new Date(now);
+  todayStart.setHours(0, 0, 0, 0);
+  const tomorrowStart = new Date(todayStart);
+  tomorrowStart.setDate(tomorrowStart.getDate() + 1);
+  const weekEnd = new Date(todayStart);
+  weekEnd.setDate(weekEnd.getDate() + 8);
+  const visibleEvents = [...scheduleState.events]
+    .filter((item) => Date.parse(item.endsAt) >= todayStart.getTime())
+    .sort((left, right) => Date.parse(left.startsAt) - Date.parse(right.startsAt));
+  const activeGuardianLinks = parentState.guardianLinks.filter((link) => (
+    link.parentUserId === parentUserId &&
+    link.status === "active"
+  ));
+  const linkedPlayerIds = new Set(activeGuardianLinks.map((link) => link.playerId));
+  const linkedPlayers = parentState.players.filter((player) => linkedPlayerIds.has(player.id));
+  const responseNeeded = visibleEvents.some((event) => (
+    event.status === "scheduled" &&
+    linkedPlayers.some((player) => (
+      player.teamId === event.teamId &&
+      !parentState.rsvps.some((rsvp) => (
+        rsvp.eventId === event.id &&
+        rsvp.playerId === player.id &&
+        rsvp.parentUserId === parentUserId
+      ))
+    ))
+  ));
+  const nextEvent = visibleEvents.find((item) => item.status === "scheduled");
+  const weekAnchor = new Date(nextEvent?.startsAt ?? visibleEvents[0]?.startsAt ?? NOW);
+  const weekStart = new Date(weekAnchor);
+  weekStart.setHours(0, 0, 0, 0);
+  weekStart.setDate(weekStart.getDate() - weekStart.getDay());
+  const weekDays = Array.from({ length: 7 }, (_, index) => {
+    const date = new Date(weekStart);
+    date.setDate(date.getDate() + index);
+    const key = getScheduleDateKey(date);
+    return {
+      key,
+      day: date.toLocaleDateString("en-US", { weekday: "short" }),
+      date: date.getDate(),
+      eventCount: visibleEvents.filter((item) => getScheduleDateKey(item.startsAt) === key).length
+    };
+  });
+  const displayedEvents = selectedDateKey
+    ? visibleEvents.filter((item) => getScheduleDateKey(item.startsAt) === selectedDateKey)
+    : visibleEvents;
+  const todayEvents = displayedEvents.filter((item) => {
+    const startsAt = Date.parse(item.startsAt);
+    return startsAt >= todayStart.getTime() && startsAt < tomorrowStart.getTime();
+  });
+  const thisWeekEvents = displayedEvents.filter((item) => {
+    const startsAt = Date.parse(item.startsAt);
+    return startsAt >= tomorrowStart.getTime() && startsAt < weekEnd.getTime();
+  });
+  const laterEvents = displayedEvents.filter((item) => Date.parse(item.startsAt) >= weekEnd.getTime());
+  const commandEvent = visibleEvents.find((item) => item.id === commandEventId);
+  const commandTeam = commandEvent ? scheduleState.teams.find((item) => item.id === commandEvent.teamId) : undefined;
+  const commandPlayers = commandEvent ? linkedPlayers.filter((player) => player.teamId === commandEvent.teamId) : [];
+  const commandWeather = commandEvent
+    ? scheduleState.weatherAlerts.find((alert) => alert.teamId === commandEvent.teamId && alert.eventId === commandEvent.id)
+    : undefined;
+  const commandSnackNeeds = commandEvent
+    ? parentState.snackScheduleSlots.filter((slot) => slot.eventId === commandEvent.id && slot.status === "open").length
+    : 0;
+  const commandVolunteerNeeds = commandEvent
+    ? parentState.volunteerSignups.filter((signup) => signup.eventId === commandEvent.id && signup.status === "open").length
+    : 0;
+  const commandAnnouncement = commandEvent
+    ? parentState.announcements.find((announcement) => announcement.teamId === commandEvent.teamId)
+    : undefined;
+  const selectedDayLabel = weekDays.find((day) => day.key === selectedDateKey);
+
+  function renderEventCard(event: LeagueEvent) {
+    const team = scheduleState.teams.find((item) => item.id === event.teamId);
+    const dateParts = getParentScheduleDateParts(event.startsAt);
+    const eventPlayers = linkedPlayers.filter((player) => player.teamId === event.teamId);
+    const directionsQuery = [event.locationName, event.locationAddress].filter(Boolean).join(", ");
+    const statusLabel = event.status === "cancelled"
+      ? "Canceled"
+      : event.status === "completed"
+        ? "Completed"
+        : event.eventType === "game"
+          ? "Confirmed game"
+          : "Confirmed";
+
+    return (
+      <article className={`parent-schedule-list-card state-${event.status}`} key={event.id}>
+        <header className="parent-schedule-list-team">
+          <span
+            className="parent-schedule-list-mark"
+            style={{ "--team-primary": team?.primaryColor, "--team-secondary": team?.secondaryColor } as CSSProperties}
+            aria-hidden="true"
+          >
+            {getTeamInitials(team)}
+          </span>
+          <strong>{team?.name ?? "Team"}</strong>
+          <span className={`season-status ${event.status === "cancelled" ? "state-blocked" : event.status === "completed" ? "state-ready" : "state-planned"}`}>
+            {statusLabel}
+          </span>
+        </header>
+
+        <div className="parent-schedule-list-event">
+          <div className="parent-schedule-list-date" aria-label={`${dateParts.day} ${dateParts.date}`}>
+            <span>{dateParts.day}</span>
+            <strong>{dateParts.date}</strong>
+            <small>{event.eventType === "team_event" ? "Team event" : event.eventType}</small>
+          </div>
+          <div className="parent-schedule-list-detail">
+            <h2>{event.title}</h2>
+            <strong className="game-day-time">{formatParentScheduleTimeRange(event)}</strong>
+            <p>
+              <span className="parent-location-mark" aria-hidden="true" />
+              <span>{event.locationName}{event.locationAddress ? `, ${event.locationAddress}` : ""}</span>
+            </p>
+            <div className="parent-schedule-card-actions">
+              {directionsQuery ? (
+                <a
+                  className="parent-schedule-directions"
+                  href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(directionsQuery)}`}
+                  target="_blank"
+                  rel="noreferrer"
+                >
+                  Directions
+                </a>
+              ) : null}
+              <button className="parent-schedule-sheet-trigger" type="button" onClick={() => setCommandEventId(event.id)}>
+                Game-day sheet
+              </button>
+            </div>
+          </div>
+        </div>
+
+        {event.status === "scheduled" && eventPlayers.length ? (
+          <div className="parent-schedule-rsvp-list">
+            {eventPlayers.map((player) => {
+              const rsvp = parentState.rsvps.find((item) => (
+                item.eventId === event.id &&
+                item.playerId === player.id &&
+                item.parentUserId === parentUserId
+              ));
+              const playerLabel = `${player.firstName} ${player.lastInitial}.`;
+
+              return (
+                <div className="parent-schedule-rsvp-row" key={player.id}>
+                  <span className="parent-player-avatar" aria-hidden="true">{player.firstName[0]}{player.lastInitial}</span>
+                  <p>
+                    <strong>{rsvp ? `${playerLabel} is ${rsvp.response.replace("_", " ")}` : `Is ${player.firstName} going?`}</strong>
+                    <small>{rsvp ? "Response recorded for this event." : "A response is still needed."}</small>
+                  </p>
+                  <a className={rsvp ? "parent-rsvp-change" : "parent-rsvp-glow"} href="/parent/rsvp">
+                    {rsvp ? "Change" : "RSVP now"}
+                  </a>
+                </div>
+              );
+            })}
+          </div>
+        ) : null}
+
+        {event.status === "cancelled" ? (
+          <p className="parent-schedule-state-note danger">This event is canceled. No RSVP action is needed.</p>
+        ) : null}
+        {event.status === "completed" ? (
+          <p className="parent-schedule-state-note">This event is complete. Attendance remains read-only.</p>
+        ) : null}
+      </article>
+    );
+  }
+
+  function renderGroup(title: string, events: LeagueEvent[], emptyCopy?: string) {
+    return (
+      <section className="parent-schedule-feed-group" aria-labelledby={`parent-schedule-${title.toLowerCase().replaceAll(" ", "-")}`}>
+        <header>
+          <h2 id={`parent-schedule-${title.toLowerCase().replaceAll(" ", "-")}`}>{title}</h2>
+          <span>{events.length} {events.length === 1 ? "event" : "events"} <span aria-hidden="true">⌃</span></span>
+        </header>
+        {events.length ? <div className="parent-schedule-feed-list">{events.map(renderEventCard)}</div> : (
+          <div className="parent-schedule-empty">
+            <strong>{title === "Today" ? "No events today" : `No events ${title.toLowerCase()}`}</strong>
+            <span>{emptyCopy ?? "Your family has no team event in this group."}</span>
+          </div>
+        )}
+      </section>
+    );
+  }
+
+  return (
+    <div className="page parent-schedule-page">
+      <section className="hero parent-schedule-hero">
+        <span className="eyebrow">Family schedule</span>
+        <h1>All schedules</h1>
+        <p className="lead">Games and practices in one calm view. Answer any RSVP, then use directions when it is time to leave.</p>
+      </section>
+
+      <div className={`certainty-band ${responseNeeded ? "certainty-band-warning" : "certainty-band-parent"}`}>
+        <span className="certainty-band-icon" aria-hidden="true">{responseNeeded ? "!" : "✓"}</span>
+        <span>
+          <strong>{responseNeeded ? "RSVP needed" : nextEvent ? "Next event confirmed" : "Schedule is clear"}</strong>
+          <small>
+            {responseNeeded
+              ? "One or more linked players still need an event response."
+              : nextEvent
+                ? `${nextEvent.title} is next on your family schedule.`
+                : "No upcoming team events are currently scheduled."}
+          </small>
+        </span>
+        {responseNeeded ? (
+          <a className="parent-rsvp-glow" href="/parent/rsvp">RSVP now</a>
+        ) : (
+          <span className="season-status state-ready">
+            {scheduleData?.isSupabaseBacked ? "Current" : "Preview"}
+          </span>
+        )}
+      </div>
+
+      <section className="parent-week-ribbon" aria-labelledby="family-week-title">
+        <header>
+          <span>
+            <strong id="family-week-title">Week ribbon</strong>
+            <small>{weekAnchor.toLocaleDateString("en-US", { month: "long", year: "numeric" })}</small>
+          </span>
+          <button type="button" aria-pressed={!selectedDateKey} onClick={() => setSelectedDateKey("")}>All dates</button>
+        </header>
+        <div className="parent-week-days">
+          {weekDays.map((day) => (
+            <button
+              type="button"
+              key={day.key}
+              aria-pressed={selectedDateKey === day.key}
+              aria-label={`${day.day} ${day.date}, ${day.eventCount} event${day.eventCount === 1 ? "" : "s"}`}
+              onClick={() => setSelectedDateKey((current) => current === day.key ? "" : day.key)}
+            >
+              <span>{day.day}</span>
+              <strong>{day.date}</strong>
+              <small>{day.eventCount || "–"}</small>
+            </button>
+          ))}
+        </div>
+      </section>
+
+      {commandEvent ? (
+        <section className="parent-game-day-sheet" aria-labelledby="game-day-sheet-title">
+          <header>
+            <span>
+              <small>Game-day command sheet</small>
+              <h2 id="game-day-sheet-title">{commandEvent.title}</h2>
+              <p>{commandTeam?.name ?? "Team"} · {formatParentScheduleTimeRange(commandEvent)}</p>
+            </span>
+            <button type="button" className="secondary" onClick={() => setCommandEventId("")}>Close</button>
+          </header>
+          <div className="parent-game-day-sheet-grid">
+            <p>
+              <span>Arrival</span>
+              <strong>{new Date(Date.parse(commandEvent.startsAt) - 20 * 60 * 1000).toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" })}</strong>
+              <small>Suggested 20-minute arrival window</small>
+            </p>
+            <p>
+              <span>Field</span>
+              <strong>{commandEvent.locationName}</strong>
+              <small>{commandEvent.locationAddress || "Address pending"}</small>
+            </p>
+            <p>
+              <span>Weather</span>
+              <strong>{commandWeather ? commandWeather.headline : "No active alert"}</strong>
+              <small>{commandWeather ? `${commandWeather.severity} · ${commandWeather.status}` : "Check again before leaving."}</small>
+            </p>
+            <p>
+              <span>Team help</span>
+              <strong>{commandSnackNeeds + commandVolunteerNeeds} open</strong>
+              <small>{commandSnackNeeds} snack · {commandVolunteerNeeds} volunteer</small>
+            </p>
+          </div>
+          <div className="parent-game-day-sheet-rsvps">
+            <strong>Family RSVP</strong>
+            {commandPlayers.map((player) => {
+              const response = parentState.rsvps.find((item) => (
+                item.eventId === commandEvent.id &&
+                item.playerId === player.id &&
+                item.parentUserId === parentUserId
+              ));
+              return (
+                <span key={player.id}>
+                  {player.firstName} {player.lastInitial}. · {response ? response.response.replace("_", " ") : "response needed"}
+                </span>
+              );
+            })}
+            {!commandPlayers.length ? <span>Linked-player details are unavailable.</span> : null}
+          </div>
+          <div className="parent-game-day-sheet-footer">
+            <p>
+              <strong>Latest coach update</strong>
+              <span>{commandAnnouncement?.body ?? "No new coach update is attached to this event."}</span>
+            </p>
+            <div>
+              <a className="parent-rsvp-glow" href="/parent/rsvp">Open RSVP</a>
+              <a
+                className="button secondary"
+                href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent([commandEvent.locationName, commandEvent.locationAddress].filter(Boolean).join(", "))}`}
+                target="_blank"
+                rel="noreferrer"
+              >
+                Directions
+              </a>
+            </div>
+          </div>
+          <small className="parent-game-day-sheet-boundary">This sheet reads current family and team records. It does not send alerts or change attendance.</small>
+        </section>
+      ) : null}
+
+      {selectedDateKey
+        ? renderGroup(`${selectedDayLabel?.day ?? "Selected day"} ${selectedDayLabel?.date ?? ""}`, displayedEvents, "No team event is scheduled for this date.")
+        : (
+          <>
+            {renderGroup("Today", todayEvents, nextEvent ? `Next: ${nextEvent.title}.` : "Nothing is scheduled next.")}
+            {thisWeekEvents.length
+              ? renderGroup("This week", thisWeekEvents)
+              : laterEvents.length
+                ? renderGroup("Coming up", laterEvents)
+                : renderGroup("This week", thisWeekEvents)}
+            {thisWeekEvents.length && laterEvents.length ? renderGroup("Later", laterEvents) : null}
+          </>
+        )}
+
+      <p className="parent-schedule-privacy">
+        <strong>Family-only RSVP details.</strong>
+        <span>Calendar details are read-only here. RSVP changes open the dedicated family response screen.</span>
+      </p>
+    </div>
+  );
+}
+
+function CoachScheduleCommand({
+  scheduleState,
+  selectedEventId,
+  onSelectEvent
+}: {
+  scheduleState: ParentCoachDashboardData["state"];
+  selectedEventId: string;
+  onSelectEvent: (eventId: string) => void;
+}) {
+  const nowMs = Date.parse(NOW);
+  const scheduledEvents = [...scheduleState.events]
+    .filter((item) => item.status === "scheduled")
+    .sort((left, right) => Date.parse(left.startsAt) - Date.parse(right.startsAt));
+  const activeEvent = scheduledEvents.find((item) => Date.parse(item.startsAt) <= nowMs && Date.parse(item.endsAt) >= nowMs);
+  const nextEvent = scheduledEvents.find((item) => Date.parse(item.startsAt) > nowMs) ?? scheduledEvents[0];
+  const laterEvents = scheduledEvents.filter((item) => item.id !== activeEvent?.id && item.id !== nextEvent?.id).slice(0, 3);
+  const readinessRows = getScheduleRsvpSyncRows(scheduleState)
+    .filter((row) => row.event.status === "scheduled")
+    .sort((left, right) => Date.parse(left.event.startsAt) - Date.parse(right.event.startsAt))
+    .slice(0, 6);
+  const totalNoResponse = readinessRows.reduce((total, row) => total + row.noResponse, 0);
+  const totalOpenHelp = readinessRows.reduce((total, row) => (
+    total +
+    scheduleState.snackScheduleSlots.filter((slot) => slot.eventId === row.event.id && slot.status === "open").length +
+    scheduleState.volunteerSignups.filter((signup) => signup.eventId === row.event.id && signup.status === "open").length
+  ), 0);
+
+  function renderTimelineEvent(label: string, item?: LeagueEvent) {
+    const team = item ? scheduleState.teams.find((teamItem) => teamItem.id === item.teamId) : undefined;
+    return (
+      <article className={`coach-schedule-moment${item?.id === selectedEventId ? " is-selected" : ""}${item ? "" : " is-empty"}`}>
+        <span>{label}</span>
+        {item ? (
+          <>
+            <strong>{item.title}</strong>
+            <small>{team?.name ?? "Team"} · {formatShortDay(item.startsAt)} · {formatShortTime(item.startsAt)}</small>
+            <button type="button" onClick={() => onSelectEvent(item.id)}>Inspect event</button>
+          </>
+        ) : (
+          <>
+            <strong>Nothing active</strong>
+            <small>The sideline is clear right now.</small>
+          </>
+        )}
+      </article>
+    );
+  }
+
+  return (
+    <section className="coach-schedule-command" aria-labelledby="coach-schedule-command-title">
+      <div className="certainty-band certainty-band-coach">
+        <span className="certainty-band-icon" aria-hidden="true">{totalNoResponse + totalOpenHelp ? "!" : "✓"}</span>
+        <span>
+          <strong id="coach-schedule-command-title">{totalNoResponse + totalOpenHelp ? "Schedule attention needed" : "Next event ready"}</strong>
+          <small>{totalNoResponse} family response gap(s) and {totalOpenHelp} open team-help role(s) across the visible schedule.</small>
+        </span>
+        <span className={`season-status ${totalNoResponse + totalOpenHelp ? "state-needs_attention" : "state-ready"}`}>
+          {readinessRows.length} events
+        </span>
+      </div>
+
+      <div className="coach-schedule-timeline">
+        <header>
+          <span>
+            <small>Sideline timeline</small>
+            <h2>Now, next, later</h2>
+          </span>
+          <p>Choose an event to move the operations form and calendar inspector to that record.</p>
+        </header>
+        <div className="coach-schedule-moments">
+          {renderTimelineEvent("Now", activeEvent)}
+          {renderTimelineEvent("Next", nextEvent)}
+          <article className="coach-schedule-moment later">
+            <span>Later</span>
+            {laterEvents.map((item) => (
+              <button type="button" key={item.id} onClick={() => onSelectEvent(item.id)}>
+                <strong>{item.title}</strong>
+                <small>{formatShortDay(item.startsAt)} · {formatShortTime(item.startsAt)}</small>
+              </button>
+            ))}
+            {!laterEvents.length ? <small>No additional team events are scheduled.</small> : null}
+          </article>
+        </div>
+      </div>
+
+      <div className="coach-readiness-matrix">
+        <header>
+          <span>
+            <small>Readiness matrix</small>
+            <h2>What needs attention before arrival</h2>
+          </span>
+          <p>Counts are derived from assigned-team schedule, RSVP, snack, volunteer, and weather records.</p>
+        </header>
+        <div className="coach-readiness-table" role="table" aria-label="Schedule readiness matrix">
+          <div className="coach-readiness-row head" role="row">
+            <span role="columnheader">Event</span>
+            <span role="columnheader">Going</span>
+            <span role="columnheader">No response</span>
+            <span role="columnheader">Help gaps</span>
+            <span role="columnheader">Weather</span>
+          </div>
+          {readinessRows.map((row) => {
+            const helpGaps =
+              scheduleState.snackScheduleSlots.filter((slot) => slot.eventId === row.event.id && slot.status === "open").length +
+              scheduleState.volunteerSignups.filter((signup) => signup.eventId === row.event.id && signup.status === "open").length;
+            const weatherAlert = scheduleState.weatherAlerts.find((alert) => alert.eventId === row.event.id);
+            return (
+              <button className="coach-readiness-row" type="button" role="row" key={row.event.id} onClick={() => onSelectEvent(row.event.id)}>
+                <span role="cell"><strong>{row.event.title}</strong><small>{formatShortDay(row.event.startsAt)}</small></span>
+                <span role="cell">{row.going}</span>
+                <span className={row.noResponse ? "needs-attention" : ""} role="cell">{row.noResponse}</span>
+                <span className={helpGaps ? "needs-attention" : ""} role="cell">{helpGaps}</span>
+                <span className={weatherAlert ? "needs-attention" : ""} role="cell">{weatherAlert ? weatherAlert.status : "Clear"}</span>
+              </button>
+            );
+          })}
+          {!readinessRows.length ? <p className="parent-schedule-empty">No assigned-team events are available.</p> : null}
+        </div>
+      </div>
+    </section>
+  );
+}
+
+function AdminCalendarControlRoom({
+  scheduleState,
+  event,
+  eventId,
+  startsAt,
+  locationName,
+  status,
+  conflictCount,
+  affectedFamilies,
+  draftAlertCount,
+  onSelectEvent,
+  onStartsAtChange,
+  onLocationNameChange,
+  onStatusChange
+}: {
+  scheduleState: ParentCoachDashboardData["state"];
+  event?: LeagueEvent;
+  eventId: string;
+  startsAt: string;
+  locationName: string;
+  status: EventStatus;
+  conflictCount: number;
+  affectedFamilies: number;
+  draftAlertCount: number;
+  onSelectEvent: (eventId: string) => void;
+  onStartsAtChange: (value: string) => void;
+  onLocationNameChange: (value: string) => void;
+  onStatusChange: (value: EventStatus) => void;
+}) {
+  const eventTeam = event ? scheduleState.teams.find((team) => team.id === event.teamId) : undefined;
+  const changes = event ? [
+    {
+      label: "Start",
+      original: formatDate(event.startsAt),
+      proposed: formatDate(startsAt),
+      changed: event.startsAt !== startsAt
+    },
+    {
+      label: "Location",
+      original: event.locationName,
+      proposed: locationName,
+      changed: event.locationName !== locationName
+    },
+    {
+      label: "Status",
+      original: event.status,
+      proposed: status,
+      changed: event.status !== status
+    }
+  ] : [];
+  const changedCount = changes.filter((item) => item.changed).length;
+
+  return (
+    <section className="admin-calendar-control-room" aria-labelledby="admin-calendar-title">
+      <div className="certainty-band certainty-band-admin">
+        <span className="certainty-band-icon" aria-hidden="true">{conflictCount || changedCount ? "!" : "✓"}</span>
+        <span>
+          <strong id="admin-calendar-title">{conflictCount ? "Schedule conflict requires review" : changedCount ? "Draft change under review" : "Calendar is operational"}</strong>
+          <small>{conflictCount} conflict(s), {affectedFamilies} affected family record(s), and {draftAlertCount} draft alert record(s) for the selected event.</small>
+        </span>
+        <span className={`season-status ${conflictCount || changedCount ? "state-needs_attention" : "state-ready"}`}>
+          {changedCount} changes
+        </span>
+      </div>
+
+      <div className="admin-calendar-split">
+        <ScheduleMonthCalendar
+          events={scheduleState.events}
+          onSelectEvent={onSelectEvent}
+          selectedEventId={event?.id ?? eventId}
+          teams={scheduleState.teams}
+        />
+        <aside className="admin-calendar-inspector" aria-label="Selected event inspector">
+          <header>
+            <span>
+              <small>Selected event</small>
+              <h2>{event?.title ?? "No event selected"}</h2>
+            </span>
+            <span className={`season-status ${status === "cancelled" ? "state-blocked" : status === "completed" ? "state-ready" : "state-planned"}`}>{status}</span>
+          </header>
+          <label>
+            Inspect event
+            <select value={eventId} onChange={(input) => onSelectEvent(input.target.value)}>
+              {scheduleState.events.map((item) => <option key={item.id} value={item.id}>{item.title}</option>)}
+            </select>
+          </label>
+          {event ? (
+            <>
+              <div className="admin-inspector-facts">
+                <p><span>Team</span><strong>{eventTeam?.name ?? "Team"}</strong></p>
+                <p><span>Type</span><strong>{event.eventType.replace("_", " ")}</strong></p>
+                <p><span>Families</span><strong>{affectedFamilies}</strong></p>
+                <p><span>Conflicts</span><strong>{conflictCount}</strong></p>
+              </div>
+              <div className="admin-inspector-edit">
+                <label>
+                  Proposed start
+                  <input value={startsAt} onChange={(input) => onStartsAtChange(input.target.value)} />
+                </label>
+                <label>
+                  Proposed location
+                  <input value={locationName} onChange={(input) => onLocationNameChange(input.target.value)} />
+                </label>
+                <label>
+                  Proposed status
+                  <select value={status} onChange={(input) => onStatusChange(input.target.value as EventStatus)}>
+                    <option value="scheduled">Scheduled</option>
+                    <option value="cancelled">Cancelled</option>
+                    <option value="completed">Completed</option>
+                  </select>
+                </label>
+              </div>
+              <div className="admin-change-lens">
+                <header>
+                  <span>
+                    <small>Change lens</small>
+                    <h3>Original and proposed truth</h3>
+                  </span>
+                  <strong>{changedCount} changed</strong>
+                </header>
+                <div className="admin-change-row head">
+                  <span>Field</span><span>Original</span><span>Proposed</span>
+                </div>
+                {changes.map((item) => (
+                  <div className={`admin-change-row${item.changed ? " changed" : ""}`} key={item.label}>
+                    <strong>{item.label}</strong>
+                    <span>{item.original}</span>
+                    <span>{item.proposed}</span>
+                  </div>
+                ))}
+              </div>
+              <p className="admin-inspector-boundary">Changes remain local to this review form until saved. Saving queues notification records for review and does not execute provider delivery.</p>
+              <a className="button" href="#schedule-change-form">Review impact and save</a>
+            </>
+          ) : <p className="muted">No event is available for inspection.</p>}
+        </aside>
+      </div>
+    </section>
+  );
+}
+
+export function ScheduleAlertsClient({
+  scheduleData,
+  dashboardData,
+  mode = "operations"
+}: {
+  scheduleData?: ScheduleOperationsData | null;
+  dashboardData?: ParentCoachDashboardData | null;
+  mode?: "operations" | "readonly" | "parent" | "coach" | "admin";
+} = {}) {
   const { state, dispatch } = useAppState();
+  const roleState = dashboardData?.state ?? state;
   const [remoteEvents, setRemoteEvents] = useState<LeagueEvent[]>(() => scheduleData?.events ?? []);
+  const scheduleEventIds = new Set((scheduleData?.events ?? []).map((event) => event.id));
+  const scheduleTeamIds = new Set((scheduleData?.teams ?? []).map((team) => team.id));
   const scheduleState = scheduleData?.isSupabaseBacked
-    ? { ...state, teams: scheduleData.teams, events: remoteEvents }
-    : state;
-  const [eventId, setEventId] = useState(scheduleState.events[0]?.id ?? "");
-  const event = scheduleState.events.find((item) => item.id === eventId) ?? scheduleState.events[0];
+    ? {
+      ...roleState,
+      teams: scheduleData.teams,
+      events: remoteEvents,
+      rsvps: roleState.rsvps.filter((rsvp) => scheduleEventIds.has(rsvp.eventId)),
+      notifications: roleState.notifications.filter((notification) => !notification.teamId || scheduleTeamIds.has(notification.teamId)),
+      notificationPreferences: roleState.notificationPreferences.filter((preference) => !preference.teamId || scheduleTeamIds.has(preference.teamId))
+    }
+    : roleState;
+  const isReadonly = mode === "readonly" || mode === "parent";
+  const defaultEventId = getDefaultScheduleEventId(scheduleState.events);
+  const [eventId, setEventId] = useState(defaultEventId);
+  const event = scheduleState.events.find((item) => item.id === eventId) ?? scheduleState.events.find((item) => item.id === defaultEventId) ?? scheduleState.events[0];
   const [startsAt, setStartsAt] = useState(event?.startsAt ?? "");
   const [endsAt, setEndsAt] = useState(event?.endsAt ?? "");
   const [title, setTitle] = useState(event?.title ?? "");
@@ -3421,6 +6501,11 @@ export function ScheduleAlertsClient({ scheduleData }: { scheduleData?: Schedule
       return;
     }
 
+    if (isReadonly) {
+      setMessage("This route is read-only. Coaches or admins must use schedule operations to edit events.");
+      return;
+    }
+
     startScheduleTransition(async () => {
       const response = await authenticatedJsonFetch("/api/schedule", {
         eventId,
@@ -3466,21 +6551,113 @@ export function ScheduleAlertsClient({ scheduleData }: { scheduleData?: Schedule
     });
   }
 
+  if (mode === "parent") {
+    return (
+      <ParentScheduleFeed
+        scheduleState={scheduleState}
+        scheduleData={scheduleData}
+        parentDashboardData={dashboardData}
+      />
+    );
+  }
+
+  if (isReadonly) {
+    return (
+      <div className="page public-schedule-page">
+        <section className="hero">
+          <span className="eyebrow">Public schedule</span>
+          <h1>Know when and where the league plays.</h1>
+          <p className="lead">See published event details without signing in. Private responses, conversations, and child information stay protected.</p>
+        </section>
+
+        <p className={`notice ${scheduleData?.isSupabaseBacked ? "ok" : "warning"}`}>
+          {scheduleData?.isSupabaseBacked
+            ? "Showing the current published schedule."
+            : "Live schedule data is temporarily unavailable. These example rows are clearly separated from official league updates."}
+        </p>
+        {message ? <p className="notice">{message}</p> : null}
+
+        <PublicScheduleAgenda
+          event={event}
+          events={scheduleState.events}
+          onSelectEvent={selectEvent}
+          teams={scheduleState.teams}
+        />
+
+        <section className="public-schedule-trust" aria-label="Schedule privacy and access">
+          <div>
+            <h2>Need private team details?</h2>
+            <p>Request access so the league can verify your family connection. Public schedule browsing never exposes rosters, attendance, transportation, or family conversations.</p>
+          </div>
+          <a className="button" href="/registration">Request Team Access</a>
+          <a className="button secondary" href="/auth">Sign in</a>
+        </section>
+      </div>
+    );
+  }
+
   return (
-    <div className="page">
+    <div className={`page schedule-operations-page schedule-mode-${mode}`}>
       <section className="hero">
-        <span className="eyebrow">Schedule change alerts</span>
-        <h1>Queue alert records when schedule details change.</h1>
-        <p className="lead">Admin and assigned coaches can update time, location, or cancellation status. The scaffold creates notification records only; no provider send occurs.</p>
+        <span className="eyebrow">{mode === "coach" ? "Coach schedule" : mode === "admin" ? "League schedule control room" : "Schedule change alerts"}</span>
+        <h1>
+          {mode === "coach"
+            ? "Run the next event."
+            : mode === "admin"
+              ? "Calendar control room."
+              : "Queue alert records when schedule details change."}
+        </h1>
+        <p className="lead">
+          {mode === "coach"
+            ? "See now, next, attendance gaps, team-help needs, and weather before changing the schedule."
+            : mode === "admin"
+              ? "Inspect an event, compare original and proposed truth, then save auditable review records."
+              : "Admins and assigned coaches can update time, location, or cancellation status. Changes create review records only; no family message is sent automatically."}
+        </p>
       </section>
 
-      <p className={`notice ${scheduleData?.isSupabaseBacked ? "ok" : "warning"}`}>
-        {scheduleData?.message ?? "Showing local schedule fallback until Supabase schedule rows are available."}
-      </p>
+      {mode === "coach" || mode === "admin" ? null : (
+        <p className={`notice ${scheduleData?.isSupabaseBacked ? "ok" : "warning"}`}>
+          {scheduleData?.isSupabaseBacked
+            ? "Schedule details are current for your approved role."
+            : "Schedule preview is shown until approved team access is available."}
+        </p>
+      )}
       {message ? <p className="notice">{message}</p> : null}
+      {mode === "coach" ? (
+        <CoachScheduleCommand
+          scheduleState={scheduleState}
+          selectedEventId={event?.id ?? eventId}
+          onSelectEvent={selectEvent}
+        />
+      ) : null}
+      {mode === "admin" ? (
+        <AdminCalendarControlRoom
+          scheduleState={scheduleState}
+          event={event}
+          eventId={eventId}
+          startsAt={startsAt}
+          locationName={locationName}
+          status={status}
+          conflictCount={scheduleConflicts.length}
+          affectedFamilies={impactPreview.affectedFamilies}
+          draftAlertCount={impactPreview.notificationCount}
+          onSelectEvent={selectEvent}
+          onStartsAtChange={setStartsAt}
+          onLocationNameChange={setLocationName}
+          onStatusChange={setStatus}
+        />
+      ) : (
+        <ScheduleMonthCalendar
+          events={scheduleState.events}
+          onSelectEvent={selectEvent}
+          selectedEventId={event?.id ?? eventId}
+          teams={scheduleState.teams}
+        />
+      )}
       <section className="grid two">
-        <article className="card stack">
-          <h2>Edit event</h2>
+        <article className="card stack" id="schedule-change-form">
+          <h2>{isReadonly ? "Event details" : "Edit event"}</h2>
           <label>
             Event
             <select value={eventId} onChange={(input) => selectEvent(input.target.value)}>
@@ -3489,11 +6666,11 @@ export function ScheduleAlertsClient({ scheduleData }: { scheduleData?: Schedule
           </label>
           <label>
             Title
-            <input value={title} onChange={(input) => setTitle(input.target.value)} />
+            <input value={title} onChange={(input) => setTitle(input.target.value)} disabled={isReadonly} />
           </label>
           <label>
             Type
-            <select value={eventType} onChange={(input) => setEventType(input.target.value as EventType)}>
+            <select value={eventType} onChange={(input) => setEventType(input.target.value as EventType)} disabled={isReadonly}>
               <option value="practice">Practice</option>
               <option value="game">Game</option>
               <option value="team_event">Team event</option>
@@ -3501,17 +6678,18 @@ export function ScheduleAlertsClient({ scheduleData }: { scheduleData?: Schedule
           </label>
           <label>
             Starts at
-            <input value={startsAt} onChange={(input) => setStartsAt(input.target.value)} />
+            <input value={startsAt} onChange={(input) => setStartsAt(input.target.value)} disabled={isReadonly} />
           </label>
           <label>
             Ends at
-            <input value={endsAt} onChange={(input) => setEndsAt(input.target.value)} />
+            <input value={endsAt} onChange={(input) => setEndsAt(input.target.value)} disabled={isReadonly} />
           </label>
           {persistedVenueRecords.length ? (
             <label>
               Saved venue
               <select
                 value={fieldLocationId}
+                disabled={isReadonly}
                 onChange={(input) => {
                   const field = persistedVenueRecords.find((item) => item.id === input.target.value);
                   setFieldLocationId(input.target.value);
@@ -3530,25 +6708,25 @@ export function ScheduleAlertsClient({ scheduleData }: { scheduleData?: Schedule
           ) : null}
           <label>
             Location
-            <input value={locationName} onChange={(input) => setLocationName(input.target.value)} />
+            <input value={locationName} onChange={(input) => setLocationName(input.target.value)} disabled={isReadonly} />
           </label>
           <label>
             Address
-            <input value={locationAddress} onChange={(input) => setLocationAddress(input.target.value)} />
+            <input value={locationAddress} onChange={(input) => setLocationAddress(input.target.value)} disabled={isReadonly} />
           </label>
           <label>
             Status
-            <select value={status} onChange={(input) => setStatus(input.target.value as EventStatus)}>
+            <select value={status} onChange={(input) => setStatus(input.target.value as EventStatus)} disabled={isReadonly}>
               <option value="scheduled">Scheduled</option>
               <option value="cancelled">Cancelled</option>
               <option value="completed">Completed</option>
             </select>
           </label>
           <button
-            disabled={isSchedulePending || !title.trim() || !locationName.trim() || !locationAddress.trim()}
+            disabled={isReadonly || isSchedulePending || !title.trim() || !locationName.trim() || !locationAddress.trim()}
             onClick={saveScheduleChange}
           >
-            Queue schedule alert records
+            {isReadonly ? "Read-only route" : "Queue schedule alert records"}
           </button>
         </article>
 
@@ -3653,7 +6831,7 @@ export function ScheduleAlertsClient({ scheduleData }: { scheduleData?: Schedule
           </div>
           <pre>{calendarExport.split("\n").slice(0, 8).join("\n")}</pre>
           {calendarExportHref ? <a href={calendarExportHref}>Download persisted calendar</a> : null}
-          <p className="muted">{calendarExportHref ? "Calendar export is served by the authenticated schedule export endpoint." : "Export text is generated locally until Supabase schedule rows are available."}</p>
+          <p className="muted">{calendarExportHref ? "Calendar download is available for this approved team." : "Calendar export preview only. A team download is not available yet."}</p>
         </article>
 
         <article className="card stack">
@@ -3852,38 +7030,126 @@ export function ScheduleAlertsClient({ scheduleData }: { scheduleData?: Schedule
   );
 }
 
-export function ParentReplayClient() {
+export function ParentReplayClient({
+  dashboardData,
+  drillVideoData,
+  practiceRunReceipts = []
+}: {
+  dashboardData?: ParentCoachDashboardData | null;
+  drillVideoData?: DrillVideoLibraryData | null;
+  practiceRunReceipts?: PracticeRunReceipt[];
+} = {}) {
   const { state, dispatch } = useAppState();
-  const [teamId, setTeamId] = useState("team-tigers");
-  const [coachUserId, setCoachUserId] = useState("user-coach-taylor");
+  const sourceState = dashboardData?.accessStatus === "live" ? dashboardData.state : state;
+  const drillTeams = drillVideoData?.teams.length ? drillVideoData.teams : sourceState.teams;
+  const drillEvents = drillVideoData?.events ?? sourceState.events.filter((event) => event.eventType === "practice");
+  const initialDrillVideos = drillVideoData?.drillVideos ?? [];
+  const initialDrillAssignments = drillVideoData?.assignments ?? [];
+  const initialTeamId = sourceState.teams[0]?.id ?? "team-tigers";
+  const initialCoachUserId = dashboardData?.accessStatus === "live"
+    ? dashboardData.coachUserId || sourceState.users[0]?.id || "user-coach-taylor"
+    : "user-coach-taylor";
+  const [teamId, setTeamId] = useState(initialTeamId);
+  const [coachUserId, setCoachUserId] = useState(initialCoachUserId);
   const [focusAreas, setFocusAreas] = useState<PracticeFocusArea[]>(["catching", "throwing", "teamwork"]);
+  const [rookieAgeBand, setRookieAgeBand] = useState<RookieCoachAgeBand>("3-4");
+  const [rookieSport, setRookieSport] = useState("baseball");
+  const [rookieExperienceLevel, setRookieExperienceLevel] = useState<RookieCoachExperienceLevel>("first_time");
+  const [rookieChallenge, setRookieChallenge] = useState<RookieCoachChallenge>("listening");
+  const [rookieMotivationStrategy, setRookieMotivationStrategy] = useState<RookieCoachMotivationStrategy>("mission_game");
+  const [rookiePracticePersonality, setRookiePracticePersonality] = useState<RookieCoachPracticePersonality>("wild_today");
+  const [rookieFocusAreasText, setRookieFocusAreasText] = useState("listening, teamwork, confidence with the ball");
+  const [sidelineResetVisible, setSidelineResetVisible] = useState(false);
   const [message, setMessage] = useState("");
   const [savedReplays, setSavedReplays] = useState<ParentReplayRecord[]>([]);
+  const [activeReplayId, setActiveReplayId] = useState("");
+  const [replayCheckpoint, setReplayCheckpoint] = useState<"draft" | "approved" | "published">("draft");
+  const [selectedPracticeRunId, setSelectedPracticeRunId] = useState(
+    practiceRunReceipts.find((receipt) => receipt.completedAt && !receipt.parentReplayId)?.id ?? ""
+  );
+  const [linkedPracticeRunId, setLinkedPracticeRunId] = useState("");
+  const [drillVideoUrl, setDrillVideoUrl] = useState("");
+  const [drillVideoSport, setDrillVideoSport] = useState("baseball");
+  const [drillVideoSkillCategory, setDrillVideoSkillCategory] = useState("throwing");
+  const [drillVideoAgeBand, setDrillVideoAgeBand] = useState("6U");
+  const [drillVideoDifficulty, setDrillVideoDifficulty] = useState<DrillVideoDifficulty>("beginner");
+  const [drillVideoCoachInstructions, setDrillVideoCoachInstructions] = useState("");
+  const [drillVideoSafetyNotes, setDrillVideoSafetyNotes] = useState("");
+  const [drillVideos, setDrillVideos] = useState<DrillVideo[]>(initialDrillVideos);
+  const [drillAssignments, setDrillAssignments] = useState<DrillVideoAssignment[]>(initialDrillAssignments);
+  const [drillVideoMessage, setDrillVideoMessage] = useState(
+    drillVideoData?.isSupabaseBacked
+      ? "Approved drill video references are current."
+      : "Drill video preview is shown until the approved library is available."
+  );
+  const [selectedDrillVideoId, setSelectedDrillVideoId] = useState(initialDrillVideos.find((video) => video.approvalStatus === "approved")?.id ?? "");
+  const [selectedDrillEventId, setSelectedDrillEventId] = useState("");
   const [aiProviderMessage, setAiProviderMessage] = useState("");
   const [aiProviderDrafts, setAiProviderDrafts] = useState<Record<string, AiCoachWorkspaceDraft>>({});
+  const [aiTrustEvidence, setAiTrustEvidence] = useState<{
+    includedSources: string[];
+    excludedSources: string[];
+    generatedAt?: string;
+    model: string;
+    humanReviewRequired: true;
+    runId?: string;
+  } | null>(null);
   const [isReplayPending, startReplayTransition] = useTransition();
+  const [isDrillVideoPending, startDrillVideoTransition] = useTransition();
   const [isAiProviderPending, startAiProviderTransition] = useTransition();
-  const selectedTeam = state.teams.find((team) => team.id === teamId);
+  const selectedTeam = sourceState.teams.find((team) => team.id === teamId);
+  const approvedDrillVideos = drillVideos.filter((video) => video.approvalStatus === "approved");
+  const selectedDrillVideo = approvedDrillVideos.find((video) => video.id === selectedDrillVideoId) ?? approvedDrillVideos[0];
+  const teamDrillAssignments = drillAssignments.filter((assignment) => assignment.teamId === teamId);
+  const teamPracticeEvents = drillEvents.filter((event) => event.teamId === teamId);
+  const completedPracticeRuns = practiceRunReceipts.filter((receipt) => (
+    receipt.teamId === teamId &&
+    receipt.completedAt &&
+    !receipt.parentReplayId &&
+    receipt.id !== linkedPracticeRunId
+  ));
+  const accessGate = privateAccessGate(dashboardData, "coach");
   const draft = useMemo(() => {
     const previewFocusAreas: PracticeFocusArea[] = focusAreas.length ? focusAreas : ["teamwork"];
-    return generateParentReplayDraft(state, {
+    return generateParentReplayDraft(sourceState, {
       teamId,
       coachUserId,
       focusAreas: previewFocusAreas,
       now: NOW
     });
-  }, [coachUserId, focusAreas, state, teamId]);
+  }, [coachUserId, focusAreas, sourceState, teamId]);
   const promptEvalHarness = getPromptEvalHarness();
-  const coachWorkspaceDrafts = useMemo(() => buildAiCoachWorkspaceDrafts(state, {
+  const coachWorkspaceDrafts = useMemo(() => buildAiCoachWorkspaceDrafts(sourceState, {
     teamId,
     coachUserId,
     focusAreas,
     now: NOW
-  }), [coachUserId, focusAreas, state, teamId]);
+  }), [coachUserId, focusAreas, sourceState, teamId]);
   const visibleCoachWorkspaceDrafts = useMemo(() => (
     coachWorkspaceDrafts.map((workspaceDraft) => aiProviderDrafts[workspaceDraft.id] ?? workspaceDraft)
   ), [aiProviderDrafts, coachWorkspaceDrafts]);
-  const teamReplays = [...savedReplays, ...state.parentReplays].filter((replay) => replay.teamId === teamId);
+  const rookieAssistFocusAreas = useMemo(() => (
+    rookieFocusAreasText.split(",").map((area) => area.trim()).filter(Boolean)
+  ), [rookieFocusAreasText]);
+  const rookieAssist = useMemo(() => generateRookieCoachAssist({
+    ageBand: rookieAgeBand,
+    sport: rookieSport,
+    experienceLevel: rookieExperienceLevel,
+    challenge: rookieChallenge,
+    motivationStrategy: rookieMotivationStrategy,
+    practicePersonality: rookiePracticePersonality,
+    focusAreas: rookieAssistFocusAreas
+  }), [
+    rookieAgeBand,
+    rookieAssistFocusAreas,
+    rookieChallenge,
+    rookieExperienceLevel,
+    rookieMotivationStrategy,
+    rookiePracticePersonality,
+    rookieSport
+  ]);
+  const teamReplays = [...savedReplays, ...sourceState.parentReplays].filter((replay) => replay.teamId === teamId);
+  const latestReplayStatus = teamReplays[0]?.status ?? "draft";
   const selectedFocus = new Set(focusAreas);
   const canQueueReplay = focusAreas.length >= 2 && focusAreas.length <= 3;
 
@@ -3895,6 +7161,78 @@ export function ParentReplayClient() {
     ));
   }
 
+  function applyRookieAssistSeed() {
+    setFocusAreas(rookieAssist.parentReplaySeed.focusAreas);
+    setMessage("Rookie Coach Assist seed applied locally. Review the Parent Replay preview before queueing.");
+  }
+
+  function showSidelineReset() {
+    setSidelineResetVisible(true);
+    setMessage("Chaos Button loaded a 90-second reset locally. Coach still chooses whether to use or share it.");
+  }
+
+  function submitDrillVideo() {
+    setDrillVideoMessage("");
+    startDrillVideoTransition(async () => {
+      const response = await authenticatedJsonFetch("/api/coach/drill-videos", {
+        teamId,
+        provider: "youtube",
+        url: drillVideoUrl,
+        sport: drillVideoSport,
+        skillCategory: drillVideoSkillCategory,
+        ageBand: drillVideoAgeBand,
+        difficulty: drillVideoDifficulty,
+        coachInstructions: drillVideoCoachInstructions || undefined,
+        safetyNotes: drillVideoSafetyNotes || undefined
+      });
+      const result = await response.json().catch(() => null) as {
+        ok?: boolean;
+        message?: string;
+        drillVideo?: DrillVideo;
+      } | null;
+
+      if (result?.ok && result.drillVideo) {
+        setDrillVideos((current) => current.some((video) => video.id === result.drillVideo!.id)
+          ? current.map((video) => video.id === result.drillVideo!.id ? result.drillVideo! : video)
+          : [result.drillVideo!, ...current]);
+        setDrillVideoUrl("");
+      }
+
+      setDrillVideoMessage(result?.message ?? "Drill video reference could not be submitted.");
+    });
+  }
+
+  function assignDrillVideo() {
+    if (!selectedDrillVideo) {
+      setDrillVideoMessage("Choose an approved drill video before assigning it.");
+      return;
+    }
+
+    setDrillVideoMessage("");
+    startDrillVideoTransition(async () => {
+      const response = await authenticatedJsonFetch("/api/coach/drill-video-assignments", {
+        drillVideoId: selectedDrillVideo.id,
+        teamId,
+        eventId: selectedDrillEventId || undefined,
+        usageContext: "practice_plan",
+        notes: "Coach planning assignment only; family-facing embeds remain disabled."
+      });
+      const result = await response.json().catch(() => null) as {
+        ok?: boolean;
+        message?: string;
+        assignment?: DrillVideoAssignment;
+      } | null;
+
+      if (result?.ok && result.assignment) {
+        setDrillAssignments((current) => current.some((assignment) => assignment.id === result.assignment!.id)
+          ? current.map((assignment) => assignment.id === result.assignment!.id ? result.assignment! : assignment)
+          : [result.assignment!, ...current]);
+      }
+
+      setDrillVideoMessage(result?.message ?? "Drill video assignment could not be saved.");
+    });
+  }
+
   function queueParentReplay() {
     setMessage("");
     startReplayTransition(async () => {
@@ -3902,7 +7240,8 @@ export function ParentReplayClient() {
         teamId,
         coachUserId,
         focusAreas,
-        draft
+        draft,
+        practiceRunId: selectedPracticeRunId || undefined
       });
       const result = await response.json().catch(() => null) as {
         ok?: boolean;
@@ -3912,6 +7251,9 @@ export function ParentReplayClient() {
 
       if (result?.ok && result.parentReplay) {
         setSavedReplays((current) => [result.parentReplay!, ...current]);
+        setActiveReplayId(result.parentReplay.id);
+        setReplayCheckpoint("draft");
+        if (selectedPracticeRunId) setLinkedPracticeRunId(selectedPracticeRunId);
       } else if (response.status === 401) {
         const input = { teamId, coachUserId, focusAreas, now: new Date().toISOString() };
         dispatch({ type: "createParentReplay", input });
@@ -3922,6 +7264,22 @@ export function ParentReplayClient() {
           ? `Parent Replay queued locally for ${selectedTeam?.name ?? "team"}. Sign in as an assigned coach to publish it to families.`
           : "Parent Replay could not be queued."
       ));
+    });
+  }
+
+  function advanceParentReplay(operation: "approve" | "publish") {
+    if (!activeReplayId) {
+      setMessage("Save a Parent Replay draft before approval or publish.");
+      return;
+    }
+    setMessage("");
+    startReplayTransition(async () => {
+      const response = await authenticatedJsonFetch(`/api/coach/parent-replay/${operation}`, {
+        parentReplayId: activeReplayId
+      });
+      const result = await response.json().catch(() => null) as { ok?: boolean; message?: string } | null;
+      setMessage(result?.message ?? `Parent Replay ${operation} could not be completed.`);
+      if (result?.ok) setReplayCheckpoint(operation === "approve" ? "approved" : "published");
     });
   }
 
@@ -3937,6 +7295,14 @@ export function ParentReplayClient() {
         message?: string;
         draft?: AiCoachWorkspaceDraft;
         source?: "openai" | "deterministic";
+        trust?: {
+          includedSources: string[];
+          excludedSources: string[];
+          generatedAt?: string;
+          model: string;
+          humanReviewRequired: true;
+        };
+        generationRun?: { id?: string };
       } | null;
 
       if (result?.ok && result.draft) {
@@ -3944,6 +7310,12 @@ export function ParentReplayClient() {
           ...current,
           [workspaceDraft.id]: result.draft!
         }));
+        if (result.trust) {
+          setAiTrustEvidence({
+            ...result.trust,
+            runId: result.generationRun?.id
+          });
+        }
       }
 
       setAiProviderMessage(result?.message ?? (
@@ -3954,42 +7326,363 @@ export function ParentReplayClient() {
     });
   }
 
+  if (accessGate) {
+    return (
+      <div className="page parent-replay-page">
+        <section className="hero parent-replay-hero">
+          <span className="eyebrow">Signature feature</span>
+          <h1>Parent Replay turns every practice into help parents can use tonight.</h1>
+          <p className="lead">
+            Coaches choose the practice focus, review the family preview, and approve the recap before families can see it.
+          </p>
+        </section>
+        {accessGate}
+      </div>
+    );
+  }
+
   return (
     <div className="page parent-replay-page">
       <section className="hero parent-replay-hero">
         <span className="eyebrow">Signature feature</span>
         <h1>Parent Replay turns every practice into help parents can use tonight.</h1>
         <p className="lead">
-          Coaches click what the team worked on. The scaffold generates home activities, a coach video recommendation, a parent tip, skill cards, and a team quest without sending real provider messages.
+          Choose the practice focus, review the family preview, and save a draft for approval before families can see it.
         </p>
       </section>
 
-      {message ? <p className="notice">{message}</p> : null}
+      <section className="certainty-band certainty-band-replay" aria-label="Parent Replay status">
+        <span className="certainty-band-icon" aria-hidden="true">!</span>
+        <span>
+          <strong>{latestReplayStatus === "draft" ? "Draft awaiting approval" : `Replay status: ${latestReplayStatus.replaceAll("_", " ")}`}</strong>
+          <small>External messages are not connected here. Saving a draft does not publish or send it.</small>
+        </span>
+        <span className="season-status state-needs_attention">Coach review</span>
+      </section>
 
+      {message ? <p className="notice">{message}</p> : null}
+      {dashboardData ? (
+        <p className={`notice ${dashboardData.isSupabaseBacked ? "ok" : "warning"}`}>
+          {dashboardData.isSupabaseBacked
+            ? "Team and coach access are current for this replay."
+            : "Preview details are shown here. Sign in with an approved coach assignment to save a draft."}
+        </p>
+      ) : null}
+      <CompactDisclosure
+        title="Drill video library"
+        summary="Submit references and assign approved videos to coach planning."
+        badge="Coach tools"
+        className="parent-replay-advanced"
+      >
       <section className="grid two">
+        <article className="card stack drill-video-library">
+          <div className="card-header">
+            <div>
+              <span className="eyebrow">Coach drill videos</span>
+              <h2>Submit a YouTube drill reference</h2>
+            </div>
+            <span className={`badge ${drillVideoData?.providerConfigured ? "ok" : "warning"}`}>Metadata {drillVideoData?.providerConfigured ? "ready" : "missing"}</span>
+          </div>
+          <p className="notice">{drillVideoMessage}</p>
+          <div className="grid two">
+            <label>
+              Team
+              <select value={teamId} onChange={(event) => setTeamId(event.target.value)}>
+                {drillTeams.map((team) => <option key={team.id} value={team.id}>{team.name} - {team.division}</option>)}
+              </select>
+            </label>
+            <label>
+              YouTube URL
+              <input value={drillVideoUrl} onChange={(event) => setDrillVideoUrl(event.target.value)} placeholder="https://www.youtube.com/watch?v=..." />
+            </label>
+            <label>
+              Sport
+              <input value={drillVideoSport} onChange={(event) => setDrillVideoSport(event.target.value)} />
+            </label>
+            <label>
+              Skill
+              <input value={drillVideoSkillCategory} onChange={(event) => setDrillVideoSkillCategory(event.target.value)} />
+            </label>
+            <label>
+              Age band
+              <input value={drillVideoAgeBand} onChange={(event) => setDrillVideoAgeBand(event.target.value)} />
+            </label>
+            <label>
+              Difficulty
+              <select value={drillVideoDifficulty} onChange={(event) => setDrillVideoDifficulty(event.target.value as DrillVideoDifficulty)}>
+                <option value="beginner">Beginner</option>
+                <option value="intermediate">Intermediate</option>
+                <option value="advanced">Advanced</option>
+              </select>
+            </label>
+          </div>
+          <label>
+            Coach instructions
+            <textarea value={drillVideoCoachInstructions} onChange={(event) => setDrillVideoCoachInstructions(event.target.value)} />
+          </label>
+          <label>
+            Safety notes
+            <textarea value={drillVideoSafetyNotes} onChange={(event) => setDrillVideoSafetyNotes(event.target.value)} />
+          </label>
+          <button type="button" disabled={isDrillVideoPending || !drillVideoUrl.trim()} onClick={submitDrillVideo}>Submit for admin review</button>
+          <p className="muted">The app stores metadata and IDs only. YouTube content remains embedded from the official player after admin approval.</p>
+        </article>
+
+        <article className="card stack drill-video-library">
+          <div className="card-header">
+            <div>
+              <span className="eyebrow">Approved club library</span>
+              <h2>Assign to practice planning</h2>
+            </div>
+            <span className="badge">{approvedDrillVideos.length} approved</span>
+          </div>
+          <div className="grid two">
+            <label>
+              Drill video
+              <select value={selectedDrillVideo?.id ?? ""} onChange={(event) => setSelectedDrillVideoId(event.target.value)}>
+                {approvedDrillVideos.map((video) => <option key={video.id} value={video.id}>{video.title}</option>)}
+              </select>
+            </label>
+            <label>
+              Practice
+              <select value={selectedDrillEventId} onChange={(event) => setSelectedDrillEventId(event.target.value)}>
+                <option value="">Team planning only</option>
+                {teamPracticeEvents.map((event) => <option key={event.id} value={event.id}>{event.title} - {formatDate(event.startsAt)}</option>)}
+              </select>
+            </label>
+          </div>
+          <button type="button" disabled={isDrillVideoPending || !selectedDrillVideo} onClick={assignDrillVideo}>Assign drill video</button>
+          {selectedDrillVideo ? (
+            <div className="drill-video-embed">
+              <iframe
+                allow="accelerometer; encrypted-media; gyroscope; picture-in-picture; web-share"
+                allowFullScreen
+                loading="lazy"
+                referrerPolicy="strict-origin-when-cross-origin"
+                src={youtubePrivacyEmbedUrl(selectedDrillVideo.externalVideoId)}
+                title={`${selectedDrillVideo.title} drill video`}
+              />
+              <p className="muted">{selectedDrillVideo.sourceChannel ?? "YouTube"} - {selectedDrillVideo.skillCategory} - Made for Kids {selectedDrillVideo.madeForKidsStatus === undefined ? "unknown" : selectedDrillVideo.madeForKidsStatus ? "yes" : "no"}</p>
+            </div>
+          ) : <p className="muted">No approved drill videos are available yet.</p>}
+          <div className="stack compact">
+            <h3>Coach-only assignments</h3>
+            {teamDrillAssignments.map((assignment) => {
+              const video = drillVideos.find((item) => item.id === assignment.drillVideoId);
+              const event = drillEvents.find((item) => item.id === assignment.eventId);
+              return (
+                <p key={assignment.id}>
+                  <strong>{video?.title ?? "Drill video"}</strong><br />
+                  <span className="muted">{event?.title ?? "Team planning"} - family visible {assignment.visibleToFamilies ? "yes" : "no"}</span>
+                </p>
+              );
+            })}
+            {teamDrillAssignments.length === 0 ? <p className="muted">No drill videos are assigned to this team yet.</p> : null}
+          </div>
+        </article>
+      </section>
+      </CompactDisclosure>
+
+      <CompactDisclosure
+        title="Rookie Coach Assist"
+        summary="Open age-safe practice help and the local sideline reset."
+        badge="Local preview"
+        className="parent-replay-advanced"
+      >
+      <section className="grid one">
+        <article className="card stack rookie-coach-assist">
+          <div className="card-header">
+            <div>
+              <span className="eyebrow">Rookie Coach Assist</span>
+              <h2>Age-safe practice help for new volunteer coaches</h2>
+            </div>
+            <span className="badge warning">Local preview only</span>
+          </div>
+          <p className="muted">
+            Deterministic guidance for coaches who are new to a sport, new to coaching, or coaching ages 3-6. It creates a reviewed Parent Replay seed only; it does not publish or send.
+          </p>
+
+          <div className="grid three rookie-assist-form">
+            <label>
+              Age band
+              <select value={rookieAgeBand} onChange={(event) => setRookieAgeBand(event.target.value as RookieCoachAgeBand)}>
+                {rookieCoachAgeBandOptions.map((option) => (
+                  <option key={option.id} value={option.id}>{option.label}</option>
+                ))}
+              </select>
+            </label>
+            <label>
+              Sport
+              <input value={rookieSport} onChange={(event) => setRookieSport(event.target.value)} />
+            </label>
+            <label>
+              Coach experience
+              <select value={rookieExperienceLevel} onChange={(event) => setRookieExperienceLevel(event.target.value as RookieCoachExperienceLevel)}>
+                {rookieCoachExperienceOptions.map((option) => (
+                  <option key={option.id} value={option.id}>{option.label}</option>
+                ))}
+              </select>
+            </label>
+            <label>
+              Challenge
+              <select value={rookieChallenge} onChange={(event) => setRookieChallenge(event.target.value as RookieCoachChallenge)}>
+                {rookieCoachChallengeOptions.map((option) => (
+                  <option key={option.id} value={option.id}>{option.label}</option>
+                ))}
+              </select>
+            </label>
+            <label>
+              Motivation strategy
+              <select value={rookieMotivationStrategy} onChange={(event) => setRookieMotivationStrategy(event.target.value as RookieCoachMotivationStrategy)}>
+                {rookieCoachMotivationStrategyOptions.map((option) => (
+                  <option key={option.id} value={option.id}>{option.label}</option>
+                ))}
+              </select>
+            </label>
+            <label>
+              Team energy
+              <select value={rookiePracticePersonality} onChange={(event) => setRookiePracticePersonality(event.target.value as RookieCoachPracticePersonality)}>
+                {rookieCoachPracticePersonalityOptions.map((option) => (
+                  <option key={option.id} value={option.id}>{option.label}</option>
+                ))}
+              </select>
+            </label>
+            <label>
+              Focus areas
+              <textarea value={rookieFocusAreasText} onChange={(event) => setRookieFocusAreasText(event.target.value)} />
+            </label>
+          </div>
+
+          <div className="notice stack">
+            <div className="card-header">
+              <div>
+                <strong>Chaos Button</strong>
+                <p className="muted">Live sideline reset for when kids are losing focus.</p>
+              </div>
+              <button type="button" onClick={showSidelineReset}>Give me a 90-second reset</button>
+            </div>
+            {sidelineResetVisible ? (
+              <div className="grid three">
+                <p><strong>Call-and-response:</strong> {rookieAssist.chaosReset.callAndResponse}</p>
+                <p><strong>Movement reset:</strong> {rookieAssist.chaosReset.movementReset}</p>
+                <p><strong>Water break:</strong> {rookieAssist.chaosReset.waterBreak}</p>
+                <p><strong>Quick game:</strong> {rookieAssist.chaosReset.quickGame}</p>
+                <p><strong>Regroup phrase:</strong> {rookieAssist.chaosReset.regroupPhrase}</p>
+              </div>
+            ) : <p className="muted">Press the button to reveal coach-reviewed reset copy. Nothing is sent or saved.</p>}
+          </div>
+
+          <div className="grid two rookie-assist-preview">
+            <div className="stack">
+              <span className="badge ok">Practice plan</span>
+              <h3>{rookieAssist.practiceTitle}</h3>
+              <p><strong>Coach objective:</strong> {rookieAssist.coachObjective}</p>
+              <div className="notice">
+                <strong>Practice Personality Engine: {rookieAssist.personalityAdjustment.label}</strong>
+                <p>{rookieAssist.personalityAdjustment.drillChange}</p>
+                <p className="muted">{rookieAssist.personalityAdjustment.tempo}</p>
+              </div>
+              <div className="grid three replay-activities">
+                {rookieAssist.practiceBlocks.map((block) => (
+                  <div className="replay-activity" key={block.title}>
+                    <span className="badge">{block.duration}</span>
+                    <h3>{block.title}</h3>
+                    <p>{block.activity}</p>
+                    <p className="muted">{block.coachCue}</p>
+                  </div>
+                ))}
+              </div>
+              <p><strong>Attention reset:</strong> {rookieAssist.attentionReset}</p>
+              <p><strong>Age-specific explanation:</strong> {rookieAssist.ageSpecificExplanation}</p>
+              <p><strong>Incentive strategy:</strong> {rookieAssist.incentiveStrategy}</p>
+            </div>
+
+            <div className="stack">
+              <span className="badge">Coach script</span>
+              <pre className="draft-preview rookie-assist-script">{rookieAssist.exactCoachScript}</pre>
+              <div className="notice">
+                <strong>Coach Voice Coach</strong>
+                <p><span className="muted">Instead of:</span> {rookieAssist.voiceCoach.insteadOf}</p>
+                <p><span className="muted">Say:</span> {rookieAssist.voiceCoach.say}</p>
+                <p className="muted">{rookieAssist.voiceCoach.why}</p>
+              </div>
+              <div className="grid two">
+                <div className="notice">
+                  <strong>Do-say phrases</strong>
+                  <ul className="list compact">
+                    {rookieAssist.doSayPhrases.map((phrase) => <li key={phrase}>{phrase}</li>)}
+                  </ul>
+                </div>
+                <div className="notice">
+                  <strong>Avoid-saying phrases</strong>
+                  <ul className="list compact">
+                    {rookieAssist.avoidSayingPhrases.map((phrase) => <li key={phrase}>{phrase}</li>)}
+                  </ul>
+                </div>
+              </div>
+              <p><strong>Parent Replay seed:</strong> {rookieAssist.parentReplaySeed.focusAreas.map(formatFocusArea).join(", ")}</p>
+              <p className="muted">{rookieAssist.parentReplaySeed.summary}</p>
+              <button type="button" onClick={applyRookieAssistSeed}>Use seed in Parent Replay</button>
+            </div>
+          </div>
+
+          <div className="grid two">
+            <div className="stack">
+              <h3>Parent message draft</h3>
+              <p>{rookieAssist.parentMessageDraft}</p>
+              <div className="notice">
+                <strong>Parent Reinforcement Loop</strong>
+                <p>{rookieAssist.parentReinforcementLoop.today}</p>
+                <p>{rookieAssist.parentReinforcementLoop.atHome}</p>
+                <p>{rookieAssist.parentReinforcementLoop.praise}</p>
+                <p className="muted">{rookieAssist.parentReinforcementLoop.deliveryBoundary}</p>
+              </div>
+            </div>
+            <div className="stack">
+              <h3>Source evidence</h3>
+              <p className="muted">{rookieAssist.sourceEvidence.join(", ")}</p>
+              <p className="notice">{rookieAssist.safetyBoundary}</p>
+            </div>
+          </div>
+        </article>
+      </section>
+      </CompactDisclosure>
+
+      <section className="grid two parent-replay-builder">
         <article className="card stack">
           <div className="card-header">
             <div>
-              <span className="eyebrow">Coach practice recap builder</span>
-              <h2>Today we worked on</h2>
+              <span className="eyebrow">Replay builder</span>
+              <h2>What should families practice at home?</h2>
             </div>
-            <span className="badge warning">Coach approval</span>
+            <span className="badge warning">Draft</span>
           </div>
 
           <div className="grid two">
             <label>
-              Team portal
+              Team
               <select value={teamId} onChange={(event) => setTeamId(event.target.value)}>
-                {state.teams.map((team) => (
+                {sourceState.teams.map((team) => (
                   <option key={team.id} value={team.id}>{team.name} - {team.division}</option>
                 ))}
               </select>
             </label>
             <label>
-              Preview as
+              Coach
               <select value={coachUserId} onChange={(event) => setCoachUserId(event.target.value)}>
-                {state.users.filter((user) => user.role !== "parent").map((user) => (
+                {sourceState.users.filter((user) => user.role !== "parent").map((user) => (
                   <option key={user.id} value={user.id}>{user.name} - {roleLabel(user.role)}</option>
+                ))}
+              </select>
+            </label>
+            <label>
+              Completed practice evidence
+              <select value={selectedPracticeRunId} onChange={(event) => setSelectedPracticeRunId(event.target.value)}>
+                <option value="">Coach-selected focus only</option>
+                {completedPracticeRuns.map((receipt) => (
+                  <option key={receipt.id} value={receipt.id}>
+                    {receipt.plan.title} - {formatDate(receipt.completedAt!)}
+                  </option>
                 ))}
               </select>
             </label>
@@ -4008,24 +7701,29 @@ export function ParentReplayClient() {
             ))}
           </div>
 
-          <p className="muted">Choose 2-3 focus areas so the parent replay stays tiny enough for home.</p>
+          <p className="muted">Choose 2-3 focus areas so the family replay stays short enough to use tonight.</p>
+          <p className="muted">
+            {selectedPracticeRunId
+              ? "This draft will cite a completed practice-run receipt and its coach observations."
+              : "No practice-run receipt is selected; the draft will cite coach-selected focus only."}
+          </p>
 
           <button
             disabled={!canQueueReplay || isReplayPending}
             onClick={queueParentReplay}
           >
-            Queue Parent Replay
+            Save draft for approval
           </button>
-          {!canQueueReplay ? <p className="muted">Select exactly 2 or 3 practice focus areas before queueing.</p> : null}
+          {!canQueueReplay ? <p className="muted">Select exactly 2 or 3 practice focus areas before saving.</p> : null}
         </article>
 
         <article className="card stack parent-replay-preview">
           <div className="card-header">
             <div>
-              <span className="eyebrow">Generated parent replay</span>
+              <span className="eyebrow">Family preview</span>
               <h2>{draft.title}</h2>
             </div>
-            <span className="badge ok">Preview</span>
+            <span className="badge ok">Preview ready</span>
           </div>
           <p>{draft.summary}</p>
           <div className="grid three replay-activities">
@@ -4042,6 +7740,40 @@ export function ParentReplayClient() {
             ))}
           </div>
         </article>
+      </section>
+
+      <section className="replay-approval-checkpoint" aria-label="Parent Replay approval checkpoint">
+        <div>
+          <span className="certainty-band-icon" aria-hidden="true">!</span>
+          <span>
+            <strong>Approval is required before publish</strong>
+            <small>Review the family wording, activities, parent tip, skill cards, and team quest first.</small>
+          </span>
+        </div>
+        <ol>
+          <li data-state="complete">Preview</li>
+          <li data-state={replayCheckpoint === "draft" ? "current" : "complete"}>Edit and save draft</li>
+          <li data-state={replayCheckpoint === "approved" ? "current" : replayCheckpoint === "published" ? "complete" : undefined}>Approve</li>
+          <li data-state={replayCheckpoint === "published" ? "complete" : undefined}>Publish</li>
+        </ol>
+        <div className="toolbar">
+          <button
+            type="button"
+            className="secondary"
+            disabled={!activeReplayId || isReplayPending || replayCheckpoint !== "draft"}
+            onClick={() => advanceParentReplay("approve")}
+          >
+            Approve reviewed draft
+          </button>
+          <button
+            type="button"
+            disabled={!activeReplayId || isReplayPending || replayCheckpoint !== "approved"}
+            onClick={() => advanceParentReplay("publish")}
+          >
+            Publish in LeaguePilot
+          </button>
+        </div>
+        <p>Publishing creates in-app notification drafts only. External delivery still requires separate approval and provider evidence.</p>
       </section>
 
       <section className="grid three">
@@ -4100,6 +7832,35 @@ export function ParentReplayClient() {
           </div>
           <p className="muted">These drafts start as deterministic workspace previews. Signed-in coaches and admins can request an AI provider rewrite only when the server-side provider gate is configured; nothing publishes or sends without review.</p>
           {aiProviderMessage ? <p className="notice">{aiProviderMessage}</p> : null}
+          <aside className="ai-trust-panel" aria-label="AI source and review evidence">
+            <div className="card-header">
+              <div>
+                <span className="eyebrow">AI Trust Panel</span>
+                <h3>{aiTrustEvidence ? "Generation evidence recorded" : "Review boundary ready"}</h3>
+              </div>
+              <span className="badge warning">Human review required</span>
+            </div>
+            <div className="grid two">
+              <div>
+                <strong>Included sources</strong>
+                <ul className="list compact">
+                  {(aiTrustEvidence?.includedSources ?? ["Visible team schedule", "Approved roster-safe names", "Coach-selected focus"]).map((source) => <li key={source}>{source}</li>)}
+                </ul>
+              </div>
+              <div>
+                <strong>Always excluded</strong>
+                <ul className="list compact">
+                  {(aiTrustEvidence?.excludedSources ?? ["Private parent notes", "Contact details", "Unapproved media", "Cross-team records"]).map((source) => <li key={source}>{source}</li>)}
+                </ul>
+              </div>
+            </div>
+            <p className="muted">
+              Model: {aiTrustEvidence?.model ?? "Environment selected"}
+              {aiTrustEvidence?.generatedAt ? ` · Generated ${formatDate(aiTrustEvidence.generatedAt)}` : ""}
+              {aiTrustEvidence?.runId ? ` · Evidence run ${aiTrustEvidence.runId}` : ""}
+            </p>
+            <p>AI cannot publish, notify, grant access, or invoke operational tools.</p>
+          </aside>
           <div className="grid two">
             {visibleCoachWorkspaceDrafts.map((workspaceDraft) => (
               <div className="stack compact" key={workspaceDraft.id}>
@@ -4168,7 +7929,9 @@ export function FeatureTierHubClient() {
               <div className="feature-tier-item" key={feature.title}>
                 <div className="card-header">
                   <h3>{feature.title}</h3>
-                  <span className={`badge ${feature.status === "implemented" ? "ok" : feature.status === "planned" ? "warning" : ""}`}>{feature.status}</span>
+                  <span className={`badge ${feature.status === "implemented" ? "ok" : feature.status === "planned" ? "warning" : ""}`}>
+                    {feature.status === "implemented" ? "Available" : feature.status === "planned" ? "Not connected" : "Preview"}
+                  </span>
                 </div>
                 <p className="muted">{feature.description}</p>
               </div>
@@ -4225,7 +7988,7 @@ function createEmptyTeamPortalReplay(team: { id: string; coachUserId?: string })
   };
 }
 
-export function TeamPortalClient({ teamPortalData }: { teamPortalData?: TeamPortalData | null } = {}) {
+export function TeamPortalClient({ teamPortalData, audience = "shared" }: { teamPortalData?: TeamPortalData | null; audience?: "shared" | "parent" | "coach" | "admin" } = {}) {
   const { state, dispatch } = useAppState();
   const [remoteBrandingOverrides, setRemoteBrandingOverrides] = useState<Record<string, Pick<Team, "mascot" | "primaryColor" | "secondaryColor" | "themeKey">>>({});
   const sourceTeams = teamPortalData?.teams.length ? teamPortalData.teams : state.teams;
@@ -4241,6 +8004,27 @@ export function TeamPortalClient({ teamPortalData }: { teamPortalData?: TeamPort
   const eventsSource = teamPortalData?.events ?? state.events;
   const mediaItemsSource = teamPortalData?.mediaItems ?? state.mediaItems;
   const parentReplaysSource = teamPortalData?.parentReplays ?? state.parentReplays;
+  const scopedTeamIds = new Set(teams.map((item) => item.id));
+  const scopedPlayerIds = new Set(playersSource.map((item) => item.id));
+  const scopedEventIds = new Set(eventsSource.map((item) => item.id));
+  const portalState = teamPortalData?.teams.length ? {
+    ...state,
+    teams,
+    players: playersSource,
+    guardianLinks: guardianLinksSource,
+    parentInvites: parentInvitesSource,
+    teamMemberships: teamMembershipsSource,
+    users: usersSource,
+    events: eventsSource,
+    mediaItems: mediaItemsSource,
+    parentReplays: parentReplaysSource,
+    announcements: state.announcements.filter((announcement) => scopedTeamIds.has(announcement.teamId)),
+    rsvps: state.rsvps.filter((rsvp) => scopedPlayerIds.has(rsvp.playerId) && scopedEventIds.has(rsvp.eventId)),
+    snackScheduleSlots: state.snackScheduleSlots.filter((slot) => scopedTeamIds.has(slot.teamId)),
+    volunteerSignups: state.volunteerSignups.filter((signup) => scopedTeamIds.has(signup.teamId)),
+    weatherAlerts: state.weatherAlerts.filter((alert) => scopedTeamIds.has(alert.teamId)),
+    sponsors: audience === "parent" ? [] : state.sponsors.filter((sponsor) => !sponsor.teamId || scopedTeamIds.has(sponsor.teamId))
+  } : state;
   const isSupabaseBacked = Boolean(teamPortalData?.teams.length);
   const [teamId, setTeamId] = useState(() => teamPortalData?.teams[0]?.id ?? "team-tigers");
   const [brandingActorId, setBrandingActorId] = useState("user-coach-taylor");
@@ -4274,7 +8058,7 @@ export function TeamPortalClient({ teamPortalData }: { teamPortalData?: TeamPort
         membership.status === "active"
       )))
     ))
-    : canUpdateTeamPortalBranding(state, brandingActorId, team.id);
+    : canUpdateTeamPortalBranding(portalState, brandingActorId, team.id);
   const portalStyle = teamBrandStyle(team.primaryColor, team.secondaryColor);
   const players = playersSource.filter((player) => player.teamId === team.id);
   const playerIds = new Set(players.map((player) => player.id));
@@ -4298,34 +8082,40 @@ export function TeamPortalClient({ teamPortalData }: { teamPortalData?: TeamPort
   const mapFallback = getMapFallbackUx({ quotaStatus: mapQuotaStatus.status, directionsUrl: embeddedMap.directionsUrl });
   const locationChange = highlightLocationChange(upcomingGame?.locationName ?? "Field pending", upcomingGame?.locationName ?? "Field pending");
   const facilityNotes = getFacilityNotes(upcomingGame ?? nextPractice);
-  const gameRsvps = upcomingGame ? state.rsvps.filter((rsvp) => rsvp.eventId === upcomingGame.id) : [];
-  const gameSnackSlots = upcomingGame ? state.snackScheduleSlots.filter((slot) => slot.teamId === team.id && slot.eventId === upcomingGame.id) : [];
-  const gameVolunteerSignups = upcomingGame ? state.volunteerSignups.filter((signup) => signup.teamId === team.id && signup.eventId === upcomingGame.id) : [];
-  const gameWeatherAlert = upcomingGame ? state.weatherAlerts.find((alert) => alert.eventId === upcomingGame.id) : undefined;
+  const gameRsvps = upcomingGame ? portalState.rsvps.filter((rsvp) => rsvp.eventId === upcomingGame.id) : [];
+  const gameSnackSlots = upcomingGame ? portalState.snackScheduleSlots.filter((slot) => slot.teamId === team.id && slot.eventId === upcomingGame.id) : [];
+  const gameVolunteerSignups = upcomingGame ? portalState.volunteerSignups.filter((signup) => signup.teamId === team.id && signup.eventId === upcomingGame.id) : [];
+  const gameWeatherAlert = upcomingGame ? portalState.weatherAlerts.find((alert) => alert.eventId === upcomingGame.id) : undefined;
   const media = mediaItemsSource.filter((item) => item.teamId === team.id);
   const privateTeamAlbum = getPrivateTeamAlbum(mediaItemsSource, team.id);
-  const teamPortalSponsors = getTeamPortalSponsorPlacement(state.sponsors, team.id);
+  const teamPortalSponsors = getTeamPortalSponsorPlacement(portalState.sponsors, team.id);
+  const localBusinessTeamPage = buildLocalBusinessTeamPage(portalState, team.id);
+  const teamVolunteerMarketplace = buildVolunteerMarketplace(portalState, team.id);
+  const teamEquipmentExchange = buildEquipmentExchange(portalState, team.id, audience === "admin" ? "admin" : "parent");
+  const teamWeatherSafety = buildWeatherSafetyDecisionAssistant(portalState, team.id, NOW);
+  const teamSponsorSafeGallery = buildSponsorSafeMediaGallery(portalState, team.id);
+  const teamAvailabilityIntelligence = buildFamilyAvailabilityIntelligence(portalState, team.id, NOW);
   const firstPlayerConsent = getPerPlayerMediaConsent(players[0]?.id ?? "player-pending", players.slice(0, 1).map((player) => player.id));
-  const parentSubmittedMoments = getParentSubmittedMoments(state, team.id);
-  const volunteerMoments = getVolunteerMoments(state, team.id);
-  const seasonMemoryExport = exportSeasonMemories(state, team.id);
-  const snackReminders = getSnackReminders(state, team.id);
-  const snackConflicts = getSnackConflicts(state, team.id);
-  const snackAuditTrail = getSnackAuditTrail(state, team.id);
-  const snackCancellation = cancelSnackSlot(state, state.snackScheduleSlots.find((slot) => slot.teamId === team.id)?.id ?? "slot-pending", "Family schedule changed.");
-  const volunteerRoleCaps = getVolunteerRoleCaps(state, team.id);
-  const volunteerReminders = getVolunteerReminders(state, team.id);
-  const volunteerCancellation = cancelVolunteerSignup(state, state.volunteerSignups.find((signup) => signup.teamId === team.id)?.id ?? "volunteer-pending", "Family schedule changed.");
+  const parentSubmittedMoments = getParentSubmittedMoments(portalState, team.id);
+  const volunteerMoments = getVolunteerMoments(portalState, team.id);
+  const seasonMemoryExport = exportSeasonMemories(portalState, team.id);
+  const snackReminders = getSnackReminders(portalState, team.id);
+  const snackConflicts = getSnackConflicts(portalState, team.id);
+  const snackAuditTrail = getSnackAuditTrail(portalState, team.id);
+  const snackCancellation = cancelSnackSlot(portalState, portalState.snackScheduleSlots.find((slot) => slot.teamId === team.id)?.id ?? "slot-pending", "Family schedule changed.");
+  const volunteerRoleCaps = getVolunteerRoleCaps(portalState, team.id);
+  const volunteerReminders = getVolunteerReminders(portalState, team.id);
+  const volunteerCancellation = cancelVolunteerSignup(portalState, portalState.volunteerSignups.find((signup) => signup.teamId === team.id)?.id ?? "volunteer-pending", "Family schedule changed.");
   const volunteerApprovalPolicies = getVolunteerApprovalPolicies();
-  const snackVolunteerFairness = getSnackVolunteerFairness(state, team.id);
-  const dutyRotation = getDutyRotation(state, team.id);
-  const familyOptOuts = getFamilyOptOuts(state, team.id);
-  const siblingAwareAssignments = getSiblingAwareDutyAssignments(state, team.id);
-  const missedSlots = getMissedSlotTracking(state, team.id);
+  const snackVolunteerFairness = getSnackVolunteerFairness(portalState, team.id);
+  const dutyRotation = getDutyRotation(portalState, team.id);
+  const familyOptOuts = getFamilyOptOuts(portalState, team.id);
+  const siblingAwareAssignments = getSiblingAwareDutyAssignments(portalState, team.id);
+  const missedSlots = getMissedSlotTracking(portalState, team.id);
   const latestReplay = parentReplaysSource
     .filter((replay) => replay.teamId === team.id)
     .sort((left, right) => Date.parse(right.createdAt) - Date.parse(left.createdAt))[0];
-  const replayDraft = latestReplay ?? (isSupabaseBacked ? createEmptyTeamPortalReplay(team) : generateParentReplayDraft(state, {
+  const replayDraft = latestReplay ?? (isSupabaseBacked ? createEmptyTeamPortalReplay(team) : generateParentReplayDraft(portalState, {
     teamId: team.id,
     coachUserId: team.coachUserId ?? "user-admin",
     focusAreas: ["catching", "throwing", "teamwork"],
@@ -4342,7 +8132,7 @@ export function TeamPortalClient({ teamPortalData }: { teamPortalData?: TeamPort
       title: replay.memoryMoment.title,
       detail: replay.memoryMoment.detail
     })),
-    ...state.announcements.filter((announcement) => announcement.teamId === team.id).map((announcement) => ({
+    ...portalState.announcements.filter((announcement) => announcement.teamId === team.id).map((announcement) => ({
       id: announcement.id,
       title: announcement.title,
       detail: `Coach note - ${announcement.body}`
@@ -4352,7 +8142,7 @@ export function TeamPortalClient({ teamPortalData }: { teamPortalData?: TeamPort
       title: item.title,
       detail: `${item.type.replace("_", " ")} memory`
     })),
-    ...state.volunteerSignups.filter((signup) => signup.teamId === team.id && signup.status === "filled").map((signup) => ({
+    ...portalState.volunteerSignups.filter((signup) => signup.teamId === team.id && signup.status === "filled").map((signup) => ({
       id: signup.id,
       title: `${signup.role} covered`,
       detail: "Volunteer moment saved to the season story."
@@ -4446,8 +8236,8 @@ export function TeamPortalClient({ teamPortalData }: { teamPortalData?: TeamPort
         <h1>{team.name} portal for schedules, learning, memories, and parent help.</h1>
         <p className="lead">
           {team.mascot} colors carry across this {themePreset.label.toLowerCase()} portal and Team Chat. {isSupabaseBacked
-            ? "This portal is reading approved roster, guardian, invite, membership, schedule, branding, media, and replay records from Supabase."
-            : "This page is using local seed fallback data because Supabase portal reads are unavailable."}
+            ? "Approved roster, family access, schedule, branding, media, and replay details are current."
+            : "Preview details are shown while the approved team portal is unavailable."}
         </p>
       </section>
 
@@ -4830,17 +8620,101 @@ export function TeamPortalClient({ teamPortalData }: { teamPortalData?: TeamPort
         </article>
       </section>
 
+      <section className="grid two">
+        <article className="card stack">
+          <div className="card-header">
+            <div>
+              <span className="eyebrow">One-Tap Volunteer Marketplace</span>
+              <h2>Snack, score, field, carpool, and backup jobs</h2>
+            </div>
+            <span className="badge">{teamVolunteerMarketplace.filter((job) => job.actionStatus === "claimable").length} claimable</span>
+          </div>
+          {teamVolunteerMarketplace.slice(0, 7).map((job) => (
+            <p key={job.id}><strong>{job.title}</strong><br /><span className="muted">{job.category.replace("_", " ")} - {job.actionStatus.replace("_", " ")}. {job.detail}</span></p>
+          ))}
+          <p className="notice">Claims require approved parent access. Reminder messages are not connected here.</p>
+        </article>
+
+        <article className="card stack">
+          <div className="card-header">
+            <div>
+              <span className="eyebrow">Equipment Exchange</span>
+              <h2>Moderated gear listings</h2>
+            </div>
+            <span className="badge">{teamEquipmentExchange.length} listing(s)</span>
+          </div>
+          {teamEquipmentExchange.map((listing) => (
+            <p key={listing.id}><strong>{listing.title}</strong><br /><span className="muted">{listing.kind} - {listing.sizeOrAge} - {listing.condition}. {listing.detail}</span></p>
+          ))}
+          <p className="notice">Gear listings do not expose parent contacts publicly and safety-sensitive items require staff review.</p>
+        </article>
+      </section>
+
+      <section className="grid two">
+        <article className="card stack">
+          <div className="card-header">
+            <div>
+              <span className="eyebrow">Weather + Safety Decision Assistant</span>
+              <h2>{teamWeatherSafety.eventTitle}</h2>
+            </div>
+            <span className={`badge ${teamWeatherSafety.recommendation === "monitor" ? "ok" : "warning"}`}>{teamWeatherSafety.recommendation.replaceAll("_", " ")}</span>
+          </div>
+          {teamWeatherSafety.conditions.map((condition) => (
+            <p key={condition.label}><strong>{condition.label}</strong><br /><span className="muted">{condition.value} - {condition.status}</span></p>
+          ))}
+          <p className="muted">{teamWeatherSafety.fieldClosureDraft}</p>
+          <p className="notice">{teamWeatherSafety.boundary}</p>
+        </article>
+
+        <article className="card stack">
+          <div className="card-header">
+            <div>
+              <span className="eyebrow">Family Availability Intelligence</span>
+              <h2>{teamAvailabilityIntelligence.eventTitle}</h2>
+            </div>
+            <span className={`badge ${teamAvailabilityIntelligence.signal === "ready" ? "ok" : "warning"}`}>{teamAvailabilityIntelligence.signal.replace("_", " ")}</span>
+          </div>
+          <p>{teamAvailabilityIntelligence.summary}</p>
+          <p className="muted">Response rate {teamAvailabilityIntelligence.responseRate}%; schedule conflicts {teamAvailabilityIntelligence.scheduleConflictCount}.</p>
+          <p className="notice">{teamAvailabilityIntelligence.boundary}</p>
+        </article>
+      </section>
+
       <section className="grid one">
         <article className="card stack">
           <div className="card-header">
             <div>
-              <span className="eyebrow">Team Portal sponsor placement</span>
-              <h2>Team sponsor slots</h2>
+              <span className="eyebrow">Sponsor-Safe Media Gallery</span>
+              <h2>Approved recap pages</h2>
             </div>
-            <span className="badge">{teamPortalSponsors.length} sponsor(s)</span>
+            <span className="badge">{teamSponsorSafeGallery.approvedItems.length} approved</span>
           </div>
-          {teamPortalSponsors.map((sponsor) => <p key={sponsor.id}><strong>{sponsor.name}</strong><br /><span className="muted">{sponsor.url}</span></p>)}
+          {teamSponsorSafeGallery.approvedItems.map((item) => (
+            <p key={item.id}><strong>{item.recapLabel}</strong><br /><span className="muted">{item.sponsorFrame}. {item.safeCaption}</span></p>
+          ))}
+          {!teamSponsorSafeGallery.approvedItems.length ? <p className="muted">No approved media is ready for sponsor-safe recap framing.</p> : null}
+          <p className="notice">{teamSponsorSafeGallery.boundary}</p>
+        </article>
+      </section>
+
+      <section className="grid one">
+        <article className="card stack">
+          <div className="card-header">
+            <div>
+              <span className="eyebrow">Local Business Team Pages</span>
+              <h2>{localBusinessTeamPage.teamName} community sponsors</h2>
+            </div>
+            <span className="badge">{localBusinessTeamPage.sponsors.length} sponsor(s)</span>
+          </div>
+          <p className="muted">Team Portal sponsor placement: {localBusinessTeamPage.acknowledgement}</p>
+          {localBusinessTeamPage.sponsors.map((sponsor) => (
+            <p key={sponsor.sponsorId}>
+              <strong>{sponsor.name}</strong><br />
+              <span className="muted">{sponsor.offerText} {sponsor.url} - {sponsor.reviewStatus.replace("_", " ")}.</span>
+            </p>
+          ))}
           {!teamPortalSponsors.length ? <p className="muted">No active team portal sponsors are placed for this team.</p> : null}
+          <p className="notice">{localBusinessTeamPage.privacyBoundary}</p>
         </article>
       </section>
 
@@ -4857,12 +8731,12 @@ export function TeamPortalClient({ teamPortalData }: { teamPortalData?: TeamPort
           <h2>{upcomingGame?.title ?? "Next game"}</h2>
           {upcomingGame ? (
             <>
-              <p>{formatDate(upcomingGame.startsAt)} - arrive by {formatArrivalTime(upcomingGame.startsAt)}</p>
-              <p><strong>Field:</strong> {upcomingGame.locationName} - {upcomingGame.locationAddress}</p>
-              <p><strong>Uniform:</strong> {team.primaryColor} jersey / {team.secondaryColor} accent</p>
+              <p>{formatDate(upcomingGame.startsAt)} · Arrival time not published</p>
+              <p><strong>Venue:</strong> {upcomingGame.locationName} · {upcomingGame.locationAddress}</p>
+              <p><strong>Bring:</strong> League bring list not published</p>
               <p><strong>RSVP:</strong> {gameRsvps.length} of {players.length} player response(s)</p>
               <p><strong>Snack:</strong> {gameSnackSlots.find((slot) => slot.status === "assigned")?.item ?? "Open snack duty"}</p>
-              <p><strong>Parking:</strong> Use the main lot near {upcomingGame.locationName}; check urgent alerts before leaving.</p>
+              <p><strong>Parking:</strong> Not published; check authorized team updates before leaving.</p>
               <p><strong>Weather:</strong> {gameWeatherAlert ? `${gameWeatherAlert.headline} - ${gameWeatherAlert.detail}` : "No weather alert drafted."}</p>
               <p><strong>Urgent help:</strong> {gameVolunteerSignups.filter((signup) => signup.status === "open").map((signup) => signup.role).join(", ") || "Covered"}</p>
               <a href={`https://maps.google.com/?q=${encodeURIComponent(upcomingGame.locationAddress)}`}>Open field map</a>
@@ -4943,9 +8817,9 @@ export function TeamPortalClient({ teamPortalData }: { teamPortalData?: TeamPort
 
       <section className="grid three">
         <article className="card stack">
-          <span className={`badge ${isSupabaseBacked ? "ok" : "warning"}`}>{isSupabaseBacked ? "Supabase live" : "Seed fallback"}</span>
-          <h2>Portal data source</h2>
-          <p>{isSupabaseBacked ? "Team Portal reads are coming from Supabase." : "Supabase could not return teams, so the portal is showing local seed state."}</p>
+          <span className={`badge ${isSupabaseBacked ? "ok" : "warning"}`}>{isSupabaseBacked ? "Current" : "Preview only"}</span>
+          <h2>Team data status</h2>
+          <p>{isSupabaseBacked ? "Approved Team Portal details are current." : "Preview details are shown while the approved team portal is unavailable."}</p>
           <p className="muted">{teams.length} team(s), {playersSource.length} player(s), {mediaItemsSource.length} media item(s)</p>
         </article>
         <article className="card stack">
@@ -5088,7 +8962,15 @@ function mapRealtimeTeamChatMessage(row: Record<string, unknown>) {
   };
 }
 
-export function TeamChatClient({ teamChatData }: { teamChatData?: TeamChatData | null } = {}) {
+export function TeamChatClient({
+  teamChatData,
+  viewerUserId,
+  lockedTeamId
+}: {
+  teamChatData?: TeamChatData | null;
+  viewerUserId?: string;
+  lockedTeamId?: string;
+} = {}) {
   const { state, dispatch } = useAppState();
   const isSupabaseBacked = Boolean(teamChatData?.teams.length);
   const [remoteMessages, setRemoteMessages] = useState(() => teamChatData?.messages ?? []);
@@ -5103,8 +8985,8 @@ export function TeamChatClient({ teamChatData }: { teamChatData?: TeamChatData |
     chatMessages: remoteMessages,
     chatModerationAuditEvents: remoteModerationEvents
   } : state;
-  const [viewerId, setViewerId] = useState(() => teamChatData?.users.find((user) => user.role !== "parent")?.id ?? "user-parent-jordan");
-  const [teamId, setTeamId] = useState(() => teamChatData?.teams[0]?.id ?? "team-tigers");
+  const [viewerId, setViewerId] = useState(() => viewerUserId ?? teamChatData?.users.find((user) => user.role !== "parent")?.id ?? "user-parent-jordan");
+  const [teamId, setTeamId] = useState(() => lockedTeamId ?? teamChatData?.teams[0]?.id ?? "team-tigers");
   const [draftMessage, setDraftMessage] = useState("");
   const [linkDraftToGameDay, setLinkDraftToGameDay] = useState(true);
   const [postNotice, setPostNotice] = useState("");
@@ -5114,8 +8996,12 @@ export function TeamChatClient({ teamChatData }: { teamChatData?: TeamChatData |
   const [announcementNotice, setAnnouncementNotice] = useState("");
   const [moderationNotice, setModerationNotice] = useState("");
   const [isChatPending, startChatTransition] = useTransition();
-  const selectedViewerId = chatState.users.some((user) => user.id === viewerId) ? viewerId : chatState.users[0]?.id ?? viewerId;
-  const selectedTeamId = chatState.teams.some((team) => team.id === teamId) ? teamId : chatState.teams[0]?.id ?? teamId;
+  const selectedViewerId = viewerUserId && chatState.users.some((user) => user.id === viewerUserId)
+    ? viewerUserId
+    : chatState.users.some((user) => user.id === viewerId) ? viewerId : chatState.users[0]?.id ?? viewerId;
+  const selectedTeamId = lockedTeamId && chatState.teams.some((team) => team.id === lockedTeamId)
+    ? lockedTeamId
+    : chatState.teams.some((team) => team.id === teamId) ? teamId : chatState.teams[0]?.id ?? teamId;
   const viewer = chatState.users.find((user) => user.id === selectedViewerId);
   const selectedTeam = chatState.teams.find((team) => team.id === selectedTeamId);
   const chatStyle = teamBrandStyle(selectedTeam?.primaryColor ?? "#1570ef", selectedTeam?.secondaryColor ?? "#dff4ff");
@@ -5226,6 +9112,18 @@ export function TeamChatClient({ teamChatData }: { teamChatData?: TeamChatData |
 
   return (
     <div className="page clubhouse-chat-page" style={chatStyle}>
+      <BreadcrumbTrail items={[{ label: "Home", href: "/" }, { label: "Team Chat" }]} />
+      <PageHeader
+        eyebrow="Safe family communication"
+        title={`${selectedTeam?.name ?? "Team"} Chat`}
+        subtitle="A private, assigned-team workspace for coach notes, game-day questions, read receipts, and moderation review. No child accounts."
+        actions={(
+          <div className="cluster">
+            <StatusBadge label={isSupabaseBacked ? "Current" : "Preview only"} variant={isSupabaseBacked ? "success" : "warning"} dot={isSupabaseBacked} />
+            <StatusBadge label="Read-only" variant="neutral" />
+          </div>
+        )}
+      />
       <section className="hero clubhouse-chat-hero">
         <div className="clubhouse-hero-mark" aria-hidden="true">{selectedTeam?.mascot.slice(0, 1) ?? "T"}</div>
         <span className="eyebrow">Safe family communication</span>
@@ -5238,7 +9136,7 @@ export function TeamChatClient({ teamChatData }: { teamChatData?: TeamChatData |
       <section className="clubhouse-toolbar card">
         <label>
           Preview as
-          <select value={selectedViewerId} onChange={(event) => setViewerId(event.target.value)}>
+          <select value={selectedViewerId} onChange={(event) => setViewerId(event.target.value)} disabled={Boolean(viewerUserId)}>
             {chatState.users.map((user) => (
               <option key={user.id} value={user.id}>{user.name} · {roleLabel(user.role)}</option>
             ))}
@@ -5246,7 +9144,7 @@ export function TeamChatClient({ teamChatData }: { teamChatData?: TeamChatData |
         </label>
         <label>
           Team Chat
-          <select value={selectedTeamId} onChange={(event) => setTeamId(event.target.value)}>
+          <select value={selectedTeamId} onChange={(event) => setTeamId(event.target.value)} disabled={Boolean(lockedTeamId)}>
             {chatState.teams.map((team) => (
               <option key={team.id} value={team.id}>{team.name} · {team.division}</option>
             ))}
@@ -5258,29 +9156,6 @@ export function TeamChatClient({ teamChatData }: { teamChatData?: TeamChatData |
         </div>
       </section>
 
-      <section className="grid three">
-        <article className="card stack">
-          <span className="eyebrow">Reporting UI</span>
-          <h2>Chat report summary</h2>
-          <p><strong>{reportingSummary?.reportableMessages ?? 0}</strong> visible message(s) can be reported.</p>
-          <p className="muted">{reportingSummary?.hiddenMessages ?? 0} hidden, {reportingSummary?.deletedMessages ?? 0} deleted.</p>
-        </article>
-        <article className="card stack">
-          <span className="eyebrow">Retention jobs</span>
-          <h2>Archive cleanup</h2>
-          {retentionJobs.map((job) => (
-            <p key={job.id}><strong>{job.title}</strong><br /><span className="muted">{job.status} · {job.detail}</span></p>
-          ))}
-        </article>
-        <article className="card stack">
-          <span className="eyebrow">Media/message policy screens</span>
-          <h2>Policy checks</h2>
-          {policyScreens.map((policy) => (
-            <p key={policy.title}><strong>{policy.title}</strong><br /><span className="muted">{policy.detail}</span></p>
-          ))}
-        </article>
-      </section>
-
       {!view ? (
         <section className="card stack">
           <span className="badge danger">Private Team Chat</span>
@@ -5289,17 +9164,22 @@ export function TeamChatClient({ teamChatData }: { teamChatData?: TeamChatData |
           <p className="muted">Parents can only view chats for teams connected to their rostered child. Coaches can only view assigned teams. Org admins can view all team chats.</p>
         </section>
       ) : (
-        <section className="clubhouse-chat-shell">
-          <aside className="card clubhouse-team-card">
+        <section className="clubhouse-chat-shell chat-workspace" aria-label="Team Chat workspace">
+          <aside className="card clubhouse-team-card chat-thread-rail">
+            <span className="eyebrow">Thread rail</span>
             <div className="clubhouse-team-mark" aria-hidden="true">{view.team.mascot.slice(0, 1)}</div>
-            <span className="badge ok">Team Chat</span>
+            <StatusBadge label="Team Chat" variant="success" />
             <h2>{view.team.name}</h2>
             <p className="muted">{view.team.mascot} · {view.team.division} · {roleLabel(view.viewer.role)} view</p>
+            <div className="chat-rail-presence">
+              <span className="eyebrow">Team presence</span>
+              <AvatarStack names={chatState.users.slice(0, 8).map((user) => user.name)} label={`${chatState.users.length} team participants`} />
+            </div>
             <div className="clubhouse-chip-row" aria-label="Team chat quick topics">
-              <span>Arrival</span>
-              <span>Uniforms</span>
-              <span>Snacks</span>
-              <span>Weather</span>
+              <Chip label="Arrival" />
+              <Chip label="Uniforms" />
+              <Chip label="Snacks" />
+              <Chip label="Weather" />
             </div>
             <div className="clubhouse-unread">
               <strong>{view.unreadCount}</strong>
@@ -5317,31 +9197,41 @@ export function TeamChatClient({ teamChatData }: { teamChatData?: TeamChatData |
             </div>
           </aside>
 
-          <section className="card clubhouse-chat-panel">
+          <section className="card clubhouse-chat-panel chat-conversation-panel">
             <div className="card-header">
               <div>
                 <span className="eyebrow">Private to assigned team members</span>
                 <h2>{view.team.mascot} clubhouse</h2>
               </div>
-              <span className="badge">{view.access.reason}</span>
+              <StatusBadge label={view.access.reason} variant="info" />
             </div>
+            <div className="chat-broadcast-control">
+              <div>
+                <strong>Coach Broadcast Mode</strong>
+                <p className="muted">When enabled, families see a Read-only game-day announcement stream.</p>
+              </div>
+              <Toggle checked={!view.access.canPost} label={!view.access.canPost ? "Read-only" : "Open thread"} />
+            </div>
+            <BroadcastMode enabled={!view.access.canPost} />
 
             {view.pinnedMessage ? (
-              <article className="clubhouse-pinned">
-                <span className="badge warning">Pinned Reminder</span>
-                <h3>Coach Note</h3>
-                <p>{view.pinnedMessage.body}</p>
-                <small>{formatDate(view.pinnedMessage.createdAt)} · {formatTopic(view.pinnedMessage.topic)}</small>
-              </article>
+              <PinnedMessagesBar count={1}>
+                <article className="clubhouse-pinned">
+                  <StatusBadge label="Pinned Reminder" variant="warning" />
+                  <h3>Coach Note</h3>
+                  <p>{view.pinnedMessage.body}</p>
+                  <small>{formatDate(view.pinnedMessage.createdAt)} · {formatTopic(view.pinnedMessage.topic)}</small>
+                </article>
+              </PinnedMessagesBar>
             ) : null}
 
             {view.upcomingGame ? (
               <article className="clubhouse-game-day">
                 <div>
-                  <span className="badge ok">Game-Day Questions</span>
+                  <StatusBadge label="Game-Day Questions" variant="success" />
                   <h3>{view.upcomingGame.title}</h3>
                   <p className="muted">
-                    {formatDate(view.upcomingGame.startsAt)} · Arrive by {formatArrivalTime(view.upcomingGame.startsAt)}
+                    {formatDate(view.upcomingGame.startsAt)} · Arrival time not published
                   </p>
                 </div>
                 <ul className="list compact">
@@ -5398,7 +9288,7 @@ export function TeamChatClient({ teamChatData }: { teamChatData?: TeamChatData |
                   <span className="eyebrow">Coach Announcements</span>
                   <h3>Coach Note</h3>
                 </div>
-                <span className="badge warning">{view.access.canAnnounce ? "Coach/Admin" : "Read only"}</span>
+                <StatusBadge label={view.access.canAnnounce ? "Coach/Admin" : "Read-only"} variant="warning" />
               </div>
               <div className="grid two">
                 <label>
@@ -5442,78 +9332,93 @@ export function TeamChatClient({ teamChatData }: { teamChatData?: TeamChatData |
               {announcementNotice ? <p className="notice">{announcementNotice}</p> : null}
             </form>
 
-            <div className="clubhouse-message-list" aria-label="Team Chat messages">
-              {view.messages.length ? view.messages.map((message) => (
-                <article className={`clubhouse-message ${message.kind}`} key={message.id}>
-                  <div className="clubhouse-message-meta">
-                    <strong>{roleLabel(message.authorRole)}</strong>
-                    <span>{message.kind === "announcement" ? "Coach Note" : "Team Chat"}</span>
-                    {message.eventId ? <span>Game linked</span> : null}
-                  </div>
-                  <p>{message.body}</p>
-                  <small>{formatDate(message.createdAt)}</small>
-                  {view.access.canModerate ? (
-                    <div className="clubhouse-message-actions">
-                      <button
-                        className="secondary"
-                        type="button"
-                        onClick={() => {
-                          if (isSupabaseBacked) {
-                            moderateSupabaseMessage(message.id, "message_hidden");
-                            return;
-                          }
-                          dispatch({
-                            type: "moderateTeamChatMessage",
-                            input: {
-                              messageId: message.id,
-                              actorUserId: view.viewer.id,
-                              action: "message_hidden",
-                              reason: "Coach or admin moderated this Team Chat message.",
-                              now: new Date().toISOString()
-                            }
-                          });
-                          setModerationNotice("Message hidden and moderation audit recorded.");
-                        }}
-                      >
-                        Hide
-                      </button>
-                      <button
-                        className="secondary"
-                        type="button"
-                        onClick={() => {
-                          if (isSupabaseBacked) {
-                            moderateSupabaseMessage(message.id, "message_deleted");
-                            return;
-                          }
-                          dispatch({
-                            type: "moderateTeamChatMessage",
-                            input: {
-                              messageId: message.id,
-                              actorUserId: view.viewer.id,
-                              action: "message_deleted",
-                              reason: "Coach or admin deleted this Team Chat message.",
-                              now: new Date().toISOString()
-                            }
-                          });
-                          setModerationNotice("Message deleted and moderation audit recorded.");
-                        }}
-                      >
-                        Delete
-                      </button>
+            <Divider label="Today" />
+            <div className="clubhouse-message-list chat-message-list" aria-label="Team Chat messages">
+              {view.messages.length ? view.messages.map((message) => {
+                const author = chatState.users.find((user) => user.id === message.authorUserId);
+                const isOutbound = message.authorUserId === view.viewer.id;
+                return (
+                  <article className={`chat-message-row ${isOutbound ? "outbound" : "inbound"} ${message.kind}`} key={message.id} aria-label={`Message from ${author?.name ?? roleLabel(message.authorRole)}`}>
+                    <div className="avatar sm" aria-hidden="true">{author?.name ? author.name.slice(0, 2).toUpperCase() : roleLabel(message.authorRole).slice(0, 2).toUpperCase()}</div>
+                    <div className={`chat-bubble ${isOutbound ? "out" : "in"}`}>
+                      <div className="chat-bubble-meta">
+                        <strong>{author?.name ?? roleLabel(message.authorRole)}</strong>
+                        <span>{roleLabel(message.authorRole)}</span>
+                        <span>{message.kind === "announcement" ? "Coach Note" : "Team Chat"}</span>
+                        {message.eventId ? <span>Game linked</span> : null}
+                      </div>
+                      <p>{message.body}</p>
+                      <time>{formatDate(message.createdAt)}</time>
+                      <ReadReceipt read={message.readByUserIds.length} total={Math.max(1, chatState.users.length)} />
+                      {view.access.canModerate ? (
+                        <div className="clubhouse-message-actions">
+                          <Tooltip tip="Hide this message from the team thread.">
+                            <button
+                              className="secondary"
+                              type="button"
+                              onClick={() => {
+                                if (isSupabaseBacked) {
+                                  moderateSupabaseMessage(message.id, "message_hidden");
+                                  return;
+                                }
+                                dispatch({
+                                  type: "moderateTeamChatMessage",
+                                  input: {
+                                    messageId: message.id,
+                                    actorUserId: view.viewer.id,
+                                    action: "message_hidden",
+                                    reason: "Coach or admin moderated this Team Chat message.",
+                                    now: new Date().toISOString()
+                                  }
+                                });
+                                setModerationNotice("Message hidden and moderation audit recorded.");
+                              }}
+                            >
+                              Hide
+                            </button>
+                          </Tooltip>
+                          <Tooltip tip="Delete and audit this message.">
+                            <button
+                              className="secondary"
+                              type="button"
+                              onClick={() => {
+                                if (isSupabaseBacked) {
+                                  moderateSupabaseMessage(message.id, "message_deleted");
+                                  return;
+                                }
+                                dispatch({
+                                  type: "moderateTeamChatMessage",
+                                  input: {
+                                    messageId: message.id,
+                                    actorUserId: view.viewer.id,
+                                    action: "message_deleted",
+                                    reason: "Coach or admin deleted this Team Chat message.",
+                                    now: new Date().toISOString()
+                                  }
+                                });
+                                setModerationNotice("Message deleted and moderation audit recorded.");
+                              }}
+                            >
+                              Delete
+                            </button>
+                          </Tooltip>
+                        </div>
+                      ) : null}
                     </div>
-                  ) : null}
-                </article>
-              )) : (
-                <article className="clubhouse-empty">
-                  <h3>Team Chat is ready.</h3>
-                  <p>Use this space for schedule questions, field details, uniforms, snacks, weather updates, and coach reminders.</p>
-                </article>
+                  </article>
+                );
+              }) : (
+                <EmptyState
+                  title="Team Chat is ready."
+                  body="Use this space for schedule questions, field details, uniforms, snacks, weather updates, and coach reminders."
+                />
               )}
+              <TypingIndicator label="Coach is drafting a field note" />
             </div>
             {moderationNotice ? <p className="notice">{moderationNotice}</p> : null}
 
             <form
-              className="clubhouse-compose"
+              className="clubhouse-compose message-input-toolbar"
               onSubmit={(event) => {
                 event.preventDefault();
                 if (!view?.access.canPost) {
@@ -5575,6 +9480,33 @@ export function TeamChatClient({ teamChatData }: { teamChatData?: TeamChatData |
               {postNotice ? <p className="notice">{postNotice}</p> : null}
             </form>
           </section>
+
+          <aside className="card chat-context-rail">
+            <span className="eyebrow">Context rail</span>
+            <h2>Safety and message status</h2>
+            <div className="stack-sm">
+              <StatusBadge label={isSupabaseBacked ? "Current" : "Preview only"} variant={isSupabaseBacked ? "success" : "warning"} dot={isSupabaseBacked} />
+              <StatusBadge label={isSupabaseBacked ? "Saved" : "Delivery disconnected"} variant={isSupabaseBacked ? "info" : "error"} />
+              <StatusBadge label="No child accounts" variant="neutral" />
+            </div>
+            <section className="chat-context-card">
+              <span className="eyebrow">Reporting UI</span>
+              <p><strong>{reportingSummary?.reportableMessages ?? 0}</strong> visible message(s) can be reported.</p>
+              <p className="muted">{reportingSummary?.hiddenMessages ?? 0} hidden, {reportingSummary?.deletedMessages ?? 0} deleted.</p>
+            </section>
+            <section className="chat-context-card">
+              <span className="eyebrow">Retention jobs</span>
+              {retentionJobs.map((job) => (
+                <p key={job.id}><strong>{job.title}</strong><br /><span className="muted">{job.status} · {job.detail}</span></p>
+              ))}
+            </section>
+            <section className="chat-context-card">
+              <span className="eyebrow">Media/message policy screens</span>
+              {policyScreens.map((policy) => (
+                <p key={policy.title}><strong>{policy.title}</strong><br /><span className="muted">{policy.detail}</span></p>
+              ))}
+            </section>
+          </aside>
         </section>
       )}
     </div>

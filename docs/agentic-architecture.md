@@ -4,12 +4,12 @@
 
 Little League HQ should become a private youth sports operations platform where agents help with administrative work without bypassing human approval, provider consent, or child privacy policy.
 
-The current prototype is static. It proves screens and workflow intent, not production capability.
+The preserved prototype under `public/prototype/` is static. The root Next.js app now has production code paths for several Supabase-backed workflows, but provider sends, payments, uploads, native distribution, and autonomous agent actions remain gated unless a slice explicitly implements and proves them.
 
-## Current Prototype Surfaces
+## Current App And Prototype Surfaces
 
-- Login and role preview.
-- Dashboard and role-aware queue.
+- Login/auth and role-aware navigation.
+- Parent, coach, and admin dashboards.
 - My Team home.
 - Teams and rosters.
 - Master schedule and score entry.

@@ -336,6 +336,8 @@ export interface Team {
   primaryColor: string;
   secondaryColor: string;
   themeKey: ProgramThemeKey;
+  status?: "active" | "archived";
+  seasonStatus?: "active" | "archived";
 }
 
 export interface TeamMembership {
@@ -397,6 +399,7 @@ export interface LeagueEvent {
   locationAddress: string;
   status: EventStatus;
   opponent?: string;
+  scheduleVersion?: number;
   createdAt: string;
   updatedAt: string;
 }
@@ -409,6 +412,10 @@ export interface Rsvp {
   response: RsvpResponse;
   note?: string;
   respondedAt: string;
+  confirmedScheduleVersion?: number;
+  lockVersion?: number;
+  lastUpdatedByUserId?: string;
+  clientActionId?: string;
   createdAt: string;
   updatedAt: string;
 }
