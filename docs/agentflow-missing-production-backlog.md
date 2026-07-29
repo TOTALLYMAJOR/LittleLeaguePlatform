@@ -47,92 +47,87 @@ Completed baseline:
 - LPM-011A integrated in AgentFlow build
   `build_d1e387bd-3e3a-48f9-9436-56fab08879db` at integration commit
   `36496d82a7fd176354cdf9974d43f005cee9dc09`.
+- LPM-012A integrated in AgentFlow build
+  `build_35560bcd-d714-4bbf-ad4b-bd555c7337fc` at integration commit
+  `f1c27e47ce0fd32cb88ac440544b37271b6b0e88`.
 
-## LPM-012A - Add native app decision readiness verifier
+## LPM-013A - Add local readiness completion ledger
 
 ```yaml
 estimate_hours: 4
 depends_on: []
 owns:
   - package.json
-  - scripts/verify-native-app-decision-readiness.mjs
-  - scripts/verify-native-app-decision-readiness.test.mjs
+  - scripts/verify-local-readiness-ledger.mjs
+  - scripts/verify-local-readiness-ledger.test.mjs
+  - docs/agentflow-missing-production-backlog.md
   - docs/runbook.md
   - docs/missing-production-slices-work-plan.md
   - docs/production-task-board.md
 validate:
   - npm ci --ignore-scripts --prefer-offline
   - npm run check:skills
-  - node --test scripts/verify-native-app-decision-readiness.test.mjs
-  - npm test -- app/routes-smoke.test.ts app/api-auth.test.ts app/api-live-actions.test.ts app/public-intake-rate-limit.test.ts
+  - npm run qa:local-readiness-ledger
+  - node --test scripts/verify-local-readiness-ledger.test.mjs
+  - npm test -- app/routes-smoke.test.ts app/api-auth.test.ts app/api-live-actions.test.ts app/provider-boundary.test.ts
   - npm run typecheck
   - npm run build
   - git diff --check
 produces:
-  - name: native-app-decision-readiness-verifier
+  - name: local-readiness-completion-ledger
     type: local-readiness-proof
     version: 1.0.0
-    path: scripts/verify-native-app-decision-readiness.mjs
+    path: scripts/verify-local-readiness-ledger.mjs
 consumes: []
 ```
 
-Implement a no-mutation verifier for the local LPM-012 native app decision
-readiness contracts that already exist in the PWA install provider, mobile
-usage route, service worker/offline route, manifest, app shell, route-smoke and
-API tests, concept scorecard, tech-stack docs, user manual, and work-plan docs.
-The verifier must prove, from repository source, that LeaguePilot remains
-PWA-first, install promotion is value-gated, standalone launches and install
-prompt outcomes are measured, mobile usage accepts a native-interest signal
-without granting product approval, offline behavior is explicit and bounded,
-and any future Expo/native path must reuse existing domain contracts, Supabase
-session/RLS boundaries, provider gates, and child privacy rules.
+Implement a no-mutation local completion ledger for the AgentFlow
+missing-production sequence. The ledger must prove, from repository source, that
+LPM-001 through LPM-012 have local readiness artifacts, scripts, tests,
+documentation, and AgentFlow integration commits recorded, while also proving
+that every hosted, provider, payment, storage, browser, analytics, app-store,
+backup/restore, accessibility, and production acceptance gate remains explicitly
+open unless separately proven outside this local sequence.
 
 The tool must not call Supabase, sign in, run Playwright, seed data, mutate
-hosted records, collect real analytics, request push permissions, register app
-stores, scaffold Expo, send providers, upload media, deploy, configure secrets,
-or claim PWA/mobile browser, production usage, push-provider, app-store, native,
-or production acceptance. Its job is to make the local native-decision contract
-executable and to name exact blockers before an operator runs approved mobile
-browser proof, usage review, push permission proof, offline/reconnect proof,
-native product approval, or Expo architecture work.
+hosted records, call providers, send notifications, create payments, upload or
+download media, run archive close, delete records, collect analytics, deploy,
+configure secrets, push, open a pull request, or claim hosted/provider/production
+acceptance. Its job is to make the local execution boundary auditable before any
+operator chooses a separate external proof or production-acceptance run.
 
 ### Acceptance Criteria
 
-- A new `qa:native-app-decision-readiness` script reads only repository files
-  and fails with named blockers when an LPM-012 local readiness contract is
-  missing or weakened.
-- The verifier checks PWA-first product posture: `docs/tech-stack.md` says the
-  first shippable mobile experience is the responsive PWA and Expo/native work
-  is justified only by real app-store, camera/media, stronger push, OS
-  integration, or offline requirements that PWA cannot meet.
-- The verifier checks install and standalone measurement: `app/providers.tsx`
-  listens for `beforeinstallprompt` and `appinstalled`, gates install prompt
-  eligibility on the value-event key, records `install_prompt_shown`,
-  `install_prompt_accepted`, `install_prompt_dismissed`, and
-  `standalone_launch`, and posts to `/api/mobile-usage-events`.
-- The verifier checks mobile usage boundaries: `/api/mobile-usage-events`
-  allows the native-interest event type, remains anonymous-safe, is covered by
-  auth and live-action tests, and is protected by public-intake rate limiting.
-- The verifier checks offline/PWA shell readiness: `public/manifest.webmanifest`
-  and `public/sw.js` are wired to `/offline`, the App Shell exposes offline
-  status and mobile navigation, and route-smoke tests prove the manifest,
-  service worker, install/standalone metrics, and PWA shell wiring.
-- The verifier checks native architecture guardrails: documentation requires
-  any approved Expo app to reuse domain models, Supabase session/RLS
-  boundaries, provider gates, and child privacy rules, and keeps Expo deferred
-  until evidence justifies the extra platform.
-- The verifier explicitly names mobile browser proof, production usage metrics
-  review, push permission proof, offline/reconnect proof, native product
-  approval, Expo architecture review, app-store compliance review, accessibility
-  proof, and production native acceptance as open gates.
+- A new `qa:local-readiness-ledger` script reads only repository files and
+  fails with named blockers when the local readiness sequence is incomplete,
+  internally inconsistent, or overstated.
+- The verifier checks that the AgentFlow queue records LPM-001 through LPM-012
+  as completed baseline items with build ids and integration commit SHAs, and
+  that LPM-013A is the only executable task in the queue.
+- The verifier checks that all local readiness scripts added by the sequence
+  are present in `package.json`, have corresponding `scripts/*.mjs` files, and
+  have direct `node --test` coverage where applicable.
+- The verifier checks that `docs/missing-production-slices-work-plan.md`,
+  `docs/production-task-board.md`, and `docs/runbook.md` describe the sequence
+  as local repository readiness proof only and do not claim hosted/provider,
+  payment, storage, mobile, backup/restore, accessibility, or production
+  acceptance.
+- The verifier checks that every LPM-002 through LPM-012 external gate family is
+  still named as open, including hosted browser proof, Supabase readback, RLS,
+  provider sandbox/webhooks, Stripe settlement, private media storage/scanner,
+  sponsor rendering/report/finance, archive retention/restore, native/app-store,
+  accessibility, and production acceptance.
+- The verifier checks that the source checkout dirty-tree boundary, clean
+  sibling worktree path, no-push/no-deploy/no-provider/no-production-mutation
+  boundary, and final AgentFlow HEAD are recorded in docs.
 - Tests cover passing fixtures and at least one missing-contract failure for
   each readiness family without requiring hosted credentials, network access,
   Supabase, browser automation, provider dashboard access, app-store access,
-  push-provider access, analytics dashboards, Expo scaffolding, native builds,
-  media uploads, storage, or external device requests.
+  push-provider access, analytics dashboards, Stripe, storage, native builds,
+  media uploads, backup systems, restore drills, deployment, or external device
+  requests.
 - `docs/runbook.md`, `docs/missing-production-slices-work-plan.md`, and
-  `docs/production-task-board.md` describe the verifier as local repository
-  readiness proof only; mobile browser proof, production usage metrics review,
-  push permission proof, offline/reconnect proof, native product approval, Expo
-  architecture review, app-store compliance review, accessibility proof, and
-  production native acceptance remain open gates.
+  `docs/production-task-board.md` identify the sequence as locally complete
+  through LPM-012, identify LPM-013A as a ledger/verifier only, and keep
+  external proof and production acceptance as separate authorized follow-up
+  lanes.
