@@ -37,6 +37,7 @@
     "qa:family-season-continuity-readiness": "node scripts/verify-family-season-continuity-readiness.mjs",
     "qa:private-media-storage-readiness": "node scripts/verify-private-media-storage-readiness.mjs",
     "qa:provider-sandbox-readiness": "node scripts/verify-provider-sandbox-readiness.mjs",
+    "qa:weather-provider-readiness": "node scripts/verify-weather-provider-readiness.mjs",
     "qa:sponsor-stripe-readiness": "node scripts/verify-sponsor-stripe-readiness.mjs",
     "qa:sponsor-fulfillment-readiness": "node scripts/verify-sponsor-fulfillment-readiness.mjs",
     "qa:reporting-archive-readiness": "node scripts/verify-reporting-archive-readiness.mjs",

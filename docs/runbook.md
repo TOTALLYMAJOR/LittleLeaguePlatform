@@ -139,6 +139,20 @@ Passing this command proves local repository readiness proof only. It does not c
 
 Real sandbox email, SMS, and Web Push sends, provider dashboard setup, provider secrets, adult QA recipient approval, signed webhook endpoint registration, hosted worker execution, cost monitoring, and production-send approval remain open gates. Before any operator sends real sandbox traffic, document one adult-consented QA allowlist recipient per channel, a cost cap, monitoring owner, suppression rollback, and the rollback transport or kill-switch path.
 
+## Local Weather Provider Readiness Proof
+
+Run the no-mutation source verifier before any LP-016 hosted weather credential proof, signed-in draft proof, provider delivery proof, realtime/offline proof, accessibility proof, or production acceptance lane:
+
+```bash
+npm run qa:weather-provider-readiness
+```
+
+The verifier reads repository files only. It checks that the weather provider chain stays National Weather Service first, Open-Meteo fallback, and Tomorrow.io optional/premium; every provider result is forced back into draft alert state before persistence; the draft route derives reviewer authority from the authenticated Supabase session; and the Supabase seam keeps event/team scope, provider fallback, reviewer audit fields, idempotent/auditable draft creation boundary, and provider-send separation visible.
+
+Passing this command proves local repository readiness proof only. It does not call Supabase, sign in, run Playwright, seed data, mutate hosted records, call weather providers, call provider dashboards, create provider sends, send email, SMS, push, or Stripe requests, configure secrets, deploy, or claim hosted, provider, or production acceptance.
+
+Hosted weather credential proof, fallback behavior, signed-in coach/admin draft proof, Supabase readback, parent delivery, provider sandbox/webhook proof, realtime/offline behavior, accessibility, and production acceptance remain open gates.
+
 ## Local Native App Decision Readiness Proof
 
 Run the no-mutation source verifier before any LPM-012 mobile browser, usage-metrics, push, offline/reconnect, native approval, Expo architecture, app-store, accessibility, or production-native proof:
