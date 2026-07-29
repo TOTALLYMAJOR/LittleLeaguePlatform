@@ -178,6 +178,7 @@ Prove schedule decisions, official communications, corrections, withdrawals, ack
 
 Acceptance criteria:
 
+- AC-000: `npm run qa:game-day-communication-readiness` passes as local repository-source proof that game-day and official communication contracts are still present and bounded. This verifier performs no Supabase call, browser sign-in, Playwright run, seed/write, hosted mutation, provider send, deployment, realtime/provider configuration, or production acceptance.
 - AC-001: Coach/admin game-day decision records monitor, confirm, delay, or cancel with exact event/schedule-version binding.
 - AC-002: Each decision creates audit evidence and pending notification drafts only.
 - AC-003: Official communication correction and withdrawal suppress superseded recipient records and preserve current-version acknowledgment rules.
@@ -185,7 +186,10 @@ Acceptance criteria:
 - AC-005: Offline/reconnect conflict states are explicit and do not silently overwrite current truth.
 
 Validation:
-`npm test -- lib/supabase/game-day-resolution.test.ts lib/supabase/official-communications.test.ts components/communication-room.test.tsx`; hosted browser proof; Supabase readback.
+`npm run qa:game-day-communication-readiness`; `node --test scripts/verify-game-day-communication-readiness.test.mjs`; `npm test -- lib/supabase/game-day-resolution.test.ts lib/supabase/official-communications.test.ts components/communication-room.test.tsx app/api-official-communications.test.ts`; hosted browser proof; Supabase readback.
+
+Boundary:
+The readiness verifier is a local source-contract gate only. It does not replace hosted browser proof, Supabase readback, populated one-version family projection, provider sandbox/webhook proof, realtime/offline production behavior, deployment evidence, or production acceptance.
 
 ## LPM-006 - Family Replay and Season Continuity Proof
 

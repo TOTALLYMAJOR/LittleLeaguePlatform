@@ -73,6 +73,18 @@ npm run qa:access-lifecycle-authority
 
 The verifier reads repository files only. It checks that registration review, parent invite preview/acceptance, guardian-link repair, and additional-guardian review remain session-derived, review-gated, scope-bounded, audited where consequential, and provider-free. It does not call Supabase, sign in, run Playwright, seed data, send providers, deploy, mutate hosted records, or establish hosted acceptance. Passing this command only proves the local source authority contract; hosted UI proof and Supabase readback remain separate open gates.
 
+## Local Game-Day Communication Readiness Proof
+
+Run the no-mutation source verifier before hosted LPM-005 browser and Supabase readback proof:
+
+```bash
+npm run qa:game-day-communication-readiness
+```
+
+The verifier reads repository files only. It checks that game-day resolution routes derive the actor from `requireAuthenticatedRouteUser`, keep the bounded monitor/confirm/delay/cancel decision set, forward idempotency, and rely on assigned-coach or organization-admin service/RPC authority. It also checks event/schedule-version evidence, durable review/audit rows, pending-only recipient records, official publish/correction/withdrawal version binding, immutable official versions, current-version family readback, projection counts, correction history, acknowledgment boundaries, and offline/reconnect conflict seams. It does not call Supabase, sign in, run Playwright, seed data, mutate hosted records, create provider sends, deploy, configure realtime/provider infrastructure, or establish hosted acceptance.
+
+Passing this command proves only the local repository readiness contract. Hosted browser proof, Supabase readback, populated one-version family projection, provider sandbox/webhook proof, realtime/offline production behavior, and production acceptance remain open gates.
+
 ## Supabase QA Proof
 
 Use these checks after migrations are applied to a Supabase QA or preview project:
