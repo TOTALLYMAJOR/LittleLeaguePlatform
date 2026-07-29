@@ -11,13 +11,14 @@ This work plan turns the known missing or gated pieces into dependency-aware exe
 
 ## Local Readiness Completion Ledger
 
-The AgentFlow missing-production sequence is locally complete through LPM-012 as local repository readiness proof only. LPM-013A is a ledger/verifier only; it reads repository files and records blockers before any operator chooses a separate proof run; external proof and production acceptance remain separate authorized follow-up lanes.
+The AgentFlow missing-production sequence is locally complete through LPM-012 as local repository readiness proof only. LPM-013A is a ledger/verifier only; it reads repository files and records blockers before any operator chooses a separate proof run. LP-016 now has a local repository readiness verifier through LPM-015; external proof and production acceptance remain separate authorized follow-up lanes.
 
 - Source checkout dirty-tree boundary: the original source checkout is `/home/administrator/projects/youth-sports-platform-mvp-v3`, and its unrelated dirty tree is outside this local ledger.
 - Clean sibling worktree path: `/home/administrator/.agentflow/worktrees/repo_80ec8817-7c48-4066-a53c-6a5aa57d31c8/build_e15b91b4-66e7-4ce9-833b-ebed388ac25c/tasks/task_lpm-013_c314ec41-5691-487b-9a43-cfeade0636ae`.
 - no-push/no-deploy/no-provider/no-production-mutation boundary: LPM-013A must not push, deploy, call providers, configure secrets, seed, mutate hosted records, upload or download media, collect analytics, run browser proof, run archive close, or claim production acceptance.
 - Final AgentFlow HEAD through LPM-012: `f1c27e47ce0fd32cb88ac440544b37271b6b0e88`.
 - Open external gate families after LPM-012: hosted browser proof open; Supabase readback open; RLS open; provider sandbox/webhooks open; Stripe settlement open; private media storage/scanner open; sponsor rendering/report/finance open; archive retention/restore open; native/app-store open; accessibility open; production acceptance open.
+- LPM-015 local weather verifier boundary: `npm run qa:weather-provider-readiness` reads repository source only and checks provider order, draft enforcement, session-derived reviewer authority, event/team scope, provider fallback, idempotent/auditable draft creation boundary, and provider-send separation. Hosted weather credential proof, fallback behavior, signed-in coach/admin draft proof, Supabase readback, parent delivery, provider sandbox/webhook proof, realtime/offline behavior, accessibility, and production acceptance remain open gates.
 
 ## Execution Rules
 
@@ -254,6 +255,31 @@ Boundary:
 
 Out of scope:
 Unrestricted production sends.
+
+## LPM-015 - Weather Provider Action Readiness
+
+Status: `done`
+Priority: P1 proof
+Depends on: LPM-001
+Governing rows: LP-016; Weather alerts.
+
+Objective:
+Add a fail-closed local source verifier before hosted weather credential proof or parent delivery proof is attempted.
+
+Acceptance criteria:
+
+- AC-000: `npm run qa:weather-provider-readiness` passes as local repository readiness proof only without credentials, network access, Supabase calls, browser automation, provider sends, provider dashboard calls, deployment, or hosted mutation.
+- AC-001: The verifier checks the weather provider order stays National Weather Service first, Open-Meteo fallback, and Tomorrow.io optional/premium.
+- AC-002: The verifier checks every provider result is forced back to draft state before Supabase weather-alert persistence.
+- AC-003: The verifier checks the draft route derives reviewer authority from the authenticated session and keeps caller-supplied reviewer authority out of the API.
+- AC-004: The verifier checks the Supabase seam preserves event/team scope, provider fallback, reviewer audit fields, idempotent/auditable draft creation boundary, and provider-send separation.
+- AC-005: The docs preserve hosted weather credential proof, fallback behavior, signed-in coach/admin draft proof, Supabase readback, parent delivery, provider sandbox/webhook proof, realtime/offline behavior, accessibility, and production acceptance as open gates.
+
+Validation:
+`npm run qa:weather-provider-readiness`; `node --test scripts/verify-weather-provider-readiness.test.mjs`; `npm test -- lib/services/weather/weather.test.ts lib/supabase/weather-draft.test.ts app/api-live-actions.test.ts app/provider-boundary.test.ts`.
+
+Boundary:
+`qa:weather-provider-readiness` is local repository readiness proof only. It reads repository files and checks source contracts; it does not call Supabase, sign in, run Playwright, seed data, mutate hosted records, call weather providers, call provider dashboards, create provider sends, send email, SMS, push, or Stripe requests, configure secrets, deploy, or claim hosted, provider, or production acceptance. Hosted weather credential proof, fallback behavior, signed-in coach/admin draft proof, Supabase readback, parent delivery, provider sandbox/webhook proof, realtime/offline behavior, accessibility, and production acceptance remain open gates.
 
 ## LPM-008 - Private Media Storage and Scanner
 
