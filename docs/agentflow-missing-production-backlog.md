@@ -17,63 +17,70 @@ Completed baseline:
 - LPM-001 integrated in AgentFlow build
   `build_5e3e818d-6dc6-4069-8fc9-6498a727b3eb` at integration commit
   `e7bdd57e24b26a01430e93be448b457a3cac19fc`.
+- LPM-002A integrated in AgentFlow build
+  `build_555180a0-4db6-4c85-8247-2c86185dd785` at integration commit
+  `962abe3ff5361ffcf72e855a8b82ff50b2653be5`.
 
-## LPM-002A - Add hosted readiness preflight gate
+## LPM-003 - Add access lifecycle authority verifier
 
 ```yaml
 estimate_hours: 4
 depends_on: []
 owns:
   - package.json
-  - scripts/verify-hosted-readiness-preflight.mjs
-  - scripts/verify-hosted-readiness-preflight.test.mjs
+  - scripts/verify-access-lifecycle-authority.mjs
+  - scripts/verify-access-lifecycle-authority.test.mjs
   - docs/runbook.md
   - docs/missing-production-slices-work-plan.md
   - docs/production-task-board.md
 validate:
   - npm ci --ignore-scripts --prefer-offline
   - npm run check:skills
-  - node --test scripts/verify-hosted-readiness-preflight.test.mjs
-  - npm test -- app/routes-smoke.test.ts lib/navigation/route-topology.test.ts lib/supabase/tenant-readiness.test.ts
+  - node --test scripts/verify-access-lifecycle-authority.test.mjs
+  - npm test -- app/api-registration-review.test.ts app/api-invite-acceptance.test.ts app/api-additional-guardians.test.ts lib/supabase/registration-approvals.test.ts lib/supabase/invite-acceptance.test.ts lib/supabase/additional-guardians.test.ts lib/supabase/guardian-links.test.ts
   - npm run typecheck
   - npm run build
   - git diff --check
 produces:
-  - name: hosted-readiness-preflight
-    type: local-proof-preflight
+  - name: access-lifecycle-authority-verifier
+    type: local-authority-proof
     version: 1.0.0
-    path: scripts/verify-hosted-readiness-preflight.mjs
+    path: scripts/verify-access-lifecycle-authority.mjs
 consumes: []
 ```
 
-Implement a no-mutation preflight gate for LPM-002 hosted public and tenant
-readiness proof. The gate must validate that the operator has supplied an
-explicit hosted base URL, public organization configuration, review-window
-configuration, and QA proof command inputs before running browser proof against
-a hosted deployment. It builds on the already-integrated LPM-001 baseline
-ledger rather than consuming a task in this new one-task plan.
+Implement a no-mutation verifier for the LPM-003 access lifecycle authority
+contracts that already exist in route handlers, Supabase adapters, and staged
+migrations. The verifier must prove, from repository source, that registration
+review, parent invite acceptance, guardian link repair, and additional guardian
+review are session-derived, review-gated, scope-bounded, audited where
+consequential, and provider-free until a separate approved send slice runs.
 
-The tool must not deploy, bypass Vercel Authentication, seed Supabase, mutate
-hosted data, send providers, write payments, upload media, or claim production
-acceptance. Its job is to fail early with actionable blockers and print the
-exact commands that remain human/operator-run after credentials and hosted URL
-are confirmed.
+The tool must not call Supabase, sign in, run Playwright, send providers, seed
+data, mutate hosted records, deploy, or claim hosted acceptance. Its job is to
+make the local authority contract executable before later hosted browser and
+Supabase readback proof.
 
 ### Acceptance Criteria
 
-- A new `qa:hosted-readiness-preflight` script validates the required hosted
-  proof inputs without making network, provider, database, payment, storage, or
-  deployment mutations.
-- The preflight rejects missing or invalid `QA_PROOF_BASE_URL`,
-  `PUBLIC_ORGANIZATION_ID`, and `PUBLIC_ACCESS_REVIEW_WINDOW`, and it
-  distinguishes local proof from hosted proof.
-- When inputs are valid, the preflight prints the exact follow-on commands for
-  `npm run qa:public-family-proof` and `npm run qa:tenant-readiness-proof`
-  using the supplied hosted URL, while explicitly preserving provider-send,
-  payment, media, migration, and production-acceptance boundaries.
-- Tests cover missing inputs, invalid URL, localhost/local-only mode, valid
-  hosted mode, and command output. They must not require real hosted
-  credentials or network access.
+- A new `qa:access-lifecycle-authority` script reads only repository files and
+  fails with named blockers when an authority contract is missing or weakened.
+- The verifier checks that registration approval/rejection uses the verified
+  admin session, requires review evidence, creates only a manual one-time invite
+  or existing-parent activation, and does not trigger provider sends.
+- The verifier checks that invite preview/acceptance uses hashed one-time
+  tokens, rejects invalid/already-accepted/expired/revoked/wrong-account cases,
+  activates only the preapproved child/team scope, and records provider-free
+  audit evidence.
+- The verifier checks that guardian repair requires active organization-admin
+  access, an existing parent profile, organization-matched player scope, bounded
+  verification evidence, and an audit row.
+- The verifier checks that additional guardian approval is admin-reviewed,
+  provider-free, restricted to `standard_linked_guardian_access`, and does not
+  grant custody, medical, transport, schedule-edit, publishing, or
+  onward-delegation authority.
+- Tests cover passing fixtures and at least one missing-contract failure for
+  each lifecycle family without requiring hosted credentials or network access.
 - `docs/runbook.md`, `docs/missing-production-slices-work-plan.md`, and
-  `docs/production-task-board.md` describe the preflight as a blocker-clearing
-  gate, not hosted acceptance itself.
+  `docs/production-task-board.md` describe the verifier as local repository
+  proof only; hosted UI proof and Supabase readback remain open gates.
