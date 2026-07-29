@@ -722,8 +722,14 @@ describe("AdminDashboardClient", () => {
     expect(html).toContain("Roster maker readiness");
     expect(html).toContain("Automatic team builder preview");
     expect(html).toContain("Sibling/friend constraints");
+    expect(html).toContain("Admin review inputs");
+    expect(html).toContain("age bands, cutoff-age labels, and player evaluations");
+    expect(html).toContain("Review metadata");
+    expect(html).toContain("Mason T. 3U, Age 3 on league cutoff, eval 4");
     expect(html).toContain("skill-balance score");
     expect(html).toContain("Preview -&gt; Edit -&gt; Approve -&gt; Publish");
+    expect(html).not.toContain("Mason Taylor");
+    expect(html).not.toContain("2019-");
     expect(html).toContain("Bracket maker");
     expect(html).toContain("Queued message records");
     expect(html).toContain("Touch target check");

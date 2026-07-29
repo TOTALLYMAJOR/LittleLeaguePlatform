@@ -149,7 +149,7 @@ Task-specific checks are required only when the surface is touched:
 ### LP-008 - Add Team-Builder Production Data Fields
 
 - Priority: P2 product hardening.
-- Current state: balance, sibling/guardian, friend request, and skill constraints exist; explicit age-band/player-evaluation fields remain a production gap.
+- Current state: local implementation complete for typed age-band, cutoff-age label, and player-evaluation metadata in Team Builder previews. Metadata can inform preview ordering/review notes while player display remains first name plus last initial. Hosted browser publish proof, Supabase migration apply/readback, cross-org proof, and production acceptance remain open.
 - Seams: team-builder domain/service, Supabase migrations, admin UI.
 - Done when: player age/evaluation inputs are modeled, permission-checked, migrated, and included in preview/publish logic without exposing private child detail to parents.
 - SaaS constants focus: data model, migration/rollout, tenant isolation, child privacy, backward compatibility.
