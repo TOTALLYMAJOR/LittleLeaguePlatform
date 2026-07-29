@@ -278,6 +278,18 @@ The verifier reads repository source only. It checks that media report, media mo
 
 Passing this command is not hosted acceptance. It does not call Supabase, sign in, run Playwright, seed data, mutate hosted records, send providers, deploy, or configure edge/firewall controls. Hosted signed-in browser proof, Supabase readback, and deployed edge/shared-store rate-limit proof remain required before LPM-004 closure.
 
+## Reporting Archive Readiness
+
+Use the local verifier before LPM-011 hosted export and archive QA:
+
+```bash
+npm run qa:reporting-archive-readiness
+```
+
+The verifier reads repository source only. It checks active organization-admin export authority, the eight supported export kinds, selected-organization and derived-ID export scoping, narrowed profile joins before contact data is joined, CSV/audit/fail-closed export generation, admin-only archive routes, archived-season readable and mutation-locked contracts, local archive fallback labeling, and separation between non-chat season preservation and chat-retention deletion proof.
+
+Passing this command is local repository readiness proof only. It does not call Supabase, sign in, run Playwright, seed data, mutate hosted records, run archive close, delete chat records, call provider dashboards, upload or download files, deploy, configure secrets, or claim hosted RLS, browser, retention, restore, or production acceptance. Hosted RLS/admin export proof, hosted archive smoke proof, real season-close proof, chat-retention cleanup proof, deleted-chat readback proof, backup/PITR/restore proof, accessibility proof, and production archive acceptance remain open gates.
+
 ## Operational-Truth Feature Gates
 
 Apply `supabase/migrations/0023_operational_truth_hardening.sql` to a non-production project before enabling any new persistence path. Local compilation does not prove the migration, RLS, storage policy, provider webhook, or connected-account behavior.

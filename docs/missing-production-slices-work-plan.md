@@ -338,6 +338,7 @@ Close hosted export and archive proof for real season-end operations.
 
 Acceptance criteria:
 
+- AC-000: `npm run qa:reporting-archive-readiness` passes as local repository readiness proof that the reporting/export, archive-vault, archived-season lock, and chat-retention separation contracts remain present. This verifier reads repository files only and performs no hosted action.
 - AC-001: Active org admin exports roster, contacts, schedule, RSVP, snacks, volunteers, sponsors, and notifications with selected-organization scoping.
 - AC-002: Export requests write audit evidence and do not include unrelated tenant rows.
 - AC-003: Season close preserves non-chat records.
@@ -345,7 +346,9 @@ Acceptance criteria:
 - AC-005: Hosted archive smoke proof covers admin and parent reads.
 
 Validation:
-`npm test -- lib/supabase/reporting.test.ts`; hosted RLS/admin export proof; archive smoke proof.
+`npm run qa:reporting-archive-readiness`; `node --test scripts/verify-reporting-archive-readiness.test.mjs`; `npm test -- lib/supabase/reporting.test.ts`; hosted RLS/admin export proof; archive smoke proof.
+
+`qa:reporting-archive-readiness` is local repository readiness proof only. It reads repository files and checks active organization-admin export authority, supported export kinds, selected-organization and derived-ID export scoping, narrowed profile joins, CSV/audit/fail-closed export generation, admin-only archive surfaces, archived-season readable/mutation-locked contracts, local archive fallback labeling, and chat-retention separation. It does not call Supabase, sign in, run Playwright, seed data, mutate hosted records, run archive close, delete chat records, call provider dashboards, upload or download files, deploy, configure secrets, or claim hosted RLS, browser, retention, restore, or production acceptance. Hosted RLS/admin export proof, hosted archive smoke proof, real season-close proof, chat-retention cleanup proof, deleted-chat readback proof, backup/PITR/restore proof, accessibility proof, and production archive acceptance remain open gates.
 
 ## LPM-012 - Native App Decision
 
