@@ -1,7 +1,8 @@
 # LeaguePilot Missing Production Slice Execution Queue
 
 This reviewed AgentFlow queue executes the LeaguePilot missing-production work
-one commit at a time from the current `codex/ui-ux-100-shell-chat` lineage.
+one commit at a time from the current
+`agentflow/missing-production-sequence-20260729` lineage.
 The full slice inventory and external proof boundaries are governed by
 `docs/missing-production-slices-work-plan.md` and
 `docs/exceptional-ux-acceptance-audit.md`.
@@ -11,60 +12,68 @@ production data, enable provider sends, enable payments, enable private media
 uploads, change DNS, configure secrets, or claim hosted/provider/production
 acceptance. Those gates remain explicit in the governing plan.
 
-## LPM-001 - Finalize production proof baseline ledger
+Completed baseline:
+
+- LPM-001 integrated in AgentFlow build
+  `build_5e3e818d-6dc6-4069-8fc9-6498a727b3eb` at integration commit
+  `e7bdd57e24b26a01430e93be448b457a3cac19fc`.
+
+## LPM-002A - Add hosted readiness preflight gate
 
 ```yaml
-estimate_hours: 3
+estimate_hours: 4
 depends_on: []
 owns:
+  - package.json
+  - scripts/verify-hosted-readiness-preflight.mjs
+  - scripts/verify-hosted-readiness-preflight.test.mjs
+  - docs/runbook.md
   - docs/missing-production-slices-work-plan.md
-  - docs/exceptional-ux-acceptance-audit.md
-  - docs/production-proof-baseline-2026-07-29.md
   - docs/production-task-board.md
 validate:
+  - npm ci --ignore-scripts --prefer-offline
   - npm run check:skills
-  - npx vitest run app/route-guards.test.ts app/routes-smoke.test.ts app/provider-boundary.test.ts lib/navigation/route-topology.test.ts
+  - node --test scripts/verify-hosted-readiness-preflight.test.mjs
+  - npm test -- app/routes-smoke.test.ts lib/navigation/route-topology.test.ts lib/supabase/tenant-readiness.test.ts
   - npm run typecheck
   - npm run build
   - git diff --check
 produces:
-  - name: production-proof-baseline-ledger
-    type: local-proof-boundary-ledger
+  - name: hosted-readiness-preflight
+    type: local-proof-preflight
     version: 1.0.0
-    path: docs/production-proof-baseline-2026-07-29.md
+    path: scripts/verify-hosted-readiness-preflight.mjs
 consumes: []
 ```
 
-Finalize the local production-proof baseline before any hosted, provider,
-payment, private-media, or native slice begins. Use current repository state as
-the authority. Preserve the dirty source checkout boundary: unrelated parent
-dashboard source edits, generated Playwright output, `.history`, and preserved
-AgentFlow task worktrees are not part of this slice.
+Implement a no-mutation preflight gate for LPM-002 hosted public and tenant
+readiness proof. The gate must validate that the operator has supplied an
+explicit hosted base URL, public organization configuration, review-window
+configuration, and QA proof command inputs before running browser proof against
+a hosted deployment. It builds on the already-integrated LPM-001 baseline
+ledger rather than consuming a task in this new one-task plan.
 
-The ledger must record branch/upstream state, dirty-tree caveats, validation
-commands, local proof results, skipped external proof with exact required
-inputs, and the open remote gates for RLS, Realtime, backup/PITR/restore,
-hosted role browser proof, provider sends, Stripe/payment, private media, and
-native app decisions.
+The tool must not deploy, bypass Vercel Authentication, seed Supabase, mutate
+hosted data, send providers, write payments, upload media, or claim production
+acceptance. Its job is to fail early with actionable blockers and print the
+exact commands that remain human/operator-run after credentials and hosted URL
+are confirmed.
 
 ### Acceptance Criteria
 
-- The baseline ledger records the current branch, current HEAD, upstream
-  relationship, dirty-tree caveats, prior AgentFlow cleanup state, and the
-  exact proof boundary between local implementation, hosted verification,
-  provider operation, production acceptance, and external decision gates.
-- `docs/missing-production-slices-work-plan.md` remains the governing
-  dependency-ordered task inventory for LPM-001 through LPM-012 and identifies
-  which slices are locally executable versus hosted, provider, payment, media,
-  storage, or product-decision gated.
-- `docs/exceptional-ux-acceptance-audit.md` remains consistent with the
-  baseline ledger and does not mark live provider sends, Stripe settlement,
-  private media upload/scanning, native app distribution, production Realtime,
-  backup/PITR/restore, or full hosted lifecycle proof as complete.
-- Required QA variables for `npm run qa:rls-proof` are listed, but the command
-  is not run unless an isolated QA target is configured and confirmed. No
-  provider sends, hosted mutations, production mutations, deployments, or
-  migrations are performed.
-- The focused route/provider/navigation tests, skill check, typecheck, build,
-  and whitespace validation pass or have exact blockers recorded in the
-  baseline ledger.
+- A new `qa:hosted-readiness-preflight` script validates the required hosted
+  proof inputs without making network, provider, database, payment, storage, or
+  deployment mutations.
+- The preflight rejects missing or invalid `QA_PROOF_BASE_URL`,
+  `PUBLIC_ORGANIZATION_ID`, and `PUBLIC_ACCESS_REVIEW_WINDOW`, and it
+  distinguishes local proof from hosted proof.
+- When inputs are valid, the preflight prints the exact follow-on commands for
+  `npm run qa:public-family-proof` and `npm run qa:tenant-readiness-proof`
+  using the supplied hosted URL, while explicitly preserving provider-send,
+  payment, media, migration, and production-acceptance boundaries.
+- Tests cover missing inputs, invalid URL, localhost/local-only mode, valid
+  hosted mode, and command output. They must not require real hosted
+  credentials or network access.
+- `docs/runbook.md`, `docs/missing-production-slices-work-plan.md`, and
+  `docs/production-task-board.md` describe the preflight as a blocker-clearing
+  gate, not hosted acceptance itself.

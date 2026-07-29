@@ -2,7 +2,7 @@ version: 1
 
 repository:
   name: LeaguePilot Missing Production Slices
-  base_branch: codex/ui-ux-100-shell-chat
+  base_branch: agentflow/missing-production-sequence-20260729
 
 backlog:
   path: docs/agentflow-missing-production-backlog.md
@@ -18,10 +18,12 @@ contracts:
 
 validation:
   task_default:
+    - npm ci --ignore-scripts --prefer-offline
     - npm run check:skills
     - npm run typecheck
     - git diff --check
   integration:
+    - npm ci --ignore-scripts --prefer-offline
     - npm run check:skills
     - npm run typecheck
     - npm test
