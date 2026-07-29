@@ -65,16 +65,22 @@ Completed baseline:
 - LPM-017 integrated in AgentFlow build
   `build_a62e498a-7316-43a4-b7c6-1569c62960d8` at integration commit
   `944366ff9e5fcee72ba3f4037ce68fa0c2f306b9`.
+- LPM-018 integrated in AgentFlow build
+  `build_faa1c28e-cc9d-4912-9529-0df1240963da` at integration commit
+  `50e56d2d33cd04dc869483a1f99b6583fd9cc36b`.
 
 Continued execution invariant: continued one-task-at-a-time execution accepts exactly one executable queue heading, either LPM-013A or LPM-014 or later. LPM-001 through LPM-012 remain completed records only; LPM-001 through LPM-012 A-variants must not be reintroduced as executable headings.
 
-## LPM-018 - Enforce exact readiness ledger validation commands
+## LPM-019 - Reconcile local readiness and external acceptance status
 
 ```yaml
-estimate_hours: 2
+estimate_hours: 3
 depends_on: []
 owns:
   - docs/agentflow-missing-production-backlog.md
+  - docs/missing-production-slices-work-plan.md
+  - docs/production-task-board.md
+  - docs/runbook.md
   - scripts/verify-local-readiness-ledger.mjs
   - scripts/verify-local-readiness-ledger.test.mjs
 validate:
@@ -86,24 +92,38 @@ validate:
   - npm run build
   - git diff --check
 produces:
-  - name: exact-ledger-validation-command-contract
+  - name: readiness-status-authority-contract
     type: local-proof-contract
     version: 1.0.0
     path: scripts/verify-local-readiness-ledger.mjs
 consumes: []
 ```
 
-Make the LPM-017 continued-execution ledger fail closed on its two required
-active-task validation commands. Independent post-integration verification
-showed that replacing `npm run qa:local-readiness-ledger` with
-`npm run qa:local-readiness-ledger-extra` still returned `ok: true` because the
-current helper checks substring inclusion instead of exact validation-list
-entries.
+Reconcile the governing work plan with the completed local-readiness ledger.
+The queue and production board say LPM-001 through LPM-012 have completed their
+local repository-readiness sequence, but the work plan still labels LPM-002
+through LPM-008, LPM-011, and LPM-012 as `planned`. It also records the original
+source checkout as permanently dirty and points at the obsolete LPM-013A task
+worktree as the current AgentFlow checkout.
 
-Parse the active YAML `validate` list into command entries and require exact
-equality for the ledger verifier and direct Node test commands. Preserve the
-completed LPM-001 through LPM-012 baseline, the single post-baseline executable
-heading invariant, and the LPM-016 integration record.
+Use one explicit status for LPM-002 through LPM-012 that states local repository
+readiness is complete while external proof remains open. Do not mark any of
+those slices end-to-end `done`; their hosted, Supabase, RLS, provider, Stripe,
+storage/scanner, sponsor, archive/restore, native/app-store, accessibility, and
+production acceptance criteria remain open. Update the status legend to
+distinguish local readiness from full completion.
+
+Replace point-in-time dirty/task-worktree claims with a protected source
+checkout boundary and the clean AgentFlow execution checkout. State that both
+checkout states must be re-read before every task, and record the final
+integration commit through LPM-018 without treating that SHA as the queue
+commit or future final HEAD.
+
+Make the local readiness ledger fail closed when any LPM-002 through LPM-012
+work-plan row returns to plain `planned`, is overstated as end-to-end `done`, or
+loses the local-readiness/external-proof distinction. Preserve exact active
+validation-command matching and all existing no-side-effect and open-gate
+checks.
 
 This task must not alter product UI, APIs, Supabase adapters, domain rules,
 migrations, providers, payments, storage, archive behavior, native behavior, or
@@ -115,22 +135,31 @@ acceptance.
 
 ### Acceptance Criteria
 
-- The queue records LPM-017 with AgentFlow build
-  `build_a62e498a-7316-43a4-b7c6-1569c62960d8` and integration commit
-  `944366ff9e5fcee72ba3f4037ce68fa0c2f306b9`.
-- Active-task validation commands are parsed as discrete YAML list entries
-  rather than searched as substrings.
-- The exact `npm run qa:local-readiness-ledger` and
-  `node --test scripts/verify-local-readiness-ledger.test.mjs` entries are
-  required.
-- Suffixed, prefixed, or argument-appended near matches for either required
-  command are rejected with the existing named blocker for that command.
-- Direct Node tests cover exact commands plus at least one suffixed and one
-  argument-appended near match for each command.
-- Existing tests for the completed baseline, single executable heading,
-  baseline reexecution, docs, external open gates, and no-side-effect boundary
-  continue to pass.
-- The change remains limited to the queue, ledger verifier, and direct ledger
-  tests.
+- The queue records LPM-018 with AgentFlow build
+  `build_faa1c28e-cc9d-4912-9529-0df1240963da` and integration commit
+  `50e56d2d33cd04dc869483a1f99b6583fd9cc36b`.
+- The work-plan status legend defines a state for local repository readiness
+  complete with external proof still open, distinct from end-to-end `done`.
+- LPM-002 through LPM-012 use that state consistently. Their existing
+  acceptance criteria, validation commands, boundaries, and external gates are
+  retained.
+- The work plan, production board, and runbook identify
+  `/home/administrator/projects/youth-sports-platform-mvp-v3` as the protected
+  source checkout and
+  `/home/administrator/projects/leaguepilot-missing-production-agentflow-20260729`
+  as the clean AgentFlow execution checkout.
+- The docs require checkout state to be re-read before every task and record
+  `50e56d2d33cd04dc869483a1f99b6583fd9cc36b` as the final integration commit
+  through LPM-018, not as a future final HEAD.
+- The ledger verifier emits named blockers when any LPM-002 through LPM-012
+  status is plain `planned`, end-to-end `done`, or otherwise loses the
+  local-readiness/external-proof distinction.
+- Direct Node tests cover the accepted statuses plus planned regression,
+  end-to-end-done overstatement, and missing external-proof language.
+- Existing tests for exact active validation commands, completed baseline,
+  single executable heading, baseline reexecution, governing docs, external
+  open gates, and no-side-effect boundaries continue to pass.
+- The change remains limited to the queue, governing work plan, production
+  task board, runbook, ledger verifier, and direct ledger tests.
 - `npm run qa:local-readiness-ledger`, its direct Node tests, skill check,
   typecheck, build, and whitespace check pass.
