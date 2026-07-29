@@ -4,10 +4,20 @@ Status: active
 Created: 2026-07-29
 Repository: LeaguePilot / Little League HQ
 Source working directory: `/home/administrator/projects/youth-sports-platform-mvp-v3`
-Current AgentFlow task worktree: `/home/administrator/.agentflow/worktrees/repo_80ec8817-7c48-4066-a53c-6a5aa57d31c8/build_5e3e818d-6dc6-4069-8fc9-6498a727b3eb/tasks/task_lpm-001_771e7704-f2bc-449a-9838-e21112a17673`
+Current AgentFlow task worktree: `/home/administrator/.agentflow/worktrees/repo_80ec8817-7c48-4066-a53c-6a5aa57d31c8/build_e15b91b4-66e7-4ce9-833b-ebed388ac25c/tasks/task_lpm-013_c314ec41-5691-487b-9a43-cfeade0636ae`
 Baseline ledger: `docs/production-proof-baseline-2026-07-29.md`
 
 This work plan turns the known missing or gated pieces into dependency-aware execution tasks. It does not treat local UI, seed fallback, provider configuration, or preview evidence as production acceptance. Each task must preserve child privacy defaults, role boundaries, human approval, auditability, and provider/payment/storage gates.
+
+## Local Readiness Completion Ledger
+
+The AgentFlow missing-production sequence is locally complete through LPM-012 as local repository readiness proof only. LPM-013A is a ledger/verifier only; it reads repository files and records blockers before any operator chooses a separate proof run; external proof and production acceptance remain separate authorized follow-up lanes.
+
+- Source checkout dirty-tree boundary: the original source checkout is `/home/administrator/projects/youth-sports-platform-mvp-v3`, and its unrelated dirty tree is outside this local ledger.
+- Clean sibling worktree path: `/home/administrator/.agentflow/worktrees/repo_80ec8817-7c48-4066-a53c-6a5aa57d31c8/build_e15b91b4-66e7-4ce9-833b-ebed388ac25c/tasks/task_lpm-013_c314ec41-5691-487b-9a43-cfeade0636ae`.
+- no-push/no-deploy/no-provider/no-production-mutation boundary: LPM-013A must not push, deploy, call providers, configure secrets, seed, mutate hosted records, upload or download media, collect analytics, run browser proof, run archive close, or claim production acceptance.
+- Final AgentFlow HEAD through LPM-012: `f1c27e47ce0fd32cb88ac440544b37271b6b0e88`.
+- Open external gate families after LPM-012: hosted browser proof open; Supabase readback open; RLS open; provider sandbox/webhooks open; Stripe settlement open; private media storage/scanner open; sponsor rendering/report/finance open; archive retention/restore open; native/app-store open; accessibility open; production acceptance open.
 
 ## Execution Rules
 
