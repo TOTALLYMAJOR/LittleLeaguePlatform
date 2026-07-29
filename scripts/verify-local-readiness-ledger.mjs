@@ -19,6 +19,15 @@ export const QUEUE_BASELINE_ITEMS = [
   { canonical: "LPM-012", ids: ["LPM-012", "LPM-012A"] }
 ];
 
+export const REQUIRED_CONTINUED_EXECUTION_ITEMS = [
+  {
+    canonical: "LPM-016",
+    ids: ["LPM-016"],
+    buildId: "build_56df39d6-071b-47ae-8b81-f00ce8853c1b",
+    integrationCommit: "12a0aa5db04a269b9efab7d76dcca671865820ae"
+  }
+];
+
 export const LOCAL_READINESS_SCRIPTS = [
   {
     task: "LPM-002",
@@ -112,6 +121,9 @@ export const REQUIRED_DOC_PHRASES = [
   "locally complete through LPM-012",
   "LPM-013A is a ledger/verifier only",
   "local repository readiness proof only",
+  "continued one-task-at-a-time execution accepts exactly one executable queue heading",
+  "LPM-013A or LPM-014 or later",
+  "LPM-001 through LPM-012 remain completed records only",
   "external proof and production acceptance remain separate authorized follow-up lanes"
 ];
 
@@ -171,6 +183,34 @@ function requireNoPattern(blockers, sources, family, code, keys, pattern, messag
   if (pattern.test(text)) addBlocker(blockers, family, code, keys, message);
 }
 
+function parseExecutableQueueHeadings(queue) {
+  return [...queue.matchAll(/^## (LPM-(\d{3})(A?))\s+-/gm)].map((match) => ({
+    id: match[1],
+    number: Number(match[2]),
+    variant: match[3],
+    index: match.index ?? 0
+  }));
+}
+
+function activeQueueBlock(queue, heading) {
+  const nextHeadingIndex = queue.slice(heading.index + 1).search(/^## LPM-\d{3}A?\s+-/m);
+  if (nextHeadingIndex === -1) return queue.slice(heading.index);
+  return queue.slice(heading.index, heading.index + 1 + nextHeadingIndex);
+}
+
+function activeQueueValidationBlock(block) {
+  const yamlBlock = block.match(/```yaml\n([\s\S]*?)\n```/);
+  if (!yamlBlock) return "";
+  const validateBlock = yamlBlock[1].match(/^validate:\n((?:  - .+(?:\n|$))+)/m);
+  return validateBlock?.[1] ?? "";
+}
+
+function requireActiveValidationCommand(blockers, validationBlock, command, code, message) {
+  if (!validationBlock.includes(`- ${command}`)) {
+    addBlocker(blockers, "agentflow-queue", code, ["queue"], message);
+  }
+}
+
 export function readRepositorySources(rootDir = process.cwd(), sourceFiles = DEFAULT_SOURCE_FILES) {
   return Object.fromEntries(
     Object.entries(sourceFiles).map(([key, relativePath]) => {
@@ -215,14 +255,74 @@ function verifyAgentFlowQueue(sources, blockers) {
     }
   }
 
-  const executableHeadings = [...queue.matchAll(/^## (LPM-\d{3}A?)\s+-/gm)].map((match) => match[1]);
-  if (executableHeadings.length !== 1 || executableHeadings[0] !== "LPM-013A") {
+  for (const item of REQUIRED_CONTINUED_EXECUTION_ITEMS) {
+    const idPattern = item.ids.map(escapeRegExp).join("|");
+    const continuedRecordPattern = new RegExp(
+      `- (${idPattern}) integrated in AgentFlow build\\s*\`${escapeRegExp(item.buildId)}\` at integration commit\\s*\`${item.integrationCommit}\``,
+      "s"
+    );
+    if (!continuedRecordPattern.test(queue)) {
+      addBlocker(
+        blockers,
+        "agentflow-queue",
+        `${item.canonical.replace("-", "_")}_INTEGRATION_RECORD_MISSING`,
+        ["queue"],
+        `${item.canonical} must be recorded with AgentFlow build ${item.buildId} and integration commit ${item.integrationCommit}.`
+      );
+    }
+  }
+
+  const executableHeadings = parseExecutableQueueHeadings(queue);
+  if (executableHeadings.length === 0) {
     addBlocker(
       blockers,
       "agentflow-queue",
-      "EXECUTABLE_QUEUE_NOT_LEDGER_ONLY",
+      "EXECUTABLE_QUEUE_HEADING_MISSING",
       ["queue"],
-      `LPM-013A must be the only executable queue heading; found ${executableHeadings.join(", ") || "none"}.`
+      "Exactly one executable queue heading is required: LPM-013A or LPM-014 or later."
+    );
+  } else if (executableHeadings.length > 1) {
+    addBlocker(
+      blockers,
+      "agentflow-queue",
+      "MULTIPLE_EXECUTABLE_QUEUE_HEADINGS",
+      ["queue"],
+      `Exactly one executable queue heading is allowed; found ${executableHeadings.map((heading) => heading.id).join(", ")}.`
+    );
+  } else {
+    const [activeHeading] = executableHeadings;
+    if (activeHeading.number <= 12) {
+      addBlocker(
+        blockers,
+        "agentflow-queue",
+        "BASELINE_REEXECUTION_HEADING_NOT_ALLOWED",
+        ["queue"],
+        `${activeHeading.id} is part of the completed LPM-001 through LPM-012 baseline and must not be re-executed.`
+      );
+    } else if (activeHeading.id !== "LPM-013A" && activeHeading.number < 14) {
+      addBlocker(
+        blockers,
+        "agentflow-queue",
+        "EXECUTABLE_QUEUE_HEADING_NOT_ALLOWED",
+        ["queue"],
+        `Executable queue heading ${activeHeading.id} is not allowed; use LPM-013A or LPM-014 or later.`
+      );
+    }
+
+    const validationBlock = activeQueueValidationBlock(activeQueueBlock(queue, activeHeading));
+    requireActiveValidationCommand(
+      blockers,
+      validationBlock,
+      "npm run qa:local-readiness-ledger",
+      "ACTIVE_LEDGER_VALIDATE_COMMAND_MISSING",
+      "The active AgentFlow task validation list must run the local readiness ledger script."
+    );
+    requireActiveValidationCommand(
+      blockers,
+      validationBlock,
+      "node --test scripts/verify-local-readiness-ledger.test.mjs",
+      "ACTIVE_LEDGER_TEST_COMMAND_MISSING",
+      "The active AgentFlow task validation list must run the local readiness ledger tests."
     );
   }
 
