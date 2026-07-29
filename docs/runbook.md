@@ -63,6 +63,16 @@ docker compose up -d --build
 curl -fsSI http://localhost:8081/
 ```
 
+## Local Access Lifecycle Authority Proof
+
+Run the no-mutation source verifier before hosted LPM-003 browser proof:
+
+```bash
+npm run qa:access-lifecycle-authority
+```
+
+The verifier reads repository files only. It checks that registration review, parent invite preview/acceptance, guardian-link repair, and additional-guardian review remain session-derived, review-gated, scope-bounded, audited where consequential, and provider-free. It does not call Supabase, sign in, run Playwright, seed data, send providers, deploy, mutate hosted records, or establish hosted acceptance. Passing this command only proves the local source authority contract; hosted UI proof and Supabase readback remain separate open gates.
+
 ## Supabase QA Proof
 
 Use these checks after migrations are applied to a Supabase QA or preview project:

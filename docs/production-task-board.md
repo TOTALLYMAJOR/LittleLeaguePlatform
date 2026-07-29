@@ -55,7 +55,7 @@ Task-specific checks are required only when the surface is touched:
 | Family phase | Current status | Remaining outcome |
 | --- | --- | --- |
 | Phase 0 - Public trust corrections | Local implementation and 320/390/768/1440 browser proof complete; hosted proof pending | Configure `PUBLIC_ORGANIZATION_ID` and `PUBLIC_ACCESS_REVIEW_WINDOW` in the target environment, run `npm run qa:hosted-readiness-preflight` to clear hosted URL and QA command-input blockers, deploy, and repeat `npm run qa:public-family-proof` against the hosted URL. Public routes now use access-first CTAs, empty production forms, an agenda-first schedule, provider calendar actions, signed-in-value-gated installation, and a tangible privacy-safe Parent Replay preview. |
-| Phase 1 - Access and activation | Local implementation complete; migrations `0025`-`0027` and `0033` are installed/read back on preview and production | Run the populated invitation/additional-guardian lifecycle, signed-in cross-family RLS, and responsive production browser proof. Provider delivery remains an independent external gate. Existing request status remains `pending`, `approved`, or `rejected`; no slice silently sends a provider message or expands approved child/team scope. |
+| Phase 1 - Access and activation | Local implementation complete; migrations `0025`-`0027` and `0033` are installed/read back on preview and production; `npm run qa:access-lifecycle-authority` is the local source-only authority verifier | Run the populated invitation/additional-guardian lifecycle, signed-in cross-family RLS, and responsive production browser proof. The verifier does not call Supabase, run browser proof, seed data, send providers, mutate hosted records, deploy, or close hosted acceptance. Provider delivery remains an independent external gate. Existing request status remains `pending`, `approved`, or `rejected`; no slice silently sends a provider message or expands approved child/team scope. |
 | Phase 2 - Family Mission Control | Local five-second Event Passport, multi-child filters/agenda, explicit conflict evidence, version-aware RSVP review, blank coordination-note form, and signed-in 375/390/768/1440 empty-state proof complete | Prove a populated multi-child household, offline/reconnect conflicts, organization isolation, performance/accessibility, and production-hosted behavior. |
 | Phase 3 - Responsibility and temporary care | `0028`/`0029` install locally and are installed/read back on preview and production. Preview proof passes for request → offer → mutual acceptance and caregiver create → wrong-email rejection → exact-email acceptance → revoke, including audit, schedule-version, token-rotation, no-membership, and zero-notification checks. | Add same-team competing-offer, cross-team/cross-family, expiry, cache-clear, and signed-in production browser proof. |
 | Phase 4 - Priority communication and disruption | Local immutable versions, correction/withdrawal, exact schedule-version binding, four-surface projection, visible propagation incidents, current-version acknowledgment, and responsive proof complete; `0030` is installed/read back on preview and production | Run populated one-revision projection, incident lifecycle, offline/accessibility, provider sandbox/webhook, and production browser proof. |
@@ -112,20 +112,20 @@ Task-specific checks are required only when the surface is touched:
 ### LP-005 - Prove Registration Approval Browser Flow
 
 - Priority: P1 proof.
-- Current state: RPC/API flow exists and live approval/rejection was verified earlier; browser-level hosted proof remains open.
-- Seams: `/admin/registrations`, `/api/admin/registrations/*`, `supabase/migrations/0003_registration_approval_workflow.sql`, `0004_fix_registration_approval_digest.sql`.
+- Current state: RPC/API flow exists and live approval/rejection was verified earlier; `npm run qa:access-lifecycle-authority` now provides local repository-source proof for session-derived, review-gated, provider-free registration authority; browser-level hosted proof and Supabase readback remain open.
+- Seams: `/admin/registrations`, `/api/admin/registrations/*`, `lib/supabase/registration-approvals.ts`, `scripts/verify-access-lifecycle-authority.mjs`, `supabase/migrations/0003_registration_approval_workflow.sql`, `0004_fix_registration_approval_digest.sql`, `0033_registration_invitation_issuance.sql`.
 - Done when: signed-in QA admin approves and rejects temporary registration requests from the hosted UI, with player/guardian/invite/action rows created or updated correctly.
 - SaaS constants focus: guardian access grant, tenant isolation, actor authorization, lifecycle reversal, audit log, idempotent approval.
-- Validation: hosted Playwright proof with cleanup and Supabase readback.
+- Validation: `npm run qa:access-lifecycle-authority`; hosted Playwright proof with cleanup and Supabase readback.
 
 ### LP-006 - Harden Guardian Verification Policy
 
 - Priority: P1 safety.
-- Current state: registration approval and guardian-link repair now require an active organization-admin reviewer, an existing parent profile, and bounded verification evidence; an existing profile email match remains only a correlation signal, while unmatched parents stay invited. Hosted/browser proof and any stronger identity-verification provider remain open.
-- Seams: `/admin/registrations`, `/admin/guardian-links`, registration approval RPCs, guardian repair API, `docs/privacy-security.md`.
+- Current state: registration approval and guardian-link repair now require an active organization-admin reviewer, an existing parent profile, and bounded verification evidence; invite acceptance and additional-guardian review are covered by the local source-only authority verifier. An existing profile email match remains only a correlation signal, while unmatched parents stay invited. Hosted/browser proof, Supabase readback, and any stronger identity-verification provider remain open.
+- Seams: `/admin/registrations`, `/admin/guardian-links`, registration approval RPCs, guardian repair API, `lib/supabase/invite-acceptance.ts`, `lib/supabase/additional-guardians.ts`, `scripts/verify-access-lifecycle-authority.mjs`, `docs/privacy-security.md`.
 - Done when: docs and tests define what evidence is enough to link a parent to a child/team and what remains admin-reviewed. Local policy and migration installation are covered; production RLS/browser proof and any stronger identity evidence remain follow-up work.
 - SaaS constants focus: identity, authorization, child privacy, support repair, auditability, failure semantics.
-- Validation: `lib/supabase/registration-approvals.test.ts`; `supabase/rls-policy.test.ts`; production signed-in RLS/browser proof for operational closure.
+- Validation: `npm run qa:access-lifecycle-authority`; `lib/supabase/registration-approvals.test.ts`; `supabase/rls-policy.test.ts`; production signed-in RLS/browser proof for operational closure.
 
 ### LP-007 - Prove Team-Builder Admin Publish
 
