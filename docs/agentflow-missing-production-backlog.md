@@ -29,81 +29,89 @@ Completed baseline:
 - LPM-005A integrated in AgentFlow build
   `build_5827781b-fefd-4baf-87a2-bdf6f5eeeeef` at integration commit
   `4b80b959462fb71a9432a53a83e9ecc38b2583bd`.
+- LPM-006A integrated in AgentFlow build
+  `build_2df551bf-6d0a-46c0-9738-0809a1dd3a78` at integration commit
+  `2c18dd75c65669f516a7224e4b4f86343ba8165f`.
 
-## LPM-006A - Add family season continuity readiness verifier
+## LPM-007A - Add provider sandbox readiness verifier
 
 ```yaml
 estimate_hours: 4
 depends_on: []
 owns:
   - package.json
-  - scripts/verify-family-season-continuity-readiness.mjs
-  - scripts/verify-family-season-continuity-readiness.test.mjs
+  - scripts/verify-provider-sandbox-readiness.mjs
+  - scripts/verify-provider-sandbox-readiness.test.mjs
   - docs/runbook.md
   - docs/missing-production-slices-work-plan.md
   - docs/production-task-board.md
 validate:
   - npm ci --ignore-scripts --prefer-offline
   - npm run check:skills
-  - node --test scripts/verify-family-season-continuity-readiness.test.mjs
-  - npm test -- lib/supabase/family-replays.test.ts lib/supabase/season-transitions.test.ts components/family-parent-replay.test.tsx components/season-transition-review.test.tsx app/api-family-replays.test.ts app/api-season-transitions.test.ts
+  - node --test scripts/verify-provider-sandbox-readiness.test.mjs
+  - npm test -- app/provider-boundary.test.ts lib/supabase/provider-delivery.test.ts lib/services/notifications/worker.test.ts lib/services/notifications/webhook-verification.test.ts lib/services/notifications/executor.test.ts lib/services/notifications/adapters.test.ts lib/supabase/provider-webhooks.test.ts app/api-notification-worker.test.ts app/api-pingram-webhook.test.ts
   - npm run typecheck
   - npm run build
   - git diff --check
 produces:
-  - name: family-season-continuity-readiness-verifier
+  - name: provider-sandbox-readiness-verifier
     type: local-readiness-proof
     version: 1.0.0
-    path: scripts/verify-family-season-continuity-readiness.mjs
+    path: scripts/verify-provider-sandbox-readiness.mjs
 consumes: []
 ```
 
-Implement a no-mutation verifier for the local LPM-006 Family Replay and season
-continuity contracts that already exist in route handlers, Supabase adapters,
-staged migrations, family replay UI, season-transition UI, and focused tests.
-The verifier must prove, from repository source, that private family replay,
-media consent and revocation, private engagement, season transition review, and
-downstream refusal seams are present and still bounded before later hosted
-browser and Supabase readback proof.
+Implement a no-mutation verifier for the local LPM-007 provider sandbox
+readiness contracts that already exist in notification domain code, provider
+delivery services, provider adapters, webhook verification, staged migrations,
+route handlers, and focused tests. The verifier must prove, from repository
+source, that provider sends remain approval-gated, adult-recipient allowlisting
+and suppression are explicit, sandbox adapters are bound by durable authority,
+signed webhooks update attempts without conflating acceptance/delivery/read/
+acknowledgment, and retry/reconciliation behavior is idempotent before any
+operator runs real sandbox email, SMS, or Web Push proof.
 
 The tool must not call Supabase, sign in, run Playwright, seed data, mutate
-hosted records, create provider sends, upload media, create storage objects,
-deploy, configure storage/scanner/realtime/provider infrastructure, or claim
-hosted acceptance. Its job is to make the local readiness contract executable
-and to name exact blockers before an operator runs hosted QA proof.
+hosted records, send email/SMS/Web Push, call SendGrid, Twilio, Pingram, Web
+Push, or provider dashboards, configure secrets, deploy, or claim sandbox,
+hosted, provider, or production acceptance. Its job is to make the local
+readiness contract executable and to name exact blockers before an operator runs
+approved sandbox-provider proof.
 
 ### Acceptance Criteria
 
-- A new `qa:family-season-continuity-readiness` script reads only repository
-  files and fails with named blockers when an LPM-006 local readiness contract is
+- A new `qa:provider-sandbox-readiness` script reads only repository files and
+  fails with named blockers when an LPM-007 local readiness contract is
   missing or weakened.
-- The verifier checks Parent Replay read authority: family reads require a
-  signed-in parent, active guardian links, current child/team scope, queued
-  published replay status, first-name plus last-initial child labels, and no
-  coach/admin/private draft leakage.
-- The verifier checks replay media consent and revocation: media publication
-  requires subject player identity, every current guardian consent, approved
-  moderation, scan/family-release evidence for private media, accessible
-  alt/transcript copy, and read-time revocation/deletion suppression.
-- The verifier checks private engagement: save, view, and activity-completed
-  rows are parent-scoped, private to the family, provider-free, and never used
-  for child/family ranking.
-- The verifier checks season transition authority: proposals require
-  organization-admin authority, every current guardian review, lock-version
-  concurrency, expiration state, fixed carry-forward/reset fields, audit
-  evidence, and provider-free state changes.
-- The verifier checks apply/revert/downstream refusal: applying a transition
-  archives only the source roster, creates provenance-linked target player
-  truth, refuses deletion after downstream family activity, and keeps revert or
-  correction service-only with audit history.
-- The verifier explicitly names hosted browser proof, Supabase readback,
-  populated media consent/revocation proof, multi-guardian transition
-  concurrency proof, storage/scanner proof, provider sandbox proof, and
-  production acceptance as open gates.
+- The verifier checks provider approval authority: notification review requires
+  assigned coach or organization-admin authority, matching provider/channel,
+  organization feature gate, recipient preference checks, durable attempt rows,
+  and no external send during review.
+- The verifier checks sandbox adapter binding: worker execution claims queued
+  approved attempts, rechecks durable authority, binds attempt, notification,
+  channel, provider, transport provider, idempotency key, retry count, and
+  adapter selection before any adapter send can run.
+- The verifier checks suppression and allowlist/cost controls: rejected,
+  preference-disabled, provider-disabled, unknown SMS provider, opt-out, and
+  missing provider configuration paths suppress without retry; docs name
+  adult-consented QA allowlists, cost caps, monitoring, and rollback before
+  provider proof.
+- The verifier checks webhook security: SendGrid signed event webhook
+  verification, Twilio request validation, Pingram timestamp/HMAC verification,
+  duplicate callback/event handling, and replay protection are present in code
+  and tests.
+- The verifier checks delivery truth separation: provider accepted, delivered,
+  failed, read, acknowledged, suppressed, indeterminate, retry, and dead-letter
+  states remain distinct; SendGrid/Twilio/Pingram callbacks never make
+  synchronous send acceptance equal delivery or family acknowledgment.
+- The verifier explicitly names real sandbox sends, provider dashboard setup,
+  secrets, adult QA recipient approval, signed webhook endpoint registration,
+  hosted worker execution, cost monitoring, and production-send approval as open
+  gates.
 - Tests cover passing fixtures and at least one missing-contract failure for
   each readiness family without requiring hosted credentials or network access.
 - `docs/runbook.md`, `docs/missing-production-slices-work-plan.md`, and
   `docs/production-task-board.md` describe the verifier as local repository
-  readiness proof only; hosted UI proof, Supabase readback, storage/scanner
-  proof, provider sandbox, multi-guardian populated proof, and production
-  acceptance remain open gates.
+  readiness proof only; real sandbox sends, hosted worker proof, provider
+  dashboard setup, provider secrets, signed webhook registration, cost
+  monitoring, and production-send approval remain open gates.
