@@ -17,7 +17,9 @@ import {
   type ClientShellAccess,
   type RouteTopologyEntry
 } from "@/lib/navigation/route-topology";
+import { formatBadgeCount, getAttentionBadge } from "@/lib/navigation/shell-attention";
 import { StatusBadge } from "./primitives";
+import { RouteIcon } from "./route-icons";
 
 const groups: RouteTopologyEntry["group"][] = [
   "Family",
@@ -283,15 +285,37 @@ export function AppShell({ access = signedOutShellAccess, children }: { access?:
                 </span>
               </Link>
               <nav className="parent-weekly-header-nav" aria-label="Family shortcuts">
-                <Link href="/parent/schedule" aria-label="Open family schedule">
+                <Link
+                  href="/parent/schedule"
+                  aria-label="Open family schedule"
+                  aria-current={isRouteActive(pathname, "/parent/schedule") ? "page" : undefined}
+                  data-active={isRouteActive(pathname, "/parent/schedule") ? "true" : undefined}
+                >
                   <CalendarDays aria-hidden="true" size={20} />
                   <span>Schedule</span>
                 </Link>
-                <Link href="/parent/messages" aria-label="Open family messages">
+                <Link
+                  href="/parent/messages"
+                  aria-label={getAttentionBadge(access.attentionBadges, "/parent/messages")
+                    ? `Open family messages, ${getAttentionBadge(access.attentionBadges, "/parent/messages")?.label}`
+                    : "Open family messages"}
+                  aria-current={isRouteActive(pathname, "/parent/messages") ? "page" : undefined}
+                  data-active={isRouteActive(pathname, "/parent/messages") ? "true" : undefined}
+                >
                   <MessageCircle aria-hidden="true" size={20} />
                   <span>Messages</span>
+                  {getAttentionBadge(access.attentionBadges, "/parent/messages") ? (
+                    <span className="parent-weekly-nav-attention" aria-hidden="true">
+                      {formatBadgeCount(getAttentionBadge(access.attentionBadges, "/parent/messages")!.count)}
+                    </span>
+                  ) : null}
                 </Link>
-                <Link href="/account" aria-label="Open account and notification settings">
+                <Link
+                  href="/account"
+                  aria-label="Open account and notification settings"
+                  aria-current={isRouteActive(pathname, "/account") ? "page" : undefined}
+                  data-active={isRouteActive(pathname, "/account") ? "true" : undefined}
+                >
                   <Bell aria-hidden="true" size={20} />
                   <span>Account</span>
                 </Link>
@@ -355,6 +379,7 @@ export function AppShell({ access = signedOutShellAccess, children }: { access?:
                   <small className="nav-section">{group}</small>
                   {items.map((item) => {
                     const active = isRouteActive(pathname, item.href);
+                    const attention = getAttentionBadge(access.attentionBadges, item.href);
                     return (
                       <Link
                         key={item.href}
@@ -367,8 +392,15 @@ export function AppShell({ access = signedOutShellAccess, children }: { access?:
                           switchRole(item);
                         } : undefined}
                       >
-                        <span className="nav-icon" aria-hidden="true">{item.short}</span>
+                        <span className="nav-icon" aria-hidden="true">
+                          <RouteIcon href={item.href} short={item.short} role={item.role} />
+                        </span>
                         <span className="nav-label">{item.label}</span>
+                        {attention ? (
+                          <span className="nav-attention-badge" aria-label={attention.label}>
+                            {formatBadgeCount(attention.count)}
+                          </span>
+                        ) : null}
                       </Link>
                     );
                   })}
@@ -425,10 +457,18 @@ export function AppShell({ access = signedOutShellAccess, children }: { access?:
           <nav className="mobile-tabbar" aria-label="Mobile navigation">
             {activeMobileItems.map((item) => {
               const active = isRouteActive(pathname, item.href);
+              const attention = getAttentionBadge(access.attentionBadges, item.href);
               return (
                 <Link key={item.href} href={item.href} aria-current={active ? "page" : undefined} data-active={active ? "true" : undefined}>
-                  <span>{item.short}</span>
+                  <span className="mobile-tab-icon" aria-hidden="true">
+                    <RouteIcon href={item.href} short={item.short} role={item.role} size={20} />
+                  </span>
                   <small>{item.label.replace("Parent ", "")}</small>
+                  {attention ? (
+                    <span className="mobile-tab-attention" aria-label={attention.label}>
+                      {formatBadgeCount(attention.count)}
+                    </span>
+                  ) : null}
                 </Link>
               );
             })}
@@ -516,7 +556,9 @@ export function AppShell({ access = signedOutShellAccess, children }: { access?:
               onMouseEnter={() => setCommandIndex(index)}
               onClick={() => openCommandRoute(item)}
             >
-              <span className="nav-icon" aria-hidden="true">{item.short}</span>
+              <span className="nav-icon" aria-hidden="true">
+                <RouteIcon href={item.href} short={item.short} role={item.role} />
+              </span>
               <span>
                 <strong>{item.label}</strong>
                 <small>{item.group} - {item.href}</small>

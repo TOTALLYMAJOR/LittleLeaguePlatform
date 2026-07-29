@@ -5,3 +5,7 @@ export const dynamic = "force-dynamic";
 export default async function CoachPracticeRecapsPage() {
   return <CoachPracticeRecapsSurface />;
 }
+
+export const metadata = {
+  title: "Practice Recaps"
+};

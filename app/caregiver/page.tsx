@@ -9,3 +9,7 @@ export default async function CaregiverPage() {
   const data = await listCaregiverPortalData(user?.id ?? "");
   return <CaregiverPortalClient data={data} />;
 }
+
+export const metadata = {
+  title: "Temporary Caregiver"
+};

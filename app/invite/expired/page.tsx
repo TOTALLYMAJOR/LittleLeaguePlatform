@@ -15,3 +15,7 @@ export default function InviteExpiredPage() {
     </div>
   );
 }
+
+export const metadata = {
+  title: "Invite Expired"
+};

@@ -63,7 +63,7 @@ export const viewport: Viewport = {
 };
 
 export default async function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
-  const shellAccess = toClientShellAccess(await getServerShellAccess());
+  const shellAccess = toClientShellAccess(await getServerShellAccess({ includeAttention: true }));
 
   return (
     <html lang="en" className={`${parentSans.variable} ${parentDisplay.variable}`}>

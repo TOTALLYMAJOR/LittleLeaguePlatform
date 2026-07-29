@@ -1,6 +1,12 @@
 import "server-only";
 
 import { seedState, type AppState } from "@/lib/domain";
+import {
+  buildShellAttentionBadges,
+  countMissingRsvpSlots,
+  countUnreadMessages,
+  type ShellAttentionBadge
+} from "@/lib/navigation/shell-attention";
 import type { ClientShellAccess, RoleSwitchLink } from "@/lib/navigation/route-topology";
 import type { ActiveContext, LeaguePilotRole } from "@/lib/operational-truth";
 import { createSupabaseAdminClient } from "./admin";
@@ -50,11 +56,14 @@ export function toClientShellAccess(access: ServerShellAccess): ClientShellAcces
     canCoach: access.canCoach,
     canAdmin: access.canAdmin,
     roleSwitchLinks: access.roleSwitchLinks,
-    contexts: access.contexts
+    contexts: access.contexts,
+    attentionBadges: access.attentionBadges
   };
 }
 
-export async function getServerShellAccess(): Promise<ServerShellAccess> {
+export async function getServerShellAccess(
+  options: { includeAttention?: boolean } = {}
+): Promise<ServerShellAccess> {
   const user = await getSupabaseServerUser();
   if (!user) return signedOutServerShellAccess;
 
@@ -118,6 +127,16 @@ export async function getServerShellAccess(): Promise<ServerShellAccess> {
       adminTeamIds
     });
 
+    const attentionBadges = options.includeAttention
+      ? await readShellAttentionBadges(db, {
+        viewerUserId: user.id,
+        parentTeamIds,
+        guardianPlayerIds,
+        coachTeamIds,
+        adminOrganizationIds
+      })
+      : undefined;
+
     return {
       signedIn: true,
       userId: user.id,
@@ -129,7 +148,8 @@ export async function getServerShellAccess(): Promise<ServerShellAccess> {
       coachTeamIds,
       adminOrganizationIds,
       adminTeamIds,
-      contexts
+      contexts,
+      attentionBadges
     };
   } catch {
     return {
@@ -383,6 +403,101 @@ function emptyDashboardState(): AppState {
     auditEvents: [],
     rosterImportReports: []
   };
+}
+
+const ATTENTION_HORIZON_DAYS = 14;
+
+async function readShellAttentionBadges(db: UnsafeSupabase, input: {
+  viewerUserId: string;
+  parentTeamIds: string[];
+  guardianPlayerIds: string[];
+  coachTeamIds: string[];
+  adminOrganizationIds: string[];
+}): Promise<ShellAttentionBadge[]> {
+  try {
+    const now = new Date();
+    const horizon = new Date(now.getTime() + ATTENTION_HORIZON_DAYS * 24 * 60 * 60 * 1000);
+    const unreadSince = new Date(now.getTime() - ATTENTION_HORIZON_DAYS * 24 * 60 * 60 * 1000);
+    const rsvpTeamIds = unique([...input.parentTeamIds, ...input.coachTeamIds]);
+
+    const { data: eventRows } = rsvpTeamIds.length
+      ? await withSupabaseTimeout(db
+        .from("events")
+        .select("id,team_id")
+        .in("team_id", rsvpTeamIds)
+        .eq("status", "scheduled")
+        .gte("starts_at", now.toISOString())
+        .lte("starts_at", horizon.toISOString())
+        .limit(60), 5000) as { data: Array<{ id: string; team_id: string }> | null }
+      : { data: [] };
+    const events = (eventRows ?? []).map((row) => ({ id: row.id, teamId: row.team_id }));
+    const eventIds = events.map((event) => event.id);
+
+    const [{ data: guardianPlayerRows }, { data: coachPlayerRows }, { data: rsvpRows }, pendingRegistrations, { data: messageRows }] = await Promise.all([
+      input.guardianPlayerIds.length && events.length
+        ? withSupabaseTimeout(db
+          .from("players")
+          .select("id,team_id")
+          .in("id", input.guardianPlayerIds), 5000) as Promise<{ data: Array<{ id: string; team_id: string }> | null }>
+        : Promise.resolve({ data: [] }),
+      input.coachTeamIds.length && events.length
+        ? withSupabaseTimeout(db
+          .from("players")
+          .select("id,team_id")
+          .in("team_id", input.coachTeamIds), 5000) as Promise<{ data: Array<{ id: string; team_id: string }> | null }>
+        : Promise.resolve({ data: [] }),
+      eventIds.length
+        ? withSupabaseTimeout(db
+          .from("rsvps")
+          .select("event_id,player_id")
+          .in("event_id", eventIds), 5000) as Promise<{ data: Array<{ event_id: string; player_id: string }> | null }>
+        : Promise.resolve({ data: [] }),
+      input.adminOrganizationIds.length
+        ? withSupabaseTimeout(db
+          .from("registration_requests")
+          .select("id", { count: "exact", head: true })
+          .in("organization_id", input.adminOrganizationIds)
+          .eq("status", "pending"), 5000) as Promise<{ count: number | null }>
+        : Promise.resolve({ count: 0 }),
+      rsvpTeamIds.length
+        ? withSupabaseTimeout(db
+          .from("team_chat_messages")
+          .select("team_id,author_user_id,read_by_user_ids")
+          .in("team_id", rsvpTeamIds)
+          .eq("moderation_status", "visible")
+          .gte("created_at", unreadSince.toISOString())
+          .limit(300), 5000) as Promise<{ data: Array<{ team_id: string; author_user_id: string; read_by_user_ids: string[] | null }> | null }>
+        : Promise.resolve({ data: [] })
+    ]);
+
+    const rsvps = (rsvpRows ?? []).map((row) => ({ eventId: row.event_id, playerId: row.player_id }));
+    const parentEvents = events.filter((event) => input.parentTeamIds.includes(event.teamId));
+    const coachEvents = events.filter((event) => input.coachTeamIds.includes(event.teamId));
+    const messages = (messageRows ?? []).map((row) => ({
+      teamId: row.team_id,
+      authorUserId: row.author_user_id,
+      readByUserIds: row.read_by_user_ids ?? []
+    }));
+
+    return buildShellAttentionBadges({
+      parentMissingRsvps: countMissingRsvpSlots(
+        parentEvents,
+        (guardianPlayerRows ?? []).map((row) => ({ id: row.id, teamId: row.team_id })),
+        rsvps
+      ),
+      coachMissingRsvps: countMissingRsvpSlots(
+        coachEvents,
+        (coachPlayerRows ?? []).map((row) => ({ id: row.id, teamId: row.team_id })),
+        rsvps
+      ),
+      pendingRegistrations: pendingRegistrations.count ?? 0,
+      parentUnreadMessages: countUnreadMessages(messages, input.viewerUserId, input.parentTeamIds),
+      coachUnreadMessages: countUnreadMessages(messages, input.viewerUserId, input.coachTeamIds)
+    });
+  } catch {
+    // Badges are advisory; the shell renders without them when reads fail.
+    return [];
+  }
 }
 
 function unique(values: string[]) {

@@ -64,3 +64,7 @@ function resolveTeamPortalScope(access: ServerShellAccess): { audience: "parent"
   }
   return null;
 }
+
+export const metadata = {
+  title: "Team Portal"
+};

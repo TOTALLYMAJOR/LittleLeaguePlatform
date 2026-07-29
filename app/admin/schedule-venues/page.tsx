@@ -5,3 +5,7 @@ export const dynamic = "force-dynamic";
 export default async function AdminScheduleVenuesPage() {
   return <AdminScheduleVenuesSurface />;
 }
+
+export const metadata = {
+  title: "Schedule & Venues"
+};

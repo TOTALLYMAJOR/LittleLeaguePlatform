@@ -3,3 +3,7 @@ import { TemporaryCaregiverAcceptanceClient } from "@/components/temporary-careg
 export default function TemporaryCaregiverAcceptancePage() {
   return <TemporaryCaregiverAcceptanceClient />;
 }
+
+export const metadata = {
+  title: "Accept Caregiver Invite"
+};

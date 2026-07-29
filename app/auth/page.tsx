@@ -48,3 +48,7 @@ export default async function AuthPage({
   const message = resolveAuthLandingMessage({ error, error_description, oauth, provider });
   return <AuthClient returnTo={safeReturnTo} initialMessage={message} />;
 }
+
+export const metadata = {
+  title: "Sign In"
+};

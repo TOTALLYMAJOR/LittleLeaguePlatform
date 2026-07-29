@@ -46,3 +46,7 @@ function resolveTeamChatTeamIds(access: ServerShellAccess): string[] {
   if (access.canParent && access.parentTeamIds.length) return access.parentTeamIds;
   return [];
 }
+
+export const metadata = {
+  title: "Team Chat"
+};

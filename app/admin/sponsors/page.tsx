@@ -18,3 +18,7 @@ export default async function AdminSponsorsPage() {
   const sponsorData = await listSponsorAdminData({ organizationId });
   return <SponsorHub initialData={sponsorData} />;
 }
+
+export const metadata = {
+  title: "Sponsor Management"
+};

@@ -7,3 +7,7 @@ export default async function SchedulePage() {
   const scheduleData = await listPublicScheduleOperationsData();
   return <ScheduleAlertsClient scheduleData={scheduleData} mode="readonly" />;
 }
+
+export const metadata = {
+  title: "League Calendar"
+};

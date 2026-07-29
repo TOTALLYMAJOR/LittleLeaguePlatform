@@ -5,3 +5,7 @@ export const dynamic = "force-dynamic";
 export default async function CoachSettingsPage() {
   return <CoachDashboardSliceSurface />;
 }
+
+export const metadata = {
+  title: "Coach Settings"
+};

@@ -116,6 +116,25 @@
   transform: translateY(1px);
 }
 
+.parent-weekly-header-nav > a[data-active="true"] {
+  background: #fff2e4;
+  color: #9b4313;
+}
+
+.parent-weekly-nav-attention {
+  display: inline-grid;
+  place-items: center;
+  min-width: 17px;
+  height: 17px;
+  padding: 0 4px;
+  border-radius: 999px;
+  background: #d6472f;
+  color: #fff;
+  font-size: 0.62rem;
+  font-weight: 900;
+  line-height: 1;
+}
+
 
 .parent-weekly-header-nav span {
   font-size: 0.79rem;

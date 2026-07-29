@@ -11,3 +11,7 @@ export default async function AccessStatusPage({
   const reviewWindow = process.env.PUBLIC_ACCESS_REVIEW_WINDOW?.trim() || "within two business days";
   return <AccessStatusClient initialReference={reference} reviewWindow={reviewWindow} />;
 }
+
+export const metadata = {
+  title: "Access Status"
+};

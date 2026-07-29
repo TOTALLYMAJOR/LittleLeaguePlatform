@@ -24,3 +24,7 @@ export default function OfflinePage() {
     </div>
   );
 }
+
+export const metadata = {
+  title: "Offline"
+};

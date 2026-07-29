@@ -5,3 +5,7 @@ export const dynamic = "force-dynamic";
 export default async function AdminTeamsPage() {
   return <AdminTeamsSurface />;
 }
+
+export const metadata = {
+  title: "Teams"
+};

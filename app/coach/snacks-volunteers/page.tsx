@@ -5,3 +5,7 @@ export const dynamic = "force-dynamic";
 export default async function CoachSnacksVolunteersPage() {
   return <CoachDashboardSliceSurface />;
 }
+
+export const metadata = {
+  title: "Snacks & Volunteers"
+};

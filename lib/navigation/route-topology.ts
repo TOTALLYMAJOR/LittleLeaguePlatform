@@ -58,6 +58,7 @@ export interface ClientShellAccess {
   canAdmin: boolean;
   roleSwitchLinks: RoleSwitchLink[];
   contexts?: import("@/lib/operational-truth").ActiveContext[];
+  attentionBadges?: import("@/lib/navigation/shell-attention").ShellAttentionBadge[];
 }
 
 export const signedOutShellAccess: ClientShellAccess = {
@@ -288,13 +289,12 @@ export function getMobileNavEntries(access: ClientShellAccess, pathname: string)
   const activeRole = getActiveRouteRole(pathname);
   const role = activeRole === "shared" || activeRole === "prototype" ? "public" : activeRole;
   const roleMobileHrefs: Partial<Record<RouteRole, string[]>> = {
-    parent: ["/parent", "/parent/schedule", "/parent/messages", "/parent/family-access", "/parent/settings"],
+    parent: ["/parent", "/parent/schedule", "/parent/rsvp", "/parent/messages", "/parent/settings"],
     coach: ["/coach", "/coach/attendance", "/coach/practice-recaps", "/coach/messages", "/coach/roster"],
     admin: ["/admin", "/admin/registrations", "/admin/teams", "/admin/message-delivery-review", "/admin/security-audit"]
   };
   const roleMobileLabels: Record<string, string> = {
     "/parent": "Today",
-    "/parent/family-access": "Team",
     "/parent/settings": "More",
     "/coach": "Today",
     "/coach/attendance": "RSVPs",

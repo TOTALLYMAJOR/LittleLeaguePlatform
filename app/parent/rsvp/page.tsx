@@ -5,3 +5,7 @@ export const dynamic = "force-dynamic";
 export default async function ParentRsvpPage() {
   return <ParentRsvpSurface />;
 }
+
+export const metadata = {
+  title: "RSVP"
+};

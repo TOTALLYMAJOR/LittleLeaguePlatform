@@ -9,3 +9,7 @@ export default async function RegistrationPage() {
 
   return <RegistrationClient reviewWindow={reviewWindow} teamOptions={teams} />;
 }
+
+export const metadata = {
+  title: "Request Team Access"
+};

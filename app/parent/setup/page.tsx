@@ -10,3 +10,7 @@ export default async function ParentSetupPage() {
   if (!access.canParent) redirect("/account");
   return <FamilyFirstSignInClient />;
 }
+
+export const metadata = {
+  title: "Family Setup"
+};
