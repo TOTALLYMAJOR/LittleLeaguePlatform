@@ -63,6 +63,22 @@ docker compose up -d --build
 curl -fsSI http://localhost:8081/
 ```
 
+## Local Readiness Completion Ledger
+
+Run the no-mutation ledger before any external proof, hosted run, provider sandbox, payment, storage, browser, analytics, app-store, backup/restore, accessibility, deploy, or production-acceptance lane:
+
+```bash
+npm run qa:local-readiness-ledger
+```
+
+The AgentFlow missing-production sequence is locally complete through LPM-012 as local repository readiness proof only. LPM-013A is a ledger/verifier only; it reads repository files, checks the AgentFlow queue, package scripts, verifier tests, and governing docs, then prints named blockers when the local sequence is incomplete, inconsistent, or overstated; external proof and production acceptance remain separate authorized follow-up lanes.
+
+- Source checkout dirty-tree boundary: `/home/administrator/projects/youth-sports-platform-mvp-v3`.
+- Clean sibling worktree path: `/home/administrator/.agentflow/worktrees/repo_80ec8817-7c48-4066-a53c-6a5aa57d31c8/build_e15b91b4-66e7-4ce9-833b-ebed388ac25c/tasks/task_lpm-013_c314ec41-5691-487b-9a43-cfeade0636ae`.
+- no-push/no-deploy/no-provider/no-production-mutation boundary: the ledger does not push, deploy, call providers, configure secrets, seed, mutate hosted records, upload or download media, collect analytics, run browser proof, run archive close, or claim production acceptance.
+- Final AgentFlow HEAD through LPM-012: `f1c27e47ce0fd32cb88ac440544b37271b6b0e88`.
+- Open external gate families after LPM-012: hosted browser proof open; Supabase readback open; RLS open; provider sandbox/webhooks open; Stripe settlement open; private media storage/scanner open; sponsor rendering/report/finance open; archive retention/restore open; native/app-store open; accessibility open; production acceptance open.
+
 ## Local Access Lifecycle Authority Proof
 
 Run the no-mutation source verifier before hosted LPM-003 browser proof:
