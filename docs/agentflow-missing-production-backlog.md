@@ -63,6 +63,8 @@ Completed baseline:
   `build_56df39d6-071b-47ae-8b81-f00ce8853c1b` at integration commit
   `12a0aa5db04a269b9efab7d76dcca671865820ae`.
 
+Continued execution invariant: continued one-task-at-a-time execution accepts exactly one executable queue heading, either LPM-013A or LPM-014 or later. LPM-001 through LPM-012 remain completed records only; LPM-001 through LPM-012 A-variants must not be reintroduced as executable headings.
+
 ## LPM-017 - Keep the readiness ledger valid during continued execution
 
 ```yaml

@@ -27,6 +27,10 @@ function removeFromDocs(sources, value, replacement = "removed readiness contrac
   }
 }
 
+function replaceExecutableHeading(sources, heading) {
+  sources.queue = sources.queue.replace(/^## LPM-\d{3}A?\s+-/m, heading);
+}
+
 test("passes against repository fixtures without hosted credentials or network access", () => {
   const result = verifyLocalReadinessLedger(cloneSources());
   const report = formatLocalReadinessLedgerReport(result);
@@ -52,14 +56,81 @@ test("fails when an AgentFlow baseline integration commit is missing", () => {
   assert.ok(codesFor(result, "agentflow-queue").includes("LPM_012_BASELINE_RECORD_MISSING"));
 });
 
-test("fails when LPM-013A is not the only executable queue task", () => {
+test("accepts LPM-013A as the sole executable queue task for ledger repair reruns", () => {
   const sources = cloneSources();
-  sources.queue = sources.queue.replace("## LPM-013A -", "## LPM-013A -\n\n## LPM-014A -");
+  replaceExecutableHeading(sources, "## LPM-013A -");
+
+  const result = verifyLocalReadinessLedger(sources);
+
+  assert.equal(result.ok, true);
+});
+
+test("fails when the LPM-016 integration evidence is missing", () => {
+  const sources = cloneSources();
+  sources.queue = sources.queue.replace(
+    "`12a0aa5db04a269b9efab7d76dcca671865820ae`",
+    "`missing-lpm-016-sha`"
+  );
 
   const result = verifyLocalReadinessLedger(sources);
 
   assert.equal(result.ok, false);
-  assert.ok(codesFor(result, "agentflow-queue").includes("EXECUTABLE_QUEUE_NOT_LEDGER_ONLY"));
+  assert.ok(codesFor(result, "agentflow-queue").includes("LPM_016_INTEGRATION_RECORD_MISSING"));
+});
+
+test("fails when the executable queue heading is missing", () => {
+  const sources = cloneSources();
+  replaceExecutableHeading(sources, "### LPM-017 -");
+
+  const result = verifyLocalReadinessLedger(sources);
+
+  assert.equal(result.ok, false);
+  assert.ok(codesFor(result, "agentflow-queue").includes("EXECUTABLE_QUEUE_HEADING_MISSING"));
+});
+
+test("fails when multiple executable queue tasks are present", () => {
+  const sources = cloneSources();
+  sources.queue = sources.queue.replace("## LPM-017 -", "## LPM-017 -\n\n## LPM-018 -");
+
+  const result = verifyLocalReadinessLedger(sources);
+
+  assert.equal(result.ok, false);
+  assert.ok(codesFor(result, "agentflow-queue").includes("MULTIPLE_EXECUTABLE_QUEUE_HEADINGS"));
+});
+
+for (const heading of ["## LPM-012 -", "## LPM-012A -"]) {
+  test(`fails when ${heading.slice(3, -2)} is reintroduced as executable`, () => {
+    const sources = cloneSources();
+    replaceExecutableHeading(sources, heading);
+
+    const result = verifyLocalReadinessLedger(sources);
+
+    assert.equal(result.ok, false);
+    assert.ok(codesFor(result, "agentflow-queue").includes("BASELINE_REEXECUTION_HEADING_NOT_ALLOWED"));
+  });
+}
+
+test("fails when the active task validation list omits the ledger verifier", () => {
+  const sources = cloneSources();
+  sources.queue = sources.queue.replace("  - npm run qa:local-readiness-ledger", "  - npm run typecheck");
+
+  const result = verifyLocalReadinessLedger(sources);
+
+  assert.equal(result.ok, false);
+  assert.ok(codesFor(result, "agentflow-queue").includes("ACTIVE_LEDGER_VALIDATE_COMMAND_MISSING"));
+});
+
+test("fails when the active task validation list omits the ledger node test", () => {
+  const sources = cloneSources();
+  sources.queue = sources.queue.replace(
+    "  - node --test scripts/verify-local-readiness-ledger.test.mjs",
+    "  - npm run typecheck"
+  );
+
+  const result = verifyLocalReadinessLedger(sources);
+
+  assert.equal(result.ok, false);
+  assert.ok(codesFor(result, "agentflow-queue").includes("ACTIVE_LEDGER_TEST_COMMAND_MISSING"));
 });
 
 test("fails when a local readiness package script points away from its verifier", () => {
