@@ -41,95 +41,97 @@ Completed baseline:
 - LPM-009A integrated in AgentFlow build
   `build_3888a189-a617-4fbe-b64e-5fc002f30ef2` at integration commit
   `e02940dee117481e46925b9a10180998a159ce5a`.
+- LPM-010A integrated in AgentFlow build
+  `build_ceede9bf-42ca-4d62-a696-2fba63f5d62b` at integration commit
+  `1afe3b4d8feed75e966bc2498fddf3570d4fdd7e`.
 
-## LPM-010A - Add sponsor fulfillment readiness verifier
+## LPM-011A - Add reporting archive readiness verifier
 
 ```yaml
 estimate_hours: 4
 depends_on: []
 owns:
   - package.json
-  - scripts/verify-sponsor-fulfillment-readiness.mjs
-  - scripts/verify-sponsor-fulfillment-readiness.test.mjs
+  - scripts/verify-reporting-archive-readiness.mjs
+  - scripts/verify-reporting-archive-readiness.test.mjs
   - docs/runbook.md
   - docs/missing-production-slices-work-plan.md
   - docs/production-task-board.md
 validate:
   - npm ci --ignore-scripts --prefer-offline
   - npm run check:skills
-  - node --test scripts/verify-sponsor-fulfillment-readiness.test.mjs
-  - npm test -- lib/domain/domain.test.ts lib/supabase/sponsors.test.ts lib/supabase/sponsor-operations.test.ts components/sponsor-hub.test.tsx app/api-live-actions.test.ts app/routes-smoke.test.ts
+  - node --test scripts/verify-reporting-archive-readiness.test.mjs
+  - npm test -- lib/supabase/reporting.test.ts app/api-auth.test.ts app/routes-smoke.test.ts components/feature-panels.test.tsx
   - npm run typecheck
   - npm run build
   - git diff --check
 produces:
-  - name: sponsor-fulfillment-readiness-verifier
+  - name: reporting-archive-readiness-verifier
     type: local-readiness-proof
     version: 1.0.0
-    path: scripts/verify-sponsor-fulfillment-readiness.mjs
+    path: scripts/verify-reporting-archive-readiness.mjs
 consumes: []
 ```
 
-Implement a no-mutation verifier for the local LPM-010 sponsor fulfillment
-readiness contracts that already exist in sponsor placement domain helpers,
-team portal/community commerce models, Supabase sponsor reads, admin sponsor
-operations, Sponsor Hub fulfillment/report UI, public sponsor privacy copy,
-feature documentation, and focused tests. The verifier must prove, from
-repository source, that active sponsors render only through approved placement
-filters, approved logo assets are distinct from submitted logo URLs, fulfillment
-and recap surfaces separate configured placement, observed rendering proof,
-billing proof, renewal state, and unproven impact, and public surfaces do not
-leak child, parent, private media, billing, or redemption proof.
+Implement a no-mutation verifier for the local LPM-011 reporting and archive
+readiness contracts that already exist in the admin export route, Supabase
+reporting service, reporting tests, archive vault surface, archive readiness
+checklist, privacy/security docs, capability matrix, and user manual. The
+verifier must prove, from repository source, that active organization admins are
+the only export actors, each supported export kind is scoped through the
+selected organization or organization-derived team/player/event sets, related
+profile lookups are narrowed before contact data is joined, export generation
+writes audit evidence, archive surfaces stay admin-only, archived seasons remain
+readable and mutation-locked, and chat text retention/deletion proof is kept
+separate from non-chat season preservation.
 
 The tool must not call Supabase, sign in, run Playwright, seed data, mutate
-hosted records, send renewal email, call email/SMS/push providers, call Stripe,
-create or refund payments, upload files, fetch external logo assets, call
-provider dashboards, deploy, or claim hosted, observed-rendering, provider,
-finance, or production acceptance. Its job is to make the local readiness
-contract executable and to name exact blockers before an operator runs approved
-hosted public/admin browser proof, logo asset proof, placement rendering proof,
-renewal delivery proof, report proof, or production sponsor acceptance.
+hosted records, run archive close, delete chat records, call provider
+dashboards, upload or download files, deploy, configure secrets, or claim hosted
+RLS, browser, retention, restore, or production acceptance. Its job is to make
+the local readiness contract executable and to name exact blockers before an
+operator runs approved hosted admin export proof, archive smoke proof,
+chat-retention cleanup proof, backup/restore proof, or production archive
+acceptance.
 
 ### Acceptance Criteria
 
-- A new `qa:sponsor-fulfillment-readiness` script reads only repository files
-  and fails with named blockers when an LPM-010 local readiness contract is
-  missing or weakened.
-- The verifier checks placement authority: public placement helpers filter to
-  `active` sponsor records and exact approved placement keys, team-portal
-  placement respects team scope, and admin save operations reject invalid
-  placement keys, wrong-organization team assignments, and unauthorized actor
-  writes.
-- The verifier checks logo and asset safety: Supabase reads only approved logo
-  assets, submitted logo URLs remain review inputs until approved, unavailable
-  sponsor data fails closed without restoring editable seed rows, and the UI
-  gives clear fallback states when artwork or placement evidence is missing.
-- The verifier checks fulfillment and recap separation: Sponsor Hub and revenue
-  summaries separate configured public placement, reviewed logo metadata,
-  billing/payment proof, renewal review, report export, delivered-placement
-  proof, and unproven impact; zero verified impact is not converted into an
-  impact claim or PDF report.
-- The verifier checks renewal delivery gates: renewal email is human-reviewed
-  and remains disconnected from provider sends unless the provider sandbox
-  delivery contract and channel-specific consent/webhook proof are separately
-  complete.
-- The verifier checks public and parent privacy: `/sponsors`, team portal, and
-  parent-facing data paths do not expose sponsor billing state, child profiles,
-  parent contacts, private media, redemption proof, or sponsor-attributed
-  impact.
-- The verifier explicitly names hosted public/admin browser proof, observed
-  placement-rendering proof, approved logo asset proof, sponsor recap/report
-  artifact proof, renewal email sandbox proof, public placement leak QA,
-  accessibility proof, finance reconciliation, and production sponsor
-  acceptance as open gates.
+- A new `qa:reporting-archive-readiness` script reads only repository files and
+  fails with named blockers when an LPM-011 local readiness contract is missing
+  or weakened.
+- The verifier checks export authority: `/api/admin/exports` requires an
+  authenticated route user, accepts only the eight supported export kinds, and
+  `createAdminExport` rejects missing organization/actor context and requires
+  an active organization-admin membership for the selected organization before
+  reading export data.
+- The verifier checks export isolation: roster, contacts, schedule, RSVP,
+  snacks, volunteers, sponsors, and notifications export rows are scoped by
+  organization or by organization-derived team, player, and event ID sets before
+  related rows are read; profile joins are limited to collected IDs from those
+  scoped rows.
+- The verifier checks audit and file truth: successful exports insert an
+  `admin_export_created` audit event, return CSV content with a deterministic
+  filename/content type, escape CSV values, and fail closed when Supabase is
+  unavailable.
+- The verifier checks archive safety: the reports/archive and archive routes
+  remain admin-only, archive vault copy keeps archived seasons readable,
+  exportable, and mutation-locked, and fallback archive data is labeled as local
+  until Supabase rows are available.
+- The verifier checks retention separation: docs require non-chat season data
+  preservation, chat retention cleanup before archive proof, deletion proof
+  that app-readable `team_chat_messages` text is gone, and retained moderation
+  metadata that cannot reconstruct deleted message bodies.
+- The verifier explicitly names hosted RLS/admin export proof, hosted archive
+  smoke proof, real season-close proof, chat-retention cleanup proof,
+  deleted-chat readback proof, backup/PITR/restore proof, accessibility proof,
+  and production archive acceptance as open gates.
 - Tests cover passing fixtures and at least one missing-contract failure for
   each readiness family without requiring hosted credentials, network access,
-  Supabase, browser automation, provider dashboard access, provider sends,
-  Stripe, storage, or external logo requests.
+  Supabase, browser automation, provider dashboard access, archive close, chat
+  deletion, backups, restore drills, storage, or external file requests.
 - `docs/runbook.md`, `docs/missing-production-slices-work-plan.md`, and
   `docs/production-task-board.md` describe the verifier as local repository
-  readiness proof only; hosted public/admin browser proof, observed
-  placement-rendering proof, approved logo asset proof, sponsor recap/report
-  artifact proof, renewal email sandbox proof, public placement leak QA,
-  accessibility proof, finance reconciliation, and production sponsor
-  acceptance remain open gates.
+  readiness proof only; hosted RLS/admin export proof, hosted archive smoke
+  proof, real season-close proof, chat-retention cleanup proof, deleted-chat
+  readback proof, backup/PITR/restore proof, accessibility proof, and production
+  archive acceptance remain open gates.
