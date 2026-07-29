@@ -101,7 +101,7 @@ export function validateHostedReadinessPreflight(env = process.env) {
 
   const normalizedBaseUrl = baseUrl ? baseUrl.origin + baseUrl.pathname.replace(/\/$/, "") : "";
   const commands = normalizedBaseUrl ? [
-    `PUBLIC_FAMILY_BASE_URL=${shellValue(normalizedBaseUrl)} QA_PROOF_BASE_URL=${shellValue(normalizedBaseUrl)} npm run qa:public-family-proof`,
+    `PUBLIC_FAMILY_BASE_URL=${shellValue(normalizedBaseUrl)} QA_PROOF_BASE_URL=${shellValue(normalizedBaseUrl)} PUBLIC_ORGANIZATION_ID=${shellValue(organizationId)} PUBLIC_ACCESS_REVIEW_WINDOW=${shellValue(reviewWindow)} npm run qa:public-family-proof`,
     `QA_PROOF_BASE_URL=${shellValue(normalizedBaseUrl)} npm run qa:tenant-readiness-proof`
   ] : [];
 

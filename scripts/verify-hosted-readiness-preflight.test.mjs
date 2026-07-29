@@ -66,15 +66,28 @@ test("accepts valid hosted mode and normalizes command URLs", () => {
   assert.equal(result.mode, "hosted");
   assert.equal(result.baseUrl, "https://preview.leaguepilot.test");
   assert.deepEqual(result.commands, [
-    "PUBLIC_FAMILY_BASE_URL=https://preview.leaguepilot.test QA_PROOF_BASE_URL=https://preview.leaguepilot.test npm run qa:public-family-proof",
+    "PUBLIC_FAMILY_BASE_URL=https://preview.leaguepilot.test QA_PROOF_BASE_URL=https://preview.leaguepilot.test PUBLIC_ORGANIZATION_ID=11111111-1111-4111-8111-111111111111 PUBLIC_ACCESS_REVIEW_WINDOW='within two business days' npm run qa:public-family-proof",
     "QA_PROOF_BASE_URL=https://preview.leaguepilot.test npm run qa:tenant-readiness-proof"
   ]);
+});
+
+test("shell-safely carries hosted public-family expectations", () => {
+  const result = validateHostedReadinessPreflight({
+    ...validEnv,
+    PUBLIC_ACCESS_REVIEW_WINDOW: "coach's 48 hour review"
+  });
+
+  assert.equal(result.ok, true);
+  assert.equal(
+    result.commands[0],
+    "PUBLIC_FAMILY_BASE_URL=https://preview.leaguepilot.test QA_PROOF_BASE_URL=https://preview.leaguepilot.test PUBLIC_ORGANIZATION_ID=11111111-1111-4111-8111-111111111111 PUBLIC_ACCESS_REVIEW_WINDOW='coach'\\''s 48 hour review' npm run qa:public-family-proof"
+  );
 });
 
 test("prints follow-on commands and proof boundaries", () => {
   const report = formatHostedReadinessPreflightReport(validateHostedReadinessPreflight(validEnv));
 
-  assert.match(report, /PUBLIC_FAMILY_BASE_URL=https:\/\/preview\.leaguepilot\.test QA_PROOF_BASE_URL=https:\/\/preview\.leaguepilot\.test npm run qa:public-family-proof/);
+  assert.match(report, /PUBLIC_FAMILY_BASE_URL=https:\/\/preview\.leaguepilot\.test QA_PROOF_BASE_URL=https:\/\/preview\.leaguepilot\.test PUBLIC_ORGANIZATION_ID=11111111-1111-4111-8111-111111111111 PUBLIC_ACCESS_REVIEW_WINDOW='within two business days' npm run qa:public-family-proof/);
   assert.match(report, /QA_PROOF_BASE_URL=https:\/\/preview\.leaguepilot\.test npm run qa:tenant-readiness-proof/);
   assert.match(report, /No deployment or Vercel Authentication bypass is performed/);
   assert.match(report, /No Supabase seeding, database write, migration, provider send, payment write, or media upload is performed/);
