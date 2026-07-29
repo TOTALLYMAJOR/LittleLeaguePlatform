@@ -44,94 +44,95 @@ Completed baseline:
 - LPM-010A integrated in AgentFlow build
   `build_ceede9bf-42ca-4d62-a696-2fba63f5d62b` at integration commit
   `1afe3b4d8feed75e966bc2498fddf3570d4fdd7e`.
+- LPM-011A integrated in AgentFlow build
+  `build_d1e387bd-3e3a-48f9-9436-56fab08879db` at integration commit
+  `36496d82a7fd176354cdf9974d43f005cee9dc09`.
 
-## LPM-011A - Add reporting archive readiness verifier
+## LPM-012A - Add native app decision readiness verifier
 
 ```yaml
 estimate_hours: 4
 depends_on: []
 owns:
   - package.json
-  - scripts/verify-reporting-archive-readiness.mjs
-  - scripts/verify-reporting-archive-readiness.test.mjs
+  - scripts/verify-native-app-decision-readiness.mjs
+  - scripts/verify-native-app-decision-readiness.test.mjs
   - docs/runbook.md
   - docs/missing-production-slices-work-plan.md
   - docs/production-task-board.md
 validate:
   - npm ci --ignore-scripts --prefer-offline
   - npm run check:skills
-  - node --test scripts/verify-reporting-archive-readiness.test.mjs
-  - npm test -- lib/supabase/reporting.test.ts app/api-auth.test.ts app/routes-smoke.test.ts components/feature-panels.test.tsx
+  - node --test scripts/verify-native-app-decision-readiness.test.mjs
+  - npm test -- app/routes-smoke.test.ts app/api-auth.test.ts app/api-live-actions.test.ts app/public-intake-rate-limit.test.ts
   - npm run typecheck
   - npm run build
   - git diff --check
 produces:
-  - name: reporting-archive-readiness-verifier
+  - name: native-app-decision-readiness-verifier
     type: local-readiness-proof
     version: 1.0.0
-    path: scripts/verify-reporting-archive-readiness.mjs
+    path: scripts/verify-native-app-decision-readiness.mjs
 consumes: []
 ```
 
-Implement a no-mutation verifier for the local LPM-011 reporting and archive
-readiness contracts that already exist in the admin export route, Supabase
-reporting service, reporting tests, archive vault surface, archive readiness
-checklist, privacy/security docs, capability matrix, and user manual. The
-verifier must prove, from repository source, that active organization admins are
-the only export actors, each supported export kind is scoped through the
-selected organization or organization-derived team/player/event sets, related
-profile lookups are narrowed before contact data is joined, export generation
-writes audit evidence, archive surfaces stay admin-only, archived seasons remain
-readable and mutation-locked, and chat text retention/deletion proof is kept
-separate from non-chat season preservation.
+Implement a no-mutation verifier for the local LPM-012 native app decision
+readiness contracts that already exist in the PWA install provider, mobile
+usage route, service worker/offline route, manifest, app shell, route-smoke and
+API tests, concept scorecard, tech-stack docs, user manual, and work-plan docs.
+The verifier must prove, from repository source, that LeaguePilot remains
+PWA-first, install promotion is value-gated, standalone launches and install
+prompt outcomes are measured, mobile usage accepts a native-interest signal
+without granting product approval, offline behavior is explicit and bounded,
+and any future Expo/native path must reuse existing domain contracts, Supabase
+session/RLS boundaries, provider gates, and child privacy rules.
 
 The tool must not call Supabase, sign in, run Playwright, seed data, mutate
-hosted records, run archive close, delete chat records, call provider
-dashboards, upload or download files, deploy, configure secrets, or claim hosted
-RLS, browser, retention, restore, or production acceptance. Its job is to make
-the local readiness contract executable and to name exact blockers before an
-operator runs approved hosted admin export proof, archive smoke proof,
-chat-retention cleanup proof, backup/restore proof, or production archive
-acceptance.
+hosted records, collect real analytics, request push permissions, register app
+stores, scaffold Expo, send providers, upload media, deploy, configure secrets,
+or claim PWA/mobile browser, production usage, push-provider, app-store, native,
+or production acceptance. Its job is to make the local native-decision contract
+executable and to name exact blockers before an operator runs approved mobile
+browser proof, usage review, push permission proof, offline/reconnect proof,
+native product approval, or Expo architecture work.
 
 ### Acceptance Criteria
 
-- A new `qa:reporting-archive-readiness` script reads only repository files and
-  fails with named blockers when an LPM-011 local readiness contract is missing
-  or weakened.
-- The verifier checks export authority: `/api/admin/exports` requires an
-  authenticated route user, accepts only the eight supported export kinds, and
-  `createAdminExport` rejects missing organization/actor context and requires
-  an active organization-admin membership for the selected organization before
-  reading export data.
-- The verifier checks export isolation: roster, contacts, schedule, RSVP,
-  snacks, volunteers, sponsors, and notifications export rows are scoped by
-  organization or by organization-derived team, player, and event ID sets before
-  related rows are read; profile joins are limited to collected IDs from those
-  scoped rows.
-- The verifier checks audit and file truth: successful exports insert an
-  `admin_export_created` audit event, return CSV content with a deterministic
-  filename/content type, escape CSV values, and fail closed when Supabase is
-  unavailable.
-- The verifier checks archive safety: the reports/archive and archive routes
-  remain admin-only, archive vault copy keeps archived seasons readable,
-  exportable, and mutation-locked, and fallback archive data is labeled as local
-  until Supabase rows are available.
-- The verifier checks retention separation: docs require non-chat season data
-  preservation, chat retention cleanup before archive proof, deletion proof
-  that app-readable `team_chat_messages` text is gone, and retained moderation
-  metadata that cannot reconstruct deleted message bodies.
-- The verifier explicitly names hosted RLS/admin export proof, hosted archive
-  smoke proof, real season-close proof, chat-retention cleanup proof,
-  deleted-chat readback proof, backup/PITR/restore proof, accessibility proof,
-  and production archive acceptance as open gates.
+- A new `qa:native-app-decision-readiness` script reads only repository files
+  and fails with named blockers when an LPM-012 local readiness contract is
+  missing or weakened.
+- The verifier checks PWA-first product posture: `docs/tech-stack.md` says the
+  first shippable mobile experience is the responsive PWA and Expo/native work
+  is justified only by real app-store, camera/media, stronger push, OS
+  integration, or offline requirements that PWA cannot meet.
+- The verifier checks install and standalone measurement: `app/providers.tsx`
+  listens for `beforeinstallprompt` and `appinstalled`, gates install prompt
+  eligibility on the value-event key, records `install_prompt_shown`,
+  `install_prompt_accepted`, `install_prompt_dismissed`, and
+  `standalone_launch`, and posts to `/api/mobile-usage-events`.
+- The verifier checks mobile usage boundaries: `/api/mobile-usage-events`
+  allows the native-interest event type, remains anonymous-safe, is covered by
+  auth and live-action tests, and is protected by public-intake rate limiting.
+- The verifier checks offline/PWA shell readiness: `public/manifest.webmanifest`
+  and `public/sw.js` are wired to `/offline`, the App Shell exposes offline
+  status and mobile navigation, and route-smoke tests prove the manifest,
+  service worker, install/standalone metrics, and PWA shell wiring.
+- The verifier checks native architecture guardrails: documentation requires
+  any approved Expo app to reuse domain models, Supabase session/RLS
+  boundaries, provider gates, and child privacy rules, and keeps Expo deferred
+  until evidence justifies the extra platform.
+- The verifier explicitly names mobile browser proof, production usage metrics
+  review, push permission proof, offline/reconnect proof, native product
+  approval, Expo architecture review, app-store compliance review, accessibility
+  proof, and production native acceptance as open gates.
 - Tests cover passing fixtures and at least one missing-contract failure for
   each readiness family without requiring hosted credentials, network access,
-  Supabase, browser automation, provider dashboard access, archive close, chat
-  deletion, backups, restore drills, storage, or external file requests.
+  Supabase, browser automation, provider dashboard access, app-store access,
+  push-provider access, analytics dashboards, Expo scaffolding, native builds,
+  media uploads, storage, or external device requests.
 - `docs/runbook.md`, `docs/missing-production-slices-work-plan.md`, and
   `docs/production-task-board.md` describe the verifier as local repository
-  readiness proof only; hosted RLS/admin export proof, hosted archive smoke
-  proof, real season-close proof, chat-retention cleanup proof, deleted-chat
-  readback proof, backup/PITR/restore proof, accessibility proof, and production
-  archive acceptance remain open gates.
+  readiness proof only; mobile browser proof, production usage metrics review,
+  push permission proof, offline/reconnect proof, native product approval, Expo
+  architecture review, app-store compliance review, accessibility proof, and
+  production native acceptance remain open gates.
