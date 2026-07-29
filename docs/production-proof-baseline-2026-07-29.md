@@ -1,6 +1,6 @@
 # Production Proof Baseline - 2026-07-29
 
-Status: LPM-001 local baseline finalized
+Status: LPM-001 local baseline finalized for AgentFlow attempt 3
 Repository: LeaguePilot / Little League HQ
 Build: `build_5e3e818d-6dc6-4069-8fc9-6498a727b3eb`
 Task: `LPM-001`
@@ -14,9 +14,10 @@ This ledger fixes the production-proof boundary before later hosted, provider, p
 | Observed working directory | `/home/administrator/.agentflow/worktrees/repo_80ec8817-7c48-4066-a53c-6a5aa57d31c8/build_5e3e818d-6dc6-4069-8fc9-6498a727b3eb/tasks/task_lpm-001_771e7704-f2bc-449a-9838-e21112a17673` |
 | Git top level | `/home/administrator/.agentflow/worktrees/repo_80ec8817-7c48-4066-a53c-6a5aa57d31c8/build_5e3e818d-6dc6-4069-8fc9-6498a727b3eb/tasks/task_lpm-001_771e7704-f2bc-449a-9838-e21112a17673` |
 | Current branch | `agent/build_5e3e818d-6dc6-4069-8fc9-6498a727b3eb/task_lpm-001_771e7704-f2bc-449a-9838-e21112a17673` |
-| Current HEAD | `97c8c5d51083067f465eab5d35347a78ad98a9e7` |
+| Current HEAD at attempt-3 start | `8ec64bd58c08572199a3703dbcf1fbe75941f3c4` |
 | Upstream | None configured for the AgentFlow task branch (`git rev-parse --abbrev-ref --symbolic-full-name @{u}` exits 128) |
-| Attempt-2 pre-final status | Owned documentation edits were already present from the prior attempt: `M docs/exceptional-ux-acceptance-audit.md`, `M docs/missing-production-slices-work-plan.md`, `M docs/production-task-board.md`, and `?? docs/production-proof-baseline-2026-07-29.md`. |
+| Attempt-3 pre-final status | Clean task worktree at `8ec64bd58c08572199a3703dbcf1fbe75941f3c4` before this documentation patch (`git status --short --branch` showed only the branch header). |
+| Attempt-3 final worker status | Owned documentation modifications only: `M docs/missing-production-slices-work-plan.md` and `M docs/production-proof-baseline-2026-07-29.md`. |
 | Owned files | `docs/exceptional-ux-acceptance-audit.md`, `docs/missing-production-slices-work-plan.md`, `docs/production-proof-baseline-2026-07-29.md`, `docs/production-task-board.md` |
 
 ## Dirty-Tree And AgentFlow Caveats
@@ -25,7 +26,7 @@ This ledger fixes the production-proof boundary before later hosted, provider, p
 - This worker did not inspect, repair, move, delete, or publish any source checkout or AgentFlow-managed worktree outside the current task directory.
 - AgentFlow owns Git history, integration validation, Docker execution, durable run state, worktree cleanup, publication, and acceptance. This ledger is local documentation evidence only until AgentFlow integrates and validates it.
 - The prior work-plan execution log referenced `/home/administrator/projects/youth-sports-platform-mvp-v3` and branch `codex/ui-ux-100-shell-chat`. Those entries remain historical source-checkout context, not the current task branch identity.
-- Attempt 1 failed during validation before integration. Attempt 2 preserved the owned documentation edits already present in this task worktree and did not perform AgentFlow cleanup or worktree repair.
+- Attempt 1 failed during validation before integration. Attempt 2 produced result commit `8ec64bd58c08572199a3703dbcf1fbe75941f3c4` but failed AgentFlow integration validation with `sh: 1: next: not found`; AgentFlow, not this worker, owns that integration environment and any cleanup. Attempt 3 starts from that result commit and keeps work scoped to the four owned docs.
 
 ## Proof Boundary
 
@@ -74,7 +75,7 @@ The guard allows localhost targets without hosted confirmation, but a hosted run
 | `npm run check:skills` | Passed in this worker. |
 | `npx vitest run app/route-guards.test.ts app/routes-smoke.test.ts app/provider-boundary.test.ts lib/navigation/route-topology.test.ts` | Passed in this worker: 4 test files, 43 tests. |
 | `npm run typecheck` | Passed in this worker. |
-| `npm run build` | Passed in this worker. |
+| `npm run build` | Passed in this worker. Attempt 2's external AgentFlow integration blocker was `sh: 1: next: not found`, but this attempt observed `node_modules/.bin/next` present before rerunning the build. |
 | `git diff --check` | Passed in this worker after the final documentation patch. |
 | `npm run qa:rls-proof` | Skipped by design; no isolated QA target and confirmation were configured for this worker. |
 
