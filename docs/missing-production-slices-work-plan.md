@@ -228,15 +228,19 @@ Prove real sandbox email, SMS, and Web Push delivery without enabling broad prod
 
 Acceptance criteria:
 
+- AC-000: `npm run qa:provider-sandbox-readiness` passes as local repository readiness proof only before any real provider sandbox traffic is attempted.
 - AC-001: Provider secrets are scoped to the approved environment and never copied into all-preview or production targets without explicit approval.
 - AC-002: One adult-consented QA allowlist recipient is documented per channel.
 - AC-003: Approved attempts create sandbox sends; rejected, preference-disabled, or provider-disabled attempts remain suppressed.
 - AC-004: Signed webhooks update attempt state, reject replay, and preserve provider acceptance versus delivery versus read versus acknowledgment.
 - AC-005: Retry and reconciliation behavior is idempotent; ambiguous outcomes are not automatically retried.
-- AC-006: Cost controls, suppression, monitoring, rollback, and send gates are documented before any production request.
+- AC-006: Cost controls, including a named cost cap, suppression, monitoring, rollback, and send gates are documented before any production request.
 
 Validation:
-Provider sandbox tests, webhook tests, focused hosted proof, `npm test -- app/provider-boundary.test.ts lib/supabase/provider-delivery.test.ts lib/services/notifications/worker.test.ts lib/services/notifications/webhook-verification.test.ts`.
+`npm run qa:provider-sandbox-readiness`; provider sandbox tests, webhook tests, focused hosted proof, `npm test -- app/provider-boundary.test.ts lib/supabase/provider-delivery.test.ts lib/services/notifications/worker.test.ts lib/services/notifications/webhook-verification.test.ts`.
+
+Boundary:
+`qa:provider-sandbox-readiness` reads repository files only. It does not call Supabase, sign in, run Playwright, seed data, mutate hosted records, send email, SMS, or Web Push, call SendGrid, Twilio, Pingram, Web Push, or provider dashboards, configure secrets, deploy, or claim sandbox, hosted, provider, or production acceptance. Real sandbox email, SMS, and Web Push sends, provider dashboard setup, provider secrets, adult QA recipient approval, signed webhook endpoint registration, hosted worker execution, cost monitoring, and production-send approval remain open gates.
 
 Out of scope:
 Unrestricted production sends.

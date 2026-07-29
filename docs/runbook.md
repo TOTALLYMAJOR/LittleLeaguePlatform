@@ -97,6 +97,20 @@ The verifier reads repository files only. It checks that private Parent Replay r
 
 Passing this command proves only the local repository readiness contract. Hosted browser proof, Supabase readback, populated media consent/revocation proof, multi-guardian transition concurrency proof, storage/scanner proof, provider sandbox proof, and production acceptance remain open gates. The verifier does not call Supabase, sign in, run Playwright, seed data, mutate hosted records, create provider sends, upload media, create storage objects, deploy, configure storage/scanner/realtime/provider infrastructure, or claim hosted acceptance.
 
+## Local Provider Sandbox Readiness Proof
+
+Run the no-mutation source verifier before any LPM-007 real provider sandbox proof:
+
+```bash
+npm run qa:provider-sandbox-readiness
+```
+
+The verifier reads repository files only. It checks that provider delivery review requires assigned-coach or organization-admin authority, provider/channel matching, organization feature gates, recipient preference checks, durable attempt rows, and no external send during review. It also checks that worker execution claims queued approved attempts, rechecks durable authority, binds attempt, notification, channel, provider, transport provider, idempotency key, retry count, and adapter selection before any adapter send can run.
+
+Passing this command proves local repository readiness proof only. It does not call Supabase, sign in, run Playwright, seed data, mutate hosted records, send email, SMS, or Web Push, call SendGrid, Twilio, Pingram, Web Push, or provider dashboards, configure secrets, deploy, or claim sandbox, hosted, provider, or production acceptance.
+
+Real sandbox email, SMS, and Web Push sends, provider dashboard setup, provider secrets, adult QA recipient approval, signed webhook endpoint registration, hosted worker execution, cost monitoring, and production-send approval remain open gates. Before any operator sends real sandbox traffic, document one adult-consented QA allowlist recipient per channel, a cost cap, monitoring owner, suppression rollback, and the rollback transport or kill-switch path.
+
 ## Supabase QA Proof
 
 Use these checks after migrations are applied to a Supabase QA or preview project:

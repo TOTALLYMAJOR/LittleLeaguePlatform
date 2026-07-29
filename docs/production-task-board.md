@@ -209,11 +209,12 @@ Task-specific checks are required only when the surface is touched:
 ### LP-015 - Implement Real Provider Sends If Approved
 
 - Priority: P2 conditional.
-- Current state: intentionally disconnected. The configured Supabase project now has `notification_delivery_attempts` execution metadata from `0021_notification_delivery_execution.sql`, including `idempotency_key`, retry locks, retry counts, provider response JSON, webhook IDs, and `dead_lettered_at`. The fictional demo tenant seed and `npm run qa:demo-tenant-proof` verify provider sends at zero and demo delivery-attempt rows carrying idempotency and dead-letter metadata. Live sends still require the approved worker/adapters/webhooks proof slice.
+- Current state: intentionally disconnected. The configured Supabase project now has `notification_delivery_attempts` execution metadata from `0021_notification_delivery_execution.sql`, including `idempotency_key`, retry locks, retry counts, provider response JSON, webhook IDs, and `dead_lettered_at`. The fictional demo tenant seed and `npm run qa:demo-tenant-proof` verify provider sends at zero and demo delivery-attempt rows carrying idempotency and dead-letter metadata. `npm run qa:provider-sandbox-readiness` is the local repository readiness proof only for the provider sandbox contract. Live sends still require the approved worker/adapters/webhooks proof slice.
 - Seams: provider delivery service, Web Push VAPID, email/SMS provider adapters, provider webhooks, delivery attempts.
 - Done when: approved attempts create real sandbox sends, rejected/suppressed attempts do not send, webhooks update delivery state, and retries are idempotent.
 - SaaS constants focus: provider contract, consent, suppression, retry, webhook replay, noisy-neighbor, billing/cost.
-- Validation: provider sandbox tests, webhook tests, `npm test`, `npm run typecheck`, hosted proof.
+- Validation: `npm run qa:provider-sandbox-readiness`; provider sandbox tests, webhook tests, `npm test`, `npm run typecheck`, hosted proof.
+- Open gates: real sandbox email, SMS, and Web Push sends, provider dashboard setup, provider secrets, adult QA recipient approval, an adult-consented QA allowlist per channel, signed webhook endpoint registration, hosted worker execution, cost monitoring with a cost cap, rollback, and production-send approval. The verifier does not call Supabase, sign in, run Playwright, seed data, mutate hosted records, send email, SMS, or Web Push, call provider dashboards, configure secrets, deploy, or claim sandbox, hosted, provider, or production acceptance.
 
 ### LP-016 - Prove Weather Provider Credentials And Actions
 
