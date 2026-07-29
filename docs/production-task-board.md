@@ -260,6 +260,8 @@ Task-specific checks are required only when the surface is touched:
 - Current state: sponsor billing proof records exist; live Stripe collection is disconnected.
 - Seams: `/admin`, `/api/admin/sponsors`, sponsor billing tables, Stripe provider adapter if added.
 - Done when: sponsor billing stays proof-only or Stripe Product/Price/Invoice/Checkout plus webhook signature proof is scoped.
+- Local verifier: `npm run qa:sponsor-stripe-readiness` is local repository readiness proof only for the sponsor billing/payment boundary, server-side Checkout Session contract, server-only key handling, webhook settlement truth, admin/public privacy separation, and open payment gates. It does not call Stripe, Supabase, sign in, run Playwright, seed data, mutate hosted records, create Checkout Sessions, configure API keys or webhook secrets, register webhook endpoints, charge or refund payments, call provider dashboards, deploy, or claim sandbox, hosted, provider, finance, production payment, or production acceptance.
+- Open gates: Stripe sandbox account setup, restricted key creation, webhook endpoint registration, signing-secret configuration, sandbox Checkout Session proof, signed webhook replay/duplicate proof, refund/failure proof, hosted admin proof, finance reconciliation, and production payment approval. Restricted API keys are preferred, separate environments are required, and no Stripe secret or restricted key values are stored in source.
 - SaaS constants focus: commercial objects, billing/metering, revenue impact, entitlement, payment failure, webhook replay, finance reporting.
 - Validation: docs-only if deferred; Stripe sandbox tests and webhook proof if implemented.
 
