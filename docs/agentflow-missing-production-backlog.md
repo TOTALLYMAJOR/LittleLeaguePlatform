@@ -62,21 +62,21 @@ Completed baseline:
 - LPM-016 integrated in AgentFlow build
   `build_56df39d6-071b-47ae-8b81-f00ce8853c1b` at integration commit
   `12a0aa5db04a269b9efab7d76dcca671865820ae`.
+- LPM-017 integrated in AgentFlow build
+  `build_a62e498a-7316-43a4-b7c6-1569c62960d8` at integration commit
+  `944366ff9e5fcee72ba3f4037ce68fa0c2f306b9`.
 
 Continued execution invariant: continued one-task-at-a-time execution accepts exactly one executable queue heading, either LPM-013A or LPM-014 or later. LPM-001 through LPM-012 remain completed records only; LPM-001 through LPM-012 A-variants must not be reintroduced as executable headings.
 
-## LPM-017 - Keep the readiness ledger valid during continued execution
+## LPM-018 - Enforce exact readiness ledger validation commands
 
 ```yaml
-estimate_hours: 3
+estimate_hours: 2
 depends_on: []
 owns:
   - docs/agentflow-missing-production-backlog.md
   - scripts/verify-local-readiness-ledger.mjs
   - scripts/verify-local-readiness-ledger.test.mjs
-  - docs/missing-production-slices-work-plan.md
-  - docs/production-task-board.md
-  - docs/runbook.md
 validate:
   - npm ci --ignore-scripts --prefer-offline
   - npm run check:skills
@@ -86,26 +86,24 @@ validate:
   - npm run build
   - git diff --check
 produces:
-  - name: continued-execution-ledger-contract
+  - name: exact-ledger-validation-command-contract
     type: local-proof-contract
     version: 1.0.0
     path: scripts/verify-local-readiness-ledger.mjs
 consumes: []
 ```
 
-Repair the LPM-013A local-readiness ledger so continued one-task-at-a-time
-AgentFlow execution does not invalidate the already integrated LPM-001 through
-LPM-012 baseline. The current verifier hard-codes LPM-013A as the only allowed
-executable queue heading, so the legitimate LPM-016 queue makes
-`qa:local-readiness-ledger` fail even though all required baseline evidence and
-external proof boundaries remain present.
+Make the LPM-017 continued-execution ledger fail closed on its two required
+active-task validation commands. Independent post-integration verification
+showed that replacing `npm run qa:local-readiness-ledger` with
+`npm run qa:local-readiness-ledger-extra` still returned `ok: true` because the
+current helper checks substring inclusion instead of exact validation-list
+entries.
 
-Keep the completed baseline requirement through LPM-012 unchanged. Permit
-exactly one executable queue heading when it is LPM-013A or a later numbered
-task, reject any attempt to re-execute LPM-001 through LPM-012, and continue to
-require the active task to run the ledger verifier and its direct Node test.
-Update the governing docs only as needed to describe this continued-execution
-invariant and the LPM-016 integration evidence.
+Parse the active YAML `validate` list into command entries and require exact
+equality for the ledger verifier and direct Node test commands. Preserve the
+completed LPM-001 through LPM-012 baseline, the single post-baseline executable
+heading invariant, and the LPM-016 integration record.
 
 This task must not alter product UI, APIs, Supabase adapters, domain rules,
 migrations, providers, payments, storage, archive behavior, native behavior, or
@@ -117,24 +115,22 @@ acceptance.
 
 ### Acceptance Criteria
 
-- The queue records LPM-016 with AgentFlow build
-  `build_56df39d6-071b-47ae-8b81-f00ce8853c1b` and integration commit
-  `12a0aa5db04a269b9efab7d76dcca671865820ae`.
-- The ledger still requires completed AgentFlow build and integration-commit
-  records for every canonical baseline item from LPM-001 through LPM-012.
-- The ledger accepts exactly one executable queue heading when that heading is
-  LPM-013A or a task numbered LPM-014 or later.
-- The ledger rejects zero executable headings, multiple executable headings,
-  and any executable LPM-001 through LPM-012 task or A-variant.
-- The ledger continues to require `npm run qa:local-readiness-ledger` and
-  `node --test scripts/verify-local-readiness-ledger.test.mjs` in the active
-  task validation list.
-- Direct Node tests cover the current repository fixture and failure modes for
-  missing, multiple, and baseline-reexecution headings without network access or
-  credentials.
-- Governing docs continue to identify LPM-001 through LPM-012 as local
-  repository readiness only and preserve hosted browser, Supabase/RLS, provider,
-  Stripe, storage/scanner, sponsor fulfillment, archive/restore, native/app
-  store, accessibility, and production acceptance as open gates.
+- The queue records LPM-017 with AgentFlow build
+  `build_a62e498a-7316-43a4-b7c6-1569c62960d8` and integration commit
+  `944366ff9e5fcee72ba3f4037ce68fa0c2f306b9`.
+- Active-task validation commands are parsed as discrete YAML list entries
+  rather than searched as substrings.
+- The exact `npm run qa:local-readiness-ledger` and
+  `node --test scripts/verify-local-readiness-ledger.test.mjs` entries are
+  required.
+- Suffixed, prefixed, or argument-appended near matches for either required
+  command are rejected with the existing named blocker for that command.
+- Direct Node tests cover exact commands plus at least one suffixed and one
+  argument-appended near match for each command.
+- Existing tests for the completed baseline, single executable heading,
+  baseline reexecution, docs, external open gates, and no-side-effect boundary
+  continue to pass.
+- The change remains limited to the queue, ledger verifier, and direct ledger
+  tests.
 - `npm run qa:local-readiness-ledger`, its direct Node tests, skill check,
   typecheck, build, and whitespace check pass.
