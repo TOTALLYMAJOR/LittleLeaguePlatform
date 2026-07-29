@@ -3,20 +3,21 @@
 Status: active
 Created: 2026-07-29
 Repository: LeaguePilot / Little League HQ
-Source working directory: `/home/administrator/projects/youth-sports-platform-mvp-v3`
-Current AgentFlow task worktree: `/home/administrator/.agentflow/worktrees/repo_80ec8817-7c48-4066-a53c-6a5aa57d31c8/build_e15b91b4-66e7-4ce9-833b-ebed388ac25c/tasks/task_lpm-013_c314ec41-5691-487b-9a43-cfeade0636ae`
+Protected source checkout: `/home/administrator/projects/youth-sports-platform-mvp-v3`
+Clean AgentFlow execution checkout: `/home/administrator/projects/leaguepilot-missing-production-agentflow-20260729`
 Baseline ledger: `docs/production-proof-baseline-2026-07-29.md`
 
 This work plan turns the known missing or gated pieces into dependency-aware execution tasks. It does not treat local UI, seed fallback, provider configuration, or preview evidence as production acceptance. Each task must preserve child privacy defaults, role boundaries, human approval, auditability, and provider/payment/storage gates.
 
 ## Local Readiness Completion Ledger
 
-The AgentFlow missing-production sequence is locally complete through LPM-012 as local repository readiness proof only. LPM-009 and LPM-010 are reconciled as local repository readiness complete only for the source contracts covered by their no-mutation verifiers, verifier failure-mode tests, and focused sponsor API/service/UI tests; they are not sandbox, hosted, provider, finance, or production acceptance. LPM-013A is a ledger/verifier only; it reads repository files and records blockers before any operator chooses a separate proof run. The continued-execution invariant is that continued one-task-at-a-time execution accepts exactly one executable queue heading, either LPM-013A or LPM-014 or later; LPM-001 through LPM-012 remain completed records only and their A-variants must not be re-executed. LPM-016 is integrated in AgentFlow build `build_56df39d6-071b-47ae-8b81-f00ce8853c1b` at integration commit `12a0aa5db04a269b9efab7d76dcca671865820ae`; external proof and production acceptance remain separate authorized follow-up lanes.
+The AgentFlow missing-production sequence is locally complete through LPM-012 as local repository readiness proof only. LPM-002 through LPM-012 are reconciled as `local repository readiness complete - external proof open` for the source contracts covered by their no-mutation verifiers, verifier failure-mode tests, and focused local tests; they are not sandbox, hosted, Supabase, RLS, provider, Stripe, storage/scanner, sponsor, archive/restore, native/app-store, accessibility, or production acceptance. LPM-013A is a ledger/verifier only; it reads repository files and records blockers before any operator chooses a separate proof run. The continued-execution invariant is that continued one-task-at-a-time execution accepts exactly one executable queue heading, either LPM-013A or LPM-014 or later; LPM-001 through LPM-012 remain completed records only and their A-variants must not be re-executed. LPM-018 is integrated in AgentFlow build `build_faa1c28e-cc9d-4912-9529-0df1240963da` at integration commit `50e56d2d33cd04dc869483a1f99b6583fd9cc36b`; external proof and production acceptance remain separate authorized follow-up lanes.
 
-- Source checkout dirty-tree boundary: the original source checkout is `/home/administrator/projects/youth-sports-platform-mvp-v3`, and its unrelated dirty tree is outside this local ledger.
-- Clean sibling worktree path: `/home/administrator/.agentflow/worktrees/repo_80ec8817-7c48-4066-a53c-6a5aa57d31c8/build_e15b91b4-66e7-4ce9-833b-ebed388ac25c/tasks/task_lpm-013_c314ec41-5691-487b-9a43-cfeade0636ae`.
+- Protected source checkout boundary: `/home/administrator/projects/youth-sports-platform-mvp-v3` is the source checkout boundary. Its live checkout state must be re-read before every task.
+- Clean AgentFlow execution checkout: `/home/administrator/projects/leaguepilot-missing-production-agentflow-20260729` is the clean execution checkout. Its live checkout state must be re-read before every task.
+- Both checkout rule: both checkout states must be re-read before every task.
 - no-push/no-deploy/no-provider/no-production-mutation boundary: LPM-013A must not push, deploy, call providers, configure secrets, seed, mutate hosted records, upload or download media, collect analytics, run browser proof, run archive close, or claim production acceptance.
-- Final AgentFlow HEAD through LPM-012: `f1c27e47ce0fd32cb88ac440544b37271b6b0e88`.
+- Final integration commit through LPM-018: `50e56d2d33cd04dc869483a1f99b6583fd9cc36b`. This is historical integration evidence through LPM-018, not the queue commit and not a promise about any future final HEAD.
 - Open external gate families after LPM-012: hosted browser proof open; Supabase readback open; RLS open; provider sandbox/webhooks open; Stripe settlement open; private media storage/scanner open; sponsor rendering/report/finance open; archive retention/restore open; native/app-store open; accessibility open; production acceptance open.
 - LPM-015 local weather verifier boundary: `npm run qa:weather-provider-readiness` reads repository source only and checks provider order, draft enforcement, session-derived reviewer authority, event/team scope, provider fallback, idempotent/auditable draft creation boundary, and provider-send separation. Hosted weather credential proof, fallback behavior, signed-in coach/admin draft proof, Supabase readback, parent delivery, provider sandbox/webhook proof, realtime/offline behavior, accessibility, and production acceptance remain open gates.
 
@@ -34,7 +35,8 @@ The AgentFlow missing-production sequence is locally complete through LPM-012 as
 - `planned`: structured and ready for scheduling.
 - `in_progress`: active bounded slice.
 - `blocked`: cannot proceed without external approval, credentials, provider access, or production-state change.
-- `done`: acceptance criteria met and evidence recorded.
+- `local repository readiness complete - external proof open`: local repository/source-contract readiness is complete, while hosted, Supabase, RLS, provider, Stripe, storage/scanner, sponsor, archive/restore, native/app-store, accessibility, and production acceptance remain open.
+- `done`: end-to-end acceptance criteria met and evidence recorded, including any required external proof.
 
 ## Dependency Map
 
@@ -104,7 +106,7 @@ Provider sends, Stripe collection, media uploads, native app work, production mu
 
 ## LPM-002 - Hosted Public and Tenant Readiness Proof
 
-Status: `planned - preflight gate added`
+Status: `local repository readiness complete - external proof open`
 Priority: P0
 Depends on: LPM-001
 Governing rows: Tenant Onboarding Readiness Lane; Public family discovery.
@@ -129,7 +131,7 @@ The preflight is a blocker-clearing gate only. It performs no deploy, Vercel Aut
 
 ## LPM-003 - Access and Registration Lifecycle Proof
 
-Status: `planned - local authority verifier added`
+Status: `local repository readiness complete - external proof open`
 Priority: P0
 Depends on: LPM-001
 Governing rows: LP-005, LP-006; Family access activation; Parent invitation issuance and acceptance; Additional guardian review.
@@ -154,7 +156,7 @@ The authority verifier is a local source-contract gate only. It does not replace
 
 ## LPM-004 - Admin Proof Closure
 
-Status: `planned`
+Status: `local repository readiness complete - external proof open`
 Priority: P1
 Depends on: LPM-001
 Governing rows: LP-003, LP-004, LP-007, LP-009, LP-010.
@@ -179,7 +181,7 @@ The readiness verifier is a local source-contract gate only. It does not replace
 
 ## LPM-005 - Game-Day and Official Communication Proof
 
-Status: `planned`
+Status: `local repository readiness complete - external proof open`
 Priority: P1
 Depends on: LPM-003
 Governing rows: Schedule management; Communication Room and Branded Team Chat; Notification delivery architecture.
@@ -204,7 +206,7 @@ The readiness verifier is a local source-contract gate only. It does not replace
 
 ## LPM-006 - Family Replay and Season Continuity Proof
 
-Status: `planned`
+Status: `local repository readiness complete - external proof open`
 Priority: P1
 Depends on: LPM-005
 Governing rows: Parent Replay; Season continuity and readiness review.
@@ -229,7 +231,7 @@ The readiness verifier is a local source-contract gate only. It does not replace
 
 ## LPM-007 - Provider Sends Sandbox
 
-Status: `planned`
+Status: `local repository readiness complete - external proof open`
 Priority: P2 gated
 Depends on: LPM-001
 Governing rows: LP-015; Notification delivery architecture.
@@ -283,7 +285,7 @@ Boundary:
 
 ## LPM-008 - Private Media Storage and Scanner
 
-Status: `planned`
+Status: `local repository readiness complete - external proof open`
 Priority: P2 gated
 Depends on: LPM-001
 Governing rows: LP-019; Private media; Team photos/media.
@@ -308,7 +310,7 @@ Boundary:
 
 ## LPM-009 - Sponsor Stripe Decision and Sandbox
 
-Status: `local repository readiness complete`
+Status: `local repository readiness complete - external proof open`
 Priority: P2 gated
 Depends on: LPM-001
 Governing rows: LP-020; Family Balance and Stripe; Sponsor management; Money + sponsors community commerce.
@@ -338,7 +340,7 @@ Stripe sandbox account setup, restricted key creation, webhook endpoint registra
 
 ## LPM-010 - Sponsor Fulfillment Proof
 
-Status: `local repository readiness complete`
+Status: `local repository readiness complete - external proof open`
 Priority: P2
 Depends on: LPM-009
 Governing rows: Sponsor management; Money + sponsors community commerce.
@@ -364,7 +366,7 @@ Hosted public/admin browser proof, observed placement-rendering proof, approved 
 
 ## LPM-011 - Reporting and Archive Closure
 
-Status: `planned`
+Status: `local repository readiness complete - external proof open`
 Priority: P2
 Depends on: LPM-005
 Governing rows: Reporting and archive.
@@ -388,7 +390,7 @@ Validation:
 
 ## LPM-012 - Native App Decision
 
-Status: `planned`
+Status: `local repository readiness complete - external proof open`
 Priority: P3
 Depends on: LPM-002
 Governing rows: Mobile-first UI; PWA installation.

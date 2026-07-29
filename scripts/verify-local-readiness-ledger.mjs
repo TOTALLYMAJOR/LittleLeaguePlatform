@@ -19,12 +19,18 @@ export const QUEUE_BASELINE_ITEMS = [
   { canonical: "LPM-012", ids: ["LPM-012", "LPM-012A"] }
 ];
 
+export const LOCAL_READY_EXTERNAL_OPEN_STATUS = "local repository readiness complete - external proof open";
+
+export const WORK_PLAN_LOCAL_READINESS_STATUS_ITEMS = QUEUE_BASELINE_ITEMS.filter(
+  (item) => item.canonical !== "LPM-001"
+);
+
 export const REQUIRED_CONTINUED_EXECUTION_ITEMS = [
   {
-    canonical: "LPM-016",
-    ids: ["LPM-016"],
-    buildId: "build_56df39d6-071b-47ae-8b81-f00ce8853c1b",
-    integrationCommit: "12a0aa5db04a269b9efab7d76dcca671865820ae"
+    canonical: "LPM-018",
+    ids: ["LPM-018"],
+    buildId: "build_faa1c28e-cc9d-4912-9529-0df1240963da",
+    integrationCommit: "50e56d2d33cd04dc869483a1f99b6583fd9cc36b"
   }
 ];
 
@@ -121,20 +127,25 @@ export const REQUIRED_DOC_PHRASES = [
   "locally complete through LPM-012",
   "LPM-013A is a ledger/verifier only",
   "local repository readiness proof only",
+  LOCAL_READY_EXTERNAL_OPEN_STATUS,
   "continued one-task-at-a-time execution accepts exactly one executable queue heading",
   "LPM-013A or LPM-014 or later",
   "LPM-001 through LPM-012 remain completed records only",
+  "LPM-018 is integrated in AgentFlow build `build_faa1c28e-cc9d-4912-9529-0df1240963da` at integration commit `50e56d2d33cd04dc869483a1f99b6583fd9cc36b`",
   "external proof and production acceptance remain separate authorized follow-up lanes"
 ];
 
 export const CHECKOUT_BOUNDARY_PHRASES = [
-  "Source checkout dirty-tree boundary",
-  "Clean sibling worktree path",
+  "Protected source checkout boundary",
+  "Clean AgentFlow execution checkout",
+  "both checkout states must be re-read before every task",
   "no-push/no-deploy/no-provider/no-production-mutation boundary",
-  "Final AgentFlow HEAD through LPM-012",
+  "Final integration commit through LPM-018",
   "/home/administrator/projects/youth-sports-platform-mvp-v3",
-  "/home/administrator/.agentflow/worktrees/repo_80ec8817-7c48-4066-a53c-6a5aa57d31c8/build_e15b91b4-66e7-4ce9-833b-ebed388ac25c/tasks/task_lpm-013_c314ec41-5691-487b-9a43-cfeade0636ae",
-  "f1c27e47ce0fd32cb88ac440544b37271b6b0e88"
+  "/home/administrator/projects/leaguepilot-missing-production-agentflow-20260729",
+  "50e56d2d33cd04dc869483a1f99b6583fd9cc36b",
+  "not the queue commit",
+  "not a future final HEAD"
 ];
 
 export const DEFAULT_SOURCE_FILES = Object.freeze({
@@ -217,6 +228,21 @@ function activeQueueValidationCommands(block) {
   }
 
   return commands;
+}
+
+function workPlanTaskBlock(workPlan, taskId) {
+  const headingPattern = new RegExp(`^## ${escapeRegExp(taskId)}\\s+-.*$`, "m");
+  const heading = workPlan.match(headingPattern);
+  if (!heading) return "";
+
+  const start = heading.index ?? 0;
+  const rest = workPlan.slice(start + heading[0].length);
+  const nextHeading = rest.search(/^## LPM-\d{3}A?\s+-/m);
+  return nextHeading === -1 ? workPlan.slice(start) : workPlan.slice(start, start + heading[0].length + nextHeading);
+}
+
+function workPlanTaskStatus(block) {
+  return block.match(/^Status:\s*`([^`]+)`\s*$/m)?.[1].trim() ?? "";
 }
 
 function requireActiveValidationCommand(blockers, validationCommands, command, code, message) {
@@ -408,6 +434,69 @@ function verifyReadinessScripts(sources, blockers) {
   });
 }
 
+function verifyWorkPlanLocalReadinessStatuses(sources, blockers) {
+  const workPlan = sources.workPlan ?? "";
+
+  for (const item of WORK_PLAN_LOCAL_READINESS_STATUS_ITEMS) {
+    const block = workPlanTaskBlock(workPlan, item.canonical);
+    if (!block) {
+      addBlocker(
+        blockers,
+        "work-plan-status",
+        `${item.canonical.replace("-", "_")}_WORK_PLAN_ROW_MISSING`,
+        ["workPlan"],
+        `${item.canonical} must remain present in the governing work plan.`
+      );
+      continue;
+    }
+
+    const status = workPlanTaskStatus(block);
+    const codePrefix = item.canonical.replace("-", "_");
+    if (!status) {
+      addBlocker(
+        blockers,
+        "work-plan-status",
+        `${codePrefix}_WORK_PLAN_STATUS_MISSING`,
+        ["workPlan"],
+        `${item.canonical} must declare Status: \`${LOCAL_READY_EXTERNAL_OPEN_STATUS}\`.`
+      );
+      continue;
+    }
+
+    if (status === "planned") {
+      addBlocker(
+        blockers,
+        "work-plan-status",
+        `${codePrefix}_WORK_PLAN_STATUS_PLAIN_PLANNED`,
+        ["workPlan"],
+        `${item.canonical} must not return to plain planned after local repository readiness completion.`
+      );
+      continue;
+    }
+
+    if (status === "done") {
+      addBlocker(
+        blockers,
+        "work-plan-status",
+        `${codePrefix}_WORK_PLAN_STATUS_END_TO_END_DONE_OVERSTATED`,
+        ["workPlan"],
+        `${item.canonical} must not be overstated as end-to-end done while external proof remains open.`
+      );
+      continue;
+    }
+
+    if (status !== LOCAL_READY_EXTERNAL_OPEN_STATUS) {
+      addBlocker(
+        blockers,
+        "work-plan-status",
+        `${codePrefix}_WORK_PLAN_STATUS_EXTERNAL_PROOF_DISTINCTION_MISSING`,
+        ["workPlan"],
+        `${item.canonical} must use the exact status \`${LOCAL_READY_EXTERNAL_OPEN_STATUS}\` to preserve the local-readiness/external-proof distinction.`
+      );
+    }
+  }
+}
+
 function verifyDocumentationBoundaries(sources, blockers) {
   for (const docKey of ["workPlan", "taskBoard", "runbook"]) {
     for (const phrase of REQUIRED_DOC_PHRASES) {
@@ -488,6 +577,7 @@ export function verifyLocalReadinessLedger(sources) {
   const blockers = [];
   verifyAgentFlowQueue(sources, blockers);
   verifyReadinessScripts(sources, blockers);
+  verifyWorkPlanLocalReadinessStatuses(sources, blockers);
   verifyDocumentationBoundaries(sources, blockers);
   verifyExternalOpenGates(sources, blockers);
   verifyCheckoutBoundary(sources, blockers);
@@ -498,6 +588,7 @@ export function verifyLocalReadinessLedger(sources) {
     blockers,
     checked: {
       completedBaselineItems: QUEUE_BASELINE_ITEMS.map((item) => item.canonical),
+      workPlanLocalReadinessStatus: LOCAL_READY_EXTERNAL_OPEN_STATUS,
       localReadinessScripts: LOCAL_READINESS_SCRIPTS.map((entry) => entry.packageScript),
       externalOpenGates: EXTERNAL_OPEN_GATES
     }
@@ -512,6 +603,8 @@ export function formatLocalReadinessLedgerReport(result) {
     "",
     "Completed local baseline required:",
     ...result.checked.completedBaselineItems.map((item) => `- ${item}`),
+    "",
+    `Work-plan status required for LPM-002 through LPM-012: ${result.checked.workPlanLocalReadinessStatus}`,
     "",
     "Local readiness scripts checked:",
     ...result.checked.localReadinessScripts.map((script) => `- ${script}`),
