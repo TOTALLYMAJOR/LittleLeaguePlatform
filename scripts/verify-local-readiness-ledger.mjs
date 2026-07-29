@@ -198,15 +198,29 @@ function activeQueueBlock(queue, heading) {
   return queue.slice(heading.index, heading.index + 1 + nextHeadingIndex);
 }
 
-function activeQueueValidationBlock(block) {
+function activeQueueValidationCommands(block) {
   const yamlBlock = block.match(/```yaml\n([\s\S]*?)\n```/);
-  if (!yamlBlock) return "";
-  const validateBlock = yamlBlock[1].match(/^validate:\n((?:  - .+(?:\n|$))+)/m);
-  return validateBlock?.[1] ?? "";
+  if (!yamlBlock) return [];
+
+  const yamlLines = yamlBlock[1].split("\n");
+  const validateIndex = yamlLines.findIndex((line) => line === "validate:");
+  if (validateIndex === -1) return [];
+
+  const commands = [];
+  for (const line of yamlLines.slice(validateIndex + 1)) {
+    const entry = line.match(/^  - (.+)$/);
+    if (entry) {
+      commands.push(entry[1].trimEnd());
+      continue;
+    }
+    if (line.trim() !== "" && !line.startsWith("  ")) break;
+  }
+
+  return commands;
 }
 
-function requireActiveValidationCommand(blockers, validationBlock, command, code, message) {
-  if (!validationBlock.includes(`- ${command}`)) {
+function requireActiveValidationCommand(blockers, validationCommands, command, code, message) {
+  if (!validationCommands.includes(command)) {
     addBlocker(blockers, "agentflow-queue", code, ["queue"], message);
   }
 }
@@ -309,17 +323,17 @@ function verifyAgentFlowQueue(sources, blockers) {
       );
     }
 
-    const validationBlock = activeQueueValidationBlock(activeQueueBlock(queue, activeHeading));
+    const validationCommands = activeQueueValidationCommands(activeQueueBlock(queue, activeHeading));
     requireActiveValidationCommand(
       blockers,
-      validationBlock,
+      validationCommands,
       "npm run qa:local-readiness-ledger",
       "ACTIVE_LEDGER_VALIDATE_COMMAND_MISSING",
       "The active AgentFlow task validation list must run the local readiness ledger script."
     );
     requireActiveValidationCommand(
       blockers,
-      validationBlock,
+      validationCommands,
       "node --test scripts/verify-local-readiness-ledger.test.mjs",
       "ACTIVE_LEDGER_TEST_COMMAND_MISSING",
       "The active AgentFlow task validation list must run the local readiness ledger tests."

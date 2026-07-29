@@ -31,6 +31,10 @@ function replaceExecutableHeading(sources, heading) {
   sources.queue = sources.queue.replace(/^## LPM-\d{3}A?\s+-/m, heading);
 }
 
+function replaceActiveValidationCommand(sources, command, replacement) {
+  sources.queue = sources.queue.replace(`  - ${command}`, `  - ${replacement}`);
+}
+
 test("passes against repository fixtures without hosted credentials or network access", () => {
   const result = verifyLocalReadinessLedger(cloneSources());
   const report = formatLocalReadinessLedgerReport(result);
@@ -90,7 +94,7 @@ test("fails when the executable queue heading is missing", () => {
 
 test("fails when multiple executable queue tasks are present", () => {
   const sources = cloneSources();
-  sources.queue = sources.queue.replace("## LPM-017 -", "## LPM-017 -\n\n## LPM-018 -");
+  sources.queue = sources.queue.replace(/^## LPM-\d{3}A?\s+-/m, (heading) => `${heading}\n\n## LPM-019 -`);
 
   const result = verifyLocalReadinessLedger(sources);
 
@@ -112,7 +116,7 @@ for (const heading of ["## LPM-012 -", "## LPM-012A -"]) {
 
 test("fails when the active task validation list omits the ledger verifier", () => {
   const sources = cloneSources();
-  sources.queue = sources.queue.replace("  - npm run qa:local-readiness-ledger", "  - npm run typecheck");
+  replaceActiveValidationCommand(sources, "npm run qa:local-readiness-ledger", "npm run typecheck");
 
   const result = verifyLocalReadinessLedger(sources);
 
@@ -122,9 +126,10 @@ test("fails when the active task validation list omits the ledger verifier", () 
 
 test("fails when the active task validation list omits the ledger node test", () => {
   const sources = cloneSources();
-  sources.queue = sources.queue.replace(
-    "  - node --test scripts/verify-local-readiness-ledger.test.mjs",
-    "  - npm run typecheck"
+  replaceActiveValidationCommand(
+    sources,
+    "node --test scripts/verify-local-readiness-ledger.test.mjs",
+    "npm run typecheck"
   );
 
   const result = verifyLocalReadinessLedger(sources);
@@ -132,6 +137,48 @@ test("fails when the active task validation list omits the ledger node test", ()
   assert.equal(result.ok, false);
   assert.ok(codesFor(result, "agentflow-queue").includes("ACTIVE_LEDGER_TEST_COMMAND_MISSING"));
 });
+
+test("accepts the exact active task validation commands", () => {
+  const result = verifyLocalReadinessLedger(cloneSources());
+
+  assert.equal(result.ok, true);
+  assert.deepEqual(codesFor(result, "agentflow-queue"), []);
+});
+
+for (const { label, command, blocker, nearMatches } of [
+  {
+    label: "ledger verifier",
+    command: "npm run qa:local-readiness-ledger",
+    blocker: "ACTIVE_LEDGER_VALIDATE_COMMAND_MISSING",
+    nearMatches: [
+      ["suffixed", "npm run qa:local-readiness-ledger-extra"],
+      ["prefixed", "npx npm run qa:local-readiness-ledger"],
+      ["argument-appended", "npm run qa:local-readiness-ledger -- --dry-run"]
+    ]
+  },
+  {
+    label: "ledger node test",
+    command: "node --test scripts/verify-local-readiness-ledger.test.mjs",
+    blocker: "ACTIVE_LEDGER_TEST_COMMAND_MISSING",
+    nearMatches: [
+      ["suffixed", "node --test scripts/verify-local-readiness-ledger.test.mjs-extra"],
+      ["prefixed", "npx node --test scripts/verify-local-readiness-ledger.test.mjs"],
+      ["argument-appended", "node --test scripts/verify-local-readiness-ledger.test.mjs --watch"]
+    ]
+  }
+]) {
+  for (const [matchType, replacement] of nearMatches) {
+    test(`rejects ${matchType} near match for the active task ${label} command`, () => {
+      const sources = cloneSources();
+      replaceActiveValidationCommand(sources, command, replacement);
+
+      const result = verifyLocalReadinessLedger(sources);
+
+      assert.equal(result.ok, false);
+      assert.ok(codesFor(result, "agentflow-queue").includes(blocker));
+    });
+  }
+}
 
 test("fails when a local readiness package script points away from its verifier", () => {
   const sources = cloneSources();
