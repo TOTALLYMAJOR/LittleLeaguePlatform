@@ -1,11 +1,17 @@
 import { existsSync, mkdirSync, readFileSync } from "node:fs";
 import { randomUUID } from "node:crypto";
 import { join } from "node:path";
+import { pathToFileURL } from "node:url";
 import { chromium } from "@playwright/test";
 import { createClient } from "@supabase/supabase-js";
+import {
+  captureQaAppInvocation,
+  runGuardedQaMutation
+} from "./qa-target-guard.mjs";
 
 const envFile = ".env.local";
 const baseUrl = process.env.QA_PROOF_BASE_URL || "http://127.0.0.1:3020";
+const appInvocation = captureQaAppInvocation();
 const screenshotDir = "output/playwright";
 const qaIds = {
   organization: "11111111-1111-4111-8111-111111111111",
@@ -58,15 +64,11 @@ function requireAnonKey() {
 }
 
 function requireServiceRoleKey() {
-  const serviceRoleKey = requireEnv("SUPABASE_SERVICE_ROLE_KEY");
-  if (jwtRole(serviceRoleKey) !== "service_role") {
-    throw new Error("SUPABASE_SERVICE_ROLE_KEY must be the Supabase service role key for QA row verification.");
-  }
-  return serviceRoleKey;
+  return requireEnv("SUPABASE_SERVICE_ROLE_KEY");
 }
 
-function createQaAdminClient() {
-  return createClient(requireEnv("NEXT_PUBLIC_SUPABASE_URL"), requireServiceRoleKey(), {
+function createQaAdminClient(url, serviceRoleKey) {
+  return createClient(url, serviceRoleKey, {
     auth: {
       autoRefreshToken: false,
       persistSession: false
@@ -1002,10 +1004,20 @@ async function proveRegistrationReviewWrites(browser, supabase) {
   }
 }
 
-async function main() {
+export async function main({ guard = runGuardedQaMutation } = {}) {
   loadLocalEnv();
   requireAnonKey();
-  const supabase = createQaAdminClient();
+  const supabaseUrl = requireEnv("NEXT_PUBLIC_SUPABASE_URL");
+  const serviceRoleKey = requireServiceRoleKey();
+
+  return guard({
+    action: "QA session proof",
+    appBaseUrl: baseUrl,
+    appInvocation,
+    serviceRoleCredential: serviceRoleKey,
+    supabaseUrl
+  }, async () => {
+  const supabase = createQaAdminClient(supabaseUrl, serviceRoleKey);
   mkdirSync(screenshotDir, { recursive: true });
 
   const executablePath = chromiumExecutablePath();
@@ -1102,9 +1114,14 @@ async function main() {
   } finally {
     await browser.close();
   }
+  });
 }
 
-main().catch((error) => {
-  console.error(error instanceof Error ? error.message : error);
-  process.exit(1);
-});
+const isDirectRun =
+  process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href;
+if (isDirectRun) {
+  main().catch((error) => {
+    console.error(error instanceof Error ? error.message : error);
+    process.exit(1);
+  });
+}

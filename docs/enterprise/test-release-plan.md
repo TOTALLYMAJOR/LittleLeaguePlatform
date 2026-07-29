@@ -1,6 +1,6 @@
 # Test Plan, QA Reports, And Release Artifacts
 
-Status: draft. Current evidence is in `docs/production-audit-action-items.md`, `docs/build-progress.md`, package scripts, and `output/playwright/` artifacts when generated.
+Status: reconciled planning artifact. Current state and gate ownership are in `docs/backlog-closeout-2026-07-27.md`; dated evidence remains in `docs/production-audit-action-items.md` and `docs/build-progress.md`.
 
 ## Test Strategy
 
@@ -9,9 +9,10 @@ Status: draft. Current evidence is in `docs/production-audit-action-items.md`, `
 | Type generation and TypeScript | `npm run typecheck` | Validate App Router types and TypeScript contracts. |
 | Unit/domain tests | `npm test` | Validate domain rules, policies, route handlers, provider boundaries, UI contracts. |
 | Build | `npm run build` | Prove production bundle and static/dynamic route generation. |
-| Dependency audit | `npm audit` | Surface known dependency advisories. |
+| Dependency audit | `npm audit --omit=dev`; `npm audit` | Keep production exposure separate from the retained development-only Next ESLint graph advisory. |
 | RLS proof | `npm run qa:rls-proof` | Prove Supabase parent/coach/anonymous isolation. |
-| Session/browser proof | `npm run qa:session-proof` | Prove signed-out gates, signed-in routes, and live action writes. |
+| Session/browser proof | `npm run qa:session-proof` on a guarded isolated QA target only | Prove signed-out gates, signed-in routes, and live action writes without touching production. |
+| Production acceptance | Separately named read-only harness (required by `EXT-PRODUCTION-READONLY`) | Prove production role/session reachability and scoped reads without seed, write, acknowledgment, publish, provider, or cleanup actions. |
 | AI provider proof | `npm run qa:ai-coach-proof` | Prove review-only OpenAI rewrite path when enabled. |
 | Brand proof | `npm run qa:brand-proof` | Prove brand launch surfaces and monitoring contract. |
 | Docker smoke | `docker compose up -d --build`; `curl -I http://localhost:8081/` | Prove container runtime. |
@@ -55,7 +56,7 @@ Validation:
 - npm run build:
 - npm audit:
 - npm run qa:rls-proof:
-- QA_PROOF_BASE_URL=<url> npm run qa:session-proof:
+- Isolated QA target identity and `npm run qa:session-proof`:
 - QA_PROOF_BASE_URL=<url> npm run qa:ai-coach-proof:
 - QA_PROOF_BASE_URL=<url> npm run qa:brand-proof:
 
@@ -71,6 +72,8 @@ Known issues:
 
 Release verdict:
 ```
+
+Never substitute a production alias in the session/browser line. Historical production-alias artifacts predate LP-QA-GUARD-001 and are not reusable instructions.
 
 ## Release Notes Template
 

@@ -32,12 +32,30 @@ export interface TeamBuildFriendRequest {
   friendPlayerId: string;
 }
 
+export interface TeamBuilderPlayerProfileInput {
+  birthDate?: string | null;
+  ageBand?: string | null;
+  evaluationRating?: number | null;
+}
+
+export interface TeamBuilderRosterContext {
+  teams: Array<{ id: string; name: string; division: string }>;
+  players: Array<{
+    id: string;
+    teamId: string;
+    firstName: string;
+    lastInitial: string;
+    guardianGroupId?: string;
+  }>;
+}
+
 export interface BalancedTeamBuildInput {
   division: string;
   targetRosterSize: number;
   actorUserId: string;
   now: string;
   skillRatings?: Record<string, number>;
+  playerProfiles?: Record<string, TeamBuilderPlayerProfileInput>;
   friendRequests?: TeamBuildFriendRequest[];
 }
 
@@ -50,10 +68,17 @@ export interface BalancedTeamBuildPreview {
     teamName: string;
     playerCount: number;
     averageSkill: number;
+    ageBandCounts: Record<string, number>;
+    missingProfileCount: number;
+    defaultedEvaluationCount: number;
     players: Array<{
       playerId: string;
       name: string;
       skillRating: number;
+      ageBand: string;
+      ageBandSource: "explicit" | "division_default";
+      evaluationSource: "explicit" | "legacy_override" | "defaulted";
+      birthDateStatus: "recorded" | "missing";
       constraintNotes: string[];
     }>;
   }>;
@@ -155,9 +180,27 @@ function average(values: number[]) {
   return Math.round((values.reduce((sum, value) => sum + value, 0) / values.length) * 10) / 10;
 }
 
-function guardianGroupKey(state: AppState, playerId: string) {
-  const guardian = state.guardianLinks.find((link) => link.playerId === playerId && link.parentUserId && link.status !== "removed");
-  return guardian?.parentUserId ?? playerId;
+function guardianGroupKey(roster: TeamBuilderRosterContext, playerId: string) {
+  return roster.players.find((player) => player.id === playerId)?.guardianGroupId ?? playerId;
+}
+
+function normalizedEvaluation(input: BalancedTeamBuildInput, playerId: string) {
+  const explicit = input.playerProfiles?.[playerId]?.evaluationRating;
+  if (typeof explicit === "number" && Number.isInteger(explicit) && explicit >= 1 && explicit <= 5) {
+    return { value: explicit, source: "explicit" as const };
+  }
+  const legacy = input.skillRatings?.[playerId];
+  if (typeof legacy === "number" && Number.isInteger(legacy) && legacy >= 1 && legacy <= 5) {
+    return { value: legacy, source: "legacy_override" as const };
+  }
+  return { value: 3, source: "defaulted" as const };
+}
+
+function normalizedAgeBand(input: BalancedTeamBuildInput, playerId: string) {
+  const explicit = input.playerProfiles?.[playerId]?.ageBand?.trim();
+  return explicit
+    ? { value: explicit, source: "explicit" as const }
+    : { value: input.division, source: "division_default" as const };
 }
 
 function mergeFriendGroups(groups: Map<string, string[]>, playerToGroup: Map<string, string>, friendRequests: TeamBuildFriendRequest[]) {
@@ -172,9 +215,9 @@ function mergeFriendGroups(groups: Map<string, string[]>, playerToGroup: Map<str
   }
 }
 
-export function previewBalancedTeamBuild(state: AppState, input: BalancedTeamBuildInput): BalancedTeamBuildPreview {
-  const teams = state.teams.filter((team) => team.division === input.division).sort((left, right) => left.name.localeCompare(right.name));
-  const players = state.players.filter((player) => teams.some((team) => team.id === player.teamId));
+export function previewBalancedTeamBuildRoster(roster: TeamBuilderRosterContext, input: BalancedTeamBuildInput): BalancedTeamBuildPreview {
+  const teams = roster.teams.filter((team) => team.division === input.division).sort((left, right) => left.name.localeCompare(right.name));
+  const players = roster.players.filter((player) => teams.some((team) => team.id === player.teamId));
   const workflow: BalancedTeamBuildPreview["workflow"] = ["Preview", "Edit", "Approve", "Publish"];
 
   if (!teams.length || !players.length) {
@@ -192,7 +235,7 @@ export function previewBalancedTeamBuild(state: AppState, input: BalancedTeamBui
   const groups = new Map<string, string[]>();
   const playerToGroup = new Map<string, string>();
   for (const player of players) {
-    const key = guardianGroupKey(state, player.id);
+    const key = guardianGroupKey(roster, player.id);
     groups.set(key, [...(groups.get(key) ?? []), player.id]);
     playerToGroup.set(player.id, key);
   }
@@ -200,9 +243,11 @@ export function previewBalancedTeamBuild(state: AppState, input: BalancedTeamBui
 
   const teamAssignments = new Map(teams.map((team) => [team.id, [] as string[]]));
   const orderedGroups = Array.from(groups.values()).sort((left, right) => {
-    const leftSkill = Math.max(...left.map((playerId) => input.skillRatings?.[playerId] ?? 3));
-    const rightSkill = Math.max(...right.map((playerId) => input.skillRatings?.[playerId] ?? 3));
-    return rightSkill - leftSkill || right.length - left.length;
+    const leftSkill = Math.max(...left.map((playerId) => normalizedEvaluation(input, playerId).value));
+    const rightSkill = Math.max(...right.map((playerId) => normalizedEvaluation(input, playerId).value));
+    return rightSkill - leftSkill
+      || right.length - left.length
+      || [...left].sort().join(":").localeCompare([...right].sort().join(":"));
   });
 
   for (const group of orderedGroups) {
@@ -210,30 +255,52 @@ export function previewBalancedTeamBuild(state: AppState, input: BalancedTeamBui
       .map((team) => ({
         team,
         count: teamAssignments.get(team.id)!.length,
-        averageSkill: average(teamAssignments.get(team.id)!.map((playerId) => input.skillRatings?.[playerId] ?? 3))
+        averageSkill: average(teamAssignments.get(team.id)!.map((playerId) => normalizedEvaluation(input, playerId).value))
       }))
       .sort((left, right) => left.count - right.count || left.averageSkill - right.averageSkill || left.team.name.localeCompare(right.team.name))[0]!.team;
     teamAssignments.get(targetTeam.id)!.push(...group);
   }
 
   const teamRows = teams.map((team) => {
-    const assignedPlayerIds = teamAssignments.get(team.id) ?? [];
+    const assignedPlayerIds = [...(teamAssignments.get(team.id) ?? [])].sort((left, right) => {
+      const evaluationDifference = normalizedEvaluation(input, right).value - normalizedEvaluation(input, left).value;
+      return evaluationDifference
+        || normalizedAgeBand(input, left).value.localeCompare(normalizedAgeBand(input, right).value)
+        || left.localeCompare(right);
+    });
+    const ageBandCounts = assignedPlayerIds.reduce<Record<string, number>>((counts, playerId) => {
+      const ageBand = normalizedAgeBand(input, playerId).value;
+      counts[ageBand] = (counts[ageBand] ?? 0) + 1;
+      return counts;
+    }, {});
     return {
       teamId: team.id,
       teamName: team.name,
       playerCount: assignedPlayerIds.length,
-      averageSkill: average(assignedPlayerIds.map((playerId) => input.skillRatings?.[playerId] ?? 3)),
+      averageSkill: average(assignedPlayerIds.map((playerId) => normalizedEvaluation(input, playerId).value)),
+      ageBandCounts,
+      missingProfileCount: assignedPlayerIds.filter((playerId) => !input.playerProfiles?.[playerId]).length,
+      defaultedEvaluationCount: assignedPlayerIds.filter((playerId) => normalizedEvaluation(input, playerId).source === "defaulted").length,
       players: assignedPlayerIds.map((playerId) => {
-        const player = state.players.find((item) => item.id === playerId)!;
-        const guardianKey = guardianGroupKey(state, playerId);
+        const player = roster.players.find((item) => item.id === playerId)!;
+        const guardianKey = guardianGroupKey(roster, playerId);
         const siblingCount = groups.get(guardianKey)?.length ?? 1;
         const hasFriendRequest = (input.friendRequests ?? []).some((request) => request.playerId === playerId || request.friendPlayerId === playerId);
+        const evaluation = normalizedEvaluation(input, playerId);
+        const ageBand = normalizedAgeBand(input, playerId);
+        const birthDateStatus = input.playerProfiles?.[playerId]?.birthDate ? "recorded" as const : "missing" as const;
         return {
           playerId,
           name: `${player.firstName} ${player.lastInitial}.`,
-          skillRating: input.skillRatings?.[playerId] ?? 3,
+          skillRating: evaluation.value,
+          ageBand: ageBand.value,
+          ageBandSource: ageBand.source,
+          evaluationSource: evaluation.source,
+          birthDateStatus,
           constraintNotes: [
-            `Age/division: ${input.division}`,
+            `Age band: ${ageBand.value} (${ageBand.source === "explicit" ? "explicit" : "division default"})`,
+            `Evaluation: ${evaluation.value} (${evaluation.source.replace("_", " ")})`,
+            `Birth date: ${birthDateStatus}`,
             siblingCount > 1 ? "Sibling/guardian group kept together" : "No sibling grouping required",
             hasFriendRequest ? "Friend request considered" : "No friend request"
           ]
@@ -245,8 +312,18 @@ export function previewBalancedTeamBuild(state: AppState, input: BalancedTeamBui
   const warnings = [
     ...teamRows.filter((team) => team.playerCount > input.targetRosterSize).map((team) => `${team.teamName} exceeds target roster size ${input.targetRosterSize}.`),
     ...teamRows.filter((team) => team.playerCount === 0).map((team) => `${team.teamName} has no assigned players in this preview.`),
-    "Skill ratings default to 3 until explicit evaluations are imported.",
-    "Age is represented by division until player birthdate/age-band metadata is added."
+    ...(players.some((player) => !input.playerProfiles?.[player.id])
+      ? [`${players.filter((player) => !input.playerProfiles?.[player.id]).length} player(s) have no private team-builder profile.`]
+      : []),
+    ...(players.some((player) => normalizedEvaluation(input, player.id).source === "defaulted")
+      ? [`${players.filter((player) => normalizedEvaluation(input, player.id).source === "defaulted").length} player evaluation(s) defaulted to 3.`]
+      : []),
+    ...(players.some((player) => normalizedAgeBand(input, player.id).source === "division_default")
+      ? [`${players.filter((player) => normalizedAgeBand(input, player.id).source === "division_default").length} player age band(s) defaulted to division ${input.division}.`]
+      : []),
+    ...(players.some((player) => !input.playerProfiles?.[player.id]?.birthDate)
+      ? [`${players.filter((player) => !input.playerProfiles?.[player.id]?.birthDate).length} player birth date(s) are missing.`]
+      : [])
   ];
 
   return {
@@ -255,9 +332,28 @@ export function previewBalancedTeamBuild(state: AppState, input: BalancedTeamBui
     workflow,
     teams: teamRows,
     warnings,
-    auditSummary: `Balanced team preview for ${input.division}: ${players.length} player(s), ${teams.length} team(s), target roster ${input.targetRosterSize}.`,
+    auditSummary: `Balanced team preview for ${input.division}: ${players.length} player(s), ${teams.length} team(s), target roster ${input.targetRosterSize}; ${players.filter((player) => !input.playerProfiles?.[player.id]).length} missing profile(s), ${players.filter((player) => normalizedEvaluation(input, player.id).source === "defaulted").length} defaulted evaluation(s).`,
     publishBoundary: "Preview does not update player.teamId. Admin must edit, approve, and publish before roster assignments change."
   };
+}
+
+export function previewBalancedTeamBuild(state: AppState, input: BalancedTeamBuildInput): BalancedTeamBuildPreview {
+  return previewBalancedTeamBuildRoster({
+    teams: state.teams.map((team) => ({
+      id: team.id,
+      name: team.name,
+      division: team.division
+    })),
+    players: state.players.map((player) => ({
+      id: player.id,
+      teamId: player.teamId,
+      firstName: player.firstName,
+      lastInitial: player.lastInitial,
+      guardianGroupId: state.guardianLinks.find((link) => (
+        link.playerId === player.id && link.parentUserId && link.status !== "removed"
+      ))?.parentUserId
+    }))
+  }, input);
 }
 
 export function publishBalancedTeamBuild(state: AppState, input: BalancedTeamBuildInput): PublishedTeamBuildPlan {

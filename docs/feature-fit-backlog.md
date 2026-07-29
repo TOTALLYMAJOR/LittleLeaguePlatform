@@ -1,5 +1,7 @@
 # Feature Fit Backlog
 
+State notice (2026-07-27): this is a historical product-fit backlog, not the active execution queue. “Repo fit” or an implemented seam means local capability only. The canonical `done-local`, `external`, `decision-required`, and `historical` states are in [`docs/backlog-closeout-2026-07-27.md`](backlog-closeout-2026-07-27.md). Any legacy instruction below to run mutating session proof applies only to a guarded isolated QA target, never the production alias.
+
 This backlog translates the pasted feature inventory into repo-fit work. It is not a claim that every item is production-ready. For implementation truth, use `docs/Features.md` and `docs/capability-matrix.md`.
 
 ## Status Rubric
@@ -44,7 +46,7 @@ This backlog translates the pasted feature inventory into repo-fit work. It is n
 ### Auth, Roles, RLS, And Audit Proof
 
 - Status: `Covered`
-- Repo fit: Supabase auth, session-derived actor IDs, authenticated writes, role-based access, signed-out UX, missing-role UX, row-level security policies, QA user seeding, and session proof scripts already fit the current production scaffold.
+- Repo fit: Supabase auth, session-derived actor IDs, authenticated writes, role-based access, signed-out UX, missing-role UX, row-level security policies, QA user seeding, and guarded session proof scripts fit the current application.
 - Current seams: `lib/supabase/route-auth.ts`, `lib/supabase/server.ts`, `supabase/migrations/*`, `supabase/rls-policy.test.ts`, `scripts/bootstrap-qa-session-users.mjs`, `scripts/verify-qa-session-paths.mjs`, `app/api-auth.test.ts`, `app/api-live-actions.test.ts`.
 - Backlog list:
   - `Covered`: Supabase Auth.
@@ -600,7 +602,7 @@ This backlog translates the pasted feature inventory into repo-fit work. It is n
 
 ## Suggested Build Order
 
-1. Run live QA proof with valid Supabase anon/user secrets: `npm run supabase:qa-users`, `npm run qa:rls-proof`, and `npm run qa:session-proof`.
+1. On a guarded isolated QA target only, run the target-identity preflight, QA user bootstrap, RLS proof, and mutating session proof. Never target the production alias.
 2. Add browser-level action proof for parent RSVP, snack, volunteer, coach weather draft, provider review, and admin approval flows once QA credentials are valid.
 3. Add hosted provider credential proof for the weather provider order and notification provider readiness.
 4. Run hosted credential/sandbox proof for the implemented provider send workers after recipient preferences, approval records, retry behavior, and webhooks are proven in the target environment.

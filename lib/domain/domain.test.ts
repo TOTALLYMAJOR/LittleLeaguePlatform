@@ -1074,6 +1074,36 @@ describe("start-of-season planning", () => {
     expect(published.ok).toBe(true);
     expect(published.state.auditEvents[0]?.action).toBe("automatic_team_build_published");
   });
+
+  it("uses explicit private inputs while reporting deterministic defaults and aggregate balance", () => {
+    const preview = previewBalancedTeamBuild(seedState, {
+      division: "3U",
+      targetRosterSize: 10,
+      actorUserId: "user-admin",
+      now: NOW,
+      playerProfiles: {
+        "player-mason": {
+          birthDate: "2021-04-10",
+          ageBand: "5U",
+          evaluationRating: 5
+        }
+      }
+    });
+
+    const mason = preview.teams.flatMap((team) => team.players)
+      .find((player) => player.playerId === "player-mason");
+    expect(mason).toMatchObject({
+      ageBand: "5U",
+      ageBandSource: "explicit",
+      skillRating: 5,
+      evaluationSource: "explicit",
+      birthDateStatus: "recorded"
+    });
+    expect(preview.warnings.join(" ")).toContain("defaulted to 3");
+    expect(preview.warnings.join(" ")).toContain("defaulted to division");
+    expect(preview.auditSummary).toContain("missing profile");
+    expect(preview.teams.every((team) => typeof team.ageBandCounts === "object")).toBe(true);
+  });
 });
 
 describe("safe team chat access", () => {

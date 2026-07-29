@@ -1,6 +1,8 @@
 # Build Progress
 
-This file tracks implementation progress while moving the app from the local reducer scaffold to Supabase-backed production slices.
+State: `historical` evidence journal. Entries record what was observed at their date and commit; they are not current run instructions or proof of the 2026-07-27 closeout commit. Earlier production-alias session runs predate LP-QA-GUARD-001 and must not be repeated. Current truth and remaining gates are in [`docs/backlog-closeout-2026-07-27.md`](backlog-closeout-2026-07-27.md).
+
+This file tracks implementation progress from typed local fallback state to Supabase-backed application slices.
 
 ## 2026-07-03
 
