@@ -116,6 +116,7 @@
   transform: translateY(1px);
 }
 
+
 .parent-weekly-header-nav span {
   font-size: 0.79rem;
 }
@@ -1325,6 +1326,148 @@
   .parent-weekly-header-nav > button,
   .parent-weekly-rsvp button,
   .parent-weekly-progress > span {
+    transition: none;
+  }
+}
+
+/* What changed strip: official schedule changes, conflicts, and one clear next step. */
+.parent-weekly-changes {
+  padding: 16px 18px;
+  border: 1px solid #f0d3b5;
+  border-radius: 18px;
+  background: #fff8ee;
+  box-shadow: 0 2px 4px rgba(53, 42, 29, 0.04);
+}
+
+.parent-weekly-changes > header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 10px;
+}
+
+.parent-weekly-changes > header svg {
+  color: #b4560f;
+}
+
+.parent-weekly-changes h2 {
+  margin: 1px 0 0;
+  font-size: 1.02rem;
+  line-height: 1.15;
+}
+
+.parent-weekly-changes ul {
+  display: grid;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.parent-weekly-changes li {
+  padding: 10px 12px;
+  border: 1px solid #f2e2cc;
+  border-radius: 12px;
+  background: #fff;
+}
+
+.parent-weekly-changes li strong {
+  display: block;
+  color: #6e3d1e;
+  font-size: 0.8rem;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+}
+
+.parent-weekly-changes li p {
+  margin: 3px 0 0;
+  color: #4b4a47;
+  font-size: 0.88rem;
+}
+
+.parent-weekly-changes-action {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  min-height: 44px;
+  margin-top: 10px;
+  padding: 0 16px;
+  border-radius: 999px;
+  background: #1f3a63;
+  color: #fff;
+  font-size: 0.84rem;
+  font-weight: 800;
+  text-decoration: none;
+}
+
+.parent-weekly-changes-action:hover {
+  background: #2a4c7f;
+}
+
+/* Transportation duty link inside the next-event duty row. */
+.parent-weekly-duty-row a.parent-weekly-duty-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 30px;
+  padding: 5px 10px;
+  border: 1px solid rgba(255, 214, 170, 0.66);
+  border-radius: 999px;
+  background: rgba(126, 66, 15, 0.6);
+  color: #fff;
+  font-size: 0.74rem;
+  font-weight: 750;
+  text-decoration: none;
+}
+
+.parent-weekly-duty-row a.parent-weekly-duty-link:hover {
+  background: rgba(126, 66, 15, 0.78);
+}
+
+/* Family access entry point: who can see this family's records, and how to revoke. */
+.parent-weekly-access-link {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-height: 56px;
+  padding: 12px 16px;
+  border: 1px solid #ede5d8;
+  border-radius: 18px;
+  background: #fff;
+  box-shadow: 0 2px 4px rgba(53, 42, 29, 0.04);
+  color: #1c2438;
+  text-decoration: none;
+  transition: border-color 150ms ease, transform 150ms ease;
+}
+
+.parent-weekly-access-link:hover {
+  border-color: #1f3a63;
+  transform: translateY(-1px);
+}
+
+.parent-weekly-access-link > svg:first-child {
+  flex: 0 0 auto;
+  color: #2f9e5b;
+}
+
+.parent-weekly-access-link > span {
+  display: grid;
+  gap: 1px;
+  min-width: 0;
+  flex: 1;
+}
+
+.parent-weekly-access-link strong {
+  font-size: 0.9rem;
+}
+
+.parent-weekly-access-link small {
+  color: #6b6559;
+  font-size: 0.76rem;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .parent-weekly-access-link {
     transition: none;
   }
 }

@@ -6,6 +6,7 @@ import {
   ArrowRight,
   BookOpenCheck,
   CalendarDays,
+  CarFront,
   Check,
   CheckCircle2,
   ChevronRight,
@@ -16,6 +17,7 @@ import {
   Megaphone,
   MessageCircle,
   ShieldCheck,
+  TriangleAlert,
   UsersRound,
   Utensils
 } from "lucide-react";
@@ -449,6 +451,50 @@ export function ParentWeeklyDashboard({ view, dashboardData, replayData }: Paren
         <p className="parent-weekly-status" role="status" aria-live="polite">{statusMessage}</p>
       ) : null}
 
+      {view.criticalChange || view.conflicts.length ? (
+        <section className="parent-weekly-changes" aria-labelledby="parent-changes-title">
+          <header>
+            <TriangleAlert aria-hidden="true" size={18} />
+            <div>
+              <span className="parent-weekly-kicker">Since you last checked</span>
+              <h2 id="parent-changes-title">What changed</h2>
+            </div>
+          </header>
+          <ul>
+            {view.criticalChange ? (
+              <li key={view.criticalChange.eventId}>
+                <strong>{view.criticalChange.title}</strong>
+                <p>{view.criticalChange.summary}</p>
+              </li>
+            ) : null}
+            {view.conflicts.map((conflict) => (
+              <li key={conflict.id}>
+                <strong>Schedule conflict</strong>
+                <p>{conflict.summary} {conflict.evidence}</p>
+              </li>
+            ))}
+          </ul>
+          {nextEvent?.primaryAction ? (
+            nextEvent.primaryAction.href.startsWith("http") ? (
+              <a
+                className="parent-weekly-changes-action"
+                href={nextEvent.primaryAction.href}
+                target="_blank"
+                rel="noreferrer"
+              >
+                {nextEvent.primaryAction.label}
+                <ArrowRight aria-hidden="true" size={16} />
+              </a>
+            ) : (
+              <Link className="parent-weekly-changes-action" href={nextEvent.primaryAction.href}>
+                {nextEvent.primaryAction.label}
+                <ArrowRight aria-hidden="true" size={16} />
+              </Link>
+            )
+          ) : null}
+        </section>
+      ) : null}
+
       <div className="parent-weekly-layout">
         <div className="parent-weekly-primary">
           <section className="parent-weekly-card parent-weekly-next" aria-labelledby="parent-next-title">
@@ -497,6 +543,16 @@ export function ParentWeeklyDashboard({ view, dashboardData, replayData }: Paren
                     ) : null}
                     {!assignedSnack && !assignedVolunteer ? (
                       <span><ShieldCheck aria-hidden="true" size={15} /> No family help assignment for this event</span>
+                    ) : null}
+                    {nextEvent.transportationAssigned ? (
+                      <span><CarFront aria-hidden="true" size={15} /> {nextEvent.responsibleAdultLabel}</span>
+                    ) : (
+                      <Link className="parent-weekly-duty-link" href="/parent/transportation">
+                        <CarFront aria-hidden="true" size={15} /> Ride plan not set · coordinate
+                      </Link>
+                    )}
+                    {nextEvent.handoffLabel ? (
+                      <span><UsersRound aria-hidden="true" size={15} /> Handoff: {nextEvent.handoffLabel}</span>
                     ) : null}
                   </div>
                   {nextEvent.status === "cancelled" ? (
@@ -642,7 +698,7 @@ export function ParentWeeklyDashboard({ view, dashboardData, replayData }: Paren
                 <CalendarDays aria-hidden="true" size={24} />
                 <div>
                   <h3>No events in the next seven days</h3>
-                  <p>Official schedule updates will appear here.</p>
+                  <p>Your coach and league admin publish the official schedule. New events appear here automatically.</p>
                 </div>
               </div>
             )}
@@ -680,7 +736,7 @@ export function ParentWeeklyDashboard({ view, dashboardData, replayData }: Paren
                 <Megaphone aria-hidden="true" size={23} />
                 <div>
                   <h3>No current coach updates</h3>
-                  <p>Published team announcements will appear here.</p>
+                  <p>When your coach publishes an announcement, it lands here — no group texts to chase.</p>
                 </div>
               </div>
             )}
@@ -706,6 +762,15 @@ export function ParentWeeklyDashboard({ view, dashboardData, replayData }: Paren
               Family logistics only. This view does not evaluate athlete performance.
             </p>
           </section>
+
+          <Link className="parent-weekly-access-link" href="/parent/family-access">
+            <ShieldCheck aria-hidden="true" size={18} />
+            <span>
+              <strong>Family access</strong>
+              <small>See who can view your family’s records, and revoke access anytime.</small>
+            </span>
+            <ArrowRight aria-hidden="true" size={16} />
+          </Link>
         </aside>
       </div>
     </div>

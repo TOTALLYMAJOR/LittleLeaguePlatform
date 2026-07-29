@@ -42,6 +42,7 @@ export interface FamilyMissionEvent {
   rsvpNeedsAction: boolean;
   rsvpOutdated: boolean;
   responsibleAdultLabel: string;
+  transportationAssigned: boolean;
   outboundResponsibilityLabel: string;
   returnResponsibilityLabel: string;
   handoffLabel?: string;
@@ -271,6 +272,7 @@ function buildMissionEvent(input: {
     responsibleAdultLabel: outboundResponsibility?.state === "assigned" && returnResponsibility?.state === "assigned"
       ? `Outbound: ${outboundResponsibility.adultLabel} · Return: ${returnResponsibility.adultLabel}`
       : "Not fully assigned",
+    transportationAssigned: outboundResponsibility?.state === "assigned" && returnResponsibility?.state === "assigned",
     outboundResponsibilityLabel,
     returnResponsibilityLabel,
     handoffLabel: input.handoff
