@@ -137,6 +137,20 @@ Passing this command proves local repository readiness proof only. It does not c
 
 The remaining open gates are Stripe sandbox account setup, restricted key creation, webhook endpoint registration, signing-secret configuration, sandbox Checkout Session proof, signed webhook replay/duplicate proof, refund/failure proof, hosted admin proof, finance reconciliation, and production payment approval. Keep restricted API keys in environment-specific server secret storage with separate environments for sandbox/preview/production. No Stripe secret or restricted key values are stored in source.
 
+## Local Sponsor Fulfillment Readiness Proof
+
+Run the no-mutation source verifier before any LPM-010 hosted public/admin browser proof, placement rendering proof, logo asset proof, report proof, renewal delivery proof, or production sponsor acceptance:
+
+```bash
+npm run qa:sponsor-fulfillment-readiness
+```
+
+The verifier reads repository files only. It checks that public sponsor placement helpers filter active sponsors to approved placement keys, Team Portal placement stays team-scoped, admin sponsor saves reject invalid placement keys and cross-organization assignments, Supabase sponsor reads expose only approved logo assets, submitted logo URLs remain pending review inputs, unavailable sponsor data fails closed, Sponsor Hub and revenue summaries separate configured placement, reviewed logo metadata, billing/payment proof, renewal review, report export, delivered-placement proof, and unproven impact, renewal email remains human-reviewed and provider-disconnected, and public/parent surfaces avoid child, parent-contact, private media, billing, redemption, and sponsor-attributed impact leaks.
+
+Passing this command proves local repository readiness proof only. It does not call Supabase, sign in, run Playwright, seed data, mutate hosted records, send renewal email, call email/SMS/push providers, call Stripe, create or refund payments, upload files, fetch external logo assets, call provider dashboards, deploy, or claim hosted, observed-rendering, provider, finance, accessibility, production, or production sponsor acceptance.
+
+The remaining open gates are hosted public/admin browser proof, observed placement-rendering proof, approved logo asset proof, sponsor recap/report artifact proof, renewal email sandbox proof, public placement leak QA, accessibility proof, finance reconciliation, and production sponsor acceptance. Passing local readiness does not prove public placement actually rendered, that approved logo assets load from storage/CDN, that a recap/report artifact is acceptable, that renewal email sandbox delivery has consent and webhook proof, or that finance and production acceptance are complete.
+
 ## Supabase QA Proof
 
 Use these checks after migrations are applied to a Supabase QA or preview project:
