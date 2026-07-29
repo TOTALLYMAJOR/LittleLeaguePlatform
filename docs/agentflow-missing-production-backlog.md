@@ -32,86 +32,94 @@ Completed baseline:
 - LPM-006A integrated in AgentFlow build
   `build_2df551bf-6d0a-46c0-9738-0809a1dd3a78` at integration commit
   `2c18dd75c65669f516a7224e4b4f86343ba8165f`.
+- LPM-007A integrated in AgentFlow build
+  `build_b1ea8cf7-a6ed-45e8-88b8-7cf50f38ffb8` at integration commit
+  `bd94292720fc8d7ece02f7b2d9989e5d34273b44`.
 
-## LPM-007A - Add provider sandbox readiness verifier
+## LPM-008A - Add private media storage readiness verifier
 
 ```yaml
 estimate_hours: 4
 depends_on: []
 owns:
   - package.json
-  - scripts/verify-provider-sandbox-readiness.mjs
-  - scripts/verify-provider-sandbox-readiness.test.mjs
+  - scripts/verify-private-media-storage-readiness.mjs
+  - scripts/verify-private-media-storage-readiness.test.mjs
   - docs/runbook.md
   - docs/missing-production-slices-work-plan.md
   - docs/production-task-board.md
 validate:
   - npm ci --ignore-scripts --prefer-offline
   - npm run check:skills
-  - node --test scripts/verify-provider-sandbox-readiness.test.mjs
-  - npm test -- app/provider-boundary.test.ts lib/supabase/provider-delivery.test.ts lib/services/notifications/worker.test.ts lib/services/notifications/webhook-verification.test.ts lib/services/notifications/executor.test.ts lib/services/notifications/adapters.test.ts lib/supabase/provider-webhooks.test.ts app/api-notification-worker.test.ts app/api-pingram-webhook.test.ts
+  - node --test scripts/verify-private-media-storage-readiness.test.mjs
+  - npm test -- app/api-auth.test.ts app/api-family-replays.test.ts lib/supabase/family-replays.test.ts components/family-parent-replay.test.tsx app/dashboard-read-adapters.test.ts
   - npm run typecheck
   - npm run build
   - git diff --check
 produces:
-  - name: provider-sandbox-readiness-verifier
+  - name: private-media-storage-readiness-verifier
     type: local-readiness-proof
     version: 1.0.0
-    path: scripts/verify-provider-sandbox-readiness.mjs
+    path: scripts/verify-private-media-storage-readiness.mjs
 consumes: []
 ```
 
-Implement a no-mutation verifier for the local LPM-007 provider sandbox
-readiness contracts that already exist in notification domain code, provider
-delivery services, provider adapters, webhook verification, staged migrations,
-route handlers, and focused tests. The verifier must prove, from repository
-source, that provider sends remain approval-gated, adult-recipient allowlisting
-and suppression are explicit, sandbox adapters are bound by durable authority,
-signed webhooks update attempts without conflating acceptance/delivery/read/
-acknowledgment, and retry/reconciliation behavior is idempotent before any
-operator runs real sandbox email, SMS, or Web Push proof.
+Implement a no-mutation verifier for the local LPM-008 private media storage
+and scanner readiness contracts that already exist in media upload routes,
+private-media services, team/family read adapters, Parent Replay migration
+contracts, privacy docs, and focused tests. The verifier must prove, from
+repository source, that private uploads remain disabled by default behind both
+environment and organization gates, tenant/team quarantine object paths are
+authoritatively derived after role checks, scanner evidence requires size,
+magic-byte, hash, decode/re-encode, metadata stripping, malware/inappropriate
+content proof, and failed scans stay quarantined before any family-visible
+release path can run.
 
 The tool must not call Supabase, sign in, run Playwright, seed data, mutate
-hosted records, send email/SMS/Web Push, call SendGrid, Twilio, Pingram, Web
-Push, or provider dashboards, configure secrets, deploy, or claim sandbox,
-hosted, provider, or production acceptance. Its job is to make the local
-readiness contract executable and to name exact blockers before an operator runs
-approved sandbox-provider proof.
+hosted records, upload media, create storage objects, download objects, call a
+scanner, call provider dashboards, configure secrets, deploy, or claim hosted,
+storage-provider, scanner-provider, or production acceptance. Its job is to
+make the local readiness contract executable and to name exact blockers before
+an operator runs approved private storage, scanner, consent, deletion, hosted,
+or production proof.
 
 ### Acceptance Criteria
 
-- A new `qa:provider-sandbox-readiness` script reads only repository files and
-  fails with named blockers when an LPM-007 local readiness contract is
+- A new `qa:private-media-storage-readiness` script reads only repository files
+  and fails with named blockers when an LPM-008 local readiness contract is
   missing or weakened.
-- The verifier checks provider approval authority: notification review requires
-  assigned coach or organization-admin authority, matching provider/channel,
-  organization feature gate, recipient preference checks, durable attempt rows,
-  and no external send during review.
-- The verifier checks sandbox adapter binding: worker execution claims queued
-  approved attempts, rechecks durable authority, binds attempt, notification,
-  channel, provider, transport provider, idempotency key, retry count, and
-  adapter selection before any adapter send can run.
-- The verifier checks suppression and allowlist/cost controls: rejected,
-  preference-disabled, provider-disabled, unknown SMS provider, opt-out, and
-  missing provider configuration paths suppress without retry; docs name
-  adult-consented QA allowlists, cost caps, monitoring, and rollback before
-  provider proof.
-- The verifier checks webhook security: SendGrid signed event webhook
-  verification, Twilio request validation, Pingram timestamp/HMAC verification,
-  duplicate callback/event handling, and replay protection are present in code
-  and tests.
-- The verifier checks delivery truth separation: provider accepted, delivered,
-  failed, read, acknowledged, suppressed, indeterminate, retry, and dead-letter
-  states remain distinct; SendGrid/Twilio/Pingram callbacks never make
-  synchronous send acceptance equal delivery or family acknowledgment.
-- The verifier explicitly names real sandbox sends, provider dashboard setup,
-  secrets, adult QA recipient approval, signed webhook endpoint registration,
-  hosted worker execution, cost monitoring, and production-send approval as open
-  gates.
+- The verifier checks upload gates and authority: upload initiation and
+  completion require authenticated route users, assigned coach or
+  organization-admin authority, a server kill switch, an organization feature
+  flag, and proven scanner configuration before any storage token or scan path
+  can succeed.
+- The verifier checks tenant-scoped quarantine storage: object paths include
+  organization id, team id, a quarantine prefix, a generated identifier, and
+  allowed image extensions; route responses and docs keep quarantine distinct
+  from family-visible media.
+- The verifier checks scanner and processing evidence: allowed MIME types,
+  size limits, SHA-256 validation, magic-byte validation, image decode,
+  rotation/re-encode with EXIF stripping, scanner endpoint/token/provider
+  readiness, scan evidence id, processed-path write, and original quarantine
+  removal are present before `scan_completed_at`.
+- The verifier checks family release and read-time privacy: release requires
+  scan evidence, admin authority, approved moderation, complete subject
+  identity, every active guardian's current consent, accessible alt text or
+  transcript, family-release approval, and family read adapters suppress draft,
+  unscanned, revoked, deleted, or unapproved media.
+- The verifier checks retention, deletion, and takedown evidence: retention
+  deadlines, storage deletion timestamps/evidence, review history, report and
+  moderation APIs, and deletion-proof language are present before any production
+  media-storage claim.
+- The verifier explicitly names storage-provider setup, scanner-provider setup,
+  hosted signed-upload proof, hosted scan proof, populated consent/revocation
+  proof, deletion/retention proof, abuse/takedown proof, accessibility proof,
+  and production acceptance as open gates.
 - Tests cover passing fixtures and at least one missing-contract failure for
   each readiness family without requiring hosted credentials or network access.
 - `docs/runbook.md`, `docs/missing-production-slices-work-plan.md`, and
   `docs/production-task-board.md` describe the verifier as local repository
-  readiness proof only; real sandbox sends, hosted worker proof, provider
-  dashboard setup, provider secrets, signed webhook registration, cost
-  monitoring, and production-send approval remain open gates.
+  readiness proof only; private storage setup, scanner setup, hosted upload and
+  scan proof, populated consent/revocation proof, deletion/retention proof,
+  abuse/takedown proof, accessibility proof, and production acceptance remain
+  open gates.
