@@ -20,7 +20,7 @@ Acceptance criteria:
 - Email, SMS, push, Stripe, AI publishing, media uploads, and provider rendering remain separated from local UI proof until the relevant sandbox, webhook, consent, and hosted gates pass.
 - Mobile and desktop browser proof exists for user-visible route changes before claiming visual completion.
 
-Current coverage: `Partial`. The route, service, RLS, migration, QA-script, and test scaffolding are broad, but several production proof lanes remain open: signed-in hosted proof for some flows, live provider delivery, Stripe settlement, private media storage/scanning, Realtime proof, backup/PITR/restore acceptance, and some cross-tenant lifecycle proof.
+Current coverage: `Partial`. The LPM-001 baseline ledger (`docs/production-proof-baseline-2026-07-29.md`) records local proof status and keeps production acceptance separate. The route, service, RLS, migration, QA-script, and test scaffolding are broad, but several production proof lanes remain open: signed-in hosted proof for some flows, live provider delivery, Stripe settlement, private media storage/scanning, Realtime proof, backup/PITR/restore acceptance, and some cross-tenant lifecycle proof.
 
 ## Role Experience Criteria
 
@@ -62,6 +62,7 @@ Current coverage: `Partial`. The route, service, RLS, migration, QA-script, and 
 - Fully proven production Realtime behavior.
 - Full hosted proof for every admin, coach, parent, caregiver, media, sponsor, and season-transition lifecycle.
 - Backup/PITR/restore acceptance for production launch.
+- Any LPM-001 local validation result as hosted, provider, payment, storage, native, or production acceptance.
 
 ## Next Acceptance Slices
 

@@ -3,7 +3,9 @@
 Status: active
 Created: 2026-07-29
 Repository: LeaguePilot / Little League HQ
-Working directory: `/home/administrator/projects/youth-sports-platform-mvp-v3`
+Source working directory: `/home/administrator/projects/youth-sports-platform-mvp-v3`
+Current AgentFlow task worktree: `/home/administrator/.agentflow/worktrees/repo_80ec8817-7c48-4066-a53c-6a5aa57d31c8/build_5e3e818d-6dc6-4069-8fc9-6498a727b3eb/tasks/task_lpm-001_771e7704-f2bc-449a-9838-e21112a17673`
+Baseline ledger: `docs/production-proof-baseline-2026-07-29.md`
 
 This work plan turns the known missing or gated pieces into dependency-aware execution tasks. It does not treat local UI, seed fallback, provider configuration, or preview evidence as production acceptance. Each task must preserve child privacy defaults, role boundaries, human approval, auditability, and provider/payment/storage gates.
 
@@ -55,12 +57,15 @@ flowchart TD
 
 ## LPM-001 - Production Proof Baseline
 
-Status: `in_progress`
+Status: `done`
 Priority: P0
 Governing rows: `docs/production-task-board.md` Active Goal - Operational-Truth Hardening and Gated Enhancements; `docs/capability-matrix.md` Security, RLS, and platform foundation.
 
 Objective:
 Establish the current proof baseline before any missing provider, payment, media, or native slice begins.
+
+Local baseline ledger:
+`docs/production-proof-baseline-2026-07-29.md` records the isolated AgentFlow branch, current HEAD, missing upstream, dirty-source caveats, local/external proof boundary, required RLS QA variables, skipped external proof, and open remote gates.
 
 Tenant context:
 Organization, season, team, player, guardian, and user scopes across parent, coach, admin, caregiver, and signed-out routes.
@@ -343,3 +348,14 @@ PWA/mobile browser proof; usage metrics; product decision record.
   - `npm run qa:rls-proof` was not run because it targets a live Supabase QA project and requires explicit isolated-target variables.
   - Required RLS proof inputs from `scripts/verify-rls-boundaries.mjs` and `scripts/qa-target-guard.mjs`: `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`, `QA_PARENT_EMAIL`, `QA_PARENT_PASSWORD`, `QA_COACH_EMAIL`, `QA_COACH_PASSWORD`, `SUPABASE_QA_TARGET_REF`, `SUPABASE_QA_PARENT_PROJECT_REF`, and `SUPABASE_QA_TARGET_CONFIRM=seed-isolated-qa-target`.
   - Backup/PITR/restore acceptance, Realtime authorization/reconnect/change-delivery proof, hosted role/browser proof, provider-send proof, payment proof, and private-media storage/scanner proof remain open.
+- 2026-07-29: Isolated AgentFlow worker finalized the LPM-001 ledger in `docs/production-proof-baseline-2026-07-29.md`:
+  - Current task worktree: `/home/administrator/.agentflow/worktrees/repo_80ec8817-7c48-4066-a53c-6a5aa57d31c8/build_5e3e818d-6dc6-4069-8fc9-6498a727b3eb/tasks/task_lpm-001_771e7704-f2bc-449a-9838-e21112a17673`
+  - Current branch: `agent/build_5e3e818d-6dc6-4069-8fc9-6498a727b3eb/task_lpm-001_771e7704-f2bc-449a-9838-e21112a17673`
+  - Current HEAD: `97c8c5d51083067f465eab5d35347a78ad98a9e7`
+  - Upstream: none configured for the task branch.
+  - Source checkout dirt, generated Playwright output, `.history`, and preserved AgentFlow worktrees remain out of scope for this slice.
+  - Attempt-2 pre-final status contained only owned documentation changes from the prior attempt plus the untracked baseline ledger.
+  - `npm run check:skills` passed in the worker.
+  - `npx vitest run app/route-guards.test.ts app/routes-smoke.test.ts app/provider-boundary.test.ts lib/navigation/route-topology.test.ts` passed `4` files and `43` tests.
+  - `npm run typecheck`, `npm run build`, and `git diff --check` passed in the worker.
+  - `npm run qa:rls-proof` remains skipped without an isolated QA target and confirmation.
