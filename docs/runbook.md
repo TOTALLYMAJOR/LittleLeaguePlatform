@@ -188,6 +188,18 @@ The proof signs in as the QA coach, opens `/coach/parent-replay`, requests an AI
 
 Current Vercel state: Production and Development have the AI Coach provider variables configured. Preview is intentionally out of launch scope until a named non-production preview branch target is chosen.
 
+## Admin Proof Closure Readiness
+
+Use the local verifier before LPM-004 hosted QA:
+
+```bash
+npm run qa:admin-proof-readiness
+```
+
+The verifier reads repository source only. It checks that media report, media moderation, team-builder publish, broader admin export scope, and public intake abuse-control contracts remain present in route handlers, Supabase adapters, migrations, and focused tests.
+
+Passing this command is not hosted acceptance. It does not call Supabase, sign in, run Playwright, seed data, mutate hosted records, send providers, deploy, or configure edge/firewall controls. Hosted signed-in browser proof, Supabase readback, and deployed edge/shared-store rate-limit proof remain required before LPM-004 closure.
+
 ## Operational-Truth Feature Gates
 
 Apply `supabase/migrations/0023_operational_truth_hardening.sql` to a non-production project before enabling any new persistence path. Local compilation does not prove the migration, RLS, storage policy, provider webhook, or connected-account behavior.

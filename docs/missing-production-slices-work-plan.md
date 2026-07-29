@@ -153,6 +153,7 @@ Close browser proof gaps for media report, media moderation, team-builder publis
 
 Acceptance criteria:
 
+- AC-000: `npm run qa:admin-proof-readiness` passes as local repository-source proof that the media report, media moderation, team-builder publish, broader admin scope, and public intake abuse-control seams remain present. This verifier performs no Supabase call, browser sign-in, Playwright run, seed/write, hosted mutation, provider send, deployment, edge firewall configuration, or production acceptance.
 - AC-001: Signed-in QA parent reports approved team media; report count/status changes; unrelated team media remains invisible.
 - AC-002: Signed-in admin or assigned coach hides, restores, or removes a QA media item; parent/team reads honor moderation state.
 - AC-003: QA admin previews, edits, approves, and publishes a team-build plan with audit evidence and no cross-org writes.
@@ -160,7 +161,10 @@ Acceptance criteria:
 - AC-005: Public registration and telemetry bursts are throttled in the deployed topology or the exact shared-store/firewall blocker is recorded.
 
 Validation:
-Hosted browser proof with Supabase readback; `npm test -- app/public-intake-rate-limit.test.ts lib/supabase/reporting.test.ts lib/supabase/sponsor-operations.test.ts app/api-live-actions.test.ts`.
+`npm run qa:admin-proof-readiness`; `node --test scripts/verify-admin-proof-closure-readiness.test.mjs`; hosted browser proof with Supabase readback; `npm test -- app/public-intake-rate-limit.test.ts lib/supabase/reporting.test.ts lib/supabase/sponsor-operations.test.ts app/api-live-actions.test.ts`.
+
+Boundary:
+The readiness verifier is a local source-contract gate only. It does not replace signed-in hosted UI proof, Supabase readback, populated cross-tenant negative proof, or deployed edge/shared-store rate-limit proof.
 
 ## LPM-005 - Game-Day and Official Communication Proof
 
