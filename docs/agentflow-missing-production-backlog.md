@@ -38,96 +38,98 @@ Completed baseline:
 - LPM-008A integrated in AgentFlow build
   `build_57282bd1-9c97-4a59-8ce5-0f97510dd9fc` at integration commit
   `3089c54c77513f1820eec69bc69ab9d34d5f8c8c`.
+- LPM-009A integrated in AgentFlow build
+  `build_3888a189-a617-4fbe-b64e-5fc002f30ef2` at integration commit
+  `e02940dee117481e46925b9a10180998a159ce5a`.
 
-## LPM-009A - Add sponsor Stripe readiness verifier
+## LPM-010A - Add sponsor fulfillment readiness verifier
 
 ```yaml
 estimate_hours: 4
 depends_on: []
 owns:
   - package.json
-  - scripts/verify-sponsor-stripe-readiness.mjs
-  - scripts/verify-sponsor-stripe-readiness.test.mjs
+  - scripts/verify-sponsor-fulfillment-readiness.mjs
+  - scripts/verify-sponsor-fulfillment-readiness.test.mjs
   - docs/runbook.md
   - docs/missing-production-slices-work-plan.md
   - docs/production-task-board.md
 validate:
   - npm ci --ignore-scripts --prefer-offline
   - npm run check:skills
-  - node --test scripts/verify-sponsor-stripe-readiness.test.mjs
-  - npm test -- lib/supabase/sponsors.test.ts lib/supabase/sponsor-operations.test.ts components/sponsor-hub.test.tsx app/api-live-actions.test.ts app/api-auth.test.ts
+  - node --test scripts/verify-sponsor-fulfillment-readiness.test.mjs
+  - npm test -- lib/domain/domain.test.ts lib/supabase/sponsors.test.ts lib/supabase/sponsor-operations.test.ts components/sponsor-hub.test.tsx app/api-live-actions.test.ts app/routes-smoke.test.ts
   - npm run typecheck
   - npm run build
   - git diff --check
 produces:
-  - name: sponsor-stripe-readiness-verifier
+  - name: sponsor-fulfillment-readiness-verifier
     type: local-readiness-proof
     version: 1.0.0
-    path: scripts/verify-sponsor-stripe-readiness.mjs
+    path: scripts/verify-sponsor-fulfillment-readiness.mjs
 consumes: []
 ```
 
-Implement a no-mutation verifier for the local LPM-009 sponsor Stripe readiness
-contracts that already exist in sponsor billing domain code, admin sponsor
-operations, Stripe checkout routes, Stripe webhook verification, public sponsor
-privacy copy, payment-provider docs, migrations, and focused tests. The
-verifier must prove, from repository source, that sponsor billing has an
-explicit proof-only-versus-sandbox decision boundary, one-time sponsor
-collection uses server-side Stripe Checkout Sessions when enabled, browser
-return state never marks a sponsor paid, and signature-verified webhooks remain
-the only settlement truth.
+Implement a no-mutation verifier for the local LPM-010 sponsor fulfillment
+readiness contracts that already exist in sponsor placement domain helpers,
+team portal/community commerce models, Supabase sponsor reads, admin sponsor
+operations, Sponsor Hub fulfillment/report UI, public sponsor privacy copy,
+feature documentation, and focused tests. The verifier must prove, from
+repository source, that active sponsors render only through approved placement
+filters, approved logo assets are distinct from submitted logo URLs, fulfillment
+and recap surfaces separate configured placement, observed rendering proof,
+billing proof, renewal state, and unproven impact, and public surfaces do not
+leak child, parent, private media, billing, or redemption proof.
 
-The tool must not call Stripe, Supabase, sign in, run Playwright, seed data,
-mutate hosted records, create Checkout Sessions, configure API keys or webhook
-secrets, register webhook endpoints, charge/refund payments, call provider
-dashboards, deploy, or claim sandbox, hosted, provider, finance, or production
-acceptance. Its job is to make the local readiness contract executable and to
-name exact blockers before an operator runs approved Stripe sandbox, webhook,
-hosted, reconciliation, refund/failure, or production payment proof.
+The tool must not call Supabase, sign in, run Playwright, seed data, mutate
+hosted records, send renewal email, call email/SMS/push providers, call Stripe,
+create or refund payments, upload files, fetch external logo assets, call
+provider dashboards, deploy, or claim hosted, observed-rendering, provider,
+finance, or production acceptance. Its job is to make the local readiness
+contract executable and to name exact blockers before an operator runs approved
+hosted public/admin browser proof, logo asset proof, placement rendering proof,
+renewal delivery proof, report proof, or production sponsor acceptance.
 
 ### Acceptance Criteria
 
-- A new `qa:sponsor-stripe-readiness` script reads only repository files and
-  fails with named blockers when an LPM-009 local readiness contract is
+- A new `qa:sponsor-fulfillment-readiness` script reads only repository files
+  and fails with named blockers when an LPM-010 local readiness contract is
   missing or weakened.
-- The verifier checks the product decision/proof boundary: sponsor billing
-  records, invoice readiness, payment-proof state, placement, fulfillment, and
-  public display remain separate; proof-only status is not presented as Stripe
-  settlement; browser return messages do not confirm payment.
-- The verifier checks Checkout Sessions readiness: any one-time sponsor
-  collection path uses server-side `checkout.sessions.create`, omits
-  `payment_method_types`, binds organization and sponsor billing metadata,
-  uses idempotency, requires organization-admin authority, requires both server
-  and organization payment gates, and refuses unverified Stripe Connect charge
-  readiness.
-- The verifier checks key and environment security: Stripe credentials are
-  server-side only, docs prefer restricted API keys with separate environments,
-  source and UI do not expose `sk_` or `rk_` values, errors do not log secrets,
-  and missing Stripe configuration fails closed.
-- The verifier checks webhook settlement truth: the route verifies
-  `stripe-signature` with `STRIPE_WEBHOOK_SECRET`, uses Stripe
-  `constructEvent` on the raw body, records signed payment evidence, handles
-  duplicate events idempotently, distinguishes paid, failed, and account
-  readiness events, and validates organization, sponsor billing record,
-  checkout session/payment intent, amount, currency, metadata, and event
-  identity before any paid claim.
-- The verifier checks admin and public privacy separation: the admin Sponsor
-  Hub separates sponsor record, placement, invoice readiness, payment proof,
-  refund/failure follow-up, fulfillment, report export, and public display;
-  public and parent surfaces never expose sponsor billing state, child
-  profiles, parent contacts, private media, or redemption proof.
-- The verifier explicitly names Stripe sandbox account setup, restricted key
-  creation, webhook endpoint registration, signing-secret configuration,
-  sandbox Checkout Session proof, signed webhook replay/duplicate proof,
-  refund/failure proof, hosted admin proof, finance reconciliation, and
-  production payment approval as open gates.
+- The verifier checks placement authority: public placement helpers filter to
+  `active` sponsor records and exact approved placement keys, team-portal
+  placement respects team scope, and admin save operations reject invalid
+  placement keys, wrong-organization team assignments, and unauthorized actor
+  writes.
+- The verifier checks logo and asset safety: Supabase reads only approved logo
+  assets, submitted logo URLs remain review inputs until approved, unavailable
+  sponsor data fails closed without restoring editable seed rows, and the UI
+  gives clear fallback states when artwork or placement evidence is missing.
+- The verifier checks fulfillment and recap separation: Sponsor Hub and revenue
+  summaries separate configured public placement, reviewed logo metadata,
+  billing/payment proof, renewal review, report export, delivered-placement
+  proof, and unproven impact; zero verified impact is not converted into an
+  impact claim or PDF report.
+- The verifier checks renewal delivery gates: renewal email is human-reviewed
+  and remains disconnected from provider sends unless the provider sandbox
+  delivery contract and channel-specific consent/webhook proof are separately
+  complete.
+- The verifier checks public and parent privacy: `/sponsors`, team portal, and
+  parent-facing data paths do not expose sponsor billing state, child profiles,
+  parent contacts, private media, redemption proof, or sponsor-attributed
+  impact.
+- The verifier explicitly names hosted public/admin browser proof, observed
+  placement-rendering proof, approved logo asset proof, sponsor recap/report
+  artifact proof, renewal email sandbox proof, public placement leak QA,
+  accessibility proof, finance reconciliation, and production sponsor
+  acceptance as open gates.
 - Tests cover passing fixtures and at least one missing-contract failure for
   each readiness family without requiring hosted credentials, network access,
-  Supabase, Stripe, browser automation, or provider dashboard access.
+  Supabase, browser automation, provider dashboard access, provider sends,
+  Stripe, storage, or external logo requests.
 - `docs/runbook.md`, `docs/missing-production-slices-work-plan.md`, and
   `docs/production-task-board.md` describe the verifier as local repository
-  readiness proof only; Stripe sandbox account setup, restricted key creation,
-  webhook endpoint registration, signing-secret configuration, sandbox Checkout
-  proof, signed webhook replay/duplicate proof, refund/failure proof, hosted
-  admin proof, finance reconciliation, and production payment approval remain
-  open gates.
+  readiness proof only; hosted public/admin browser proof, observed
+  placement-rendering proof, approved logo asset proof, sponsor recap/report
+  artifact proof, renewal email sandbox proof, public placement leak QA,
+  accessibility proof, finance reconciliation, and production sponsor
+  acceptance remain open gates.
