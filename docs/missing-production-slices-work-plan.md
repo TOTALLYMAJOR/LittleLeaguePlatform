@@ -385,6 +385,11 @@ Validation:
 
 ## Current Execution Log
 
+- 2026-07-29: LPM-014 added the local Team Builder player metadata slice:
+  - Domain preview input/output now models admin-scoped age band, cutoff-age label, evaluation rating/source, and review notes without requiring or emitting private full birthdates.
+  - `/admin` Team Builder copy frames metadata as roster-fairness review input while keeping player display to first name plus last initial.
+  - Migration `0034_team_builder_player_metadata.sql` extends existing admin-only `team_build_plans` persistence with idempotent JSON metadata/constraint columns and does not introduce a new family-readable table.
+  - Local implementation is complete; hosted browser publish proof, Supabase migration apply/readback, real-session cross-org proof, and production acceptance remain open.
 - 2026-07-29: Goal started. Created structured missing-slices work plan. Beginning LPM-001 with non-mutating repository and validation checks only.
 - 2026-07-29: LPM-001 baseline repository context confirmed:
   - `pwd`: `/home/administrator/projects/youth-sports-platform-mvp-v3`

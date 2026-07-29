@@ -1,4 +1,5 @@
 import type { AppState, AuditEvent } from "./types";
+import type { TeamBuilderAgeBand, TeamBuilderPlayerMetadata } from "./contracts";
 
 type DivisionBalanceStatus = "balanced" | "needs_players" | "uneven";
 
@@ -38,6 +39,7 @@ export interface BalancedTeamBuildInput {
   actorUserId: string;
   now: string;
   skillRatings?: Record<string, number>;
+  playerMetadata?: Record<string, TeamBuilderPlayerMetadata>;
   friendRequests?: TeamBuildFriendRequest[];
 }
 
@@ -53,7 +55,11 @@ export interface BalancedTeamBuildPreview {
     players: Array<{
       playerId: string;
       name: string;
+      ageBand: TeamBuilderAgeBand;
+      birthdateDerivedAgeLabel: string;
       skillRating: number;
+      evaluationSource: string;
+      evaluationNotes: string[];
       constraintNotes: string[];
     }>;
   }>;
@@ -155,6 +161,33 @@ function average(values: number[]) {
   return Math.round((values.reduce((sum, value) => sum + value, 0) / values.length) * 10) / 10;
 }
 
+function safeRating(value?: number) {
+  if (typeof value !== "number" || Number.isNaN(value)) return 3;
+  return Math.min(Math.max(Math.round(value * 10) / 10, 1), 5);
+}
+
+function ageBandScore(ageBand: string) {
+  const match = ageBand.match(/\d+/);
+  return match ? Number(match[0]) : 0;
+}
+
+function getPlayerMetadata(input: BalancedTeamBuildInput, playerId: string) {
+  const metadata = input.playerMetadata?.[playerId];
+  const evaluationRating = metadata?.evaluation ? safeRating(metadata.evaluation.rating) : safeRating(input.skillRatings?.[playerId]);
+
+  return {
+    ageBand: metadata?.ageBand ?? input.division,
+    birthdateDerivedAgeLabel: metadata?.birthdateDerivedAgeLabel ?? `Division ${metadata?.ageBand ?? input.division}`,
+    skillRating: evaluationRating,
+    evaluationSource: metadata?.evaluation?.source ?? (input.skillRatings?.[playerId] !== undefined ? "legacy_skill_rating" : "default_review_rating"),
+    evaluationNotes: [
+      ...(metadata?.evaluation?.label ? [metadata.evaluation.label] : []),
+      ...(metadata?.evaluation?.notes ?? []),
+      ...(metadata?.reviewNotes ?? [])
+    ]
+  };
+}
+
 function guardianGroupKey(state: AppState, playerId: string) {
   const guardian = state.guardianLinks.find((link) => link.playerId === playerId && link.parentUserId && link.status !== "removed");
   return guardian?.parentUserId ?? playerId;
@@ -200,9 +233,11 @@ export function previewBalancedTeamBuild(state: AppState, input: BalancedTeamBui
 
   const teamAssignments = new Map(teams.map((team) => [team.id, [] as string[]]));
   const orderedGroups = Array.from(groups.values()).sort((left, right) => {
-    const leftSkill = Math.max(...left.map((playerId) => input.skillRatings?.[playerId] ?? 3));
-    const rightSkill = Math.max(...right.map((playerId) => input.skillRatings?.[playerId] ?? 3));
-    return rightSkill - leftSkill || right.length - left.length;
+    const leftSkill = Math.max(...left.map((playerId) => getPlayerMetadata(input, playerId).skillRating));
+    const rightSkill = Math.max(...right.map((playerId) => getPlayerMetadata(input, playerId).skillRating));
+    const leftAge = Math.max(...left.map((playerId) => ageBandScore(getPlayerMetadata(input, playerId).ageBand)));
+    const rightAge = Math.max(...right.map((playerId) => ageBandScore(getPlayerMetadata(input, playerId).ageBand)));
+    return rightSkill - leftSkill || rightAge - leftAge || right.length - left.length;
   });
 
   for (const group of orderedGroups) {
@@ -210,9 +245,10 @@ export function previewBalancedTeamBuild(state: AppState, input: BalancedTeamBui
       .map((team) => ({
         team,
         count: teamAssignments.get(team.id)!.length,
-        averageSkill: average(teamAssignments.get(team.id)!.map((playerId) => input.skillRatings?.[playerId] ?? 3))
+        averageSkill: average(teamAssignments.get(team.id)!.map((playerId) => getPlayerMetadata(input, playerId).skillRating)),
+        averageAge: average(teamAssignments.get(team.id)!.map((playerId) => ageBandScore(getPlayerMetadata(input, playerId).ageBand)))
       }))
-      .sort((left, right) => left.count - right.count || left.averageSkill - right.averageSkill || left.team.name.localeCompare(right.team.name))[0]!.team;
+      .sort((left, right) => left.count - right.count || left.averageSkill - right.averageSkill || left.averageAge - right.averageAge || left.team.name.localeCompare(right.team.name))[0]!.team;
     teamAssignments.get(targetTeam.id)!.push(...group);
   }
 
@@ -222,31 +258,42 @@ export function previewBalancedTeamBuild(state: AppState, input: BalancedTeamBui
       teamId: team.id,
       teamName: team.name,
       playerCount: assignedPlayerIds.length,
-      averageSkill: average(assignedPlayerIds.map((playerId) => input.skillRatings?.[playerId] ?? 3)),
+      averageSkill: average(assignedPlayerIds.map((playerId) => getPlayerMetadata(input, playerId).skillRating)),
       players: assignedPlayerIds.map((playerId) => {
         const player = state.players.find((item) => item.id === playerId)!;
+        const metadata = getPlayerMetadata(input, playerId);
         const guardianKey = guardianGroupKey(state, playerId);
         const siblingCount = groups.get(guardianKey)?.length ?? 1;
         const hasFriendRequest = (input.friendRequests ?? []).some((request) => request.playerId === playerId || request.friendPlayerId === playerId);
         return {
           playerId,
           name: `${player.firstName} ${player.lastInitial}.`,
-          skillRating: input.skillRatings?.[playerId] ?? 3,
+          ageBand: metadata.ageBand,
+          birthdateDerivedAgeLabel: metadata.birthdateDerivedAgeLabel,
+          skillRating: metadata.skillRating,
+          evaluationSource: metadata.evaluationSource,
+          evaluationNotes: metadata.evaluationNotes,
           constraintNotes: [
-            `Age/division: ${input.division}`,
+            `Age band: ${metadata.ageBand}`,
+            `Age label: ${metadata.birthdateDerivedAgeLabel}`,
+            `Evaluation: ${metadata.skillRating} (${metadata.evaluationSource.replaceAll("_", " ")})`,
             siblingCount > 1 ? "Sibling/guardian group kept together" : "No sibling grouping required",
-            hasFriendRequest ? "Friend request considered" : "No friend request"
+            hasFriendRequest ? "Friend request considered" : "No friend request",
+            ...(metadata.evaluationNotes.length ? metadata.evaluationNotes.map((note) => `Review note: ${note}`) : ["Review note: No private child detail shown"])
           ]
         };
       })
     };
   });
 
+  const playerRows = teamRows.flatMap((team) => team.players);
+  const missingEvaluationCount = playerRows.filter((player) => player.evaluationSource === "default_review_rating").length;
+  const missingAgeMetadataCount = playerRows.filter((player) => !input.playerMetadata?.[player.playerId]?.ageBand).length;
   const warnings = [
     ...teamRows.filter((team) => team.playerCount > input.targetRosterSize).map((team) => `${team.teamName} exceeds target roster size ${input.targetRosterSize}.`),
     ...teamRows.filter((team) => team.playerCount === 0).map((team) => `${team.teamName} has no assigned players in this preview.`),
-    "Skill ratings default to 3 until explicit evaluations are imported.",
-    "Age is represented by division until player birthdate/age-band metadata is added."
+    ...(missingEvaluationCount ? [`${missingEvaluationCount} player(s) use default evaluation rating 3 until admin metadata is imported.`] : []),
+    ...(missingAgeMetadataCount ? [`${missingAgeMetadataCount} player(s) use division as the age band until admin metadata is imported.`] : [])
   ];
 
   return {
