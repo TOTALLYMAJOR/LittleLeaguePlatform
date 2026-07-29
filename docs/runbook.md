@@ -97,6 +97,18 @@ The verifier reads repository files only. It checks that private Parent Replay r
 
 Passing this command proves only the local repository readiness contract. Hosted browser proof, Supabase readback, populated media consent/revocation proof, multi-guardian transition concurrency proof, storage/scanner proof, provider sandbox proof, and production acceptance remain open gates. The verifier does not call Supabase, sign in, run Playwright, seed data, mutate hosted records, create provider sends, upload media, create storage objects, deploy, configure storage/scanner/realtime/provider infrastructure, or claim hosted acceptance.
 
+## Local Private Media Storage Readiness Proof
+
+Run the no-mutation source verifier before any LPM-008 private storage, scanner, consent, deletion, hosted, or production proof:
+
+```bash
+npm run qa:private-media-storage-readiness
+```
+
+The verifier reads repository files only. It checks that private media upload initiation and completion use authenticated route users, assigned coach or organization-admin authority, the `MEDIA_UPLOADS_ENABLED` server kill switch, the organization `media_uploads_enabled` flag, and proven scanner configuration before a signed storage token or scan path can succeed. It also checks organization/team quarantine object paths, allowed image extensions, quarantine-vs-family-visible copy, size/type/SHA-256/magic-byte evidence, image decode, rotation/re-encode with EXIF stripping, scanner endpoint/token/provider readiness, clean scan evidence id, processed-path writes, original quarantine removal before `scan_completed_at`, family release consent/moderation/accessibility requirements, family read suppression, retention/deletion evidence, reports, and moderation/takedown APIs.
+
+Passing this command proves only the local repository readiness contract. It does not call Supabase, sign in, run Playwright, seed data, mutate hosted records, upload media, create storage objects, download objects, call a scanner, call provider dashboards, configure secrets, deploy, or claim hosted, storage-provider, scanner-provider, or production acceptance. The remaining open gates are storage-provider setup, scanner-provider setup, hosted signed-upload proof, hosted scan proof, populated consent/revocation proof, deletion/retention proof, abuse/takedown proof, accessibility proof, and production acceptance.
+
 ## Local Provider Sandbox Readiness Proof
 
 Run the no-mutation source verifier before any LPM-007 real provider sandbox proof:

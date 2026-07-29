@@ -257,6 +257,7 @@ Decide and implement the private media storage path only after file isolation, s
 
 Acceptance criteria:
 
+- AC-000: `npm run qa:private-media-storage-readiness` passes as local repository readiness proof only before any private storage, scanner, consent, deletion, hosted, or production proof is attempted.
 - AC-001: Storage provider decision is documented with tenant-scoped object paths, RLS, retention, support export/delete, and abuse controls.
 - AC-002: Uploads remain disabled by default behind environment and organization gates.
 - AC-003: Upload initiation validates role, team, family-release intent, file size/type, and object path authority.
@@ -264,7 +265,10 @@ Acceptance criteria:
 - AC-005: Family release requires subject identity, guardian consent, moderation, alt text/transcript where needed, revocation handling, and deletion proof.
 
 Validation:
-Storage/provider tests if implemented; migration/RLS tests; hosted browser proof; deletion/retention proof.
+`npm run qa:private-media-storage-readiness`; `node --test scripts/verify-private-media-storage-readiness.test.mjs`; storage/provider tests if implemented; migration/RLS tests; hosted signed-upload proof; hosted scan proof; populated consent/revocation proof; deletion/retention proof; abuse/takedown proof; accessibility proof; production acceptance.
+
+Boundary:
+`qa:private-media-storage-readiness` reads repository files only. It does not call Supabase, sign in, run Playwright, seed data, mutate hosted records, upload media, create storage objects, download objects, call a scanner, call provider dashboards, configure secrets, deploy, or claim hosted, storage-provider, scanner-provider, or production acceptance. The remaining open gates are storage-provider setup, scanner-provider setup, hosted signed-upload proof, hosted scan proof, populated consent/revocation proof, deletion/retention proof, abuse/takedown proof, accessibility proof, and production acceptance.
 
 ## LPM-009 - Sponsor Stripe Decision and Sandbox
 
