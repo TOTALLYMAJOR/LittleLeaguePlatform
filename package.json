@@ -34,6 +34,7 @@
     "qa:access-lifecycle-authority": "node scripts/verify-access-lifecycle-authority.mjs",
     "qa:admin-proof-readiness": "node scripts/verify-admin-proof-closure-readiness.mjs",
     "qa:game-day-communication-readiness": "node scripts/verify-game-day-communication-readiness.mjs",
+    "qa:family-season-continuity-readiness": "node scripts/verify-family-season-continuity-readiness.mjs",
     "qa:rls-proof": "node scripts/verify-rls-boundaries.mjs",
     "check:skills": "node scripts/check-agent-skills.mjs",
     "supabase:oauth": "node scripts/configure-supabase-oauth.mjs",
