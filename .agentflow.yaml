@@ -1,14 +1,14 @@
 version: 1
 
 repository:
-  name: LeaguePilot Missing Production Slices
-  base_branch: codex/ui-ux-100-shell-chat
+  name: LeaguePilot
+  base_branch: main
 
 backlog:
-  path: docs/agentflow-missing-production-backlog.md
+  path: BACKLOG.md
 
 workers:
-  maximum: 1
+  maximum: 3
 
 contracts:
   roots:
@@ -18,14 +18,19 @@ contracts:
 
 validation:
   task_default:
+    - npm ci --ignore-scripts --prefer-offline
     - npm run check:skills
+    - npm run lint
     - npm run typecheck
     - git diff --check
   integration:
+    - npm ci --ignore-scripts --prefer-offline
     - npm run check:skills
+    - npm run lint
     - npm run typecheck
     - npm test
     - npm run build
+    - npm audit --omit=dev
     - git diff --check
 
 docker:

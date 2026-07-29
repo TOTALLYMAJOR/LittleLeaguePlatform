@@ -18,9 +18,21 @@ export interface ParentCoachDashboardData {
   state: AppState;
   parentUserId: string;
   coachUserId: string;
+  rsvpChangeLogs?: RsvpChangeLog[];
   isSupabaseBacked: boolean;
   accessStatus: "live" | "signed_out" | "missing_parent_link" | "missing_coach_membership" | "unavailable";
   message: string;
+}
+
+export interface RsvpChangeLog {
+  id: string;
+  eventId: string;
+  playerId: string;
+  parentUserId: string;
+  previousResponse?: Rsvp["response"];
+  nextResponse: Rsvp["response"];
+  note?: string;
+  createdAt: string;
 }
 
 export interface ParentCoachDashboardReadOptions {
@@ -78,6 +90,7 @@ function unavailableDashboardData(surface: ParentCoachDashboardReadOptions["surf
     state: emptyDashboardState(),
     parentUserId: "",
     coachUserId: "",
+    rsvpChangeLogs: [],
     isSupabaseBacked: false,
     accessStatus: "unavailable",
     message
@@ -89,6 +102,7 @@ function signedOutDashboardData(surface: ParentCoachDashboardReadOptions["surfac
     state: emptyDashboardState(),
     parentUserId: "",
     coachUserId: "",
+    rsvpChangeLogs: [],
     isSupabaseBacked: false,
     accessStatus: "signed_out",
     message: surface === "parent"
@@ -215,6 +229,7 @@ export async function listParentCoachDashboardData(options: ParentCoachDashboard
       parentInvitesResult,
       eventsResult,
       rsvpsResult,
+      rsvpLogsResult,
       announcementsResult,
       mediaResult,
       preferencesResult,
@@ -235,14 +250,24 @@ export async function listParentCoachDashboardData(options: ParentCoachDashboard
         () => db.from("rsvps").select("id,event_id,player_id,parent_user_id,response,note,responded_at,confirmed_schedule_version,lock_version,last_updated_by_user_id,client_action_id,created_at,updated_at").order("responded_at", { ascending: false }),
         () => db.from("rsvps").select("id,event_id,player_id,parent_user_id,response,note,responded_at,created_at,updated_at").order("responded_at", { ascending: false })
       ),
+      readWithSchemaFallback(
+        () => db.from("rsvp_change_logs").select("id,event_id,player_id,parent_user_id,previous_response,next_response,note,created_at").order("created_at", { ascending: false }).limit(100),
+        () => Promise.resolve({ data: [], error: null })
+      ),
       db.from("announcements").select("id,team_id,author_user_id,title,body,created_at").order("created_at", { ascending: false }),
       readWithSchemaFallback(
         () => db.from("media_items").select("id,team_id,title,media_type,url,created_at,moderation_status,report_count,private_object_path,scan_completed_at,family_release_approved_at").eq("moderation_status", "approved").order("created_at", { ascending: false }),
         () => db.from("media_items").select("id,team_id,title,media_type,url,created_at,moderation_status,report_count").eq("moderation_status", "approved").order("created_at", { ascending: false })
       ),
       db.from("notification_preferences").select("id,user_id,organization_id,team_id,channel,notification_type,enabled,quiet_hours_start,quiet_hours_end,timezone,opted_in_at,opted_out_at").order("updated_at", { ascending: false }),
-      db.from("snack_schedule_slots").select("id,team_id,event_id,assigned_parent_user_id,item,status").order("created_at", { ascending: true }),
-      db.from("volunteer_signups").select("id,team_id,event_id,role,assigned_user_id,status").order("created_at", { ascending: true }),
+      readWithSchemaFallback(
+        () => db.from("snack_schedule_slots").select("id,team_id,event_id,assigned_parent_user_id,item,status,slot_cap,reminder_draft_count,reminder_last_drafted_at,unclaimed_at,unclaimed_by_user_id,cancellation_reason").order("created_at", { ascending: true }),
+        () => db.from("snack_schedule_slots").select("id,team_id,event_id,assigned_parent_user_id,item,status").order("created_at", { ascending: true })
+      ),
+      readWithSchemaFallback(
+        () => db.from("volunteer_signups").select("id,team_id,event_id,role,assigned_user_id,status,role_cap,reminder_draft_count,reminder_last_drafted_at,unclaimed_at,unclaimed_by_user_id,cancellation_reason").order("created_at", { ascending: true }),
+        () => db.from("volunteer_signups").select("id,team_id,event_id,role,assigned_user_id,status").order("created_at", { ascending: true })
+      ),
       db.from("weather_alerts").select("id,team_id,event_id,headline,detail,severity,status,created_at").order("created_at", { ascending: false })
     ]), 7000);
 
@@ -257,6 +282,7 @@ export async function listParentCoachDashboardData(options: ParentCoachDashboard
       parentInvitesResult,
       eventsResult,
       rsvpsResult,
+      rsvpLogsResult,
       announcementsResult,
       mediaResult,
       preferencesResult,
@@ -426,6 +452,25 @@ export async function listParentCoachDashboardData(options: ParentCoachDashboard
       createdAt: rsvp.created_at,
       updatedAt: rsvp.updated_at
     }));
+    const rsvpChangeLogs: RsvpChangeLog[] = ((rsvpLogsResult.data ?? []) as Array<{
+      id: string;
+      event_id: string;
+      player_id: string;
+      parent_user_id: string;
+      previous_response: Rsvp["response"] | null;
+      next_response: Rsvp["response"];
+      note: string | null;
+      created_at: string;
+    }>).map((log) => ({
+      id: log.id,
+      eventId: log.event_id,
+      playerId: log.player_id,
+      parentUserId: log.parent_user_id,
+      previousResponse: log.previous_response ?? undefined,
+      nextResponse: log.next_response,
+      note: log.note ?? undefined,
+      createdAt: log.created_at
+    }));
     const announcements: Announcement[] = (announcementsResult.data ?? []).map((announcement: {
       id: string;
       team_id: string;
@@ -495,35 +540,59 @@ export async function listParentCoachDashboardData(options: ParentCoachDashboard
       optedInAt: preference.opted_in_at ?? undefined,
       optedOutAt: preference.opted_out_at ?? undefined
     }));
-    const snackScheduleSlots: SnackScheduleSlot[] = (snacksResult.data ?? []).map((slot: {
+    const snackScheduleSlots: SnackScheduleSlot[] = ((snacksResult.data ?? []) as Array<{
       id: string;
       team_id: string;
       event_id: string;
       assigned_parent_user_id: string | null;
       item: string;
       status: SnackScheduleSlot["status"];
-    }) => ({
+      slot_cap?: number | null;
+      reminder_draft_count?: number | null;
+      reminder_last_drafted_at?: string | null;
+      unclaimed_at?: string | null;
+      unclaimed_by_user_id?: string | null;
+      cancellation_reason?: string | null;
+    }>).map((slot) => ({
       id: slot.id,
       teamId: slot.team_id,
       eventId: slot.event_id,
       assignedParentUserId: slot.assigned_parent_user_id ?? undefined,
       item: slot.item,
-      status: slot.status
+      status: slot.status,
+      slotCap: slot.slot_cap ?? undefined,
+      reminderDraftCount: slot.reminder_draft_count ?? undefined,
+      reminderLastDraftedAt: slot.reminder_last_drafted_at ?? undefined,
+      unclaimedAt: slot.unclaimed_at ?? undefined,
+      unclaimedByUserId: slot.unclaimed_by_user_id ?? undefined,
+      cancellationReason: slot.cancellation_reason ?? undefined
     }));
-    const volunteerSignups: VolunteerSignup[] = (volunteersResult.data ?? []).map((signup: {
+    const volunteerSignups: VolunteerSignup[] = ((volunteersResult.data ?? []) as Array<{
       id: string;
       team_id: string;
       event_id: string | null;
       role: string;
       assigned_user_id: string | null;
       status: VolunteerSignup["status"];
-    }) => ({
+      role_cap?: number | null;
+      reminder_draft_count?: number | null;
+      reminder_last_drafted_at?: string | null;
+      unclaimed_at?: string | null;
+      unclaimed_by_user_id?: string | null;
+      cancellation_reason?: string | null;
+    }>).map((signup) => ({
       id: signup.id,
       teamId: signup.team_id,
       eventId: signup.event_id ?? undefined,
       role: signup.role,
       assignedUserId: signup.assigned_user_id ?? undefined,
-      status: signup.status
+      status: signup.status,
+      roleCap: signup.role_cap ?? undefined,
+      reminderDraftCount: signup.reminder_draft_count ?? undefined,
+      reminderLastDraftedAt: signup.reminder_last_drafted_at ?? undefined,
+      unclaimedAt: signup.unclaimed_at ?? undefined,
+      unclaimedByUserId: signup.unclaimed_by_user_id ?? undefined,
+      cancellationReason: signup.cancellation_reason ?? undefined
     }));
     const weatherAlerts: WeatherAlert[] = (weatherResult.data ?? []).map((alert: {
       id: string;
@@ -576,11 +645,18 @@ export async function listParentCoachDashboardData(options: ParentCoachDashboard
     if (options.surface === "parent") {
       const parentState = scopeParentState(state, options.viewerUserId);
       const hasAccess = hasParentSurface(parentState, options.viewerUserId);
+      const parentPlayerIds = new Set(parentState.players.map((player) => player.id));
+      const parentEventIds = new Set(parentState.events.map((event) => event.id));
 
       return {
         state: parentState,
         parentUserId: options.viewerUserId,
         coachUserId: "",
+        rsvpChangeLogs: rsvpChangeLogs.filter((log) => (
+          log.parentUserId === options.viewerUserId &&
+          parentPlayerIds.has(log.playerId) &&
+          parentEventIds.has(log.eventId)
+        )),
         isSupabaseBacked: hasAccess,
         accessStatus: hasAccess ? "live" : "missing_parent_link",
         message: hasAccess
@@ -591,11 +667,17 @@ export async function listParentCoachDashboardData(options: ParentCoachDashboard
 
     const coachState = scopeCoachState(state, options.viewerUserId);
     const hasAccess = hasCoachSurface(coachState, options.viewerUserId);
+    const coachPlayerIds = new Set(coachState.players.map((player) => player.id));
+    const coachEventIds = new Set(coachState.events.map((event) => event.id));
 
     return {
       state: coachState,
       parentUserId: "",
       coachUserId: options.viewerUserId,
+      rsvpChangeLogs: rsvpChangeLogs.filter((log) => (
+        coachPlayerIds.has(log.playerId) &&
+        coachEventIds.has(log.eventId)
+      )),
       isSupabaseBacked: hasAccess,
       accessStatus: hasAccess ? "live" : "missing_coach_membership",
       message: hasAccess

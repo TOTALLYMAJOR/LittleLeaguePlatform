@@ -722,8 +722,14 @@ describe("AdminDashboardClient", () => {
     expect(html).toContain("Roster maker readiness");
     expect(html).toContain("Automatic team builder preview");
     expect(html).toContain("Sibling/friend constraints");
+    expect(html).toContain("Admin review inputs");
+    expect(html).toContain("age bands, cutoff-age labels, and player evaluations");
+    expect(html).toContain("Review metadata");
+    expect(html).toContain("Mason T. 3U, Age 3 on league cutoff, eval 4");
     expect(html).toContain("skill-balance score");
     expect(html).toContain("Preview -&gt; Edit -&gt; Approve -&gt; Publish");
+    expect(html).not.toContain("Mason Taylor");
+    expect(html).not.toContain("2019-");
     expect(html).toContain("Bracket maker");
     expect(html).toContain("Queued message records");
     expect(html).toContain("Touch target check");
@@ -922,6 +928,25 @@ describe("RegistrationClient", () => {
 
     expect(html).toContain("Launch Lions (6U)");
     expect(html).not.toContain("Tiny Tigers (6U)");
+  });
+
+  it("renders passive public configuration proof attributes without raw organization values", () => {
+    const html = renderToStaticMarkup(
+      <AppStateProvider>
+        <RegistrationClient
+          proofMetadata={{
+            publicOrganizationFingerprint: "5c5a4f34f1d20464",
+            reviewWindowConfigured: true
+          }}
+          reviewWindow="within three business days"
+        />
+      </AppStateProvider>
+    );
+
+    expect(html).toContain('data-public-organization-fingerprint="5c5a4f34f1d20464"');
+    expect(html).toContain('data-access-review-window-configured="true"');
+    expect(html).toContain("The usual review target is within three business days.");
+    expect(html).not.toContain("11111111-1111-4111-8111-111111111111");
   });
 });
 

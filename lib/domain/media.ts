@@ -160,7 +160,7 @@ export function getSnackReminders(state: AppState, teamId: string) {
       return {
         id: `snack-reminder-${slot.id}`,
         title: slot.status === "open" ? "Snack slot open" : "Snack reminder",
-        detail: `${slot.item} · ${event?.title ?? "Team event"}`
+        detail: `${slot.item} - ${event?.title ?? "Team event"} - drafted ${slot.reminderDraftCount ?? 0} - cap ${slot.slotCap ?? 1}`
       };
     });
 }

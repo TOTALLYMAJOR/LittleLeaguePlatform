@@ -1,6 +1,6 @@
 # Production Task Board
 
-This board makes the current launch and hardening plate concrete. It is scoped to the current Next.js + Supabase LeaguePilot app and should be reconciled with `docs/Features.md`, `docs/capability-matrix.md`, and `docs/production-audit-action-items.md` when a slice changes.
+This board preserves the launch and hardening plate. The approved local queue closed on 2026-07-27; [`docs/backlog-closeout-2026-07-27.md`](backlog-closeout-2026-07-27.md) is now authoritative for exact local evidence, remaining external gates, decisions, and retired production-mutation instructions. Rows below do not authorize hosted, provider, or production actions.
 
 ## Every-Task SaaS Check
 
@@ -39,8 +39,21 @@ Task-specific checks are required only when the surface is touched:
 - Feature gates: offline replay needs `NEXT_PUBLIC_OFFLINE_WRITES_ENABLED`, `OFFLINE_WRITES_ENABLED`, and `organizations.offline_writes_enabled`. Provider sends, media uploads, and payments each need their server kill switch plus organization flag. Media additionally needs a proven scan adapter; payment confirmation additionally needs a verified Stripe webhook.
 - Rollback: disable the environment switch or organization flag. Existing records remain; the affected surface returns to online-only, draft-only, quarantine/proof-only, or link-only behavior without deleting evidence.
 - Proof queue: retain the isolated preview while completing cross-organization, cross-team, cross-family, wrong-role, concurrency, expiry, cache-clearing, correction, and downstream-refusal coverage. Review the remaining 175 permissive-policy overlaps by actor/action semantics. Run signed-in production role/browser and broader application-health proof, prove Realtime authorization/reconnect/change delivery, and close the production backup/PITR/restore gap. Provider, media, and payment slices remain separate allowlisted sandbox and hosted gates.
+- Baseline ledger: LPM-001 records the current local proof boundary in `docs/production-proof-baseline-2026-07-29.md`. Treat that ledger as local documentation/repository proof only; it does not close hosted role browser proof, provider sends, Stripe settlement, private media storage/scanning, production Realtime, backup/PITR/restore, native app distribution, or production acceptance.
+- Local readiness completion ledger: the AgentFlow missing-production sequence is locally complete through LPM-012 as local repository readiness proof only. LPM-002 through LPM-012 are reconciled as `local repository readiness complete - external proof open`; this is not end-to-end `done` and does not close hosted, Supabase, RLS, provider, Stripe, storage/scanner, sponsor, archive/restore, native/app-store, accessibility, or production acceptance. LPM-013A is a ledger/verifier only; it reads repository files and names blockers without any hosted, provider, payment, storage, browser, analytics, app-store, backup/restore, accessibility, deploy, or production action. The continued-execution invariant is that continued one-task-at-a-time execution accepts exactly one executable queue heading, either LPM-013A or LPM-014 or later; LPM-001 through LPM-012 remain completed records only and their A-variants must not be re-executed. LPM-018 is integrated in AgentFlow build `build_faa1c28e-cc9d-4912-9529-0df1240963da` at integration commit `50e56d2d33cd04dc869483a1f99b6583fd9cc36b`; external proof and production acceptance remain separate authorized follow-up lanes.
+- LPM-013A execution boundary: Protected source checkout boundary is `/home/administrator/projects/youth-sports-platform-mvp-v3`; Clean AgentFlow execution checkout is `/home/administrator/projects/leaguepilot-missing-production-agentflow-20260729`; both checkout states must be re-read before every task; no-push/no-deploy/no-provider/no-production-mutation boundary is mandatory; Final integration commit through LPM-018 is `50e56d2d33cd04dc869483a1f99b6583fd9cc36b`, which is historical integration evidence through LPM-018, not the queue commit or a future final HEAD.
+- LPM-013A open gate ledger: hosted browser proof open; Supabase readback open; RLS open; provider sandbox/webhooks open; Stripe settlement open; private media storage/scanner open; sponsor rendering/report/finance open; archive retention/restore open; native/app-store open; accessibility open; production acceptance open.
 - Prompt workflow: `docs/prompt-evolution-timeline.md` and `tools/prompt-api/` encode the four-system prompt patterns. `npm run codex:spec` and `npm run codex:debug` print prompts only.
 - Validation: `npm run check:skills`; `npm run typecheck`; `npm test`; `npm run build`; `npm audit`; `npm run qa:rls-proof`; role-browser screenshots at 375, 390, 768, and 1440.
+- Admin proof closure verifier: `npm run qa:admin-proof-readiness` is a local repository-source gate for the LPM-004 seams only. It reads files and names missing contracts before hosted QA; it does not sign in, call Supabase, run Playwright, seed data, mutate hosted records, send providers, deploy, configure edge/firewall controls, or close production acceptance.
+- Game-day communication readiness verifier: `npm run qa:game-day-communication-readiness` is a local repository-source gate for the LPM-005 game-day resolution, official correction/withdrawal, current-version family readback, and offline/reconnect seams only. It reads files and names missing contracts before hosted QA; it does not sign in, call Supabase, run Playwright, seed data, mutate hosted records, send providers, deploy, configure realtime/provider infrastructure, or close production acceptance.
+- Family season continuity readiness verifier: `npm run qa:family-season-continuity-readiness` is a local repository-source gate for the LPM-006 private Parent Replay, media consent/revocation, private engagement, season transition review, apply/revert, and downstream refusal seams only. It reads files and names missing contracts before hosted QA; it does not sign in, call Supabase, run Playwright, seed data, mutate hosted records, send providers, upload media, create storage objects, deploy, configure storage/scanner/realtime/provider infrastructure, or close production acceptance.
+- Private media storage readiness verifier: `npm run qa:private-media-storage-readiness` is a local repository-source gate for the LPM-008 private upload gates, tenant/team quarantine paths, scanner-processing evidence, family release/read privacy, retention/deletion, and report/moderation seams only. It reads files and names missing contracts before hosted QA; it does not sign in, call Supabase, run Playwright, seed data, mutate hosted records, upload media, create storage objects, download objects, call a scanner, call provider dashboards, configure secrets, deploy, or claim hosted, storage-provider, scanner-provider, or production acceptance. The remaining open gates are storage-provider setup, scanner-provider setup, hosted signed-upload proof, hosted scan proof, populated consent/revocation proof, deletion/retention proof, abuse/takedown proof, accessibility proof, and production acceptance.
+- Reporting archive readiness verifier: `npm run qa:reporting-archive-readiness` is local repository readiness proof only for the LPM-011 admin export, archive vault, archived-season lock, and chat-retention separation contracts. It reads files and names missing contracts before hosted QA; it does not sign in, call Supabase, run Playwright, seed data, mutate hosted records, run archive close, delete chat records, call provider dashboards, upload or download files, deploy, configure secrets, or claim hosted RLS, browser, retention, restore, or production acceptance. Hosted RLS/admin export proof, hosted archive smoke proof, real season-close proof, chat-retention cleanup proof, deleted-chat readback proof, backup/PITR/restore proof, accessibility proof, and production archive acceptance remain open gates.
+- Native app decision readiness verifier: `npm run qa:native-app-decision-readiness` is local repository readiness proof only for LPM-012 PWA-first posture, value-gated install promotion, standalone/install metrics, native-interest telemetry without product approval, rate-limited anonymous mobile usage intake, bounded manifest/service-worker/offline/App Shell wiring, route-smoke/API coverage, and future Expo guardrails. It reads files and names missing contracts before mobile decision proof; it does not call Supabase, sign in, run Playwright, seed data, mutate hosted records, collect real analytics, request push permissions, register app stores, scaffold Expo, send providers, upload media, deploy, configure secrets, or claim PWA/mobile browser, production usage, push-provider, app-store, native, or production acceptance. Mobile browser proof, production usage metrics review, push permission proof, offline/reconnect proof, native product approval, Expo architecture review, app-store compliance review, accessibility proof, and production native acceptance remain open gates. Expo remains deferred until approved evidence shows the PWA cannot satisfy the requirement.
+- Weather provider action readiness verifier: `npm run qa:weather-provider-readiness` is local repository readiness proof only for LP-016 provider order, draft enforcement, session-derived reviewer authority, event/team scope, provider fallback, idempotent/auditable draft creation boundary, and provider-send separation. It reads files and names missing contracts before hosted credential proof; it does not call Supabase, sign in, run Playwright, seed data, mutate hosted records, call weather providers, call provider dashboards, create provider sends, send email, SMS, push, or Stripe requests, configure secrets, deploy, or claim hosted, provider, or production acceptance. Hosted weather credential proof, fallback behavior, signed-in coach/admin draft proof, Supabase readback, parent delivery, provider sandbox/webhook proof, realtime/offline behavior, accessibility, and production acceptance remain open gates.
+- Sponsor Stripe readiness verifier: `npm run qa:sponsor-stripe-readiness` is local repository readiness complete for LPM-009 source contracts only: proof-only versus sandbox boundary, server-side Checkout Session contract, server-only key handling, webhook settlement truth, admin/public privacy separation, and open payment gates. It does not prove live Stripe collection, sandbox Checkout Session creation, webhook replay, hosted admin proof, finance reconciliation, production payment approval, or production acceptance.
+- Sponsor fulfillment readiness verifier: `npm run qa:sponsor-fulfillment-readiness` is local repository readiness complete for LPM-010 source contracts only: approved active placement filters, Team Portal scope, admin placement authority, approved logo reads, submitted-logo review queues, fail-closed sponsor data, fulfillment/report separation, renewal delivery gates, public and parent privacy, and open fulfillment gates. It does not prove hosted public/admin browser behavior, observed placement rendering, approved logo asset loading, recap/report artifact acceptance, renewal email sandbox delivery, public placement leak QA, accessibility, finance reconciliation, or production sponsor acceptance.
 
 ### Active Goal - Approved Family Experience Execution
 
@@ -53,12 +66,13 @@ Task-specific checks are required only when the surface is touched:
 
 | Family phase | Current status | Remaining outcome |
 | --- | --- | --- |
-| Phase 0 - Public trust corrections | Local implementation and 320/390/768/1440 browser proof complete; hosted proof pending | Configure `PUBLIC_ORGANIZATION_ID` and `PUBLIC_ACCESS_REVIEW_WINDOW` in the target environment, deploy, and repeat `npm run qa:public-family-proof` against the hosted URL. Public routes now use access-first CTAs, empty production forms, an agenda-first schedule, provider calendar actions, signed-in-value-gated installation, and a tangible privacy-safe Parent Replay preview. |
-| Phase 1 - Access and activation | Local implementation complete; migrations `0025`-`0027` and `0033` are installed/read back on preview and production | Run the populated invitation/additional-guardian lifecycle, signed-in cross-family RLS, and responsive production browser proof. Provider delivery remains an independent external gate. Existing request status remains `pending`, `approved`, or `rejected`; no slice silently sends a provider message or expands approved child/team scope. |
-| Phase 2 - Family Mission Control | Local five-second Event Passport, multi-child filters/agenda, explicit conflict evidence, version-aware RSVP review, blank coordination-note form, and signed-in 375/390/768/1440 empty-state proof complete | Prove a populated multi-child household, offline/reconnect conflicts, organization isolation, performance/accessibility, and production-hosted behavior. |
-| Phase 3 - Responsibility and temporary care | `0028`/`0029` install locally and are installed/read back on preview and production. Preview proof passes for request → offer → mutual acceptance and caregiver create → wrong-email rejection → exact-email acceptance → revoke, including audit, schedule-version, token-rotation, no-membership, and zero-notification checks. | Add same-team competing-offer, cross-team/cross-family, expiry, cache-clear, and signed-in production browser proof. |
-| Phase 4 - Priority communication and disruption | Local immutable versions, correction/withdrawal, exact schedule-version binding, four-surface projection, visible propagation incidents, current-version acknowledgment, and responsive proof complete; `0030` is installed/read back on preview and production | Run populated one-revision projection, incident lifecycle, offline/accessibility, provider sandbox/webhook, and production browser proof. |
-| Phase 5 - Parent Replay and season continuity | Local published-only family story, private engagement, consent-aware optional media, memory timeline, reviewed transition/source archival/safe correction, explainable readiness, and responsive proof complete; `0031`/`0032` are installed/read back on preview and production | Run populated media consent/revocation, retention, multi-guardian transition concurrency, expiration/downstream refusal, accessibility, moderated-family, and production browser proof. |
+| Phase 0 - Public trust corrections | Local implementation and 320/390/768/1440 browser proof complete; hosted proof pending | Configure `PUBLIC_ORGANIZATION_ID` and `PUBLIC_ACCESS_REVIEW_WINDOW` in the target environment, run `npm run qa:hosted-readiness-preflight` to clear hosted URL and QA command-input blockers, deploy, and repeat `npm run qa:public-family-proof` against the hosted URL with the same expected values. After the LPM-020 code is deployed, the local browser harness can prove the hosted registration route used the intended public organization by matching the rendered short SHA-256 fingerprint and can prove the configured review-window copy rendered. Public routes now use access-first CTAs, empty production forms, an agenda-first schedule, provider calendar actions, signed-in-value-gated installation, and a tangible privacy-safe Parent Replay preview. |
+| Phase 1 - Access and activation | Local implementation complete; migrations `0025`-`0027` and `0033` are installed/read back on preview and production; `npm run qa:access-lifecycle-authority` is the local source-only authority verifier | Run populated invitation/additional-guardian lifecycle, cross-family RLS, and mutating browser proof only on isolated QA; production acceptance is read-only. The verifier does not call Supabase, run browser proof, seed data, send providers, mutate hosted records, deploy, or close hosted acceptance. Existing request status remains `pending`, `approved`, or `rejected`; no slice silently sends a provider message or expands approved child/team scope. |
+| Phase 2 - Family Mission Control | Local five-second Event Passport, multi-child filters/agenda, explicit conflict evidence, version-aware RSVP review, blank coordination-note form, and signed-in 375/390/768/1440 empty-state proof complete | Prove a populated multi-child household, offline/reconnect conflicts, organization isolation, performance, and accessibility on isolated QA; then run separately named read-only production acceptance. |
+| Phase 3 - Responsibility and temporary care | `0028`/`0029` install locally and are installed/read back on preview and production. Preview proof passes for request -> offer -> mutual acceptance and caregiver create -> wrong-email rejection -> exact-email acceptance -> revoke, including audit, schedule-version, token-rotation, no-membership, and zero-notification checks. | Add same-team competing-offer, cross-team/cross-family, expiry, and cache-clear proof on isolated QA; production acceptance remains read-only. |
+| Phase 4 - Priority communication and disruption | Local immutable versions, correction/withdrawal, exact schedule-version binding, four-surface projection, visible propagation incidents, current-version acknowledgment, responsive proof, and `npm run qa:game-day-communication-readiness` source-only readiness proof complete; `0030` is installed/read back on preview and production | Run mutating browser, Supabase readback, populated projection, incident, offline/accessibility, provider sandbox/webhook, and realtime proof only on isolated QA. The verifier performs none of those operations. Production acceptance remains a separate read-only gate. |
+| Phase 5 - Parent Replay and season continuity | Local published-only family story, private engagement, consent-aware optional media, memory timeline, reviewed transition/source archival/safe correction, explainable readiness, responsive proof, and `npm run qa:family-season-continuity-readiness` source-only readiness proof complete; `0031`/`0032` are installed/read back on preview and production | Run populated browser/readback, media consent/revocation, transition concurrency, retention, expiration/downstream refusal, and accessibility proof on isolated QA. Storage/scanner and provider proof remain separate external gates; production acceptance is read-only. |
+| Phase 6 - Reporting archive readiness | Local repository verifier `npm run qa:reporting-archive-readiness` checks active org-admin export authority, selected-organization/derived-ID export scoping, narrowed profile joins, CSV/audit/fail-closed export generation, admin-only archive surfaces, readable/mutation-locked archived-season contracts, local archive fallback labeling, and chat-retention separation | Run hosted RLS/admin export proof, hosted archive smoke proof, real season-close proof, chat-retention cleanup proof, deleted-chat readback proof, backup/PITR/restore proof, accessibility proof, and production archive acceptance. The verifier does not call Supabase, run browser proof, seed data, mutate hosted records, run archive close, delete chat records, call provider dashboards, upload or download files, deploy, configure secrets, or close hosted acceptance. |
 
 ### Active Goal - Tenant Onboarding Readiness Lane
 
@@ -66,7 +80,7 @@ Task-specific checks are required only when the surface is touched:
 - Status: Local implementation and proof complete. Production tenant-readiness proof passed against `https://www.leaguepilot.us` on 2026-07-18; latest-preview proof is still blocked by Vercel Authentication until a bypass secret is configured or the deployment is explicitly promoted to Production.
 - Current state: Slices 1 through 4 are implemented. `/admin/health` now loads tenant readiness from Supabase rows scoped to the signed-in organization admin and shows whether each organization has an active season, active teams, coach coverage, rostered players, family access path, scheduled events, and a provider-send boundary before inviting families. `/admin/teams` now gives admins a tenant setup guide, new season/team/player reset actions, and explicit empty-state blocking copy. `npm run qa:tenant-readiness-proof` signs in the QA admin, proves `/admin/health` plus `/admin/teams`, and captures screenshots under `output/playwright/tenant-readiness/`. `npm run qa:demo-tenant-proof` proves the fictional demo tenant with DEMO admin, coach, and parent sessions, Supabase readback, delivery-attempt metadata, zero provider sends, and screenshots under `output/playwright/demo-tenant/`.
 - Blockers carried forward: the latest preview deployment cannot be browser-proven while Vercel Authentication blocks unauthenticated QA automation; Supabase Auth raw-signup email quota/SMTP capacity must not be the only tenant-admin onboarding path; live email/SMS/Web Push sends remain disconnected until the approved provider-send worker/adapters/webhooks slice is implemented and proven.
-- Next slices: either configure a Vercel automation bypass for preview proof or explicitly promote the current preview to Production, rerun `QA_PROOF_BASE_URL=https://www.leaguepilot.us npm run qa:tenant-readiness-proof`, then resume the P1 proof queue starting with media report/moderation, registration approval, and team-builder publish browser proof.
+- Next acceptance: run `npm run qa:hosted-readiness-preflight` with the explicit hosted URL, public organization, review window, and QA admin command inputs, then configure a scoped automation bypass for a named isolated QA/Preview deployment and complete `EXT-PREVIEW-AUTH` plus `EXT-HOSTED-SESSION`. After LPM-020 is deployed, rerun the public-family and tenant-readiness browser proof with the same expected public configuration. The preflight performs no deployment, provider send, payment, media, migration, Supabase seed/write, or production acceptance. Do not promote a mutating QA harness to Production; production verification must use `EXT-PRODUCTION-READONLY`.
 - Seams: `/admin/health`, `/admin/teams`, `lib/supabase/tenant-readiness.ts`, `components/feature-panels.tsx`, `app/admin/_surfaces.tsx`.
 - SaaS constants focus: tenant context, tenant propagation, isolation proof, actor authorization, failure semantics, public-family invite boundary.
 - Validation: `lib/supabase/tenant-readiness.test.ts`; `components/feature-panels.test.tsx`; `app/route-guards.test.ts`; `app/routes-smoke.test.ts`; `npm run qa:tenant-readiness-proof`; `npm run qa:demo-tenant-proof`; `npm run typecheck`; `npm test`; `npm run build`; `git diff --check`.
@@ -74,9 +88,10 @@ Task-specific checks are required only when the surface is touched:
 ### LP-001 - Reconcile Product Truth Docs
 
 - Priority: P0 docs/safety.
-- Current state: `docs/capability-matrix.md` and older stack/backlog wording still contain gaps or scaffold framing that later work covered.
+- Status: Done local 2026-07-27.
+- Current state: repository truth docs now distinguish committed implementation/tests, external proof, decision gates, and historical evidence through the canonical closeout ledger.
 - Seams: `docs/Features.md`, `docs/capability-matrix.md`, `docs/feature-fit-backlog.md`, `docs/production-audit-action-items.md`, `docs/tech-stack.md`, ROMINA reference.
-- Done when: the docs agree on shipped, partial, deferred, provider-gated, and hosted-proof status.
+- Done evidence: `docs/backlog-closeout-2026-07-27.md`, the reconciled trackers, and `git diff --check`.
 - SaaS constants focus: tenant context, proof boundary, backward compatibility, release governance.
 - Validation: `git diff --check`; no runtime test required unless code changes.
 
@@ -88,7 +103,7 @@ Task-specific checks are required only when the surface is touched:
 - Seams: `/coach`, `/api/coach/weekly-update`, `lib/domain/communications.ts`, `scripts/verify-qa-session-paths.mjs`.
 - Done when: met. The coach dashboard now targets the next scheduled event team, falling back to the active-season team, so archived team memberships do not receive current weekly updates.
 - SaaS constants focus: tenant/team scope, actor authorization, notification draft state, auditability, provider-send boundary.
-- Validation: `npm run supabase:qa-users`; `QA_PROOF_BASE_URL=https://www.leaguepilot.us npm run qa:session-proof`; hosted deployment `dpl_ERncYiyZE3BXSz8TJHzKHsu7DPGZ`.
+- Historical validation only: the dated 2026-07-02 production-alias run and deployment remain evidence for that older state. After LP-QA-GUARD-001, `qa:session-proof` is isolated-QA-only and is not a production acceptance command.
 
 ### LP-003 - Prove Media Report Browser Write
 
@@ -97,7 +112,7 @@ Task-specific checks are required only when the surface is touched:
 - Seams: `/parent`, `/team-portal`, `/api/media/report`, `lib/supabase/media-governance.ts`.
 - Done when: signed-in QA parent reports approved team media from a parent-visible surface, Supabase reflects report count/status change, and unrelated team media remains invisible.
 - SaaS constants focus: tenant isolation, child/media privacy, state transition, audit event, abuse prevention.
-- Validation: focused route/browser proof plus `npm test` if route code changes.
+- Validation: `npm run qa:admin-proof-readiness`; focused route/browser proof plus `npm test` if route code changes.
 
 ### LP-004 - Prove Media Moderation Browser Write
 
@@ -106,43 +121,46 @@ Task-specific checks are required only when the surface is touched:
 - Seams: `/admin`, `/api/media/moderation`, `lib/supabase/media-governance.ts`.
 - Done when: signed-in admin or assigned coach hides/restores/removes a QA media item through browser UI and parent/team reads honor the moderation state.
 - SaaS constants focus: tenant isolation, reviewer role, moderation state, auditability, support/admin action risk.
-- Validation: browser proof with Supabase readback; `npm test` if code changes.
+- Validation: `npm run qa:admin-proof-readiness`; browser proof with Supabase readback; `npm test` if code changes.
 
 ### LP-005 - Prove Registration Approval Browser Flow
 
 - Priority: P1 proof.
-- Current state: RPC/API flow exists and live approval/rejection was verified earlier; browser-level hosted proof remains open.
-- Seams: `/admin/registrations`, `/api/admin/registrations/*`, `supabase/migrations/0003_registration_approval_workflow.sql`, `0004_fix_registration_approval_digest.sql`.
+- Current state: RPC/API flow exists and live approval/rejection was verified earlier; `npm run qa:access-lifecycle-authority` now provides local repository-source proof for session-derived, review-gated, provider-free registration authority; browser-level hosted proof and Supabase readback remain open.
+- Seams: `/admin/registrations`, `/api/admin/registrations/*`, `lib/supabase/registration-approvals.ts`, `scripts/verify-access-lifecycle-authority.mjs`, `supabase/migrations/0003_registration_approval_workflow.sql`, `0004_fix_registration_approval_digest.sql`, `0033_registration_invitation_issuance.sql`.
 - Done when: signed-in QA admin approves and rejects temporary registration requests from the hosted UI, with player/guardian/invite/action rows created or updated correctly.
 - SaaS constants focus: guardian access grant, tenant isolation, actor authorization, lifecycle reversal, audit log, idempotent approval.
-- Validation: hosted Playwright proof with cleanup and Supabase readback.
+- Validation: `npm run qa:access-lifecycle-authority`; hosted Playwright proof with cleanup and Supabase readback.
 
 ### LP-006 - Harden Guardian Verification Policy
 
 - Priority: P1 safety.
-- Current state: registration approval and guardian-link repair now require an active organization-admin reviewer, an existing parent profile, and bounded verification evidence; an existing profile email match remains only a correlation signal, while unmatched parents stay invited. Hosted/browser proof and any stronger identity-verification provider remain open.
-- Seams: `/admin/registrations`, `/admin/guardian-links`, registration approval RPCs, guardian repair API, `docs/privacy-security.md`.
+- Current state: registration approval and guardian-link repair now require an active organization-admin reviewer, an existing parent profile, and bounded verification evidence; invite acceptance and additional-guardian review are covered by the local source-only authority verifier. An existing profile email match remains only a correlation signal, while unmatched parents stay invited. Hosted/browser proof, Supabase readback, and any stronger identity-verification provider remain open.
+- Seams: `/admin/registrations`, `/admin/guardian-links`, registration approval RPCs, guardian repair API, `lib/supabase/invite-acceptance.ts`, `lib/supabase/additional-guardians.ts`, `scripts/verify-access-lifecycle-authority.mjs`, `docs/privacy-security.md`.
 - Done when: docs and tests define what evidence is enough to link a parent to a child/team and what remains admin-reviewed. Local policy and migration installation are covered; production RLS/browser proof and any stronger identity evidence remain follow-up work.
 - SaaS constants focus: identity, authorization, child privacy, support repair, auditability, failure semantics.
-- Validation: `lib/supabase/registration-approvals.test.ts`; `supabase/rls-policy.test.ts`; production signed-in RLS/browser proof for operational closure.
+- Validation: `npm run qa:access-lifecycle-authority`; `lib/supabase/registration-approvals.test.ts`; `supabase/rls-policy.test.ts`; production signed-in RLS/browser proof for operational closure.
 
 ### LP-007 - Prove Team-Builder Admin Publish
 
 - Priority: P1 proof.
-- Current state: preview and admin-only tables exist; browser publish proof remains open.
+- Status: Local portion done 2026-07-27; external browser proof open.
+- Current state: private inputs plus preview/edit/approve/publish are implemented through admin UI, authenticated routes, Supabase services, persisted plans, audit evidence, and migration/RLS contracts.
 - Seams: `/admin`, `/admin/teams`, team-builder domain/service code, `team_build_plans`.
-- Done when: QA admin previews, edits/approves, and publishes a team-build plan through the browser with persisted plan/audit evidence and no cross-org writes.
+- External completion: `EXT-HOSTED-SESSION` requires an isolated-QA admin browser publish with persisted plan/audit readback and no cross-org writes.
 - SaaS constants focus: tenant scope, lifecycle state, idempotency, concurrency, audit log, migration compatibility.
-- Validation: browser proof with Supabase readback and `npm run qa:rls-proof` if policies change.
+- Local evidence: `components/team-builder-workbench.test.tsx`; `app/api-team-builder.test.ts`; `lib/supabase/team-builder-inputs.test.ts`; `lib/supabase/team-builder-plans.test.ts`; `supabase/team-builder-production.test.ts`.
+- Validation: the local evidence above plus `npm run qa:admin-proof-readiness`; connected browser proof requires Supabase readback and `npm run qa:rls-proof` if policies change.
 
 ### LP-008 - Add Team-Builder Production Data Fields
 
 - Priority: P2 product hardening.
-- Current state: balance, sibling/guardian, friend request, and skill constraints exist; explicit age-band/player-evaluation fields remain a production gap.
+- Status: Local portion done 2026-07-27; hosted/RLS acceptance open.
+- Current state: private birthdate-derived age, typed age band/cutoff-age label, admin player evaluation source/notes, sibling/guardian grouping, friend request, skill balance, placement locks, and roster constraints are modeled for authorized admins. Existing private profiles and the new review-safe metadata both inform deterministic previews; persisted plans and publish authority retain tenant, lock, idempotency, and audit controls. Player display remains first name plus last initial, with no parent/public private-child exposure. Hosted browser publish proof, migration apply/readback, cross-org proof, and production acceptance remain open.
 - Seams: team-builder domain/service, Supabase migrations, admin UI.
-- Done when: player age/evaluation inputs are modeled, permission-checked, migrated, and included in preview/publish logic without exposing private child detail to parents.
+- Local done evidence: migrations `20260727145702_complete_private_team_builder_publish.sql` and `20260729144506_team_builder_player_metadata.sql`; `lib/domain/season-planning.ts`; the domain, service, route, component, and RLS tests listed in the closeout ledger.
 - SaaS constants focus: data model, migration/rollout, tenant isolation, child privacy, backward compatibility.
-- Validation: migration/RLS tests, focused domain tests, `npm run typecheck`, `npm test`.
+- External completion: execute connected isolated-QA RLS/readback and signed-in browser proof under `EXT-RLS-ACTOR-ACTION` and `EXT-HOSTED-SESSION`.
 
 ### LP-009 - Prove Admin Operations Hosted Scope
 
@@ -188,7 +206,7 @@ Task-specific checks are required only when the surface is touched:
 - Status: Deferred from launch 2026-07-02.
 - Current state: Preview OpenAI env values remain unset. Preview is explicitly out of launch scope until a named non-production preview branch is chosen; production secrets are not copied to an all-branch Preview target.
 - Seams: Vercel env config, `docs/runbook.md`, AI Coach provider docs.
-- Done evidence: Preview remains explicitly out of scope, with no production secret leakage.
+- Current decision: Preview remains explicitly out of scope, with no production secret leakage. This is a deferred safe default, not an approved expansion; see `DEC-PREVIEW-OPENAI`.
 - SaaS constants focus: environment governance, provider secret ownership, rollout/rollback, tenant preview safety.
 - Validation: docs/runbook and production tracker reconciliation.
 
@@ -198,27 +216,28 @@ Task-specific checks are required only when the surface is touched:
 - Status: Decided for launch 2026-07-02.
 - Current state: records, review, attempts, preferences, retry plans exist; live email/SMS/Web Push sends are disconnected. Launch scope is draft/internal records only.
 - Seams: `/api/provider-delivery/review`, `lib/supabase/provider-delivery.ts`, `lib/domain/notifications.ts`, launch copy/runbook.
-- Done evidence: launch explicitly says "draft/internal records only"; live provider sends require a separate implementation slice.
+- Current decision: launch explicitly says "draft/internal records only"; live provider sends require `DEC-PROVIDER` approval followed by `EXT-PROVIDER-SENDS`.
 - SaaS constants focus: provider contracts, opt-in, billing/cost, failure semantics, idempotency, audit logs.
 - Validation: docs reconciliation if deferred; provider tests if implemented.
 
 ### LP-015 - Implement Real Provider Sends If Approved
 
 - Priority: P2 conditional.
-- Current state: intentionally disconnected. The configured Supabase project now has `notification_delivery_attempts` execution metadata from `0021_notification_delivery_execution.sql`, including `idempotency_key`, retry locks, retry counts, provider response JSON, webhook IDs, and `dead_lettered_at`. The fictional demo tenant seed and `npm run qa:demo-tenant-proof` verify provider sends at zero and demo delivery-attempt rows carrying idempotency and dead-letter metadata. Live sends still require the approved worker/adapters/webhooks proof slice.
+- Current state: intentionally disconnected. The configured Supabase project now has `notification_delivery_attempts` execution metadata from `0021_notification_delivery_execution.sql`, including `idempotency_key`, retry locks, retry counts, provider response JSON, webhook IDs, and `dead_lettered_at`. The fictional demo tenant seed and `npm run qa:demo-tenant-proof` verify provider sends at zero and demo delivery-attempt rows carrying idempotency and dead-letter metadata. `npm run qa:provider-sandbox-readiness` is the local repository readiness proof only for the provider sandbox contract. Live sends still require the approved worker/adapters/webhooks proof slice.
 - Seams: provider delivery service, Web Push VAPID, email/SMS provider adapters, provider webhooks, delivery attempts.
 - Done when: approved attempts create real sandbox sends, rejected/suppressed attempts do not send, webhooks update delivery state, and retries are idempotent.
 - SaaS constants focus: provider contract, consent, suppression, retry, webhook replay, noisy-neighbor, billing/cost.
-- Validation: provider sandbox tests, webhook tests, `npm test`, `npm run typecheck`, hosted proof.
+- Validation: `npm run qa:provider-sandbox-readiness`; provider sandbox tests, webhook tests, `npm test`, `npm run typecheck`, hosted proof.
+- Open gates: real sandbox email, SMS, and Web Push sends, provider dashboard setup, provider secrets, adult QA recipient approval, an adult-consented QA allowlist per channel, signed webhook endpoint registration, hosted worker execution, cost monitoring with a cost cap, rollback, and production-send approval. The verifier does not call Supabase, sign in, run Playwright, seed data, mutate hosted records, send email, SMS, or Web Push, call provider dashboards, configure secrets, deploy, or claim sandbox, hosted, provider, or production acceptance.
 
 ### LP-016 - Prove Weather Provider Credentials And Actions
 
 - Priority: P1 proof.
-- Current state: NWS first, Open-Meteo fallback, optional Tomorrow.io; draft rows only.
-- Seams: `/coach`, `/api/weather-alerts/draft`, `lib/services/weather/`, provider delivery review.
-- Done when: hosted proof shows credential readiness/fallback behavior and a signed-in coach/admin creates a weather draft without parent delivery.
-- SaaS constants focus: provider boundary, team/event scope, draft state, failure fallback, observability.
-- Validation: weather provider tests, hosted browser proof, Supabase readback.
+- Current state: Local readiness complete. NWS remains first, Open-Meteo remains the fallback, Tomorrow.io remains optional/premium, and every provider result is forced to draft before weather-alert persistence. The draft route derives the reviewer from the authenticated session; hosted proof must still verify coach/admin authority, event/team scope, provider fallback, idempotent/auditable draft creation, and no parent delivery with Supabase readback.
+- Seams: `/coach`, `/api/weather-alerts/draft`, `lib/services/weather/`, provider delivery review, `scripts/verify-weather-provider-readiness.mjs`.
+- Done when: hosted weather credential proof shows credential readiness and fallback behavior, signed-in coach/admin draft proof creates a weather draft without parent delivery, Supabase readback proves the row and reviewer attribution, provider sandbox/webhook proof confirms delivery boundaries, realtime/offline behavior and accessibility are accepted, and production acceptance is separately approved.
+- SaaS constants focus: provider boundary, team/event scope, draft state, coach/admin authority, failure fallback, observability, idempotent/auditable draft creation, provider-send separation.
+- Validation: `npm run qa:weather-provider-readiness`; `node --test scripts/verify-weather-provider-readiness.test.mjs`; weather provider tests; hosted browser proof; Supabase readback.
 
 ### LP-017 - Prove Multi-Brand Launch Surfaces
 
@@ -242,19 +261,35 @@ Task-specific checks are required only when the surface is touched:
 
 - Priority: P2 product decision.
 - Current state: link-based Google Photos/YouTube media with validation, reporting, and moderation; upload storage provider is not configured.
+- Decision state: deferred safe default is link-only media; see `DEC-MEDIA`.
 - Seams: media governance service, storage provider, `/api/media/*`, brand/media docs.
-- Done when: launch either stays link-based or scopes Supabase Storage/private asset provider with upload review, file limits, scanning, deletion, and takedown policy.
+- Local verifier: `npm run qa:private-media-storage-readiness` proves repository-source readiness only for the existing private upload gates, tenant/team quarantine paths, scanner evidence, family release/read privacy, retention/deletion evidence, reports, and moderation/takedown seams. It is not hosted, storage-provider, scanner-provider, or production acceptance.
+- Done when: launch either stays link-based or scopes Supabase Storage/private asset provider with upload review, file limits, scanning, deletion, and takedown policy. The remaining open gates are storage-provider setup, scanner-provider setup, hosted signed-upload proof, hosted scan proof, populated consent/revocation proof, deletion/retention proof, abuse/takedown proof, accessibility proof, and production acceptance.
 - SaaS constants focus: file isolation, child privacy, storage paths, retention, support export/delete, abuse control.
 - Validation: docs-only if deferred; storage/provider tests if implemented.
 
 ### LP-020 - Decide Sponsor Billing And Stripe Scope
 
 - Priority: P2 commercial decision.
-- Current state: sponsor billing proof records exist; live Stripe collection is disconnected.
+- Current state: sponsor billing proof records exist; live Stripe collection is disconnected. LPM-009 sponsor Stripe readiness is local repository readiness complete for the existing proof-only versus sandbox boundary, server-side Checkout Session contract, server-only key handling, webhook settlement truth, admin/public privacy separation, and open payment gates.
+- Decision state: deferred safe default is sponsor proof-only billing; see `DEC-BILLING`.
 - Seams: `/admin`, `/api/admin/sponsors`, sponsor billing tables, Stripe provider adapter if added.
-- Done when: sponsor billing stays proof-only or Stripe Product/Price/Invoice/Checkout plus webhook signature proof is scoped.
+- Done when: sponsor billing stays proof-only or Stripe Product/Price/Invoice/Checkout plus webhook signature proof is scoped. Sandbox, hosted, finance, and production payment approval remain separate from local readiness.
+- Local verifier: `npm run qa:sponsor-stripe-readiness` is local repository readiness proof only for the sponsor billing/payment boundary, server-side Checkout Session contract, server-only key handling, webhook settlement truth, admin/public privacy separation, and open payment gates. It does not call Stripe, Supabase, sign in, run Playwright, seed data, mutate hosted records, create Checkout Sessions, configure API keys or webhook secrets, register webhook endpoints, charge or refund payments, call provider dashboards, deploy, or claim sandbox, hosted, provider, finance, production payment, or production acceptance.
+- Open gates: Stripe sandbox account setup, restricted key creation, webhook endpoint registration, signing-secret configuration, sandbox Checkout Session proof, signed webhook replay/duplicate proof, refund/failure proof, hosted admin proof, finance reconciliation, and production payment approval. Restricted API keys are preferred, separate environments are required, and no Stripe secret or restricted key values are stored in source.
 - SaaS constants focus: commercial objects, billing/metering, revenue impact, entitlement, payment failure, webhook replay, finance reporting.
-- Validation: docs-only if deferred; Stripe sandbox tests and webhook proof if implemented.
+- Validation: `npm run qa:sponsor-stripe-readiness`; `node --test scripts/verify-sponsor-stripe-readiness.test.mjs`; focused sponsor API/service/UI tests. Stripe sandbox account setup, restricted key creation, webhook endpoint registration, signing-secret configuration, sandbox Checkout Session proof, signed webhook replay/duplicate proof, refund/failure proof, hosted admin proof, finance reconciliation, and production payment approval remain open gates.
+
+### LPM-010 - Sponsor Fulfillment Proof
+
+- Priority: P2 commercial fulfillment.
+- Current state: sponsor placement helpers, approved-logo reads, admin sponsor operations, Sponsor Hub fulfillment/report surfaces, public sponsor copy, and focused tests exist as local source contracts. LPM-010 sponsor fulfillment readiness is local repository readiness complete for approved active placement filters, Team Portal scope, admin placement authority, approved logo reads, submitted-logo review queues, fail-closed sponsor data, fulfillment/report separation, renewal delivery gates, public and parent privacy, and open fulfillment gates.
+- Seams: `/sponsors`, `/team-portal`, `/admin/sponsors`, `/api/admin/sponsors`, `/api/admin/revenue-summary`, sponsor placement helpers, Supabase sponsor reads, Sponsor Hub reports, renewal-review copy.
+- Done when: approved active sponsor placement, approved logo rendering, recap/report artifacts, renewal delivery, leak QA, accessibility, finance reconciliation, and production sponsor acceptance are proven with the required hosted/provider evidence.
+- Local verifier: `npm run qa:sponsor-fulfillment-readiness` is local repository readiness proof only for approved active placement filters, Team Portal team scope, admin placement authority, approved logo asset reads, submitted-logo review queues, fail-closed sponsor data, fulfillment/report separation, renewal delivery gates, public and parent privacy, and open fulfillment gates. It does not call Supabase, sign in, run Playwright, seed data, mutate hosted records, send renewal email, call email/SMS/push providers, call Stripe, create or refund payments, upload files, fetch external logo assets, call provider dashboards, deploy, or claim hosted, observed-rendering, provider, finance, accessibility, production, or production sponsor acceptance.
+- Open gates: hosted public/admin browser proof, observed placement-rendering proof, approved logo asset proof, sponsor recap/report artifact proof, renewal email sandbox proof, public placement leak QA, accessibility proof, finance reconciliation, and production sponsor acceptance.
+- SaaS constants focus: sponsor entitlement display, fulfillment evidence, asset governance, privacy leak prevention, report truth, renewal provider gates, production acceptance.
+- Validation: `npm run qa:sponsor-fulfillment-readiness`; `node --test scripts/verify-sponsor-fulfillment-readiness.test.mjs`; focused sponsor API/service/UI tests. Hosted public/admin browser proof, observed placement-rendering proof, approved logo asset proof, sponsor recap/report artifact proof, renewal email sandbox proof, public placement leak QA, accessibility proof, finance reconciliation, and production sponsor acceptance remain open gates.
 
 ## Concrete Task Template
 

@@ -1,87 +1,26 @@
-# Backlog Now
+# Backlog Now - Historical
 
-These are the next production-enabling tasks that should happen before adding more surface area. They turn the current local MVP scaffold into a safer, persistent product foundation.
+State: `historical` as of 2026-07-27.
 
-Historical note (2026-07-24): the implementation items below are no longer the active queue; the root production scaffold, Supabase adapters/migrations, role guards, RLS tests, persistence paths, PWA shell, and validation commands now exist. Current proof and promotion truth lives in `docs/production-task-board.md`, `docs/capability-matrix.md`, and `docs/family-experience-readiness-review-2026-07-24.md`. Do not interpret this original checklist as evidence that provider, hosted, migration, or production gates have passed.
+This checklist originally described the Supabase/auth/RLS/persistence/PWA foundation. Those implementation slices now exist in the root Next.js application. Do not use this file as the active queue or as evidence of hosted, provider, storage, billing, or production acceptance.
 
-## 1. Production Data And Auth Foundation
+The canonical closeout is [`docs/backlog-closeout-2026-07-27.md`](backlog-closeout-2026-07-27.md):
 
-- Create Supabase project, environment contract, and local development setup.
-- Move typed seed models into migrations for organizations, seasons, teams, memberships, players, guardian links, events, RSVPs, registrations, invites, notifications, media links, snacks, volunteers, sponsors, themes, and audit events.
-- Add Supabase Auth roles for org admin, coach, and parent.
-- Add RLS policies and tests for parent child/team scope, coach assigned-team scope, and org admin organization scope.
+- completed implementation and repository tests are `done-local`;
+- hosted/session/browser, Realtime, RLS actor/action execution, backup/restore, Preview auth, and production release are `external`;
+- provider sends, private media storage, sponsor collection, native Expo, and Preview OpenAI expansion require the named decisions;
+- mutating session and Communication Room proof is isolated-QA-only.
 
-Acceptance:
-- Parent cannot read another team's private records.
-- Coach cannot edit another team's portal, roster, schedule, chat, snack, volunteer, or Parent Replay records.
-- Admin is scoped to one organization.
+## Retired Foundation Checklist
 
-## 2. Registration And Invite Access Workflow
+The following areas were the original "now" plan and are retained only for provenance:
 
-- Convert `/registration` from local queue to persisted registration requests.
-- Add admin review actions: approve, reject, request more info.
-- Connect accepted registration to guardian-child access only after admin approval.
-- Store hashed invite tokens only; no raw token display.
-- Audit every invite recovery, registration review, and access grant.
+1. Supabase data/auth/RLS foundation.
+2. Registration and reviewed invite access.
+3. Team Portal and theme persistence.
+4. Schedule, RSVP, snacks, and volunteers.
+5. Team Chat persistence and moderation.
+6. PWA/offline foundations.
+7. Typecheck/test/build/route validation.
 
-Acceptance:
-- Registration request never grants access on submit.
-- Admin approval creates the guardian/team link and audit event.
-- Rejected/pending users cannot access private team data.
-
-## 3. Team Portal And Theme Persistence
-
-- Persist team `themeKey`, mascot, colors, and future logo asset metadata.
-- Add dedicated admin theme management route, likely `/admin/themes`.
-- Keep assigned coach edit scope for only their team.
-- Add contrast validation for team colors in light and dark mode.
-
-Acceptance:
-- Theme changes survive refresh and are audit logged.
-- Admin can see/edit all team themes.
-- Assigned coach can edit only assigned team branding.
-
-## 4. Schedule, RSVP, Snacks, Volunteers
-
-- Persist events, RSVPs, snack slots, and volunteer roles.
-- Add parent signup actions for snack and volunteer slots.
-- Add conflict checks for event updates.
-- Keep notification records as drafts until delivery provider integration is approved.
-
-Acceptance:
-- RSVP/snack/volunteer updates are permission-checked and persisted.
-- Schedule changes create notification drafts with recipients, channels, and approval status.
-
-## 5. Team Chat Production Path
-
-- Move Team Chat channels/messages/moderation audit to Supabase tables.
-- Use Supabase Realtime for team-scoped live updates.
-- Add retention policy: chat deletion at season close, audit-only deletion proof.
-- Add message reporting and moderation queue.
-
-Acceptance:
-- Parents only receive messages for their assigned team.
-- Hidden/deleted messages disappear from family view and produce audit records.
-- Season close removes chat text according to retention policy.
-
-## 6. PWA And Mobile Hardening
-
-- Add install prompt UX and offline fallback route.
-- Test manifest/service worker from standalone build and Docker.
-- Add Web Push subscription storage behind explicit opt-in.
-- Keep Expo native app as later work unless PWA usage proves insufficient.
-
-Acceptance:
-- PWA install works in Chrome/Edge mobile and desktop.
-- Offline fallback is understandable and does not imply stale data is current.
-- No push send occurs without opt-in and provider configuration.
-
-## 7. Validation And CI
-
-- Add CI commands for `npm run typecheck`, `npm test`, `npm run build`, and lint.
-- Add route smoke tests for `/`, `/admin`, `/coach`, `/parent`, `/registration`, `/team-portal`, `/team-chat`, and `/coach/parent-replay`.
-- Keep Playwright screenshots for new user-visible route work.
-
-Acceptance:
-- Pull requests cannot merge with type/test/build failures.
-- Route smoke test catches blank pages and missing PWA assets.
+Current evidence belongs in `docs/Features.md` and `docs/capability-matrix.md`. Current open acceptance belongs only in the closeout ledger.

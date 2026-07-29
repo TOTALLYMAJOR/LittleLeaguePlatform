@@ -1,11 +1,17 @@
 import { randomUUID } from "node:crypto";
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
+import { pathToFileURL } from "node:url";
 import { chromium } from "@playwright/test";
 import { createClient } from "@supabase/supabase-js";
+import {
+  captureQaAppInvocation,
+  runGuardedQaMutation
+} from "./qa-target-guard.mjs";
 
 const envFile = ".env.local";
 const baseUrl = process.env.COMMUNICATION_ROOM_BASE_URL || "http://127.0.0.1:3021";
+const appInvocation = captureQaAppInvocation();
 const outputDir = "output/playwright/communication-room";
 const organizationId = "11111111-1111-4111-8111-111111111111";
 const primaryTeamId = "33333333-3333-4333-8333-333333333331";
@@ -149,12 +155,11 @@ async function addParentSession(context) {
   }]);
 }
 
-loadLocalEnv();
+async function runCommunicationRoomProof(supabaseUrl, serviceRoleKey) {
 mkdirSync(outputDir, { recursive: true });
-
 const db = createClient(
-  requireEnv("NEXT_PUBLIC_SUPABASE_URL"),
-  requireEnv("SUPABASE_SERVICE_ROLE_KEY"),
+  supabaseUrl,
+  serviceRoleKey,
   { auth: { autoRefreshToken: false, persistSession: false } }
 );
 const qaContext = await requireQaContext(db);
@@ -279,4 +284,28 @@ if (report.criticalAcknowledgment.status === "blocked") {
   process.exitCode = 2;
 } else {
   console.log("Communication Room populated-record proof passed.");
+}
+}
+
+export async function main({ guard = runGuardedQaMutation } = {}) {
+  loadLocalEnv();
+  const supabaseUrl = requireEnv("NEXT_PUBLIC_SUPABASE_URL");
+  const serviceRoleKey = requireEnv("SUPABASE_SERVICE_ROLE_KEY");
+
+  return guard({
+    action: "Communication Room proof",
+    appBaseUrl: baseUrl,
+    appInvocation,
+    serviceRoleCredential: serviceRoleKey,
+    supabaseUrl
+  }, () => runCommunicationRoomProof(supabaseUrl, serviceRoleKey));
+}
+
+const isDirectRun =
+  process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href;
+if (isDirectRun) {
+  main().catch((error) => {
+    console.error(error instanceof Error ? error.message : error);
+    process.exit(1);
+  });
 }

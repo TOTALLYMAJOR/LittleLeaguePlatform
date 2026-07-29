@@ -229,6 +229,27 @@ export type AiCoachWorkspaceToolId = (typeof AI_COACH_WORKSPACE_TOOL_IDS)[number
 export const DIVISION_BALANCE_STATUSES = ["balanced", "needs_players", "uneven"] as const;
 export type DivisionBalanceStatus = (typeof DIVISION_BALANCE_STATUSES)[number];
 
+export const TEAM_BUILDER_AGE_BANDS = ["3U", "4U", "5U", "6U", "7U", "8U", "9U", "10U", "11U", "12U", "13U+"] as const;
+export type TeamBuilderAgeBand = (typeof TEAM_BUILDER_AGE_BANDS)[number] | (string & {});
+
+export const TEAM_BUILDER_EVALUATION_SOURCES = ["coach_evaluation", "guardian_questionnaire", "imported_roster", "admin_override"] as const;
+export type TeamBuilderEvaluationSource = (typeof TEAM_BUILDER_EVALUATION_SOURCES)[number];
+
+export interface TeamBuilderPlayerEvaluation {
+  rating: number;
+  label?: string;
+  source: TeamBuilderEvaluationSource;
+  notes?: string[];
+}
+
+export interface TeamBuilderPlayerMetadata {
+  playerId: string;
+  ageBand: TeamBuilderAgeBand;
+  birthdateDerivedAgeLabel?: string;
+  evaluation?: TeamBuilderPlayerEvaluation;
+  reviewNotes?: string[];
+}
+
 export const ASSISTIVE_SUGGESTION_SURFACES = ["admin", "coach", "parent"] as const;
 export type AssistiveSuggestionSurface = (typeof ASSISTIVE_SUGGESTION_SURFACES)[number];
 
@@ -543,6 +564,12 @@ export interface SnackScheduleSlot {
   assignedParentUserId?: string;
   item: string;
   status: SnackScheduleSlotStatus;
+  slotCap?: number;
+  reminderDraftCount?: number;
+  reminderLastDraftedAt?: string;
+  unclaimedAt?: string;
+  unclaimedByUserId?: string;
+  cancellationReason?: string;
 }
 
 export interface VolunteerSignup {
@@ -552,6 +579,12 @@ export interface VolunteerSignup {
   role: string;
   assignedUserId?: string;
   status: VolunteerSignupStatus;
+  roleCap?: number;
+  reminderDraftCount?: number;
+  reminderLastDraftedAt?: string;
+  unclaimedAt?: string;
+  unclaimedByUserId?: string;
+  cancellationReason?: string;
 }
 
 export interface Sponsor {
@@ -609,6 +642,7 @@ export interface TeamChatMessage {
   moderatedAt?: string;
   moderatedByUserId?: string;
   moderationReason?: string;
+  reportedCount?: number;
 }
 
 export interface ChatModerationAuditEvent {
@@ -1027,12 +1061,20 @@ export interface TeamBuildFriendRequest {
   friendPlayerId: string;
 }
 
+export interface TeamBuilderPlayerProfileInput {
+  birthDate?: string | null;
+  ageBand?: string | null;
+  evaluationRating?: number | null;
+}
+
 export interface BalancedTeamBuildInput {
   division: string;
   targetRosterSize: number;
   actorUserId: string;
   now: string;
   skillRatings?: Record<string, number>;
+  playerProfiles?: Record<string, TeamBuilderPlayerProfileInput>;
+  playerMetadata?: Record<string, TeamBuilderPlayerMetadata>;
   friendRequests?: TeamBuildFriendRequest[];
 }
 
@@ -1045,10 +1087,19 @@ export interface BalancedTeamBuildPreview {
     teamName: string;
     playerCount: number;
     averageSkill: number;
+    ageBandCounts: Record<string, number>;
+    missingProfileCount: number;
+    defaultedEvaluationCount: number;
     players: Array<{
       playerId: string;
       name: string;
+      ageBand: TeamBuilderAgeBand;
+      birthdateDerivedAgeLabel: string;
       skillRating: number;
+      ageBandSource: "metadata" | "explicit" | "division_default";
+      evaluationSource: string;
+      birthDateStatus: "recorded" | "missing";
+      evaluationNotes: string[];
       constraintNotes: string[];
     }>;
   }>;

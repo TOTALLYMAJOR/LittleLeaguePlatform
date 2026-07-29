@@ -2,7 +2,7 @@
 
 LeaguePilot is the public app and product identity for this youth sports operations platform. The production public domain is `https://www.leaguepilot.us`, with `https://leaguepilot.us` kept as the apex alias.
 
-The app is private software for league admins, coaches, and parent/guardian accounts. The current repo is a root-level Next.js App Router + TypeScript app with Supabase-backed production paths for several authenticated workflows and typed seed fallbacks where live rows or auth context are unavailable.
+The app is private software for league admins, coaches, and parent/guardian accounts. The current repo is a root-level Next.js App Router + TypeScript application with authenticated Supabase adapters, typed fallback states, and guarded local/isolated-QA proof tools. Implementation in this repository is not, by itself, hosted or production acceptance.
 
 The original static MVP prototype remains available under `public/prototype/` and can be viewed at `/prototype/index.html`.
 
@@ -15,6 +15,7 @@ The original static MVP prototype remains available under `public/prototype/` an
 - Supabase Auth, route handlers, service adapters, and RLS enforce production boundaries where slices are connected.
 - Notification, weather, Parent Replay, AI Coach, sponsor billing, and provider-delivery records are draft/review/proof surfaces unless a provider slice explicitly enables live sends, payments, uploads, or native distribution.
 - Enterprise planning artifacts are tracked under `docs/enterprise/`.
+- The canonical 2026-07-27 shipped/open/decision/historical split is `docs/backlog-closeout-2026-07-27.md`.
 
 ## Run Locally
 
@@ -40,8 +41,11 @@ Core local checks:
 npm run typecheck
 npm test
 npm run build
+npm audit --omit=dev
 npm audit
 ```
+
+Production dependencies and the full development graph are separate release signals. See the closeout ledger for the retained upstream-only Next ESLint `minimatch`/`brace-expansion` advisory.
 
 Docker smoke:
 
@@ -60,9 +64,9 @@ make smoke
 make down
 ```
 
-## Hosted And QA Proof
+## Isolated QA Proof
 
-Supabase QA proof uses seeded QA users and environment-specific secrets:
+Supabase QA proof uses seeded fictional users and environment-specific secrets on a local or explicitly identified isolated QA target:
 
 ```bash
 npm run supabase:qa-users
@@ -71,13 +75,7 @@ npm run qa:session-proof
 npm run qa:brand-proof
 ```
 
-Hosted proof can target the deployed app:
-
-```bash
-QA_PROOF_BASE_URL=https://www.leaguepilot.us npm run qa:session-proof
-QA_PROOF_BASE_URL=https://www.leaguepilot.us npm run qa:ai-coach-proof
-QA_PROOF_BASE_URL=https://www.leaguepilot.us npm run qa:brand-proof
-```
+`qa:session-proof` and Communication Room record proof mutate rows. LP-QA-GUARD-001 makes them isolated-QA-only and rejects the protected production Supabase project and canonical production host. Do not point them at `leaguepilot.us` or `www.leaguepilot.us`. Production acceptance requires a separately named read-only harness; see gate `EXT-PRODUCTION-READONLY` in the closeout ledger.
 
 Keep `SUPABASE_SERVICE_ROLE_KEY` server-side or CI-only. Keep provider keys out of `NEXT_PUBLIC_*`.
 
@@ -92,6 +90,7 @@ Keep `SUPABASE_SERVICE_ROLE_KEY` server-side or CI-only. Keep provider keys out 
 | API contract draft | `docs/api/openapi.yaml`, `docs/enterprise/api-specification.md` |
 | Architecture and agent boundaries | `docs/agentic-architecture.md`, `docs/adr/` |
 | Production task board | `docs/production-task-board.md` |
+| Local queue closeout and remaining gates | `docs/backlog-closeout-2026-07-27.md` |
 | Operations and QA proof | `docs/runbook.md`, `docs/production-audit-action-items.md` |
 | Privacy and provider rules | `docs/privacy-security.md`, `docs/codex-rules.md` |
 

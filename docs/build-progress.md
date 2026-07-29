@@ -1,6 +1,8 @@
 # Build Progress
 
-This file tracks implementation progress while moving the app from the local reducer scaffold to Supabase-backed production slices.
+State: `historical` evidence journal. Entries record what was observed at their date and commit; they are not current run instructions or proof of the 2026-07-27 closeout commit. Earlier production-alias session runs predate LP-QA-GUARD-001 and must not be repeated. Current truth and remaining gates are in [`docs/backlog-closeout-2026-07-27.md`](backlog-closeout-2026-07-27.md).
+
+This file tracks implementation progress from typed local fallback state to Supabase-backed application slices.
 
 ## 2026-07-03
 
@@ -41,7 +43,7 @@ This file tracks implementation progress while moving the app from the local red
 - Added `npm run qa:ai-coach-proof` to sign in as the QA coach, request a hosted OpenAI rewrite from `/coach/parent-replay`, assert draft/review-only boundaries, and capture `output/playwright/ai-coach-provider-rewrite-qa-session-live.png`.
 - Deployed the corrected worktree to Vercel Production. `https://www.leaguepilot.us` now aliases deployment `dpl_EwvgSQY6ws7u7GmSnSAFtu9V9Zfi`.
 - Ran hosted AI Coach Workspace proof against `https://www.leaguepilot.us`; the provider rewrite completed as OpenAI-sourced draft copy with no publish/send claim.
-- Set launch scope for provider sends to draft/internal records only. Real email/SMS/Web Push sends remain a separate explicit implementation decision.
+- Set launch scope for provider sends to draft/internal records only. Superseded 2026-07-16: real email/SMS/Web Push sends are implemented only through the approval-gated, secret-gated, env-gated worker path, with hosted credential proof still required.
 - Set Vercel Preview OpenAI env setup out of launch scope until a named non-production preview branch is chosen.
 - Hardened `/auth` hosted diagnostics so missing browser Supabase env, public service-role key misuse, and browser/network failures show specific messages instead of the generic unreachable banner.
 - Redeployed the auth diagnostics patch to Vercel Production. `https://www.leaguepilot.us` now aliases deployment `dpl_v9eq5AkHhDjkhDodXGUVaAcTMaYn`.
@@ -73,7 +75,7 @@ This file tracks implementation progress while moving the app from the local red
 
 ### Remaining Gap
 
-- Real email/SMS/Web Push sends remain disconnected by launch decision; implement provider adapters, webhooks, idempotent retries, suppression handling, cost controls, and sandbox proof only if real sends become explicit scope.
+- Superseded 2026-07-16: email/SMS/Web Push worker adapters, webhook reconciliation, idempotent retries, suppression handling, and dead-letter metadata are implemented behind approval, preferences, credentials, and a worker secret. Hosted credential/sandbox proof remains before relying on live delivery.
 - Vercel Preview OpenAI env values remain unset by launch decision until a non-production preview branch target is named.
 - The Next SWC lockfile warning still appears during the Vercel build even though local `typecheck` and `build` passed; it remains a non-blocking lockfile follow-up.
 - Superseded by the 2026-07-03 Season Certainty home UI pass for `/parent`, `/coach`, and `/admin`; deeper workflow sections still reuse existing scoped production panels.
@@ -102,7 +104,7 @@ This file tracks implementation progress while moving the app from the local red
 ### Remaining Gap
 
 - Superseded by the 2026-07-02 closeout above: hosted AI rewrite proof and broader AI eval coverage are now complete.
-- Provider sends remain disconnected by launch decision unless real email/SMS/Web Push delivery becomes explicit production scope.
+- Superseded 2026-07-16: provider sends now execute only through the secret-gated, env-gated worker after approval and recipient checks. Hosted credential/sandbox proof remains pending.
 - Vercel Preview OpenAI env values remain unset by launch decision until a non-production preview branch target is named.
 - The Next SWC lockfile warning remains a non-blocking Vercel build follow-up.
 
@@ -115,7 +117,7 @@ This file tracks implementation progress while moving the app from the local red
 - Added `db/schema.sql` plus `db/rls/*.sql` as a Supabase Postgres/RLS reference schema for teams, players, events, RSVPs, notifications, weather alerts, and team chat messages.
 - Added `lib/services/weather/` with National Weather Service first, Open-Meteo fallback, and optional Tomorrow.io adapters. Provider results normalize into `WeatherEventDraft` and always return draft weather-alert state.
 - Added `lib/domain/policies.ts` and read-only React feature panels in `components/features/` for parent, coach, and admin audit surfaces. Panels render from domain types, use policy visibility helpers, and make no API calls.
-- Hardened provider delivery review so approval checks provider/channel match, recipient notification preferences, and provider credential readiness before writing a queued or suppressed delivery-attempt record. External provider sends remain disconnected.
+- Hardened provider delivery review so approval checks provider/channel match, recipient notification preferences, and provider credential readiness before writing a queued or suppressed delivery-attempt record. Superseded 2026-07-16: external provider sends are now connected only through the secret-gated worker and env-gated adapters.
 - Added authenticated notification unsubscribe and provider retry-plan routes. Both derive the actor from the verified Supabase session.
 - Wired Supabase weather draft creation to the provider-order weather service: National Weather Service, Open-Meteo fallback, then optional Tomorrow.io. Persisted weather alerts still save as draft records only.
 - Extended QA browser proof to seed a QA admin, verify `/admin/operations` and `/admin/security`, and click a parent RSVP action during `/parent/rsvp` proof.
@@ -221,7 +223,7 @@ These 2026-06-22 next items were completed in the 2026-06-23 hardening pass:
 - Added Mobile App Decision metrics with Supabase `mobile_usage_events`, install/standalone client measurement, and a public usage-event route so Expo remains gated on actual PWA and push-demand evidence.
 - Added deterministic assistive suggestions across admin, coach, and parent dashboards. Suggestions summarize existing scoped records only and cannot approve, publish, RSVP, or send provider messages.
 - Added Reporting and Archive exports with authenticated admin CSV generation, audit logging, and an archive readiness checklist covering non-chat preservation and chat deletion proof.
-- Added Provider Integration approval boundaries with notification provider approval status, authenticated provider delivery review, and delivery-attempt logs for approved or suppressed email/SMS/Web Push attempts. External provider sends remain disconnected.
+- Added Provider Integration approval boundaries with notification provider approval status, authenticated provider delivery review, and delivery-attempt logs for approved or suppressed email/SMS/Web Push attempts. Superseded 2026-07-16: approved queued attempts can be executed by the secret-gated worker when credentials and preferences allow.
 - Hardened the shared Supabase auth and role boundary by adding reusable access-control decisions, routing coach/admin team actions through the shared checker, and blocking parent RSVP writes unless the event and player share a team and the authenticated parent has an active guardian link.
 - Hardened admin membership mutation and live RLS proof by requiring an active organization admin for team-membership changes, writing membership audit events, tightening RSVP RLS to active guardian links, and extending `qa:rls-proof` with an unlinked-player RSVP denial.
 - Added cross-team and archived-season RLS proof rows, locked archived-season event and RSVP mutations behind active-season checks, and added `/admin/security` as the production proof dashboard for RLS and audit evidence.
@@ -286,4 +288,4 @@ These 2026-06-22 next items were completed in the 2026-06-23 hardening pass:
 
 - Run hosted production browser smoke for signed-out, parent, coach, and admin routes, preserving screenshots or CI artifacts.
 - Run hosted AI Coach Workspace rewrite proof with a signed-in assigned coach/admin, preserving evidence that output stays draft/review-only.
-- Keep provider sends and direct database IP allowlisting out of launch scope unless they become explicit production requirements.
+- Keep direct database IP allowlisting out of launch scope unless it becomes an explicit production requirement. Provider sends now stay approval-gated and require hosted credential proof before live-family reliance.

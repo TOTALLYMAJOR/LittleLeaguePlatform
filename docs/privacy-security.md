@@ -40,6 +40,9 @@ Email, SMS, Web Push, media, AI, and payment adapters require:
 - Environment-managed secrets.
 - Consent and opt-in checks.
 - Delivery logs.
+- Tenant-scoped Storage object paths.
+- File size/type validation and moderation before family visibility.
+- Retention, takedown, and scanning policy proof.
 - Retry and failure states.
 - Human approval for sensitive sends.
 - Audit records for administrative actions.

@@ -40,6 +40,21 @@ export function evaluateTeamStaffAccess(input: {
   };
 }
 
+export function evaluateTeamMemberOrAdminAccess(input: {
+  hasTeamMembership: boolean;
+  hasAdminMembership: boolean;
+  action: string;
+}): AccessDecision {
+  if (input.hasTeamMembership || input.hasAdminMembership) {
+    return { ok: true, message: "Access allowed." };
+  }
+
+  return {
+    ok: false,
+    message: `Only active team members or org admins can ${input.action}.`
+  };
+}
+
 export function evaluateParentPlayerEventAccess(input: {
   eventTeamId?: string | null;
   playerTeamId?: string | null;
@@ -95,6 +110,51 @@ export async function requireActiveTeamCoachOrOrgAdmin(input: {
 
   const decision = evaluateTeamStaffAccess({
     hasCoachMembership: Boolean(coachMemberships?.length),
+    hasAdminMembership: Boolean(adminMemberships?.length),
+    action: input.action
+  });
+
+  return decision.ok ? { ...decision, team } : decision;
+}
+
+export async function requireActiveTeamMemberOrOrgAdmin(input: {
+  db: SupabaseAccessClient;
+  teamId: string;
+  userId: string;
+  action: string;
+}): Promise<TeamAccessDecision> {
+  const { data: team, error: teamError } = await withSupabaseTimeout(input.db
+    .from("teams")
+    .select("id,organization_id,season_id,name")
+    .eq("id", input.teamId)
+    .single(), 7000) as {
+      data: TeamAccessDecision["team"] | null;
+      error: { message?: string } | null;
+    };
+
+  if (teamError || !team) return { ok: false, message: `${input.action} requires a known team.` };
+
+  const [{ data: teamMemberships }, { data: adminMemberships }] = await withSupabaseTimeout(Promise.all([
+    input.db
+      .from("team_memberships")
+      .select("id")
+      .eq("team_id", input.teamId)
+      .eq("user_id", input.userId)
+      .eq("status", "active"),
+    input.db
+      .from("organization_memberships")
+      .select("id")
+      .eq("organization_id", team.organization_id)
+      .eq("user_id", input.userId)
+      .eq("role", "admin")
+      .eq("status", "active")
+  ]), 7000) as [
+    { data: Array<{ id: string }> | null },
+    { data: Array<{ id: string }> | null }
+  ];
+
+  const decision = evaluateTeamMemberOrAdminAccess({
+    hasTeamMembership: Boolean(teamMemberships?.length),
     hasAdminMembership: Boolean(adminMemberships?.length),
     action: input.action
   });

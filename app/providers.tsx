@@ -2,7 +2,7 @@
 
 import { createContext, useContext, useEffect, useMemo, useReducer, useRef, useState } from "react";
 import { appReducer, seedState, type AppAction, type AppState } from "@/lib/domain";
-import { clearPrivateGameDayData } from "@/lib/offline/game-day-outbox";
+import { PWA_CACHE_VERSION, versionedPwaAsset } from "@/lib/domain/pwa-cache";
 
 interface AppStateContextValue {
   state: AppState;
@@ -72,13 +72,16 @@ export function AppStateProvider({ children }: { children: React.ReactNode }) {
       if ("caches" in window) {
         void caches.keys()
           .then((keys) => Promise.all(keys
-            .filter((key) => key.startsWith("little-league-hq-shell-"))
+            .filter((key) => key.startsWith("little-league-hq-shell-") || key.startsWith("little-league-hq-runtime-"))
             .map((key) => caches.delete(key))))
           .catch(() => undefined);
       }
       return;
     }
-    navigator.serviceWorker.register("/sw.js").catch(() => undefined);
+    navigator.serviceWorker
+      .register(versionedPwaAsset("/sw.js", PWA_CACHE_VERSION), { updateViaCache: "none" })
+      .then((registration) => registration.update().catch(() => undefined))
+      .catch(() => undefined);
   }, []);
 
   useEffect(() => {
@@ -86,15 +89,16 @@ export function AppStateProvider({ children }: { children: React.ReactNode }) {
       // Context-scoped screens remount immediately. The outbox remains keyed and
       // hidden so a temporary role switch does not discard an unsynced response.
     }
-    function onSignOut() {
-      void clearPrivateGameDayData();
+    function onSignOut(event: Event) {
+      const actorId = (event as CustomEvent<{ actorId?: string }>).detail?.actorId;
+      if (!actorId) return;
       for (let index = localStorage.length - 1; index >= 0; index -= 1) {
         const key = localStorage.key(index);
-        if (key?.startsWith("leaguepilot-context:")) localStorage.removeItem(key);
+        if (key?.startsWith(`leaguepilot-context:${actorId}:`)) localStorage.removeItem(key);
       }
       if ("caches" in window) {
         void caches.keys().then((keys) => Promise.all(keys
-          .filter((key) => key.startsWith("leaguepilot-private-"))
+          .filter((key) => key === `leaguepilot-private-${actorId}` || key.startsWith(`leaguepilot-private-${actorId}:`))
           .map((key) => caches.delete(key))));
       }
     }

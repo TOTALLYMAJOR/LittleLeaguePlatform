@@ -1,23 +1,16 @@
 import { NextResponse } from "next/server";
+import { applyPublicRateLimit, PUBLIC_RATE_LIMITS } from "@/lib/supabase/public-rate-limit";
 import { createPendingRegistration } from "@/lib/supabase/registrations";
-import {
-  checkPublicIntakeRateLimit,
-  getPublicClientKey,
-  publicIntakeRateLimitHeaders,
-} from "@/lib/public-intake/rate-limit";
 
 export async function POST(request: Request) {
-  const rateLimit = checkPublicIntakeRateLimit(
-    "registration",
-    getPublicClientKey(request),
-  );
+  const rateLimit = await applyPublicRateLimit(request, PUBLIC_RATE_LIMITS.registrationRequests);
   if (!rateLimit.allowed) {
     return NextResponse.json(
       {
         ok: false,
         message: "Too many registration requests. Please try again later.",
       },
-      { status: 429, headers: publicIntakeRateLimitHeaders(rateLimit) },
+      { status: 429, headers: rateLimit.headers },
     );
   }
 
@@ -25,7 +18,7 @@ export async function POST(request: Request) {
   if (!body || typeof body !== "object") {
     return NextResponse.json(
       { ok: false, message: "Registration request body is required." },
-      { status: 400, headers: publicIntakeRateLimitHeaders(rateLimit) },
+      { status: 400, headers: rateLimit.headers },
     );
   }
 
@@ -39,6 +32,6 @@ export async function POST(request: Request) {
 
   return NextResponse.json(result, {
     status: result.ok ? 201 : 400,
-    headers: publicIntakeRateLimitHeaders(rateLimit),
+    headers: rateLimit.headers,
   });
 }

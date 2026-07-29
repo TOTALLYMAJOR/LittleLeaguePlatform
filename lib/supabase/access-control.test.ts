@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { evaluateParentPlayerEventAccess, evaluateTeamStaffAccess } from "./access-control";
+import { evaluateParentPlayerEventAccess, evaluateTeamMemberOrAdminAccess, evaluateTeamStaffAccess } from "./access-control";
 
 describe("Supabase access-control decisions", () => {
   it("allows assigned coaches and org admins to perform team staff actions", () => {
@@ -24,6 +24,31 @@ describe("Supabase access-control decisions", () => {
     })).toEqual({
       ok: false,
       message: "Only assigned coaches or org admins can save weekly updates."
+    });
+  });
+
+  it("allows team members or org admins to submit media uploads", () => {
+    expect(evaluateTeamMemberOrAdminAccess({
+      hasTeamMembership: true,
+      hasAdminMembership: false,
+      action: "submit team media uploads"
+    })).toEqual({ ok: true, message: "Access allowed." });
+
+    expect(evaluateTeamMemberOrAdminAccess({
+      hasTeamMembership: false,
+      hasAdminMembership: true,
+      action: "submit team media uploads"
+    })).toEqual({ ok: true, message: "Access allowed." });
+  });
+
+  it("blocks media upload submission without team membership or org admin access", () => {
+    expect(evaluateTeamMemberOrAdminAccess({
+      hasTeamMembership: false,
+      hasAdminMembership: false,
+      action: "submit team media uploads"
+    })).toEqual({
+      ok: false,
+      message: "Only active team members or org admins can submit team media uploads."
     });
   });
 

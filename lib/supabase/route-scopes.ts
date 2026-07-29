@@ -52,7 +52,8 @@ export function scopeTeamChatData(
     events,
     channels,
     messages,
-    moderationEvents: data.moderationEvents.filter((event) => allowedTeamIds.has(event.teamId))
+    moderationEvents: data.moderationEvents.filter((event) => allowedTeamIds.has(event.teamId)),
+    reports: (data.reports ?? []).filter((report) => allowedTeamIds.has(report.teamId))
   };
 }
 
@@ -81,11 +82,13 @@ export function scopeTeamPortalData(
     .filter((membership) => allowedTeamIds.has(membership.teamId))
     .map((membership) => membership.userId));
   if (options.viewerUserId) membershipUserIds.add(options.viewerUserId);
+  const scopedTeams = options.audience === "parent"
+    ? teams.filter((team) => visibleTeamIds.has(team.id))
+    : teams;
+  const organizationIds = new Set(scopedTeams.map((team) => team.organizationId));
 
   return {
-    teams: options.audience === "parent"
-      ? teams.filter((team) => visibleTeamIds.has(team.id))
-      : teams,
+    teams: scopedTeams,
     players: visiblePlayers,
     guardianLinks,
     parentInvites: options.audience === "parent"
@@ -94,6 +97,7 @@ export function scopeTeamPortalData(
     teamMemberships: data.teamMemberships.filter((membership) => allowedTeamIds.has(membership.teamId)),
     users: data.users.filter((user) => membershipUserIds.has(user.id)),
     events: data.events.filter((event) => allowedTeamIds.has(event.teamId)),
+    fieldLocations: (data.fieldLocations ?? []).filter((field) => organizationIds.has(field.organizationId)),
     mediaItems: data.mediaItems.filter((item) => allowedTeamIds.has(item.teamId)),
     parentReplays: data.parentReplays.filter((replay) => (
       allowedTeamIds.has(replay.teamId) &&

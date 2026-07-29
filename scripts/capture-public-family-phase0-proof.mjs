@@ -2,8 +2,15 @@ import assert from "node:assert/strict";
 import { existsSync, mkdirSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { chromium } from "@playwright/test";
+import {
+  buildPublicFamilyProofPlan,
+  evaluateRenderedPublicFamilyProof
+} from "./public-family-proof-contract.mjs";
 
-const baseUrl = process.env.PUBLIC_FAMILY_BASE_URL || "http://127.0.0.1:3022";
+const proofPlan = buildPublicFamilyProofPlan();
+assert.equal(proofPlan.ok, true, proofPlan.blockers.join("\n"));
+
+const baseUrl = proofPlan.baseUrl;
 const screenshotDir = process.env.PUBLIC_FAMILY_SCREENSHOT_DIR || "output/playwright/public-family-phase0";
 const executablePath = process.env.PLAYWRIGHT_MCP_EXECUTABLE_PATH || process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH;
 const viewports = [
@@ -114,6 +121,25 @@ async function assertRouteContract(page, routeName) {
     const options = (await teamSelect.locator("option").allTextContents()).join(" ").toLowerCase();
     assert.equal(options.includes("archived"), false, "Archived teams must not be offered for access requests.");
     assert.equal(options.includes("demo league"), false, "Another organization must not be offered for access requests.");
+    if (proofPlan.mode === "hosted") {
+      const renderedEvidence = await page.evaluate(() => {
+        const root = document.querySelector("main .page");
+        return {
+          publicOrganizationFingerprint: root?.getAttribute("data-public-organization-fingerprint") ?? "",
+          reviewWindowConfigured: root?.getAttribute("data-access-review-window-configured") ?? "",
+          reviewWindowCopy: document.querySelector(".access-review-timeline")?.textContent ?? ""
+        };
+      });
+      const proofResult = evaluateRenderedPublicFamilyProof(proofPlan, renderedEvidence);
+      assert.equal(proofResult.ok, true, proofResult.blockers.join("\n"));
+      return {
+        expectedOrganizationFingerprint: proofResult.checks.expectedOrganizationFingerprint,
+        renderedOrganizationFingerprint: proofResult.checks.renderedOrganizationFingerprint,
+        organizationFingerprintMatches: proofResult.checks.organizationFingerprintMatches,
+        reviewWindowConfigured: proofResult.checks.reviewWindowConfigured,
+        reviewWindowCopyMatches: proofResult.checks.reviewWindowCopyMatches
+      };
+    }
     return;
   }
 
@@ -147,7 +173,7 @@ try {
           waitUntil: "domcontentloaded"
         });
         await page.locator("main").waitFor({ timeout: 20_000 });
-        await assertRouteContract(page, routeName);
+        const hostedPublicConfiguration = await assertRouteContract(page, routeName);
         const metrics = await inspectPage(page, routeName, viewportName);
         assert.deepEqual(pageErrors, [], `${routeName} ${viewportName} emitted browser errors.`);
         await page.evaluate(() => document.querySelector("nextjs-portal")?.remove());
@@ -162,6 +188,7 @@ try {
           screenshot,
           documentOverflow: metrics.documentOverflow,
           undersizedInteractiveCount: metrics.undersized.length,
+          hostedPublicConfiguration,
           pageErrors
         });
         console.log(`proved ${routeName} at ${viewportName}`);
@@ -173,7 +200,7 @@ try {
 
   writeFileSync(
     join(screenshotDir, "proof.json"),
-    `${JSON.stringify({ generatedAt: new Date().toISOString(), baseUrl, proof }, null, 2)}\n`
+    `${JSON.stringify({ generatedAt: new Date().toISOString(), baseUrl, targetMode: proofPlan.mode, proof }, null, 2)}\n`
   );
 } finally {
   await browser.close();

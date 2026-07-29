@@ -94,6 +94,20 @@ describe("role route guards and compatibility wrappers", () => {
     }
   });
 
+  it("keeps admin observability access-guarded and organization-scoped", () => {
+    const page = source("app/admin/observability/page.tsx");
+    const service = source("lib/supabase/admin-observability.ts");
+
+    expect(page).toContain("requireAdminPageAccess");
+    expect(page).toContain("AdminAccessDeniedSurface");
+    expect(page).toContain("listAdminObservabilityData({ organizationId })");
+    expect(service).toContain('.eq("organization_id", input.organizationId)');
+    expect(service).toContain('.eq("notifications.organization_id", input.organizationId)');
+    expect(service).toContain('.from("provider_webhook_events")');
+    expect(service).not.toContain('.from("notification_provider_webhook_events")');
+    expect(service).not.toContain('.from("public_rate_limit_buckets")');
+  });
+
   it("keeps coach attendance canonical and RSVP compatibility on the same guarded surface", () => {
     expect(source("app/coach/attendance/page.tsx")).toContain("CoachAttendanceSurface");
     expect(source("app/coach/rsvps/page.tsx")).toContain("CoachAttendanceSurface");

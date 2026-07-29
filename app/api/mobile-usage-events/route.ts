@@ -1,10 +1,6 @@
 import { NextResponse } from "next/server";
 import { recordMobileUsageEvent } from "@/lib/supabase/operations";
-import {
-  checkPublicIntakeRateLimit,
-  getPublicClientKey,
-  publicIntakeRateLimitHeaders,
-} from "@/lib/public-intake/rate-limit";
+import { applyPublicRateLimit, PUBLIC_RATE_LIMITS } from "@/lib/supabase/public-rate-limit";
 
 const eventTypes = new Set([
   "install_prompt_shown",
@@ -16,14 +12,11 @@ const eventTypes = new Set([
 ]);
 
 export async function POST(request: Request) {
-  const rateLimit = checkPublicIntakeRateLimit(
-    "mobile_usage",
-    getPublicClientKey(request),
-  );
+  const rateLimit = await applyPublicRateLimit(request, PUBLIC_RATE_LIMITS.mobileUsageEvents);
   if (!rateLimit.allowed) {
     return NextResponse.json(
       { ok: false, message: "Too many usage events. Please try again later." },
-      { status: 429, headers: publicIntakeRateLimitHeaders(rateLimit) },
+      { status: 429, headers: rateLimit.headers },
     );
   }
 
@@ -31,7 +24,7 @@ export async function POST(request: Request) {
   if (!body || typeof body !== "object") {
     return NextResponse.json(
       { ok: false, message: "Mobile usage event body is required." },
-      { status: 400, headers: publicIntakeRateLimitHeaders(rateLimit) },
+      { status: 400, headers: rateLimit.headers },
     );
   }
 
@@ -39,7 +32,7 @@ export async function POST(request: Request) {
   if (!eventTypes.has(eventType)) {
     return NextResponse.json(
       { ok: false, message: "Unsupported mobile usage event type." },
-      { status: 400, headers: publicIntakeRateLimitHeaders(rateLimit) },
+      { status: 400, headers: rateLimit.headers },
     );
   }
 
@@ -61,6 +54,6 @@ export async function POST(request: Request) {
 
   return NextResponse.json(result, {
     status: result.ok ? 201 : 400,
-    headers: publicIntakeRateLimitHeaders(rateLimit),
+    headers: rateLimit.headers,
   });
 }

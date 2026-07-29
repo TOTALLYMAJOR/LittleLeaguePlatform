@@ -1,16 +1,25 @@
 import { existsSync, mkdirSync, readFileSync } from "node:fs";
+import { randomUUID } from "node:crypto";
 import { join } from "node:path";
+import { pathToFileURL } from "node:url";
 import { chromium } from "@playwright/test";
 import { createClient } from "@supabase/supabase-js";
+import {
+  captureQaAppInvocation,
+  runGuardedQaMutation
+} from "./qa-target-guard.mjs";
 
 const envFile = ".env.local";
 const baseUrl = process.env.QA_PROOF_BASE_URL || "http://127.0.0.1:3020";
+const appInvocation = captureQaAppInvocation();
 const screenshotDir = "output/playwright";
 const qaIds = {
   organization: "11111111-1111-4111-8111-111111111111",
+  season: "22222222-2222-4222-8222-222222222222",
   team: "33333333-3333-4333-8333-333333333331",
   playerMason: "44444444-4444-4444-8444-444444444441",
   game: "55555555-5555-4555-8555-555555555551",
+  mediaProof: "99999999-9999-4999-8999-999999999993",
   snackOpen: "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaa2",
   volunteerOpen: "bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbb1"
 };
@@ -55,15 +64,11 @@ function requireAnonKey() {
 }
 
 function requireServiceRoleKey() {
-  const serviceRoleKey = requireEnv("SUPABASE_SERVICE_ROLE_KEY");
-  if (jwtRole(serviceRoleKey) !== "service_role") {
-    throw new Error("SUPABASE_SERVICE_ROLE_KEY must be the Supabase service role key for QA row verification.");
-  }
-  return serviceRoleKey;
+  return requireEnv("SUPABASE_SERVICE_ROLE_KEY");
 }
 
-function createQaAdminClient() {
-  return createClient(requireEnv("NEXT_PUBLIC_SUPABASE_URL"), requireServiceRoleKey(), {
+function createQaAdminClient(url, serviceRoleKey) {
+  return createClient(url, serviceRoleKey, {
     auth: {
       autoRefreshToken: false,
       persistSession: false
@@ -234,6 +239,163 @@ async function authenticatedBrowserPost(page, url, payload) {
     const body = await response.json().catch(() => null);
     return { status: response.status, body };
   }, { url, payload });
+}
+
+async function resetQaMediaProofItem(supabase) {
+  const { data, error } = await supabase
+    .from("media_items")
+    .upsert({
+      id: qaIds.mediaProof,
+      organization_id: qaIds.organization,
+      team_id: qaIds.team,
+      title: "QA browser proof media",
+      media_type: "google_photos",
+      url: "https://photos.google.com/share/qa-browser-proof-media",
+      moderation_status: "approved",
+      visibility: "team",
+      report_count: 0,
+      hidden_at: null,
+      removed_at: null,
+      reviewed_by_user_id: null,
+      reviewed_at: null
+    }, { onConflict: "id" })
+    .select("id,moderation_status,visibility,report_count")
+    .single();
+
+  if (error || !data) throw new Error("QA media proof item could not be prepared.");
+  return data;
+}
+
+async function createQaRegistrationRequest(supabase, input) {
+  const requestId = randomUUID();
+  const nonce = `${input.action}-${Date.now()}-${Math.random().toString(16).slice(2)}`;
+  const { data, error } = await supabase
+    .from("registration_requests")
+    .insert({
+      id: requestId,
+      organization_id: qaIds.organization,
+      season_id: qaIds.season,
+      team_id: qaIds.team,
+      parent_name: `QA ${input.action} Parent`,
+      parent_email: `qa.${nonce}@example.test`,
+      player_first_name: input.action === "approve" ? "ProofApprove" : "ProofReject",
+      player_last_initial: input.action === "approve" ? "A" : "R",
+      status: "pending"
+    })
+    .select("id,parent_email,player_first_name,status")
+    .single();
+
+  if (error || !data) throw new Error(`QA ${input.action} registration request could not be created.`);
+  return data;
+}
+
+async function assertMediaReportRows(supabase, input) {
+  const { data: mediaItem, error: mediaError } = await supabase
+    .from("media_items")
+    .select("id,moderation_status,report_count")
+    .eq("id", qaIds.mediaProof)
+    .single();
+
+  if (
+    mediaError ||
+    !mediaItem ||
+    mediaItem.moderation_status !== "pending" ||
+    mediaItem.report_count !== input.startingReportCount + 1
+  ) {
+    throw new Error("Media report browser proof did not persist the expected pending media row.");
+  }
+
+  const { data: auditEvents, error: auditError } = await supabase
+    .from("audit_events")
+    .select("id,actor_user_id,action,target_type,target_id,created_at")
+    .eq("actor_user_id", input.parentUserId)
+    .eq("action", "media_reported")
+    .eq("target_type", "media_item")
+    .eq("target_id", qaIds.mediaProof)
+    .gte("created_at", input.proofStartedAt);
+
+  if (auditError || !auditEvents?.length) {
+    throw new Error("Media report browser proof did not write the expected audit event.");
+  }
+}
+
+async function assertMediaModerationRows(supabase, input) {
+  const { data: mediaItem, error: mediaError } = await supabase
+    .from("media_items")
+    .select("id,moderation_status,visibility,reviewed_by_user_id,hidden_at,removed_at")
+    .eq("id", qaIds.mediaProof)
+    .single();
+
+  if (
+    mediaError ||
+    !mediaItem ||
+    mediaItem.moderation_status !== "hidden" ||
+    mediaItem.visibility !== "organization" ||
+    mediaItem.reviewed_by_user_id !== input.adminUserId ||
+    !mediaItem.hidden_at ||
+    mediaItem.removed_at
+  ) {
+    throw new Error("Media moderation browser proof did not persist the expected hidden media row.");
+  }
+
+  const { data: auditEvents, error: auditError } = await supabase
+    .from("audit_events")
+    .select("id,actor_user_id,action,target_type,target_id,created_at")
+    .eq("actor_user_id", input.adminUserId)
+    .eq("action", "media_hidden")
+    .eq("target_type", "media_item")
+    .eq("target_id", qaIds.mediaProof)
+    .gte("created_at", input.proofStartedAt);
+
+  if (auditError || !auditEvents?.length) {
+    throw new Error("Media moderation browser proof did not write the expected admin audit event.");
+  }
+}
+
+async function assertRegistrationReviewRows(supabase, input) {
+  const { data: request, error: requestError } = await supabase
+    .from("registration_requests")
+    .select("id,status,reviewed_by_user_id,reviewed_at")
+    .eq("id", input.requestId)
+    .single();
+
+  if (
+    requestError ||
+    !request ||
+    request.status !== input.status ||
+    request.reviewed_by_user_id !== input.adminUserId ||
+    !request.reviewed_at
+  ) {
+    throw new Error(`Registration ${input.status} browser proof did not persist the expected request state.`);
+  }
+
+  const { data: actions, error: actionError } = await supabase
+    .from("registration_approval_actions")
+    .select("id,action,reviewed_by_user_id,registration_request_id,created_at")
+    .eq("registration_request_id", input.requestId)
+    .eq("reviewed_by_user_id", input.adminUserId)
+    .gte("created_at", input.proofStartedAt);
+
+  if (actionError || !actions?.some((action) => action.action === input.status)) {
+    throw new Error(`Registration ${input.status} browser proof did not write the expected approval-action row.`);
+  }
+
+  if (input.status === "approved" && !actions.some((action) => action.action === "created_player")) {
+    throw new Error("Registration approval browser proof did not create the expected player action row.");
+  }
+
+  const { data: auditEvents, error: auditError } = await supabase
+    .from("audit_events")
+    .select("id,actor_user_id,action,target_type,target_id,created_at")
+    .eq("actor_user_id", input.adminUserId)
+    .eq("action", `registration_request_${input.status}`)
+    .eq("target_type", "registration_request")
+    .eq("target_id", input.requestId)
+    .gte("created_at", input.proofStartedAt);
+
+  if (auditError || !auditEvents?.length) {
+    throw new Error(`Registration ${input.status} browser proof did not write the expected admin audit event.`);
+  }
 }
 
 async function assertParentActionRows(supabase, parentUserId) {
@@ -697,10 +859,165 @@ async function proveParentLiveActions(browser, supabase) {
   }
 }
 
-async function main() {
+async function proveMediaReportAndModerationWrites(browser, supabase) {
+  const [parent, admin] = await Promise.all([
+    findUserByEmail(supabase, requireEnv("QA_PARENT_EMAIL")),
+    findUserByEmail(supabase, requireEnv("QA_ADMIN_EMAIL"))
+  ]);
+  const preparedMedia = await resetQaMediaProofItem(supabase);
+  const proofStartedAt = new Date(Date.now() - 2000).toISOString();
+
+  const parentContext = await browser.newContext({
+    viewport: { width: 390, height: 844 },
+    isMobile: true,
+    deviceScaleFactor: 2,
+    extraHTTPHeaders: {
+      "Cache-Control": "no-cache"
+    }
+  });
+  const parentPage = await parentContext.newPage();
+
+  try {
+    await signIn(parentPage, requireEnv("QA_PARENT_EMAIL"), requireEnv("QA_PARENT_PASSWORD"));
+    await parentPage.goto(`${baseUrl}/parent?qa_media_report=${Date.now()}`, { waitUntil: "networkidle" });
+    await assertText(parentPage, "Showing Supabase roster, guardian, schedule, RSVP, and media rows.");
+    await assertText(parentPage, "QA browser proof media");
+
+    const reportResult = await authenticatedBrowserPost(parentPage, "/api/media/report", {
+      mediaItemId: qaIds.mediaProof,
+      reason: "QA browser proof family media report."
+    });
+    if (reportResult.status !== 200 || !reportResult.body?.ok) {
+      throw new Error(`Media report browser API proof failed: ${reportResult.body?.message ?? reportResult.status}`);
+    }
+
+    await assertMediaReportRows(supabase, {
+      parentUserId: parent.id,
+      startingReportCount: preparedMedia.report_count ?? 0,
+      proofStartedAt
+    });
+
+    const screenshotPath = join(screenshotDir, "media-report-qa-session-live.png");
+    await parentPage.screenshot({ path: screenshotPath, fullPage: true });
+    console.log(`QA parent media report verified against Supabase rows (${screenshotPath})`);
+  } finally {
+    await parentContext.close();
+  }
+
+  const adminContext = await browser.newContext({
+    viewport: { width: 390, height: 844 },
+    isMobile: true,
+    deviceScaleFactor: 2,
+    extraHTTPHeaders: {
+      "Cache-Control": "no-cache"
+    }
+  });
+  const adminPage = await adminContext.newPage();
+
+  try {
+    await signIn(adminPage, requireEnv("QA_ADMIN_EMAIL"), requireEnv("QA_ADMIN_PASSWORD"));
+    await adminPage.goto(`${baseUrl}/admin?qa_media_moderation=${Date.now()}`, { waitUntil: "networkidle" });
+    await assertText(adminPage, "Media governance");
+    await assertText(adminPage, "QA browser proof media");
+
+    const moderationResult = await authenticatedBrowserPost(adminPage, "/api/media/moderation", {
+      mediaItemId: qaIds.mediaProof,
+      status: "hidden",
+      visibility: "organization",
+      reason: "QA browser proof admin moderation."
+    });
+    if (moderationResult.status !== 200 || !moderationResult.body?.ok) {
+      throw new Error(`Media moderation browser API proof failed: ${moderationResult.body?.message ?? moderationResult.status}`);
+    }
+
+    await assertMediaModerationRows(supabase, {
+      adminUserId: admin.id,
+      proofStartedAt
+    });
+
+    const screenshotPath = join(screenshotDir, "media-moderation-qa-session-live.png");
+    await adminPage.screenshot({ path: screenshotPath, fullPage: true });
+    console.log(`QA admin media moderation verified against Supabase rows (${screenshotPath})`);
+  } finally {
+    await adminContext.close();
+  }
+}
+
+async function proveRegistrationReviewWrites(browser, supabase) {
+  const admin = await findUserByEmail(supabase, requireEnv("QA_ADMIN_EMAIL"));
+  const [approvalRequest, rejectionRequest] = await Promise.all([
+    createQaRegistrationRequest(supabase, { action: "approve" }),
+    createQaRegistrationRequest(supabase, { action: "reject" })
+  ]);
+  const proofStartedAt = new Date(Date.now() - 2000).toISOString();
+  const context = await browser.newContext({
+    viewport: { width: 390, height: 844 },
+    isMobile: true,
+    deviceScaleFactor: 2,
+    extraHTTPHeaders: {
+      "Cache-Control": "no-cache"
+    }
+  });
+  const page = await context.newPage();
+
+  try {
+    await signIn(page, requireEnv("QA_ADMIN_EMAIL"), requireEnv("QA_ADMIN_PASSWORD"));
+    await page.goto(`${baseUrl}/admin/registrations?qa_registration_review=${Date.now()}`, { waitUntil: "networkidle" });
+    await assertText(page, "Registration review");
+    await assertText(page, "Pending queue");
+    await assertText(page, approvalRequest.player_first_name);
+    await assertText(page, rejectionRequest.player_first_name);
+
+    const approvalResult = await authenticatedBrowserPost(page, `/api/admin/registration-requests/${approvalRequest.id}/approve`, {
+      note: "QA browser proof approval."
+    });
+    if (approvalResult.status !== 200 || !approvalResult.body?.ok) {
+      throw new Error(`Registration approval browser API proof failed: ${approvalResult.body?.message ?? approvalResult.status}`);
+    }
+    await assertRegistrationReviewRows(supabase, {
+      requestId: approvalRequest.id,
+      status: "approved",
+      adminUserId: admin.id,
+      proofStartedAt
+    });
+    const approvalScreenshotPath = join(screenshotDir, "registration-approval-qa-session-live.png");
+    await page.screenshot({ path: approvalScreenshotPath, fullPage: true });
+
+    const rejectionResult = await authenticatedBrowserPost(page, `/api/admin/registration-requests/${rejectionRequest.id}/reject`, {
+      note: "QA browser proof rejection."
+    });
+    if (rejectionResult.status !== 200 || !rejectionResult.body?.ok) {
+      throw new Error(`Registration rejection browser API proof failed: ${rejectionResult.body?.message ?? rejectionResult.status}`);
+    }
+    await assertRegistrationReviewRows(supabase, {
+      requestId: rejectionRequest.id,
+      status: "rejected",
+      adminUserId: admin.id,
+      proofStartedAt
+    });
+    const rejectionScreenshotPath = join(screenshotDir, "registration-rejection-qa-session-live.png");
+    await page.screenshot({ path: rejectionScreenshotPath, fullPage: true });
+
+    console.log(`QA admin registration approve/reject verified against Supabase rows (${approvalScreenshotPath}, ${rejectionScreenshotPath})`);
+  } finally {
+    await context.close();
+  }
+}
+
+export async function main({ guard = runGuardedQaMutation } = {}) {
   loadLocalEnv();
   requireAnonKey();
-  const supabase = createQaAdminClient();
+  const supabaseUrl = requireEnv("NEXT_PUBLIC_SUPABASE_URL");
+  const serviceRoleKey = requireServiceRoleKey();
+
+  return guard({
+    action: "QA session proof",
+    appBaseUrl: baseUrl,
+    appInvocation,
+    serviceRoleCredential: serviceRoleKey,
+    supabaseUrl
+  }, async () => {
+  const supabase = createQaAdminClient(supabaseUrl, serviceRoleKey);
   mkdirSync(screenshotDir, { recursive: true });
 
   const executablePath = chromiumExecutablePath();
@@ -765,6 +1082,10 @@ async function main() {
 
     await proveCoachProviderPrivateWrites(browser, supabase);
 
+    await proveMediaReportAndModerationWrites(browser, supabase);
+
+    await proveRegistrationReviewWrites(browser, supabase);
+
     await proveRole(browser, {
       label: "QA admin",
       email: requireEnv("QA_ADMIN_EMAIL"),
@@ -793,9 +1114,14 @@ async function main() {
   } finally {
     await browser.close();
   }
+  });
 }
 
-main().catch((error) => {
-  console.error(error instanceof Error ? error.message : error);
-  process.exit(1);
-});
+const isDirectRun =
+  process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href;
+if (isDirectRun) {
+  main().catch((error) => {
+    console.error(error instanceof Error ? error.message : error);
+    process.exit(1);
+  });
+}

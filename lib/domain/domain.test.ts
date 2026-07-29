@@ -47,7 +47,10 @@ import {
   getArrivalInstructions,
   getMapFallbackUx,
   getVenueIntelligence,
+  isApprovedGoogleMapsEmbedUrl,
+  isApprovedGoogleMapsUrl,
   highlightLocationChange,
+  validateVenueMetadata,
   getWeatherAlertHistory,
   getWeatherApprovalQueue,
   getWeatherProviderRetryLogs,
@@ -818,21 +821,58 @@ describe("weather policy", () => {
 describe("venue intelligence", () => {
   it("builds embedded map, markers, quota status, and field layout metadata", () => {
     const event = seedState.events.find((item) => item.id === "event-tigers-game")!;
-    const map = getEmbeddedMapUi(event);
-    const markers = getVenueMarkers(seedState.events.filter((item) => item.teamId === "team-tigers"));
+    const venueMetadata = [{
+      id: "field-1",
+      name: "Field 1",
+      address: "100 League Way",
+      latitude: 40.7128,
+      longitude: -74.006,
+      mapUrl: "https://www.google.com/maps/search/?api=1&query=Field%201",
+      mapEmbedUrl: "https://www.google.com/maps/embed/v1/place?key=browser-key&q=Field%201",
+      fieldLabel: "North diamond",
+      notes: "Use the north parking lot.",
+      status: "active" as const
+    }];
+    const fallbackMap = getEmbeddedMapUi(event);
+    const map = getEmbeddedMapUi(event, venueMetadata);
+    const markers = getVenueMarkers(seedState.events.filter((item) => item.teamId === "team-tigers"), venueMetadata);
     const quota = getMapQuotaStatus({ requestsToday: 90, dailyLimit: 100 });
-    const layout = getFieldLayoutMetadata(event);
+    const layout = getFieldLayoutMetadata(event, venueMetadata);
 
-    expect(map.embedUrl).toContain("output=embed");
+    expect(fallbackMap.embedUrl).toBe("");
+    expect(fallbackMap.boundary).toContain("No route tracking");
+    expect(map.embedUrl).toContain("/maps/embed");
+    expect(map.boundary).toContain("no route tracking");
     expect(markers).toHaveLength(2);
+    expect(markers[0]?.label).toBe("North diamond");
+    expect(markers[0]?.metadataStatus).toBe("managed");
     expect(quota.status).toBe("warning");
     expect(layout.entrance).toContain("Main gate");
+    expect(layout.notes).toContain("north parking");
     expect(getVenuePage(event).path).toBe("/venues/field-1");
     expect(getVenueAmenityNotes(event).restrooms).toContain("Restrooms");
     expect(getArrivalInstructions(event)).toContain("Arrive 20 minutes");
     expect(getVenueIntelligence(event).confidence).toBe("ready");
     expect(getMapFallbackUx({ quotaStatus: "danger", directionsUrl: "https://maps.example" }).useFallback).toBe(true);
+    expect(getMapFallbackUx({ quotaStatus: "danger", directionsUrl: "https://maps.example" }).trackingBoundary).toContain("does not enable route tracking");
     expect(highlightLocationChange("Field 1", "Field 3").changed).toBe(true);
+  });
+
+  it("validates managed map metadata before embeds and markers are saved", () => {
+    expect(isApprovedGoogleMapsUrl("https://www.google.com/maps/search/?api=1&query=Field%201")).toBe(true);
+    expect(isApprovedGoogleMapsEmbedUrl("https://www.google.com/maps/embed/v1/place?key=browser-key&q=Field%201")).toBe(true);
+    expect(validateVenueMetadata({
+      name: "Field 1",
+      address: "100 League Way",
+      latitude: 91,
+      longitude: -74.006,
+      mapEmbedUrl: "https://www.google.com/maps/embed/v1/place?key=browser-key&q=Field%201"
+    }).message).toContain("valid latitude");
+    expect(validateVenueMetadata({
+      name: "Field 1",
+      address: "100 League Way",
+      mapEmbedUrl: "https://tracking.example.com/embed/field-1"
+    }).message).toContain("approved Google Maps embed");
   });
 });
 
@@ -1033,6 +1073,124 @@ describe("start-of-season planning", () => {
     expect(preview.teams.flatMap((team) => team.players).map((player) => player.constraintNotes.join(" ")).join(" ")).toContain("Friend request considered");
     expect(published.ok).toBe(true);
     expect(published.state.auditEvents[0]?.action).toBe("automatic_team_build_published");
+  });
+
+  it("uses explicit private inputs while reporting deterministic defaults and aggregate balance", () => {
+    const preview = previewBalancedTeamBuild(seedState, {
+      division: "3U",
+      targetRosterSize: 10,
+      actorUserId: "user-admin",
+      now: NOW,
+      playerProfiles: {
+        "player-mason": {
+          birthDate: "2021-04-10",
+          ageBand: "5U",
+          evaluationRating: 5
+        }
+      }
+    });
+
+    const mason = preview.teams.flatMap((team) => team.players)
+      .find((player) => player.playerId === "player-mason");
+    expect(mason).toMatchObject({
+      ageBand: "5U",
+      ageBandSource: "explicit",
+      skillRating: 5,
+      evaluationSource: "explicit",
+      birthDateStatus: "recorded"
+    });
+    expect(preview.warnings.join(" ")).toContain("defaulted to 3");
+    expect(preview.warnings.join(" ")).toContain("defaulted to division");
+    expect(preview.auditSummary).toContain("missing profile");
+    expect(preview.teams.every((team) => typeof team.ageBandCounts === "object")).toBe(true);
+  });
+
+  it("uses age-band and evaluation metadata without exposing private birthdates", () => {
+    const preview = previewBalancedTeamBuild(seedState, {
+      division: "3U",
+      targetRosterSize: 10,
+      actorUserId: "user-admin",
+      now: NOW,
+      skillRatings: {
+        "player-mason": 1,
+        "player-avery": 1,
+        "player-noah": 1
+      },
+      playerMetadata: {
+        "player-mason": {
+          playerId: "player-mason",
+          ageBand: "3U",
+          birthdateDerivedAgeLabel: "Age 3 on league cutoff",
+          evaluation: {
+            rating: 5,
+            source: "coach_evaluation",
+            label: "Advanced coordination"
+          }
+        },
+        "player-avery": {
+          playerId: "player-avery",
+          ageBand: "3U",
+          birthdateDerivedAgeLabel: "Age 3 on league cutoff",
+          evaluation: {
+            rating: 3,
+            source: "guardian_questionnaire",
+            label: "New player"
+          },
+          reviewNotes: ["Keep with requested friend when roster size allows."]
+        },
+        "player-noah": {
+          playerId: "player-noah",
+          ageBand: "4U",
+          birthdateDerivedAgeLabel: "Age 4 on league cutoff",
+          evaluation: {
+            rating: 2,
+            source: "imported_roster",
+            label: "Needs throwing reps"
+          }
+        }
+      },
+      friendRequests: [{ playerId: "player-mason", friendPlayerId: "player-avery" }]
+    });
+    const players = preview.teams.flatMap((team) => team.players);
+    const mason = players.find((player) => player.playerId === "player-mason");
+    const avery = players.find((player) => player.playerId === "player-avery");
+    const notes = players.flatMap((player) => player.constraintNotes).join(" ");
+    const displayNames = players.map((player) => player.name).join(" ");
+
+    expect(mason?.skillRating).toBe(5);
+    expect(avery?.evaluationNotes).toContain("Keep with requested friend when roster size allows.");
+    expect(notes).toContain("Age band: 4U");
+    expect(notes).toContain("Age label: Age 3 on league cutoff");
+    expect(notes).toContain("Evaluation: 5 (coach evaluation)");
+    expect(notes).not.toContain("birthdate");
+    expect(preview.warnings.join(" ")).not.toContain("Skill ratings default");
+    expect(preview.warnings.join(" ")).not.toContain("Age is represented by division");
+    expect(displayNames).toContain("Mason T.");
+    expect(displayNames).not.toContain("Mason Taylor");
+  });
+
+  it("keeps automatic team-builder publish authority admin-only", () => {
+    const coachPublish = publishBalancedTeamBuild(seedState, {
+      division: "3U",
+      targetRosterSize: 10,
+      actorUserId: "user-coach-taylor",
+      now: NOW,
+      playerMetadata: {
+        "player-mason": {
+          playerId: "player-mason",
+          ageBand: "3U",
+          birthdateDerivedAgeLabel: "Age 3 on league cutoff",
+          evaluation: {
+            rating: 4,
+            source: "coach_evaluation"
+          }
+        }
+      }
+    });
+
+    expect(coachPublish.ok).toBe(false);
+    expect(coachPublish.message).toContain("Only org admins");
+    expect(coachPublish.state.players).toEqual(seedState.players);
   });
 });
 

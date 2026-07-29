@@ -1,5 +1,5 @@
 import { createHash, randomUUID } from "node:crypto";
-import type { ParentReplayDraft, ParentReplayRecord, PracticeFocusArea } from "@/lib/domain";
+import { validateVenueMetadata, type ParentReplayDraft, type ParentReplayRecord, type PracticeFocusArea } from "@/lib/domain";
 import { featureGateDecision } from "@/lib/services/feature-gates";
 import { getWeatherEventDraft } from "@/lib/services/weather";
 import {
@@ -51,21 +51,51 @@ function googleMapsEmbedUrl(address: string) {
 }
 
 export async function upsertFieldLocation(input: {
+  actorUserId: string;
   organizationId: string;
   name: string;
   address: string;
   latitude?: number;
   longitude?: number;
   googlePlaceId?: string;
+  mapUrl?: string;
+  mapEmbedUrl?: string;
+  fieldLabel?: string;
+  notes?: string;
+  status?: "active" | "inactive";
 }) {
   const name = input.name.trim();
   const address = input.address.trim();
   if (!input.organizationId || !name || !address) {
     return { ok: false, message: "Field location requires organization, name, and address." };
   }
+  if (!input.actorUserId) {
+    return { ok: false, message: "Field location changes require an authenticated organization admin." };
+  }
+  const validation = validateVenueMetadata({
+    name,
+    address,
+    latitude: input.latitude,
+    longitude: input.longitude,
+    googlePlaceId: input.googlePlaceId,
+    mapUrl: input.mapUrl,
+    mapEmbedUrl: input.mapEmbedUrl,
+    fieldLabel: input.fieldLabel,
+    notes: input.notes,
+    status: input.status
+  });
+  if (!validation.ok) return { ok: false, message: validation.message };
 
   try {
     const db = adminDb();
+    const access = await requireActiveOrganizationAdmin({
+      db,
+      organizationId: input.organizationId,
+      userId: input.actorUserId,
+      action: "manage field locations"
+    });
+    if (!access.ok) return { ok: false, message: access.message };
+
     const { data, error } = await runDynamicQuery(db
       .from("field_locations")
       .upsert({
@@ -74,37 +104,54 @@ export async function upsertFieldLocation(input: {
         address,
         latitude: input.latitude ?? null,
         longitude: input.longitude ?? null,
-        google_place_id: input.googlePlaceId ?? null,
-        map_url: googleMapsUrl(address),
-        map_embed_url: googleMapsEmbedUrl(address),
-        status: "active"
+        google_place_id: input.googlePlaceId?.trim() || null,
+        map_url: input.mapUrl?.trim() || googleMapsUrl(address),
+        map_embed_url: input.mapEmbedUrl?.trim() || googleMapsEmbedUrl(address),
+        field_label: input.fieldLabel?.trim() || null,
+        notes: input.notes?.trim() || null,
+        status: input.status ?? "active"
       }, { onConflict: "organization_id,name" })
-      .select("id,name,address,map_url,map_embed_url,status")
+      .select("id,name,address,latitude,longitude,google_place_id,map_url,map_embed_url,field_label,notes,status")
       .single());
 
     if (error || !data) return { ok: false, message: "Field location could not be saved." };
-    return { ok: true, message: "Field location saved with Google Maps metadata.", fieldLocation: data };
+    return { ok: true, message: "Field location saved with approved map metadata. No route tracking is enabled.", fieldLocation: data };
   } catch {
     return { ok: false, message: "Field location could not reach Supabase." };
   }
 }
 
-export async function listFieldLocations(organizationId?: string) {
+export async function listFieldLocations(organizationId?: string, actorUserId?: string) {
+  if (!organizationId) {
+    return { ok: false, message: "Field location list requires an organization.", fieldLocations: [] };
+  }
+  if (!actorUserId) {
+    return { ok: false, message: "Field location list requires an authenticated organization admin.", fieldLocations: [] };
+  }
+
   try {
     const db = adminDb();
+    const access = await requireActiveOrganizationAdmin({
+      db,
+      organizationId,
+      userId: actorUserId,
+      action: "view field locations"
+    });
+    if (!access.ok) return { ok: false, message: access.message, fieldLocations: [] };
+
     let query = db
       .from("field_locations")
-      .select("id,organization_id,name,address,latitude,longitude,google_place_id,map_url,map_embed_url,status,updated_at")
+      .select("id,organization_id,name,address,latitude,longitude,google_place_id,map_url,map_embed_url,field_label,notes,status,updated_at")
       .order("name", { ascending: true });
 
-    if (organizationId) query = query.eq("organization_id", organizationId);
+    query = query.eq("organization_id", organizationId);
 
     const { data, error } = await runDynamicQuery(query);
     if (error) return { ok: false, message: "Field locations could not be loaded.", fieldLocations: [] };
 
     return {
       ok: true,
-      message: "Field locations loaded from Supabase with map fallback metadata.",
+      message: "Field locations loaded from Supabase with approved map metadata and marker labels.",
       fieldLocations: data ?? []
     };
   } catch {
@@ -768,6 +815,58 @@ export async function submitParentSupportRequest(input: {
   }
 }
 
+async function getCommunityActorAccess(db: UnsafeSupabase, teamId: string, userId: string) {
+  const { data: team, error: teamError } = await runDynamicQuery<{
+    id: string;
+    organization_id: string;
+  }>(db
+    .from("teams")
+    .select("id,organization_id")
+    .eq("id", teamId)
+    .single());
+
+  if (teamError || !team) return null;
+
+  const [{ data: teamMemberships }, { data: adminMemberships }] = await Promise.all([
+    runDynamicQuery<Array<{ id: string; role: "coach" | "parent" }>>(db
+      .from("team_memberships")
+      .select("id,role")
+      .eq("team_id", teamId)
+      .eq("user_id", userId)
+      .eq("status", "active")),
+    runDynamicQuery<Array<{ id: string }>>(db
+      .from("organization_memberships")
+      .select("id")
+      .eq("organization_id", team.organization_id)
+      .eq("user_id", userId)
+      .eq("role", "admin")
+      .eq("status", "active"))
+  ]);
+
+  const isOrgAdmin = Boolean(adminMemberships?.length);
+  const isTeamMember = Boolean(teamMemberships?.length);
+  const isStaff = isOrgAdmin || Boolean(teamMemberships?.some((membership) => membership.role === "coach"));
+  return { team, isTeamMember, isStaff };
+}
+
+async function insertCommunityAudit(db: UnsafeSupabase, input: {
+  organizationId: string;
+  actorUserId: string;
+  action: string;
+  targetType: string;
+  targetId: string;
+  summary: string;
+}) {
+  await runDynamicQuery(db.from("audit_events").insert({
+    organization_id: input.organizationId,
+    actor_user_id: input.actorUserId,
+    action: input.action,
+    target_type: input.targetType,
+    target_id: input.targetId,
+    summary: input.summary
+  }));
+}
+
 export async function claimSnackSlot(input: {
   slotId: string;
   parentUserId: string;
@@ -775,36 +874,303 @@ export async function claimSnackSlot(input: {
   if (!input.slotId || !input.parentUserId) return { ok: false, message: "Snack signup requires a slot and parent." };
   try {
     const db = adminDb();
-    const { data, error } = await runDynamicQuery(db
+    const { data: slot, error: slotError } = await runDynamicQuery<{
+      id: string;
+      team_id: string;
+      event_id: string;
+      item: string;
+      assigned_parent_user_id: string | null;
+      status: "open" | "assigned";
+    }>(db
       .from("snack_schedule_slots")
-      .update({ assigned_parent_user_id: input.parentUserId, status: "assigned" })
+      .select("id,team_id,event_id,item,assigned_parent_user_id,status")
       .eq("id", input.slotId)
-      .select("id,status,assigned_parent_user_id")
       .single());
+
+    if (slotError || !slot) return { ok: false, message: "Snack slot could not be found." };
+    const access = await getCommunityActorAccess(db, slot.team_id, input.parentUserId);
+    if (!access?.isTeamMember && !access?.isStaff) {
+      return { ok: false, message: "Only assigned team members can claim snack slots." };
+    }
+    if (slot.status !== "open" || slot.assigned_parent_user_id) {
+      return { ok: false, message: "Snack slot is already assigned." };
+    }
+
+    const { data, error } = await runDynamicQuery<Record<string, unknown>>(db.rpc(
+      "claim_snack_slot_compare_and_set",
+      {
+        p_slot_id: input.slotId,
+        p_user_id: input.parentUserId
+      }
+    ));
     if (error || !data) return { ok: false, message: "Snack slot could not be assigned." };
-    return { ok: true, message: "Snack slot saved to Supabase.", slot: data };
+    if (data.ok !== true) return data;
+
+    await insertCommunityAudit(db, {
+      organizationId: access.team.organization_id,
+      actorUserId: input.parentUserId,
+      action: "snack_slot_claimed",
+      targetType: "snack_schedule_slot",
+      targetId: input.slotId,
+      summary: `${slot.item} claimed.`
+    });
+    return data;
   } catch {
     return { ok: false, message: "Snack slot could not reach Supabase." };
   }
 }
 
-export async function claimVolunteerRole(input: {
-  signupId: string;
-  userId: string;
+export async function unclaimSnackSlot(input: {
+  slotId: string;
+  actorUserId: string;
+  reason: string;
 }) {
-  if (!input.signupId || !input.userId) return { ok: false, message: "Volunteer signup requires a role and user." };
+  const reason = input.reason.trim();
+  if (!input.slotId || !input.actorUserId || !reason) return { ok: false, message: "Snack unclaim requires slot, actor, and reason." };
+
   try {
     const db = adminDb();
+    const { data: slot, error: slotError } = await runDynamicQuery<{
+      id: string;
+      team_id: string;
+      item: string;
+      assigned_parent_user_id: string | null;
+      status: "open" | "assigned";
+    }>(db
+      .from("snack_schedule_slots")
+      .select("id,team_id,item,assigned_parent_user_id,status")
+      .eq("id", input.slotId)
+      .single());
+
+    if (slotError || !slot) return { ok: false, message: "Snack slot could not be found." };
+    const access = await getCommunityActorAccess(db, slot.team_id, input.actorUserId);
+    const canUnclaim = access?.isStaff || slot.assigned_parent_user_id === input.actorUserId;
+    if (!canUnclaim) return { ok: false, message: "Only the assigned parent, coach, or org admin can unclaim this snack slot." };
+    if (slot.status !== "assigned") return { ok: false, message: "Snack slot is not currently assigned." };
+
+    const now = new Date().toISOString();
+    const { data, error } = await runDynamicQuery(db
+      .from("snack_schedule_slots")
+      .update({
+        assigned_parent_user_id: null,
+        status: "open",
+        unclaimed_at: now,
+        unclaimed_by_user_id: input.actorUserId,
+        cancellation_reason: reason
+      })
+      .eq("id", input.slotId)
+      .eq("status", "assigned")
+      .eq("assigned_parent_user_id", slot.assigned_parent_user_id)
+      .select("id,status,assigned_parent_user_id,unclaimed_at,unclaimed_by_user_id,cancellation_reason")
+      .single());
+    if (error || !data) return { ok: false, message: "Snack slot could not be unclaimed." };
+
+    await insertCommunityAudit(db, {
+      organizationId: access!.team.organization_id,
+      actorUserId: input.actorUserId,
+      action: "snack_slot_unclaimed",
+      targetType: "snack_schedule_slot",
+      targetId: input.slotId,
+      summary: `${slot.item} reopened: ${reason}`
+    });
+    return { ok: true, message: "Snack slot reopened for another family.", slot: data };
+  } catch {
+    return { ok: false, message: "Snack slot unclaim could not reach Supabase." };
+  }
+}
+
+export async function unclaimVolunteerRole(input: {
+  signupId: string;
+  actorUserId: string;
+  reason: string;
+}) {
+  const reason = input.reason.trim();
+  if (!input.signupId || !input.actorUserId || !reason) return { ok: false, message: "Volunteer unclaim requires role, actor, and reason." };
+
+  try {
+    const db = adminDb();
+    const { data: signup, error: signupError } = await runDynamicQuery<{
+      id: string;
+      team_id: string;
+      role: string;
+      assigned_user_id: string | null;
+      status: "open" | "filled";
+    }>(db
+      .from("volunteer_signups")
+      .select("id,team_id,role,assigned_user_id,status")
+      .eq("id", input.signupId)
+      .single());
+
+    if (signupError || !signup) return { ok: false, message: "Volunteer role could not be found." };
+    const access = await getCommunityActorAccess(db, signup.team_id, input.actorUserId);
+    const canUnclaim = access?.isStaff || signup.assigned_user_id === input.actorUserId;
+    if (!canUnclaim) return { ok: false, message: "Only the assigned volunteer, coach, or org admin can unclaim this role." };
+    if (signup.status !== "filled") return { ok: false, message: "Volunteer role is not currently filled." };
+
+    const now = new Date().toISOString();
     const { data, error } = await runDynamicQuery(db
       .from("volunteer_signups")
-      .update({ assigned_user_id: input.userId, status: "filled" })
+      .update({
+        assigned_user_id: null,
+        status: "open",
+        unclaimed_at: now,
+        unclaimed_by_user_id: input.actorUserId,
+        cancellation_reason: reason
+      })
       .eq("id", input.signupId)
-      .select("id,status,assigned_user_id")
+      .eq("status", "filled")
+      .eq("assigned_user_id", signup.assigned_user_id)
+      .select("id,status,assigned_user_id,unclaimed_at,unclaimed_by_user_id,cancellation_reason")
       .single());
-    if (error || !data) return { ok: false, message: "Volunteer role could not be assigned." };
-    return { ok: true, message: "Volunteer role saved to Supabase.", signup: data };
+    if (error || !data) return { ok: false, message: "Volunteer role could not be unclaimed." };
+
+    await insertCommunityAudit(db, {
+      organizationId: access!.team.organization_id,
+      actorUserId: input.actorUserId,
+      action: "volunteer_role_unclaimed",
+      targetType: "volunteer_signup",
+      targetId: input.signupId,
+      summary: `${signup.role} reopened: ${reason}`
+    });
+    return { ok: true, message: "Volunteer role reopened for another family.", signup: data };
   } catch {
-    return { ok: false, message: "Volunteer role could not reach Supabase." };
+    return { ok: false, message: "Volunteer role unclaim could not reach Supabase." };
+  }
+}
+
+async function activeParentRecipients(db: UnsafeSupabase, teamId: string) {
+  const { data } = await runDynamicQuery<Array<{ user_id: string }>>(db
+    .from("team_memberships")
+    .select("user_id")
+    .eq("team_id", teamId)
+    .eq("role", "parent")
+    .eq("status", "active"));
+  return data?.map((row) => row.user_id) ?? [];
+}
+
+export async function createSnackReminderDrafts(input: {
+  teamId: string;
+  actorUserId: string;
+}) {
+  if (!input.teamId || !input.actorUserId) return { ok: false, message: "Snack reminders require team and actor." };
+
+  try {
+    const db = adminDb();
+    const access = await getCommunityActorAccess(db, input.teamId, input.actorUserId);
+    if (!access?.isStaff) return { ok: false, message: "Only coaches or org admins can draft snack reminders." };
+
+    const { data: slots } = await runDynamicQuery<Array<{
+      id: string;
+      event_id: string;
+      item: string;
+      assigned_parent_user_id: string | null;
+      status: "open" | "assigned";
+      reminder_draft_count?: number | null;
+    }>>(db
+      .from("snack_schedule_slots")
+      .select("id,event_id,item,assigned_parent_user_id,status,reminder_draft_count")
+      .eq("team_id", input.teamId));
+    const parents = await activeParentRecipients(db, input.teamId);
+    const now = new Date().toISOString();
+    const notifications = (slots ?? []).flatMap((slot) => {
+      const recipients = slot.assigned_parent_user_id ? [slot.assigned_parent_user_id] : parents;
+      return recipients.map((recipientUserId) => ({
+        organization_id: access.team.organization_id,
+        recipient_user_id: recipientUserId,
+        team_id: input.teamId,
+        event_id: slot.event_id,
+        notification_type: "snack_reminder",
+        title: slot.status === "open" ? "Snack slot still open" : "Snack duty reminder",
+        body: `${slot.item} is ${slot.status}.`,
+        channel: "email",
+        status: "pending"
+      }));
+    });
+
+    if (notifications.length) {
+      await runDynamicQuery(db.from("notifications").insert(notifications));
+    }
+    await Promise.all((slots ?? []).map((slot) => runDynamicQuery(db
+      .from("snack_schedule_slots")
+      .update({
+        reminder_draft_count: (slot.reminder_draft_count ?? 0) + 1,
+        reminder_last_drafted_at: now
+      })
+      .eq("id", slot.id))));
+    await insertCommunityAudit(db, {
+      organizationId: access.team.organization_id,
+      actorUserId: input.actorUserId,
+      action: "snack_reminder_drafts_created",
+      targetType: "team",
+      targetId: input.teamId,
+      summary: `${notifications.length} snack reminder draft(s) created. Provider sending remains review-gated.`
+    });
+    return { ok: true, message: `${notifications.length} snack reminder draft(s) queued. Provider sending remains approval-gated.`, notificationCount: notifications.length };
+  } catch {
+    return { ok: false, message: "Snack reminder drafts could not reach Supabase." };
+  }
+}
+
+export async function createVolunteerReminderDrafts(input: {
+  teamId: string;
+  actorUserId: string;
+}) {
+  if (!input.teamId || !input.actorUserId) return { ok: false, message: "Volunteer reminders require team and actor." };
+
+  try {
+    const db = adminDb();
+    const access = await getCommunityActorAccess(db, input.teamId, input.actorUserId);
+    if (!access?.isStaff) return { ok: false, message: "Only coaches or org admins can draft volunteer reminders." };
+
+    const { data: signups } = await runDynamicQuery<Array<{
+      id: string;
+      event_id: string | null;
+      role: string;
+      assigned_user_id: string | null;
+      status: "open" | "filled";
+      reminder_draft_count?: number | null;
+    }>>(db
+      .from("volunteer_signups")
+      .select("id,event_id,role,assigned_user_id,status,reminder_draft_count")
+      .eq("team_id", input.teamId));
+    const parents = await activeParentRecipients(db, input.teamId);
+    const now = new Date().toISOString();
+    const notifications = (signups ?? []).flatMap((signup) => {
+      const recipients = signup.assigned_user_id ? [signup.assigned_user_id] : parents;
+      return recipients.map((recipientUserId) => ({
+        organization_id: access.team.organization_id,
+        recipient_user_id: recipientUserId,
+        team_id: input.teamId,
+        event_id: signup.event_id,
+        notification_type: "volunteer_reminder",
+        title: signup.status === "open" ? "Volunteer role still open" : "Volunteer duty reminder",
+        body: `${signup.role} is ${signup.status}.`,
+        channel: "email",
+        status: "pending"
+      }));
+    });
+
+    if (notifications.length) {
+      await runDynamicQuery(db.from("notifications").insert(notifications));
+    }
+    await Promise.all((signups ?? []).map((signup) => runDynamicQuery(db
+      .from("volunteer_signups")
+      .update({
+        reminder_draft_count: (signup.reminder_draft_count ?? 0) + 1,
+        reminder_last_drafted_at: now
+      })
+      .eq("id", signup.id))));
+    await insertCommunityAudit(db, {
+      organizationId: access.team.organization_id,
+      actorUserId: input.actorUserId,
+      action: "volunteer_reminder_drafts_created",
+      targetType: "team",
+      targetId: input.teamId,
+      summary: `${notifications.length} volunteer reminder draft(s) created. Provider sending remains review-gated.`
+    });
+    return { ok: true, message: `${notifications.length} volunteer reminder draft(s) queued. Provider sending remains approval-gated.`, notificationCount: notifications.length };
+  } catch {
+    return { ok: false, message: "Volunteer reminder drafts could not reach Supabase." };
   }
 }
 

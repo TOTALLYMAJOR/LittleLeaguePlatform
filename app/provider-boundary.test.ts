@@ -12,7 +12,19 @@ describe("provider boundary tests", () => {
 
     expect(providerDelivery).toContain("No external send occurred");
     expect(providerDelivery).toContain("notification_delivery_attempts");
+    expect(providerDelivery).toContain("claimQueuedNotificationDeliveries");
+    expect(providerDelivery).toContain("@/lib/services/notifications/worker");
     expect(providerDelivery).not.toContain("fetch(");
+  });
+
+  it("keeps notification worker foundation adapter-driven", () => {
+    const worker = source("lib/services/notifications/worker.ts");
+
+    expect(worker).toContain("NotificationDeliveryAdapter");
+    expect(worker).toContain("deadLetteredAt");
+    expect(worker).not.toContain("SENDGRID");
+    expect(worker).not.toContain("TWILIO");
+    expect(worker).not.toContain("fetch(");
   });
 
   it("keeps roster import audit from committing rosters or sending invites", () => {

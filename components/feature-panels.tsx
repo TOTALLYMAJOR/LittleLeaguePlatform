@@ -3,9 +3,11 @@
 import { useEffect, useMemo, useState, useTransition, type CSSProperties, type ChangeEvent, type ReactNode } from "react";
 import { markLeaguePilotValueExperienced, useAppState } from "@/app/providers";
 import {
+  captureOfflineOwnerGeneration,
   queueOfflineGameDayAction,
   syncContextOutbox,
-  type OfflineGameDayAction
+  type OfflineGameDayAction,
+  type QueueOfflineGameDayActionInput
 } from "@/lib/offline/game-day-outbox";
 import {
   NOW,
@@ -941,7 +943,12 @@ function initialsFromName(value: string) {
     .toUpperCase();
 }
 
-async function authenticatedJsonFetch(url: string, payload: unknown, extraHeaders?: Record<string, string>) {
+async function authenticatedJsonFetch(
+  url: string,
+  payload: unknown,
+  extraHeaders?: Record<string, string>,
+  signal?: AbortSignal
+) {
   const headers: Record<string, string> = {
     "Content-Type": "application/json",
     ...extraHeaders
@@ -959,8 +966,55 @@ async function authenticatedJsonFetch(url: string, payload: unknown, extraHeader
   return fetch(url, {
     method: "POST",
     headers,
-    body: JSON.stringify(payload)
+    body: JSON.stringify(payload),
+    signal
   });
+}
+
+async function getOfflineReplaySession(
+  expectedActorId: string,
+  verifyWithServer = true
+) {
+  try {
+    const supabase = createSupabaseBrowserClient();
+    const readSession = async () => {
+      const { data } = await supabase.auth.getSession();
+      const session = data.session;
+      if (
+        session?.user.id !== expectedActorId ||
+        !session.expires_at ||
+        session.expires_at * 1000 <= Date.now()
+      ) return null;
+      if (verifyWithServer) {
+        const { data: userData, error } = await supabase.auth.getUser();
+        if (error || userData.user?.id !== expectedActorId) return null;
+      }
+      return { session, expiresAt: session.expires_at };
+    };
+    const verified = await readSession();
+    if (!verified) return null;
+    return {
+      actorId: verified.session.user.id,
+      expiresAt: new Date(verified.expiresAt * 1000).toISOString(),
+      validate: async () => Boolean(await readSession())
+    };
+  } catch {
+    return null;
+  }
+}
+
+async function queueOfflineActionForCurrentSession(
+  action: QueueOfflineGameDayActionInput,
+  expectedOwnerGeneration: number
+) {
+  const session = await getOfflineReplaySession(action.actorId, false);
+  if (!session || !await session.validate?.()) return false;
+  try {
+    await queueOfflineGameDayAction(action, expectedOwnerGeneration);
+    return true;
+  } catch {
+    return false;
+  }
 }
 
 function mediaReviewPriority(item: MediaItem) {
@@ -2559,8 +2613,12 @@ export function ParentRsvpClient({ dashboardData }: { dashboardData?: ParentCoac
   const parentUserId = dashboardData?.parentUserId ?? "user-parent-jordan";
   const parentUser = displayState.users.find((user) => user.id === parentUserId);
   const dashboard = getParentDashboard(displayState, parentUserId, NOW);
-  const parentContextKey = `parent:${displayState.organization.id}:${displayState.activeSeason.id}:${dashboard.children.map(({ team }) => team.id).sort().join(",") || "none"}`;
-  const offlineWritesEnabled = process.env.NEXT_PUBLIC_OFFLINE_WRITES_ENABLED === "true";
+  const parentContextKey = `parent:${parentUserId}:${displayState.organization.id}:${displayState.activeSeason.id}:${dashboard.children.map(({ team }) => team.id).sort().join(",") || "none"}`;
+  const offlineWritesEnabled = (
+    process.env.NEXT_PUBLIC_OFFLINE_WRITES_ENABLED === "true" &&
+    dashboardData?.accessStatus === "live" &&
+    dashboardData.isSupabaseBacked
+  );
   const accessGate = privateAccessGate(dashboardData, "parent");
   const isArchivedSeason = displayState.activeSeason.status === "archived";
   const rsvpHistory = displayState.rsvps
@@ -2575,11 +2633,23 @@ export function ParentRsvpClient({ dashboardData }: { dashboardData?: ParentCoac
       rsvp: displayState.rsvps.find((item) => item.eventId === event.id && item.playerId === player.id)
     })));
 
-  async function sendQueuedRsvp(action: OfflineGameDayAction) {
-    const response = await authenticatedJsonFetch(action.endpoint, action.payload, {
+  const parentOfflineScope = {
+    actorId: parentUserId,
+    organizationId: sourceState.organization.id,
+    seasonId: sourceState.activeSeason.id,
+    contextKey: parentContextKey,
+    familyId: parentUserId
+  };
+
+  async function sendQueuedRsvp(
+    action: OfflineGameDayAction,
+    endpoint: string,
+    signal: AbortSignal
+  ) {
+    const response = await authenticatedJsonFetch(endpoint, action.payload, {
       "Idempotency-Key": action.actionId,
       "X-LeaguePilot-Offline-Replay": "true"
-    });
+    }, signal);
     return {
       ok: response.ok,
       status: response.status,
@@ -2590,19 +2660,28 @@ export function ParentRsvpClient({ dashboardData }: { dashboardData?: ParentCoac
   useEffect(() => {
     if (!offlineWritesEnabled || typeof window === "undefined") return;
     const sync = () => {
-      void syncContextOutbox(parentContextKey, sendQueuedRsvp).then((results) => {
-        const conflict = results.find((result) => result.conflictDetail);
-        if (conflict) setMessage(`Sync conflict: ${conflict.conflictDetail}`);
-        else if (results.some((result) => result.succeededAt)) setMessage("Offline RSVP synced to current team records.");
+      void getOfflineReplaySession(parentUserId).then((session) => {
+        if (!session) {
+          setMessage("Sign-in required before saved RSVP actions can sync.");
+          return [];
+        }
+        return syncContextOutbox(parentOfflineScope, session, sendQueuedRsvp);
+      }).then((results) => {
+        const conflict = results.find((result) => "conflictDetail" in result && result.conflictDetail);
+        if (conflict && "conflictDetail" in conflict) setMessage(`Sync conflict: ${conflict.conflictDetail}`);
+        else if (results.some((result) => "syncedAt" in result)) setMessage("Offline RSVP synced to current team records.");
       }).catch(() => undefined);
     };
     if (navigator.onLine) sync();
     window.addEventListener("online", sync);
     return () => window.removeEventListener("online", sync);
-  }, [offlineWritesEnabled, parentContextKey]);
+  }, [offlineWritesEnabled, parentContextKey, parentUserId, sourceState.activeSeason.id, sourceState.organization.id]);
 
   function save(eventId: string, playerId: string, response: RsvpResponse) {
     startTransition(async () => {
+      const ownerGeneration = offlineWritesEnabled
+        ? await captureOfflineOwnerGeneration(parentUserId).catch(() => null)
+        : null;
       const event = displayState.events.find((item) => item.id === eventId);
       const currentRsvp = displayState.rsvps.find((item) => item.eventId === eventId && item.playerId === playerId);
       const actionId = typeof crypto !== "undefined" && "randomUUID" in crypto
@@ -2615,11 +2694,14 @@ export function ParentRsvpClient({ dashboardData }: { dashboardData?: ParentCoac
         expectedLockVersion: currentRsvp?.lockVersion ?? 0,
         expectedScheduleVersion: event?.scheduleVersion ?? 1
       };
-      const queuedAction: OfflineGameDayAction = {
+      const queuedAction: QueueOfflineGameDayActionInput = {
         actionId,
         actionType: "rsvp",
         contextKey: parentContextKey,
-        endpoint: "/api/rsvps",
+        actorId: parentUserId,
+        organizationId: sourceState.organization.id,
+        seasonId: sourceState.activeSeason.id,
+        familyId: parentUserId,
         payload,
         queuedAt: new Date().toISOString(),
         retryCount: 0,
@@ -2631,19 +2713,34 @@ export function ParentRsvpClient({ dashboardData }: { dashboardData?: ParentCoac
           setMessage("RSVP needs an online connection. Offline writes are disabled for this league.");
           return;
         }
-        await queueOfflineGameDayAction(queuedAction);
+        if (
+          ownerGeneration === null ||
+          !await queueOfflineActionForCurrentSession(
+            queuedAction,
+            ownerGeneration
+          )
+        ) {
+          setMessage("Sign-in required before an RSVP can be saved for offline sync.");
+          return;
+        }
         setMessage("Waiting to sync. Your RSVP is saved on this device, not yet in team records.");
         return;
       }
+      let queuedAfterNetworkFailure = false;
       const apiResponse = await authenticatedJsonFetch("/api/rsvps", payload, { "Idempotency-Key": actionId })
         .catch(async () => {
-          if (offlineWritesEnabled) await queueOfflineGameDayAction(queuedAction);
+          if (offlineWritesEnabled && ownerGeneration !== null) {
+            queuedAfterNetworkFailure = await queueOfflineActionForCurrentSession(
+              queuedAction,
+              ownerGeneration
+            );
+          }
           return null;
         });
       if (!apiResponse) {
-        setMessage(offlineWritesEnabled
+        setMessage(queuedAfterNetworkFailure
           ? "Waiting to sync. Your RSVP is saved on this device, not yet in team records."
-          : "Team records are unavailable. Offline writes are disabled for this league.");
+          : "Team records are unavailable, and no offline RSVP was saved. Sign in again after reconnecting.");
         return;
       }
       const result = await apiResponse.json().catch(() => null) as {
@@ -2749,7 +2846,11 @@ export function CoachDashboardClient({ dashboardData }: { dashboardData?: Parent
     ?? teams[0];
   const fieldPlayers = sourceState.players.filter((player) => player.teamId === nextAssignedEvent?.teamId);
   const coachContextKey = `coach:${sourceState.organization.id}:${sourceState.activeSeason.id}:${primaryCoachTeam?.id ?? "none"}`;
-  const offlineWritesEnabled = process.env.NEXT_PUBLIC_OFFLINE_WRITES_ENABLED === "true";
+  const offlineWritesEnabled = (
+    process.env.NEXT_PUBLIC_OFFLINE_WRITES_ENABLED === "true" &&
+    dashboardData?.accessStatus === "live" &&
+    dashboardData.isSupabaseBacked
+  );
   const weatherAlerts = sourceState.weatherAlerts.filter((alert) => teamIds.has(alert.teamId));
   const weatherApprovalQueue = getWeatherApprovalQueue(sourceState).filter((item) => teamIds.has(item.alert.teamId));
   const weatherRetryLogs = getWeatherProviderRetryLogs(sourceState).filter((item) => teamIds.has(item.alert.teamId));
@@ -2823,11 +2924,23 @@ export function CoachDashboardClient({ dashboardData }: { dashboardData?: Parent
     now: NOW
   });
 
-  async function sendQueuedFieldAction(action: OfflineGameDayAction) {
-    const response = await authenticatedJsonFetch(action.endpoint, action.payload, {
+  const coachOfflineScope = {
+    actorId: coachId,
+    organizationId: sourceState.organization.id,
+    seasonId: sourceState.activeSeason.id,
+    contextKey: coachContextKey,
+    teamId: primaryCoachTeam?.id ?? "none"
+  };
+
+  async function sendQueuedFieldAction(
+    action: OfflineGameDayAction,
+    endpoint: string,
+    signal: AbortSignal
+  ) {
+    const response = await authenticatedJsonFetch(endpoint, action.payload, {
       "Idempotency-Key": action.actionId,
       "X-LeaguePilot-Offline-Replay": "true"
-    });
+    }, signal);
     return {
       ok: response.ok,
       status: response.status,
@@ -2837,7 +2950,7 @@ export function CoachDashboardClient({ dashboardData }: { dashboardData?: Parent
 
   useEffect(() => {
     if (!nextAssignedEvent || typeof window === "undefined") return;
-    const packKey = `leaguepilot-context:${coachContextKey}:game-day-pack`;
+    const packKey = `leaguepilot-context:${coachId}:${coachContextKey}:game-day-pack`;
     try {
       localStorage.setItem(packKey, JSON.stringify({
         cachedAt: new Date().toISOString(),
@@ -2861,34 +2974,45 @@ export function CoachDashboardClient({ dashboardData }: { dashboardData?: Parent
   useEffect(() => {
     if (!offlineWritesEnabled || typeof window === "undefined") return;
     const sync = () => {
-      void syncContextOutbox(coachContextKey, sendQueuedFieldAction).then((results) => {
-        const conflict = results.find((result) => result.conflictDetail);
-        if (conflict) setActionMessage(`Sync conflict: ${conflict.conflictDetail}`);
-        else if (results.some((result) => result.succeededAt)) setActionMessage("Field Mode changes synced to team records.");
+      void getOfflineReplaySession(coachId).then((session) => {
+        if (!session) {
+          setActionMessage("Sign-in required before saved Field Mode actions can sync.");
+          return [];
+        }
+        return syncContextOutbox(coachOfflineScope, session, sendQueuedFieldAction);
+      }).then((results) => {
+        const conflict = results.find((result) => "conflictDetail" in result && result.conflictDetail);
+        if (conflict && "conflictDetail" in conflict) setActionMessage(`Sync conflict: ${conflict.conflictDetail}`);
+        else if (results.some((result) => "syncedAt" in result)) setActionMessage("Field Mode changes synced to team records.");
       }).catch(() => undefined);
     };
     if (navigator.onLine) sync();
     window.addEventListener("online", sync);
     return () => window.removeEventListener("online", sync);
-  }, [coachContextKey, offlineWritesEnabled]);
+  }, [coachContextKey, coachId, offlineWritesEnabled, primaryCoachTeam?.id, sourceState.activeSeason.id, sourceState.organization.id]);
 
   function submitFieldAction(input: {
     actionType: "attendance" | "coach_note";
-    endpoint: string;
     payload: Record<string, unknown>;
     playerId?: string;
     attendanceValue?: "present" | "absent" | "late";
   }) {
     if (!nextAssignedEvent) return;
     startActionTransition(async () => {
+      const ownerGeneration = offlineWritesEnabled
+        ? await captureOfflineOwnerGeneration(coachId).catch(() => null)
+        : null;
       const actionId = typeof crypto !== "undefined" && "randomUUID" in crypto
         ? crypto.randomUUID()
         : `field-${Date.now()}-${Math.random().toString(16).slice(2)}`;
-      const action: OfflineGameDayAction = {
+      const action: QueueOfflineGameDayActionInput = {
         actionId,
         actionType: input.actionType,
         contextKey: coachContextKey,
-        endpoint: input.endpoint,
+        actorId: coachId,
+        organizationId: sourceState.organization.id,
+        seasonId: sourceState.activeSeason.id,
+        teamId: primaryCoachTeam?.id ?? "none",
         payload: input.payload,
         queuedAt: new Date().toISOString(),
         retryCount: 0,
@@ -2900,22 +3024,35 @@ export function CoachDashboardClient({ dashboardData }: { dashboardData?: Parent
           setActionMessage("Offline writes are disabled for this league. Cached game-day details remain available.");
           return;
         }
-        await queueOfflineGameDayAction(action);
+        if (
+          ownerGeneration === null ||
+          !await queueOfflineActionForCurrentSession(action, ownerGeneration)
+        ) {
+          setActionMessage("Sign-in required before a Field Mode change can be saved for offline sync.");
+          return;
+        }
         if (input.playerId && input.attendanceValue) {
           setFieldAttendance((current) => ({ ...current, [input.playerId!]: input.attendanceValue! }));
         }
         setActionMessage("Waiting to sync. This Field Mode change is saved on this device only.");
         return;
       }
-      const apiResponse = await authenticatedJsonFetch(input.endpoint, input.payload, { "Idempotency-Key": actionId })
+      const endpoint = input.actionType === "attendance" ? "/api/coach/attendance" : "/api/coach/event-notes";
+      let queuedAfterNetworkFailure = false;
+      const apiResponse = await authenticatedJsonFetch(endpoint, input.payload, { "Idempotency-Key": actionId })
         .catch(async () => {
-          if (offlineWritesEnabled) await queueOfflineGameDayAction(action);
+          if (offlineWritesEnabled && ownerGeneration !== null) {
+            queuedAfterNetworkFailure = await queueOfflineActionForCurrentSession(
+              action,
+              ownerGeneration
+            );
+          }
           return null;
         });
       if (!apiResponse) {
-        setActionMessage(offlineWritesEnabled
+        setActionMessage(queuedAfterNetworkFailure
           ? "Waiting to sync. This Field Mode change is saved on this device only."
-          : "Team records are unavailable. Offline writes are disabled for this league.");
+          : "Team records are unavailable, and no offline Field Mode change was saved. Sign in again after reconnecting.");
         return;
       }
       const result = await apiResponse.json().catch(() => null) as {
@@ -2939,7 +3076,6 @@ export function CoachDashboardClient({ dashboardData }: { dashboardData?: Parent
     if (!nextAssignedEvent) return;
     submitFieldAction({
       actionType: "attendance",
-      endpoint: "/api/coach/attendance",
       playerId,
       attendanceValue,
       payload: {
@@ -2956,7 +3092,6 @@ export function CoachDashboardClient({ dashboardData }: { dashboardData?: Parent
     if (!nextAssignedEvent || !fieldNote.trim()) return;
     submitFieldAction({
       actionType: "coach_note",
-      endpoint: "/api/coach/event-notes",
       payload: {
         eventId: nextAssignedEvent.id,
         body: fieldNote,
@@ -4044,6 +4179,60 @@ export function AdminDashboardClient({ registrationRequests, sponsorData, mediaD
       "player-ella": 4,
       "player-liam": 2
     },
+    playerMetadata: {
+      "player-mason": {
+        playerId: "player-mason",
+        ageBand: "3U",
+        birthdateDerivedAgeLabel: "Age 3 on league cutoff",
+        evaluation: {
+          rating: 4,
+          source: "coach_evaluation",
+          label: "Confident throwing and listening"
+        },
+        reviewNotes: ["Admin review input only; family preview keeps safe roster name."]
+      },
+      "player-avery": {
+        playerId: "player-avery",
+        ageBand: "3U",
+        birthdateDerivedAgeLabel: "Age 3 on league cutoff",
+        evaluation: {
+          rating: 3,
+          source: "guardian_questionnaire",
+          label: "New player, comfortable with friends"
+        },
+        reviewNotes: ["Use with sibling/friend constraints before publishing."]
+      },
+      "player-noah": {
+        playerId: "player-noah",
+        ageBand: "3U",
+        birthdateDerivedAgeLabel: "Age 3 on league cutoff",
+        evaluation: {
+          rating: 3,
+          source: "imported_roster",
+          label: "Balanced beginner"
+        }
+      },
+      "player-ella": {
+        playerId: "player-ella",
+        ageBand: "5U",
+        birthdateDerivedAgeLabel: "Age 5 on league cutoff",
+        evaluation: {
+          rating: 4,
+          source: "coach_evaluation",
+          label: "Ready for older division pace"
+        }
+      },
+      "player-liam": {
+        playerId: "player-liam",
+        ageBand: "6U",
+        birthdateDerivedAgeLabel: "Age 6 on league cutoff",
+        evaluation: {
+          rating: 2,
+          source: "guardian_questionnaire",
+          label: "Needs extra practice support"
+        }
+      }
+    },
     friendRequests: [
       { playerId: "player-mason", friendPlayerId: "player-avery" }
     ]
@@ -4413,11 +4602,15 @@ export function AdminDashboardClient({ registrationRequests, sponsorData, mediaD
             <h3>Automatic team builder preview</h3>
             <p className="muted"><strong>Workflow:</strong> {teamBuildPreview.workflow.join(" -> ")}</p>
             <p className="muted"><strong>Sibling/friend constraints:</strong> sibling groups stay together and friend requests are considered before roster balance.</p>
+            <p className="muted"><strong>Admin review inputs:</strong> age bands, cutoff-age labels, and player evaluations inform fairness review without showing full birthdates or private child detail to families.</p>
             <p className="muted"><strong>Publish boundary:</strong> {teamBuildPreview.publishBoundary}</p>
             {teamBuildPreview.teams.map((team) => (
               <p key={team.teamId}>
                 <strong>{team.teamName}</strong><br />
                 <span className="muted">{team.playerCount} player(s), skill-balance score {team.averageSkill}: {team.players.map((player) => player.name).join(", ") || "No players"}</span>
+                {team.players.length ? (
+                  <span className="muted"><br />Review metadata: {team.players.map((player) => `${player.name} ${player.ageBand}, ${player.birthdateDerivedAgeLabel}, eval ${player.skillRating}`).join("; ")}</span>
+                ) : null}
               </p>
             ))}
             {teamBuildPreview.warnings.slice(0, 3).map((warning) => <p className="notice" key={warning}>{warning}</p>)}
@@ -5486,12 +5679,17 @@ export function AdminThemesClient({ initialData }: { initialData: AdminThemeData
 }
 
 interface RegistrationClientProps {
+  proofMetadata?: {
+    publicOrganizationFingerprint?: string;
+    reviewWindowConfigured: boolean;
+  };
   registrationRequests?: RegistrationRequest[];
   reviewWindow?: string;
   teamOptions?: RegistrationTeamOption[];
 }
 
 export function RegistrationClient({
+  proofMetadata,
   registrationRequests,
   reviewWindow = "within two business days",
   teamOptions
@@ -5536,7 +5734,11 @@ export function RegistrationClient({
   }
 
   return (
-    <div className="page">
+    <div
+      className="page"
+      data-public-organization-fingerprint={proofMetadata?.publicOrganizationFingerprint}
+      data-access-review-window-configured={proofMetadata ? String(proofMetadata.reviewWindowConfigured) : undefined}
+    >
       <section className="hero">
         <span className="eyebrow">Request Team Access</span>
         <h1>Connect your family to the right team.</h1>

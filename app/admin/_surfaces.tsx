@@ -2,6 +2,7 @@ import Link from "next/link";
 import { AdminAdditionalGuardianClient } from "@/components/additional-guardian-access";
 import { OfficialCommunicationWorkbench } from "@/components/official-communication-workbench";
 import { AdminSeasonTransitionReview } from "@/components/season-transition-review";
+import { TeamBuilderWorkbench } from "@/components/team-builder-workbench";
 import {
   AdminDeliveryReviewClient,
   GameDayResolutionRoomClient,
@@ -44,6 +45,7 @@ import { seedState } from "@/lib/domain";
 import { listAdminAdditionalGuardianData } from "@/lib/supabase/additional-guardians";
 import { listOfficialCommunicationReviewData } from "@/lib/supabase/official-communications";
 import { listAdminSeasonTransitions } from "@/lib/supabase/season-transitions";
+import { listTeamBuilderWorkbenchData } from "@/lib/supabase/team-builder-plans";
 
 export async function AdminAccessDeniedSurface({ message }: { message?: string } = {}) {
   return (
@@ -287,9 +289,15 @@ export function AdminOperationsView({ data }: { data: AdminOperationsData }) {
 export async function AdminTeamsSurface() {
   const pageAccess = await requireAdminPageAccess();
   if (!pageAccess.ok) return <AdminAccessDeniedSurface message={pageAccess.message} />;
-  const data = await listAdminTeamManagementData({
-    organizationIds: pageAccess.access.adminOrganizationIds
-  });
+  const [data, teamBuilderData] = await Promise.all([
+    listAdminTeamManagementData({
+      organizationIds: pageAccess.access.adminOrganizationIds
+    }),
+    listTeamBuilderWorkbenchData({
+      actorUserId: pageAccess.access.userId ?? "",
+      organizationIds: pageAccess.access.adminOrganizationIds
+    })
+  ]);
 
   return (
     <div className="page">
@@ -319,6 +327,7 @@ export async function AdminTeamsSurface() {
       </section>
 
       <AdminTeamManagementClient data={data} />
+      <TeamBuilderWorkbench initialData={teamBuilderData} />
     </div>
   );
 }

@@ -5,6 +5,8 @@ import { usePathname, useRouter } from "next/navigation";
 import { Bell, CalendarDays, Menu, MessageCircle, ShieldCheck } from "lucide-react";
 import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { AppStateProvider } from "@/app/providers";
+import { OfflineSyncStatus } from "@/components/offline-sync-status";
+import { clearPrivateGameDayData } from "@/lib/offline/game-day-outbox";
 import {
   getCommandEntries,
   getMobileNavEntries,
@@ -18,6 +20,7 @@ import {
   type RouteTopologyEntry
 } from "@/lib/navigation/route-topology";
 import { formatBadgeCount, getAttentionBadge } from "@/lib/navigation/shell-attention";
+import { createSupabaseBrowserClient } from "@/lib/supabase/browser";
 import { StatusBadge } from "./primitives";
 import { RouteIcon } from "./route-icons";
 
@@ -124,6 +127,8 @@ export function AppShell({ access = signedOutShellAccess, children }: { access?:
   const [isOffline, setIsOffline] = useState(false);
   const [sessionWarningVisible, setSessionWarningVisible] = useState(false);
   const [roleSwitchPending, setRoleSwitchPending] = useState<RouteTopologyEntry | null>(null);
+  const [signOutPending, setSignOutPending] = useState(false);
+  const [signOutError, setSignOutError] = useState("");
   const previousFocus = useRef<HTMLElement | null>(null);
   const commandDialogRef = useRef<HTMLDialogElement>(null);
   const commandInputRef = useRef<HTMLInputElement>(null);
@@ -228,6 +233,28 @@ export function AppShell({ access = signedOutShellAccess, children }: { access?:
       detail: { nextRole: item.role, nextHref: item.href }
     }));
     window.location.assign(item.href);
+  }
+
+  async function signOut() {
+    if (!access.userId || signOutPending) return;
+    setSignOutPending(true);
+    setSignOutError("");
+    try {
+      // The atomic owner clear increments every affected generation before it
+      // deletes records. A replay already in flight therefore cannot settle
+      // into a receipt or recreate private queue state after this resolves.
+      await clearPrivateGameDayData(access.userId);
+      window.dispatchEvent(new CustomEvent("leaguepilot:sign-out", {
+        detail: { actorId: access.userId }
+      }));
+      const supabase = createSupabaseBrowserClient();
+      const { error } = await supabase.auth.signOut();
+      if (error) throw error;
+      window.location.assign("/auth");
+    } catch {
+      setSignOutError("Sign-out could not safely clear private offline data. Try again before leaving this device.");
+      setSignOutPending(false);
+    }
   }
 
   if (!access.signedIn) {
@@ -442,6 +469,9 @@ export function AppShell({ access = signedOutShellAccess, children }: { access?:
                     <small>Access</small>
                     <strong>{activeContext.readOnly ? "Archived, read-only" : "Current access"}</strong>
                   </span>
+                  <button type="button" className="secondary" disabled={signOutPending} onClick={() => void signOut()}>
+                    {signOutPending ? "Signing out..." : "Sign out"}
+                  </button>
                 </div>
               ) : (
                 <div className="verified-context-bar context-unavailable" role="status">
@@ -451,6 +481,8 @@ export function AppShell({ access = signedOutShellAccess, children }: { access?:
             </>
           ) : null}
           {children}
+          <OfflineSyncStatus actorId={access.userId} contextKey={activeContext?.contextKey} />
+          {signOutError ? <p className="notice warning" role="alert">{signOutError}</p> : null}
         </main>
 
         {showMobileTabbar ? (
