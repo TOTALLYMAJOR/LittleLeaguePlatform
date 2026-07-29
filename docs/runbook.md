@@ -123,6 +123,20 @@ Passing this command proves local repository readiness proof only. It does not c
 
 Real sandbox email, SMS, and Web Push sends, provider dashboard setup, provider secrets, adult QA recipient approval, signed webhook endpoint registration, hosted worker execution, cost monitoring, and production-send approval remain open gates. Before any operator sends real sandbox traffic, document one adult-consented QA allowlist recipient per channel, a cost cap, monitoring owner, suppression rollback, and the rollback transport or kill-switch path.
 
+## Local Sponsor Stripe Readiness Proof
+
+Run the no-mutation source verifier before any LPM-009 Stripe sandbox, webhook, hosted-admin, reconciliation, refund/failure, or production payment proof:
+
+```bash
+npm run qa:sponsor-stripe-readiness
+```
+
+The verifier reads repository files only. It checks that sponsor billing records, invoice readiness, payment-proof state, placement, fulfillment, and public display remain separate; proof-only status and browser return messages do not claim Stripe settlement; one-time sponsor collection uses server-side Checkout Sessions when enabled; Stripe keys stay server-side; missing Stripe configuration fails closed; and signature-verified webhooks remain the only settlement truth. It also checks that docs prefer restricted API keys, separate environments, and that no Stripe secret or restricted key values are stored in source.
+
+Passing this command proves local repository readiness proof only. It does not call Stripe, Supabase, sign in, run Playwright, seed data, mutate hosted records, create Checkout Sessions, configure API keys or webhook secrets, register webhook endpoints, charge or refund payments, call provider dashboards, deploy, or claim sandbox, hosted, provider, finance, production payment, or production acceptance.
+
+The remaining open gates are Stripe sandbox account setup, restricted key creation, webhook endpoint registration, signing-secret configuration, sandbox Checkout Session proof, signed webhook replay/duplicate proof, refund/failure proof, hosted admin proof, finance reconciliation, and production payment approval. Keep restricted API keys in environment-specific server secret storage with separate environments for sandbox/preview/production. No Stripe secret or restricted key values are stored in source.
+
 ## Supabase QA Proof
 
 Use these checks after migrations are applied to a Supabase QA or preview project:

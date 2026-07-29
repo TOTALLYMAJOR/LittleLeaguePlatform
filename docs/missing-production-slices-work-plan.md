@@ -290,10 +290,15 @@ Acceptance criteria:
 - AC-006: Public and parent surfaces never expose billing state, child profiles, parent contacts, private media, or redemption proof.
 
 Validation:
+`qa:sponsor-stripe-readiness` is local repository readiness proof only. It reads repository files and checks the sponsor billing/payment boundary, server-side Checkout Session contract, server-only key handling, webhook settlement truth, admin/public privacy separation, and open payment gates. It does not call Stripe, Supabase, sign in, run Playwright, seed data, mutate hosted records, create Checkout Sessions, configure API keys or webhook secrets, register webhook endpoints, charge or refund payments, call provider dashboards, deploy, or claim sandbox, hosted, provider, finance, production payment, or production acceptance.
+
 Stripe sandbox tests, webhook tests, `npm test -- lib/supabase/sponsors.test.ts lib/supabase/sponsor-operations.test.ts app/api-live-actions.test.ts`, hosted proof if implemented.
 
 Out of scope:
 Production payment collection without sandbox/webhook proof and explicit go-live approval.
+
+Open gates:
+Stripe sandbox account setup, restricted key creation, webhook endpoint registration, signing-secret configuration, sandbox Checkout Session proof, signed webhook replay/duplicate proof, refund/failure proof, hosted admin proof, finance reconciliation, and production payment approval. Restricted API keys are preferred over broad secret keys, key access must use separate environments, and no Stripe secret or restricted key values are stored in source.
 
 ## LPM-010 - Sponsor Fulfillment Proof
 
