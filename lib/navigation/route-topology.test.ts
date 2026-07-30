@@ -1,12 +1,34 @@
 import { describe, expect, it } from "vitest";
 import {
   getCommandEntries,
+  getFamilyPrimaryNavEntries,
   getMobileNavEntries,
+  getProductShellFamily,
   getPrimaryNavEntries,
   getRouteEntry,
+  resolveNavigationRole,
   routeTopology,
-  type ClientShellAccess
+  type ClientShellAccess,
+  type ProductRole
 } from "./route-topology";
+
+function confirmedContext(role: ProductRole) {
+  return {
+    actorUserId: `user-${role}`,
+    role,
+    organizationId: "org-1",
+    organizationName: "LeaguePilot Demo League",
+    seasonId: "season-1",
+    seasonName: "Spring 2026",
+    teamId: role === "admin" ? undefined : `team-${role}`,
+    teamName: role === "admin" ? undefined : `${role} team`,
+    permittedTeamIds: role === "admin" ? ["team-parent", "team-coach"] : [`team-${role}`],
+    permittedPlayerIds: role === "parent" ? ["player-1"] : [],
+    contextKey: `${role}:org-1:season-1`,
+    archived: false,
+    readOnly: false
+  };
+}
 
 const signedOut: ClientShellAccess = {
   signedIn: false,
@@ -22,7 +44,8 @@ const parent: ClientShellAccess = {
   canParent: true,
   canCoach: false,
   canAdmin: false,
-  roleSwitchLinks: [{ href: "/parent", label: "Parent Home", role: "parent" }]
+  roleSwitchLinks: [{ href: "/parent", label: "Parent Home", role: "parent" }],
+  contexts: [confirmedContext("parent")]
 };
 
 const signedInPending: ClientShellAccess = {
@@ -40,7 +63,8 @@ const coach: ClientShellAccess = {
   canParent: false,
   canCoach: true,
   canAdmin: false,
-  roleSwitchLinks: [{ href: "/coach", label: "Coach Home", role: "coach" }]
+  roleSwitchLinks: [{ href: "/coach", label: "Coach Home", role: "coach" }],
+  contexts: [confirmedContext("coach")]
 };
 
 const coachWithAdmin: ClientShellAccess = {
@@ -52,7 +76,8 @@ const coachWithAdmin: ClientShellAccess = {
   roleSwitchLinks: [
     { href: "/coach", label: "Coach Home", role: "coach" },
     { href: "/admin", label: "Admin Overview", role: "admin" }
-  ]
+  ],
+  contexts: [confirmedContext("coach"), confirmedContext("admin")]
 };
 
 const admin: ClientShellAccess = {
@@ -61,7 +86,26 @@ const admin: ClientShellAccess = {
   canParent: false,
   canCoach: false,
   canAdmin: true,
-  roleSwitchLinks: [{ href: "/admin", label: "Admin Overview", role: "admin" }]
+  roleSwitchLinks: [{ href: "/admin", label: "Admin Overview", role: "admin" }],
+  contexts: [confirmedContext("admin")]
+};
+
+const multiRole: ClientShellAccess = {
+  signedIn: true,
+  userId: "user-multi-role",
+  canParent: true,
+  canCoach: true,
+  canAdmin: true,
+  roleSwitchLinks: [
+    { href: "/parent", label: "Parent Home", role: "parent" },
+    { href: "/coach", label: "Coach Home", role: "coach" },
+    { href: "/admin", label: "Admin Overview", role: "admin" }
+  ],
+  contexts: [
+    confirmedContext("parent"),
+    confirmedContext("coach"),
+    confirmedContext("admin")
+  ]
 };
 
 function hrefs(entries: Array<{ href: string }>) {
@@ -90,15 +134,19 @@ describe("route topology", () => {
     expect(nav).not.toContain("/admin");
   });
 
-  it("filters parent IA away from shared and compatibility routes", () => {
+  it("keeps the five primary family destinations separate from secondary and compatibility routes", () => {
     const nav = hrefs(getPrimaryNavEntries(parent, "/parent/schedule"));
     const command = hrefs(getCommandEntries(parent, "/parent/schedule"));
     const parentHome = getPrimaryNavEntries(parent, "/parent").find((entry) => entry.href === "/parent");
 
     expect(nav).toContain("/parent/schedule");
     expect(nav).toContain("/parent/messages");
+    expect(nav).toContain("/parent/family-access");
+    expect(nav).toContain("/parent/more");
     expect(parentHome?.label).toBe("Home");
     expect(command).toContain("/parent/practice-recaps");
+    expect(nav).not.toContain("/parent/rsvp");
+    expect(nav).not.toContain("/parent/settings");
     expect(nav).not.toContain("/schedule");
     expect(nav).not.toContain("/team-chat");
     expect(command).not.toContain("/prototype/index.html");
@@ -140,9 +188,16 @@ describe("route topology", () => {
     expect(hrefs(getMobileNavEntries(parent, "/parent"))).toEqual([
       "/parent",
       "/parent/schedule",
-      "/parent/rsvp",
       "/parent/messages",
-      "/parent/settings"
+      "/parent/family-access",
+      "/parent/more"
+    ]);
+    expect(hrefs(getFamilyPrimaryNavEntries(parent))).toEqual([
+      "/parent",
+      "/parent/schedule",
+      "/parent/messages",
+      "/parent/family-access",
+      "/parent/more"
     ]);
     expect(hrefs(getMobileNavEntries(coach, "/coach"))).toEqual([
       "/coach",
@@ -174,6 +229,81 @@ describe("route topology", () => {
     expect(teamPortal?.allowedRoles).toEqual(["parent", "coach", "admin"]);
     expect(teamChat?.requiresAuth).toBe(true);
     expect(teamChat?.allowedRoles).toEqual(["parent", "coach", "admin"]);
+  });
+
+  it.each(["/team-chat", "/team-portal", "/account", "/"])(
+    "retains Family navigation and shell context for a parent on %s",
+    (pathname) => {
+      const nav = hrefs(getPrimaryNavEntries(parent, pathname));
+      expect(nav).toContain("/parent");
+      expect(nav).toContain("/parent/messages");
+      expect(nav).not.toContain("/coach");
+      expect(resolveNavigationRole(parent, pathname)).toBe("parent");
+      if (pathname === "/") {
+        expect(getProductShellFamily(parent, pathname)).toBe("neutral");
+      } else {
+        expect(getProductShellFamily(parent, pathname)).toBe("family");
+      }
+    }
+  );
+
+  it("uses preserved role on shared routes but route-required staff roles take precedence", () => {
+    const parentContext = { preservedRole: "parent" as const };
+
+    expect(getProductShellFamily(multiRole, "/team-chat", parentContext)).toBe("family");
+    expect(hrefs(getPrimaryNavEntries(multiRole, "/team-chat", parentContext))).toContain("/parent/messages");
+
+    expect(resolveNavigationRole(multiRole, "/coach/messages", parentContext)).toBe("coach");
+    expect(getProductShellFamily(multiRole, "/coach/messages", parentContext)).toBe("staff");
+    expect(hrefs(getPrimaryNavEntries(multiRole, "/coach/messages", parentContext))).toContain("/coach/messages");
+    expect(hrefs(getPrimaryNavEntries(multiRole, "/coach/messages", parentContext))).not.toContain("/parent/messages");
+  });
+
+  it("falls back to a neutral shell when a shared route has ambiguous multi-role membership", () => {
+    expect(resolveNavigationRole(multiRole, "/account")).toBeUndefined();
+    expect(getProductShellFamily(multiRole, "/account")).toBe("neutral");
+  });
+
+  it("does not grant Family navigation from canParent without confirmed context", () => {
+    const capabilityOnly: ClientShellAccess = {
+      signedIn: true,
+      userId: "user-unresolved",
+      canParent: true,
+      canCoach: false,
+      canAdmin: false,
+      roleSwitchLinks: [{ href: "/parent", label: "Parent Home", role: "parent" }],
+      contexts: []
+    };
+
+    expect(resolveNavigationRole(capabilityOnly, "/parent")).toBeUndefined();
+    expect(getProductShellFamily(capabilityOnly, "/parent")).toBe("neutral");
+    expect(getFamilyPrimaryNavEntries(capabilityOnly)).toEqual([]);
+    expect(hrefs(getPrimaryNavEntries(capabilityOnly, "/parent"))).not.toContain("/parent");
+  });
+
+  it("classifies family, shared, support, public, and transition routes explicitly", () => {
+    const expected = {
+      "/parent": ["family", "family", "family", "home", false],
+      "/parent/setup": ["family", "family", "family", "family", false],
+      "/account": ["support", "active-role", "active-role", "more", false],
+      "/team-chat": ["shared", "active-role", "active-role", "messages", false],
+      "/team-portal": ["shared", "active-role", "active-role", "family", false],
+      "/": ["public", "neutral", "active-role", "home", false],
+      "/access/status": ["transition", "neutral", "none", undefined, true],
+      "/invite/accept": ["transition", "neutral", "none", undefined, true]
+    } as const;
+
+    for (const [href, values] of Object.entries(expected)) {
+      const entry = getRouteEntry(href);
+      expect(entry).toBeDefined();
+      expect([
+        entry?.surfaceFamily,
+        entry?.shellFamily,
+        entry?.primaryNavigationFamily,
+        entry?.familyMobileTab,
+        entry?.neutralTransition
+      ]).toEqual(values);
+    }
   });
 
   it("keeps caregiver acceptance public but caregiver event data signed-in only", () => {

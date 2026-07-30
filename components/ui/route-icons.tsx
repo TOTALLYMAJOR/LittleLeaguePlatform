@@ -11,6 +11,7 @@ import {
   ClipboardCheck,
   ClipboardList,
   CloudSun,
+  Ellipsis,
   FileUp,
   Handshake,
   HeartPulse,
@@ -54,6 +55,7 @@ const iconByHref: Record<string, LucideIcon> = {
   "/parent/family-access": ShieldCheck,
   "/parent/transportation": CarFront,
   "/parent/settings": Settings,
+  "/parent/more": Ellipsis,
 
   "/coach": LayoutDashboard,
   "/coach/schedule": CalendarDays,

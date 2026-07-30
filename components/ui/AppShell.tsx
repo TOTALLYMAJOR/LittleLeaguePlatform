@@ -2,25 +2,27 @@
 
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { Bell, CalendarDays, Menu, MessageCircle, ShieldCheck } from "lucide-react";
+import { Menu, ShieldCheck } from "lucide-react";
 import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { AppStateProvider } from "@/app/providers";
 import { OfflineSyncStatus } from "@/components/offline-sync-status";
-import { clearPrivateGameDayData } from "@/lib/offline/game-day-outbox";
 import {
   getCommandEntries,
+  getFamilyPrimaryNavEntries,
   getMobileNavEntries,
+  getProductShellFamily,
   getPrimaryNavEntries,
   getRouteEntry,
   getRouteParent,
+  resolveNavigationRole,
   canAccessRouteEntry,
-  isRouteActive,
+  isNavigationEntryActive,
   signedOutShellAccess,
   type ClientShellAccess,
+  type ProductRole,
   type RouteTopologyEntry
 } from "@/lib/navigation/route-topology";
 import { formatBadgeCount, getAttentionBadge } from "@/lib/navigation/shell-attention";
-import { createSupabaseBrowserClient } from "@/lib/supabase/browser";
 import { StatusBadge } from "./primitives";
 import { RouteIcon } from "./route-icons";
 
@@ -127,21 +129,39 @@ export function AppShell({ access = signedOutShellAccess, children }: { access?:
   const [isOffline, setIsOffline] = useState(false);
   const [sessionWarningVisible, setSessionWarningVisible] = useState(false);
   const [roleSwitchPending, setRoleSwitchPending] = useState<RouteTopologyEntry | null>(null);
-  const [signOutPending, setSignOutPending] = useState(false);
-  const [signOutError, setSignOutError] = useState("");
+  const [preservedRole, setPreservedRole] = useState<ProductRole>();
   const previousFocus = useRef<HTMLElement | null>(null);
   const commandDialogRef = useRef<HTMLDialogElement>(null);
   const commandInputRef = useRef<HTMLInputElement>(null);
-  const navItems = useMemo(() => getPrimaryNavEntries(access, pathname), [access, pathname]);
-  const commandItems = useMemo(() => getCommandEntries(access, pathname), [access, pathname]);
-  const activeMobileItems = useMemo(() => getMobileNavEntries(access, pathname), [access, pathname]);
+  const routeRole = getRouteEntry(pathname)?.role;
+  const explicitRouteRole = routeRole === "parent" || routeRole === "coach" || routeRole === "admin"
+    ? routeRole
+    : undefined;
+  const navigationContext = useMemo(
+    () => ({ preservedRole: explicitRouteRole ?? preservedRole }),
+    [explicitRouteRole, preservedRole]
+  );
+  const navItems = useMemo(
+    () => getPrimaryNavEntries(access, pathname, navigationContext),
+    [access, navigationContext, pathname]
+  );
+  const commandItems = useMemo(
+    () => getCommandEntries(access, pathname, navigationContext),
+    [access, navigationContext, pathname]
+  );
+  const activeMobileItems = useMemo(
+    () => getMobileNavEntries(access, pathname, navigationContext),
+    [access, navigationContext, pathname]
+  );
+  const familyNavItems = useMemo(() => getFamilyPrimaryNavEntries(access), [access]);
   const shellContext = useMemo(() => getShellContext(pathname, access), [access, pathname]);
-  const activeRouteRole = getRouteEntry(pathname)?.role;
-  const activeContext = access.contexts?.find((context) => context.role === activeRouteRole);
-  const usesParentWeeklyShell = pathname === "/parent" && access.canParent;
-  const usesImmersiveFamilyHeader = pathname === "/parent/messages" || usesParentWeeklyShell;
+  const activeProductRole = resolveNavigationRole(access, pathname, navigationContext);
+  const activeContext = access.contexts?.find((context) => context.role === activeProductRole);
+  const productShellFamily = getProductShellFamily(access, pathname, navigationContext);
+  const usesFamilyShell = productShellFamily === "family";
+  const usesImmersiveFamilyHeader = usesFamilyShell;
   const usesPublicGateway = pathname === "/";
-  const showMobileTabbar = access.signedIn && (access.canParent || access.canCoach || access.canAdmin) && activeMobileItems.length >= 3;
+  const showMobileTabbar = Boolean(activeProductRole) && activeMobileItems.length >= 3;
 
   const filteredNav = useMemo(() => {
     const query = commandQuery.trim().toLowerCase();
@@ -158,6 +178,24 @@ export function AppShell({ access = signedOutShellAccess, children }: { access?:
     });
     return () => window.cancelAnimationFrame(frame);
   }, []);
+
+  useEffect(() => {
+    if (!access.userId) return;
+    const roleStorageKey = `leaguepilot-shell-role:${access.userId}`;
+    if (explicitRouteRole) {
+      window.sessionStorage.setItem(roleStorageKey, explicitRouteRole);
+      return;
+    }
+    const frame = window.requestAnimationFrame(() => {
+      const storedRole = window.sessionStorage.getItem(roleStorageKey);
+      setPreservedRole(
+        storedRole === "parent" || storedRole === "coach" || storedRole === "admin"
+          ? storedRole
+          : undefined
+      );
+    });
+    return () => window.cancelAnimationFrame(frame);
+  }, [access.userId, explicitRouteRole]);
 
   useEffect(() => {
     if (!hasHydrated) return;
@@ -224,6 +262,9 @@ export function AppShell({ access = signedOutShellAccess, children }: { access?:
 
   function switchRole(item: RouteTopologyEntry) {
     setRoleSwitchPending(item);
+    if (access.userId && (item.role === "parent" || item.role === "coach" || item.role === "admin")) {
+      window.sessionStorage.setItem(`leaguepilot-shell-role:${access.userId}`, item.role);
+    }
     setCommandOpen(false);
     setCommandQuery("");
     for (const key of Object.keys(window.sessionStorage)) {
@@ -233,28 +274,6 @@ export function AppShell({ access = signedOutShellAccess, children }: { access?:
       detail: { nextRole: item.role, nextHref: item.href }
     }));
     window.location.assign(item.href);
-  }
-
-  async function signOut() {
-    if (!access.userId || signOutPending) return;
-    setSignOutPending(true);
-    setSignOutError("");
-    try {
-      // The atomic owner clear increments every affected generation before it
-      // deletes records. A replay already in flight therefore cannot settle
-      // into a receipt or recreate private queue state after this resolves.
-      await clearPrivateGameDayData(access.userId);
-      window.dispatchEvent(new CustomEvent("leaguepilot:sign-out", {
-        detail: { actorId: access.userId }
-      }));
-      const supabase = createSupabaseBrowserClient();
-      const { error } = await supabase.auth.signOut();
-      if (error) throw error;
-      window.location.assign("/auth");
-    } catch {
-      setSignOutError("Sign-out could not safely clear private offline data. Try again before leaving this device.");
-      setSignOutPending(false);
-    }
   }
 
   if (!access.signedIn) {
@@ -298,10 +317,14 @@ export function AppShell({ access = signedOutShellAccess, children }: { access?:
           You are offline. Current team details may be unavailable until the connection returns.
         </div>
       ) : null}
-      <div className={usesParentWeeklyShell
+      <div
+        data-product-shell={usesFamilyShell ? "family" : productShellFamily}
+        data-surface-family={usesFamilyShell ? "family" : undefined}
+        className={usesFamilyShell
         ? "parent-weekly-app-shell"
-        : `shell app-shell${collapsed ? " sidebar-collapsed" : ""}`}>
-        {usesParentWeeklyShell ? (
+        : `shell app-shell${collapsed ? " sidebar-collapsed" : ""}`}
+      >
+        {usesFamilyShell ? (
           <header className="parent-weekly-header">
             <div className="parent-weekly-header-inner">
               <Link href="/parent" className="parent-weekly-brand" aria-label="LeaguePilot family home">
@@ -312,40 +335,28 @@ export function AppShell({ access = signedOutShellAccess, children }: { access?:
                 </span>
               </Link>
               <nav className="parent-weekly-header-nav" aria-label="Family shortcuts">
-                <Link
-                  href="/parent/schedule"
-                  aria-label="Open family schedule"
-                  aria-current={isRouteActive(pathname, "/parent/schedule") ? "page" : undefined}
-                  data-active={isRouteActive(pathname, "/parent/schedule") ? "true" : undefined}
-                >
-                  <CalendarDays aria-hidden="true" size={20} />
-                  <span>Schedule</span>
-                </Link>
-                <Link
-                  href="/parent/messages"
-                  aria-label={getAttentionBadge(access.attentionBadges, "/parent/messages")
-                    ? `Open family messages, ${getAttentionBadge(access.attentionBadges, "/parent/messages")?.label}`
-                    : "Open family messages"}
-                  aria-current={isRouteActive(pathname, "/parent/messages") ? "page" : undefined}
-                  data-active={isRouteActive(pathname, "/parent/messages") ? "true" : undefined}
-                >
-                  <MessageCircle aria-hidden="true" size={20} />
-                  <span>Messages</span>
-                  {getAttentionBadge(access.attentionBadges, "/parent/messages") ? (
-                    <span className="parent-weekly-nav-attention" aria-hidden="true">
-                      {formatBadgeCount(getAttentionBadge(access.attentionBadges, "/parent/messages")!.count)}
-                    </span>
-                  ) : null}
-                </Link>
-                <Link
-                  href="/account"
-                  aria-label="Open account and notification settings"
-                  aria-current={isRouteActive(pathname, "/account") ? "page" : undefined}
-                  data-active={isRouteActive(pathname, "/account") ? "true" : undefined}
-                >
-                  <Bell aria-hidden="true" size={20} />
-                  <span>Account</span>
-                </Link>
+                {familyNavItems.map((item) => {
+                  const active = isNavigationEntryActive(pathname, item);
+                  const attention = getAttentionBadge(access.attentionBadges, item.href);
+                  return (
+                    <Link
+                      className="family-primary-link"
+                      key={item.href}
+                      href={item.href}
+                      aria-label={attention ? `${item.label}, ${attention.label}` : item.label}
+                      aria-current={active ? "page" : undefined}
+                      data-active={active ? "true" : undefined}
+                    >
+                      <RouteIcon href={item.href} short={item.short} role={item.role} size={20} />
+                      <span>{item.label}</span>
+                      {attention ? (
+                        <span className="parent-weekly-nav-attention" aria-hidden="true">
+                          {formatBadgeCount(attention.count)}
+                        </span>
+                      ) : null}
+                    </Link>
+                  );
+                })}
                 <button
                   type="button"
                   aria-label="Open all LeaguePilot pages"
@@ -360,6 +371,20 @@ export function AppShell({ access = signedOutShellAccess, children }: { access?:
                 </Link>
               </nav>
             </div>
+            {activeContext ? (
+              <div className="family-shell-context" aria-label="Verified family context" tabIndex={0}>
+                <span><small>Role</small><strong>Parent</strong></span>
+                <span><small>Organization</small><strong>{activeContext.organizationName}</strong></span>
+                <span><small>Season</small><strong>{activeContext.seasonName}</strong></span>
+                <span><small>Team</small><strong>{activeContext.teamName ?? "Family teams"}</strong></span>
+                <span><small>Family</small><strong>{activeContext.permittedPlayerIds.length} linked {activeContext.permittedPlayerIds.length === 1 ? "player" : "players"}</strong></span>
+                <span><small>Access</small><strong>{activeContext.readOnly ? "Archived, read-only" : "Current access"}</strong></span>
+              </div>
+            ) : (
+              <div className="family-shell-context family-shell-context-unavailable" role="status">
+                Private team details stay hidden until parent access is confirmed.
+              </div>
+            )}
           </header>
         ) : (
         <aside className="sidebar app-sidebar" aria-label="Primary">
@@ -405,7 +430,7 @@ export function AppShell({ access = signedOutShellAccess, children }: { access?:
                 <div className="nav-group" key={group}>
                   <small className="nav-section">{group}</small>
                   {items.map((item) => {
-                    const active = isRouteActive(pathname, item.href);
+                    const active = isNavigationEntryActive(pathname, item);
                     const attention = getAttentionBadge(access.attentionBadges, item.href);
                     return (
                       <Link
@@ -440,7 +465,7 @@ export function AppShell({ access = signedOutShellAccess, children }: { access?:
 
         <main
           id="main-content"
-          className={usesParentWeeklyShell
+          className={usesFamilyShell
             ? "main parent-weekly-main"
             : `main${usesImmersiveFamilyHeader ? " immersive-family-main" : ""}`}
         >
@@ -469,9 +494,6 @@ export function AppShell({ access = signedOutShellAccess, children }: { access?:
                     <small>Access</small>
                     <strong>{activeContext.readOnly ? "Archived, read-only" : "Current access"}</strong>
                   </span>
-                  <button type="button" className="secondary" disabled={signOutPending} onClick={() => void signOut()}>
-                    {signOutPending ? "Signing out..." : "Sign out"}
-                  </button>
                 </div>
               ) : (
                 <div className="verified-context-bar context-unavailable" role="status">
@@ -482,13 +504,12 @@ export function AppShell({ access = signedOutShellAccess, children }: { access?:
           ) : null}
           {children}
           <OfflineSyncStatus actorId={access.userId} contextKey={activeContext?.contextKey} />
-          {signOutError ? <p className="notice warning" role="alert">{signOutError}</p> : null}
         </main>
 
         {showMobileTabbar ? (
           <nav className="mobile-tabbar" aria-label="Mobile navigation">
             {activeMobileItems.map((item) => {
-              const active = isRouteActive(pathname, item.href);
+              const active = isNavigationEntryActive(pathname, item);
               const attention = getAttentionBadge(access.attentionBadges, item.href);
               return (
                 <Link key={item.href} href={item.href} aria-current={active ? "page" : undefined} data-active={active ? "true" : undefined}>

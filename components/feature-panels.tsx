@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState, useTransition, type CSSProperties, type C
 import { markLeaguePilotValueExperienced, useAppState } from "@/app/providers";
 import {
   captureOfflineOwnerGeneration,
+  clearPrivateGameDayData,
   queueOfflineGameDayAction,
   syncContextOutbox,
   type OfflineGameDayAction,
@@ -1241,6 +1242,8 @@ export function AccountClient() {
   const [memberships, setMemberships] = useState<AccountMembership[]>([]);
   const [organizationMemberships, setOrganizationMemberships] = useState<AccountOrganizationMembership[]>([]);
   const [message, setMessage] = useState("Checking your account...");
+  const [signOutPending, setSignOutPending] = useState(false);
+  const [signOutError, setSignOutError] = useState("");
 
   useEffect(() => {
     let cancelled = false;
@@ -1303,6 +1306,30 @@ export function AccountClient() {
     };
   }, []);
 
+  async function signOut() {
+    if (signOutPending) return;
+    setSignOutPending(true);
+    setSignOutError("");
+    try {
+      const supabase = createSupabaseBrowserClient();
+      const { data, error: userError } = await supabase.auth.getUser();
+      if (userError || !data.user) throw userError ?? new Error("No active user.");
+
+      // Clearing increments every owner generation before records are deleted,
+      // so an in-flight replay cannot recreate private state after sign-out.
+      await clearPrivateGameDayData(data.user.id);
+      window.dispatchEvent(new CustomEvent("leaguepilot:sign-out", {
+        detail: { actorId: data.user.id }
+      }));
+      const { error } = await supabase.auth.signOut();
+      if (error) throw error;
+      window.location.assign("/auth");
+    } catch {
+      setSignOutError("Sign-out could not safely clear private offline data. Try again before leaving this device.");
+      setSignOutPending(false);
+    }
+  }
+
   return (
     <div className="page">
       <section className="hero">
@@ -1347,6 +1374,17 @@ export function AccountClient() {
           ))}
           {memberships.length === 0 ? <p className="muted">No active team memberships yet.</p> : null}
         </article>
+      </section>
+
+      <section className="card stack account-security-actions" aria-labelledby="account-security-title">
+        <div>
+          <h2 id="account-security-title">Account security</h2>
+          <p className="muted">Sign out clears private offline actions and sync receipts from this browser before the session closes.</p>
+        </div>
+        <button type="button" className="secondary" disabled={signOutPending} onClick={() => void signOut()}>
+          {signOutPending ? "Signing out..." : "Sign out"}
+        </button>
+        {signOutError ? <p className="notice warning" role="alert">{signOutError}</p> : null}
       </section>
     </div>
   );

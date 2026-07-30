@@ -8,6 +8,11 @@ export type RouteLifecycle =
   | "deprecated-hidden";
 
 export type AllowedRouteRole = "signed_out" | "signed_in" | "parent" | "coach" | "admin";
+export type ProductRole = Extract<AllowedRouteRole, "parent" | "coach" | "admin">;
+export type SurfaceFamily = "public" | "family" | "staff" | "shared" | "support" | "transition" | "prototype";
+export type ShellFamily = "public" | "family" | "staff" | "neutral" | "active-role";
+export type PrimaryNavigationFamily = "public" | "family" | "coach" | "admin" | "active-role" | "none";
+export type FamilyMobileTab = "home" | "schedule" | "messages" | "family" | "more";
 export type RouteNavigationGroup =
   | "Family"
   | "Command"
@@ -42,6 +47,11 @@ export interface RouteTopologyEntry {
   requiresAuth: boolean;
   requiresActiveAdmin?: boolean;
   noindex?: boolean;
+  surfaceFamily: SurfaceFamily;
+  shellFamily: ShellFamily;
+  primaryNavigationFamily: PrimaryNavigationFamily;
+  familyMobileTab?: FamilyMobileTab;
+  neutralTransition: boolean;
 }
 
 export interface RoleSwitchLink {
@@ -61,6 +71,11 @@ export interface ClientShellAccess {
   attentionBadges?: import("@/lib/navigation/shell-attention").ShellAttentionBadge[];
 }
 
+export interface NavigationRoleContext {
+  currentRole?: ProductRole;
+  preservedRole?: ProductRole;
+}
+
 export const signedOutShellAccess: ClientShellAccess = {
   signedIn: false,
   canParent: false,
@@ -70,27 +85,71 @@ export const signedOutShellAccess: ClientShellAccess = {
 };
 
 export const routeTopology = [
-  route("/", "Home", "HM", "public", "Family", ["signed_out", "signed_in"], false, false, false, false, 1),
+  route("/", "Home", "HM", "public", "Family", ["signed_out", "signed_in"], false, false, false, false, 1, false, {
+    shellFamily: "neutral",
+    primaryNavigationFamily: "active-role",
+    familyMobileTab: "home"
+  }),
   route("/registration", "Sign up", "SU", "public", "League Ops", ["signed_out", "signed_in"], true, true, true, false),
   route("/schedule", "Calendar", "CL", "public", "Family", ["signed_out", "signed_in"], true, true, true, false, 3),
   route("/sponsors", "Sponsors", "SP", "public", "Business", ["signed_out", "signed_in"], false, false, true, false),
   route("/auth", "Sign in", "AU", "support", "Support", ["signed_out"], true, true, true, false, 4),
-  route("/account", "Account", "AC", "support", "Support", ["signed_in"], true, true, true, true, 5),
+  route("/account", "Account", "AC", "support", "Support", ["signed_in"], true, true, true, true, 5, false, {
+    shellFamily: "active-role",
+    primaryNavigationFamily: "active-role",
+    familyMobileTab: "more"
+  }),
+  route("/access/status", "Access Status", "AS", "support", "Support", ["signed_out", "signed_in"], false, false, true, false, undefined, false, {
+    surfaceFamily: "transition",
+    shellFamily: "neutral",
+    primaryNavigationFamily: "none",
+    neutralTransition: true
+  }),
+  route("/invite/accept", "Accept Invite", "AI", "support", "Support", ["signed_out", "signed_in"], false, false, false, false, undefined, false, {
+    surfaceFamily: "transition",
+    shellFamily: "neutral",
+    primaryNavigationFamily: "none",
+    neutralTransition: true
+  }),
   route("/invite/recover", "Recover Invite", "RI", "support", "Support", ["signed_in"], false, false, true, true),
   route("/invite/expired", "Expired Invite", "EX", "support", "Support", ["signed_out", "parent", "coach", "admin"], false, false, false, false),
   route("/caregiver/accept", "Accept temporary care", "TC", "support", "Support", ["signed_out", "signed_in"], false, false, false, false),
   route("/caregiver", "Temporary caregiver", "TC", "support", "Support", ["signed_in"], false, false, false, true),
   route("/offline", "Offline", "OF", "support", "Support", ["signed_out", "parent", "coach", "admin"], false, false, false, false),
 
-  route("/parent", "Home", "HM", "parent", "Family", ["parent"], true, true, true, true, 1),
-  route("/parent/schedule", "Schedule", "SC", "parent", "Family", ["parent"], true, true, true, true, 2),
-  route("/parent/rsvp", "RSVP", "RS", "parent", "Family", ["parent"], true, true, true, true, 3),
-  route("/parent/messages", "Messages", "MS", "parent", "Family", ["parent"], true, true, true, true, 4),
-  route("/parent/photos", "Photos", "PH", "parent", "Family", ["parent"], true, true, true, true, 5),
-  route("/parent/practice-recaps", "Practice Recaps", "PR", "parent", "Family", ["parent"], true, true, true, true),
-  route("/parent/family-access", "Family Access", "FA", "parent", "Family", ["parent"], true, true, true, true),
-  route("/parent/transportation", "Transportation", "TR", "parent", "Family", ["parent"], true, true, true, true),
-  route("/parent/settings", "Settings", "ST", "parent", "Family", ["parent"], true, true, true, true),
+  route("/parent", "Home", "HM", "parent", "Family", ["parent"], true, true, true, true, 1, false, {
+    familyMobileTab: "home"
+  }),
+  route("/parent/schedule", "Schedule", "SC", "parent", "Family", ["parent"], true, true, true, true, 2, false, {
+    familyMobileTab: "schedule"
+  }),
+  route("/parent/rsvp", "RSVP", "RS", "parent", "Family", ["parent"], false, true, true, true, undefined, false, {
+    familyMobileTab: "schedule"
+  }),
+  route("/parent/messages", "Messages", "MS", "parent", "Family", ["parent"], true, true, true, true, 3, false, {
+    familyMobileTab: "messages"
+  }),
+  route("/parent/photos", "Photos", "PH", "parent", "Family", ["parent"], false, true, true, true, undefined, false, {
+    familyMobileTab: "more"
+  }),
+  route("/parent/practice-recaps", "Practice Replays", "PR", "parent", "Family", ["parent"], false, true, true, true, undefined, false, {
+    familyMobileTab: "more"
+  }),
+  route("/parent/family-access", "Family", "FA", "parent", "Family", ["parent"], true, true, true, true, 4, false, {
+    familyMobileTab: "family"
+  }),
+  route("/parent/transportation", "Transportation", "TR", "parent", "Family", ["parent"], false, true, true, true, undefined, false, {
+    familyMobileTab: "more"
+  }),
+  route("/parent/settings", "Settings", "ST", "parent", "Family", ["parent"], false, true, true, true, undefined, false, {
+    familyMobileTab: "more"
+  }),
+  route("/parent/more", "More", "MO", "parent", "Family", ["parent"], true, true, true, true, 5, false, {
+    familyMobileTab: "more"
+  }),
+  route("/parent/setup", "Family Setup", "FS", "parent", "Family", ["parent"], false, false, true, true, undefined, false, {
+    familyMobileTab: "family"
+  }),
 
   route("/coach", "Home", "HM", "coach", "Command", ["coach"], true, true, true, true, 1),
   route("/coach/schedule", "Schedule", "SC", "coach", "Calendar", ["coach"], true, true, true, true, 2),
@@ -144,7 +203,11 @@ export const routeTopology = [
     commandVisible: false,
     searchable: false,
     requiresAuth: false,
-    noindex: true
+    noindex: true,
+    surfaceFamily: "prototype",
+    shellFamily: "neutral",
+    primaryNavigationFamily: "none",
+    neutralTransition: false
   }
 ] as const satisfies RouteTopologyEntry[];
 
@@ -160,8 +223,13 @@ function route(
   searchable: boolean,
   requiresAuth: boolean,
   mobilePriority?: number,
-  requiresActiveAdmin = false
+  requiresActiveAdmin = false,
+  metadata: Partial<Pick<
+    RouteTopologyEntry,
+    "surfaceFamily" | "shellFamily" | "primaryNavigationFamily" | "familyMobileTab" | "neutralTransition"
+  >> = {}
 ): RouteTopologyEntry {
+  const defaults = routeMetadataForRole(role);
   return {
     href,
     label,
@@ -175,7 +243,9 @@ function route(
     searchable,
     mobilePriority,
     requiresAuth,
-    requiresActiveAdmin
+    requiresActiveAdmin,
+    ...defaults,
+    ...metadata
   };
 }
 
@@ -201,7 +271,8 @@ function compatibility(
     navVisible: false,
     commandVisible: false,
     searchable: false,
-    requiresAuth
+    requiresAuth,
+    ...routeMetadataForRole(role)
   };
 }
 
@@ -218,7 +289,48 @@ function shared(href: string, label: string, short: string, canonicalHref: strin
     navVisible: false,
     commandVisible: false,
     searchable: false,
-    requiresAuth: true
+    requiresAuth: true,
+    surfaceFamily: "shared",
+    shellFamily: "active-role",
+    primaryNavigationFamily: "active-role",
+    familyMobileTab: canonicalHref === "/parent/messages" ? "messages" : "family",
+    neutralTransition: false
+  };
+}
+
+function routeMetadataForRole(role: RouteRole): Pick<
+  RouteTopologyEntry,
+  "surfaceFamily" | "shellFamily" | "primaryNavigationFamily" | "neutralTransition"
+> {
+  if (role === "parent") {
+    return {
+      surfaceFamily: "family",
+      shellFamily: "family",
+      primaryNavigationFamily: "family",
+      neutralTransition: false
+    };
+  }
+  if (role === "coach" || role === "admin") {
+    return {
+      surfaceFamily: "staff",
+      shellFamily: "staff",
+      primaryNavigationFamily: role,
+      neutralTransition: false
+    };
+  }
+  if (role === "public") {
+    return {
+      surfaceFamily: "public",
+      shellFamily: "public",
+      primaryNavigationFamily: "public",
+      neutralTransition: false
+    };
+  }
+  return {
+    surfaceFamily: role === "prototype" ? "prototype" : "support",
+    shellFamily: "neutral",
+    primaryNavigationFamily: role === "support" ? "public" : "none",
+    neutralTransition: false
   };
 }
 
@@ -242,7 +354,20 @@ export function getRouteParent(pathname: string): string {
 
 export function isRouteActive(pathname: string, href: string) {
   if (href === "/") return pathname === "/";
+  if (href === "/parent" || href === "/coach" || href === "/admin") return pathname === href;
   return pathname === href || pathname.startsWith(`${href}/`);
+}
+
+export function isNavigationEntryActive(pathname: string, entry: RouteTopologyEntry) {
+  const activeEntry = getRouteEntry(pathname);
+  if (
+    entry.familyMobileTab &&
+    activeEntry?.familyMobileTab &&
+    entry.role === "parent"
+  ) {
+    return entry.familyMobileTab === activeEntry.familyMobileTab;
+  }
+  return isRouteActive(pathname, entry.href);
 }
 
 export function canAccessRouteEntry(entry: RouteTopologyEntry, access: ClientShellAccess): boolean {
@@ -258,44 +383,62 @@ export function canAccessRouteEntry(entry: RouteTopologyEntry, access: ClientShe
   return !entry.requiresActiveAdmin || access.canAdmin;
 }
 
-export function getPrimaryNavEntries(access: ClientShellAccess, pathname: string): RouteTopologyEntry[] {
-  const activeRole = getActiveRouteRole(pathname);
-  const role = activeRole === "shared" || activeRole === "prototype" ? "public" : activeRole;
+export function getPrimaryNavEntries(
+  access: ClientShellAccess,
+  pathname: string,
+  context: NavigationRoleContext = {}
+): RouteTopologyEntry[] {
+  const entry = getRouteEntry(pathname);
+  const role = resolvePrimaryNavigationRole(access, entry, context);
   const roleEntries = routeTopology.filter((entry) => (
     entry.lifecycle === "primary" &&
     entry.navVisible &&
     canAccessRouteEntry(entry, access) &&
-    (entry.role === role || entry.role === "support" || (role === "public" && entry.role === "public"))
+    (
+      entry.role === role ||
+      entry.role === "support" ||
+      (role === "public" && entry.role === "public")
+    )
   ));
 
-  const switchEntries = getRoleSwitchEntries(access, role);
+  const switchEntries = getRoleSwitchEntries(access, role ?? "public");
   return [...roleEntries, ...switchEntries];
 }
 
-export function getCommandEntries(access: ClientShellAccess, pathname: string): RouteTopologyEntry[] {
-  const activeRole = getActiveRouteRole(pathname);
-  const role = activeRole === "shared" || activeRole === "prototype" ? "public" : activeRole;
+export function getCommandEntries(
+  access: ClientShellAccess,
+  pathname: string,
+  context: NavigationRoleContext = {}
+): RouteTopologyEntry[] {
+  const role = resolvePrimaryNavigationRole(access, getRouteEntry(pathname), context);
   return routeTopology
     .filter((entry) => (
       entry.lifecycle === "primary" &&
       entry.commandVisible &&
       entry.searchable &&
       canAccessRouteEntry(entry, access) &&
-      (entry.role === role || entry.role === "support" || entry.role === "public" || isRoleHomeSwitch(entry, access, role))
+      (
+        entry.role === role ||
+        entry.role === "support" ||
+        entry.role === "public" ||
+        isRoleHomeSwitch(entry, access, role ?? "public")
+      )
     ));
 }
 
-export function getMobileNavEntries(access: ClientShellAccess, pathname: string): RouteTopologyEntry[] {
-  const activeRole = getActiveRouteRole(pathname);
-  const role = activeRole === "shared" || activeRole === "prototype" ? "public" : activeRole;
+export function getMobileNavEntries(
+  access: ClientShellAccess,
+  pathname: string,
+  context: NavigationRoleContext = {}
+): RouteTopologyEntry[] {
+  const role = resolvePrimaryNavigationRole(access, getRouteEntry(pathname), context);
+  if (role === "parent") return getFamilyPrimaryNavEntries(access);
+
   const roleMobileHrefs: Partial<Record<RouteRole, string[]>> = {
-    parent: ["/parent", "/parent/schedule", "/parent/rsvp", "/parent/messages", "/parent/settings"],
     coach: ["/coach", "/coach/attendance", "/coach/practice-recaps", "/coach/messages", "/coach/roster"],
     admin: ["/admin", "/admin/registrations", "/admin/teams", "/admin/message-delivery-review", "/admin/security-audit"]
   };
   const roleMobileLabels: Record<string, string> = {
-    "/parent": "Today",
-    "/parent/settings": "More",
     "/coach": "Today",
     "/coach/attendance": "RSVPs",
     "/coach/practice-recaps": "Replay",
@@ -304,7 +447,7 @@ export function getMobileNavEntries(access: ClientShellAccess, pathname: string)
     "/admin/message-delivery-review": "Providers",
     "/admin/security-audit": "Security"
   };
-  const preferredHrefs = roleMobileHrefs[role];
+  const preferredHrefs = role ? roleMobileHrefs[role] : undefined;
   if (preferredHrefs) {
     return preferredHrefs
       .map((href) => routeTopology.find((entry) => entry.href === href))
@@ -314,7 +457,7 @@ export function getMobileNavEntries(access: ClientShellAccess, pathname: string)
         label: roleMobileLabels[entry.href] ?? entry.label
       }));
   }
-  const primaryEntries = getPrimaryNavEntries(access, pathname);
+  const primaryEntries = getPrimaryNavEntries(access, pathname, context);
   const roleEntries = primaryEntries.filter((entry) => (
     entry.role === role ||
     (role === "public" && (entry.role === "public" || entry.role === "support"))
@@ -327,9 +470,86 @@ export function getMobileNavEntries(access: ClientShellAccess, pathname: string)
     .slice(0, 5);
 }
 
+export function getFamilyPrimaryNavEntries(access: ClientShellAccess): RouteTopologyEntry[] {
+  if (!hasConfirmedRole(access, "parent")) return [];
+  const order: FamilyMobileTab[] = ["home", "schedule", "messages", "family", "more"];
+  return order
+    .map((placement) => routeTopology.find((entry) => (
+      entry.role === "parent" &&
+      entry.navVisible &&
+      entry.familyMobileTab === placement
+    )))
+    .filter((entry): entry is RouteTopologyEntry => Boolean(entry && canAccessRouteEntry(entry, access)));
+}
+
+export function resolveNavigationRole(
+  access: ClientShellAccess,
+  pathname: string,
+  context: NavigationRoleContext = {}
+): ProductRole | undefined {
+  const entry = getRouteEntry(pathname);
+  const requiredRole = routeRequiredRole(entry);
+  if (requiredRole) return hasConfirmedRole(access, requiredRole) ? requiredRole : undefined;
+
+  if (context.currentRole && hasConfirmedRole(access, context.currentRole)) return context.currentRole;
+  if (context.preservedRole && hasConfirmedRole(access, context.preservedRole)) return context.preservedRole;
+
+  const confirmedRoles = (["parent", "coach", "admin"] as const).filter((role) => hasConfirmedRole(access, role));
+  return confirmedRoles.length === 1 ? confirmedRoles[0] : undefined;
+}
+
+export function getProductShellFamily(
+  access: ClientShellAccess,
+  pathname: string,
+  context: NavigationRoleContext = {}
+): Exclude<ShellFamily, "active-role"> {
+  const entry = getRouteEntry(pathname);
+  const shellFamily = entry?.shellFamily ?? "neutral";
+  if (!access.signedIn) return shellFamily === "public" ? "public" : "neutral";
+  if (shellFamily === "family") return hasConfirmedRole(access, "parent") ? "family" : "neutral";
+  if (shellFamily === "staff") {
+    const requiredRole = routeRequiredRole(entry);
+    return requiredRole && hasConfirmedRole(access, requiredRole) ? "staff" : "neutral";
+  }
+  if (shellFamily !== "active-role") return shellFamily;
+
+  const activeRole = resolveNavigationRole(access, pathname, context);
+  if (activeRole === "parent") return "family";
+  if (activeRole === "coach" || activeRole === "admin") return "staff";
+  return "neutral";
+}
+
+function resolvePrimaryNavigationRole(
+  access: ClientShellAccess,
+  entry: RouteTopologyEntry | undefined,
+  context: NavigationRoleContext
+): ProductRole | "public" | undefined {
+  const family = entry?.primaryNavigationFamily ?? "public";
+  if (family === "family") return hasConfirmedRole(access, "parent") ? "parent" : undefined;
+  if (family === "coach" || family === "admin") return hasConfirmedRole(access, family) ? family : undefined;
+  if (family === "active-role") return resolveNavigationRole(access, entry?.href ?? "/", context) ?? "public";
+  if (family === "none") return undefined;
+  return "public";
+}
+
+function routeRequiredRole(entry: RouteTopologyEntry | undefined): ProductRole | undefined {
+  return entry?.role === "parent" || entry?.role === "coach" || entry?.role === "admin"
+    ? entry.role
+    : undefined;
+}
+
+function hasConfirmedRole(access: ClientShellAccess, role: ProductRole) {
+  const capability = role === "parent"
+    ? access.canParent
+    : role === "coach"
+      ? access.canCoach
+      : access.canAdmin;
+  return capability && Boolean(access.contexts?.some((context) => context.role === role));
+}
+
 function getRoleSwitchEntries(access: ClientShellAccess, activeRole: RouteRole): RouteTopologyEntry[] {
   return access.roleSwitchLinks
-    .filter((link) => link.role !== activeRole)
+    .filter((link) => link.role !== activeRole && hasConfirmedRole(access, link.role))
     .map((link) => ({
       href: link.href,
       label: link.label,
@@ -342,11 +562,16 @@ function getRoleSwitchEntries(access: ClientShellAccess, activeRole: RouteRole):
       commandVisible: true,
       searchable: true,
       requiresAuth: true,
-      requiresActiveAdmin: link.role === "admin"
+      requiresActiveAdmin: link.role === "admin",
+      ...routeMetadataForRole(link.role)
     }));
 }
 
 function isRoleHomeSwitch(entry: RouteTopologyEntry, access: ClientShellAccess, activeRole: RouteRole) {
   if (entry.role === activeRole) return true;
-  return access.roleSwitchLinks.some((link) => link.href === entry.href && link.role !== activeRole);
+  return access.roleSwitchLinks.some((link) => (
+    link.href === entry.href &&
+    link.role !== activeRole &&
+    hasConfirmedRole(access, link.role)
+  ));
 }

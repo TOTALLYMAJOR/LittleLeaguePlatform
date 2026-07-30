@@ -40,6 +40,7 @@ const appRoutes = [
   "/parent",
   "/parent/family-access",
   "/parent/messages",
+  "/parent/more",
   "/parent/photos",
   "/parent/practice-recaps",
   "/parent/schedule",
