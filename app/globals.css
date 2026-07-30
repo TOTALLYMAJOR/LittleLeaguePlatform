@@ -54,6 +54,8 @@
   --warning-soft: #fff3c4;
   --danger:       #b42318;
   --danger-soft:  #fee4e2;
+  --status-changed:      #4c4ddc;
+  --status-changed-soft: #ececff;
 
   /* — Team colours (overridden per-team via inline style) — */
   --team-primary:   #1570ef;
@@ -9751,15 +9753,13 @@ caption {
   text-decoration: none;
 }
 
-.parent-rsvp-glow {
+.parent-rsvp-action {
   align-items: center;
-  background: #22c55e;
-  border: 1px solid #16a34a;
+  background: var(--action);
+  border: 1px solid var(--action-strong);
   border-radius: 8px;
-  box-shadow:
-    0 0 0 3px rgba(34, 197, 94, .18),
-    0 8px 22px rgba(22, 163, 74, .3);
-  color: #052e16;
+  box-shadow: var(--shadow-sm);
+  color: #fff;
   display: inline-flex;
   font-size: .78rem;
   font-weight: 950;
@@ -9909,16 +9909,14 @@ caption {
   }
 }
 
-.parent-rsvp-glow:hover,
-.parent-rsvp-glow:focus-visible {
-  background: #4ade80;
-  box-shadow:
-    0 0 0 4px rgba(34, 197, 94, .24),
-    0 10px 28px rgba(22, 163, 74, .38);
-  color: #052e16;
+.parent-rsvp-action:hover,
+.parent-rsvp-action:focus-visible {
+  background: var(--action-strong);
+  box-shadow: var(--shadow);
+  color: #fff;
 }
 
-.parent-rsvp-glow.compact {
+.parent-rsvp-action.compact {
   min-height: 34px;
   padding: 7px 12px;
 }
@@ -11177,7 +11175,7 @@ caption {
 
   .landing-certainty-band a,
   .certainty-band > .season-status,
-  .certainty-band > .parent-rsvp-glow {
+  .certainty-band > .parent-rsvp-action {
     grid-column: 2;
     justify-self: start;
   }
@@ -11354,7 +11352,7 @@ caption {
     width: 34px;
   }
 
-  .parent-rsvp-glow {
+  .parent-rsvp-action {
     min-height: 40px;
     padding-inline: 11px;
   }

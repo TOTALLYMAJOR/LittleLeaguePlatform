@@ -69,7 +69,7 @@ export function ParentTransportationClient({ data }: { data: ParentTransportatio
   }
 
   return (
-    <main className="page transportation-page" data-analytics-surface="family_transportation">
+    <div className="page transportation-page" data-analytics-surface="family_transportation">
       <header className="transportation-hero">
         <div>
           <span className="eyebrow">Transportation responsibility</span>
@@ -204,7 +204,7 @@ export function ParentTransportationClient({ data }: { data: ParentTransportatio
           />
         ))}
       </section>
-    </main>
+    </div>
   );
 }
 
@@ -236,7 +236,10 @@ function TransportationRequestCard({
   const directionLabel = request.direction === "outbound" ? "Outbound · getting there" : "Return · getting home";
   const canWithdraw = request.canWithdrawRequest || request.canWithdrawAssignment;
   return (
-    <article className="card transportation-request-card">
+    <article
+      className="card transportation-request-card"
+      id={`transportation-request-${encodeURIComponent(request.id)}`}
+    >
       <header>
         <div>
           <span className="eyebrow">{request.teamName} · {directionLabel}</span>

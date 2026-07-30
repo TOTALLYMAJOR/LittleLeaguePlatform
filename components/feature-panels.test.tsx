@@ -550,7 +550,7 @@ describe("ScheduleAlertsClient", () => {
     expect(html).toContain("Week ribbon");
     expect(html).toContain("Tiny Tigers vs Rookie Rockets");
     expect(html).toContain("Is Mason going?");
-    expect(html).toContain("parent-rsvp-glow");
+    expect(html).toContain("parent-rsvp-action");
     expect(html).toContain("RSVP now");
     expect(html).toContain("Game-day sheet");
     expect(html).toContain("Family-only RSVP details");

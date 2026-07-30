@@ -21,7 +21,11 @@ export function ReadinessStrip({
         {hasItems ? <CircleAlert aria-hidden="true" size={20} strokeWidth={2.2} /> : <CheckCircle2 aria-hidden="true" size={20} strokeWidth={2.2} />}
         <div>
           <span className="parent-weekly-kicker">Ready for Saturday</span>
-          <h2 id="family-readiness-title">{hasItems ? `${items.length} thing${items.length === 1 ? "" : "s"} need you` : "Nothing unresolved for Saturday"}</h2>
+          <h2 id="family-readiness-title">
+            {hasItems
+              ? `${items.length} thing${items.length === 1 ? " needs" : "s need"} you`
+              : "Nothing unresolved for Saturday"}
+          </h2>
           <p>{eventTitle ? `For ${eventTitle}.` : "No upcoming official event is being called ready."}</p>
         </div>
       </div>

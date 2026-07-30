@@ -5,6 +5,7 @@ import { buildFamilyMissionControl } from "@/lib/family-mission-control";
 import type { ParentCoachDashboardData } from "@/lib/supabase/dashboard-data";
 import type { ParentEventChangeLogReadResult } from "@/lib/supabase/event-change-log-reads";
 import type { FamilyReplayData } from "@/lib/supabase/family-replays";
+import type { ParentTransportationData } from "@/lib/supabase/transportation";
 import { ParentWeeklyDashboard } from "./parent-weekly-dashboard";
 
 function parentDashboardData(): ParentCoachDashboardData {
@@ -89,9 +90,18 @@ const noEventChanges: ParentEventChangeLogReadResult = {
     organizationId: "org-little-league",
     seasonId: "season-spring-2026",
     familyContextKey: "team-tigers",
+    timeZone: "America/Chicago",
     limit: 20
   },
   changes: []
+};
+
+const noTransportationRequests: ParentTransportationData = {
+  ok: true,
+  message: "No current transportation requests.",
+  events: [],
+  requests: [],
+  responsibilities: []
 };
 
 describe("ParentWeeklyDashboard", () => {
@@ -113,6 +123,8 @@ describe("ParentWeeklyDashboard", () => {
         dashboardData={dashboardData}
         replayData={replayData}
         notificationReceipts={[]}
+        notificationLoadOk
+        transportationData={noTransportationRequests}
         eventChangeData={noEventChanges}
       />
     );
@@ -132,7 +144,7 @@ describe("ParentWeeklyDashboard", () => {
     expect(html).not.toContain("class=\"is-selected\" data-response=\"going\"");
     expect(html).toContain("Family access");
     expect(html).toContain("revoke access anytime");
-    expect(html).toContain("Ride responsibility is not fully assigned");
+    expect(html).toContain("No ride help requested");
     expect(html).toContain("/parent/transportation");
     expect(html).not.toContain("What changed");
     expect(html).not.toContain("Detailed family operations");
@@ -160,6 +172,8 @@ describe("ParentWeeklyDashboard", () => {
         dashboardData={dashboardData}
         replayData={{ ok: true, message: "No published Replay yet.", replays: [] }}
         notificationReceipts={[]}
+        notificationLoadOk
+        transportationData={noTransportationRequests}
         eventChangeData={noEventChanges}
       />
     );
@@ -208,6 +222,7 @@ describe("ParentWeeklyDashboard", () => {
         eventId: "event-tigers-game",
         eventTitle: "Tiny Tigers vs Rookie Rockets",
         teamName: "Tiny Tigers",
+        childIds: ["player-mason"],
         childLabels: ["Mason T."],
         changeType: "time_changed",
         actorLabel: "Coach Taylor",
@@ -222,6 +237,8 @@ describe("ParentWeeklyDashboard", () => {
         dashboardData={dashboardData}
         replayData={{ ok: true, message: "No published Replay yet.", replays: [] }}
         notificationReceipts={[]}
+        notificationLoadOk
+        transportationData={noTransportationRequests}
         eventChangeData={eventChangeData}
       />
     );
@@ -231,7 +248,7 @@ describe("ParentWeeklyDashboard", () => {
     expect(html).toContain("Start time");
     expect(html).toContain("6:00 PM");
     expect(html).toContain("5:30 PM");
-    expect(html).toContain("RSVP needs review after a schedule change");
+    expect(html).toContain("Review RSVP after the schedule change");
   });
 
   it("shows the mutually accepted ride plan instead of the coordinate link when transportation is assigned", () => {
@@ -256,6 +273,14 @@ describe("ParentWeeklyDashboard", () => {
         dashboardData={dashboardData}
         replayData={{ ok: true, message: "No published Replay yet.", replays: [] }}
         notificationReceipts={[]}
+        notificationLoadOk
+        transportationData={{
+          ...noTransportationRequests,
+          responsibilities: [
+            { eventId: "event-tigers-game", playerId: "player-mason", direction: "outbound", state: "assigned", adultLabel: "Jordan P." },
+            { eventId: "event-tigers-game", playerId: "player-mason", direction: "return", state: "assigned", adultLabel: "Riley P." }
+          ]
+        }}
         eventChangeData={noEventChanges}
       />
     );
@@ -299,11 +324,100 @@ describe("ParentWeeklyDashboard", () => {
             acknowledgedAt: "2026-04-01T11:00:00.000Z"
           }
         }]}
+        notificationLoadOk
+        transportationData={noTransportationRequests}
         eventChangeData={noEventChanges}
       />
     );
 
     expect(html).toContain("Acknowledged Apr 1");
     expect(html).not.toContain("No receipt evidence");
+  });
+
+  it("renders an honest Saturday summary for every linked child with exact action links", () => {
+    const dashboardData = parentDashboardData();
+    const mason = dashboardData.state.players[0];
+    dashboardData.state = {
+      ...dashboardData.state,
+      players: [
+        ...dashboardData.state.players,
+        { ...mason, id: "player-avery", firstName: "Avery", lastInitial: "T", jersey: "12" }
+      ],
+      guardianLinks: [
+        ...dashboardData.state.guardianLinks,
+        {
+          ...dashboardData.state.guardianLinks[0],
+          id: "guardian-avery",
+          playerId: "player-avery"
+        }
+      ]
+    };
+    const view = buildFamilyMissionControl({
+      state: dashboardData.state,
+      parentUserId: dashboardData.parentUserId,
+      handoffs: [],
+      accessStatus: dashboardData.accessStatus,
+      isSupabaseBacked: dashboardData.isSupabaseBacked,
+      message: dashboardData.message,
+      now: "2026-04-01T12:00:00.000Z"
+    });
+
+    const html = renderToStaticMarkup(
+      <ParentWeeklyDashboard
+        view={view}
+        dashboardData={dashboardData}
+        replayData={{ ok: true, message: "No published Replay yet.", replays: [] }}
+        notificationReceipts={[{
+          notificationId: "critical-1",
+          organizationId: "org-little-league",
+          teamId: "team-tigers",
+          eventId: "event-tigers-game",
+          recipientUserId: "user-parent-jordan",
+          title: "Weather update",
+          body: "Review the official event update.",
+          channel: "email",
+          notificationType: "weather_alert",
+          notificationStatus: "read",
+          providerApprovalStatus: "approved",
+          createdAt: "2026-04-03T10:00:00.000Z",
+          evidence: { attemptStatus: "sent" }
+        }]}
+        notificationLoadOk
+        transportationData={{
+          ...noTransportationRequests,
+          requests: [{
+            id: "ride-avery",
+            eventId: "event-tigers-game",
+            playerId: "player-avery",
+            childLabel: "Avery T.",
+            teamName: "Tiny Tigers",
+            eventTitle: "Tiny Tigers vs Rookie Rockets",
+            startsAt: "2026-04-04T09:00:00.000Z",
+            direction: "outbound",
+            state: "open",
+            stateLabel: "Needs a driver",
+            scheduleVersion: 1,
+            currentScheduleVersion: 1,
+            requestedByLabel: "Jordan Taylor",
+            requestedAt: "2026-04-03T09:00:00.000Z",
+            canOffer: false,
+            canAccept: false,
+            canWithdrawRequest: true,
+            canWithdrawAssignment: false,
+            explanation: "Waiting for an offer."
+          }]
+        }}
+        eventChangeData={noEventChanges}
+      />
+    );
+
+    expect(html).toContain("Saturday readiness by child");
+    expect(html).toContain("Mason T.");
+    expect(html).toContain("Avery T.");
+    expect(html).toContain("No ride help requested");
+    expect(html).toContain("Ride help was requested and awaits an offer");
+    expect(html).toContain("#transportation-request-ride-avery");
+    expect(html).toContain("#communication-message-critical-1");
+    expect(html).not.toContain("Next event</span>");
   });
 });

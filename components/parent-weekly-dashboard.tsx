@@ -19,13 +19,25 @@ import type { ParentCoachDashboardData } from "@/lib/supabase/dashboard-data";
 import type { ParentEventChangeLogReadResult } from "@/lib/supabase/event-change-log-reads";
 import type { FamilyReplayData, FamilyReplayStory } from "@/lib/supabase/family-replays";
 import type { NotificationReceipt } from "@/lib/supabase/notification-receipts";
-import { ChangeBand, EventPassport, FamilyFilter, ReadinessStrip, StatusChip, responseLabel, type ReadinessItem } from "./family";
+import type { ParentTransportationData } from "@/lib/supabase/transportation";
+import {
+  buildChildSaturdayReadiness,
+  ChangeBand,
+  EventPassport,
+  FamilyFilter,
+  MultiChildReadiness,
+  ReadinessStrip,
+  StatusChip,
+  responseLabel
+} from "./family";
 
 interface ParentWeeklyDashboardProps {
   view: FamilyMissionControlView;
   dashboardData: ParentCoachDashboardData;
   replayData: FamilyReplayData;
   notificationReceipts: NotificationReceipt[];
+  notificationLoadOk: boolean;
+  transportationData: ParentTransportationData;
   eventChangeData: ParentEventChangeLogReadResult;
 }
 
@@ -65,55 +77,6 @@ function initials(value: string) {
     .join("")
     .slice(0, 2)
     .toUpperCase();
-}
-
-function buildReadinessItems({
-  event,
-  changeCount,
-  conflicts
-}: {
-  event?: FamilyMissionEvent;
-  changeCount: number;
-  conflicts: FamilyMissionControlView["conflicts"];
-}): ReadinessItem[] {
-  const items: ReadinessItem[] = [];
-  if (changeCount > 0) {
-    items.push({
-      id: "changes",
-      label: `${changeCount} event change${changeCount === 1 ? "" : "s"} to review`,
-      href: event ? `/parent/schedule?eventId=${encodeURIComponent(event.eventId)}` : "/parent/schedule"
-    });
-  }
-  if (conflicts.length) {
-    items.push({
-      id: "schedule-conflict",
-      label: `${conflicts.length} schedule conflict${conflicts.length === 1 ? "" : "s"} to review`,
-      href: "/parent/schedule"
-    });
-  }
-  if (!event) return items;
-  if (event.rsvpNeedsAction) {
-    items.push({
-      id: "rsvp",
-      label: event.rsvpOutdated ? "RSVP needs review after a schedule change" : "RSVP is required",
-      href: `/parent/rsvp?eventId=${encodeURIComponent(event.eventId)}&playerId=${encodeURIComponent(event.childId)}`
-    });
-  }
-  if (!event.transportationAssigned) {
-    items.push({
-      id: "transportation",
-      label: "Ride responsibility is not fully assigned",
-      href: `/parent/transportation?eventId=${encodeURIComponent(event.eventId)}&playerId=${encodeURIComponent(event.childId)}`
-    });
-  }
-  if (event.status === "cancelled") {
-    items.push({
-      id: "cancelled",
-      label: "Event cancellation needs review",
-      href: `/parent/schedule?eventId=${encodeURIComponent(event.eventId)}`
-    });
-  }
-  return items;
 }
 
 async function authenticatedPost(url: string, payload: unknown, extraHeaders?: Record<string, string>) {
@@ -211,7 +174,15 @@ function ReplayActivity({
   );
 }
 
-export function ParentWeeklyDashboard({ view, dashboardData, replayData, notificationReceipts, eventChangeData }: ParentWeeklyDashboardProps) {
+export function ParentWeeklyDashboard({
+  view,
+  dashboardData,
+  replayData,
+  notificationReceipts,
+  notificationLoadOk,
+  transportationData,
+  eventChangeData
+}: ParentWeeklyDashboardProps) {
   const [localRsvps, setLocalRsvps] = useState<Record<string, LocalRsvp>>(() => (
     Object.fromEntries(dashboardData.state.rsvps.map((rsvp) => [
       rsvpKey(rsvp.eventId, rsvp.playerId),
@@ -228,7 +199,7 @@ export function ParentWeeklyDashboard({ view, dashboardData, replayData, notific
   const [pendingReplayId, setPendingReplayId] = useState("");
   const [statusMessage, setStatusMessage] = useState("");
   const [selectedChildId, setSelectedChildId] = useState("");
-  const [visibleChangeCount, setVisibleChangeCount] = useState(eventChangeData.ok ? eventChangeData.changes.length : 0);
+  const [visibleChanges, setVisibleChanges] = useState(eventChangeData.changes);
 
   const scopedEvents = selectedChildId
     ? view.events.filter((event) => event.childId === selectedChildId)
@@ -252,6 +223,24 @@ export function ParentWeeklyDashboard({ view, dashboardData, replayData, notific
     if (!local || local.confirmedScheduleVersion < event.scheduleVersion) return undefined;
     return local.response;
   };
+  const childReadiness = view.children.map((child) => {
+    const childEvents = view.events.filter((event) => event.childId === child.id);
+    const event = childEvents.find((item) => item.status === "scheduled") ?? childEvents[0];
+    return buildChildSaturdayReadiness({
+      child,
+      event,
+      currentRsvp: event ? getStoredRsvp(event)?.response : undefined,
+      notificationReceipts,
+      notificationLoadOk,
+      transportationData,
+      visibleChanges,
+      eventChangeLoadOk: eventChangeData.ok,
+      conflicts: view.conflicts
+    });
+  });
+  const selectedReadiness = childReadiness.find((summary) => summary.child.id === selectedChildId)
+    ?? childReadiness[0];
+  const showAllChildren = !selectedChildId && childReadiness.length > 1;
 
   const answeredEvents = weeklyEvents.filter((event) => {
     const response = getCurrentRsvp(event);
@@ -272,8 +261,10 @@ export function ParentWeeklyDashboard({ view, dashboardData, replayData, notific
   const firstName = primaryPlayer?.firstName
     ?? primaryChild?.label.split(" ")[0]
     ?? "Your family";
-  const familyHeading = view.children.length > 1
-    ? `${firstName}'s family week`
+  const familyHeading = view.children.length > 1 && !selectedChildId
+    ? "Your family week"
+    : view.children.length > 1
+      ? `${firstName}'s family week`
     : `${firstName}'s week`;
   const teamMark = initials(primaryTeam?.mascot || primaryTeam?.name || "LP");
   const storageKey = [
@@ -283,14 +274,6 @@ export function ParentWeeklyDashboard({ view, dashboardData, replayData, notific
     dashboardData.state.activeSeason.id,
     selectedChildId || eventChangeData.scope.familyContextKey || "everyone"
   ].join(":");
-  const readinessItems = buildReadinessItems({
-    event: nextEvent,
-    changeCount: visibleChangeCount,
-    conflicts: view.conflicts.filter((conflict) => (
-      !selectedChildId || conflict.childLabels.includes(primaryChild?.label ?? "")
-    ))
-  });
-
   const snapshotRows = [
     {
       label: "RSVP coverage",
@@ -387,34 +370,44 @@ export function ParentWeeklyDashboard({ view, dashboardData, replayData, notific
 
       <ChangeBand
         changes={selectedChildId
-          ? eventChangeData.changes.filter((change) => change.childLabels.includes(primaryChild?.label ?? ""))
+          ? eventChangeData.changes.filter((change) => change.childIds.includes(selectedChildId))
           : eventChangeData.changes}
         querySucceeded={eventChangeData.ok}
         storageKey={storageKey}
-        onVisibleChangeCount={setVisibleChangeCount}
+        timeZone={eventChangeData.scope.timeZone}
+        onVisibleChanges={setVisibleChanges}
       />
 
-      <EventPassport
-        event={nextEvent}
-        currentResponse={nextEvent ? getStoredRsvp(nextEvent)?.response : undefined}
-        currentLockVersion={nextEvent ? getStoredRsvp(nextEvent)?.lockVersion ?? 0 : 0}
-        canWriteRsvp={canWriteRsvp}
-        pending={false}
-        onRsvpSaved={(result) => {
-          if (!nextEvent) return;
-          setLocalRsvps((existing) => ({
-            ...existing,
-            [rsvpKey(nextEvent.eventId, nextEvent.childId)]: {
-              response: result.response,
-              lockVersion: result.lockVersion,
-              confirmedScheduleVersion: result.scheduleVersion
-            }
-          }));
-          setStatusMessage(result.message);
-        }}
-      />
-
-      <ReadinessStrip eventTitle={nextEvent?.title} items={readinessItems} />
+      {showAllChildren ? (
+        <MultiChildReadiness summaries={childReadiness} />
+      ) : (
+        <>
+          <EventPassport
+            event={nextEvent}
+            currentResponse={nextEvent ? getStoredRsvp(nextEvent)?.response : undefined}
+            currentLockVersion={nextEvent ? getStoredRsvp(nextEvent)?.lockVersion ?? 0 : 0}
+            canWriteRsvp={canWriteRsvp}
+            transportationLane={selectedReadiness?.lanes.find((lane) => lane.id === "transportation")}
+            pending={false}
+            onRsvpSaved={(result) => {
+              if (!nextEvent) return;
+              setLocalRsvps((existing) => ({
+                ...existing,
+                [rsvpKey(nextEvent.eventId, nextEvent.childId)]: {
+                  response: result.response,
+                  lockVersion: result.lockVersion,
+                  confirmedScheduleVersion: result.scheduleVersion
+                }
+              }));
+              setStatusMessage(result.message);
+            }}
+          />
+          <ReadinessStrip
+            eventTitle={selectedReadiness?.event?.title}
+            items={selectedReadiness?.unresolvedItems ?? []}
+          />
+        </>
+      )}
 
       <div className="parent-weekly-layout">
         <div className="parent-weekly-primary">

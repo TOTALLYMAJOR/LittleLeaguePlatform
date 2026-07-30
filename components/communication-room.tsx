@@ -381,7 +381,7 @@ export function CommunicationRoom({
   }
 
   return (
-    <main className="page communication-room" data-analytics-surface="parent_communication_room">
+    <div className="page communication-room" data-analytics-surface="parent_communication_room">
       <header className="communication-room-header">
         <div>
           <span className="eyebrow">Family communication</span>
@@ -541,7 +541,11 @@ export function CommunicationRoom({
 
         <div className="communication-message-stack">
             {visibleCritical.map((receipt) => (
-              <article className="communication-message-card critical" key={receipt.notificationId}>
+              <article
+                className="communication-message-card critical"
+                id={`communication-message-${encodeURIComponent(receipt.notificationId)}`}
+                key={receipt.notificationId}
+              >
                 <header>
                   <div>
                     <span className="communication-authority-label">
@@ -795,6 +799,6 @@ export function CommunicationRoom({
             </form>
         </div>
       </section>
-    </main>
+    </div>
   );
 }

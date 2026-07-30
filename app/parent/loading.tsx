@@ -1,6 +1,12 @@
 export default function ParentHomeLoading() {
   return (
-    <main className="page parent-weekly-dashboard" aria-busy="true" aria-label="Loading Family Home">
+    <section
+      className="page parent-weekly-dashboard"
+      aria-busy="true"
+      aria-labelledby="parent-home-loading-title"
+      role="status"
+    >
+      <h1 className="sr-only" id="parent-home-loading-title">Loading Family Home</h1>
       <section className="parent-weekly-player">
         <div className="communication-loading-block" />
         <div className="communication-loading-tabs">
@@ -12,6 +18,6 @@ export default function ParentHomeLoading() {
       <div className="communication-loading-block" />
       <div className="communication-loading-block tall" />
       <div className="communication-loading-block" />
-    </main>
+    </section>
   );
 }

@@ -1,7 +1,9 @@
 # LP-UX-002 Acceptance Verification
 
-Accepted: 2026-07-30
-Status: `done-local-accepted`
+Historical implementation report: 2026-07-30
+Status: `superseded-by-corrections`
+
+> This report records the original implementation result. Independent review subsequently found blocking acceptance gaps. The corrected local result is documented in `lp-ux-002-correction-verification.md`; LP-UX-002 is `done-local-corrected`, not independently accepted.
 
 ## Scope
 

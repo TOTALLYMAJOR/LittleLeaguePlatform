@@ -21,6 +21,8 @@ type EventRow = {
   season_id: string;
   team_id: string;
   title: string;
+  starts_at: string;
+  ends_at: string;
 };
 
 type PlayerRow = {
@@ -80,6 +82,7 @@ export interface ParentEventChange {
   eventId: string;
   eventTitle: string;
   teamName: string;
+  childIds: string[];
   childLabels: string[];
   changeType: ChangeLogRow["change_type"];
   actorLabel: string;
@@ -96,6 +99,7 @@ export interface ParentEventChangeLogReadResult {
     organizationId: string;
     seasonId: string;
     familyContextKey: string;
+    timeZone: string;
     limit: number;
   };
   changes: ParentEventChange[];
@@ -122,6 +126,7 @@ const allowedFields: Record<string, {
 
 type FormatContext = {
   fieldsById: Map<string, string>;
+  timeZone: string;
 };
 
 function dbClient() {
@@ -130,17 +135,21 @@ function dbClient() {
 
 export async function listParentEventChangeLogs({
   parentUserId,
-  limit = DEFAULT_LIMIT
+  limit = DEFAULT_LIMIT,
+  timeZone = "America/Chicago"
 }: {
   parentUserId: string;
   limit?: number;
+  timeZone?: string;
 }): Promise<ParentEventChangeLogReadResult> {
   const boundedLimit = Math.min(50, Math.max(1, Math.floor(limit)));
+  const safeTimeZone = supportedTimeZone(timeZone);
   const emptyScope = {
     parentUserId,
     organizationId: "",
     seasonId: "",
     familyContextKey: "unavailable",
+    timeZone: safeTimeZone,
     limit: boundedLimit
   };
 
@@ -155,8 +164,16 @@ export async function listParentEventChangeLogs({
       .select("player_id,parent_user_id,status")
       .eq("parent_user_id", parentUserId)
       .eq("status", "active"), 7000) as QueryResult<GuardianRow>;
-    if (guardianError || !guardianRows?.length) {
-      return { ok: false, message: "No active guardian-linked child scope is available.", scope: emptyScope, changes: [] };
+    if (guardianError) {
+      return { ok: false, message: "Guardian-linked child scope could not be checked.", scope: emptyScope, changes: [] };
+    }
+    if (!guardianRows?.length) {
+      return {
+        ok: true,
+        message: "No active guardian-linked child records are available.",
+        scope: { ...emptyScope, familyContextKey: "no-linked-children" },
+        changes: []
+      };
     }
 
     const playerIds = unique(guardianRows.map((row) => row.player_id));
@@ -176,9 +193,12 @@ export async function listParentEventChangeLogs({
       organizationId: organizationIds.length === 1 ? organizationIds[0] : organizationIds.sort().join("."),
       seasonId: seasonIds.length === 1 ? seasonIds[0] : seasonIds.sort().join("."),
       familyContextKey: teamIds.sort().join("."),
+      timeZone: safeTimeZone,
       limit: boundedLimit
     };
 
+    const windowStart = new Date(Date.now() - 14 * 24 * 60 * 60 * 1000).toISOString();
+    const windowEnd = new Date(Date.now() + 120 * 24 * 60 * 60 * 1000).toISOString();
     const [{ data: teams, error: teamsError }, { data: events, error: eventsError }] = await withSupabaseTimeout(Promise.all([
       db
         .from("teams")
@@ -188,13 +208,18 @@ export async function listParentEventChangeLogs({
         .in("season_id", seasonIds),
       db
         .from("events")
-        .select("id,organization_id,season_id,team_id,title")
+        .select("id,organization_id,season_id,team_id,title,starts_at,ends_at")
         .in("team_id", teamIds)
         .in("organization_id", organizationIds)
         .in("season_id", seasonIds)
+        .gte("ends_at", windowStart)
+        .lte("starts_at", windowEnd)
     ]), 7000) as [QueryResult<TeamRow>, QueryResult<EventRow>];
-    if (teamsError || eventsError || !teams?.length || !events?.length) {
+    if (teamsError || eventsError || !teams?.length) {
       return { ok: false, message: "Parent event scope could not be confirmed.", scope, changes: [] };
+    }
+    if (!events?.length) {
+      return { ok: true, message: "No events are in the family change window.", scope, changes: [] };
     }
 
     const eventIds = events.map((event) => event.id);
@@ -243,14 +268,24 @@ export async function listParentEventChangeLogs({
           const event = eventsById.get(log.event_id);
           const team = teamsById.get(log.team_id);
           if (!event || !team || event.organization_id !== log.organization_id || event.team_id !== log.team_id) return undefined;
-          const diffs = buildDiffs(log, { fieldsById });
+          const diffs = buildDiffs(log, { fieldsById, timeZone: safeTimeZone });
+          if (!diffs.length && log.change_type === "location_changed") {
+            diffs.push({
+              field: "field",
+              label: "Location",
+              previousValue: "Previous published location",
+              currentValue: "Updated published location"
+            });
+          }
           if (!diffs.length && log.change_type !== "created" && log.change_type !== "cancelled" && log.change_type !== "restored") return undefined;
+          const scopedPlayers = playersByTeamId.get(log.team_id) ?? [];
           return {
             id: log.id,
             eventId: log.event_id,
             eventTitle: event.title,
             teamName: team.name,
-            childLabels: (playersByTeamId.get(log.team_id) ?? []).map((player) => `${player.first_name} ${player.last_initial}.`),
+            childIds: scopedPlayers.map((player) => player.id),
+            childLabels: scopedPlayers.map((player) => `${player.first_name} ${player.last_initial}.`),
             changeType: log.change_type,
             actorLabel: log.actor_user_id ? profilesById.get(log.actor_user_id) ?? "League staff" : "League staff",
             changedAt: log.created_at,
@@ -304,12 +339,22 @@ function formatField(value: unknown, context: FormatContext) {
   return id ? context.fieldsById.get(id) ?? "Published field" : formatPlain(value);
 }
 
-function formatTime(value: unknown) {
+function formatTime(value: unknown, context: FormatContext) {
   if (typeof value !== "string") return "Not published";
   const timestamp = Date.parse(value);
   if (Number.isNaN(timestamp)) return value;
   return new Intl.DateTimeFormat("en-US", {
     hour: "numeric",
-    minute: "2-digit"
+    minute: "2-digit",
+    timeZone: context.timeZone
   }).format(new Date(timestamp));
+}
+
+function supportedTimeZone(value: string) {
+  try {
+    new Intl.DateTimeFormat("en-US", { timeZone: value }).format();
+    return value;
+  } catch {
+    return "America/Chicago";
+  }
 }

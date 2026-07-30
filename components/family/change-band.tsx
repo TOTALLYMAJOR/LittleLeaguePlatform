@@ -12,12 +12,14 @@ export function ChangeBand({
   changes,
   querySucceeded,
   storageKey,
-  onVisibleChangeCount
+  timeZone,
+  onVisibleChanges
 }: {
   changes: ParentEventChange[];
   querySucceeded: boolean;
   storageKey: string;
-  onVisibleChangeCount?: (count: number) => void;
+  timeZone: string;
+  onVisibleChanges?: (changes: ParentEventChange[]) => void;
 }) {
   const watermark = useSyncExternalStore(
     () => () => undefined,
@@ -34,7 +36,7 @@ export function ChangeBand({
   }, [changes, watermark]);
 
   useEffect(() => {
-    onVisibleChangeCount?.(querySucceeded ? visibleChanges.length : changes.length);
+    onVisibleChanges?.(querySucceeded ? visibleChanges : changes);
     if (!querySucceeded || !visibleChanges.length) return;
     const latest = visibleChanges
       .map((change) => change.changedAt)
@@ -44,7 +46,7 @@ export function ChangeBand({
     } catch {
       // Device-local storage is presentation-only. Failure leaves state unchanged.
     }
-  }, [changes.length, onVisibleChangeCount, querySucceeded, storageKey, visibleChanges]);
+  }, [changes, onVisibleChanges, querySucceeded, storageKey, visibleChanges]);
 
   if (!querySucceeded) {
     return (
@@ -79,7 +81,7 @@ export function ChangeBand({
               <StatusChip tone="changed">{changeLabel(change.changeType)}</StatusChip>
               <strong>{change.eventTitle}</strong>
             </div>
-            <p>{change.teamName}{change.childLabels.length ? ` · ${change.childLabels.join(", ")}` : ""} · by {change.actorLabel} · {formatTimestamp(change.changedAt)}</p>
+            <p>{change.teamName}{change.childLabels.length ? ` · ${change.childLabels.join(", ")}` : ""} · by {change.actorLabel} · {formatTimestamp(change.changedAt, timeZone)}</p>
             <dl>
               {change.diffs.map((diff) => (
                 <div key={`${change.id}:${diff.field}:${diff.label}`}>
@@ -120,11 +122,12 @@ function changeLabel(value: ParentEventChange["changeType"]) {
   return "New event";
 }
 
-function formatTimestamp(value: string) {
+function formatTimestamp(value: string, timeZone: string) {
   return new Intl.DateTimeFormat("en-US", {
     month: "short",
     day: "numeric",
     hour: "numeric",
-    minute: "2-digit"
+    minute: "2-digit",
+    timeZone
   }).format(new Date(value));
 }

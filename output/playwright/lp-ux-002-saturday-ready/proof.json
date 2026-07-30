@@ -1,0 +1,253 @@
+{
+  "generatedAt": "2026-07-30T18:52:52.078Z",
+  "proofType": "isolated-browser-component-state-matrix",
+  "sourceComponents": [
+    "components/family/event-passport.tsx",
+    "components/family/multi-child-readiness.tsx",
+    "components/family/readiness-strip.tsx",
+    "components/family/readiness.ts",
+    "app/parent/loading.tsx",
+    "app/parent/error.tsx"
+  ],
+  "results": [
+    {
+      "scenario": {
+        "name": "multi-mixed-320",
+        "state": "multi-mixed",
+        "width": 320,
+        "height": 844,
+        "colorScheme": "light",
+        "forcedColors": "none"
+      },
+      "mainLandmarks": 1,
+      "horizontalOverflow": false,
+      "childSummaries": 3,
+      "controlCount": 10,
+      "axeViolations": [],
+      "consoleErrors": [],
+      "failedRequests": [],
+      "focus": {
+        "outlineStyle": "solid",
+        "outlineWidth": "2px"
+      },
+      "screenshotPath": "output/playwright/lp-ux-002-saturday-ready/multi-mixed-320.png"
+    },
+    {
+      "scenario": {
+        "name": "multi-mixed-390",
+        "state": "multi-mixed",
+        "width": 390,
+        "height": 844,
+        "colorScheme": "light",
+        "forcedColors": "none"
+      },
+      "mainLandmarks": 1,
+      "horizontalOverflow": false,
+      "childSummaries": 3,
+      "controlCount": 10,
+      "axeViolations": [],
+      "consoleErrors": [],
+      "failedRequests": [],
+      "focus": {
+        "outlineStyle": "solid",
+        "outlineWidth": "2px"
+      },
+      "screenshotPath": "output/playwright/lp-ux-002-saturday-ready/multi-mixed-390.png"
+    },
+    {
+      "scenario": {
+        "name": "multi-mixed-768",
+        "state": "multi-mixed",
+        "width": 768,
+        "height": 1024,
+        "colorScheme": "light",
+        "forcedColors": "none"
+      },
+      "mainLandmarks": 1,
+      "horizontalOverflow": false,
+      "childSummaries": 3,
+      "controlCount": 10,
+      "axeViolations": [],
+      "consoleErrors": [],
+      "failedRequests": [],
+      "focus": {
+        "outlineStyle": "solid",
+        "outlineWidth": "2px"
+      },
+      "screenshotPath": "output/playwright/lp-ux-002-saturday-ready/multi-mixed-768.png"
+    },
+    {
+      "scenario": {
+        "name": "multi-mixed-1024",
+        "state": "multi-mixed",
+        "width": 1024,
+        "height": 900,
+        "colorScheme": "light",
+        "forcedColors": "none"
+      },
+      "mainLandmarks": 1,
+      "horizontalOverflow": false,
+      "childSummaries": 3,
+      "controlCount": 10,
+      "axeViolations": [],
+      "consoleErrors": [],
+      "failedRequests": [],
+      "focus": {
+        "outlineStyle": "solid",
+        "outlineWidth": "2px"
+      },
+      "screenshotPath": "output/playwright/lp-ux-002-saturday-ready/multi-mixed-1024.png"
+    },
+    {
+      "scenario": {
+        "name": "multi-mixed-1440",
+        "state": "multi-mixed",
+        "width": 1440,
+        "height": 1000,
+        "colorScheme": "light",
+        "forcedColors": "none"
+      },
+      "mainLandmarks": 1,
+      "horizontalOverflow": false,
+      "childSummaries": 3,
+      "controlCount": 10,
+      "axeViolations": [],
+      "consoleErrors": [],
+      "failedRequests": [],
+      "focus": {
+        "outlineStyle": "solid",
+        "outlineWidth": "2px"
+      },
+      "screenshotPath": "output/playwright/lp-ux-002-saturday-ready/multi-mixed-1440.png"
+    },
+    {
+      "scenario": {
+        "name": "single-unresolved-390",
+        "state": "single-unresolved",
+        "width": 390,
+        "height": 844,
+        "colorScheme": "light",
+        "forcedColors": "none"
+      },
+      "mainLandmarks": 1,
+      "horizontalOverflow": false,
+      "childSummaries": 1,
+      "controlCount": 18,
+      "axeViolations": [],
+      "consoleErrors": [],
+      "failedRequests": [],
+      "focus": {
+        "outlineStyle": "solid",
+        "outlineWidth": "2px"
+      },
+      "screenshotPath": "output/playwright/lp-ux-002-saturday-ready/single-unresolved-390.png"
+    },
+    {
+      "scenario": {
+        "name": "single-resolved-390",
+        "state": "single-resolved",
+        "width": 390,
+        "height": 844,
+        "colorScheme": "light",
+        "forcedColors": "none"
+      },
+      "mainLandmarks": 1,
+      "horizontalOverflow": false,
+      "childSummaries": 1,
+      "controlCount": 3,
+      "axeViolations": [],
+      "consoleErrors": [],
+      "failedRequests": [],
+      "focus": {
+        "outlineStyle": "solid",
+        "outlineWidth": "2px"
+      },
+      "screenshotPath": "output/playwright/lp-ux-002-saturday-ready/single-resolved-390.png"
+    },
+    {
+      "scenario": {
+        "name": "loading-390",
+        "state": "loading",
+        "width": 390,
+        "height": 844,
+        "colorScheme": "light",
+        "forcedColors": "none"
+      },
+      "mainLandmarks": 1,
+      "horizontalOverflow": false,
+      "childSummaries": 0,
+      "controlCount": 0,
+      "axeViolations": [],
+      "consoleErrors": [],
+      "failedRequests": [],
+      "focus": null,
+      "screenshotPath": "output/playwright/lp-ux-002-saturday-ready/loading-390.png"
+    },
+    {
+      "scenario": {
+        "name": "error-390",
+        "state": "error",
+        "width": 390,
+        "height": 844,
+        "colorScheme": "light",
+        "forcedColors": "none"
+      },
+      "mainLandmarks": 1,
+      "horizontalOverflow": false,
+      "childSummaries": 0,
+      "controlCount": 1,
+      "axeViolations": [],
+      "consoleErrors": [],
+      "failedRequests": [],
+      "focus": {
+        "outlineStyle": "solid",
+        "outlineWidth": "2px"
+      },
+      "screenshotPath": "output/playwright/lp-ux-002-saturday-ready/error-390.png"
+    },
+    {
+      "scenario": {
+        "name": "multi-device-dark-390",
+        "state": "multi-mixed",
+        "width": 390,
+        "height": 844,
+        "colorScheme": "dark",
+        "forcedColors": "none"
+      },
+      "mainLandmarks": 1,
+      "horizontalOverflow": false,
+      "childSummaries": 3,
+      "controlCount": 10,
+      "axeViolations": [],
+      "consoleErrors": [],
+      "failedRequests": [],
+      "focus": {
+        "outlineStyle": "solid",
+        "outlineWidth": "2px"
+      },
+      "screenshotPath": "output/playwright/lp-ux-002-saturday-ready/multi-device-dark-390.png"
+    },
+    {
+      "scenario": {
+        "name": "multi-forced-colors-390",
+        "state": "multi-mixed",
+        "width": 390,
+        "height": 844,
+        "colorScheme": "light",
+        "forcedColors": "active"
+      },
+      "mainLandmarks": 1,
+      "horizontalOverflow": false,
+      "childSummaries": 3,
+      "controlCount": 10,
+      "axeViolations": [],
+      "consoleErrors": [],
+      "failedRequests": [],
+      "focus": {
+        "outlineStyle": "solid",
+        "outlineWidth": "3px"
+      },
+      "screenshotPath": "output/playwright/lp-ux-002-saturday-ready/multi-forced-colors-390.png"
+    }
+  ]
+}

@@ -36,6 +36,7 @@
     "qa:game-day-communication-readiness": "node scripts/verify-game-day-communication-readiness.mjs",
     "qa:family-season-continuity-readiness": "node scripts/verify-family-season-continuity-readiness.mjs",
     "qa:family-shell-proof": "node scripts/capture-family-shell-proof.mjs",
+    "qa:saturday-ready-proof": "node scripts/capture-saturday-ready-state-proof.mjs",
     "qa:private-media-storage-readiness": "node scripts/verify-private-media-storage-readiness.mjs",
     "qa:provider-sandbox-readiness": "node scripts/verify-provider-sandbox-readiness.mjs",
     "qa:weather-provider-readiness": "node scripts/verify-weather-provider-readiness.mjs",

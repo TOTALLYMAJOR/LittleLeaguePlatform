@@ -717,7 +717,7 @@ function ParentGameDayCalmCard({
               </p>
               <div className="parent-schedule-links">
                 {directionsUrl ? <a href={directionsUrl} target="_blank" rel="noreferrer">Directions</a> : null}
-                <a className={rsvpRequired ? "parent-rsvp-glow compact" : undefined} href={primaryHref}>{primaryLabel}</a>
+                <a className={rsvpRequired ? "parent-rsvp-action compact" : undefined} href={primaryHref}>{primaryLabel}</a>
               </div>
             </div>
           </div>
@@ -6199,7 +6199,7 @@ function ParentScheduleFeed({
                     <strong>{rsvp ? `${playerLabel} is ${rsvp.response.replace("_", " ")}` : `Is ${player.firstName} going?`}</strong>
                     <small>{rsvp ? "Response recorded for this event." : "A response is still needed."}</small>
                   </p>
-                  <a className={rsvp ? "parent-rsvp-change" : "parent-rsvp-glow"} href="/parent/rsvp">
+                  <a className={rsvp ? "parent-rsvp-change" : "parent-rsvp-action"} href="/parent/rsvp">
                     {rsvp ? "Change" : "RSVP now"}
                   </a>
                 </div>
@@ -6256,7 +6256,7 @@ function ParentScheduleFeed({
           </small>
         </span>
         {responseNeeded ? (
-          <a className="parent-rsvp-glow" href="/parent/rsvp">RSVP now</a>
+          <a className="parent-rsvp-action" href="/parent/rsvp">RSVP now</a>
         ) : (
           <span className="season-status state-ready">
             {scheduleData?.isSupabaseBacked ? "Current" : "Preview"}
@@ -6343,7 +6343,7 @@ function ParentScheduleFeed({
               <span>{commandAnnouncement?.body ?? "No new coach update is attached to this event."}</span>
             </p>
             <div>
-              <a className="parent-rsvp-glow" href="/parent/rsvp">Open RSVP</a>
+              <a className="parent-rsvp-action" href="/parent/rsvp">Open RSVP</a>
               <a
                 className="button secondary"
                 href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent([commandEvent.locationName, commandEvent.locationAddress].filter(Boolean).join(", "))}`}

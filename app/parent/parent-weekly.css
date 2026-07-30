@@ -22,8 +22,6 @@
   --warning-soft: #fff3c4;
   --danger: #b42318;
   --danger-soft: #fee4e2;
-  --status-changed: #4c4ddc;
-  --status-changed-soft: #ececff;
   --family-inverse-surface: #22304a;
   --family-inverse-text: #ffffff;
   --family-inverse-muted: #d7e3f2;
@@ -75,6 +73,63 @@
 
 [data-surface-family="family"] .card:not(.chat-conversation-panel) .eyebrow {
   color: var(--accent-strong);
+}
+
+[data-surface-family="family"] .team-branding-preview {
+  border: 1px solid var(--line);
+  background: var(--surface-strong);
+  color: var(--text);
+}
+
+[data-surface-family="family"] .card.team-branding-preview strong {
+  border-color: var(--accent);
+  background: var(--accent);
+  color: var(--surface);
+}
+
+[data-surface-family="family"] a.parent-rsvp-action {
+  border-color: var(--action-strong);
+  background: var(--action-strong);
+  color: var(--surface);
+}
+
+[data-surface-family="family"] .chat-conversation-panel {
+  background-color: var(--family-inverse-surface);
+}
+
+[data-surface-family="family"] .chat-conversation-panel .clubhouse-pinned,
+[data-surface-family="family"] .chat-conversation-panel .clubhouse-game-day {
+  background-color: var(--surface);
+  color: var(--text);
+}
+
+[data-surface-family="family"] .chat-conversation-panel .clubhouse-pinned h3,
+[data-surface-family="family"] .chat-conversation-panel .clubhouse-pinned p,
+[data-surface-family="family"] .chat-conversation-panel .clubhouse-pinned small,
+[data-surface-family="family"] .chat-conversation-panel .clubhouse-game-day h3,
+[data-surface-family="family"] .chat-conversation-panel .clubhouse-game-day p,
+[data-surface-family="family"] .chat-conversation-panel .clubhouse-game-day li {
+  color: var(--text);
+}
+
+[data-surface-family="family"] .chat-conversation-panel .clubhouse-game-day a {
+  color: var(--accent);
+}
+
+[data-surface-family="family"] .chat-conversation-panel .clubhouse-coach-note > label:not(.clubhouse-checkbox),
+[data-surface-family="family"] .chat-conversation-panel .clubhouse-coach-note > .grid label:not(.clubhouse-checkbox),
+[data-surface-family="family"] .chat-conversation-panel .message-input-toolbar > label:not(.clubhouse-checkbox) {
+  color: var(--family-inverse-text);
+}
+
+[data-surface-family="family"] .chat-conversation-panel .clubhouse-checkbox {
+  border-color: var(--line);
+  background: var(--surface);
+  color: var(--text);
+}
+
+[data-surface-family="family"] .chat-conversation-panel .divider.labeled span {
+  color: var(--family-inverse-muted);
 }
 
 [data-surface-family="family"] .notice {
@@ -284,7 +339,7 @@
   min-width: 44px;
   min-height: 44px;
   margin-left: 4px;
-  border: 2px solid #ff7a2f;
+  border: 2px solid var(--action);
   background: var(--surface);
 }
 
@@ -476,10 +531,9 @@
 .parent-weekly-dashboard a:focus-visible,
 .parent-weekly-dashboard button:focus-visible,
 .parent-weekly-header a:focus-visible,
-.parent-weekly-header button:focus-visible,
-.parent-weekly-deep-operations summary:focus-visible {
-  outline: 3px solid rgba(255, 122, 47, 0.48);
-  outline-offset: 3px;
+.parent-weekly-header button:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
 }
 
 .parent-weekly-kicker {
@@ -556,11 +610,11 @@
   border-radius: 16px;
   background: #fff;
   box-shadow: 0 2px 4px rgba(53, 42, 29, 0.04);
-  color: #2f9e5b;
+  color: var(--ok);
 }
 
 .parent-weekly-player-stats > div.needs-reply {
-  color: #ff7a2f;
+  color: var(--action-strong);
 }
 
 .parent-weekly-player-stats strong {
@@ -588,7 +642,7 @@
 }
 
 .parent-weekly-privacy svg {
-  color: #2f9e5b;
+  color: var(--ok);
 }
 
 .parent-weekly-status {
@@ -807,14 +861,14 @@
 }
 
 .parent-weekly-rsvp button:hover:not(:disabled) {
-  border-color: #ff9d65;
+  border-color: var(--action);
   transform: translateY(-1px);
 }
 
 .parent-weekly-rsvp button.is-selected {
-  border-color: #ff7a2f;
-  background: #fff2e4;
-  color: #9b4313;
+  border-color: var(--action);
+  background: var(--action-soft);
+  color: var(--action-strong);
 }
 
 .parent-weekly-rsvp button.is-selected[data-response="going"] {
@@ -976,8 +1030,8 @@
 }
 
 .parent-weekly-replay-actions button.is-complete {
-  border-color: #2f9e5b;
-  background: #2f9e5b;
+  border-color: var(--ok);
+  background: var(--ok);
 }
 
 .parent-weekly-replay-actions button:disabled {
@@ -1200,12 +1254,12 @@
   width: var(--parent-weekly-progress);
   height: 100%;
   border-radius: inherit;
-  background: #2f9e5b;
+  background: var(--ok);
   transition: width 240ms ease;
 }
 
 .parent-weekly-readiness li:nth-child(2) .parent-weekly-progress > span {
-  background: #ff7a2f;
+  background: var(--action);
 }
 
 .parent-weekly-readiness li:nth-child(3) .parent-weekly-progress > span {
@@ -1226,7 +1280,7 @@
 
 .parent-weekly-readiness > p svg {
   flex: 0 0 auto;
-  color: #2f9e5b;
+  color: var(--ok);
 }
 
 .parent-weekly-empty {
@@ -1264,83 +1318,6 @@
   font-size: 0.73rem;
   font-weight: 850;
   white-space: nowrap;
-}
-
-.parent-weekly-deep-operations {
-  width: min(100%, 1152px);
-  margin: 20px auto 0;
-  border: 1px solid #ded5c7;
-  border-radius: 16px;
-  background: #fff;
-  color: #1c2438;
-}
-
-.parent-weekly-deep-operations > summary {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 20px;
-  min-height: 68px;
-  padding: 14px 18px;
-  cursor: pointer;
-  list-style: none;
-}
-
-.parent-weekly-deep-operations > summary::-webkit-details-marker {
-  display: none;
-}
-
-.parent-weekly-deep-operations > summary > span:first-child {
-  display: grid;
-  gap: 2px;
-}
-
-.parent-weekly-deep-operations > summary strong {
-  font-size: 0.88rem;
-}
-
-.parent-weekly-deep-operations > summary small {
-  color: #6b6559;
-  font-size: 0.72rem;
-}
-
-.parent-weekly-deep-operations > summary > span:last-child {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  min-width: 64px;
-  min-height: 36px;
-  border-radius: 999px;
-  background: #f2ede4;
-  color: #1f3a63;
-  font-size: 0.72rem;
-  font-weight: 850;
-}
-
-.parent-weekly-deep-operations[open] > summary {
-  border-bottom: 1px solid #ede5d8;
-}
-
-.parent-weekly-deep-operations[open] > summary > span:last-child {
-  font-size: 0;
-}
-
-.parent-weekly-deep-operations[open] > summary > span:last-child::after {
-  font-size: 0.72rem;
-  content: "Close";
-}
-
-.parent-weekly-deep-content {
-  display: grid;
-  gap: 24px;
-  padding: 24px;
-  background: #f2f6fb;
-}
-
-.parent-weekly-deep-content > .page,
-.parent-weekly-deep-content > section,
-.parent-weekly-deep-content > div {
-  max-width: 100%;
 }
 
 @media (max-width: 1023px) {
@@ -1435,14 +1412,30 @@
     grid-column: auto;
   }
 
+  .family-shell-context {
+    display: flex;
+    flex-wrap: nowrap;
+    gap: 0;
+    width: 100%;
+    min-height: 48px;
+    overflow-x: auto;
+  }
+
+  .family-shell-context > span {
+    flex: 0 0 132px;
+    min-height: 48px;
+    padding: 6px 10px;
+  }
+
   .parent-weekly-dashboard {
     gap: 16px;
-    padding-top: 22px;
+    padding-top: 16px;
   }
 
   .parent-weekly-player {
     grid-template-columns: minmax(0, 1fr);
-    padding-bottom: 36px;
+    gap: 10px;
+    padding-bottom: 0;
   }
 
   .parent-weekly-team-mark {
@@ -1456,15 +1449,13 @@
   }
 
   .parent-weekly-player-stats {
-    position: absolute;
-    right: 0;
-    bottom: 0;
+    position: static;
     grid-template-columns: repeat(2, minmax(86px, 1fr));
   }
 
   .parent-weekly-player-stats > div {
-    min-height: 58px;
-    padding: 7px 10px;
+    min-height: 48px;
+    padding: 5px 10px;
   }
 
   .parent-weekly-player-stats strong {
@@ -1472,16 +1463,21 @@
   }
 
   .parent-weekly-privacy {
-    right: auto;
-    bottom: 16px;
-    left: 0;
-    max-width: calc(100% - 188px);
+    position: static;
+    max-width: 100%;
   }
 
   .parent-weekly-privacy span {
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
+  }
+
+  .family-filter {
+    flex-wrap: nowrap;
+    margin-top: 0;
+    overflow-x: auto;
+    padding-bottom: 2px;
   }
 
   .parent-weekly-layout,
@@ -1583,13 +1579,6 @@
     margin-inline: 14px;
   }
 
-  .parent-weekly-deep-operations > summary small {
-    display: none;
-  }
-
-  .parent-weekly-deep-content {
-    padding: 12px;
-  }
 }
 
 @media (max-width: 410px) {
@@ -1606,7 +1595,7 @@
   }
 
   .parent-weekly-player {
-    padding-bottom: 70px;
+    padding-bottom: 0;
   }
 
   .parent-weekly-player-identity {
@@ -1614,8 +1603,6 @@
   }
 
   .parent-weekly-player-stats {
-    right: 0;
-    left: 0;
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
@@ -2080,6 +2067,12 @@
   color: var(--family-inverse-text);
 }
 
+.family-event-passport-facts a {
+  color: var(--family-inverse-text);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
 .family-event-passport.is-empty {
   background: var(--surface);
   color: var(--text);
@@ -2119,6 +2112,126 @@
   color: var(--action-strong);
 }
 
+.family-multi-readiness {
+  display: grid;
+  gap: var(--sp-4);
+  width: min(100%, 1152px);
+  margin: var(--sp-4) auto 0;
+}
+
+.family-multi-readiness-heading {
+  display: grid;
+  gap: var(--sp-1);
+}
+
+.family-multi-readiness-heading h2,
+.family-multi-readiness-heading p,
+.family-child-readiness h3,
+.family-child-readiness p {
+  margin: 0;
+}
+
+.family-multi-readiness-heading p,
+.family-child-readiness header p,
+.family-child-empty {
+  color: var(--muted);
+}
+
+.family-multi-readiness > .family-readiness-strip {
+  width: 100%;
+  margin: 0;
+}
+
+.family-multi-readiness-list {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--sp-3);
+}
+
+.family-child-readiness {
+  display: grid;
+  align-content: start;
+  gap: var(--sp-3);
+  min-width: 0;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--surface);
+  box-shadow: var(--shadow-sm);
+  padding: var(--sp-4);
+}
+
+.family-child-readiness > header,
+.family-child-next-event,
+.family-child-readiness li,
+.family-child-readiness li > div,
+.family-child-readiness li > a {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-2);
+}
+
+.family-child-readiness > header,
+.family-child-readiness li {
+  justify-content: space-between;
+}
+
+.family-child-readiness > header > div {
+  min-width: 0;
+}
+
+.family-child-next-event {
+  min-height: 56px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  padding: var(--sp-2) var(--sp-3);
+  color: var(--accent);
+  text-decoration: none;
+}
+
+.family-child-next-event > span {
+  display: grid;
+  flex: 1;
+  gap: 2px;
+  min-width: 0;
+}
+
+.family-child-next-event small {
+  color: var(--muted);
+}
+
+.family-child-readiness ul {
+  display: grid;
+  gap: 0;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.family-child-readiness li {
+  min-height: 54px;
+  border-top: 1px solid var(--line);
+  padding-block: var(--sp-2);
+}
+
+.family-child-readiness li > div {
+  align-items: flex-start;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.family-child-readiness li > div > span:last-child {
+  color: var(--muted);
+  font-size: var(--text-sm);
+}
+
+.family-child-readiness li > a {
+  flex: 0 0 auto;
+  min-height: 44px;
+  color: var(--action-strong);
+  font-size: var(--text-sm);
+  font-weight: 800;
+}
+
 .parent-weekly-row-action {
   min-width: 68px;
 }
@@ -2132,24 +2245,124 @@
 @media (max-width: 640px) {
   .family-change-band,
   .family-event-passport,
-  .family-readiness-strip {
+  .family-readiness-strip,
+  .family-multi-readiness {
     width: min(100% - 24px, 1152px);
     margin-top: var(--sp-3);
   }
 
   .family-event-passport {
-    padding: var(--sp-4);
+    gap: var(--sp-3);
+    padding: var(--sp-3);
   }
 
-  .family-event-passport-header,
   .family-readiness-strip-summary {
     align-items: flex-start;
     flex-direction: column;
   }
 
-  .family-event-passport-facts,
+  .family-event-passport-header {
+    align-items: flex-start;
+    flex-wrap: wrap;
+  }
+
+  .family-event-passport-facts {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .family-event-passport-facts > div {
+    padding-top: var(--sp-2);
+  }
+
   .family-rsvp-options {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .family-rsvp-options button {
+    padding-inline: var(--sp-1);
+  }
+
+  .family-multi-readiness-list {
     grid-template-columns: 1fr;
+  }
+
+  .family-child-readiness > header {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+}
+
+@media (forced-colors: active) {
+  .family-filter button,
+  .family-status-chip,
+  .family-change-band,
+  .family-event-passport,
+  .family-readiness-strip,
+  .family-child-readiness,
+  .family-child-next-event,
+  .family-rsvp-options button {
+    border: 1px solid CanvasText;
+    background: Canvas;
+    box-shadow: none;
+    color: CanvasText;
+  }
+
+  .family-filter button.is-selected,
+  .family-rsvp-options button.is-selected {
+    border: 3px double Highlight;
+    background: Highlight;
+    color: HighlightText;
+  }
+
+  .family-status-chip-confirmed,
+  .family-readiness-strip.is-ready {
+    border-style: double;
+    border-width: 3px;
+  }
+
+  .family-status-chip-action,
+  .family-status-chip-critical,
+  .family-readiness-strip.needs-action {
+    border-style: dashed;
+    border-width: 2px;
+  }
+
+  .family-change-band dd span {
+    text-decoration: line-through;
+  }
+
+  .family-change-band dd strong {
+    border-inline-start: 3px solid Highlight;
+    padding-inline-start: var(--sp-2);
+  }
+
+  .family-change-band a,
+  .family-event-passport a,
+  .family-readiness-strip a,
+  .family-child-readiness a {
+    color: LinkText;
+  }
+
+  .family-filter button:focus-visible,
+  .family-change-band a:focus-visible,
+  .family-event-passport a:focus-visible,
+  .family-event-passport button:focus-visible,
+  .family-readiness-strip a:focus-visible,
+  .family-child-readiness a:focus-visible {
+    outline: 3px solid Highlight;
+    outline-offset: 3px;
+  }
+
+  .family-rsvp-options button:disabled {
+    border-color: GrayText;
+    color: GrayText;
+  }
+
+  [data-surface-family="family"] .coach-announcement-item > span,
+  [data-surface-family="family"] .coach-announcement-item > small,
+  [data-surface-family="family"] .parent-season-story-header > div:first-child > span,
+  [data-surface-family="family"] .parent-season-story-header p {
+    color: CanvasText !important;
   }
 }
 
@@ -2176,7 +2389,7 @@
 
 .parent-weekly-access-link > svg:first-child {
   flex: 0 0 auto;
-  color: #2f9e5b;
+  color: var(--ok);
 }
 
 .parent-weekly-access-link > span {

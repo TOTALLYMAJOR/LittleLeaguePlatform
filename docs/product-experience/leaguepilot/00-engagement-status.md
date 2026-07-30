@@ -1,11 +1,11 @@
 # LeaguePilot UX Convergence Engagement — Status
 
 Engagement: Production-grade parent experience convergence (audit, experience architecture, and bounded implementation).
-Audit completed and LP-UX-001 implemented locally: 2026-07-29. Corrections completed locally and independently accepted: 2026-07-30. LP-UX-002 implemented and accepted locally: 2026-07-30.
+Audit completed and LP-UX-001 implemented locally: 2026-07-29. LP-UX-001 corrections completed locally and independently accepted: 2026-07-30. LP-UX-002 implemented and corrected locally: 2026-07-30.
 
 ## Current phase
 
-**LP-UX-002 SATURDAY READY REFERENCE SURFACE IS DONE-LOCAL-ACCEPTED.** The local reference-surface slice on `ux/lp-ux-002-saturday-ready` implements Family Home -> What Changed -> Next Event -> RSVP -> Readiness on `/parent`, adds the parent-authorized event-change read model, promotes reusable `components/family/*` primitives, and records portable local browser proof under `output/playwright/lp-ux-002-family-shell/`.
+**LP-UX-002 SATURDAY READY REFERENCE SURFACE IS DONE-LOCAL-CORRECTED.** The blocking canonical-reachability, multi-child readiness, forced-colors, landmark, token-governance, and authenticated contrast-proof gaps have local correction evidence on `ux/lp-ux-002-saturday-ready`. It is ready for fresh independent local review; it is not independently accepted or ready to publish.
 
 **LP-UX-001 FAMILY SHELL CONVERGENCE REMAINS DONE-LOCAL-ACCEPTED.** The reviewed shell-only slice on `ux/lp-ux-001-family-shell` has a local correction commit that aligns shared-route shell authority with server data scope, removes delayed client-only role discovery from first render, guards `/parent/more` through parent access, and regenerates expanded browser proof. The independent correction review found no unresolved P0 or P1 authorization/data-scope defect and accepted P2/P3 debt as non-blocking.
 
@@ -24,7 +24,10 @@ This state means local code, tests, build, and authenticated browser evidence on
 9. `09-first-five-implementation-slices.md` — bounded slices 1–5 + deferred list.
 10. `10-reference-implementation-brief.md` — reference slice (Family Home → What Changed → Next Event → RSVP), acceptance, bounded Codex handoff prompt.
 11. `lp-ux-001-correction-verification.md` — independent-review correction summary, exact local gates, and browser proof manifest summary.
-12. `lp-ux-002-acceptance-verification.md` — local acceptance summary, exact implementation commit, local gates, and browser proof manifest summary.
+12. `lp-ux-002-acceptance-verification.md` — superseded historical implementation report.
+13. `lp-ux-002-correction-verification.md` — correction boundary, exact local gates, and review boundary.
+14. `lp-ux-002-canonical-route-reachability.md` — removed-capability inventory, canonical context, authorization, and disposition.
+15. `lp-ux-002-correction-proof-manifest.md` — machine artifacts, human summaries, and screenshot sets.
 
 ## Headline findings (full detail in 01)
 
@@ -46,7 +49,7 @@ This state means local code, tests, build, and authenticated browser evidence on
 
 LP-UX-001 branch: `ux/lp-ux-001-family-shell`, based on `472790cff6ace95bd9329080f073eb77086da22e`. The exact implementation commit is `049c4b1e3f85549f4316e075b84d05bd3a56694e` with message `ux(parent): converge family shell and navigation`. The production-experience documents are preserved in the separate baseline commit that follows it. No push, merge, rebase, deployment, or promotion is inferred.
 
-LP-UX-002 branch: `ux/lp-ux-002-saturday-ready`, based on accepted correction commit `49697d3b25b370b68e6230e1626661f4fac49ba1`. The exact implementation commit is `9e2eca995f4fff81950a458623b74011a7ca833d` with message `ux(parent): implement Saturday Ready reference surface`. No push, merge, rebase, deployment, or promotion is inferred.
+LP-UX-002 branch: `ux/lp-ux-002-saturday-ready`, based on accepted LP-UX-001 correction commit `49697d3b25b370b68e6230e1626661f4fac49ba1`. The implementation commit is `9e2eca995f4fff81950a458623b74011a7ca833d` with message `ux(parent): implement Saturday Ready reference surface`. Its authorized correction commit uses message `fix(parent): complete Saturday Ready acceptance`; the final local handoff records its exact SHA. No push, merge, rebase, deployment, or promotion is inferred.
 
 ## LP-UX-001 local evidence
 
@@ -60,17 +63,18 @@ LP-UX-002 branch: `ux/lp-ux-002-saturday-ready`, based on accepted correction co
 
 ## LP-UX-002 local evidence
 
-- `output/playwright/lp-ux-002-family-shell/proof.json` records 80 route-viewport results across parent, coach, admin, neutral, and signed-out contexts at 320, 390, 768, 1024, and 1440 pixels.
-- All axe-checked Family results have zero critical/serious violations, no document overflow, 44px minimum shell controls, visible keyboard focus, explicit light Family shell rendering under dark device preference, zero page errors, and zero request failures.
-- The proof includes tracked screenshots for every route-viewport result under `output/playwright/lp-ux-002-family-shell/`.
-- `npm test -- app/api-live-actions.test.ts components/parent-weekly-dashboard.test.tsx lib/supabase/event-change-log-reads.test.ts` passes 37 focused tests, including both RSVP 409 conflict branches.
-- The complete Vitest suite passes 676 tests across 115 files. `npm run typecheck`, `npm run lint`, `npm run build`, and `git diff --check` pass. ESLint exits zero with 17 existing warnings outside the slice.
-- The event-change adapter is server-only, parent-authorized, organization- and season-scoped, bounded, deterministically ordered, privacy-safe, field-allowlisted, and does not return raw audit JSON.
+- `output/playwright/lp-ux-002-corrected-family-shell/proof.json` records 80 route-viewport results across parent, coach, admin, neutral, and signed-out contexts at 320, 390, 768, 1024, and 1440 pixels.
+- `output/playwright/lp-ux-002-contrast/proof.json` records 56 authenticated results for 14 topology-derived Family routes in Family light, device light, device dark, and forced-colors modes.
+- `output/playwright/lp-ux-002-saturday-ready/proof.json` records 11 production-component state scenarios spanning multi-child mixed readiness, different events, no-event, single unresolved/resolved, loading, error, device dark, and forced colors.
+- All state-proof results have exactly one primary landmark, zero serious/critical axe findings, no document overflow, controls at least 44px where present, visible focus, zero unexpected console errors, and zero failed requests. The authenticated contrast artifact records the same evidence categories per route/mode.
+- Eleven correction-focused test files pass 103 tests. The complete Vitest suite passes 692 tests across 121 files. `npm run typecheck`, `npm run lint`, and `npm run build` pass. ESLint exits zero with 17 existing warnings. `git diff --check` is required before the correction commit.
+- `npm audit` remains non-green with nine high-severity findings in the existing ESLint/minimatch development chain; the suggested complete repair requires a breaking dependency upgrade and is outside this no-dependency correction.
+- The event-change adapter remains server-only, parent-authorized, organization- and season-scoped, bounded, deterministically ordered, privacy-safe, field-allowlisted, and does not return raw audit JSON. Empty authorized scopes now fail closed to empty results rather than broadening a query.
 - The proof uses authenticated demo sessions and does not run row mutations or provider sends.
 
 ## Remaining work (next engagement)
 
-1. Review whether to publish LP-UX-001 and LP-UX-002 separately; hosted route proof remains a later, explicit action.
+1. Run a fresh independent local review of LP-UX-002. Only after acceptance should publication be considered; hosted route proof remains a later, explicit action.
 2. Triage the report-only security findings independently of UX work.
 3. Slices 3–5 (09), then P6–P7 (transportation sheets, Communication Room density).
 
@@ -78,10 +82,12 @@ LP-UX-002 branch: `ux/lp-ux-002-saturday-ready`, based on accepted correction co
 
 You are continuing the LeaguePilot UX convergence engagement at
 `/home/administrator/projects/youth-sports-platform-mvp-v3`. The read-only audit and
-experience-architecture phase, LP-UX-001, and LP-UX-002 are COMPLETE LOCALLY. Read `docs/product-experience/leaguepilot/`
+experience-architecture phase and LP-UX-001 are complete locally; LP-UX-002 is
+DONE-LOCAL-CORRECTED and awaits fresh independent review. Read `docs/product-experience/leaguepilot/`
 files 00 through 10 in order; 00 (this file) lists decisions of record and remaining
 work. Constraints that survive into implementation: docs/codex-rules.md strict rules;
 no second CSS framework; compatibility routes preserved; child-privacy display rules;
 acknowledgement = receipt only; claims stay done-local without hosted proof; QA guard
 LP-QA-GUARD-001 (no row-mutating proofs outside isolated QA). Keep later slices on
-separate branches and do not infer hosted acceptance from LP-UX-001 or LP-UX-002 local evidence.
+separate branches and do not begin later UX slices until LP-UX-002 is independently accepted.
+Do not infer hosted acceptance from LP-UX-001 or LP-UX-002 local evidence.

@@ -22,7 +22,7 @@ const rsvpOptions: Array<{
 export function responseLabel(response?: RsvpResponse) {
   if (response === "going") return "Going";
   if (response === "maybe") return "Maybe";
-  if (response === "not_going") return "Can’t attend";
+  if (response === "not_going") return "Can’t go";
   if (response === "cancelled") return "Cancelled";
   return "Needs reply";
 }

@@ -184,7 +184,7 @@ describe("route smoke coverage", () => {
     expect(shell).toContain("playsInline");
     expect(css).toContain(".mobile-tabbar");
     expect(css).toContain(".sidebar-video-backdrop");
-    expect(css).toContain(".parent-rsvp-glow");
+    expect(css).toContain(".parent-rsvp-action");
     expect(css).toContain("@media print");
     expect(css).toContain("@media (forced-colors: active)");
   });

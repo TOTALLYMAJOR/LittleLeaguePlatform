@@ -2,6 +2,7 @@ import Link from "next/link";
 import { ArrowRight, CalendarDays, CarFront, Clock3, MapPin, Shirt, UsersRound } from "lucide-react";
 import type { RsvpResponse } from "@/lib/domain";
 import type { FamilyMissionEvent } from "@/lib/family-mission-control";
+import type { ChildReadinessLane } from "./readiness";
 import { RsvpControl, responseLabel } from "./rsvp-control";
 import { StatusChip } from "./status-chip";
 
@@ -10,6 +11,7 @@ export function EventPassport({
   currentResponse,
   currentLockVersion,
   canWriteRsvp,
+  transportationLane,
   pending,
   onRsvpSaved
 }: {
@@ -17,6 +19,7 @@ export function EventPassport({
   currentResponse?: RsvpResponse;
   currentLockVersion: number;
   canWriteRsvp: boolean;
+  transportationLane?: ChildReadinessLane;
   pending?: boolean;
   onRsvpSaved?: (result: { response: Extract<RsvpResponse, "going" | "maybe" | "not_going">; lockVersion: number; scheduleVersion: number; message: string }) => void;
 }) {
@@ -35,15 +38,18 @@ export function EventPassport({
     ? "Review cancellation"
     : event.rsvpNeedsAction
       ? event.rsvpOutdated ? "Review RSVP after schedule change" : "RSVP required"
-      : !event.transportationAssigned
-        ? "Review ride responsibility"
+      : transportationLane?.status === "unresolved"
+        ? transportationLane.detail
         : "No immediate family action";
   const nextAction = event.status === "cancelled"
     ? { label: "Open schedule", href: `/parent/schedule?eventId=${encodeURIComponent(event.eventId)}` }
     : event.rsvpNeedsAction
       ? { label: "Answer RSVP", href: `/parent/rsvp?eventId=${encodeURIComponent(event.eventId)}&playerId=${encodeURIComponent(event.childId)}` }
-      : !event.transportationAssigned
-        ? { label: "Open transportation", href: `/parent/transportation?eventId=${encodeURIComponent(event.eventId)}&playerId=${encodeURIComponent(event.childId)}` }
+      : transportationLane?.status === "unresolved"
+        ? {
+          label: "Open transportation",
+          href: transportationLane.href ?? `/parent/transportation?eventId=${encodeURIComponent(event.eventId)}&playerId=${encodeURIComponent(event.childId)}`
+        }
         : event.primaryAction;
 
   return (
@@ -74,7 +80,13 @@ export function EventPassport({
         </div>
         <div>
           <dt><CarFront aria-hidden="true" size={16} /> Transportation</dt>
-          <dd>{event.transportationAssigned ? event.responsibleAdultLabel : "Not fully assigned"}</dd>
+          <dd>
+            {transportationLane?.detail ?? (event.transportationAssigned ? event.responsibleAdultLabel : "No ride help requested")}
+            {" · "}
+            <Link href={`/parent/transportation?eventId=${encodeURIComponent(event.eventId)}&playerId=${encodeURIComponent(event.childId)}#caregiver-coordination`}>
+              Caregiver note
+            </Link>
+          </dd>
         </div>
         <div>
           <dt><UsersRound aria-hidden="true" size={16} /> Required family action</dt>

@@ -9,6 +9,7 @@ import { CommunicationRoom } from "@/components/communication-room";
 import { ParentAdditionalGuardianClient } from "@/components/additional-guardian-access";
 import { ParentWeeklyDashboard } from "@/components/parent-weekly-dashboard";
 import { ParentTransportationClient } from "@/components/family-transportation";
+import { FamilyFlightPlanClient } from "@/components/coordination-workbenches";
 import { ParentTemporaryCaregiverClient } from "@/components/temporary-caregiver-access";
 import { FamilyParentReplay } from "@/components/family-parent-replay";
 import { ParentSeasonTransitionReview } from "@/components/season-transition-review";
@@ -39,13 +40,19 @@ export async function ParentHomeSurface() {
   if (!pageAccess.ok || !pageAccess.access.userId) {
     return <ParentDashboardClient dashboardData={pageAccess.dashboardData} />;
   }
-  const [dashboardData, notificationData, handoffData, transportationData, replayData, eventChangeData] = await Promise.all([
-    listParentCoachDashboardData({ viewerUserId: pageAccess.access.userId, surface: "parent" }),
+  const dashboardData = await listParentCoachDashboardData({
+    viewerUserId: pageAccess.access.userId,
+    surface: "parent"
+  });
+  const familyTimeZone = dashboardData.state.notificationPreferences.find((preference) => (
+    preference.userId === pageAccess.access.userId && preference.timezone
+  ))?.timezone ?? "America/Chicago";
+  const [notificationData, handoffData, transportationData, replayData, eventChangeData] = await Promise.all([
     listParentNotificationReceipts({ parentUserId: pageAccess.access.userId }),
     listParentFamilyHandoffs({ parentUserId: pageAccess.access.userId }),
     listParentTransportationData(pageAccess.access.userId),
     listFamilyReplays({ parentUserId: pageAccess.access.userId }),
-    listParentEventChangeLogs({ parentUserId: pageAccess.access.userId })
+    listParentEventChangeLogs({ parentUserId: pageAccess.access.userId, timeZone: familyTimeZone })
   ]);
   const missionControl = buildFamilyMissionControl({
     state: dashboardData.state,
@@ -64,6 +71,8 @@ export async function ParentHomeSurface() {
         dashboardData={dashboardData}
         replayData={replayData}
         notificationReceipts={notificationData.receipts}
+        notificationLoadOk={notificationData.ok}
+        transportationData={transportationData}
         eventChangeData={eventChangeData}
       />
     </>
@@ -158,8 +167,24 @@ export async function ParentTransportationSurface() {
   if (!pageAccess.ok || !pageAccess.access.userId) {
     return <ParentDashboardClient dashboardData={pageAccess.dashboardData} />;
   }
-  const data = await listParentTransportationData(pageAccess.access.userId);
-  return <ParentTransportationClient data={data} />;
+  const [data, dashboardData, handoffData] = await Promise.all([
+    listParentTransportationData(pageAccess.access.userId),
+    listParentCoachDashboardData({ viewerUserId: pageAccess.access.userId, surface: "parent" }),
+    listParentFamilyHandoffs({ parentUserId: pageAccess.access.userId })
+  ]);
+  return (
+    <>
+      <ParentTransportationClient data={data} />
+      <div id="caregiver-coordination">
+        <FamilyFlightPlanClient
+          state={dashboardData.state}
+          parentUserId={pageAccess.access.userId}
+          initialHandoffs={handoffData.handoffs}
+          message={handoffData.message}
+        />
+      </div>
+    </>
+  );
 }
 
 export async function ParentSettingsSurface() {
