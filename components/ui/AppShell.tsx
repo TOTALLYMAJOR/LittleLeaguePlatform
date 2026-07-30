@@ -58,7 +58,7 @@ const routeHelpByRole: Record<RouteTopologyEntry["role"], { title: string; body:
   },
   coach: {
     title: "Coach tools",
-    body: "Use this area for attendance, practice recaps, team messages, roster, weather, and planning.",
+    body: "Use this area for attendance, Practice Replays, team messages, roster, weather, and planning.",
     tone: "coach"
   },
   admin: {
@@ -401,7 +401,7 @@ export function AppShell({ access = signedOutShellAccess, children }: { access?:
               <span className="brand-mark">LP</span>
               <span className="brand-copy">
                 <strong>LeaguePilot</strong>
-                <small>Little League HQ demo</small>
+                <small>{activeContext?.organizationName ?? "Youth sports operations"}</small>
               </span>
             </Link>
             <button

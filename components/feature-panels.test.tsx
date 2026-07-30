@@ -174,8 +174,10 @@ describe("AccountClient", () => {
   it("shows organization membership separately from team membership", () => {
     const html = renderToStaticMarkup(<AccountClient />);
 
+    expect(html).toContain("Your account and access");
     expect(html).toContain("Organization memberships");
     expect(html).toContain("Team memberships");
+    expect(html).not.toContain("Confirm identity, profile, and team membership");
   });
 });
 

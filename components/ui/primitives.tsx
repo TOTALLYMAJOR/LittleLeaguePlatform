@@ -706,7 +706,7 @@ export function GradientTeamCard({ team = "Tiny Tigers" }: { team?: string }) {
         <div>
           <span className="eyebrow">Team home</span>
           <h3>{team}</h3>
-          <p className="muted">Family schedules, RSVPs, chat, and practice recaps in one place.</p>
+          <p className="muted">Family schedules, RSVPs, chat, and Practice Replays in one place.</p>
         </div>
         <div className="big-team-logo" aria-hidden="true">TT</div>
       </div>

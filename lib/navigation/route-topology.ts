@@ -141,7 +141,7 @@ export const routeTopology = [
   }),
   route("/invite/recover", "Recover Invite", "RI", "support", "Support", ["signed_in"], false, false, true, true, undefined, false, {
     familyMobileTab: "more",
-    parentMoreDescription: "Get help with an invitation or access review.",
+    parentMoreDescription: "Get help with an invitation, access review, or account question.",
     parentMorePriority: 6
   }),
   route("/invite/expired", "Expired Invite", "EX", "support", "Support", ["signed_out", "parent", "coach", "admin"], false, false, false, false),
@@ -199,7 +199,7 @@ export const routeTopology = [
   route("/coach/schedule", "Schedule", "SC", "coach", "Calendar", ["coach"], true, true, true, true, 2),
   route("/coach/attendance", "Attendance", "AT", "coach", "Team", ["coach"], true, true, true, true, 3),
   route("/coach/messages", "Messages", "MS", "coach", "Communication", ["coach"], true, true, true, true, 4),
-  route("/coach/practice-recaps", "Practice Recaps", "PR", "coach", "Replay", ["coach"], true, true, true, true, 5),
+  route("/coach/practice-recaps", "Practice Replays", "PR", "coach", "Replay", ["coach"], true, true, true, true, 5),
   route("/coach/roster", "Roster", "RO", "coach", "Team", ["coach"], true, true, true, true),
   route("/coach/snacks-volunteers", "Snacks & Volunteers", "SV", "coach", "Team", ["coach"], true, true, true, true),
   route("/coach/weather-fields", "Weather & Fields", "WF", "coach", "Tools", ["coach"], true, true, true, true),

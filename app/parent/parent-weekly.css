@@ -2182,6 +2182,36 @@
   color: var(--muted);
 }
 
+.family-settings-page .hero {
+  max-width: 820px;
+}
+
+.family-settings-links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--sp-2);
+  border-top: 1px solid var(--line);
+  padding-top: var(--sp-3);
+}
+
+.family-settings-links a {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  color: var(--action-strong);
+  font-weight: 750;
+}
+
+.account-page .account-hero {
+  max-width: 840px;
+}
+
+.account-page .account-hero h1 {
+  font-size: clamp(2.4rem, 5vw, 4.8rem);
+  line-height: 0.98;
+  letter-spacing: -0.055em;
+}
+
 .parent-schedule-page > .family-filter {
   margin-top: 0;
 }

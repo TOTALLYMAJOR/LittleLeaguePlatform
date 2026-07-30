@@ -1337,11 +1337,11 @@ export function AccountClient() {
   }
 
   return (
-    <div className="page">
-      <section className="hero">
+    <div className="page account-page">
+      <section className="hero account-hero">
         <span className="eyebrow">Account access</span>
-        <h1>Confirm identity, profile, and team membership before showing private data.</h1>
-        <p className="lead">This page separates signup from access. A profile proves identity; team or organization memberships unlock role-scoped app surfaces.</p>
+        <h1>Your account and access</h1>
+        <p className="lead">Review your profile, the leagues and teams connected to it, and safely sign out of this device.</p>
       </section>
 
       <p className="notice">{message}</p>
@@ -1363,8 +1363,8 @@ export function AccountClient() {
           <h2>Organization memberships</h2>
           {organizationMemberships.map((membership) => (
             <p key={`${membership.organization_id}-${membership.role}`}>
-              <strong>{roleLabel(membership.role)}</strong><br />
-              <span className="muted">{membership.organization_id} - {membership.status}</span>
+              <strong>League access</strong><br />
+              <span className="muted">{roleLabel(membership.role)} · {membership.status}</span>
             </p>
           ))}
           {organizationMemberships.length === 0 ? <p className="muted">No active organization memberships yet.</p> : null}
@@ -1374,8 +1374,8 @@ export function AccountClient() {
           <h2>Team memberships</h2>
           {memberships.map((membership) => (
             <p key={`${membership.team_id}-${membership.role}`}>
-              <strong>{roleLabel(membership.role)}</strong><br />
-              <span className="muted">{membership.team_id} - {membership.status}</span>
+              <strong>Team access</strong><br />
+              <span className="muted">{roleLabel(membership.role)} · {membership.status}</span>
             </p>
           ))}
           {memberships.length === 0 ? <p className="muted">No active team memberships yet.</p> : null}
@@ -3097,7 +3097,7 @@ export function CoachDashboardClient({ dashboardData }: { dashboardData?: Parent
             />
             <CompactDisclosure
               title="More coach context"
-              summary="Attendance, recent changes, fields, drafts, and practice recaps."
+              summary="Attendance, recent changes, fields, drafts, and Practice Replays."
               badge={`${coachReviewCount} review`}
             >
               <div className="season-card-grid">
@@ -3462,7 +3462,7 @@ export function CoachDashboardClient({ dashboardData }: { dashboardData?: Parent
 
       <CompactDisclosure
         title="Drafts and team help"
-        summary="Weekly update draft, practice recap, snack, and volunteer controls."
+        summary="Weekly update draft, Practice Replay, snack, and volunteer controls."
         badge="drafts"
       >
       <section className="grid two">
@@ -3482,9 +3482,9 @@ export function CoachDashboardClient({ dashboardData }: { dashboardData?: Parent
 
       <section className="grid three">
         <article className="card stack">
-          <h2>Practice Recaps</h2>
+          <h2>Practice Replays</h2>
           <p>Use the recap builder after practice to generate parent activities and team quests.</p>
-          <a href="/coach/practice-recaps">Open practice recaps</a>
+          <a href="/coach/practice-recaps">Open Practice Replays</a>
         </article>
         <article className="card stack">
           <h2>Snacks</h2>
@@ -8084,14 +8084,14 @@ function createEmptyTeamPortalReplay(team: { id: string; coachUserId?: string })
       {
         duration: "2_minutes",
         title: "Ask your coach for the next home activity.",
-        coachCue: "practice recap",
+        coachCue: "Practice Replay",
         parentGoal: "Keep the family loop ready until the next coach-approved Replay.",
-        steps: ["Check the next practice recap after it is published."]
+        steps: ["Check the next Practice Replay after it is published."]
       }
     ],
     parentTranslations: [
       {
-        coachTerm: "practice recap",
+        coachTerm: "Practice Replay",
         parentInstruction: "Ask your coach for one simple cue to repeat at home."
       }
     ],
@@ -8110,7 +8110,7 @@ function createEmptyTeamPortalReplay(team: { id: string; coachUserId?: string })
       url: "#",
       note: "No coach video has been linked yet."
     },
-    parentTip: "Coach tips will appear after the next practice recap.",
+    parentTip: "Coach tips will appear after the next Practice Replay.",
     teamQuest: "Ask your coach for the next team quest.",
     skillCards: ["Practice cues will appear after the next recap."],
     parentEducation: "Parent education will appear after the next recap.",

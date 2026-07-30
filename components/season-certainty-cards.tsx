@@ -262,7 +262,7 @@ export function CoachUpdateCard({ view }: { view: ParentSeasonCertaintyView }) {
           <a className="text-link" href={view.coachUpdate.href}>Read update</a>
         </>
       ) : (
-        <EmptyState title="No coach updates this week." body="Published coach announcements and approved practice recaps will appear here." />
+        <EmptyState title="No coach updates this week." body="Published coach announcements and approved Practice Replays will appear here." />
       )}
     </SeasonCard>
   );
@@ -384,9 +384,9 @@ export function DraftsToReviewCard({ view }: { view: CoachSeasonCertaintyView })
 export function PracticeRecapCard({ view }: { view: CoachSeasonCertaintyView }) {
   return (
     <SeasonCard state="ready" className="practice-recap-card">
-      <SectionHeader title="Practice Recaps" action={<a href={view.practiceRecap.href}>{view.practiceRecap.statusLabel}</a>} />
+      <SectionHeader title="Practice Replays" action={<a href={view.practiceRecap.href}>{view.practiceRecap.statusLabel}</a>} />
       <p>{view.practiceRecap.title}</p>
-      <p className="season-muted">Practice recap content stays coach reviewed before families see it.</p>
+      <p className="season-muted">Practice Replay content stays coach reviewed before families see it.</p>
     </SeasonCard>
   );
 }

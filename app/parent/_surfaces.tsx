@@ -13,6 +13,7 @@ import { FamilyFlightPlanClient } from "@/components/coordination-workbenches";
 import { ParentTemporaryCaregiverClient } from "@/components/temporary-caregiver-access";
 import { FamilyParentReplay } from "@/components/family-parent-replay";
 import { ParentSeasonTransitionReview } from "@/components/season-transition-review";
+import { FamilySettingsClient } from "@/components/family-first-sign-in";
 import { listParentCoachDashboardData } from "@/lib/supabase/dashboard-data";
 import { listParentFamilyHandoffs } from "@/lib/supabase/family-flight-plan";
 import { listParentNotificationReceipts } from "@/lib/supabase/notification-receipts";
@@ -188,8 +189,15 @@ export async function ParentTransportationSurface() {
 }
 
 export async function ParentSettingsSurface() {
-  const dashboardData = await loadParentDashboardForPage();
-  return <ParentDashboardClient dashboardData={dashboardData} />;
+  const pageAccess = await requireParentPageAccess();
+  if (!pageAccess.ok || !pageAccess.access.userId) {
+    return <ParentDashboardClient dashboardData={pageAccess.dashboardData} />;
+  }
+  const dashboardData = await listParentCoachDashboardData({
+    viewerUserId: pageAccess.access.userId,
+    surface: "parent"
+  });
+  return <FamilySettingsClient dashboardData={dashboardData} />;
 }
 
 export async function ParentReplayReadSurface() {
