@@ -1,6 +1,6 @@
 # Authenticated Family Contrast Proof
 
-Generated: 2026-07-30T18:38:32.268Z
+Generated: 2026-07-30T22:45:50.069Z
 Routes: 14, topology source: lib/navigation/route-topology.ts
 Modes: family-light, device-light, device-dark, forced-colors
 Results: 56 passed

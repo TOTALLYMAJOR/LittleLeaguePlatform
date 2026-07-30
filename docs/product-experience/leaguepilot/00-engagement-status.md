@@ -1,11 +1,11 @@
 # LeaguePilot UX Convergence Engagement — Status
 
 Engagement: Production-grade parent experience convergence (audit, experience architecture, and bounded implementation).
-Audit completed and LP-UX-001 implemented locally: 2026-07-29. LP-UX-001 corrections completed locally and independently accepted: 2026-07-30. LP-UX-002 implemented and corrected locally: 2026-07-30.
+Audit completed and LP-UX-001 implemented locally: 2026-07-29. LP-UX-001 corrections completed locally and independently accepted: 2026-07-30. LP-UX-002 implemented, corrected, and independently accepted locally: 2026-07-30.
 
 ## Current phase
 
-**LP-UX-002 SATURDAY READY REFERENCE SURFACE IS DONE-LOCAL-CORRECTED.** The blocking canonical-reachability, multi-child readiness, forced-colors, landmark, token-governance, and authenticated contrast-proof gaps have local correction evidence on `ux/lp-ux-002-saturday-ready`. It is ready for fresh independent local review; it is not independently accepted or ready to publish.
+**LP-UX-002 SATURDAY READY REFERENCE SURFACE IS DONE-LOCAL-ACCEPTED.** The blocking canonical-reachability, multi-child readiness, forced-colors, landmark, token-governance, and authenticated contrast-proof gaps have correction evidence on `ux/lp-ux-002-saturday-ready`. A fresh independent source, test, build, state-proof, and authenticated contrast review accepted commit `44f746e` as the local base for the next bounded slice. It is not pushed, merged, deployed, hosted-proven, or production-accepted.
 
 **LP-UX-001 FAMILY SHELL CONVERGENCE REMAINS DONE-LOCAL-ACCEPTED.** The reviewed shell-only slice on `ux/lp-ux-001-family-shell` has a local correction commit that aligns shared-route shell authority with server data scope, removes delayed client-only role discovery from first render, guards `/parent/more` through parent access, and regenerates expanded browser proof. The independent correction review found no unresolved P0 or P1 authorization/data-scope defect and accepted P2/P3 debt as non-blocking.
 
@@ -28,6 +28,7 @@ This state means local code, tests, build, and authenticated browser evidence on
 13. `lp-ux-002-correction-verification.md` — correction boundary, exact local gates, and review boundary.
 14. `lp-ux-002-canonical-route-reachability.md` — removed-capability inventory, canonical context, authorization, and disposition.
 15. `lp-ux-002-correction-proof-manifest.md` — machine artifacts, human summaries, and screenshot sets.
+16. `lp-ux-002-independent-correction-review.md` — fresh independent local acceptance of the corrected slice and its exact proof boundary.
 
 ## Headline findings (full detail in 01)
 
@@ -74,20 +75,20 @@ LP-UX-002 branch: `ux/lp-ux-002-saturday-ready`, based on accepted LP-UX-001 cor
 
 ## Remaining work (next engagement)
 
-1. Run a fresh independent local review of LP-UX-002. Only after acceptance should publication be considered; hosted route proof remains a later, explicit action.
+1. Implement Slices 3–5 (09), then P6–P7 (Family progression, transportation sheets, Communication Room density) as separate local commits.
 2. Triage the report-only security findings independently of UX work.
-3. Slices 3–5 (09), then P6–P7 (transportation sheets, Communication Room density).
+3. Keep publication and hosted route proof as later, explicit actions.
 
 ## Continuation prompt (self-contained)
 
 You are continuing the LeaguePilot UX convergence engagement at
 `/home/administrator/projects/youth-sports-platform-mvp-v3`. The read-only audit and
 experience-architecture phase and LP-UX-001 are complete locally; LP-UX-002 is
-DONE-LOCAL-CORRECTED and awaits fresh independent review. Read `docs/product-experience/leaguepilot/`
+DONE-LOCAL-ACCEPTED at `44f746e`. Read `docs/product-experience/leaguepilot/`
 files 00 through 10 in order; 00 (this file) lists decisions of record and remaining
 work. Constraints that survive into implementation: docs/codex-rules.md strict rules;
 no second CSS framework; compatibility routes preserved; child-privacy display rules;
 acknowledgement = receipt only; claims stay done-local without hosted proof; QA guard
 LP-QA-GUARD-001 (no row-mutating proofs outside isolated QA). Keep later slices on
-separate branches and do not begin later UX slices until LP-UX-002 is independently accepted.
+separate local commits and preserve the accepted LP-UX-002 proof boundary.
 Do not infer hosted acceptance from LP-UX-001 or LP-UX-002 local evidence.
