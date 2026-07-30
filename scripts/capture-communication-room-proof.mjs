@@ -81,8 +81,17 @@ async function captureViewport(browser, [name, width, height]) {
     });
     await page.getByRole("heading", { name: "Communication Room" }).waitFor({ timeout: 20_000 });
     await page.getByRole("heading", { name: "Critical · Requires you" }).waitFor();
-    await page.getByRole("heading", { name: "Recent from Updates" }).waitFor();
-    await page.getByRole("heading", { name: "Conversation preview" }).waitFor();
+    if (width <= 820) {
+      await page.getByRole("button", { name: /Updates/ }).click();
+      await page.getByRole("heading", { name: "Recent from Updates" }).waitFor();
+      await page.getByRole("button", { name: /Conversation/ }).click();
+      await page.getByRole("heading", { name: "Conversation preview" }).waitFor();
+      await page.getByRole("button", { name: /Critical/ }).click();
+      await page.getByRole("heading", { name: "Critical · Requires you" }).waitFor();
+    } else {
+      await page.getByRole("heading", { name: "Recent from Updates" }).waitFor();
+      await page.getByRole("heading", { name: "Conversation preview" }).waitFor();
+    }
 
     const metrics = await page.evaluate(() => {
       const surface = document.querySelector(".communication-room");

@@ -2636,7 +2636,10 @@
   .family-access-step,
   .family-access-review-queue,
   .family-access-type-grid button,
-  .transportation-step-rail li {
+  .transportation-step-rail li,
+  .communication-event-disclosure,
+  .communication-authority-detail,
+  .communication-lanes {
     border: 1px solid CanvasText;
     background: Canvas;
     box-shadow: none;
@@ -2700,6 +2703,100 @@
   [data-surface-family="family"] .parent-season-story-header > div:first-child > span,
   [data-surface-family="family"] .parent-season-story-header p {
     color: CanvasText !important;
+  }
+}
+
+/* LP-UX-007: compact source truth, disclosed context, and lane-first mobile scanning. */
+.communication-source-summary {
+  display: grid;
+  gap: 4px;
+  justify-items: end;
+}
+
+.communication-source-summary details {
+  color: var(--muted);
+  font-size: var(--text-xs);
+}
+
+.communication-source-summary summary,
+.communication-event-disclosure summary,
+.communication-authority-detail summary {
+  cursor: pointer;
+  font-weight: 850;
+  min-height: 44px;
+  padding-block: 10px;
+}
+
+.communication-source-summary ul {
+  display: grid;
+  gap: 3px;
+  margin: 0;
+  padding: var(--sp-2) 0 0 1.1rem;
+}
+
+.communication-event-disclosure {
+  border-block: 1px solid var(--line);
+}
+
+.communication-event-disclosure > summary {
+  color: var(--muted);
+  font-size: var(--text-sm);
+}
+
+.communication-event-disclosure[open] > summary {
+  border-bottom: 1px solid var(--line);
+}
+
+.communication-event-disclosure .communication-event-context {
+  margin-block: var(--sp-3);
+}
+
+.communication-authority-detail {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-md);
+  padding: var(--sp-3) var(--sp-4);
+}
+
+.communication-authority-detail p {
+  color: var(--muted);
+  font-size: var(--text-sm);
+}
+
+@media (max-width: 820px) {
+  .communication-source-summary {
+    justify-items: start;
+  }
+
+  .communication-lanes {
+    position: sticky;
+    top: 0;
+    z-index: var(--z-sticky);
+    box-shadow: 0 8px 20px rgba(28, 36, 56, 0.12);
+  }
+
+  .communication-lane-panel:not(.is-active) {
+    display: none;
+  }
+
+  .communication-conversation-layout > .communication-context-rail {
+    display: grid;
+  }
+}
+
+@media (min-width: 1100px) {
+  .communication-conversation-layout {
+    grid-template-columns: minmax(0, 1fr) minmax(220px, 0.42fr);
+  }
+
+  .communication-conversation-layout > .communication-context-rail {
+    display: grid;
+    grid-column: 2;
+    grid-row: 1 / span 2;
+  }
+
+  .communication-composer {
+    grid-column: 1;
   }
 }
 

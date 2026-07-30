@@ -78,6 +78,11 @@ describe("CommunicationRoom", () => {
     expect(html).toContain("Critical");
     expect(html).toContain("Updates");
     expect(html).toContain("Conversation");
+    expect(html).toContain("Family communication is current");
+    expect(html).toContain("Source details");
+    expect(html.match(/communication-source-status/g)).toHaveLength(1);
+    expect(html).toContain("What this room can confirm");
+    expect(html).toContain("Event details");
     expect(html).toContain("Critical team instruction");
     expect(html).toContain("Approved by Coach Taylor");
     expect(html).toContain("Published");
