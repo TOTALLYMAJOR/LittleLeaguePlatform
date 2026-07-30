@@ -2632,7 +2632,11 @@
   .family-readiness-strip,
   .family-child-readiness,
   .family-child-next-event,
-  .family-rsvp-options button {
+  .family-rsvp-options button,
+  .family-access-step,
+  .family-access-review-queue,
+  .family-access-type-grid button,
+  .transportation-step-rail li {
     border: 1px solid CanvasText;
     background: Canvas;
     box-shadow: none;
@@ -2640,7 +2644,8 @@
   }
 
   .family-filter button.is-selected,
-  .family-rsvp-options button.is-selected {
+  .family-rsvp-options button.is-selected,
+  .family-access-type-grid button.is-selected {
     border: 3px double Highlight;
     background: Highlight;
     color: HighlightText;
@@ -2743,5 +2748,226 @@
 @media (prefers-reduced-motion: reduce) {
   .parent-weekly-access-link {
     transition: none;
+  }
+}
+
+/* LP-UX-006: one deliberate access progression instead of three competing pages. */
+.family-access-progression {
+  max-width: 1040px;
+}
+
+.family-access-progression,
+.family-access-progression > *,
+.family-access-workflow,
+.family-access-embedded,
+.family-access-workflow .grid,
+.family-access-workflow .card {
+  min-width: 0;
+  max-width: 100%;
+}
+
+.family-access-hero {
+  max-width: 820px;
+}
+
+.family-access-step,
+.family-access-review-queue {
+  display: grid;
+  gap: var(--sp-4);
+  padding: clamp(20px, 3vw, 32px);
+  border: 1px solid #e4dccf;
+  border-radius: 24px;
+  background: #fffdf9;
+  box-shadow: 0 12px 32px rgba(53, 42, 29, 0.06);
+}
+
+.family-access-step > header,
+.family-access-review-queue > header {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--sp-3);
+}
+
+.family-access-step > header > span {
+  display: grid;
+  flex: 0 0 36px;
+  width: 36px;
+  height: 36px;
+  place-items: center;
+  border-radius: 50%;
+  background: #1f3a63;
+  color: #fff;
+  font-weight: 900;
+}
+
+.family-access-step > header small,
+.family-access-review-queue > header small {
+  color: #746958;
+  font-size: var(--text-xs);
+  font-weight: 900;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.family-access-step > header h2,
+.family-access-review-queue > header h2 {
+  margin: 2px 0 0;
+}
+
+.family-access-step > label {
+  display: grid;
+  gap: var(--sp-2);
+  max-width: 560px;
+  font-weight: 800;
+}
+
+.family-access-type-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--sp-3);
+}
+
+.family-access-type-grid button {
+  display: grid;
+  min-height: 168px;
+  gap: var(--sp-2);
+  align-content: start;
+  padding: var(--sp-4);
+  border: 2px solid #ded6c8;
+  border-radius: 20px;
+  background: #fff;
+  color: #1c2438;
+  text-align: left;
+  white-space: normal;
+  overflow-wrap: anywhere;
+}
+
+.family-access-type-grid button:hover {
+  border-color: #7891b5;
+}
+
+.family-access-type-grid button.is-selected {
+  border-color: #1f3a63;
+  background: #f2f6fb;
+  box-shadow: inset 0 0 0 1px #1f3a63;
+}
+
+.family-access-type-grid button > svg {
+  color: #1f3a63;
+}
+
+.family-access-type-grid button > strong {
+  font-size: var(--text-lg);
+}
+
+.family-access-type-grid button > span,
+.family-access-type-grid button > small,
+.family-access-tier-boundary,
+.family-access-selected-child {
+  color: #665f53;
+}
+
+.family-access-type-grid button > small {
+  font-weight: 800;
+}
+
+.family-access-tier-boundary {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--sp-2);
+  margin: 0;
+  padding: var(--sp-3);
+  border-radius: 14px;
+  background: #f7f1e7;
+  font-size: var(--text-sm);
+}
+
+.family-access-tier-boundary svg {
+  flex: 0 0 auto;
+  color: var(--ok);
+}
+
+.family-access-embedded {
+  display: grid;
+  gap: var(--sp-4);
+}
+
+.family-access-selected-child {
+  display: grid;
+  gap: 2px;
+  margin: 0;
+  font-size: var(--text-sm);
+  font-weight: 800;
+}
+
+.family-access-workflow input,
+.family-access-workflow select,
+.family-access-workflow textarea,
+.family-access-workflow button {
+  min-width: 0;
+  max-width: 100%;
+}
+
+.family-access-workflow .additional-guardian-page .grid.two,
+.family-access-workflow .temporary-caregiver-builder {
+  grid-template-columns: 1fr;
+}
+
+.transportation-step-rail {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: var(--sp-2);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.transportation-step-rail li {
+  display: grid;
+  gap: 2px;
+  min-height: 72px;
+  padding: var(--sp-3);
+  border: 1px solid #e4dccf;
+  border-radius: 16px;
+  background: #fffdf9;
+}
+
+.transportation-step-rail li span {
+  color: #1f3a63;
+  font-size: var(--text-xs);
+  font-weight: 900;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.transportation-step-rail li strong {
+  color: #1c2438;
+}
+
+.transportation-workspace {
+  display: grid;
+  grid-template-columns: 1fr;
+  max-width: 820px;
+  margin-inline: auto;
+}
+
+@media (max-width: 640px) {
+  .family-access-step,
+  .family-access-review-queue {
+    padding: var(--sp-3);
+    border-radius: 18px;
+  }
+
+  .family-access-type-grid,
+  .transportation-step-rail {
+    grid-template-columns: 1fr;
+  }
+
+  .family-access-step > header {
+    gap: var(--sp-2);
+  }
+
+  .family-access-type-grid button {
+    min-height: 0;
   }
 }

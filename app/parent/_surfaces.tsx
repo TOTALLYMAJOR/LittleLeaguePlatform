@@ -2,19 +2,16 @@ import {
   ParentDashboardClient,
   ParentReplayClient,
   ParentRsvpClient,
-  ScheduleAlertsClient,
-  TeamPortalClient
+  ScheduleAlertsClient
 } from "@/components/feature-panels";
 import { CommunicationRoom } from "@/components/communication-room";
-import { ParentAdditionalGuardianClient } from "@/components/additional-guardian-access";
 import { ParentWeeklyDashboard } from "@/components/parent-weekly-dashboard";
 import { ParentTransportationClient } from "@/components/family-transportation";
 import { FamilyFlightPlanClient } from "@/components/coordination-workbenches";
-import { ParentTemporaryCaregiverClient } from "@/components/temporary-caregiver-access";
 import { FamilyParentReplay } from "@/components/family-parent-replay";
-import { ParentSeasonTransitionReview } from "@/components/season-transition-review";
 import { FamilySettingsClient } from "@/components/family-first-sign-in";
 import { FamilyPhotos } from "@/components/family-photos";
+import { FamilyAccessProgression } from "@/components/family-access-progression";
 import { listParentCoachDashboardData } from "@/lib/supabase/dashboard-data";
 import { listParentFamilyHandoffs } from "@/lib/supabase/family-flight-plan";
 import { listParentNotificationReceipts } from "@/lib/supabase/notification-receipts";
@@ -172,13 +169,11 @@ export async function ParentFamilyAccessSurface() {
     listParentTemporaryCaregiverData(pageAccess.access.userId),
     listParentSeasonTransitions(pageAccess.access.userId)
   ]);
-  return (
-    <>
-      <ParentSeasonTransitionReview data={transitionData} />
-      <ParentAdditionalGuardianClient data={guardianData} />
-      <ParentTemporaryCaregiverClient data={caregiverData} />
-    </>
-  );
+  return <FamilyAccessProgression
+    guardianData={guardianData}
+    caregiverData={caregiverData}
+    transitionData={transitionData}
+  />;
 }
 
 export async function ParentTransportationSurface() {
