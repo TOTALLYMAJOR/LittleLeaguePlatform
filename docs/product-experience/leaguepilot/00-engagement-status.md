@@ -40,7 +40,7 @@ This state means local code, tests, build, and authenticated browser evidence on
 
 ## Git status at end of engagement
 
-LP-UX-001 branch: `ux/lp-ux-001-family-shell`, based on `472790cff6ace95bd9329080f073eb77086da22e`. The implementation is bounded for one local commit with message `ux(parent): converge family shell and navigation`. No push, merge, rebase, deployment, or promotion is part of this slice. Other product-experience audit files remain separate user-owned working-tree material.
+LP-UX-001 branch: `ux/lp-ux-001-family-shell`, based on `472790cff6ace95bd9329080f073eb77086da22e`. The exact implementation commit is `049c4b1e3f85549f4316e075b84d05bd3a56694e` with message `ux(parent): converge family shell and navigation`. The production-experience documents are preserved in the separate baseline commit that follows it. No push, merge, rebase, deployment, or promotion is inferred.
 
 ## LP-UX-001 local evidence
 
