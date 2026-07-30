@@ -1,13 +1,13 @@
 # LeaguePilot UX Convergence Engagement — Status
 
 Engagement: Production-grade parent experience convergence (audit, experience architecture, and bounded implementation).
-Audit completed and LP-UX-001 implemented locally: 2026-07-29.
+Audit completed and LP-UX-001 implemented locally: 2026-07-29. Corrections completed locally: 2026-07-30.
 
 ## Current phase
 
-**LP-UX-001 FAMILY SHELL CONVERGENCE IS DONE-LOCAL.** The approved shell-only slice is implemented on `ux/lp-ux-001-family-shell`. It converges confirmed Parent contexts on one metadata-driven light Family shell and exact Home / Schedule / Messages / Family / More navigation. It adds `/parent/more`, moves sign out to Account, keeps shared routes in the active confirmed role context, and leaves public, caregiver, neutral-transition, and staff authority boundaries intact.
+**LP-UX-001 FAMILY SHELL CONVERGENCE IS DONE-LOCAL-CORRECTED.** The reviewed shell-only slice on `ux/lp-ux-001-family-shell` has a local correction commit that aligns shared-route shell authority with server data scope, removes delayed client-only role discovery from first render, guards `/parent/more` through parent access, and regenerates expanded browser proof.
 
-This state means local code, tests, build, and authenticated browser evidence only. Nothing was pushed, merged, deployed, promoted, or accepted on a hosted environment. No route move, domain behavior, API contract, provider operation, permission, schema, migration, or staff-route behavior changed.
+This state means local code, tests, build, and authenticated browser evidence only. Nothing was pushed, merged, deployed, promoted, or accepted on a hosted environment. No route move, domain behavior, provider operation, permission weakening, schema, migration, or staff business logic changed.
 
 ## Deliverables (all in this directory)
 
@@ -21,6 +21,7 @@ This state means local code, tests, build, and authenticated browser evidence on
 8. `08-accessibility-and-responsive-contract.md` — testable clauses + proof harness upgrade.
 9. `09-first-five-implementation-slices.md` — bounded slices 1–5 + deferred list.
 10. `10-reference-implementation-brief.md` — reference slice (Family Home → What Changed → Next Event → RSVP), acceptance, bounded Codex handoff prompt.
+11. `lp-ux-001-correction-verification.md` — independent-review correction summary, exact local gates, and browser proof manifest summary.
 
 ## Headline findings (full detail in 01)
 
@@ -44,10 +45,12 @@ LP-UX-001 branch: `ux/lp-ux-001-family-shell`, based on `472790cff6ace95bd932908
 
 ## LP-UX-001 local evidence
 
-- `output/playwright/family-shell/proof.json` records 40 route-viewport results: seven family-context routes and one Coach shell regression at 320, 390, 768, 1024, and 1440 pixels.
-- All 35 family-context results have zero axe critical/serious violations, no document overflow, 44px minimum shell controls, visible keyboard focus, the explicit light Family theme under dark device preference, exact mobile tabs, active destinations, and no family sidebar video or duplicate context bars.
+- `output/playwright/family-shell/proof.json` records 80 route-viewport results across parent, coach, admin, neutral, and signed-out contexts at 320, 390, 768, 1024, and 1440 pixels.
+- All axe-checked Family results have zero critical/serious violations, no document overflow, 44px minimum shell controls, visible keyboard focus, the explicit light Family theme under dark device preference, exact mobile tabs, active destinations, and no family sidebar video or duplicate context bars.
+- Shared-route browser proof covers `/team-chat` and `/team-portal` in parent, coach, and administrator contexts. Initial JavaScript-disabled render and hydrated render keep the same shell, resolved role, and data-scope marker.
+- Neutral transition proof covers `/access/status` and `/invite/accept`; signed-out proof covers `/parent/more`; Account proof covers reachable keyboard focus for Sign out.
 - `npm run qa:contrast-proof` passes its existing nine-route light, dark, and team-theme contract. Coach retains a pre-existing dark-device contrast issue outside the LP-UX-001 family boundary; it is not relabeled as fixed.
-- `npm run typecheck`, the complete 659-test Vitest suite, focused shell tests, and `npm run build` pass. ESLint exits zero with pre-existing warnings outside the slice. `npm audit` still reports nine high-severity development-toolchain findings whose complete suggested fix requires a breaking ESLint upgrade.
+- `npm run typecheck`, the complete 672-test Vitest suite, focused shell tests, and `npm run build` pass. ESLint exits zero with pre-existing warnings outside the slice. `npm audit` still reports nine high-severity development-toolchain findings whose complete suggested fix requires a breaking ESLint upgrade.
 - The proof uses authenticated demo sessions and does not run row mutations or provider sends.
 
 ## Remaining work (next engagement)

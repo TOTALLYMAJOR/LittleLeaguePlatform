@@ -8,53 +8,34 @@ import {
   Settings,
   UserCog
 } from "lucide-react";
+import { ParentDashboardClient } from "@/components/feature-panels";
+import {
+  getParentMoreDestinations,
+  type RouteTopologyEntry
+} from "@/lib/navigation/route-topology";
+import { requireParentPageAccess } from "@/lib/supabase/shell-access";
 
-const moreDestinations = [
-  {
-    href: "/parent/practice-recaps",
-    label: "Practice Replays",
-    description: "Open coach-published practice memories.",
-    Icon: BookOpenCheck
-  },
-  {
-    href: "/parent/photos",
-    label: "Photos",
-    description: "View family-visible team media.",
-    Icon: Images
-  },
-  {
-    href: "/parent/transportation",
-    label: "Transportation",
-    description: "Review ride requests, offers, and accepted plans.",
-    Icon: CarFront
-  },
-  {
-    href: "/parent/settings",
-    label: "Settings",
-    description: "Open family preferences and current settings.",
-    Icon: Settings
-  },
-  {
-    href: "/account",
-    label: "Account",
-    description: "Review identity, memberships, security, and sign out.",
-    Icon: UserCog
-  },
-  {
-    href: "/invite/recover",
-    label: "Support",
-    description: "Get help with an invitation or access review.",
-    Icon: CircleHelp
-  },
-  {
-    href: "/offline",
-    label: "Offline and synchronization status",
-    description: "Check what remains available without a connection.",
-    Icon: CloudOff
-  }
-] as const;
+const destinationIcons: Record<string, typeof BookOpenCheck> = {
+  "/parent/practice-recaps": BookOpenCheck,
+  "/parent/photos": Images,
+  "/parent/transportation": CarFront,
+  "/parent/settings": Settings,
+  "/account": UserCog,
+  "/invite/recover": CircleHelp,
+  "/offline": CloudOff
+};
 
-export default function ParentMorePage() {
+function getDestinationIcon(entry: RouteTopologyEntry) {
+  return destinationIcons[entry.href] ?? CircleHelp;
+}
+
+export const dynamic = "force-dynamic";
+
+export default async function ParentMorePage() {
+  const pageAccess = await requireParentPageAccess();
+  if (!pageAccess.ok) return <ParentDashboardClient dashboardData={pageAccess.dashboardData} />;
+  const moreDestinations = getParentMoreDestinations(pageAccess.access);
+
   return (
     <div className="page family-more-page">
       <header className="family-more-heading">
@@ -64,17 +45,20 @@ export default function ParentMorePage() {
 
       <nav aria-label="More family tools">
         <ul className="family-more-list">
-          {moreDestinations.map(({ href, label, description, Icon }) => (
-            <li key={href}>
-              <Link href={href}>
-                <Icon aria-hidden="true" size={22} strokeWidth={2.2} />
-                <span>
-                  <strong>{label}</strong>
-                  <small>{description}</small>
-                </span>
-              </Link>
-            </li>
-          ))}
+          {moreDestinations.map((destination) => {
+            const Icon = getDestinationIcon(destination);
+            return (
+              <li key={destination.href}>
+                <Link href={destination.href}>
+                  <Icon aria-hidden="true" size={22} strokeWidth={2.2} />
+                  <span>
+                    <strong>{destination.label}</strong>
+                    <small>{destination.parentMoreDescription}</small>
+                  </span>
+                </Link>
+              </li>
+            );
+          })}
         </ul>
       </nav>
     </div>

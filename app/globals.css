@@ -2915,6 +2915,33 @@ button.month-calendar-day:hover {
   --portal-soft-secondary: color-mix(in srgb, var(--team-secondary, #dff4ff) 24%, #ffffff);
   --portal-line:           color-mix(in srgb, var(--team-primary, #1570ef) 30%, #d9e0ea);
 }
+.team-portal-page .card,
+.team-portal-page .card-header,
+.team-portal-page .card-header > div {
+  min-width: 0;
+}
+.team-portal-page .card-header {
+  flex-wrap: wrap;
+}
+.team-portal-page .grid.three {
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 220px), 1fr));
+}
+.team-portal-page .card-header h2,
+.team-portal-page .card-header .eyebrow,
+.team-portal-page p,
+.team-portal-page .badge,
+.team-portal-page pre {
+  max-width: 100%;
+  overflow-wrap: anywhere;
+  word-break: break-word;
+}
+.team-portal-page .badge {
+  white-space: normal;
+}
+.team-portal-page pre {
+  overflow-x: auto;
+  white-space: pre-wrap;
+}
 .team-portal-hero { background: linear-gradient(135deg, var(--portal-soft-primary), var(--portal-soft-secondary)); border: 1px solid var(--portal-line); border-radius: var(--radius); box-shadow: var(--shadow); padding: var(--sp-5); }
 .team-portal-mark { align-items: center; background: var(--team-primary, var(--text)); border: 4px solid var(--team-secondary, #fff); border-radius: var(--radius); color: #fff; display: inline-flex; font-size: 2.2rem; font-weight: 900; height: 76px; justify-content: center; margin-bottom: 6px; width: 76px; }
 .team-color-row { align-items: center; display: flex; flex-wrap: wrap; gap: var(--sp-2); }
@@ -8006,6 +8033,10 @@ button.month-calendar-day:hover {
   justify-content: flex-end;
 }
 .context-back { min-height: 44px; padding: 10px var(--sp-4); }
+.context-back:focus {
+  outline: 2px solid var(--accent);
+  outline-offset: 3px;
+}
 
 .verified-context-bar {
   align-items: stretch;

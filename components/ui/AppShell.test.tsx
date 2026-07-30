@@ -15,6 +15,8 @@ type WorkerResponse = {
   clone: () => WorkerResponse;
 };
 
+type CachePut = (request: string | WorkerRequest, response: WorkerResponse) => Promise<void>;
+
 type FetchEvent = {
   request: WorkerRequest;
   respondWith: (response: Promise<unknown>) => void;
@@ -33,7 +35,7 @@ function serviceWorkerHarness(
   cachedFallback?: WorkerResponse
 ) {
   const listeners = new Map<string, (event: FetchEvent) => void>();
-  const cachePut = vi.fn(async () => undefined);
+  const cachePut = vi.fn<CachePut>(async () => undefined);
   const cacheOpen = vi.fn(async () => ({ put: cachePut }));
   const cacheMatch = vi.fn(async (request: string | WorkerRequest) => (
     request === "/offline.html" ? cachedFallback : undefined
@@ -105,13 +107,19 @@ describe("AppShell private sign-out boundary", () => {
     const shell = readFileSync(join(process.cwd(), "components", "ui", "AppShell.tsx"), "utf8");
 
     expect(shell).toContain("getProductShellFamily");
+    expect(shell).toContain("resolveRouteAuthorityContext");
     expect(shell).toContain("getFamilyPrimaryNavEntries");
     expect(shell).toContain("getMobileNavEntries");
+    expect(shell).toContain("data-route-authority");
+    expect(shell).toContain("data-data-scope-role");
     expect(shell).toContain('data-surface-family={usesFamilyShell ? "family" : undefined}');
     expect(shell).toContain('className="family-primary-link"');
     expect(shell).toContain('className="family-shell-context"');
+    expect(shell).toContain("access.activeRole");
+    expect(shell).toContain('fetch("/api/auth/active-role"');
     expect(shell).not.toContain('pathname === "/parent"');
     expect(shell).not.toContain('pathname.startsWith("/parent")');
+    expect(shell).not.toContain("setPreservedRole");
   });
 
   it("wires queue and replay to current actor, session, and owner-generation checks", () => {

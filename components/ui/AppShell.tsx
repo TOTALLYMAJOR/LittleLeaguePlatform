@@ -14,12 +14,12 @@ import {
   getPrimaryNavEntries,
   getRouteEntry,
   getRouteParent,
+  resolveRouteAuthorityContext,
   resolveNavigationRole,
   canAccessRouteEntry,
   isNavigationEntryActive,
   signedOutShellAccess,
   type ClientShellAccess,
-  type ProductRole,
   type RouteTopologyEntry
 } from "@/lib/navigation/route-topology";
 import { formatBadgeCount, getAttentionBadge } from "@/lib/navigation/shell-attention";
@@ -129,7 +129,6 @@ export function AppShell({ access = signedOutShellAccess, children }: { access?:
   const [isOffline, setIsOffline] = useState(false);
   const [sessionWarningVisible, setSessionWarningVisible] = useState(false);
   const [roleSwitchPending, setRoleSwitchPending] = useState<RouteTopologyEntry | null>(null);
-  const [preservedRole, setPreservedRole] = useState<ProductRole>();
   const previousFocus = useRef<HTMLElement | null>(null);
   const commandDialogRef = useRef<HTMLDialogElement>(null);
   const commandInputRef = useRef<HTMLInputElement>(null);
@@ -138,8 +137,8 @@ export function AppShell({ access = signedOutShellAccess, children }: { access?:
     ? routeRole
     : undefined;
   const navigationContext = useMemo(
-    () => ({ preservedRole: explicitRouteRole ?? preservedRole }),
-    [explicitRouteRole, preservedRole]
+    () => ({ currentRole: explicitRouteRole ?? access.activeRole }),
+    [access.activeRole, explicitRouteRole]
   );
   const navItems = useMemo(
     () => getPrimaryNavEntries(access, pathname, navigationContext),
@@ -155,6 +154,7 @@ export function AppShell({ access = signedOutShellAccess, children }: { access?:
   );
   const familyNavItems = useMemo(() => getFamilyPrimaryNavEntries(access), [access]);
   const shellContext = useMemo(() => getShellContext(pathname, access), [access, pathname]);
+  const routeAuthority = resolveRouteAuthorityContext(access, pathname, navigationContext);
   const activeProductRole = resolveNavigationRole(access, pathname, navigationContext);
   const activeContext = access.contexts?.find((context) => context.role === activeProductRole);
   const productShellFamily = getProductShellFamily(access, pathname, navigationContext);
@@ -178,24 +178,6 @@ export function AppShell({ access = signedOutShellAccess, children }: { access?:
     });
     return () => window.cancelAnimationFrame(frame);
   }, []);
-
-  useEffect(() => {
-    if (!access.userId) return;
-    const roleStorageKey = `leaguepilot-shell-role:${access.userId}`;
-    if (explicitRouteRole) {
-      window.sessionStorage.setItem(roleStorageKey, explicitRouteRole);
-      return;
-    }
-    const frame = window.requestAnimationFrame(() => {
-      const storedRole = window.sessionStorage.getItem(roleStorageKey);
-      setPreservedRole(
-        storedRole === "parent" || storedRole === "coach" || storedRole === "admin"
-          ? storedRole
-          : undefined
-      );
-    });
-    return () => window.cancelAnimationFrame(frame);
-  }, [access.userId, explicitRouteRole]);
 
   useEffect(() => {
     if (!hasHydrated) return;
@@ -260,10 +242,19 @@ export function AppShell({ access = signedOutShellAccess, children }: { access?:
     router.push(item.href);
   }
 
-  function switchRole(item: RouteTopologyEntry) {
+  async function switchRole(item: RouteTopologyEntry) {
     setRoleSwitchPending(item);
     if (access.userId && (item.role === "parent" || item.role === "coach" || item.role === "admin")) {
       window.sessionStorage.setItem(`leaguepilot-shell-role:${access.userId}`, item.role);
+      try {
+        await fetch("/api/auth/active-role", {
+          method: "POST",
+          headers: { "content-type": "application/json" },
+          body: JSON.stringify({ role: item.role })
+        });
+      } catch {
+        // The destination route still enforces role access server-side.
+      }
     }
     setCommandOpen(false);
     setCommandQuery("");
@@ -320,6 +311,9 @@ export function AppShell({ access = signedOutShellAccess, children }: { access?:
       <div
         data-product-shell={usesFamilyShell ? "family" : productShellFamily}
         data-surface-family={usesFamilyShell ? "family" : undefined}
+        data-route-authority={routeAuthority.source}
+        data-resolved-role={routeAuthority.activeRole}
+        data-data-scope-role={routeAuthority.dataScopeRole}
         className={usesFamilyShell
         ? "parent-weekly-app-shell"
         : `shell app-shell${collapsed ? " sidebar-collapsed" : ""}`}

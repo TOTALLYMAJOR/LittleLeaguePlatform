@@ -3,9 +3,11 @@ import {
   getCommandEntries,
   getFamilyPrimaryNavEntries,
   getMobileNavEntries,
+  getParentMoreDestinations,
   getProductShellFamily,
   getPrimaryNavEntries,
   getRouteEntry,
+  resolveRouteAuthorityContext,
   resolveNavigationRole,
   routeTopology,
   type ClientShellAccess,
@@ -80,6 +82,32 @@ const coachWithAdmin: ClientShellAccess = {
   contexts: [confirmedContext("coach"), confirmedContext("admin")]
 };
 
+const parentWithCoach: ClientShellAccess = {
+  signedIn: true,
+  userId: "user-parent-coach",
+  canParent: true,
+  canCoach: true,
+  canAdmin: false,
+  roleSwitchLinks: [
+    { href: "/parent", label: "Parent Home", role: "parent" },
+    { href: "/coach", label: "Coach Home", role: "coach" }
+  ],
+  contexts: [confirmedContext("parent"), confirmedContext("coach")]
+};
+
+const parentWithAdmin: ClientShellAccess = {
+  signedIn: true,
+  userId: "user-parent-admin",
+  canParent: true,
+  canCoach: false,
+  canAdmin: true,
+  roleSwitchLinks: [
+    { href: "/parent", label: "Parent Home", role: "parent" },
+    { href: "/admin", label: "Admin Overview", role: "admin" }
+  ],
+  contexts: [confirmedContext("parent"), confirmedContext("admin")]
+};
+
 const admin: ClientShellAccess = {
   signedIn: true,
   userId: "user-admin",
@@ -110,6 +138,28 @@ const multiRole: ClientShellAccess = {
 
 function hrefs(entries: Array<{ href: string }>) {
   return entries.map((entry) => entry.href);
+}
+
+function expectRouteAuthority(
+  access: ClientShellAccess,
+  pathname: string,
+  expected: {
+    role?: ProductRole;
+    shell: "family" | "staff" | "neutral" | "public";
+    source: string;
+  },
+  context: Parameters<typeof resolveRouteAuthorityContext>[2] = {}
+) {
+  const authority = resolveRouteAuthorityContext(access, pathname, context);
+
+  expect(authority.activeRole).toBe(expected.role);
+  expect(authority.dataScopeRole).toBe(expected.role);
+  expect(authority.shellFamily).toBe(expected.shell);
+  expect(authority.source).toBe(expected.source);
+  if (expected.role) {
+    expect(authority.navigationRole).toBe(expected.role);
+  }
+  return authority;
 }
 
 describe("route topology", () => {
@@ -316,5 +366,135 @@ describe("route topology", () => {
     expect(portal?.requiresAuth).toBe(true);
     expect(portal?.allowedRoles).toEqual(["signed_in"]);
     expect(portal?.navVisible).toBe(false);
+  });
+
+  it("resolves parent-only routes and shared data scope to the same Family authority", () => {
+    expectRouteAuthority(parent, "/parent", {
+      role: "parent",
+      shell: "family",
+      source: "route-required"
+    });
+    expectRouteAuthority(parent, "/team-chat", {
+      role: "parent",
+      shell: "family",
+      source: "single-role-inferred"
+    });
+    expectRouteAuthority(parent, "/team-portal", {
+      role: "parent",
+      shell: "family",
+      source: "single-role-inferred"
+    });
+  });
+
+  it("resolves single-role staff users on shared routes without Family chrome", () => {
+    expectRouteAuthority(coach, "/team-chat", {
+      role: "coach",
+      shell: "staff",
+      source: "single-role-inferred"
+    });
+    expectRouteAuthority(coach, "/team-portal", {
+      role: "coach",
+      shell: "staff",
+      source: "single-role-inferred"
+    });
+    expectRouteAuthority(admin, "/team-chat", {
+      role: "admin",
+      shell: "staff",
+      source: "single-role-inferred"
+    });
+    expectRouteAuthority(admin, "/team-portal", {
+      role: "admin",
+      shell: "staff",
+      source: "single-role-inferred"
+    });
+  });
+
+  it.each([
+    ["parent + coach", parentWithCoach],
+    ["parent + admin", parentWithAdmin],
+    ["coach + admin", coachWithAdmin],
+    ["parent + coach + admin", multiRole]
+  ] as const)("keeps ambiguous %s shared routes neutral before loading broader data", (_label, access) => {
+    const authority = expectRouteAuthority(access, "/team-chat", {
+      shell: "neutral",
+      source: "ambiguous"
+    });
+
+    expect(authority.ambiguous).toBe(true);
+    expect(authority.navigationRole).toBeUndefined();
+    expect(hrefs(getPrimaryNavEntries(access, "/team-chat"))).not.toContain("/parent/messages");
+  });
+
+  it("honors explicit and server-persisted role context only when membership supports it", () => {
+    expectRouteAuthority(parentWithCoach, "/team-chat", {
+      role: "parent",
+      shell: "family",
+      source: "explicit"
+    }, { currentRole: "parent" });
+    expectRouteAuthority(parentWithCoach, "/team-chat", {
+      role: "coach",
+      shell: "staff",
+      source: "explicit"
+    }, { currentRole: "coach" });
+    expectRouteAuthority(parentWithAdmin, "/team-portal", {
+      role: "admin",
+      shell: "staff",
+      source: "explicit"
+    }, { currentRole: "admin" });
+
+    expectRouteAuthority(parent, "/team-chat", {
+      role: "parent",
+      shell: "family",
+      source: "single-role-inferred"
+    }, { preservedRole: "admin" });
+
+    expectRouteAuthority({
+      ...parentWithCoach,
+      activeRole: "admin",
+      activeRoleSource: "server-persisted"
+    }, "/team-chat", {
+      shell: "neutral",
+      source: "ambiguous"
+    });
+  });
+
+  it("keeps parent More guarded and topology-backed", () => {
+    const signedOutAuthority = resolveRouteAuthorityContext(signedOut, "/parent/more");
+    expect(signedOutAuthority).toMatchObject({
+      shellFamily: "neutral",
+      source: "signed-out"
+    });
+    expect(signedOutAuthority.activeRole).toBeUndefined();
+    expect(signedOutAuthority.dataScopeRole).toBeUndefined();
+    expect(getParentMoreDestinations(signedOut)).toEqual([]);
+
+    const more = getParentMoreDestinations(parent);
+    expect(hrefs(more)).toEqual([
+      "/parent/practice-recaps",
+      "/parent/photos",
+      "/parent/transportation",
+      "/parent/settings",
+      "/account",
+      "/invite/recover",
+      "/offline"
+    ]);
+    expect(more.every((entry) => entry.parentMoreDescription)).toBe(true);
+    expect(more.every((entry) => getRouteEntry(entry.href) === entry)).toBe(true);
+  });
+
+  it("keeps neutral transition routes neutral even for signed-in role holders", () => {
+    for (const pathname of ["/access/status", "/invite/accept"]) {
+      const authority = expectRouteAuthority({
+        ...parent,
+        activeRole: "parent",
+        activeRoleSource: "server-persisted"
+      }, pathname, {
+        shell: "neutral",
+        source: "neutral-transition"
+      });
+
+      expect(authority.neutralTransition).toBe(true);
+      expect(authority.dataScopeRole).toBeUndefined();
+    }
   });
 });

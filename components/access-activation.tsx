@@ -50,6 +50,7 @@ export function AccessStatusClient({
           <button disabled={isPending || !reference.trim() || !email.trim()} onClick={checkStatus}>
             {isPending ? "Checking..." : "Check status"}
           </button>
+          <a className="button secondary" href="/invite/recover">Invitation help</a>
           <p className="muted">Most reviews are completed {reviewWindow}. Status checks do not approve access or send an invitation.</p>
         </article>
         <article className="card stack" aria-live="polite">
