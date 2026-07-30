@@ -22,6 +22,8 @@
   --warning-soft: #fff3c4;
   --danger: #b42318;
   --danger-soft: #fee4e2;
+  --status-changed: #4c4ddc;
+  --status-changed-soft: #ececff;
   --family-inverse-surface: #22304a;
   --family-inverse-text: #ffffff;
   --family-inverse-muted: #d7e3f2;
@@ -1743,6 +1745,412 @@
 
 .parent-weekly-duty-row a.parent-weekly-duty-link:hover {
   background: rgba(126, 66, 15, 0.78);
+}
+
+.family-filter {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--sp-2);
+  width: 100%;
+  margin-top: var(--sp-3);
+}
+
+.family-filter button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--sp-2);
+  min-height: 44px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-pill);
+  background: var(--surface);
+  color: var(--text);
+  font-size: var(--text-sm);
+  font-weight: 700;
+}
+
+.family-filter button small {
+  color: var(--muted);
+  font-size: var(--text-xs);
+  font-weight: 600;
+}
+
+.family-filter button.is-selected {
+  border-color: color-mix(in srgb, var(--action) 36%, var(--line));
+  background: var(--action-soft);
+  color: var(--action-strong);
+}
+
+.family-status-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--sp-1);
+  width: fit-content;
+  min-height: 30px;
+  border: 1px solid transparent;
+  border-radius: var(--radius-pill);
+  padding: 0 var(--sp-2);
+  font-size: var(--text-xs);
+  font-weight: 700;
+  line-height: 1;
+  white-space: nowrap;
+}
+
+.family-status-chip-confirmed {
+  border-color: color-mix(in srgb, var(--ok) 28%, var(--line));
+  background: var(--ok-soft);
+  color: var(--ok);
+}
+
+.family-status-chip-action {
+  border-color: color-mix(in srgb, var(--action) 28%, var(--line));
+  background: var(--action-soft);
+  color: var(--action-strong);
+}
+
+.family-status-chip-waiting {
+  border-color: color-mix(in srgb, var(--warning) 28%, var(--line));
+  background: var(--warning-soft);
+  color: var(--warning);
+}
+
+.family-status-chip-changed {
+  border-color: color-mix(in srgb, var(--status-changed) 28%, var(--line));
+  background: var(--status-changed-soft);
+  color: var(--status-changed);
+}
+
+.family-status-chip-critical {
+  border-color: color-mix(in srgb, var(--danger) 28%, var(--line));
+  background: var(--danger-soft);
+  color: var(--danger);
+}
+
+.family-status-chip-neutral {
+  border-color: var(--line);
+  background: var(--surface-strong);
+  color: var(--muted);
+}
+
+.family-change-band,
+.family-event-passport,
+.family-readiness-strip {
+  width: min(100%, 1152px);
+  margin: var(--sp-4) auto 0;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow-sm);
+}
+
+.family-change-band {
+  background: var(--status-changed-soft);
+  color: var(--text);
+  padding: var(--sp-4);
+}
+
+.family-change-band-warning {
+  background: var(--warning-soft);
+}
+
+.family-change-band > header,
+.family-change-band-title,
+.family-event-passport-header,
+.family-readiness-strip-summary {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--sp-3);
+}
+
+.family-change-band > header svg {
+  color: var(--status-changed);
+}
+
+.family-change-band h2,
+.family-event-passport h2,
+.family-readiness-strip h2 {
+  margin: 0;
+  font-size: var(--text-xl);
+  line-height: 1.15;
+}
+
+.family-change-band ol,
+.family-readiness-strip ul {
+  display: grid;
+  gap: var(--sp-3);
+  margin: var(--sp-3) 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.family-change-band li {
+  display: grid;
+  gap: var(--sp-2);
+  border-top: 1px solid color-mix(in srgb, var(--status-changed) 24%, var(--line));
+  padding-top: var(--sp-3);
+}
+
+.family-change-band p,
+.family-event-passport p,
+.family-readiness-strip p {
+  margin: 0;
+  color: var(--muted);
+}
+
+.family-change-band dl,
+.family-event-passport-facts {
+  display: grid;
+  gap: var(--sp-2);
+  margin: 0;
+}
+
+.family-change-band dl > div {
+  display: grid;
+  gap: var(--sp-1);
+}
+
+.family-change-band dt,
+.family-event-passport dt {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--sp-1);
+  color: var(--muted);
+  font-size: var(--text-xs);
+  font-weight: 700;
+}
+
+.family-change-band dd,
+.family-event-passport dd {
+  margin: 0;
+  color: var(--text);
+  font-weight: 700;
+}
+
+.family-change-band dd {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--sp-2);
+}
+
+.family-change-band dd span {
+  color: var(--muted);
+  text-decoration: line-through;
+}
+
+.family-change-band a,
+.family-event-passport a,
+.family-readiness-strip a,
+.parent-weekly-row-action {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--sp-1);
+  min-height: 44px;
+  color: var(--accent);
+  font-weight: 700;
+  text-decoration: none;
+}
+
+.family-change-band-note {
+  margin-top: var(--sp-3) !important;
+  font-size: var(--text-sm);
+}
+
+.family-event-passport {
+  display: grid;
+  gap: var(--sp-4);
+  background: var(--accent-strong);
+  color: var(--family-inverse-text);
+  padding: var(--sp-5);
+}
+
+.family-event-passport h2,
+.family-event-passport strong,
+.family-event-passport dd {
+  color: var(--family-inverse-text);
+}
+
+.family-event-passport p,
+.family-event-passport dt,
+.family-event-passport .parent-weekly-kicker,
+.family-event-passport-footer p {
+  color: var(--family-inverse-muted);
+}
+
+.family-event-passport-header {
+  justify-content: space-between;
+}
+
+.family-event-passport-facts {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.family-event-passport-facts > div {
+  display: grid;
+  gap: var(--sp-1);
+  min-width: 0;
+  border-top: 1px solid rgb(255 255 255 / 18%);
+  padding-top: var(--sp-3);
+}
+
+.family-event-passport-rsvp,
+.family-rsvp-current {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--sp-2);
+  flex-wrap: wrap;
+}
+
+.family-rsvp-control {
+  display: grid;
+  gap: var(--sp-3);
+  border: 1px solid rgb(255 255 255 / 18%);
+  border-radius: var(--radius);
+  background: rgb(255 255 255 / 8%);
+  padding: var(--sp-3);
+}
+
+.family-rsvp-options {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: var(--sp-2);
+}
+
+.family-rsvp-options button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--sp-1);
+  min-height: 48px;
+  border: 1px solid rgb(255 255 255 / 22%);
+  border-radius: var(--radius-sm);
+  background: var(--surface);
+  color: var(--text);
+  font-size: var(--text-sm);
+  font-weight: 700;
+}
+
+.family-rsvp-options button.is-selected[data-response="going"] {
+  border-color: color-mix(in srgb, var(--ok) 42%, var(--line));
+  background: var(--ok-soft);
+  color: var(--ok);
+}
+
+.family-rsvp-options button.is-selected[data-response="maybe"] {
+  border-color: color-mix(in srgb, var(--warning) 42%, var(--line));
+  background: var(--warning-soft);
+  color: var(--warning);
+}
+
+.family-rsvp-options button.is-selected[data-response="not_going"] {
+  border-color: color-mix(in srgb, var(--danger) 42%, var(--line));
+  background: var(--danger-soft);
+  color: var(--danger);
+}
+
+.family-rsvp-options button:disabled {
+  border-color: var(--line);
+  background: var(--surface-strong);
+  color: var(--muted);
+  cursor: not-allowed;
+}
+
+.family-rsvp-message {
+  margin: 0;
+  color: var(--family-inverse-text) !important;
+  font-size: var(--text-sm);
+  font-weight: 700;
+}
+
+.family-rsvp-message.success {
+  color: var(--ok-soft) !important;
+}
+
+.family-event-passport-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--sp-3);
+  flex-wrap: wrap;
+  border-top: 1px solid rgb(255 255 255 / 18%);
+  padding-top: var(--sp-3);
+}
+
+.family-event-passport-footer a {
+  color: var(--family-inverse-text);
+}
+
+.family-event-passport.is-empty {
+  background: var(--surface);
+  color: var(--text);
+}
+
+.family-event-passport.is-empty h2 {
+  color: var(--text);
+}
+
+.family-event-passport.is-empty a {
+  color: var(--accent);
+}
+
+.family-readiness-strip {
+  display: grid;
+  gap: var(--sp-3);
+  background: var(--surface);
+  padding: var(--sp-4);
+}
+
+.family-readiness-strip.needs-action {
+  border-color: color-mix(in srgb, var(--action) 28%, var(--line));
+}
+
+.family-readiness-strip.needs-action .family-readiness-strip-summary > svg {
+  color: var(--action);
+}
+
+.family-readiness-strip.is-ready .family-readiness-strip-summary > svg {
+  color: var(--ok);
+}
+
+.family-readiness-strip li a {
+  justify-content: space-between;
+  width: 100%;
+  border-top: 1px solid var(--line);
+  color: var(--action-strong);
+}
+
+.parent-weekly-row-action {
+  min-width: 68px;
+}
+
+@media (max-width: 899px) {
+  .family-event-passport-facts {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
+@media (max-width: 640px) {
+  .family-change-band,
+  .family-event-passport,
+  .family-readiness-strip {
+    width: min(100% - 24px, 1152px);
+    margin-top: var(--sp-3);
+  }
+
+  .family-event-passport {
+    padding: var(--sp-4);
+  }
+
+  .family-event-passport-header,
+  .family-readiness-strip-summary {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .family-event-passport-facts,
+  .family-rsvp-options {
+    grid-template-columns: 1fr;
+  }
 }
 
 /* Family access entry point: who can see this family's records, and how to revoke. */

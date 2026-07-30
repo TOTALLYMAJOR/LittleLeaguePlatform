@@ -2,7 +2,7 @@
 
 Date: 2026-07-30
 
-Status: `done-local-corrected`
+Status: `done-local-accepted`
 
 Reviewed implementation commit: `049c4b1e3f85549f4316e075b84d05bd3a56694e`
 
@@ -75,4 +75,17 @@ No hosted, deployed, production, provider, migration, or RLS readback proof was 
 
 No ready-made true multi-role demo browser credential was present in the local environment. Multi-role behavior is covered by route-authority unit tests; browser proof covers parent, coach, and admin shared-route contexts separately.
 
-LP-UX-002 remains blocked until this corrected LP-UX-001 commit is independently reviewed.
+## Independent Acceptance
+
+Verdict: `ready-with-documented-debt`.
+
+No unresolved P0 or P1 authorization or data-scope defect was found in the independent correction review. The route authority resolver, server-validated role cookie, shared-route scoping, `/parent/more` guard, and first-render markers were found coherent in source and proof.
+
+Accepted non-blocking debt:
+
+- P2: true multi-role browser coverage is still unavailable; behavior remains covered by unit fixtures and separate parent, coach, and admin browser sessions.
+- P3: browser markers prove shell metadata but do not independently inspect every returned payload against server query scope.
+- P3: screenshot paths referenced by proof metadata are local artifacts; hosted, RLS, provider, migration, and production proof remain absent.
+- P3: prior documentation drift in `10-reference-implementation-brief.md` was not a runtime defect.
+
+LP-UX-002 may proceed as a separate local slice from the corrected LP-UX-001 baseline. This acceptance is local only and does not imply push, merge, deployment, hosted proof, provider operation, migration proof, or production acceptance.

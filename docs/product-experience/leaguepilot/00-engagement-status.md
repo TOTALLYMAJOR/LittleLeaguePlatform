@@ -1,11 +1,11 @@
 # LeaguePilot UX Convergence Engagement — Status
 
 Engagement: Production-grade parent experience convergence (audit, experience architecture, and bounded implementation).
-Audit completed and LP-UX-001 implemented locally: 2026-07-29. Corrections completed locally: 2026-07-30.
+Audit completed and LP-UX-001 implemented locally: 2026-07-29. Corrections completed locally and independently accepted: 2026-07-30.
 
 ## Current phase
 
-**LP-UX-001 FAMILY SHELL CONVERGENCE IS DONE-LOCAL-CORRECTED.** The reviewed shell-only slice on `ux/lp-ux-001-family-shell` has a local correction commit that aligns shared-route shell authority with server data scope, removes delayed client-only role discovery from first render, guards `/parent/more` through parent access, and regenerates expanded browser proof.
+**LP-UX-001 FAMILY SHELL CONVERGENCE IS DONE-LOCAL-ACCEPTED.** The reviewed shell-only slice on `ux/lp-ux-001-family-shell` has a local correction commit that aligns shared-route shell authority with server data scope, removes delayed client-only role discovery from first render, guards `/parent/more` through parent access, and regenerates expanded browser proof. The independent correction review found no unresolved P0 or P1 authorization/data-scope defect and accepted P2/P3 debt as non-blocking.
 
 This state means local code, tests, build, and authenticated browser evidence only. Nothing was pushed, merged, deployed, promoted, or accepted on a hosted environment. No route move, domain behavior, provider operation, permission weakening, schema, migration, or staff business logic changed.
 
@@ -55,8 +55,8 @@ LP-UX-001 branch: `ux/lp-ux-001-family-shell`, based on `472790cff6ace95bd932908
 
 ## Remaining work (next engagement)
 
-1. Review the local LP-UX-001 commit and decide whether to publish it separately; hosted route proof remains a later, explicit action.
-2. LP-UX-002 may begin as a separate local slice after this branch is reconciled, without broadening LP-UX-001 into Home/content/domain work.
+1. Review whether to publish LP-UX-001 separately; hosted route proof remains a later, explicit action.
+2. LP-UX-002 may proceed as a separate local slice from the corrected and accepted LP-UX-001 baseline, without broadening LP-UX-001 into Home/content/domain work.
 3. Triage the report-only security findings independently of UX work.
 4. Slices 3–5 (09), then P6–P7 (transportation sheets, Communication Room density).
 

@@ -3,6 +3,7 @@ import { describe, expect, it } from "vitest";
 import { seedState } from "@/lib/domain";
 import { buildFamilyMissionControl } from "@/lib/family-mission-control";
 import type { ParentCoachDashboardData } from "@/lib/supabase/dashboard-data";
+import type { ParentEventChangeLogReadResult } from "@/lib/supabase/event-change-log-reads";
 import type { FamilyReplayData } from "@/lib/supabase/family-replays";
 import { ParentWeeklyDashboard } from "./parent-weekly-dashboard";
 
@@ -80,6 +81,19 @@ const replayData: FamilyReplayData = {
   }]
 };
 
+const noEventChanges: ParentEventChangeLogReadResult = {
+  ok: true,
+  message: "No family-safe event changes are visible.",
+  scope: {
+    parentUserId: "user-parent-jordan",
+    organizationId: "org-little-league",
+    seasonId: "season-spring-2026",
+    familyContextKey: "team-tigers",
+    limit: 20
+  },
+  changes: []
+};
+
 describe("ParentWeeklyDashboard", () => {
   it("maps the visual reference to guardian-scoped schedule, Replay, and family logistics truth", () => {
     const dashboardData = parentDashboardData();
@@ -98,23 +112,30 @@ describe("ParentWeeklyDashboard", () => {
         view={view}
         dashboardData={dashboardData}
         replayData={replayData}
+        notificationReceipts={[]}
+        eventChangeData={noEventChanges}
       />
     );
 
     expect(html).toContain("Mason&#x27;s week");
+    expect(html).toContain("Everyone");
     expect(html).toContain("Tiny Tigers vs Rookie Rockets");
-    expect(html).toContain("Will Mason T. be there?");
+    expect(html).toContain("Next event");
+    expect(html).toContain("Required family action");
+    expect(html).toContain("Persisted RSVP");
     expect(html).toContain("Sock-ball high five");
     expect(html).toContain("Opening weekend notes");
     expect(html).toContain("Family logistics only");
     expect(html).toContain("does not evaluate athlete performance");
-    expect(html).toContain("%2Fimages%2Fleaguepilot-baseball-field-overhead.webp");
+    expect(html).not.toContain("%2Fimages%2Fleaguepilot-baseball-field-overhead.webp");
     expect(html).toContain("data-response=\"going\"");
+    expect(html).not.toContain("class=\"is-selected\" data-response=\"going\"");
     expect(html).toContain("Family access");
     expect(html).toContain("revoke access anytime");
-    expect(html).toContain("Ride plan not set");
+    expect(html).toContain("Ride responsibility is not fully assigned");
     expect(html).toContain("/parent/transportation");
     expect(html).not.toContain("What changed");
+    expect(html).not.toContain("Detailed family operations");
     expect(html).not.toContain("Avery P.");
     expect(html).not.toContain("Noah B.");
     expect(html).not.toContain("day streak");
@@ -138,6 +159,8 @@ describe("ParentWeeklyDashboard", () => {
         view={view}
         dashboardData={dashboardData}
         replayData={{ ok: true, message: "No published Replay yet.", replays: [] }}
+        notificationReceipts={[]}
+        eventChangeData={noEventChanges}
       />
     );
 
@@ -154,7 +177,19 @@ describe("ParentWeeklyDashboard", () => {
         event.id === "event-tigers-game"
           ? { ...event, scheduleVersion: 2 }
           : event
-      ))
+      )),
+      rsvps: [{
+        id: "rsvp-stale",
+        eventId: "event-tigers-game",
+        playerId: "player-mason",
+        parentUserId: "user-parent-jordan",
+        response: "going",
+        respondedAt: "2026-04-01T10:00:00.000Z",
+        confirmedScheduleVersion: 1,
+        lockVersion: 2,
+        createdAt: "2026-04-01T10:00:00.000Z",
+        updatedAt: "2026-04-01T10:00:00.000Z"
+      }]
     };
     const view = buildFamilyMissionControl({
       state: dashboardData.state,
@@ -166,19 +201,37 @@ describe("ParentWeeklyDashboard", () => {
       now: "2026-04-01T12:00:00.000Z"
     });
 
+    const eventChangeData: ParentEventChangeLogReadResult = {
+      ...noEventChanges,
+      changes: [{
+        id: "change-1",
+        eventId: "event-tigers-game",
+        eventTitle: "Tiny Tigers vs Rookie Rockets",
+        teamName: "Tiny Tigers",
+        childLabels: ["Mason T."],
+        changeType: "time_changed",
+        actorLabel: "Coach Taylor",
+        changedAt: "2026-04-03T12:00:00.000Z",
+        canonicalHref: "/parent/schedule?eventId=event-tigers-game",
+        diffs: [{ field: "start_time", label: "Start time", previousValue: "6:00 PM", currentValue: "5:30 PM" }]
+      }]
+    };
     const html = renderToStaticMarkup(
       <ParentWeeklyDashboard
         view={view}
         dashboardData={dashboardData}
         replayData={{ ok: true, message: "No published Replay yet.", replays: [] }}
+        notificationReceipts={[]}
+        eventChangeData={eventChangeData}
       />
     );
 
     expect(html).toContain("What changed");
-    expect(html).toContain("Official schedule version changed");
-    expect(html).toContain("schedule version 2");
-    expect(html).toContain("RSVP");
-    expect(html).toContain("parent-weekly-changes-action");
+    expect(html).toContain("Changes since this page was last successfully loaded on this device.");
+    expect(html).toContain("Start time");
+    expect(html).toContain("6:00 PM");
+    expect(html).toContain("5:30 PM");
+    expect(html).toContain("RSVP needs review after a schedule change");
   });
 
   it("shows the mutually accepted ride plan instead of the coordinate link when transportation is assigned", () => {
@@ -202,11 +255,55 @@ describe("ParentWeeklyDashboard", () => {
         view={view}
         dashboardData={dashboardData}
         replayData={{ ok: true, message: "No published Replay yet.", replays: [] }}
+        notificationReceipts={[]}
+        eventChangeData={noEventChanges}
       />
     );
 
     expect(html).toContain("Outbound: Jordan P.");
     expect(html).toContain("Return: Riley P.");
-    expect(html).not.toContain("Ride plan not set");
+    expect(html).not.toContain("Ride responsibility is not fully assigned");
+  });
+
+  it("shows official receipt evidence as an independent coach-update chip", () => {
+    const dashboardData = parentDashboardData();
+    const view = buildFamilyMissionControl({
+      state: dashboardData.state,
+      parentUserId: dashboardData.parentUserId,
+      handoffs: [],
+      accessStatus: dashboardData.accessStatus,
+      isSupabaseBacked: dashboardData.isSupabaseBacked,
+      message: dashboardData.message,
+      now: "2026-04-01T12:00:00.000Z"
+    });
+
+    const html = renderToStaticMarkup(
+      <ParentWeeklyDashboard
+        view={view}
+        dashboardData={dashboardData}
+        replayData={{ ok: true, message: "No published Replay yet.", replays: [] }}
+        notificationReceipts={[{
+          notificationId: "notification-1",
+          organizationId: "org-little-league",
+          teamId: "team-tigers",
+          recipientUserId: "user-parent-jordan",
+          title: "Opening weekend notes",
+          body: "Opening weekend notes",
+          channel: "email",
+          notificationType: "team_update",
+          notificationStatus: "read",
+          providerApprovalStatus: "approved",
+          createdAt: "2026-04-01T10:00:00.000Z",
+          evidence: {
+            attemptStatus: "sent",
+            acknowledgedAt: "2026-04-01T11:00:00.000Z"
+          }
+        }]}
+        eventChangeData={noEventChanges}
+      />
+    );
+
+    expect(html).toContain("Acknowledged Apr 1");
+    expect(html).not.toContain("No receipt evidence");
   });
 });
