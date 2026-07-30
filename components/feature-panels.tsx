@@ -2603,6 +2603,7 @@ export function ParentDashboardClient({ dashboardData }: { dashboardData?: Paren
       </CompactDisclosure>
 
       <CompactDisclosure
+        id="family-help"
         title="Support"
         summary="Ask league staff for help when family access or team details need review."
         badge={dashboardData?.isSupabaseBacked ? "saved" : "preview"}

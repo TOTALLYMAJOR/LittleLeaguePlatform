@@ -183,12 +183,27 @@ describe("role route guards and compatibility wrappers", () => {
     expect(teamPortalPage).toContain("resolveTeamPortalScope");
     expect(teamPortalPage).toContain("scopeTeamPortalData");
     expect(teamPortalPage).toContain("No accepted parent-team access is active yet.");
+    expect(teamPortalPage).toContain('scope.audience === "parent"');
+    expect(teamPortalPage).toContain("<FamilyTeamPage view={view}");
+    expect(teamPortalPage.indexOf('scope.audience === "parent"')).toBeLessThan(teamPortalPage.indexOf("<TeamPortalClient"));
     expect(teamChatPage).toContain("getServerShellAccess");
     expect(teamChatPage).toContain("resolveRouteAuthorityContext(access, \"/team-chat\")");
     expect(teamChatPage).toContain("authority.dataScopeRole");
     expect(teamChatPage).toContain("resolveTeamChatTeamIds");
     expect(teamChatPage).toContain("scopeTeamChatData");
     expect(teamChatPage).toContain("Team chat access is not active yet.");
+  });
+
+  it("keeps family Photos on the released-media projection instead of Team Portal", () => {
+    const photosPage = source("app/parent/photos/page.tsx");
+    const parentSurfaces = source("app/parent/_surfaces.tsx");
+    const teamPortal = source("lib/supabase/team-portal.ts");
+
+    expect(photosPage).toContain("ParentPhotosSurface");
+    expect(parentSurfaces).toContain("familyReleasedMediaItemIds");
+    expect(parentSurfaces).toContain("<FamilyPhotos");
+    expect(teamPortal).toContain("family_release_approved_at");
+    expect(teamPortal).toContain("familyReleasedMediaItemIds");
   });
 
   it("persists active role through an authenticated server-validated cookie route", () => {

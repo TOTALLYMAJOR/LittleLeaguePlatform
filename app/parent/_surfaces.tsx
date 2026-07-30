@@ -14,6 +14,7 @@ import { ParentTemporaryCaregiverClient } from "@/components/temporary-caregiver
 import { FamilyParentReplay } from "@/components/family-parent-replay";
 import { ParentSeasonTransitionReview } from "@/components/season-transition-review";
 import { FamilySettingsClient } from "@/components/family-first-sign-in";
+import { FamilyPhotos } from "@/components/family-photos";
 import { listParentCoachDashboardData } from "@/lib/supabase/dashboard-data";
 import { listParentFamilyHandoffs } from "@/lib/supabase/family-flight-plan";
 import { listParentNotificationReceipts } from "@/lib/supabase/notification-receipts";
@@ -122,17 +123,34 @@ export async function ParentMessagesSurface() {
   );
 }
 
-export async function ParentPortalSurface({ audience = "parent" }: { audience?: "parent" | "coach" | "admin" } = {}) {
+export async function ParentPhotosSurface() {
   const pageAccess = await requireParentPageAccess();
   if (!pageAccess.ok) return <ParentDashboardClient dashboardData={pageAccess.dashboardData} />;
   const teamPortalData = await listTeamPortalData();
   const scopedTeamPortalData = teamPortalData
     ? scopeTeamPortalData(teamPortalData, pageAccess.access.parentTeamIds, {
-      audience,
+      audience: "parent",
       viewerUserId: pageAccess.access.userId
     })
     : null;
-  return <TeamPortalClient teamPortalData={scopedTeamPortalData} audience={audience} />;
+  const familyReleasedIds = new Set(scopedTeamPortalData?.familyReleasedMediaItemIds ?? []);
+  const teamNames = new Map(scopedTeamPortalData?.teams.map((team) => [team.id, team.name]) ?? []);
+  const photos = (scopedTeamPortalData?.mediaItems ?? [])
+    .filter((item) => familyReleasedIds.has(item.id) && item.moderationStatus === "approved")
+    .map((item) => ({
+      ...item,
+      teamName: teamNames.get(item.teamId) ?? "Linked team"
+    }));
+  const childLabels = (scopedTeamPortalData?.players ?? []).map((player) => (
+    `${player.firstName} ${player.lastInitial}.`
+  ));
+  return (
+    <FamilyPhotos
+      photos={photos}
+      childLabels={childLabels}
+      isCurrent={Boolean(scopedTeamPortalData)}
+    />
+  );
 }
 
 export async function ParentPracticeRecapsSurface() {
