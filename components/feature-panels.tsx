@@ -74,7 +74,6 @@ import {
   programThemePresets,
   roleLabel,
   sampleRosterCsv,
-  setRsvp,
   updateTeamPortalBranding,
   validateRegistrationRequestInput,
   validateMediaUrl,
@@ -174,6 +173,13 @@ import type { ParentCoachDashboardData } from "@/lib/supabase/dashboard-data";
 import type { PracticeRunReceipt } from "@/lib/supabase/practice-runs";
 import type { AdminTeamManagementData } from "@/lib/supabase/team-management";
 import type { ScheduleOperationsData } from "@/lib/supabase/schedule-management";
+import { buildFamilyMissionControl } from "@/lib/family-mission-control";
+import {
+  EventPassport,
+  FamilyFilter,
+  RsvpControl,
+  responseLabel
+} from "@/components/family";
 import {
   buildAdminSeasonCertaintyView,
   buildCoachSeasonCertaintyView,
@@ -2642,216 +2648,107 @@ export function ParentDashboardClient({ dashboardData }: { dashboardData?: Paren
 }
 
 export function ParentRsvpClient({ dashboardData }: { dashboardData?: ParentCoachDashboardData | null } = {}) {
-  const { state, dispatch } = useAppState();
-  const [snapshotRsvps, setSnapshotRsvps] = useState(() => dashboardData?.state.rsvps ?? []);
-  const [message, setMessage] = useState("");
-  const [isPending, startTransition] = useTransition();
+  const { state } = useAppState();
+  const [savedAnswers, setSavedAnswers] = useState<Record<string, {
+    response: Extract<RsvpResponse, "going" | "maybe" | "not_going">;
+    lockVersion: number;
+  }>>({});
   const sourceState = dashboardData?.state ?? state;
-  const displayState = dashboardData ? { ...sourceState, rsvps: snapshotRsvps } : sourceState;
   const parentUserId = dashboardData?.parentUserId ?? "user-parent-jordan";
-  const parentUser = displayState.users.find((user) => user.id === parentUserId);
-  const dashboard = getParentDashboard(displayState, parentUserId, NOW);
-  const parentContextKey = `parent:${parentUserId}:${displayState.organization.id}:${displayState.activeSeason.id}:${dashboard.children.map(({ team }) => team.id).sort().join(",") || "none"}`;
-  const offlineWritesEnabled = (
-    process.env.NEXT_PUBLIC_OFFLINE_WRITES_ENABLED === "true" &&
-    dashboardData?.accessStatus === "live" &&
-    dashboardData.isSupabaseBacked
-  );
+  const parentUser = sourceState.users.find((user) => user.id === parentUserId);
   const accessGate = privateAccessGate(dashboardData, "parent");
-  const isArchivedSeason = displayState.activeSeason.status === "archived";
-  const rsvpHistory = displayState.rsvps
+  const isArchivedSeason = sourceState.activeSeason.status === "archived";
+  const rsvpHistory = sourceState.rsvps
     .filter((rsvp) => rsvp.parentUserId === parentUserId)
     .sort((left, right) => new Date(right.updatedAt).getTime() - new Date(left.updatedAt).getTime())
     .slice(0, 6);
-  const events = dashboard.nextEvents.flatMap((event) => dashboard.children
-    .filter(({ player }) => player.teamId === event.teamId)
-    .map(({ player }) => ({
-      event,
-      player,
-      rsvp: displayState.rsvps.find((item) => item.eventId === event.id && item.playerId === player.id)
-    })));
-
-  const parentOfflineScope = {
-    actorId: parentUserId,
-    organizationId: sourceState.organization.id,
-    seasonId: sourceState.activeSeason.id,
-    contextKey: parentContextKey,
-    familyId: parentUserId
-  };
-
-  async function sendQueuedRsvp(
-    action: OfflineGameDayAction,
-    endpoint: string,
-    signal: AbortSignal
-  ) {
-    const response = await authenticatedJsonFetch(endpoint, action.payload, {
-      "Idempotency-Key": action.actionId,
-      "X-LeaguePilot-Offline-Replay": "true"
-    }, signal);
-    return {
-      ok: response.ok,
-      status: response.status,
-      body: await response.json().catch(() => null) as Record<string, unknown> | null
-    };
-  }
-
-  useEffect(() => {
-    if (!offlineWritesEnabled || typeof window === "undefined") return;
-    const sync = () => {
-      void getOfflineReplaySession(parentUserId).then((session) => {
-        if (!session) {
-          setMessage("Sign-in required before saved RSVP actions can sync.");
-          return [];
-        }
-        return syncContextOutbox(parentOfflineScope, session, sendQueuedRsvp);
-      }).then((results) => {
-        const conflict = results.find((result) => "conflictDetail" in result && result.conflictDetail);
-        if (conflict && "conflictDetail" in conflict) setMessage(`Sync conflict: ${conflict.conflictDetail}`);
-        else if (results.some((result) => "syncedAt" in result)) setMessage("Offline RSVP synced to current team records.");
-      }).catch(() => undefined);
-    };
-    if (navigator.onLine) sync();
-    window.addEventListener("online", sync);
-    return () => window.removeEventListener("online", sync);
-  }, [offlineWritesEnabled, parentContextKey, parentUserId, sourceState.activeSeason.id, sourceState.organization.id]);
-
-  function save(eventId: string, playerId: string, response: RsvpResponse) {
-    startTransition(async () => {
-      const ownerGeneration = offlineWritesEnabled
-        ? await captureOfflineOwnerGeneration(parentUserId).catch(() => null)
-        : null;
-      const event = displayState.events.find((item) => item.id === eventId);
-      const currentRsvp = displayState.rsvps.find((item) => item.eventId === eventId && item.playerId === playerId);
-      const actionId = typeof crypto !== "undefined" && "randomUUID" in crypto
-        ? crypto.randomUUID()
-        : `rsvp-${Date.now()}-${Math.random().toString(16).slice(2)}`;
-      const payload = {
-        eventId,
-        playerId,
-        response,
-        expectedLockVersion: currentRsvp?.lockVersion ?? 0,
-        expectedScheduleVersion: event?.scheduleVersion ?? 1
-      };
-      const queuedAction: QueueOfflineGameDayActionInput = {
-        actionId,
-        actionType: "rsvp",
-        contextKey: parentContextKey,
-        actorId: parentUserId,
-        organizationId: sourceState.organization.id,
-        seasonId: sourceState.activeSeason.id,
-        familyId: parentUserId,
-        payload,
-        queuedAt: new Date().toISOString(),
-        retryCount: 0,
-        baseRecordVersion: currentRsvp?.lockVersion ?? 0,
-        baseScheduleVersion: event?.scheduleVersion ?? 1
-      };
-      if (typeof navigator !== "undefined" && !navigator.onLine) {
-        if (!offlineWritesEnabled) {
-          setMessage("RSVP needs an online connection. Offline writes are disabled for this league.");
-          return;
-        }
-        if (
-          ownerGeneration === null ||
-          !await queueOfflineActionForCurrentSession(
-            queuedAction,
-            ownerGeneration
-          )
-        ) {
-          setMessage("Sign-in required before an RSVP can be saved for offline sync.");
-          return;
-        }
-        setMessage("Waiting to sync. Your RSVP is saved on this device, not yet in team records.");
-        return;
-      }
-      let queuedAfterNetworkFailure = false;
-      const apiResponse = await authenticatedJsonFetch("/api/rsvps", payload, { "Idempotency-Key": actionId })
-        .catch(async () => {
-          if (offlineWritesEnabled && ownerGeneration !== null) {
-            queuedAfterNetworkFailure = await queueOfflineActionForCurrentSession(
-              queuedAction,
-              ownerGeneration
-            );
-          }
-          return null;
-        });
-      if (!apiResponse) {
-        setMessage(queuedAfterNetworkFailure
-          ? "Waiting to sync. Your RSVP is saved on this device, not yet in team records."
-          : "Team records are unavailable, and no offline RSVP was saved. Sign in again after reconnecting.");
-        return;
-      }
-      const result = await apiResponse.json().catch(() => null) as {
-        ok?: boolean;
-        code?: string;
-        message?: string;
-        currentResponse?: RsvpResponse;
-      } | null;
-      setMessage(result?.message ?? "RSVP could not be saved.");
-      if (apiResponse.status === 409) {
-        setMessage(result?.code === "schedule_changed"
-          ? "The event time or details changed after this RSVP opened. Review the current schedule, then confirm again."
-          : `Another guardian updated this RSVP${result?.currentResponse ? ` to ${result.currentResponse.replace("_", " ")}` : ""}. Review it before retrying.`);
-      }
-      if (!result?.ok) return;
-      markLeaguePilotValueExperienced("parent_rsvp_confirmed");
-
-      const input = { eventId, playerId, parentUserId, response, now: new Date().toISOString() };
-      const preview = setRsvp(displayState, input);
-      if (!preview.ok) return;
-      if (dashboardData) {
-        setSnapshotRsvps(preview.state.rsvps);
-      } else {
-        dispatch({ type: "setRsvp", input });
-      }
-    });
-  }
+  const mission = buildFamilyMissionControl({
+    state: sourceState,
+    parentUserId,
+    handoffs: [],
+    accessStatus: dashboardData?.accessStatus ?? "live",
+    isSupabaseBacked: dashboardData?.isSupabaseBacked ?? false,
+    message: dashboardData?.message ?? "Preview family schedule.",
+    now: NOW
+  });
+  const tasks = mission.events.filter((event) => event.rsvpNeedsAction);
 
   return (
-    <div className="page">
-      <section className="hero">
-        <span className="eyebrow">One-tap RSVP</span>
-        <h1>Parents answer attendance for linked children only.</h1>
-        <p className="lead">This view is scoped to {parentUser?.name ?? "the selected parent"}. Only linked children appear here.</p>
+    <div className="page parent-rsvp-page">
+      <section className="hero parent-rsvp-hero">
+        <span className="eyebrow">Needs reply</span>
+        <h1>Answer the family RSVP list.</h1>
+        <p className="lead">Only unanswered or schedule-changed events for children linked to {parentUser?.name ?? "this account"} appear here.</p>
       </section>
 
       <p className={`notice ${dashboardData?.isSupabaseBacked ? "ok" : "warning"}`}>
         {dashboardData?.accessStatus === "live" ? "RSVP details are current for your approved family access." : "Preview details are shown until approved family access is available."}
       </p>
       {isArchivedSeason ? <p className="notice warning">Archived RSVP read-only mode is active. Past attendance remains visible, but edits are locked.</p> : null}
-      {message ? <p className="notice">{message}</p> : null}
       {accessGate ?? (
-      <section className="grid two">
-        {events.map(({ event, player, rsvp }) => (
-          <article className="card stack" key={`${event.id}-${player.id}`}>
-            <div className="card-header">
-              <h2>{event.title}</h2>
-              <span className="badge">{rsvp?.response.replace("_", " ") ?? "no response"}</span>
+      <div className="parent-rsvp-layout">
+        <section className="parent-rsvp-task-list" aria-labelledby="parent-rsvp-task-title">
+          <header>
+            <span>
+              <small>Family action list</small>
+              <h2 id="parent-rsvp-task-title">Needs reply</h2>
+            </span>
+            <strong>{tasks.length} {tasks.length === 1 ? "response" : "responses"}</strong>
+          </header>
+          {tasks.map((event) => {
+            const persisted = sourceState.rsvps.find((item) => (
+              item.eventId === event.eventId &&
+              item.playerId === event.childId &&
+              item.parentUserId === parentUserId
+            ));
+            const saved = savedAnswers[event.projectionId];
+            return (
+              <article className="parent-rsvp-task" key={event.projectionId}>
+                <div>
+                  <span>{event.childLabel} · {event.teamName}</span>
+                  <h3>{event.title}</h3>
+                  <p>{event.dateLabel} · {event.startLabel} · {event.venueLabel}</p>
+                </div>
+                <RsvpControl
+                  eventId={event.eventId}
+                  playerId={event.childId}
+                  childLabel={event.childLabel}
+                  eventTitle={event.title}
+                  scheduleVersion={event.scheduleVersion}
+                  currentResponse={saved?.response ?? persisted?.response}
+                  currentLockVersion={saved?.lockVersion ?? persisted?.lockVersion ?? 0}
+                  disabled={isArchivedSeason}
+                  onSaved={({ response, lockVersion }) => setSavedAnswers((current) => ({
+                    ...current,
+                    [event.projectionId]: { response, lockVersion }
+                  }))}
+                />
+              </article>
+            );
+          })}
+          {!tasks.length ? (
+            <div className="parent-rsvp-empty">
+              <strong>No replies needed</strong>
+              <p>Your linked children have no unanswered or schedule-changed events.</p>
+              <a className="button secondary" href="/parent/schedule">Open family schedule</a>
             </div>
-            <p>{player.firstName} {player.lastInitial}. · {formatDate(event.startsAt)} · {event.locationName}</p>
-            <div className="toolbar">
-              <button disabled={isPending || isArchivedSeason} onClick={() => save(event.id, player.id, "going")}>Going</button>
-              <button disabled={isPending || isArchivedSeason} className="secondary" onClick={() => save(event.id, player.id, "maybe")}>Maybe</button>
-              <button disabled={isPending || isArchivedSeason} className="secondary" onClick={() => save(event.id, player.id, "not_going")}>Not going</button>
-              <button disabled={isPending || isArchivedSeason} className="secondary" onClick={() => save(event.id, player.id, "cancelled")}>Cancel RSVP</button>
-            </div>
-          </article>
-        ))}
-        <article className="card stack">
+          ) : null}
+        </section>
+        <aside className="card stack parent-rsvp-history">
           <h2>RSVP history</h2>
           {rsvpHistory.map((rsvp) => {
-            const event = displayState.events.find((item) => item.id === rsvp.eventId);
-            const player = displayState.players.find((item) => item.id === rsvp.playerId);
+            const event = sourceState.events.find((item) => item.id === rsvp.eventId);
+            const player = sourceState.players.find((item) => item.id === rsvp.playerId);
             return (
               <p key={rsvp.id}>
                 <strong>{event?.title ?? "Event"}</strong><br />
-                <span className="muted">{player ? `${player.firstName} ${player.lastInitial}.` : "Player"} - {rsvp.response.replace("_", " ")} - {formatDate(rsvp.updatedAt)}</span>
+                <span className="muted">{player ? `${player.firstName} ${player.lastInitial}.` : "Player"} · {responseLabel(rsvp.response)} · {formatDate(rsvp.updatedAt)}</span>
               </p>
             );
           })}
           {!rsvpHistory.length ? <p className="muted">No RSVP history yet.</p> : null}
-        </article>
-      </section>
+        </aside>
+      </div>
       )}
     </div>
   );
@@ -6049,7 +5946,12 @@ function ParentScheduleFeed({
   const parentState = parentDashboardData?.state ?? scheduleState;
   const parentUserId = parentDashboardData?.parentUserId || "user-parent-jordan";
   const [selectedDateKey, setSelectedDateKey] = useState("");
-  const [commandEventId, setCommandEventId] = useState("");
+  const [selectedChildId, setSelectedChildId] = useState("");
+  const [passportProjectionId, setPassportProjectionId] = useState("");
+  const [savedAnswers, setSavedAnswers] = useState<Record<string, {
+    response: Extract<RsvpResponse, "going" | "maybe" | "not_going">;
+    lockVersion: number;
+  }>>({});
   const now = new Date(NOW);
   const todayStart = new Date(now);
   todayStart.setHours(0, 0, 0, 0);
@@ -6066,9 +5968,21 @@ function ParentScheduleFeed({
   ));
   const linkedPlayerIds = new Set(activeGuardianLinks.map((link) => link.playerId));
   const linkedPlayers = parentState.players.filter((player) => linkedPlayerIds.has(player.id));
+  const familyMission = buildFamilyMissionControl({
+    state: parentState,
+    parentUserId,
+    handoffs: [],
+    accessStatus: parentDashboardData?.accessStatus ?? "live",
+    isSupabaseBacked: parentDashboardData?.isSupabaseBacked ?? false,
+    message: parentDashboardData?.message ?? "Preview family schedule.",
+    now: NOW
+  });
+  const filteredPlayers = selectedChildId
+    ? linkedPlayers.filter((player) => player.id === selectedChildId)
+    : linkedPlayers;
   const responseNeeded = visibleEvents.some((event) => (
     event.status === "scheduled" &&
-    linkedPlayers.some((player) => (
+    filteredPlayers.some((player) => (
       player.teamId === event.teamId &&
       !parentState.rsvps.some((rsvp) => (
         rsvp.eventId === event.id &&
@@ -6093,9 +6007,11 @@ function ParentScheduleFeed({
       eventCount: visibleEvents.filter((item) => getScheduleDateKey(item.startsAt) === key).length
     };
   });
+  const visibleTeamIds = new Set(filteredPlayers.map((player) => player.teamId));
+  const familyVisibleEvents = visibleEvents.filter((event) => visibleTeamIds.has(event.teamId));
   const displayedEvents = selectedDateKey
-    ? visibleEvents.filter((item) => getScheduleDateKey(item.startsAt) === selectedDateKey)
-    : visibleEvents;
+    ? familyVisibleEvents.filter((item) => getScheduleDateKey(item.startsAt) === selectedDateKey)
+    : familyVisibleEvents;
   const todayEvents = displayedEvents.filter((item) => {
     const startsAt = Date.parse(item.startsAt);
     return startsAt >= todayStart.getTime() && startsAt < tomorrowStart.getTime();
@@ -6105,27 +6021,22 @@ function ParentScheduleFeed({
     return startsAt >= tomorrowStart.getTime() && startsAt < weekEnd.getTime();
   });
   const laterEvents = displayedEvents.filter((item) => Date.parse(item.startsAt) >= weekEnd.getTime());
-  const commandEvent = visibleEvents.find((item) => item.id === commandEventId);
-  const commandTeam = commandEvent ? scheduleState.teams.find((item) => item.id === commandEvent.teamId) : undefined;
-  const commandPlayers = commandEvent ? linkedPlayers.filter((player) => player.teamId === commandEvent.teamId) : [];
-  const commandWeather = commandEvent
-    ? scheduleState.weatherAlerts.find((alert) => alert.teamId === commandEvent.teamId && alert.eventId === commandEvent.id)
-    : undefined;
-  const commandSnackNeeds = commandEvent
-    ? parentState.snackScheduleSlots.filter((slot) => slot.eventId === commandEvent.id && slot.status === "open").length
-    : 0;
-  const commandVolunteerNeeds = commandEvent
-    ? parentState.volunteerSignups.filter((signup) => signup.eventId === commandEvent.id && signup.status === "open").length
-    : 0;
-  const commandAnnouncement = commandEvent
-    ? parentState.announcements.find((announcement) => announcement.teamId === commandEvent.teamId)
-    : undefined;
+  const passportEvent = familyMission.events.find((item) => item.projectionId === passportProjectionId);
+  const passportRsvp = passportEvent ? parentState.rsvps.find((item) => (
+    item.eventId === passportEvent.eventId &&
+    item.playerId === passportEvent.childId &&
+    item.parentUserId === parentUserId
+  )) : undefined;
   const selectedDayLabel = weekDays.find((day) => day.key === selectedDateKey);
 
   function renderEventCard(event: LeagueEvent) {
     const team = scheduleState.teams.find((item) => item.id === event.teamId);
     const dateParts = getParentScheduleDateParts(event.startsAt);
-    const eventPlayers = linkedPlayers.filter((player) => player.teamId === event.teamId);
+    const eventPlayers = filteredPlayers.filter((player) => player.teamId === event.teamId);
+    const eventProjections = familyMission.events.filter((item) => (
+      item.eventId === event.id &&
+      eventPlayers.some((player) => player.id === item.childId)
+    ));
     const directionsQuery = [event.locationName, event.locationAddress].filter(Boolean).join(", ");
     const statusLabel = event.status === "cancelled"
       ? "Canceled"
@@ -6175,8 +6086,13 @@ function ParentScheduleFeed({
                   Directions
                 </a>
               ) : null}
-              <button className="parent-schedule-sheet-trigger" type="button" onClick={() => setCommandEventId(event.id)}>
-                Game-day sheet
+              <button
+                className="parent-schedule-sheet-trigger"
+                type="button"
+                disabled={!eventProjections.length}
+                onClick={() => setPassportProjectionId(eventProjections[0]?.projectionId ?? "")}
+              >
+                Event Passport
               </button>
             </div>
           </div>
@@ -6191,17 +6107,30 @@ function ParentScheduleFeed({
                 item.parentUserId === parentUserId
               ));
               const playerLabel = `${player.firstName} ${player.lastInitial}.`;
+              const projection = eventProjections.find((item) => item.childId === player.id);
+              const saved = projection ? savedAnswers[projection.projectionId] : undefined;
 
               return (
                 <div className="parent-schedule-rsvp-row" key={player.id}>
                   <span className="parent-player-avatar" aria-hidden="true">{player.firstName[0]}{player.lastInitial}</span>
                   <p>
-                    <strong>{rsvp ? `${playerLabel} is ${rsvp.response.replace("_", " ")}` : `Is ${player.firstName} going?`}</strong>
-                    <small>{rsvp ? "Response recorded for this event." : "A response is still needed."}</small>
+                    <strong>{playerLabel}</strong>
+                    <small>{saved || rsvp ? "Response recorded for this event." : "A response is still needed."}</small>
                   </p>
-                  <a className={rsvp ? "parent-rsvp-change" : "parent-rsvp-action"} href="/parent/rsvp">
-                    {rsvp ? "Change" : "RSVP now"}
-                  </a>
+                  <RsvpControl
+                    eventId={event.id}
+                    playerId={player.id}
+                    childLabel={playerLabel}
+                    eventTitle={event.title}
+                    scheduleVersion={event.scheduleVersion ?? 1}
+                    currentResponse={saved?.response ?? rsvp?.response}
+                    currentLockVersion={saved?.lockVersion ?? rsvp?.lockVersion ?? 0}
+                    disabled={false}
+                    onSaved={({ response, lockVersion }) => projection && setSavedAnswers((current) => ({
+                      ...current,
+                      [projection.projectionId]: { response, lockVersion }
+                    }))}
+                  />
                 </div>
               );
             })}
@@ -6256,13 +6185,19 @@ function ParentScheduleFeed({
           </small>
         </span>
         {responseNeeded ? (
-          <a className="parent-rsvp-action" href="/parent/rsvp">RSVP now</a>
+          <a className="parent-rsvp-action" href="/parent/rsvp">Open needs reply</a>
         ) : (
           <span className="season-status state-ready">
             {scheduleData?.isSupabaseBacked ? "Current" : "Preview"}
           </span>
         )}
       </div>
+
+      <FamilyFilter
+        childrenList={familyMission.children}
+        selectedChildId={selectedChildId}
+        onSelect={setSelectedChildId}
+      />
 
       <section className="parent-week-ribbon" aria-labelledby="family-week-title">
         <header>
@@ -6289,72 +6224,27 @@ function ParentScheduleFeed({
         </div>
       </section>
 
-      {commandEvent ? (
+      {passportEvent ? (
         <section className="parent-game-day-sheet" aria-labelledby="game-day-sheet-title">
           <header>
             <span>
-              <small>Game-day command sheet</small>
-              <h2 id="game-day-sheet-title">{commandEvent.title}</h2>
-              <p>{commandTeam?.name ?? "Team"} · {formatParentScheduleTimeRange(commandEvent)}</p>
+              <small>Family event details</small>
+              <h2 id="game-day-sheet-title">Event Passport</h2>
+              <p>Official schedule facts and family-owned responses stay separate.</p>
             </span>
-            <button type="button" className="secondary" onClick={() => setCommandEventId("")}>Close</button>
+            <button type="button" className="secondary" onClick={() => setPassportProjectionId("")}>Close</button>
           </header>
-          <div className="parent-game-day-sheet-grid">
-            <p>
-              <span>Arrival</span>
-              <strong>{new Date(Date.parse(commandEvent.startsAt) - 20 * 60 * 1000).toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" })}</strong>
-              <small>Suggested 20-minute arrival window</small>
-            </p>
-            <p>
-              <span>Field</span>
-              <strong>{commandEvent.locationName}</strong>
-              <small>{commandEvent.locationAddress || "Address pending"}</small>
-            </p>
-            <p>
-              <span>Weather</span>
-              <strong>{commandWeather ? commandWeather.headline : "No active alert"}</strong>
-              <small>{commandWeather ? `${commandWeather.severity} · ${commandWeather.status}` : "Check again before leaving."}</small>
-            </p>
-            <p>
-              <span>Team help</span>
-              <strong>{commandSnackNeeds + commandVolunteerNeeds} open</strong>
-              <small>{commandSnackNeeds} snack · {commandVolunteerNeeds} volunteer</small>
-            </p>
-          </div>
-          <div className="parent-game-day-sheet-rsvps">
-            <strong>Family RSVP</strong>
-            {commandPlayers.map((player) => {
-              const response = parentState.rsvps.find((item) => (
-                item.eventId === commandEvent.id &&
-                item.playerId === player.id &&
-                item.parentUserId === parentUserId
-              ));
-              return (
-                <span key={player.id}>
-                  {player.firstName} {player.lastInitial}. · {response ? response.response.replace("_", " ") : "response needed"}
-                </span>
-              );
-            })}
-            {!commandPlayers.length ? <span>Linked-player details are unavailable.</span> : null}
-          </div>
-          <div className="parent-game-day-sheet-footer">
-            <p>
-              <strong>Latest coach update</strong>
-              <span>{commandAnnouncement?.body ?? "No new coach update is attached to this event."}</span>
-            </p>
-            <div>
-              <a className="parent-rsvp-action" href="/parent/rsvp">Open RSVP</a>
-              <a
-                className="button secondary"
-                href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent([commandEvent.locationName, commandEvent.locationAddress].filter(Boolean).join(", "))}`}
-                target="_blank"
-                rel="noreferrer"
-              >
-                Directions
-              </a>
-            </div>
-          </div>
-          <small className="parent-game-day-sheet-boundary">This sheet reads current family and team records. It does not send alerts or change attendance.</small>
+          <EventPassport
+            event={passportEvent}
+            currentResponse={savedAnswers[passportEvent.projectionId]?.response ?? passportRsvp?.response}
+            currentLockVersion={savedAnswers[passportEvent.projectionId]?.lockVersion ?? passportRsvp?.lockVersion ?? 0}
+            canWriteRsvp
+            onRsvpSaved={({ response, lockVersion }) => setSavedAnswers((current) => ({
+              ...current,
+              [passportEvent.projectionId]: { response, lockVersion }
+            }))}
+          />
+          <small className="parent-game-day-sheet-boundary">This passport reads current family and team records. It does not send alerts or infer unpublished arrival details.</small>
         </section>
       ) : null}
 
@@ -6374,7 +6264,7 @@ function ParentScheduleFeed({
 
       <p className="parent-schedule-privacy">
         <strong>Family-only RSVP details.</strong>
-        <span>Calendar details are read-only here. RSVP changes open the dedicated family response screen.</span>
+        <span>Official calendar facts remain read-only here. Family responses use the same three-answer control everywhere.</span>
       </p>
     </div>
   );

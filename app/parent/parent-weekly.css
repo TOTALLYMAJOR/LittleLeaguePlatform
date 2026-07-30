@@ -2086,6 +2086,121 @@
   color: var(--accent);
 }
 
+.parent-rsvp-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1.7fr) minmax(260px, 0.7fr);
+  gap: var(--sp-4);
+  align-items: start;
+}
+
+.parent-rsvp-task-list {
+  display: grid;
+  gap: var(--sp-3);
+}
+
+.parent-rsvp-task-list > header {
+  display: flex;
+  align-items: end;
+  justify-content: space-between;
+  gap: var(--sp-3);
+  padding-bottom: var(--sp-3);
+  border-bottom: 1px solid var(--line);
+}
+
+.parent-rsvp-task-list > header small,
+.parent-rsvp-task-list > header h2 {
+  display: block;
+  margin: 0;
+}
+
+.parent-rsvp-task-list > header small {
+  color: var(--muted);
+  font-size: var(--text-xs);
+  font-weight: 750;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+.parent-rsvp-task {
+  display: grid;
+  grid-template-columns: minmax(190px, 0.7fr) minmax(320px, 1.3fr);
+  gap: var(--sp-4);
+  align-items: start;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--surface);
+  box-shadow: var(--shadow-sm);
+  padding: var(--sp-4);
+}
+
+.parent-rsvp-task h3,
+.parent-rsvp-task p {
+  margin: 0;
+}
+
+.parent-rsvp-task h3 {
+  margin-top: var(--sp-1);
+  font-size: var(--text-lg);
+}
+
+.parent-rsvp-task > div:first-child > span,
+.parent-rsvp-task p {
+  color: var(--muted);
+  font-size: var(--text-sm);
+}
+
+.parent-rsvp-task .family-rsvp-control,
+.parent-schedule-rsvp-row .family-rsvp-control {
+  border-color: var(--line);
+  background: var(--surface-strong);
+  color: var(--text);
+}
+
+.parent-rsvp-task .family-rsvp-message,
+.parent-schedule-rsvp-row .family-rsvp-message {
+  color: var(--danger) !important;
+}
+
+.parent-rsvp-task .family-rsvp-message.success,
+.parent-schedule-rsvp-row .family-rsvp-message.success {
+  color: var(--ok) !important;
+}
+
+.parent-rsvp-history {
+  position: sticky;
+  top: var(--sp-4);
+}
+
+.parent-rsvp-empty {
+  border: 1px dashed var(--line);
+  border-radius: var(--radius);
+  background: var(--surface-strong);
+  padding: var(--sp-5);
+}
+
+.parent-rsvp-empty p {
+  color: var(--muted);
+}
+
+.parent-schedule-page > .family-filter {
+  margin-top: 0;
+}
+
+.parent-schedule-rsvp-row {
+  grid-template-columns: auto minmax(120px, 0.45fr) minmax(390px, 1.55fr);
+  align-items: start;
+  padding: var(--sp-3) 0;
+}
+
+.parent-schedule-rsvp-row .family-rsvp-control {
+  width: 100%;
+}
+
+.parent-game-day-sheet > .family-event-passport {
+  width: 100%;
+  margin-top: 0;
+}
+
 .family-readiness-strip {
   display: grid;
   gap: var(--sp-3);
@@ -2240,6 +2355,23 @@
   .family-event-passport-facts {
     grid-template-columns: 1fr 1fr;
   }
+
+  .parent-rsvp-layout,
+  .parent-rsvp-task {
+    grid-template-columns: 1fr;
+  }
+
+  .parent-rsvp-history {
+    position: static;
+  }
+
+  .parent-schedule-rsvp-row {
+    grid-template-columns: auto minmax(0, 1fr);
+  }
+
+  .parent-schedule-rsvp-row .family-rsvp-control {
+    grid-column: 1 / -1;
+  }
 }
 
 @media (max-width: 640px) {
@@ -2289,6 +2421,14 @@
   .family-child-readiness > header {
     align-items: flex-start;
     flex-direction: column;
+  }
+
+  .parent-rsvp-task-list > header {
+    align-items: flex-start;
+  }
+
+  .parent-rsvp-task {
+    padding: var(--sp-3);
   }
 }
 
