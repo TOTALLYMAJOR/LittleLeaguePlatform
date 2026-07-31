@@ -1,0 +1,1147 @@
+{
+  "generatedAt": "2026-07-31T03:49:27.331Z",
+  "baseUrl": "http://127.0.0.1:3133",
+  "routeSource": "lib/navigation/route-topology.ts",
+  "authenticatedAs": "demo-parent",
+  "thresholds": {
+    "normalText": 4.5,
+    "largeText": 3
+  },
+  "routes": [
+    {
+      "path": "/parent/schedule",
+      "surfaceFamily": "family",
+      "expectedShellFamily": "family",
+      "familyMobileTab": "schedule"
+    },
+    {
+      "path": "/parent/rsvp",
+      "surfaceFamily": "family",
+      "expectedShellFamily": "family",
+      "familyMobileTab": "schedule"
+    }
+  ],
+  "modes": [
+    {
+      "name": "family-light",
+      "colorScheme": "light",
+      "forcedColors": "none"
+    },
+    {
+      "name": "device-light",
+      "colorScheme": "light",
+      "forcedColors": "none"
+    },
+    {
+      "name": "device-dark",
+      "colorScheme": "dark",
+      "forcedColors": "none"
+    },
+    {
+      "name": "forced-colors",
+      "colorScheme": "light",
+      "forcedColors": "active"
+    }
+  ],
+  "results": [
+    {
+      "route": "/parent/schedule",
+      "mode": "family-light",
+      "authenticationState": "authenticated",
+      "activeRole": "parent",
+      "shellFamily": "family",
+      "surfaceFamily": "family",
+      "themeMarker": "light",
+      "forcedColorsActive": false,
+      "foregroundBackgroundPairs": [
+        {
+          "foreground": "rgb(5, 122, 85)",
+          "background": "rgb(216, 248, 231)",
+          "minimumRatio": 4.72,
+          "threshold": 4.5,
+          "count": 3
+        },
+        {
+          "foreground": "rgb(104, 102, 95)",
+          "background": "rgb(242, 237, 228)",
+          "minimumRatio": 4.93,
+          "threshold": 4.5,
+          "count": 4
+        },
+        {
+          "foreground": "rgb(104, 102, 95)",
+          "background": "rgb(253, 248, 241)",
+          "minimumRatio": 5.44,
+          "threshold": 4.5,
+          "count": 11
+        },
+        {
+          "foreground": "rgb(107, 101, 89)",
+          "background": "rgb(253, 248, 241)",
+          "minimumRatio": 5.47,
+          "threshold": 4.5,
+          "count": 1
+        },
+        {
+          "foreground": "rgb(104, 102, 95)",
+          "background": "rgb(255, 250, 244)",
+          "minimumRatio": 5.54,
+          "threshold": 4.5,
+          "count": 2
+        },
+        {
+          "foreground": "rgb(104, 102, 95)",
+          "background": "rgb(255, 255, 255)",
+          "minimumRatio": 5.75,
+          "threshold": 4.5,
+          "count": 12
+        },
+        {
+          "foreground": "rgb(155, 67, 19)",
+          "background": "rgb(255, 242, 228)",
+          "minimumRatio": 5.95,
+          "threshold": 4.5,
+          "count": 1
+        },
+        {
+          "foreground": "rgb(159, 59, 13)",
+          "background": "rgb(255, 240, 231)",
+          "minimumRatio": 6.08,
+          "threshold": 4.5,
+          "count": 3
+        },
+        {
+          "foreground": "rgb(146, 64, 14)",
+          "background": "rgb(255, 243, 196)",
+          "minimumRatio": 6.37,
+          "threshold": 4.5,
+          "count": 2
+        },
+        {
+          "foreground": "rgb(255, 255, 255)",
+          "background": "rgb(159, 59, 13)",
+          "minimumRatio": 6.76,
+          "threshold": 4.5,
+          "count": 1
+        },
+        {
+          "foreground": "rgb(255, 255, 255)",
+          "background": "rgb(20, 83, 45)",
+          "minimumRatio": 9.11,
+          "threshold": 4.5,
+          "count": 2
+        },
+        {
+          "foreground": "rgb(31, 58, 99)",
+          "background": "rgb(253, 248, 241)",
+          "minimumRatio": 10.78,
+          "threshold": 4.5,
+          "count": 7
+        },
+        {
+          "foreground": "rgb(255, 255, 255)",
+          "background": "rgb(31, 58, 99)",
+          "minimumRatio": 11.39,
+          "threshold": 4.5,
+          "count": 1
+        },
+        {
+          "foreground": "rgb(31, 58, 99)",
+          "background": "rgb(255, 255, 255)",
+          "minimumRatio": 11.39,
+          "threshold": 4.5,
+          "count": 1
+        },
+        {
+          "foreground": "rgb(20, 42, 74)",
+          "background": "rgb(237, 242, 247)",
+          "minimumRatio": 12.77,
+          "threshold": 4.5,
+          "count": 1
+        },
+        {
+          "foreground": "rgb(28, 36, 56)",
+          "background": "rgb(242, 237, 228)",
+          "minimumRatio": 13.25,
+          "threshold": 4.5,
+          "count": 4
+        },
+        {
+          "foreground": "rgb(20, 42, 74)",
+          "background": "rgb(253, 248, 241)",
+          "minimumRatio": 13.61,
+          "threshold": 4.5,
+          "count": 1
+        },
+        {
+          "foreground": "rgb(20, 42, 74)",
+          "background": "rgb(255, 255, 255)",
+          "minimumRatio": 14.39,
+          "threshold": 4.5,
+          "count": 4
+        },
+        {
+          "foreground": "rgb(28, 36, 56)",
+          "background": "rgb(253, 248, 241)",
+          "minimumRatio": 14.63,
+          "threshold": 4.5,
+          "count": 9
+        },
+        {
+          "foreground": "rgb(28, 36, 56)",
+          "background": "rgb(253, 248, 241)",
+          "minimumRatio": 14.63,
+          "threshold": 3,
+          "count": 3
+        },
+        {
+          "foreground": "rgb(28, 36, 56)",
+          "background": "rgb(255, 250, 244)",
+          "minimumRatio": 14.89,
+          "threshold": 4.5,
+          "count": 1
+        },
+        {
+          "foreground": "rgb(255, 255, 255)",
+          "background": "rgb(28, 36, 56)",
+          "minimumRatio": 15.45,
+          "threshold": 4.5,
+          "count": 1
+        },
+        {
+          "foreground": "rgb(28, 36, 56)",
+          "background": "rgb(255, 255, 255)",
+          "minimumRatio": 15.45,
+          "threshold": 4.5,
+          "count": 49
+        },
+        {
+          "foreground": "rgb(28, 36, 56)",
+          "background": "rgb(255, 255, 255)",
+          "minimumRatio": 15.45,
+          "threshold": 3,
+          "count": 2
+        }
+      ],
+      "testedElementCount": 126,
+      "contrastResult": "pass",
+      "axeResult": "pass",
+      "axeViolations": [],
+      "consoleErrors": [],
+      "failedRequests": [],
+      "horizontalOverflow": false,
+      "mainLandmarks": 1,
+      "screenshotPath": "output/playwright/lp-ux-003-contrast/family-light-parent-schedule.png"
+    },
+    {
+      "route": "/parent/rsvp",
+      "mode": "family-light",
+      "authenticationState": "authenticated",
+      "activeRole": "parent",
+      "shellFamily": "family",
+      "surfaceFamily": "family",
+      "themeMarker": "light",
+      "forcedColorsActive": false,
+      "foregroundBackgroundPairs": [
+        {
+          "foreground": "rgb(104, 102, 95)",
+          "background": "rgb(253, 248, 241)",
+          "minimumRatio": 5.44,
+          "threshold": 4.5,
+          "count": 8
+        },
+        {
+          "foreground": "rgb(107, 101, 89)",
+          "background": "rgb(253, 248, 241)",
+          "minimumRatio": 5.47,
+          "threshold": 4.5,
+          "count": 1
+        },
+        {
+          "foreground": "rgb(104, 102, 95)",
+          "background": "rgb(255, 250, 244)",
+          "minimumRatio": 5.54,
+          "threshold": 4.5,
+          "count": 2
+        },
+        {
+          "foreground": "rgb(104, 102, 95)",
+          "background": "rgb(255, 255, 255)",
+          "minimumRatio": 5.75,
+          "threshold": 4.5,
+          "count": 6
+        },
+        {
+          "foreground": "rgb(155, 67, 19)",
+          "background": "rgb(255, 242, 228)",
+          "minimumRatio": 5.95,
+          "threshold": 4.5,
+          "count": 1
+        },
+        {
+          "foreground": "rgb(159, 59, 13)",
+          "background": "rgb(255, 240, 231)",
+          "minimumRatio": 6.08,
+          "threshold": 4.5,
+          "count": 2
+        },
+        {
+          "foreground": "rgb(31, 58, 99)",
+          "background": "rgb(253, 248, 241)",
+          "minimumRatio": 10.78,
+          "threshold": 4.5,
+          "count": 5
+        },
+        {
+          "foreground": "rgb(255, 255, 255)",
+          "background": "rgb(31, 58, 99)",
+          "minimumRatio": 11.39,
+          "threshold": 4.5,
+          "count": 1
+        },
+        {
+          "foreground": "rgb(31, 58, 99)",
+          "background": "rgb(255, 255, 255)",
+          "minimumRatio": 11.39,
+          "threshold": 4.5,
+          "count": 1
+        },
+        {
+          "foreground": "rgb(28, 36, 56)",
+          "background": "rgb(242, 237, 228)",
+          "minimumRatio": 13.25,
+          "threshold": 4.5,
+          "count": 2
+        },
+        {
+          "foreground": "rgb(20, 42, 74)",
+          "background": "rgb(253, 248, 241)",
+          "minimumRatio": 13.61,
+          "threshold": 4.5,
+          "count": 1
+        },
+        {
+          "foreground": "rgb(28, 36, 56)",
+          "background": "rgb(216, 248, 231)",
+          "minimumRatio": 13.62,
+          "threshold": 4.5,
+          "count": 1
+        },
+        {
+          "foreground": "rgb(28, 36, 56)",
+          "background": "rgb(253, 248, 241)",
+          "minimumRatio": 14.63,
+          "threshold": 4.5,
+          "count": 8
+        },
+        {
+          "foreground": "rgb(28, 36, 56)",
+          "background": "rgb(253, 248, 241)",
+          "minimumRatio": 14.63,
+          "threshold": 3,
+          "count": 2
+        },
+        {
+          "foreground": "rgb(28, 36, 56)",
+          "background": "rgb(255, 250, 244)",
+          "minimumRatio": 14.89,
+          "threshold": 4.5,
+          "count": 1
+        },
+        {
+          "foreground": "rgb(255, 255, 255)",
+          "background": "rgb(28, 36, 56)",
+          "minimumRatio": 15.45,
+          "threshold": 4.5,
+          "count": 1
+        },
+        {
+          "foreground": "rgb(28, 36, 56)",
+          "background": "rgb(255, 255, 255)",
+          "minimumRatio": 15.45,
+          "threshold": 3,
+          "count": 3
+        },
+        {
+          "foreground": "rgb(28, 36, 56)",
+          "background": "rgb(255, 255, 255)",
+          "minimumRatio": 15.45,
+          "threshold": 4.5,
+          "count": 8
+        }
+      ],
+      "testedElementCount": 54,
+      "contrastResult": "pass",
+      "axeResult": "pass",
+      "axeViolations": [],
+      "consoleErrors": [],
+      "failedRequests": [],
+      "horizontalOverflow": false,
+      "mainLandmarks": 1,
+      "screenshotPath": "output/playwright/lp-ux-003-contrast/family-light-parent-rsvp.png"
+    },
+    {
+      "route": "/parent/schedule",
+      "mode": "device-light",
+      "authenticationState": "authenticated",
+      "activeRole": "parent",
+      "shellFamily": "family",
+      "surfaceFamily": "family",
+      "themeMarker": "light",
+      "forcedColorsActive": false,
+      "foregroundBackgroundPairs": [
+        {
+          "foreground": "rgb(5, 122, 85)",
+          "background": "rgb(216, 248, 231)",
+          "minimumRatio": 4.72,
+          "threshold": 4.5,
+          "count": 3
+        },
+        {
+          "foreground": "rgb(104, 102, 95)",
+          "background": "rgb(242, 237, 228)",
+          "minimumRatio": 4.93,
+          "threshold": 4.5,
+          "count": 4
+        },
+        {
+          "foreground": "rgb(104, 102, 95)",
+          "background": "rgb(253, 248, 241)",
+          "minimumRatio": 5.44,
+          "threshold": 4.5,
+          "count": 11
+        },
+        {
+          "foreground": "rgb(107, 101, 89)",
+          "background": "rgb(253, 248, 241)",
+          "minimumRatio": 5.47,
+          "threshold": 4.5,
+          "count": 1
+        },
+        {
+          "foreground": "rgb(104, 102, 95)",
+          "background": "rgb(255, 250, 244)",
+          "minimumRatio": 5.54,
+          "threshold": 4.5,
+          "count": 2
+        },
+        {
+          "foreground": "rgb(104, 102, 95)",
+          "background": "rgb(255, 255, 255)",
+          "minimumRatio": 5.75,
+          "threshold": 4.5,
+          "count": 12
+        },
+        {
+          "foreground": "rgb(155, 67, 19)",
+          "background": "rgb(255, 242, 228)",
+          "minimumRatio": 5.95,
+          "threshold": 4.5,
+          "count": 1
+        },
+        {
+          "foreground": "rgb(159, 59, 13)",
+          "background": "rgb(255, 240, 231)",
+          "minimumRatio": 6.08,
+          "threshold": 4.5,
+          "count": 3
+        },
+        {
+          "foreground": "rgb(146, 64, 14)",
+          "background": "rgb(255, 243, 196)",
+          "minimumRatio": 6.37,
+          "threshold": 4.5,
+          "count": 2
+        },
+        {
+          "foreground": "rgb(255, 255, 255)",
+          "background": "rgb(159, 59, 13)",
+          "minimumRatio": 6.76,
+          "threshold": 4.5,
+          "count": 1
+        },
+        {
+          "foreground": "rgb(255, 255, 255)",
+          "background": "rgb(20, 83, 45)",
+          "minimumRatio": 9.11,
+          "threshold": 4.5,
+          "count": 2
+        },
+        {
+          "foreground": "rgb(31, 58, 99)",
+          "background": "rgb(253, 248, 241)",
+          "minimumRatio": 10.78,
+          "threshold": 4.5,
+          "count": 7
+        },
+        {
+          "foreground": "rgb(255, 255, 255)",
+          "background": "rgb(31, 58, 99)",
+          "minimumRatio": 11.39,
+          "threshold": 4.5,
+          "count": 1
+        },
+        {
+          "foreground": "rgb(31, 58, 99)",
+          "background": "rgb(255, 255, 255)",
+          "minimumRatio": 11.39,
+          "threshold": 4.5,
+          "count": 1
+        },
+        {
+          "foreground": "rgb(20, 42, 74)",
+          "background": "rgb(237, 242, 247)",
+          "minimumRatio": 12.77,
+          "threshold": 4.5,
+          "count": 1
+        },
+        {
+          "foreground": "rgb(28, 36, 56)",
+          "background": "rgb(242, 237, 228)",
+          "minimumRatio": 13.25,
+          "threshold": 4.5,
+          "count": 4
+        },
+        {
+          "foreground": "rgb(20, 42, 74)",
+          "background": "rgb(253, 248, 241)",
+          "minimumRatio": 13.61,
+          "threshold": 4.5,
+          "count": 1
+        },
+        {
+          "foreground": "rgb(20, 42, 74)",
+          "background": "rgb(255, 255, 255)",
+          "minimumRatio": 14.39,
+          "threshold": 4.5,
+          "count": 4
+        },
+        {
+          "foreground": "rgb(28, 36, 56)",
+          "background": "rgb(253, 248, 241)",
+          "minimumRatio": 14.63,
+          "threshold": 4.5,
+          "count": 9
+        },
+        {
+          "foreground": "rgb(28, 36, 56)",
+          "background": "rgb(253, 248, 241)",
+          "minimumRatio": 14.63,
+          "threshold": 3,
+          "count": 3
+        },
+        {
+          "foreground": "rgb(28, 36, 56)",
+          "background": "rgb(255, 250, 244)",
+          "minimumRatio": 14.89,
+          "threshold": 4.5,
+          "count": 1
+        },
+        {
+          "foreground": "rgb(255, 255, 255)",
+          "background": "rgb(28, 36, 56)",
+          "minimumRatio": 15.45,
+          "threshold": 4.5,
+          "count": 1
+        },
+        {
+          "foreground": "rgb(28, 36, 56)",
+          "background": "rgb(255, 255, 255)",
+          "minimumRatio": 15.45,
+          "threshold": 4.5,
+          "count": 49
+        },
+        {
+          "foreground": "rgb(28, 36, 56)",
+          "background": "rgb(255, 255, 255)",
+          "minimumRatio": 15.45,
+          "threshold": 3,
+          "count": 2
+        }
+      ],
+      "testedElementCount": 126,
+      "contrastResult": "pass",
+      "axeResult": "pass",
+      "axeViolations": [],
+      "consoleErrors": [],
+      "failedRequests": [],
+      "horizontalOverflow": false,
+      "mainLandmarks": 1,
+      "screenshotPath": "output/playwright/lp-ux-003-contrast/device-light-parent-schedule.png"
+    },
+    {
+      "route": "/parent/rsvp",
+      "mode": "device-light",
+      "authenticationState": "authenticated",
+      "activeRole": "parent",
+      "shellFamily": "family",
+      "surfaceFamily": "family",
+      "themeMarker": "light",
+      "forcedColorsActive": false,
+      "foregroundBackgroundPairs": [
+        {
+          "foreground": "rgb(104, 102, 95)",
+          "background": "rgb(253, 248, 241)",
+          "minimumRatio": 5.44,
+          "threshold": 4.5,
+          "count": 8
+        },
+        {
+          "foreground": "rgb(107, 101, 89)",
+          "background": "rgb(253, 248, 241)",
+          "minimumRatio": 5.47,
+          "threshold": 4.5,
+          "count": 1
+        },
+        {
+          "foreground": "rgb(104, 102, 95)",
+          "background": "rgb(255, 250, 244)",
+          "minimumRatio": 5.54,
+          "threshold": 4.5,
+          "count": 2
+        },
+        {
+          "foreground": "rgb(104, 102, 95)",
+          "background": "rgb(255, 255, 255)",
+          "minimumRatio": 5.75,
+          "threshold": 4.5,
+          "count": 6
+        },
+        {
+          "foreground": "rgb(155, 67, 19)",
+          "background": "rgb(255, 242, 228)",
+          "minimumRatio": 5.95,
+          "threshold": 4.5,
+          "count": 1
+        },
+        {
+          "foreground": "rgb(159, 59, 13)",
+          "background": "rgb(255, 240, 231)",
+          "minimumRatio": 6.08,
+          "threshold": 4.5,
+          "count": 2
+        },
+        {
+          "foreground": "rgb(31, 58, 99)",
+          "background": "rgb(253, 248, 241)",
+          "minimumRatio": 10.78,
+          "threshold": 4.5,
+          "count": 5
+        },
+        {
+          "foreground": "rgb(255, 255, 255)",
+          "background": "rgb(31, 58, 99)",
+          "minimumRatio": 11.39,
+          "threshold": 4.5,
+          "count": 1
+        },
+        {
+          "foreground": "rgb(31, 58, 99)",
+          "background": "rgb(255, 255, 255)",
+          "minimumRatio": 11.39,
+          "threshold": 4.5,
+          "count": 1
+        },
+        {
+          "foreground": "rgb(28, 36, 56)",
+          "background": "rgb(242, 237, 228)",
+          "minimumRatio": 13.25,
+          "threshold": 4.5,
+          "count": 2
+        },
+        {
+          "foreground": "rgb(20, 42, 74)",
+          "background": "rgb(253, 248, 241)",
+          "minimumRatio": 13.61,
+          "threshold": 4.5,
+          "count": 1
+        },
+        {
+          "foreground": "rgb(28, 36, 56)",
+          "background": "rgb(216, 248, 231)",
+          "minimumRatio": 13.62,
+          "threshold": 4.5,
+          "count": 1
+        },
+        {
+          "foreground": "rgb(28, 36, 56)",
+          "background": "rgb(253, 248, 241)",
+          "minimumRatio": 14.63,
+          "threshold": 4.5,
+          "count": 8
+        },
+        {
+          "foreground": "rgb(28, 36, 56)",
+          "background": "rgb(253, 248, 241)",
+          "minimumRatio": 14.63,
+          "threshold": 3,
+          "count": 2
+        },
+        {
+          "foreground": "rgb(28, 36, 56)",
+          "background": "rgb(255, 250, 244)",
+          "minimumRatio": 14.89,
+          "threshold": 4.5,
+          "count": 1
+        },
+        {
+          "foreground": "rgb(255, 255, 255)",
+          "background": "rgb(28, 36, 56)",
+          "minimumRatio": 15.45,
+          "threshold": 4.5,
+          "count": 1
+        },
+        {
+          "foreground": "rgb(28, 36, 56)",
+          "background": "rgb(255, 255, 255)",
+          "minimumRatio": 15.45,
+          "threshold": 3,
+          "count": 3
+        },
+        {
+          "foreground": "rgb(28, 36, 56)",
+          "background": "rgb(255, 255, 255)",
+          "minimumRatio": 15.45,
+          "threshold": 4.5,
+          "count": 8
+        }
+      ],
+      "testedElementCount": 54,
+      "contrastResult": "pass",
+      "axeResult": "pass",
+      "axeViolations": [],
+      "consoleErrors": [],
+      "failedRequests": [],
+      "horizontalOverflow": false,
+      "mainLandmarks": 1,
+      "screenshotPath": "output/playwright/lp-ux-003-contrast/device-light-parent-rsvp.png"
+    },
+    {
+      "route": "/parent/schedule",
+      "mode": "device-dark",
+      "authenticationState": "authenticated",
+      "activeRole": "parent",
+      "shellFamily": "family",
+      "surfaceFamily": "family",
+      "themeMarker": "light",
+      "forcedColorsActive": false,
+      "foregroundBackgroundPairs": [
+        {
+          "foreground": "rgb(5, 122, 85)",
+          "background": "rgb(216, 248, 231)",
+          "minimumRatio": 4.72,
+          "threshold": 4.5,
+          "count": 3
+        },
+        {
+          "foreground": "rgb(104, 102, 95)",
+          "background": "rgb(242, 237, 228)",
+          "minimumRatio": 4.93,
+          "threshold": 4.5,
+          "count": 4
+        },
+        {
+          "foreground": "rgb(104, 102, 95)",
+          "background": "rgb(253, 248, 241)",
+          "minimumRatio": 5.44,
+          "threshold": 4.5,
+          "count": 11
+        },
+        {
+          "foreground": "rgb(107, 101, 89)",
+          "background": "rgb(253, 248, 241)",
+          "minimumRatio": 5.47,
+          "threshold": 4.5,
+          "count": 1
+        },
+        {
+          "foreground": "rgb(104, 102, 95)",
+          "background": "rgb(255, 250, 244)",
+          "minimumRatio": 5.54,
+          "threshold": 4.5,
+          "count": 2
+        },
+        {
+          "foreground": "rgb(104, 102, 95)",
+          "background": "rgb(255, 255, 255)",
+          "minimumRatio": 5.75,
+          "threshold": 4.5,
+          "count": 12
+        },
+        {
+          "foreground": "rgb(155, 67, 19)",
+          "background": "rgb(255, 242, 228)",
+          "minimumRatio": 5.95,
+          "threshold": 4.5,
+          "count": 1
+        },
+        {
+          "foreground": "rgb(159, 59, 13)",
+          "background": "rgb(255, 240, 231)",
+          "minimumRatio": 6.08,
+          "threshold": 4.5,
+          "count": 3
+        },
+        {
+          "foreground": "rgb(146, 64, 14)",
+          "background": "rgb(255, 243, 196)",
+          "minimumRatio": 6.37,
+          "threshold": 4.5,
+          "count": 2
+        },
+        {
+          "foreground": "rgb(255, 255, 255)",
+          "background": "rgb(159, 59, 13)",
+          "minimumRatio": 6.76,
+          "threshold": 4.5,
+          "count": 1
+        },
+        {
+          "foreground": "rgb(255, 255, 255)",
+          "background": "rgb(20, 83, 45)",
+          "minimumRatio": 9.11,
+          "threshold": 4.5,
+          "count": 2
+        },
+        {
+          "foreground": "rgb(31, 58, 99)",
+          "background": "rgb(253, 248, 241)",
+          "minimumRatio": 10.78,
+          "threshold": 4.5,
+          "count": 7
+        },
+        {
+          "foreground": "rgb(255, 255, 255)",
+          "background": "rgb(31, 58, 99)",
+          "minimumRatio": 11.39,
+          "threshold": 4.5,
+          "count": 1
+        },
+        {
+          "foreground": "rgb(31, 58, 99)",
+          "background": "rgb(255, 255, 255)",
+          "minimumRatio": 11.39,
+          "threshold": 4.5,
+          "count": 1
+        },
+        {
+          "foreground": "rgb(20, 42, 74)",
+          "background": "rgb(237, 242, 247)",
+          "minimumRatio": 12.77,
+          "threshold": 4.5,
+          "count": 1
+        },
+        {
+          "foreground": "rgb(28, 36, 56)",
+          "background": "rgb(242, 237, 228)",
+          "minimumRatio": 13.25,
+          "threshold": 4.5,
+          "count": 4
+        },
+        {
+          "foreground": "rgb(20, 42, 74)",
+          "background": "rgb(253, 248, 241)",
+          "minimumRatio": 13.61,
+          "threshold": 4.5,
+          "count": 1
+        },
+        {
+          "foreground": "rgb(25, 35, 47)",
+          "background": "rgb(246, 241, 233)",
+          "minimumRatio": 14.12,
+          "threshold": 4.5,
+          "count": 1
+        },
+        {
+          "foreground": "rgb(20, 42, 74)",
+          "background": "rgb(255, 255, 255)",
+          "minimumRatio": 14.39,
+          "threshold": 4.5,
+          "count": 4
+        },
+        {
+          "foreground": "rgb(28, 36, 56)",
+          "background": "rgb(253, 248, 241)",
+          "minimumRatio": 14.63,
+          "threshold": 4.5,
+          "count": 9
+        },
+        {
+          "foreground": "rgb(28, 36, 56)",
+          "background": "rgb(253, 248, 241)",
+          "minimumRatio": 14.63,
+          "threshold": 3,
+          "count": 3
+        },
+        {
+          "foreground": "rgb(28, 36, 56)",
+          "background": "rgb(255, 250, 244)",
+          "minimumRatio": 14.89,
+          "threshold": 4.5,
+          "count": 1
+        },
+        {
+          "foreground": "rgb(28, 36, 56)",
+          "background": "rgb(255, 255, 255)",
+          "minimumRatio": 15.45,
+          "threshold": 4.5,
+          "count": 49
+        },
+        {
+          "foreground": "rgb(28, 36, 56)",
+          "background": "rgb(255, 255, 255)",
+          "minimumRatio": 15.45,
+          "threshold": 3,
+          "count": 2
+        }
+      ],
+      "testedElementCount": 126,
+      "contrastResult": "pass",
+      "axeResult": "pass",
+      "axeViolations": [],
+      "consoleErrors": [],
+      "failedRequests": [],
+      "horizontalOverflow": false,
+      "mainLandmarks": 1,
+      "screenshotPath": "output/playwright/lp-ux-003-contrast/device-dark-parent-schedule.png"
+    },
+    {
+      "route": "/parent/rsvp",
+      "mode": "device-dark",
+      "authenticationState": "authenticated",
+      "activeRole": "parent",
+      "shellFamily": "family",
+      "surfaceFamily": "family",
+      "themeMarker": "light",
+      "forcedColorsActive": false,
+      "foregroundBackgroundPairs": [
+        {
+          "foreground": "rgb(104, 102, 95)",
+          "background": "rgb(253, 248, 241)",
+          "minimumRatio": 5.44,
+          "threshold": 4.5,
+          "count": 8
+        },
+        {
+          "foreground": "rgb(107, 101, 89)",
+          "background": "rgb(253, 248, 241)",
+          "minimumRatio": 5.47,
+          "threshold": 4.5,
+          "count": 1
+        },
+        {
+          "foreground": "rgb(104, 102, 95)",
+          "background": "rgb(255, 250, 244)",
+          "minimumRatio": 5.54,
+          "threshold": 4.5,
+          "count": 2
+        },
+        {
+          "foreground": "rgb(104, 102, 95)",
+          "background": "rgb(255, 255, 255)",
+          "minimumRatio": 5.75,
+          "threshold": 4.5,
+          "count": 6
+        },
+        {
+          "foreground": "rgb(155, 67, 19)",
+          "background": "rgb(255, 242, 228)",
+          "minimumRatio": 5.95,
+          "threshold": 4.5,
+          "count": 1
+        },
+        {
+          "foreground": "rgb(159, 59, 13)",
+          "background": "rgb(255, 240, 231)",
+          "minimumRatio": 6.08,
+          "threshold": 4.5,
+          "count": 2
+        },
+        {
+          "foreground": "rgb(31, 58, 99)",
+          "background": "rgb(253, 248, 241)",
+          "minimumRatio": 10.78,
+          "threshold": 4.5,
+          "count": 5
+        },
+        {
+          "foreground": "rgb(255, 255, 255)",
+          "background": "rgb(31, 58, 99)",
+          "minimumRatio": 11.39,
+          "threshold": 4.5,
+          "count": 1
+        },
+        {
+          "foreground": "rgb(31, 58, 99)",
+          "background": "rgb(255, 255, 255)",
+          "minimumRatio": 11.39,
+          "threshold": 4.5,
+          "count": 1
+        },
+        {
+          "foreground": "rgb(28, 36, 56)",
+          "background": "rgb(242, 237, 228)",
+          "minimumRatio": 13.25,
+          "threshold": 4.5,
+          "count": 2
+        },
+        {
+          "foreground": "rgb(20, 42, 74)",
+          "background": "rgb(253, 248, 241)",
+          "minimumRatio": 13.61,
+          "threshold": 4.5,
+          "count": 1
+        },
+        {
+          "foreground": "rgb(28, 36, 56)",
+          "background": "rgb(216, 248, 231)",
+          "minimumRatio": 13.62,
+          "threshold": 4.5,
+          "count": 1
+        },
+        {
+          "foreground": "rgb(25, 35, 47)",
+          "background": "rgb(246, 241, 233)",
+          "minimumRatio": 14.12,
+          "threshold": 4.5,
+          "count": 1
+        },
+        {
+          "foreground": "rgb(28, 36, 56)",
+          "background": "rgb(253, 248, 241)",
+          "minimumRatio": 14.63,
+          "threshold": 4.5,
+          "count": 8
+        },
+        {
+          "foreground": "rgb(28, 36, 56)",
+          "background": "rgb(253, 248, 241)",
+          "minimumRatio": 14.63,
+          "threshold": 3,
+          "count": 2
+        },
+        {
+          "foreground": "rgb(28, 36, 56)",
+          "background": "rgb(255, 250, 244)",
+          "minimumRatio": 14.89,
+          "threshold": 4.5,
+          "count": 1
+        },
+        {
+          "foreground": "rgb(28, 36, 56)",
+          "background": "rgb(255, 255, 255)",
+          "minimumRatio": 15.45,
+          "threshold": 3,
+          "count": 3
+        },
+        {
+          "foreground": "rgb(28, 36, 56)",
+          "background": "rgb(255, 255, 255)",
+          "minimumRatio": 15.45,
+          "threshold": 4.5,
+          "count": 8
+        }
+      ],
+      "testedElementCount": 54,
+      "contrastResult": "pass",
+      "axeResult": "pass",
+      "axeViolations": [],
+      "consoleErrors": [],
+      "failedRequests": [],
+      "horizontalOverflow": false,
+      "mainLandmarks": 1,
+      "screenshotPath": "output/playwright/lp-ux-003-contrast/device-dark-parent-rsvp.png"
+    },
+    {
+      "route": "/parent/schedule",
+      "mode": "forced-colors",
+      "authenticationState": "authenticated",
+      "activeRole": "parent",
+      "shellFamily": "family",
+      "surfaceFamily": "family",
+      "themeMarker": "light dark",
+      "forcedColorsActive": true,
+      "foregroundBackgroundPairs": [
+        {
+          "foreground": "rgb(255, 255, 255)",
+          "background": "rgb(55, 51, 109)",
+          "minimumRatio": 11.3,
+          "threshold": 4.5,
+          "count": 1
+        },
+        {
+          "foreground": "rgb(0, 0, 159)",
+          "background": "rgb(255, 255, 255)",
+          "minimumRatio": 13.99,
+          "threshold": 4.5,
+          "count": 13
+        },
+        {
+          "foreground": "rgb(0, 0, 0)",
+          "background": "rgb(255, 255, 255)",
+          "minimumRatio": 21,
+          "threshold": 4.5,
+          "count": 107
+        },
+        {
+          "foreground": "rgb(0, 0, 0)",
+          "background": "rgb(255, 255, 255)",
+          "minimumRatio": 21,
+          "threshold": 3,
+          "count": 5
+        }
+      ],
+      "testedElementCount": 126,
+      "contrastResult": "system-colors-verified",
+      "axeResult": "pass-structural-color-contrast-covered-by-system-colors",
+      "axeViolations": [],
+      "consoleErrors": [],
+      "failedRequests": [],
+      "horizontalOverflow": false,
+      "mainLandmarks": 1,
+      "screenshotPath": "output/playwright/lp-ux-003-contrast/forced-colors-parent-schedule.png"
+    },
+    {
+      "route": "/parent/rsvp",
+      "mode": "forced-colors",
+      "authenticationState": "authenticated",
+      "activeRole": "parent",
+      "shellFamily": "family",
+      "surfaceFamily": "family",
+      "themeMarker": "light dark",
+      "forcedColorsActive": true,
+      "foregroundBackgroundPairs": [
+        {
+          "foreground": "rgb(0, 0, 159)",
+          "background": "rgb(255, 255, 255)",
+          "minimumRatio": 13.99,
+          "threshold": 4.5,
+          "count": 10
+        },
+        {
+          "foreground": "rgb(0, 0, 0)",
+          "background": "rgb(255, 255, 255)",
+          "minimumRatio": 21,
+          "threshold": 4.5,
+          "count": 39
+        },
+        {
+          "foreground": "rgb(0, 0, 0)",
+          "background": "rgb(255, 255, 255)",
+          "minimumRatio": 21,
+          "threshold": 3,
+          "count": 5
+        }
+      ],
+      "testedElementCount": 54,
+      "contrastResult": "system-colors-verified",
+      "axeResult": "pass-structural-color-contrast-covered-by-system-colors",
+      "axeViolations": [],
+      "consoleErrors": [],
+      "failedRequests": [],
+      "horizontalOverflow": false,
+      "mainLandmarks": 1,
+      "screenshotPath": "output/playwright/lp-ux-003-contrast/forced-colors-parent-rsvp.png"
+    }
+  ]
+}

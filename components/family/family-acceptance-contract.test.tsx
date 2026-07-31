@@ -39,4 +39,34 @@ describe("Family component acceptance contracts", () => {
     expect(source("app/globals.css")).not.toContain(".parent-rsvp-glow");
     expect(source("components/feature-panels.tsx")).not.toContain("parent-rsvp-glow");
   });
+
+  it("keeps Schedule date and Event Passport controls at the family touch-target floor", () => {
+    const globals = source("app/globals.css");
+    const scheduleActions = globals.slice(
+      globals.indexOf(".parent-schedule-directions,"),
+      globals.indexOf(".parent-schedule-card-actions")
+    );
+    const weekHeaderButton = globals.slice(
+      globals.indexOf(".parent-week-ribbon > header button {"),
+      globals.indexOf('.parent-week-ribbon > header button[aria-pressed="true"]')
+    );
+    expect(scheduleActions).toContain("min-height: 44px");
+    expect(weekHeaderButton).toContain("min-height: 44px");
+    expect(globals).toContain("grid-template-columns: repeat(7, minmax(44px, 1fr))");
+    expect(globals).toContain("overflow-x: auto");
+  });
+
+  it("keeps RSVP hover and focus paints inside the shared status grammar", () => {
+    const family = source("app/parent/parent-weekly.css");
+    const interactionPaints = family.slice(
+      family.indexOf(".family-rsvp-options button:hover:not(:disabled)"),
+      family.indexOf(".family-rsvp-options button:disabled")
+    );
+
+    expect(interactionPaints).toContain("background: var(--accent-soft)");
+    expect(interactionPaints).toContain("color: var(--accent-strong)");
+    expect(interactionPaints).toContain('button.is-selected[data-response="going"]');
+    expect(interactionPaints).toContain('button.is-selected[data-response="maybe"]');
+    expect(interactionPaints).toContain('button.is-selected[data-response="not_going"]');
+  });
 });
