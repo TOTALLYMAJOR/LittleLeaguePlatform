@@ -9,7 +9,7 @@ Audit completed and LP-UX-001 implemented locally: 2026-07-29. LP-UX-001 correct
 
 Authenticated local proof covers `/parent/settings`, `/parent/more`, `/account`, and `/parent/practice-recaps` at 320/390/768/1024/1440 plus all four routes in family-light, device-light, device-dark, and forced-colors modes. Settings and Practice Replay saves are exercised with browser interception, More retains its exact approved destinations, and Account reaches settled scoped data before privacy and keyboard checks. No hosted row is mutated and no provider is called.
 
-LP-UX-001 through LP-UX-004 are done-local-accepted. LP-UX-005 through LP-UX-007 remain done-local with responsive and hosted proof pending. The live production task board authorizes no additional local Family product surface, so the next safe continuation is responsive acceptance on the existing LP-UX-005 Family Photos and parent-context Team Portal surfaces. Commits `376bd0c` and `bc4e761` are local only: they are not pushed, merged, deployed, hosted-proven, or production-accepted. No route move, domain behavior, provider operation, permission weakening, schema, migration, or staff business logic changed.
+LP-UX-001 through LP-UX-004 are done-local-accepted. LP-UX-005 through LP-UX-007 remain done-local with responsive and hosted proof pending. The live production task board authorizes no additional local Family product surface, so the next safe continuation is responsive acceptance on the existing LP-UX-005 Family Photos and parent-context Team Portal surfaces. The stacked LP-UX-003 and LP-UX-004 acceptance line is published at `origin/ux/lp-ux-004-responsive-acceptance`; it is not reviewed, merged, deployed, hosted-proven, or production-accepted. No route move, domain behavior, provider operation, permission weakening, schema, migration, or staff business logic changed.
 
 ## Deliverables (all in this directory)
 
@@ -52,7 +52,7 @@ LP-UX-001 through LP-UX-004 are done-local-accepted. LP-UX-005 through LP-UX-007
 
 Remote `main` at `8602469` contains the reconciled LP-UX-001 through LP-UX-007 implementation chain through PR #4. The protected original checkout remains untouched on its historical LP-UX-001 branch with unrelated local artifacts.
 
-LP-UX-004 acceptance branch: `ux/lp-ux-004-responsive-acceptance`, stacked linearly on LP-UX-003 so the accepted UI line can later reconcile in one motion. The exact LP-UX-004 correction and proof commit is `bc4e761` with message `fix(parent): accept truthful family utilities`. This branch is local only. No push, merge, rebase, deployment, or promotion is inferred.
+LP-UX-004 acceptance branch: `ux/lp-ux-004-responsive-acceptance`, stacked linearly on LP-UX-003 so the accepted UI line can later reconcile in one motion. The exact LP-UX-004 correction and proof commit is `bc4e761` with message `fix(parent): accept truthful family utilities`. The branch was pushed to `origin/ux/lp-ux-004-responsive-acceptance` on 2026-07-31. No pull request, review, merge, rebase, deployment, or promotion is inferred.
 
 ## LP-UX-001 local evidence
 

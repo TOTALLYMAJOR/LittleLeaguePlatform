@@ -6,7 +6,7 @@ Date: 2026-07-30 (US/Central)
 
 LP-UX-004 is **done-local-accepted** at exact commit `bc4e761` on branch `ux/lp-ux-004-responsive-acceptance`.
 
-The branch is stacked linearly on the accepted LP-UX-003 commits, which in turn start from merged `origin/main` commit `8602469`. This is local code, test, production-build, authenticated browser, responsive, interaction, and contrast evidence only. It is not a push, merge, deployment, hosted write proof, provider proof, or production acceptance.
+The branch is stacked linearly on the accepted LP-UX-003 commits, which in turn start from merged `origin/main` commit `8602469`. This is local code, test, production-build, authenticated browser, responsive, interaction, and contrast evidence only. The accepted branch was pushed to `origin/ux/lp-ux-004-responsive-acceptance` on 2026-07-31; that publication is not a pull request, merge, deployment, hosted write proof, provider proof, or production acceptance.
 
 ## Accepted boundary
 
@@ -63,8 +63,8 @@ No new UI surface was required. The existing Family shell, Settings form, More d
 
 ## Remaining gates
 
-- Independent review of `bc4e761` may run before publication.
-- No push is authorized or performed by this acceptance.
+- Independent review of `bc4e761` remains available before pull request or merge.
+- The acceptance branch is pushed; pull request, review, merge, and deployment remain separate actions.
 - Hosted signed-in route proof remains open.
 - Real Supabase/RLS write and readback proof remains open and must run only against an explicitly isolated QA target.
 - Offline/reconnect behavior, manual screen-reader review, 200%/400% zoom review, one-handed timing, outdoor readability, and production acceptance remain separate.
