@@ -1,15 +1,15 @@
 # LeaguePilot UX Convergence Engagement — Status
 
-Engagement: Production-grade parent experience convergence (audit, experience architecture, and bounded implementation).
-Audit completed and LP-UX-001 implemented locally: 2026-07-29. LP-UX-001 corrections completed locally and independently accepted: 2026-07-30. LP-UX-002 implemented, corrected, and independently accepted locally: 2026-07-30.
+Engagement: Production-grade parent experience convergence (audit, experience architecture, bounded implementation, and local acceptance).
+Audit completed and LP-UX-001 implemented locally: 2026-07-29. LP-UX-001 corrections and LP-UX-002 correction acceptance completed: 2026-07-30. The complete LP-UX-001 through LP-UX-007 implementation line was merged to remote `main` by PR #4 at `8602469`. LP-UX-003 responsive correction and local acceptance completed on 2026-07-30 at `376bd0c`.
 
 ## Current phase
 
-**LP-UX-002 SATURDAY READY REFERENCE SURFACE IS DONE-LOCAL-ACCEPTED.** The blocking canonical-reachability, multi-child readiness, forced-colors, landmark, token-governance, and authenticated contrast-proof gaps have correction evidence on `ux/lp-ux-002-saturday-ready`. A fresh independent source, test, build, state-proof, and authenticated contrast review accepted commit `44f746e` as the local base for the next bounded slice. It is not pushed, merged, deployed, hosted-proven, or production-accepted.
+**LP-UX-003 SCHEDULE AND RSVP CONVERGENCE IS DONE-LOCAL-ACCEPTED.** The responsive correction and proof slice on `ux/lp-ux-003-responsive-acceptance` starts from the fully merged UI line at `8602469`. Commit `376bd0c` raises Schedule date, Directions, and Event Passport controls to the Family touch-target floor, keeps the seven-day mobile ribbon usable through contained horizontal scrolling, and pins shared RSVP hover/focus paints to accessible semantic colors.
 
-**LP-UX-001 FAMILY SHELL CONVERGENCE REMAINS DONE-LOCAL-ACCEPTED.** The reviewed shell-only slice on `ux/lp-ux-001-family-shell` has a local correction commit that aligns shared-route shell authority with server data scope, removes delayed client-only role discovery from first render, guards `/parent/more` through parent access, and regenerates expanded browser proof. The independent correction review found no unresolved P0 or P1 authorization/data-scope defect and accepted P2/P3 debt as non-blocking.
+Authenticated local proof covers `/parent/schedule` and `/parent/rsvp` at 320/390/768/1024/1440 plus both routes in family-light, device-light, device-dark, and forced-colors modes. The RSVP success and `schedule_changed` / `guardian_conflict` branches are exercised with browser interception. No hosted row is mutated and no provider is called.
 
-This state means local code, tests, build, and authenticated browser evidence only. Nothing was pushed, merged, deployed, promoted, or accepted on a hosted environment. No route move, domain behavior, provider operation, permission weakening, schema, migration, or staff business logic changed.
+LP-UX-001 and LP-UX-002 remain done-local-accepted. LP-UX-004 through LP-UX-007 remain done-local with responsive and hosted proof pending. The live production task board authorizes no additional local Family product surface, so the next safe continuation is responsive acceptance on the existing LP-UX-004 utility surfaces. Commit `376bd0c` is local only: it is not pushed, merged, deployed, hosted-proven, or production-accepted. No route move, domain behavior, provider operation, permission weakening, schema, migration, or staff business logic changed.
 
 ## Deliverables (all in this directory)
 
@@ -29,6 +29,7 @@ This state means local code, tests, build, and authenticated browser evidence on
 14. `lp-ux-002-canonical-route-reachability.md` — removed-capability inventory, canonical context, authorization, and disposition.
 15. `lp-ux-002-correction-proof-manifest.md` — machine artifacts, human summaries, and screenshot sets.
 16. `lp-ux-002-independent-correction-review.md` — fresh independent local acceptance of the corrected slice and its exact proof boundary.
+17. `lp-ux-003-acceptance-verification.md` — responsive correction, provider-free conflict proof, exact validation, and remaining gates.
 
 ## Headline findings (full detail in 01)
 
@@ -46,11 +47,11 @@ This state means local code, tests, build, and authenticated browser evidence on
 4. Dark mode: family routes light-only until a deliberate, authenticated, contrast-proven dark theme exists.
 5. Reference slice: Family Home → What Changed → Next Event → RSVP (Stage A shell + Stage B surface); Transportation and Communication follow in later slices.
 
-## Git status at end of engagement
+## Git status at current handoff
 
-LP-UX-001 branch: `ux/lp-ux-001-family-shell`, based on `472790cff6ace95bd9329080f073eb77086da22e`. The exact implementation commit is `049c4b1e3f85549f4316e075b84d05bd3a56694e` with message `ux(parent): converge family shell and navigation`. The production-experience documents are preserved in the separate baseline commit that follows it. No push, merge, rebase, deployment, or promotion is inferred.
+Remote `main` at `8602469` contains the reconciled LP-UX-001 through LP-UX-007 implementation chain through PR #4. The protected original checkout remains untouched on its historical LP-UX-001 branch with unrelated local artifacts.
 
-LP-UX-002 branch: `ux/lp-ux-002-saturday-ready`, based on accepted LP-UX-001 correction commit `49697d3b25b370b68e6230e1626661f4fac49ba1`. The implementation commit is `9e2eca995f4fff81950a458623b74011a7ca833d` with message `ux(parent): implement Saturday Ready reference surface`. Its authorized correction commit uses message `fix(parent): complete Saturday Ready acceptance`; the final local handoff records its exact SHA. No push, merge, rebase, deployment, or promotion is inferred.
+LP-UX-003 acceptance branch: `ux/lp-ux-003-responsive-acceptance`, based directly on `origin/main` at `8602469`. The exact correction and proof commit is `376bd0c` with message `fix(parent): accept schedule and RSVP responsive flow`. This branch is local only. No push, merge, rebase, deployment, or promotion is inferred.
 
 ## LP-UX-001 local evidence
 
@@ -75,20 +76,23 @@ LP-UX-002 branch: `ux/lp-ux-002-saturday-ready`, based on accepted LP-UX-001 cor
 
 ## Remaining work (next engagement)
 
-1. Implement Slices 3–5 (09), then P6–P7 (Family progression, transportation sheets, Communication Room density) as separate local commits.
-2. Triage the report-only security findings independently of UX work.
-3. Keep publication and hosted route proof as later, explicit actions.
+1. Continue with LP-UX-004 responsive acceptance on the existing Settings, More, Account, and Practice Replays surfaces. Do not add a new route or product surface without renewed product authority.
+2. Then close responsive acceptance for LP-UX-005 through LP-UX-007 as separate local commits, preserving each existing route, data, and provider boundary.
+3. Triage the report-only security findings independently of UX work.
+4. Keep publication and hosted route proof as later, explicit actions.
 
 ## Continuation prompt (self-contained)
 
 You are continuing the LeaguePilot UX convergence engagement at
 `/home/administrator/projects/youth-sports-platform-mvp-v3`. The read-only audit and
-experience-architecture phase and LP-UX-001 are complete locally; LP-UX-002 is
-DONE-LOCAL-ACCEPTED at `44f746e`. Read `docs/product-experience/leaguepilot/`
-files 00 through 10 in order; 00 (this file) lists decisions of record and remaining
-work. Constraints that survive into implementation: docs/codex-rules.md strict rules;
-no second CSS framework; compatibility routes preserved; child-privacy display rules;
-acknowledgement = receipt only; claims stay done-local without hosted proof; QA guard
-LP-QA-GUARD-001 (no row-mutating proofs outside isolated QA). Keep later slices on
-separate local commits and preserve the accepted LP-UX-002 proof boundary.
-Do not infer hosted acceptance from LP-UX-001 or LP-UX-002 local evidence.
+experience-architecture phase and LP-UX-001 through LP-UX-007 implementation are
+merged at `8602469`; LP-UX-003 is DONE-LOCAL-ACCEPTED at `376bd0c`. Read
+`docs/product-experience/leaguepilot/` files 00 through 10 in order; 00 (this file)
+lists decisions of record and remaining work. Continue with LP-UX-004 responsive
+acceptance on existing surfaces only. Constraints that survive into implementation:
+docs/codex-rules.md strict rules; no second CSS framework; compatibility routes
+preserved; child-privacy display rules; acknowledgement = receipt only; claims stay
+done-local without hosted proof; QA guard LP-QA-GUARD-001 (no row-mutating proofs
+outside isolated QA). Keep later acceptance slices on separate local commits and
+preserve the accepted LP-UX-001 through LP-UX-003 proof boundaries. Do not infer
+hosted acceptance from local evidence.
