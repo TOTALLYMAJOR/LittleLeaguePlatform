@@ -347,4 +347,33 @@ describe("route smoke coverage", () => {
     expect(proofScript).toContain("providerSendsExecuted: 0");
     expect(proofScript).toContain("provider_call === true");
   });
+
+  it("keeps Schedule and RSVP browser proof provider-free and mutation-safe", () => {
+    const packageJson = readFileSync(join(process.cwd(), "package.json"), "utf8");
+    const proofScript = readFileSync(join(process.cwd(), "scripts", "capture-schedule-rsvp-proof.mjs"), "utf8");
+
+    expect(packageJson).toContain("\"qa:schedule-rsvp-proof\"");
+    expect(proofScript).toContain("/parent/schedule");
+    expect(proofScript).toContain("/parent/rsvp");
+    expect(proofScript).toContain("schedule_changed");
+    expect(proofScript).toContain("guardian_conflict");
+    expect(proofScript).toContain("hostedRowsMutated: false");
+    expect(proofScript).toContain("providerCallsExecuted: 0");
+    expect(proofScript).toContain('page.route("**/api/rsvps"');
+  });
+
+  it("keeps Family utility browser proof provider-free and mutation-safe", () => {
+    const packageJson = readFileSync(join(process.cwd(), "package.json"), "utf8");
+    const proofScript = readFileSync(join(process.cwd(), "scripts", "capture-family-utilities-proof.mjs"), "utf8");
+
+    expect(packageJson).toContain("\"qa:family-utilities-proof\"");
+    expect(proofScript).toContain("/parent/settings");
+    expect(proofScript).toContain("/parent/more");
+    expect(proofScript).toContain("/account");
+    expect(proofScript).toContain("/parent/practice-recaps");
+    expect(proofScript).toContain("hostedRowsMutated: false");
+    expect(proofScript).toContain("providerCallsExecuted: 0");
+    expect(proofScript).toContain('page.route("**/api/parent/setup"');
+    expect(proofScript).toContain('page.route("**/api/parent/replays/*/engagement"');
+  });
 });

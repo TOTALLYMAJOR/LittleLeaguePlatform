@@ -2035,6 +2035,35 @@
   color: var(--danger);
 }
 
+.family-rsvp-options button:hover:not(:disabled),
+.family-rsvp-options button:focus-visible {
+  border-color: color-mix(in srgb, var(--accent) 38%, var(--line));
+  background: var(--accent-soft);
+  color: var(--accent-strong);
+  box-shadow: none;
+}
+
+.family-rsvp-options button.is-selected[data-response="going"]:hover:not(:disabled),
+.family-rsvp-options button.is-selected[data-response="going"]:focus-visible {
+  border-color: color-mix(in srgb, var(--ok) 42%, var(--line));
+  background: var(--ok-soft);
+  color: var(--ok);
+}
+
+.family-rsvp-options button.is-selected[data-response="maybe"]:hover:not(:disabled),
+.family-rsvp-options button.is-selected[data-response="maybe"]:focus-visible {
+  border-color: color-mix(in srgb, var(--warning) 42%, var(--line));
+  background: var(--warning-soft);
+  color: var(--warning);
+}
+
+.family-rsvp-options button.is-selected[data-response="not_going"]:hover:not(:disabled),
+.family-rsvp-options button.is-selected[data-response="not_going"]:focus-visible {
+  border-color: color-mix(in srgb, var(--danger) 42%, var(--line));
+  background: var(--danger-soft);
+  color: var(--danger);
+}
+
 .family-rsvp-options button:disabled {
   border-color: var(--line);
   background: var(--surface-strong);
