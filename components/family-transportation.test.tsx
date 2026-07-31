@@ -31,7 +31,7 @@ const data: ParentTransportationData = {
     startsAt: "2026-04-04T09:00:00.000Z",
     direction: "outbound",
     state: "awaiting_requester_acceptance",
-    stateLabel: "Awaiting requesting guardian",
+    stateLabel: "Offered · awaiting your confirmation",
     scheduleVersion: 2,
     currentScheduleVersion: 2,
     requestedByLabel: "Jordan Taylor",
@@ -58,9 +58,15 @@ describe("ParentTransportationClient", () => {
     expect(html).toContain("Who is getting this child there and home?");
     expect(html).toContain("Outbound · getting there");
     expect(html).toContain("Return · getting home");
-    expect(html).toContain("Awaiting requesting guardian");
+    expect(html).toContain(">1<");
+    expect(html).toContain("Ask for help");
+    expect(html).toContain(">2<");
+    expect(html).toContain("Someone offers");
+    expect(html).toContain(">3<");
+    expect(html).toContain("You confirm");
+    expect(html).toContain("Offered · awaiting your confirmation");
     expect(html).toContain("Not assigned");
-    expect(html).toContain("Two adults, two explicit decisions");
+    expect(html).toContain("Mutual acceptance required");
     expect(html).toContain("Accept and assign responsibility");
     expect(html).toContain("No home address is displayed or requested");
     expect(html).toContain("No automation, coach note, or chat reply can assign a driver");

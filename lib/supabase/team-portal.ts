@@ -33,6 +33,7 @@ export interface TeamPortalData {
   events: LeagueEvent[];
   fieldLocations?: Array<ManagedVenueMetadata & { organizationId: string }>;
   mediaItems: MediaItem[];
+  familyReleasedMediaItemIds?: string[];
   parentReplays: ParentReplayRecord[];
 }
 
@@ -326,6 +327,9 @@ export async function listTeamPortalData(): Promise<TeamPortalData | null> {
           createdAt: item.created_at
         };
       }))).filter((item) => Boolean(item.url)),
+      familyReleasedMediaItemIds: (mediaItemsResult.data ?? [])
+        .filter((item: { family_release_approved_at: string | null }) => Boolean(item.family_release_approved_at))
+        .map((item: { id: string }) => item.id),
       parentReplays: (parentReplaysResult.data ?? []).map((replay) => ({
         id: replay.id,
         organizationId: replay.organization_id,

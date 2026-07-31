@@ -1,9 +1,9 @@
-import { ParentPortalSurface } from "../_surfaces";
+import { ParentPhotosSurface } from "../_surfaces";
 
 export const dynamic = "force-dynamic";
 
 export default async function ParentPhotosPage() {
-  return <ParentPortalSurface audience="parent" />;
+  return <ParentPhotosSurface />;
 }
 
 export const metadata = {

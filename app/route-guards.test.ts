@@ -178,12 +178,55 @@ describe("role route guards and compatibility wrappers", () => {
     const teamChatPage = source("app/team-chat/page.tsx");
 
     expect(teamPortalPage).toContain("getServerShellAccess");
+    expect(teamPortalPage).toContain("resolveRouteAuthorityContext(access, \"/team-portal\")");
+    expect(teamPortalPage).toContain("authority.dataScopeRole");
     expect(teamPortalPage).toContain("resolveTeamPortalScope");
     expect(teamPortalPage).toContain("scopeTeamPortalData");
     expect(teamPortalPage).toContain("No accepted parent-team access is active yet.");
+    expect(teamPortalPage).toContain('scope.audience === "parent"');
+    expect(teamPortalPage).toContain("<FamilyTeamPage view={view}");
+    expect(teamPortalPage.indexOf('scope.audience === "parent"')).toBeLessThan(teamPortalPage.indexOf("<TeamPortalClient"));
     expect(teamChatPage).toContain("getServerShellAccess");
+    expect(teamChatPage).toContain("resolveRouteAuthorityContext(access, \"/team-chat\")");
+    expect(teamChatPage).toContain("authority.dataScopeRole");
     expect(teamChatPage).toContain("resolveTeamChatTeamIds");
     expect(teamChatPage).toContain("scopeTeamChatData");
     expect(teamChatPage).toContain("Team chat access is not active yet.");
+  });
+
+  it("keeps family Photos on the released-media projection instead of Team Portal", () => {
+    const photosPage = source("app/parent/photos/page.tsx");
+    const parentSurfaces = source("app/parent/_surfaces.tsx");
+    const teamPortal = source("lib/supabase/team-portal.ts");
+
+    expect(photosPage).toContain("ParentPhotosSurface");
+    expect(parentSurfaces).toContain("familyReleasedMediaItemIds");
+    expect(parentSurfaces).toContain("<FamilyPhotos");
+    expect(teamPortal).toContain("family_release_approved_at");
+    expect(teamPortal).toContain("familyReleasedMediaItemIds");
+  });
+
+  it("persists active role through an authenticated server-validated cookie route", () => {
+    const route = source("app/api/auth/active-role/route.ts");
+    const shell = source("components/ui/AppShell.tsx");
+
+    expect(route).toContain("getServerShellAccess");
+    expect(route).toContain("response.cookies.set");
+    expect(route).toContain("leaguepilot-active-role");
+    expect(route).toContain("hasContext");
+    expect(shell).toContain('fetch("/api/auth/active-role"');
+    expect(shell).not.toContain("document.cookie");
+  });
+
+  it("guards parent More and derives destinations from route topology", () => {
+    const page = source("app/parent/more/page.tsx");
+    const topology = source("lib/navigation/route-topology.ts");
+
+    expect(page).toContain("requireParentPageAccess");
+    expect(page).toContain("ParentDashboardClient");
+    expect(page).toContain("getParentMoreDestinations(pageAccess.access)");
+    expect(page).not.toContain("const moreDestinations = [");
+    expect(topology).toContain("getParentMoreDestinations");
+    expect(topology).toContain("parentMoreDescription");
   });
 });

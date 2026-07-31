@@ -103,7 +103,12 @@ export function InviteAcceptanceClient() {
               )}
               {completed ? <a className="button secondary" href="/parent/setup">Set language and notifications</a> : null}
             </>
-          ) : <p className="muted">League, team, masked child match, invited email, expiry, and current invitation state appear after the code is verified.</p>}
+          ) : (
+            <>
+              <p className="muted">League, team, masked child match, invited email, expiry, and current invitation state appear after the code is verified.</p>
+              <a className="button secondary" href="/auth?returnTo=/invite/accept">Sign in with invited email</a>
+            </>
+          )}
         </article>
       </section>
     </div>

@@ -63,18 +63,31 @@ async function authenticatedJsonFetch(url: string, payload: unknown) {
   return fetch(url, { method: "POST", headers, body: JSON.stringify(payload) });
 }
 
-function SourceStatus({
-  current,
-  label
+function SourceSummary({
+  familyCurrent,
+  chatCurrent,
+  receiptsCurrent
 }: {
-  current: boolean;
-  label: string;
+  familyCurrent: boolean;
+  chatCurrent: boolean;
+  receiptsCurrent: boolean;
 }) {
+  const allCurrent = familyCurrent && chatCurrent && receiptsCurrent;
   return (
-    <span className={`communication-source-status ${current ? "current" : "attention"}`}>
-      <span aria-hidden="true" />
-      {label}
-    </span>
+    <div className="communication-source-summary">
+      <span className={`communication-source-status ${allCurrent ? "current" : "attention"}`}>
+        <span aria-hidden="true" />
+        {allCurrent ? "Family communication is current" : "Some communication sources are unavailable"}
+      </span>
+      <details>
+        <summary>Source details</summary>
+        <ul>
+          <li>{familyCurrent ? "Family links current" : "Family links unavailable"}</li>
+          <li>{chatCurrent ? "Conversation current" : "Conversation preview"}</li>
+          <li>{receiptsCurrent ? "Message status current" : "Message status unavailable"}</li>
+        </ul>
+      </details>
+    </div>
   );
 }
 
@@ -187,14 +200,17 @@ function EventContext({
   const team = teamChatData.teams.find((item) => item.id === event.teamId);
 
   return (
-    <dl className="communication-event-context">
-      <div><dt>Team</dt><dd>{team?.name ?? "Team"}</dd></div>
-      <div><dt>Activity</dt><dd>{event.eventType === "game" ? "Game" : event.eventType === "practice" ? "Practice" : "Team event"}</dd></div>
-      <div><dt>Date and time</dt><dd>{formatEventDate(event.startsAt)}</dd></div>
-      <div><dt>Opponent</dt><dd>{event.opponent ?? "Not applicable"}</dd></div>
-      <div><dt>Venue and field</dt><dd>{event.locationName}</dd></div>
-      <div><dt>Status</dt><dd>{event.status}</dd></div>
-    </dl>
+    <details className="communication-event-disclosure">
+      <summary>Event details · {team?.name ?? "Team"} · {formatEventDate(event.startsAt)}</summary>
+      <dl className="communication-event-context">
+        <div><dt>Team</dt><dd>{team?.name ?? "Team"}</dd></div>
+        <div><dt>Activity</dt><dd>{event.eventType === "game" ? "Game" : event.eventType === "practice" ? "Practice" : "Team event"}</dd></div>
+        <div><dt>Date and time</dt><dd>{formatEventDate(event.startsAt)}</dd></div>
+        <div><dt>Opponent</dt><dd>{event.opponent ?? "Not applicable"}</dd></div>
+        <div><dt>Venue and field</dt><dd>{event.locationName}</dd></div>
+        <div><dt>Status</dt><dd>{event.status}</dd></div>
+      </dl>
+    </details>
   );
 }
 
@@ -381,7 +397,7 @@ export function CommunicationRoom({
   }
 
   return (
-    <main className="page communication-room" data-analytics-surface="parent_communication_room">
+    <div className="page communication-room" data-analytics-surface="parent_communication_room">
       <header className="communication-room-header">
         <div>
           <span className="eyebrow">Family communication</span>
@@ -389,9 +405,11 @@ export function CommunicationRoom({
           <p>Critical instructions, official team updates, and family conversation stay clearly separated.</p>
         </div>
         <div className="communication-freshness" aria-label="Information freshness">
-          <SourceStatus current={familyDataIsCurrent} label={familyDataIsCurrent ? "Family links current" : "Family links unavailable"} />
-          <SourceStatus current={chatIsCurrent} label={chatIsCurrent ? "Conversation current" : "Conversation preview"} />
-          <SourceStatus current={receiptLoadOk} label={receiptLoadOk ? "Message status current" : "Message status unavailable"} />
+          <SourceSummary
+            familyCurrent={familyDataIsCurrent}
+            chatCurrent={chatIsCurrent}
+            receiptsCurrent={receiptLoadOk}
+          />
         </div>
       </header>
 
@@ -445,14 +463,13 @@ export function CommunicationRoom({
             </div>
           ) : <p className="muted">No scheduled event is available for this family view.</p>}
         </section>
-        <section>
-          <span className="eyebrow danger-text">What acknowledgment means</span>
-          <p>It proves you reviewed this message version. It does not prove attendance, agreement, compliance, safety completion, or ride responsibility.</p>
-        </section>
-        <section>
-          <span className="eyebrow">Human authority</span>
-          <p>Recommendations and delivery systems cannot publish schedule changes, cancellations, permissions, attendance, rides, or emergency instructions.</p>
-        </section>
+        <details className="communication-authority-detail">
+          <summary>What this room can confirm</summary>
+          <div className="stack-sm">
+            <p><strong>Acknowledgment</strong> proves you reviewed this message version. It does not prove attendance, agreement, compliance, safety completion, or ride responsibility.</p>
+            <p><strong>Human authority</strong> controls schedule changes, cancellations, permissions, attendance, rides, and emergency instructions.</p>
+          </div>
+        </details>
       </aside>
 
       <nav className="communication-lanes" aria-label="Jump to a communication lane">
@@ -528,7 +545,7 @@ export function CommunicationRoom({
 
       <section
         aria-labelledby="communication-critical-title"
-        className="communication-lane-panel critical"
+        className={`communication-lane-panel critical ${lane === "critical" ? "is-active" : ""}`}
         id="communication-critical"
       >
         <div className="communication-lane-heading">
@@ -541,7 +558,11 @@ export function CommunicationRoom({
 
         <div className="communication-message-stack">
             {visibleCritical.map((receipt) => (
-              <article className="communication-message-card critical" key={receipt.notificationId}>
+              <article
+                className="communication-message-card critical"
+                id={`communication-message-${encodeURIComponent(receipt.notificationId)}`}
+                key={receipt.notificationId}
+              >
                 <header>
                   <div>
                     <span className="communication-authority-label">
@@ -607,7 +628,7 @@ export function CommunicationRoom({
 
       <section
         aria-labelledby="communication-updates-title"
-        className="communication-lane-panel updates"
+        className={`communication-lane-panel updates ${lane === "updates" ? "is-active" : ""}`}
         id="communication-updates"
       >
         <div className="communication-lane-heading">
@@ -688,7 +709,7 @@ export function CommunicationRoom({
 
       <section
         aria-labelledby="communication-conversation-title"
-        className="communication-lane-panel conversation"
+        className={`communication-lane-panel conversation ${lane === "conversation" ? "is-active" : ""}`}
         id="communication-conversation"
       >
         <div className="communication-lane-heading">
@@ -795,6 +816,6 @@ export function CommunicationRoom({
             </form>
         </div>
       </section>
-    </main>
+    </div>
   );
 }

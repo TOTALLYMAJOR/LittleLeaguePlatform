@@ -1,38 +1,44 @@
 "use client";
 
-import Image from "next/image";
 import Link from "next/link";
 import {
   ArrowRight,
   BookOpenCheck,
   CalendarDays,
-  CarFront,
-  Check,
   CheckCircle2,
   ChevronRight,
-  CircleHelp,
-  CircleX,
-  Clock3,
-  MapPin,
   Megaphone,
   MessageCircle,
-  ShieldCheck,
-  TriangleAlert,
-  UsersRound,
-  Utensils
+  ShieldCheck
 } from "lucide-react";
 import { useState, type CSSProperties } from "react";
-import { markLeaguePilotValueExperienced } from "@/app/providers";
 import type { RsvpResponse } from "@/lib/domain";
 import type { FamilyMissionControlView, FamilyMissionEvent } from "@/lib/family-mission-control";
 import { createSupabaseBrowserClient } from "@/lib/supabase/browser";
 import type { ParentCoachDashboardData } from "@/lib/supabase/dashboard-data";
+import type { ParentEventChangeLogReadResult } from "@/lib/supabase/event-change-log-reads";
 import type { FamilyReplayData, FamilyReplayStory } from "@/lib/supabase/family-replays";
+import type { NotificationReceipt } from "@/lib/supabase/notification-receipts";
+import type { ParentTransportationData } from "@/lib/supabase/transportation";
+import {
+  buildChildSaturdayReadiness,
+  ChangeBand,
+  EventPassport,
+  FamilyFilter,
+  MultiChildReadiness,
+  ReadinessStrip,
+  StatusChip,
+  responseLabel
+} from "./family";
 
 interface ParentWeeklyDashboardProps {
   view: FamilyMissionControlView;
   dashboardData: ParentCoachDashboardData;
   replayData: FamilyReplayData;
+  notificationReceipts: NotificationReceipt[];
+  notificationLoadOk: boolean;
+  transportationData: ParentTransportationData;
+  eventChangeData: ParentEventChangeLogReadResult;
 }
 
 interface LocalRsvp {
@@ -40,16 +46,6 @@ interface LocalRsvp {
   lockVersion: number;
   confirmedScheduleVersion: number;
 }
-
-const rsvpOptions: Array<{
-  response: Extract<RsvpResponse, "going" | "maybe" | "not_going">;
-  label: string;
-  Icon: typeof Check;
-}> = [
-  { response: "going", label: "Going", Icon: Check },
-  { response: "maybe", label: "Maybe", Icon: CircleHelp },
-  { response: "not_going", label: "Can’t go", Icon: CircleX }
-];
 
 function rsvpKey(eventId: string, playerId: string) {
   return `${eventId}:${playerId}`;
@@ -71,14 +67,6 @@ function durationLabel(value: string) {
   if (value === "30_seconds") return "30 sec";
   if (value === "2_minutes") return "2 min";
   return "5 min";
-}
-
-function responseLabel(response?: RsvpResponse) {
-  if (response === "going") return "Going";
-  if (response === "maybe") return "Maybe";
-  if (response === "not_going") return "Can’t go";
-  if (response === "cancelled") return "Cancelled";
-  return "Needs reply";
 }
 
 function initials(value: string) {
@@ -141,39 +129,6 @@ function ProgressRow({
   );
 }
 
-function RsvpButtons({
-  event,
-  response,
-  pending,
-  disabled,
-  onSave
-}: {
-  event: FamilyMissionEvent;
-  response?: RsvpResponse;
-  pending: boolean;
-  disabled: boolean;
-  onSave: (event: FamilyMissionEvent, response: Extract<RsvpResponse, "going" | "maybe" | "not_going">) => void;
-}) {
-  return (
-    <div className="parent-weekly-rsvp" aria-label={`RSVP for ${event.childLabel} at ${event.title}`}>
-      {rsvpOptions.map(({ response: option, label, Icon }) => (
-        <button
-          type="button"
-          key={option}
-          className={response === option ? "is-selected" : ""}
-          data-response={option}
-          aria-pressed={response === option}
-          disabled={disabled || pending}
-          onClick={() => onSave(event, option)}
-        >
-          <Icon aria-hidden="true" size={16} strokeWidth={2.4} />
-          <span>{pending && response === option ? "Saving" : label}</span>
-        </button>
-      ))}
-    </div>
-  );
-}
-
 function ReplayActivity({
   replay,
   completed,
@@ -219,7 +174,15 @@ function ReplayActivity({
   );
 }
 
-export function ParentWeeklyDashboard({ view, dashboardData, replayData }: ParentWeeklyDashboardProps) {
+export function ParentWeeklyDashboard({
+  view,
+  dashboardData,
+  replayData,
+  notificationReceipts,
+  notificationLoadOk,
+  transportationData,
+  eventChangeData
+}: ParentWeeklyDashboardProps) {
   const [localRsvps, setLocalRsvps] = useState<Record<string, LocalRsvp>>(() => (
     Object.fromEntries(dashboardData.state.rsvps.map((rsvp) => [
       rsvpKey(rsvp.eventId, rsvp.playerId),
@@ -230,53 +193,62 @@ export function ParentWeeklyDashboard({ view, dashboardData, replayData }: Paren
       }
     ]))
   ));
-  const [pendingProjection, setPendingProjection] = useState("");
   const [completedReplayIds, setCompletedReplayIds] = useState(() => (
     new Set(replayData.replays.filter((replay) => replay.activityCompletedAt).map((replay) => replay.id))
   ));
   const [pendingReplayId, setPendingReplayId] = useState("");
   const [statusMessage, setStatusMessage] = useState("");
+  const [selectedChildId, setSelectedChildId] = useState("");
+  const [visibleChanges, setVisibleChanges] = useState(eventChangeData.changes);
 
-  const primaryChild = view.children[0];
+  const scopedEvents = selectedChildId
+    ? view.events.filter((event) => event.childId === selectedChildId)
+    : view.events;
+  const primaryChild = view.children.find((child) => child.id === selectedChildId) ?? view.children[0];
   const primaryPlayer = dashboardData.state.players.find((player) => player.id === primaryChild?.id);
   const primaryTeam = dashboardData.state.teams.find((team) => team.id === primaryChild?.teamId);
   const parentUser = dashboardData.state.users.find((user) => user.id === dashboardData.parentUserId);
-  const weeklyEvents = view.events
+  const weeklyEvents = scopedEvents
     .filter((event) => Date.parse(event.startsAt) <= Date.parse(view.weekEndsAt))
     .slice(0, 8);
-  const nextEvent = view.nextEvent;
+  const nextEvent = scopedEvents.find((event) => event.status === "scheduled") ?? scopedEvents[0];
   const announcements = [...dashboardData.state.announcements]
     .sort((left, right) => Date.parse(right.createdAt) - Date.parse(left.createdAt))
     .slice(0, 2);
   const recentReplays = replayData.replays.slice(0, 2);
 
-  const getRsvp = (event: FamilyMissionEvent) => {
-    const local = localRsvps[rsvpKey(event.eventId, event.childId)];
+  const getStoredRsvp = (event: FamilyMissionEvent) => localRsvps[rsvpKey(event.eventId, event.childId)];
+  const getCurrentRsvp = (event: FamilyMissionEvent) => {
+    const local = getStoredRsvp(event);
     if (!local || local.confirmedScheduleVersion < event.scheduleVersion) return undefined;
     return local.response;
   };
+  const childReadiness = view.children.map((child) => {
+    const childEvents = view.events.filter((event) => event.childId === child.id);
+    const event = childEvents.find((item) => item.status === "scheduled") ?? childEvents[0];
+    return buildChildSaturdayReadiness({
+      child,
+      event,
+      currentRsvp: event ? getStoredRsvp(event)?.response : undefined,
+      notificationReceipts,
+      notificationLoadOk,
+      transportationData,
+      visibleChanges,
+      eventChangeLoadOk: eventChangeData.ok,
+      conflicts: view.conflicts
+    });
+  });
+  const selectedReadiness = childReadiness.find((summary) => summary.child.id === selectedChildId)
+    ?? childReadiness[0];
+  const showAllChildren = !selectedChildId && childReadiness.length > 1;
 
   const answeredEvents = weeklyEvents.filter((event) => {
-    const response = getRsvp(event);
+    const response = getCurrentRsvp(event);
     return response && response !== "cancelled";
   }).length;
-  const goingEvents = weeklyEvents.filter((event) => getRsvp(event) === "going").length;
-  const needsReply = weeklyEvents.filter((event) => !getRsvp(event) || getRsvp(event) === "cancelled").length;
+  const goingEvents = weeklyEvents.filter((event) => getCurrentRsvp(event) === "going").length;
+  const needsReply = weeklyEvents.filter((event) => !getCurrentRsvp(event) || getCurrentRsvp(event) === "cancelled").length;
   const rsvpCoverage = weeklyEvents.length ? Math.round((answeredEvents / weeklyEvents.length) * 100) : 0;
-  const assignedSnack = nextEvent
-    ? dashboardData.state.snackScheduleSlots.find((slot) => (
-      slot.eventId === nextEvent.eventId &&
-      slot.assignedParentUserId === dashboardData.parentUserId &&
-      slot.status === "assigned"
-    ))
-    : undefined;
-  const assignedVolunteer = nextEvent
-    ? dashboardData.state.volunteerSignups.find((signup) => (
-      signup.eventId === nextEvent.eventId &&
-      signup.assignedUserId === dashboardData.parentUserId &&
-      signup.status === "filled"
-    ))
-    : undefined;
   const familyAssignments = dashboardData.state.snackScheduleSlots.filter((slot) => (
     slot.assignedParentUserId === dashboardData.parentUserId && slot.status === "assigned"
   )).length + dashboardData.state.volunteerSignups.filter((signup) => (
@@ -289,11 +261,19 @@ export function ParentWeeklyDashboard({ view, dashboardData, replayData }: Paren
   const firstName = primaryPlayer?.firstName
     ?? primaryChild?.label.split(" ")[0]
     ?? "Your family";
-  const familyHeading = view.children.length > 1
-    ? `${firstName}'s family week`
+  const familyHeading = view.children.length > 1 && !selectedChildId
+    ? "Your family week"
+    : view.children.length > 1
+      ? `${firstName}'s family week`
     : `${firstName}'s week`;
   const teamMark = initials(primaryTeam?.mascot || primaryTeam?.name || "LP");
-
+  const storageKey = [
+    "leaguepilot:event-change-watermark:v1",
+    dashboardData.parentUserId || "signed-out",
+    dashboardData.state.organization.id,
+    dashboardData.state.activeSeason.id,
+    selectedChildId || eventChangeData.scope.familyContextKey || "everyone"
+  ].join(":");
   const snapshotRows = [
     {
       label: "RSVP coverage",
@@ -311,70 +291,6 @@ export function ParentWeeklyDashboard({ view, dashboardData, replayData }: Paren
       detail: replayData.replays.length ? `${replayData.replays.length} ready for your family` : "None published yet"
     }
   ];
-
-  async function saveRsvp(
-    event: FamilyMissionEvent,
-    response: Extract<RsvpResponse, "going" | "maybe" | "not_going">
-  ) {
-    if (!canWriteRsvp || event.status !== "scheduled") return;
-    if (typeof navigator !== "undefined" && !navigator.onLine) {
-      setStatusMessage("Connect to update this RSVP here. The full RSVP center keeps the league’s offline-write rules.");
-      return;
-    }
-
-    const key = rsvpKey(event.eventId, event.childId);
-    const current = localRsvps[key];
-    const actionId = typeof crypto !== "undefined" && "randomUUID" in crypto
-      ? crypto.randomUUID()
-      : `rsvp-${Date.now()}-${Math.random().toString(16).slice(2)}`;
-    setPendingProjection(event.projectionId);
-    setStatusMessage("");
-
-    try {
-      const apiResponse = await authenticatedPost("/api/rsvps", {
-        eventId: event.eventId,
-        playerId: event.childId,
-        response,
-        expectedLockVersion: current?.lockVersion ?? 0,
-        expectedScheduleVersion: event.scheduleVersion
-      }, { "Idempotency-Key": actionId });
-      const result = await apiResponse.json().catch(() => null) as {
-        ok?: boolean;
-        code?: string;
-        message?: string;
-        currentResponse?: RsvpResponse;
-        lockVersion?: number;
-        lock_version?: number;
-      } | null;
-
-      if (!result?.ok) {
-        if (apiResponse.status === 409) {
-          setStatusMessage(result?.code === "schedule_changed"
-            ? "This event changed. Review the current details, then confirm again."
-            : `Another guardian updated this RSVP${result?.currentResponse ? ` to ${responseLabel(result.currentResponse)}` : ""}. Review before retrying.`);
-        } else {
-          setStatusMessage(result?.message ?? "RSVP could not be saved.");
-        }
-        return;
-      }
-
-      const nextLockVersion = result.lockVersion ?? result.lock_version ?? ((current?.lockVersion ?? 0) + 1);
-      setLocalRsvps((existing) => ({
-        ...existing,
-        [key]: {
-          response,
-          lockVersion: nextLockVersion,
-          confirmedScheduleVersion: event.scheduleVersion
-        }
-      }));
-      markLeaguePilotValueExperienced("parent_rsvp_confirmed");
-      setStatusMessage(`${event.childLabel} is marked ${responseLabel(response).toLowerCase()} for ${event.title}.`);
-    } catch {
-      setStatusMessage("Team records could not be reached. No RSVP change was confirmed.");
-    } finally {
-      setPendingProjection("");
-    }
-  }
 
   async function completeReplay(replay: FamilyReplayStory) {
     if (typeof navigator !== "undefined" && !navigator.onLine) {
@@ -445,171 +361,56 @@ export function ParentWeeklyDashboard({ view, dashboardData, replayData }: Paren
           <ShieldCheck aria-hidden="true" size={16} />
           <span>Guardian-scoped view for {parentUser?.name ?? "this signed-in family"}</span>
         </div>
+        <FamilyFilter childrenList={view.children} selectedChildId={selectedChildId} onSelect={setSelectedChildId} />
       </section>
 
       {statusMessage ? (
         <p className="parent-weekly-status" role="status" aria-live="polite">{statusMessage}</p>
       ) : null}
 
-      {view.criticalChange || view.conflicts.length ? (
-        <section className="parent-weekly-changes" aria-labelledby="parent-changes-title">
-          <header>
-            <TriangleAlert aria-hidden="true" size={18} />
-            <div>
-              <span className="parent-weekly-kicker">Since you last checked</span>
-              <h2 id="parent-changes-title">What changed</h2>
-            </div>
-          </header>
-          <ul>
-            {view.criticalChange ? (
-              <li key={view.criticalChange.eventId}>
-                <strong>{view.criticalChange.title}</strong>
-                <p>{view.criticalChange.summary}</p>
-              </li>
-            ) : null}
-            {view.conflicts.map((conflict) => (
-              <li key={conflict.id}>
-                <strong>Schedule conflict</strong>
-                <p>{conflict.summary} {conflict.evidence}</p>
-              </li>
-            ))}
-          </ul>
-          {nextEvent?.primaryAction ? (
-            nextEvent.primaryAction.href.startsWith("http") ? (
-              <a
-                className="parent-weekly-changes-action"
-                href={nextEvent.primaryAction.href}
-                target="_blank"
-                rel="noreferrer"
-              >
-                {nextEvent.primaryAction.label}
-                <ArrowRight aria-hidden="true" size={16} />
-              </a>
-            ) : (
-              <Link className="parent-weekly-changes-action" href={nextEvent.primaryAction.href}>
-                {nextEvent.primaryAction.label}
-                <ArrowRight aria-hidden="true" size={16} />
-              </Link>
-            )
-          ) : null}
-        </section>
-      ) : null}
+      <ChangeBand
+        changes={selectedChildId
+          ? eventChangeData.changes.filter((change) => change.childIds.includes(selectedChildId))
+          : eventChangeData.changes}
+        querySucceeded={eventChangeData.ok}
+        storageKey={storageKey}
+        timeZone={eventChangeData.scope.timeZone}
+        onVisibleChanges={setVisibleChanges}
+      />
+
+      {showAllChildren ? (
+        <MultiChildReadiness summaries={childReadiness} />
+      ) : (
+        <>
+          <EventPassport
+            event={nextEvent}
+            currentResponse={nextEvent ? getStoredRsvp(nextEvent)?.response : undefined}
+            currentLockVersion={nextEvent ? getStoredRsvp(nextEvent)?.lockVersion ?? 0 : 0}
+            canWriteRsvp={canWriteRsvp}
+            transportationLane={selectedReadiness?.lanes.find((lane) => lane.id === "transportation")}
+            pending={false}
+            onRsvpSaved={(result) => {
+              if (!nextEvent) return;
+              setLocalRsvps((existing) => ({
+                ...existing,
+                [rsvpKey(nextEvent.eventId, nextEvent.childId)]: {
+                  response: result.response,
+                  lockVersion: result.lockVersion,
+                  confirmedScheduleVersion: result.scheduleVersion
+                }
+              }));
+              setStatusMessage(result.message);
+            }}
+          />
+          <ReadinessStrip
+            eventTitle={selectedReadiness?.event?.title}
+            items={selectedReadiness?.unresolvedItems ?? []}
+          />
+        </>
+      )}
 
       <div className="parent-weekly-layout">
         <div className="parent-weekly-primary">
-          <section className="parent-weekly-card parent-weekly-next" aria-labelledby="parent-next-title">
-            <header className="parent-weekly-section-heading">
-              <div>
-                <span className="parent-weekly-kicker">Next up</span>
-                <h2 id="parent-next-title">{nextEvent ? "Your next team moment" : "The week is clear"}</h2>
-              </div>
-              <Link href="/parent/schedule">
-                Full schedule
-                <ArrowRight aria-hidden="true" size={16} />
-              </Link>
-            </header>
-
-            {nextEvent ? (
-              <div className="parent-weekly-next-scene">
-                <div className="parent-weekly-field-image">
-                  <Image
-                    src="/images/leaguepilot-baseball-field-overhead.webp"
-                    alt=""
-                    fill
-                    priority
-                    sizes="(max-width: 1023px) 100vw, 66vw"
-                  />
-                  <span className="parent-weekly-field-overlay" />
-                  <div className="parent-weekly-event-copy">
-                    <span>Next up · {nextEvent.dateLabel} · {nextEvent.childLabel}</span>
-                    <h3>{nextEvent.title}</h3>
-                    <p>
-                      <Clock3 aria-hidden="true" size={17} />
-                      {nextEvent.dateLabel} at {nextEvent.startLabel}
-                    </p>
-                    <p>
-                      <MapPin aria-hidden="true" size={17} />
-                      {nextEvent.venueLabel}
-                    </p>
-                  </div>
-                </div>
-                <div className="parent-weekly-next-details">
-                  <div className="parent-weekly-duty-row">
-                    {assignedSnack ? (
-                      <span><Utensils aria-hidden="true" size={15} /> Snack duty: {assignedSnack.item}</span>
-                    ) : null}
-                    {assignedVolunteer ? (
-                      <span><UsersRound aria-hidden="true" size={15} /> {assignedVolunteer.role}</span>
-                    ) : null}
-                    {!assignedSnack && !assignedVolunteer ? (
-                      <span><ShieldCheck aria-hidden="true" size={15} /> No family help assignment for this event</span>
-                    ) : null}
-                    {nextEvent.transportationAssigned ? (
-                      <span><CarFront aria-hidden="true" size={15} /> {nextEvent.responsibleAdultLabel}</span>
-                    ) : (
-                      <Link className="parent-weekly-duty-link" href="/parent/transportation">
-                        <CarFront aria-hidden="true" size={15} /> Ride plan not set · coordinate
-                      </Link>
-                    )}
-                    {nextEvent.handoffLabel ? (
-                      <span><UsersRound aria-hidden="true" size={15} /> Handoff: {nextEvent.handoffLabel}</span>
-                    ) : null}
-                  </div>
-                  {nextEvent.status === "cancelled" ? (
-                    <p className="parent-weekly-cancelled">This event is cancelled in the official schedule.</p>
-                  ) : (
-                    <>
-                      <div className="parent-weekly-rsvp-heading">
-                        <span>Will {nextEvent.childLabel} be there?</span>
-                        <strong>{responseLabel(getRsvp(nextEvent))}</strong>
-                      </div>
-                      <RsvpButtons
-                        event={nextEvent}
-                        response={getRsvp(nextEvent)}
-                        pending={pendingProjection === nextEvent.projectionId}
-                        disabled={!canWriteRsvp}
-                        onSave={saveRsvp}
-                      />
-                      {!canWriteRsvp ? (
-                        <p className="parent-weekly-write-boundary">
-                          RSVP updates are available after live family access is confirmed.{" "}
-                          <Link href="/parent/rsvp">Open RSVP center</Link>
-                        </p>
-                      ) : null}
-                    </>
-                  )}
-                </div>
-              </div>
-            ) : (
-              <div className="parent-weekly-next-scene parent-weekly-next-empty-scene">
-                <div className="parent-weekly-field-image">
-                  <Image
-                    src="/images/leaguepilot-baseball-field-overhead.webp"
-                    alt=""
-                    fill
-                    priority
-                    sizes="(max-width: 1023px) 100vw, 66vw"
-                  />
-                  <span className="parent-weekly-field-overlay" />
-                  <div className="parent-weekly-event-copy">
-                    <span>This week · Official schedule</span>
-                    <h3>No upcoming official events</h3>
-                    <p>
-                      <CalendarDays aria-hidden="true" size={17} />
-                      {view.message}
-                    </p>
-                  </div>
-                </div>
-                <div className="parent-weekly-next-details parent-weekly-next-empty-actions">
-                  <Link href="/parent/schedule">
-                    Open full schedule
-                    <ArrowRight aria-hidden="true" size={16} />
-                  </Link>
-                </div>
-              </div>
-            )}
-          </section>
-
           <section className="parent-weekly-card parent-weekly-replay" aria-labelledby="parent-replay-title">
             <header className="parent-weekly-section-heading">
               <div>
@@ -662,7 +463,7 @@ export function ParentWeeklyDashboard({ view, dashboardData, replayData }: Paren
             {weeklyEvents.length ? (
               <ol>
                 {weeklyEvents.slice(0, 5).map((event) => {
-                  const response = getRsvp(event);
+                  const response = getCurrentRsvp(event);
                   return (
                     <li key={event.projectionId}>
                       <div className="parent-weekly-date-tile" aria-hidden="true">
@@ -674,20 +475,14 @@ export function ParentWeeklyDashboard({ view, dashboardData, replayData }: Paren
                         <h3>{event.title}</h3>
                         <p>{event.startLabel} · {event.venueLabel}</p>
                       </div>
-                      <span
-                        className={`parent-weekly-response-badge response-${response ?? "needed"}`}
-                        data-status={response ?? "needed"}
-                      >
+                      <StatusChip tone={response && response !== "cancelled" ? "confirmed" : "action"} className="parent-weekly-response-badge">
                         {responseLabel(response)}
-                      </span>
-                      {event.status === "scheduled" ? (
-                        <RsvpButtons
-                          event={event}
-                          response={response}
-                          pending={pendingProjection === event.projectionId}
-                          disabled={!canWriteRsvp}
-                          onSave={saveRsvp}
-                        />
+                      </StatusChip>
+                      {event.status === "scheduled" && (!response || event.rsvpOutdated) ? (
+                        <Link className="parent-weekly-row-action" href={`/parent/rsvp?eventId=${encodeURIComponent(event.eventId)}&playerId=${encodeURIComponent(event.childId)}`}>
+                          RSVP
+                          <ArrowRight aria-hidden="true" size={14} />
+                        </Link>
                       ) : null}
                     </li>
                   );
@@ -718,18 +513,31 @@ export function ParentWeeklyDashboard({ view, dashboardData, replayData }: Paren
             </header>
             {announcements.length ? (
               <ol>
-                {announcements.map((announcement) => (
-                  <li key={announcement.id}>
-                    <div className="parent-weekly-update-icon" aria-hidden="true">
-                      <Megaphone size={17} />
-                    </div>
-                    <div>
-                      <span>{formatAnnouncementDate(announcement.createdAt)}</span>
-                      <h3>{announcement.title}</h3>
-                      <p>{announcement.body}</p>
-                    </div>
-                  </li>
-                ))}
+                {announcements.map((announcement) => {
+                  const receipt = notificationReceipts.find((item) => (
+                    item.teamId === announcement.teamId &&
+                    (item.title === announcement.title || item.body.includes(announcement.title))
+                  ));
+                  return (
+                    <li key={announcement.id}>
+                      <div className="parent-weekly-update-icon" aria-hidden="true">
+                        <Megaphone size={17} />
+                      </div>
+                      <div>
+                        <span>{formatAnnouncementDate(announcement.createdAt)}</span>
+                        <h3>{announcement.title}</h3>
+                        <p>{announcement.body}</p>
+                        {receipt ? (
+                          <StatusChip tone={receipt.evidence.acknowledgedAt ? "confirmed" : "action"}>
+                            {receipt.evidence.acknowledgedAt ? `Acknowledged ${formatAnnouncementDate(receipt.evidence.acknowledgedAt)}` : "Needs acknowledgement"}
+                          </StatusChip>
+                        ) : (
+                          <StatusChip tone="neutral">No receipt evidence</StatusChip>
+                        )}
+                      </div>
+                    </li>
+                  );
+                })}
               </ol>
             ) : (
               <div className="parent-weekly-empty parent-weekly-empty-compact">

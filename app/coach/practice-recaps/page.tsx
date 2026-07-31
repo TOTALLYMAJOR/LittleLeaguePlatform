@@ -7,5 +7,5 @@ export default async function CoachPracticeRecapsPage() {
 }
 
 export const metadata = {
-  title: "Practice Recaps"
+  title: "Practice Replays"
 };

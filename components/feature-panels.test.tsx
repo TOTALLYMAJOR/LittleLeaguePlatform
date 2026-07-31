@@ -174,8 +174,10 @@ describe("AccountClient", () => {
   it("shows organization membership separately from team membership", () => {
     const html = renderToStaticMarkup(<AccountClient />);
 
+    expect(html).toContain("Your account and access");
     expect(html).toContain("Organization memberships");
     expect(html).toContain("Team memberships");
+    expect(html).not.toContain("Confirm identity, profile, and team membership");
   });
 });
 
@@ -500,7 +502,7 @@ describe("ParentRsvpClient", () => {
     expect(html).not.toContain("Not going</button>");
   });
 
-  it("renders RSVP history, edit buttons, and cancellation controls for linked parents", () => {
+  it("renders the shared three-answer grammar and RSVP history for linked parents", () => {
     const html = renderToStaticMarkup(
       <AppStateProvider>
         <ParentRsvpClient />
@@ -510,7 +512,9 @@ describe("ParentRsvpClient", () => {
     expect(html).toContain("RSVP history");
     expect(html).toContain("Going");
     expect(html).toContain("Maybe");
-    expect(html).toContain("Cancel RSVP");
+    expect(html).toContain("Can’t go");
+    expect(html).not.toContain("Cancel RSVP");
+    expect(html).toContain("family-rsvp-control");
   });
 
   it("keeps archived RSVP records visible but edit controls read-only", () => {
@@ -532,7 +536,8 @@ describe("ParentRsvpClient", () => {
 
     expect(html).toContain("Archived RSVP read-only mode");
     expect(html).toContain("Past attendance remains visible");
-    expect(html).toContain("Going</button>");
+    expect(html).toContain("data-response=\"going\"");
+    expect(html).toContain("disabled");
   });
 });
 
@@ -549,10 +554,11 @@ describe("ScheduleAlertsClient", () => {
     expect(html).toContain("This week");
     expect(html).toContain("Week ribbon");
     expect(html).toContain("Tiny Tigers vs Rookie Rockets");
-    expect(html).toContain("Is Mason going?");
-    expect(html).toContain("parent-rsvp-glow");
-    expect(html).toContain("RSVP now");
-    expect(html).toContain("Game-day sheet");
+    expect(html).toContain("Mason T.");
+    expect(html).toContain("family-rsvp-control");
+    expect(html).toContain("Open needs reply");
+    expect(html).toContain("Event Passport");
+    expect(html).toContain("Family filter");
     expect(html).toContain("Family-only RSVP details");
     expect(html).not.toContain("Watch now");
   });

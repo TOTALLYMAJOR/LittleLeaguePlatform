@@ -86,6 +86,8 @@ export function scopeTeamPortalData(
     ? teams.filter((team) => visibleTeamIds.has(team.id))
     : teams;
   const organizationIds = new Set(scopedTeams.map((team) => team.organizationId));
+  const scopedMediaItems = data.mediaItems.filter((item) => allowedTeamIds.has(item.teamId));
+  const scopedMediaIds = new Set(scopedMediaItems.map((item) => item.id));
 
   return {
     teams: scopedTeams,
@@ -98,7 +100,8 @@ export function scopeTeamPortalData(
     users: data.users.filter((user) => membershipUserIds.has(user.id)),
     events: data.events.filter((event) => allowedTeamIds.has(event.teamId)),
     fieldLocations: (data.fieldLocations ?? []).filter((field) => organizationIds.has(field.organizationId)),
-    mediaItems: data.mediaItems.filter((item) => allowedTeamIds.has(item.teamId)),
+    mediaItems: scopedMediaItems,
+    familyReleasedMediaItemIds: (data.familyReleasedMediaItemIds ?? []).filter((id) => scopedMediaIds.has(id)),
     parentReplays: data.parentReplays.filter((replay) => (
       allowedTeamIds.has(replay.teamId) &&
       (options.audience !== "parent" || replay.status === "queued")

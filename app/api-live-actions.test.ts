@@ -285,6 +285,25 @@ describe("live action API routes", () => {
     expect((await response.json()).code).toBe("schedule_changed");
   });
 
+  it("returns a conflict when another guardian changed the RSVP first", async () => {
+    updateParentRsvpMock.mockResolvedValue({
+      ok: false,
+      code: "guardian_conflict",
+      message: "Another guardian already updated this RSVP."
+    });
+
+    const response = await postRsvp(jsonRequest({
+      eventId: "event-1",
+      playerId: "player-1",
+      response: "maybe",
+      expectedLockVersion: 1,
+      expectedScheduleVersion: 4
+    }, { "idempotency-key": "rsvp-action-guardian-conflict" }));
+
+    expect(response.status).toBe(409);
+    expect((await response.json()).code).toBe("guardian_conflict");
+  });
+
   it("uses the authenticated parent session for snack claims", async () => {
     claimSnackSlotMock.mockResolvedValue({ ok: true, message: "Snack saved.", slot: { id: "slot-1" } });
 

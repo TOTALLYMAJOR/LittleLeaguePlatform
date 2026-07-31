@@ -1,5 +1,6 @@
 import { SharedAccessRequiredSurface } from "@/app/_access-state";
 import { TeamChatClient } from "@/components/feature-panels";
+import { resolveRouteAuthorityContext, type ProductRole } from "@/lib/navigation/route-topology";
 import { scopeTeamChatData } from "@/lib/supabase/route-scopes";
 import { getServerShellAccess, type ServerShellAccess } from "@/lib/supabase/shell-access";
 import { listTeamChatData } from "@/lib/supabase/team-chat";
@@ -8,7 +9,6 @@ export const dynamic = "force-dynamic";
 
 export default async function TeamChatPage() {
   const access = await getServerShellAccess();
-  const teamIds = resolveTeamChatTeamIds(access);
   if (!access.signedIn) {
     return (
       <SharedAccessRequiredSurface
@@ -17,6 +17,19 @@ export default async function TeamChatPage() {
       />
     );
   }
+  const authority = resolveRouteAuthorityContext(access, "/team-chat");
+  if (!authority.dataScopeRole) {
+    return (
+      <SharedAccessRequiredSurface
+        eyebrow="Choose role"
+        title="Choose a role before opening team chat."
+        body="This account has more than one active role. Team chat will load after the server can resolve one matching shell and data scope."
+        actionHref={access.roleSwitchLinks[0]?.href ?? "/account"}
+        actionLabel="Choose role"
+      />
+    );
+  }
+  const teamIds = resolveTeamChatTeamIds(access, authority.dataScopeRole);
   if (!teamIds.length || !access.userId) {
     return (
       <SharedAccessRequiredSurface
@@ -40,10 +53,10 @@ export default async function TeamChatPage() {
   );
 }
 
-function resolveTeamChatTeamIds(access: ServerShellAccess): string[] {
-  if (access.canAdmin && access.adminTeamIds.length) return access.adminTeamIds;
-  if (access.canCoach && access.coachTeamIds.length) return access.coachTeamIds;
-  if (access.canParent && access.parentTeamIds.length) return access.parentTeamIds;
+function resolveTeamChatTeamIds(access: ServerShellAccess, role: ProductRole): string[] {
+  if (role === "admin" && access.canAdmin) return access.adminTeamIds;
+  if (role === "coach" && access.canCoach) return access.coachTeamIds;
+  if (role === "parent" && access.canParent) return access.parentTeamIds;
   return [];
 }
 

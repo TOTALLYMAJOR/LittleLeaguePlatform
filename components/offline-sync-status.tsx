@@ -49,7 +49,7 @@ export function OfflineSyncStatus({ actorId, contextKey }: { actorId?: string; c
     + summary.signInRequired + summary.reviewRequired + summary.synced;
 
   return (
-    <section className="offline-sync-status" aria-label="Offline sync status" role="status" aria-live="polite">
+    <section id="offline-sync-status" className="offline-sync-status" aria-label="Offline sync status" role="status" aria-live="polite">
       <strong>Offline sync</strong>
       {total === 0 ? <span>No saved actions or recent sync receipts.</span> : (
         <ul>

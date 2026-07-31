@@ -1,0 +1,6989 @@
+{
+  "generatedAt": "2026-07-30T18:41:21.993Z",
+  "baseUrl": "http://127.0.0.1:3020",
+  "colorScheme": "dark",
+  "results": [
+    {
+      "route": "/parent",
+      "role": "parent",
+      "viewport": {
+        "name": "mobile-320",
+        "width": 320,
+        "height": 844
+      },
+      "metrics": {
+        "shell": "family",
+        "surfaceFamily": "family",
+        "routeAuthority": "route-required",
+        "resolvedRole": "parent",
+        "dataScopeRole": "parent",
+        "publicShellVisible": false,
+        "documentWidth": 320,
+        "viewportWidth": 320,
+        "contextBarVisible": false,
+        "sidebarVideoVisible": false,
+        "familyContextVisible": true,
+        "mobileLabels": [
+          "Home",
+          "Schedule",
+          "Messages",
+          "Family",
+          "More"
+        ],
+        "mobileNavVisible": true,
+        "desktopNavVisible": false,
+        "activeTabs": [
+          "Home"
+        ],
+        "colorScheme": "light",
+        "backgroundColor": "rgb(253, 248, 241)",
+        "undersizedShellControls": [],
+        "expectedFamilyTabs": [
+          "Home",
+          "Schedule",
+          "Messages",
+          "Family",
+          "More"
+        ],
+        "expectedShell": "family"
+      },
+      "initialMetrics": {
+        "shell": "family",
+        "surfaceFamily": "family",
+        "routeAuthority": "route-required",
+        "resolvedRole": "parent",
+        "dataScopeRole": "parent",
+        "publicShellVisible": false,
+        "documentWidth": 320,
+        "viewportWidth": 320,
+        "contextBarVisible": false,
+        "sidebarVideoVisible": false,
+        "familyContextVisible": true,
+        "mobileLabels": [
+          "Home",
+          "Schedule",
+          "Messages",
+          "Family",
+          "More"
+        ],
+        "mobileNavVisible": true,
+        "desktopNavVisible": false,
+        "activeTabs": [
+          "Home"
+        ],
+        "colorScheme": "light",
+        "backgroundColor": "rgb(253, 248, 241)",
+        "undersizedShellControls": [],
+        "expectedFamilyTabs": [
+          "Home",
+          "Schedule",
+          "Messages",
+          "Family",
+          "More"
+        ],
+        "expectedShell": "family"
+      },
+      "axeChecked": true,
+      "axeViolations": [],
+      "keyboardFocus": {
+        "tagName": "A",
+        "outlineStyle": "solid",
+        "outlineWidth": "2px"
+      },
+      "pageErrors": [],
+      "requestFailures": [],
+      "screenshotPath": "output/playwright/lp-ux-002-corrected-family-shell/parent-home-mobile-320.png"
+    },
+    {
+      "route": "/parent",
+      "role": "parent",
+      "viewport": {
+        "name": "mobile-390",
+        "width": 390,
+        "height": 844
+      },
+      "metrics": {
+        "shell": "family",
+        "surfaceFamily": "family",
+        "routeAuthority": "route-required",
+        "resolvedRole": "parent",
+        "dataScopeRole": "parent",
+        "publicShellVisible": false,
+        "documentWidth": 390,
+        "viewportWidth": 390,
+        "contextBarVisible": false,
+        "sidebarVideoVisible": false,
+        "familyContextVisible": true,
+        "mobileLabels": [
+          "Home",
+          "Schedule",
+          "Messages",
+          "Family",
+          "More"
+        ],
+        "mobileNavVisible": true,
+        "desktopNavVisible": false,
+        "activeTabs": [
+          "Home"
+        ],
+        "colorScheme": "light",
+        "backgroundColor": "rgb(253, 248, 241)",
+        "undersizedShellControls": [],
+        "expectedFamilyTabs": [
+          "Home",
+          "Schedule",
+          "Messages",
+          "Family",
+          "More"
+        ],
+        "expectedShell": "family"
+      },
+      "initialMetrics": {
+        "shell": "family",
+        "surfaceFamily": "family",
+        "routeAuthority": "route-required",
+        "resolvedRole": "parent",
+        "dataScopeRole": "parent",
+        "publicShellVisible": false,
+        "documentWidth": 390,
+        "viewportWidth": 390,
+        "contextBarVisible": false,
+        "sidebarVideoVisible": false,
+        "familyContextVisible": true,
+        "mobileLabels": [
+          "Home",
+          "Schedule",
+          "Messages",
+          "Family",
+          "More"
+        ],
+        "mobileNavVisible": true,
+        "desktopNavVisible": false,
+        "activeTabs": [
+          "Home"
+        ],
+        "colorScheme": "light",
+        "backgroundColor": "rgb(253, 248, 241)",
+        "undersizedShellControls": [],
+        "expectedFamilyTabs": [
+          "Home",
+          "Schedule",
+          "Messages",
+          "Family",
+          "More"
+        ],
+        "expectedShell": "family"
+      },
+      "axeChecked": true,
+      "axeViolations": [],
+      "keyboardFocus": {
+        "tagName": "A",
+        "outlineStyle": "solid",
+        "outlineWidth": "2px"
+      },
+      "pageErrors": [],
+      "requestFailures": [],
+      "screenshotPath": "output/playwright/lp-ux-002-corrected-family-shell/parent-home-mobile-390.png"
+    },
+    {
+      "route": "/parent",
+      "role": "parent",
+      "viewport": {
+        "name": "tablet-768",
+        "width": 768,
+        "height": 1024
+      },
+      "metrics": {
+        "shell": "family",
+        "surfaceFamily": "family",
+        "routeAuthority": "route-required",
+        "resolvedRole": "parent",
+        "dataScopeRole": "parent",
+        "publicShellVisible": false,
+        "documentWidth": 768,
+        "viewportWidth": 768,
+        "contextBarVisible": false,
+        "sidebarVideoVisible": false,
+        "familyContextVisible": true,
+        "mobileLabels": [
+          "Home",
+          "Schedule",
+          "Messages",
+          "Family",
+          "More"
+        ],
+        "mobileNavVisible": true,
+        "desktopNavVisible": false,
+        "activeTabs": [
+          "Home"
+        ],
+        "colorScheme": "light",
+        "backgroundColor": "rgb(253, 248, 241)",
+        "undersizedShellControls": [],
+        "expectedFamilyTabs": [
+          "Home",
+          "Schedule",
+          "Messages",
+          "Family",
+          "More"
+        ],
+        "expectedShell": "family"
+      },
+      "initialMetrics": {
+        "shell": "family",
+        "surfaceFamily": "family",
+        "routeAuthority": "route-required",
+        "resolvedRole": "parent",
+        "dataScopeRole": "parent",
+        "publicShellVisible": false,
+        "documentWidth": 768,
+        "viewportWidth": 768,
+        "contextBarVisible": false,
+        "sidebarVideoVisible": false,
+        "familyContextVisible": true,
+        "mobileLabels": [
+          "Home",
+          "Schedule",
+          "Messages",
+          "Family",
+          "More"
+        ],
+        "mobileNavVisible": true,
+        "desktopNavVisible": false,
+        "activeTabs": [
+          "Home"
+        ],
+        "colorScheme": "light",
+        "backgroundColor": "rgb(253, 248, 241)",
+        "undersizedShellControls": [],
+        "expectedFamilyTabs": [
+          "Home",
+          "Schedule",
+          "Messages",
+          "Family",
+          "More"
+        ],
+        "expectedShell": "family"
+      },
+      "axeChecked": true,
+      "axeViolations": [],
+      "keyboardFocus": {
+        "tagName": "A",
+        "outlineStyle": "solid",
+        "outlineWidth": "2px"
+      },
+      "pageErrors": [],
+      "requestFailures": [],
+      "screenshotPath": "output/playwright/lp-ux-002-corrected-family-shell/parent-home-tablet-768.png"
+    },
+    {
+      "route": "/parent",
+      "role": "parent",
+      "viewport": {
+        "name": "desktop-1024",
+        "width": 1024,
+        "height": 900
+      },
+      "metrics": {
+        "shell": "family",
+        "surfaceFamily": "family",
+        "routeAuthority": "route-required",
+        "resolvedRole": "parent",
+        "dataScopeRole": "parent",
+        "publicShellVisible": false,
+        "documentWidth": 1024,
+        "viewportWidth": 1024,
+        "contextBarVisible": false,
+        "sidebarVideoVisible": false,
+        "familyContextVisible": true,
+        "mobileLabels": [
+          "Home",
+          "Schedule",
+          "Messages",
+          "Family",
+          "More"
+        ],
+        "mobileNavVisible": false,
+        "desktopNavVisible": true,
+        "activeTabs": [
+          "Home"
+        ],
+        "colorScheme": "light",
+        "backgroundColor": "rgb(253, 248, 241)",
+        "undersizedShellControls": [],
+        "expectedFamilyTabs": [
+          "Home",
+          "Schedule",
+          "Messages",
+          "Family",
+          "More"
+        ],
+        "expectedShell": "family"
+      },
+      "initialMetrics": {
+        "shell": "family",
+        "surfaceFamily": "family",
+        "routeAuthority": "route-required",
+        "resolvedRole": "parent",
+        "dataScopeRole": "parent",
+        "publicShellVisible": false,
+        "documentWidth": 1024,
+        "viewportWidth": 1024,
+        "contextBarVisible": false,
+        "sidebarVideoVisible": false,
+        "familyContextVisible": true,
+        "mobileLabels": [
+          "Home",
+          "Schedule",
+          "Messages",
+          "Family",
+          "More"
+        ],
+        "mobileNavVisible": false,
+        "desktopNavVisible": true,
+        "activeTabs": [
+          "Home"
+        ],
+        "colorScheme": "light",
+        "backgroundColor": "rgb(253, 248, 241)",
+        "undersizedShellControls": [],
+        "expectedFamilyTabs": [
+          "Home",
+          "Schedule",
+          "Messages",
+          "Family",
+          "More"
+        ],
+        "expectedShell": "family"
+      },
+      "axeChecked": true,
+      "axeViolations": [],
+      "keyboardFocus": {
+        "tagName": "A",
+        "outlineStyle": "solid",
+        "outlineWidth": "2px"
+      },
+      "pageErrors": [],
+      "requestFailures": [],
+      "screenshotPath": "output/playwright/lp-ux-002-corrected-family-shell/parent-home-desktop-1024.png"
+    },
+    {
+      "route": "/parent",
+      "role": "parent",
+      "viewport": {
+        "name": "desktop-1440",
+        "width": 1440,
+        "height": 1000
+      },
+      "metrics": {
+        "shell": "family",
+        "surfaceFamily": "family",
+        "routeAuthority": "route-required",
+        "resolvedRole": "parent",
+        "dataScopeRole": "parent",
+        "publicShellVisible": false,
+        "documentWidth": 1440,
+        "viewportWidth": 1440,
+        "contextBarVisible": false,
+        "sidebarVideoVisible": false,
+        "familyContextVisible": true,
+        "mobileLabels": [
+          "Home",
+          "Schedule",
+          "Messages",
+          "Family",
+          "More"
+        ],
+        "mobileNavVisible": false,
+        "desktopNavVisible": true,
+        "activeTabs": [
+          "Home"
+        ],
+        "colorScheme": "light",
+        "backgroundColor": "rgb(253, 248, 241)",
+        "undersizedShellControls": [],
+        "expectedFamilyTabs": [
+          "Home",
+          "Schedule",
+          "Messages",
+          "Family",
+          "More"
+        ],
+        "expectedShell": "family"
+      },
+      "initialMetrics": {
+        "shell": "family",
+        "surfaceFamily": "family",
+        "routeAuthority": "route-required",
+        "resolvedRole": "parent",
+        "dataScopeRole": "parent",
+        "publicShellVisible": false,
+        "documentWidth": 1440,
+        "viewportWidth": 1440,
+        "contextBarVisible": false,
+        "sidebarVideoVisible": false,
+        "familyContextVisible": true,
+        "mobileLabels": [
+          "Home",
+          "Schedule",
+          "Messages",
+          "Family",
+          "More"
+        ],
+        "mobileNavVisible": false,
+        "desktopNavVisible": true,
+        "activeTabs": [
+          "Home"
+        ],
+        "colorScheme": "light",
+        "backgroundColor": "rgb(253, 248, 241)",
+        "undersizedShellControls": [],
+        "expectedFamilyTabs": [
+          "Home",
+          "Schedule",
+          "Messages",
+          "Family",
+          "More"
+        ],
+        "expectedShell": "family"
+      },
+      "axeChecked": true,
+      "axeViolations": [],
+      "keyboardFocus": {
+        "tagName": "A",
+        "outlineStyle": "solid",
+        "outlineWidth": "2px"
+      },
+      "pageErrors": [],
+      "requestFailures": [],
+      "screenshotPath": "output/playwright/lp-ux-002-corrected-family-shell/parent-home-desktop-1440.png"
+    },
+    {
+      "route": "/parent/schedule",
+      "role": "parent",
+      "viewport": {
+        "name": "mobile-320",
+        "width": 320,
+        "height": 844
+      },
+      "metrics": {
+        "shell": "family",
+        "surfaceFamily": "family",
+        "routeAuthority": "route-required",
+        "resolvedRole": "parent",
+        "dataScopeRole": "parent",
+        "publicShellVisible": false,
+        "documentWidth": 320,
+        "viewportWidth": 320,
+        "contextBarVisible": false,
+        "sidebarVideoVisible": false,
+        "familyContextVisible": true,
+        "mobileLabels": [
+          "Home",
+          "Schedule",
+          "Messages",
+          "Family",
+          "More"
+        ],
+        "mobileNavVisible": true,
+        "desktopNavVisible": false,
+        "activeTabs": [
+          "Schedule"
+        ],
+        "colorScheme": "light",
+        "backgroundColor": "rgb(253, 248, 241)",
+        "undersizedShellControls": [],
+        "expectedFamilyTabs": [
+          "Home",
+          "Schedule",
+          "Messages",
+          "Family",
+          "More"
+        ],
+        "expectedShell": "family"
+      },
+      "initialMetrics": {
+        "shell": "family",
+        "surfaceFamily": "family",
+        "routeAuthority": "route-required",
+        "resolvedRole": "parent",
+        "dataScopeRole": "parent",
+        "publicShellVisible": false,
+        "documentWidth": 320,
+        "viewportWidth": 320,
+        "contextBarVisible": false,
+        "sidebarVideoVisible": false,
+        "familyContextVisible": true,
+        "mobileLabels": [
+          "Home",
+          "Schedule",
+          "Messages",
+          "Family",
+          "More"
+        ],
+        "mobileNavVisible": true,
+        "desktopNavVisible": false,
+        "activeTabs": [
+          "Schedule"
+        ],
+        "colorScheme": "light",
+        "backgroundColor": "rgb(253, 248, 241)",
+        "undersizedShellControls": [],
+        "expectedFamilyTabs": [
+          "Home",
+          "Schedule",
+          "Messages",
+          "Family",
+          "More"
+        ],
+        "expectedShell": "family"
+      },
+      "axeChecked": true,
+      "axeViolations": [],
+      "keyboardFocus": {
+        "tagName": "A",
+        "outlineStyle": "solid",
+        "outlineWidth": "2px"
+      },
+      "pageErrors": [],
+      "requestFailures": [],
+      "screenshotPath": "output/playwright/lp-ux-002-corrected-family-shell/parent-schedule-mobile-320.png"
+    },
+    {
+      "route": "/parent/schedule",
+      "role": "parent",
+      "viewport": {
+        "name": "mobile-390",
+        "width": 390,
+        "height": 844
+      },
+      "metrics": {
+        "shell": "family",
+        "surfaceFamily": "family",
+        "routeAuthority": "route-required",
+        "resolvedRole": "parent",
+        "dataScopeRole": "parent",
+        "publicShellVisible": false,
+        "documentWidth": 390,
+        "viewportWidth": 390,
+        "contextBarVisible": false,
+        "sidebarVideoVisible": false,
+        "familyContextVisible": true,
+        "mobileLabels": [
+          "Home",
+          "Schedule",
+          "Messages",
+          "Family",
+          "More"
+        ],
+        "mobileNavVisible": true,
+        "desktopNavVisible": false,
+        "activeTabs": [
+          "Schedule"
+        ],
+        "colorScheme": "light",
+        "backgroundColor": "rgb(253, 248, 241)",
+        "undersizedShellControls": [],
+        "expectedFamilyTabs": [
+          "Home",
+          "Schedule",
+          "Messages",
+          "Family",
+          "More"
+        ],
+        "expectedShell": "family"
+      },
+      "initialMetrics": {
+        "shell": "family",
+        "surfaceFamily": "family",
+        "routeAuthority": "route-required",
+        "resolvedRole": "parent",
+        "dataScopeRole": "parent",
+        "publicShellVisible": false,
+        "documentWidth": 390,
+        "viewportWidth": 390,
+        "contextBarVisible": false,
+        "sidebarVideoVisible": false,
+        "familyContextVisible": true,
+        "mobileLabels": [
+          "Home",
+          "Schedule",
+          "Messages",
+          "Family",
+          "More"
+        ],
+        "mobileNavVisible": true,
+        "desktopNavVisible": false,
+        "activeTabs": [
+          "Schedule"
+        ],
+        "colorScheme": "light",
+        "backgroundColor": "rgb(253, 248, 241)",
+        "undersizedShellControls": [],
+        "expectedFamilyTabs": [
+          "Home",
+          "Schedule",
+          "Messages",
+          "Family",
+          "More"
+        ],
+        "expectedShell": "family"
+      },
+      "axeChecked": true,
+      "axeViolations": [],
+      "keyboardFocus": {
+        "tagName": "A",
+        "outlineStyle": "solid",
+        "outlineWidth": "2px"
+      },
+      "pageErrors": [],
+      "requestFailures": [],
+      "screenshotPath": "output/playwright/lp-ux-002-corrected-family-shell/parent-schedule-mobile-390.png"
+    },
+    {
+      "route": "/parent/schedule",
+      "role": "parent",
+      "viewport": {
+        "name": "tablet-768",
+        "width": 768,
+        "height": 1024
+      },
+      "metrics": {
+        "shell": "family",
+        "surfaceFamily": "family",
+        "routeAuthority": "route-required",
+        "resolvedRole": "parent",
+        "dataScopeRole": "parent",
+        "publicShellVisible": false,
+        "documentWidth": 768,
+        "viewportWidth": 768,
+        "contextBarVisible": false,
+        "sidebarVideoVisible": false,
+        "familyContextVisible": true,
+        "mobileLabels": [
+          "Home",
+          "Schedule",
+          "Messages",
+          "Family",
+          "More"
+        ],
+        "mobileNavVisible": true,
+        "desktopNavVisible": false,
+        "activeTabs": [
+          "Schedule"
+        ],
+        "colorScheme": "light",
+        "backgroundColor": "rgb(253, 248, 241)",
+        "undersizedShellControls": [],
+        "expectedFamilyTabs": [
+          "Home",
+          "Schedule",
+          "Messages",
+          "Family",
+          "More"
+        ],
+        "expectedShell": "family"
+      },
+      "initialMetrics": {
+        "shell": "family",
+        "surfaceFamily": "family",
+        "routeAuthority": "route-required",
+        "resolvedRole": "parent",
+        "dataScopeRole": "parent",
+        "publicShellVisible": false,
+        "documentWidth": 768,
+        "viewportWidth": 768,
+        "contextBarVisible": false,
+        "sidebarVideoVisible": false,
+        "familyContextVisible": true,
+        "mobileLabels": [
+          "Home",
+          "Schedule",
+          "Messages",
+          "Family",
+          "More"
+        ],
+        "mobileNavVisible": true,
+        "desktopNavVisible": false,
+        "activeTabs": [
+          "Schedule"
+        ],
+        "colorScheme": "light",
+        "backgroundColor": "rgb(253, 248, 241)",
+        "undersizedShellControls": [],
+        "expectedFamilyTabs": [
+          "Home",
+          "Schedule",
+          "Messages",
+          "Family",
+          "More"
+        ],
+        "expectedShell": "family"
+      },
+      "axeChecked": true,
+      "axeViolations": [],
+      "keyboardFocus": {
+        "tagName": "A",
+        "outlineStyle": "solid",
+        "outlineWidth": "2px"
+      },
+      "pageErrors": [],
+      "requestFailures": [],
+      "screenshotPath": "output/playwright/lp-ux-002-corrected-family-shell/parent-schedule-tablet-768.png"
+    },
+    {
+      "route": "/parent/schedule",
+      "role": "parent",
+      "viewport": {
+        "name": "desktop-1024",
+        "width": 1024,
+        "height": 900
+      },
+      "metrics": {
+        "shell": "family",
+        "surfaceFamily": "family",
+        "routeAuthority": "route-required",
+        "resolvedRole": "parent",
+        "dataScopeRole": "parent",
+        "publicShellVisible": false,
+        "documentWidth": 1024,
+        "viewportWidth": 1024,
+        "contextBarVisible": false,
+        "sidebarVideoVisible": false,
+        "familyContextVisible": true,
+        "mobileLabels": [
+          "Home",
+          "Schedule",
+          "Messages",
+          "Family",
+          "More"
+        ],
+        "mobileNavVisible": false,
+        "desktopNavVisible": true,
+        "activeTabs": [
+          "Schedule"
+        ],
+        "colorScheme": "light",
+        "backgroundColor": "rgb(253, 248, 241)",
+        "undersizedShellControls": [],
+        "expectedFamilyTabs": [
+          "Home",
+          "Schedule",
+          "Messages",
+          "Family",
+          "More"
+        ],
+        "expectedShell": "family"
+      },
+      "initialMetrics": {
+        "shell": "family",
+        "surfaceFamily": "family",
+        "routeAuthority": "route-required",
+        "resolvedRole": "parent",
+        "dataScopeRole": "parent",
+        "publicShellVisible": false,
+        "documentWidth": 1024,
+        "viewportWidth": 1024,
+        "contextBarVisible": false,
+        "sidebarVideoVisible": false,
+        "familyContextVisible": true,
+        "mobileLabels": [
+          "Home",
+          "Schedule",
+          "Messages",
+          "Family",
+          "More"
+        ],
+        "mobileNavVisible": false,
+        "desktopNavVisible": true,
+        "activeTabs": [
+          "Schedule"
+        ],
+        "colorScheme": "light",
+        "backgroundColor": "rgb(253, 248, 241)",
+        "undersizedShellControls": [],
+        "expectedFamilyTabs": [
+          "Home",
+          "Schedule",
+          "Messages",
+          "Family",
+          "More"
+        ],
+        "expectedShell": "family"
+      },
+      "axeChecked": true,
+      "axeViolations": [],
+      "keyboardFocus": {
+        "tagName": "A",
+        "outlineStyle": "solid",
+        "outlineWidth": "2px"
+      },
+      "pageErrors": [],
+      "requestFailures": [],
+      "screenshotPath": "output/playwright/lp-ux-002-corrected-family-shell/parent-schedule-desktop-1024.png"
+    },
+    {
+      "route": "/parent/schedule",
+      "role": "parent",
+      "viewport": {
+        "name": "desktop-1440",
+        "width": 1440,
+        "height": 1000
+      },
+      "metrics": {
+        "shell": "family",
+        "surfaceFamily": "family",
+        "routeAuthority": "route-required",
+        "resolvedRole": "parent",
+        "dataScopeRole": "parent",
+        "publicShellVisible": false,
+        "documentWidth": 1440,
+        "viewportWidth": 1440,
+        "contextBarVisible": false,
+        "sidebarVideoVisible": false,
+        "familyContextVisible": true,
+        "mobileLabels": [
+          "Home",
+          "Schedule",
+          "Messages",
+          "Family",
+          "More"
+        ],
+        "mobileNavVisible": false,
+        "desktopNavVisible": true,
+        "activeTabs": [
+          "Schedule"
+        ],
+        "colorScheme": "light",
+        "backgroundColor": "rgb(253, 248, 241)",
+        "undersizedShellControls": [],
+        "expectedFamilyTabs": [
+          "Home",
+          "Schedule",
+          "Messages",
+          "Family",
+          "More"
+        ],
+        "expectedShell": "family"
+      },
+      "initialMetrics": {
+        "shell": "family",
+        "surfaceFamily": "family",
+        "routeAuthority": "route-required",
+        "resolvedRole": "parent",
+        "dataScopeRole": "parent",
+        "publicShellVisible": false,
+        "documentWidth": 1440,
+        "viewportWidth": 1440,
+        "contextBarVisible": false,
+        "sidebarVideoVisible": false,
+        "familyContextVisible": true,
+        "mobileLabels": [
+          "Home",
+          "Schedule",
+          "Messages",
+          "Family",
+          "More"
+        ],
+        "mobileNavVisible": false,
+        "desktopNavVisible": true,
+        "activeTabs": [
+          "Schedule"
+        ],
+        "colorScheme": "light",
+        "backgroundColor": "rgb(253, 248, 241)",
+        "undersizedShellControls": [],
+        "expectedFamilyTabs": [
+          "Home",
+          "Schedule",
+          "Messages",
+          "Family",
+          "More"
+        ],
+        "expectedShell": "family"
+      },
+      "axeChecked": true,
+      "axeViolations": [],
+      "keyboardFocus": {
+        "tagName": "A",
+        "outlineStyle": "solid",
+        "outlineWidth": "2px"
+      },
+      "pageErrors": [],
+      "requestFailures": [],
+      "screenshotPath": "output/playwright/lp-ux-002-corrected-family-shell/parent-schedule-desktop-1440.png"
+    },
+    {
+      "route": "/parent/messages",
+      "role": "parent",
+      "viewport": {
+        "name": "mobile-320",
+        "width": 320,
+        "height": 844
+      },
+      "metrics": {
+        "shell": "family",
+        "surfaceFamily": "family",
+        "routeAuthority": "route-required",
+        "resolvedRole": "parent",
+        "dataScopeRole": "parent",
+        "publicShellVisible": false,
+        "documentWidth": 320,
+        "viewportWidth": 320,
+        "contextBarVisible": false,
+        "sidebarVideoVisible": false,
+        "familyContextVisible": true,
+        "mobileLabels": [
+          "Home",
+          "Schedule",
+          "Messages",
+          "Family",
+          "More"
+        ],
+        "mobileNavVisible": true,
+        "desktopNavVisible": false,
+        "activeTabs": [
+          "Messages"
+        ],
+        "colorScheme": "light",
+        "backgroundColor": "rgb(253, 248, 241)",
+        "undersizedShellControls": [],
+        "expectedFamilyTabs": [
+          "Home",
+          "Schedule",
+          "Messages",
+          "Family",
+          "More"
+        ],
+        "expectedShell": "family"
+      },
+      "initialMetrics": {
+        "shell": "family",
+        "surfaceFamily": "family",
+        "routeAuthority": "route-required",
+        "resolvedRole": "parent",
+        "dataScopeRole": "parent",
+        "publicShellVisible": false,
+        "documentWidth": 320,
+        "viewportWidth": 320,
+        "contextBarVisible": false,
+        "sidebarVideoVisible": false,
+        "familyContextVisible": true,
+        "mobileLabels": [
+          "Home",
+          "Schedule",
+          "Messages",
+          "Family",
+          "More"
+        ],
+        "mobileNavVisible": true,
+        "desktopNavVisible": false,
+        "activeTabs": [
+          "Messages"
+        ],
+        "colorScheme": "light",
+        "backgroundColor": "rgb(253, 248, 241)",
+        "undersizedShellControls": [],
+        "expectedFamilyTabs": [
+          "Home",
+          "Schedule",
+          "Messages",
+          "Family",
+          "More"
+        ],
+        "expectedShell": "family"
+      },
+      "axeChecked": true,
+      "axeViolations": [],
+      "keyboardFocus": {
+        "tagName": "A",
+        "outlineStyle": "solid",
+        "outlineWidth": "2px"
+      },
+      "pageErrors": [],
+      "requestFailures": [],
+      "screenshotPath": "output/playwright/lp-ux-002-corrected-family-shell/parent-messages-mobile-320.png"
+    },
+    {
+      "route": "/parent/messages",
+      "role": "parent",
+      "viewport": {
+        "name": "mobile-390",
+        "width": 390,
+        "height": 844
+      },
+      "metrics": {
+        "shell": "family",
+        "surfaceFamily": "family",
+        "routeAuthority": "route-required",
+        "resolvedRole": "parent",
+        "dataScopeRole": "parent",
+        "publicShellVisible": false,
+        "documentWidth": 390,
+        "viewportWidth": 390,
+        "contextBarVisible": false,
+        "sidebarVideoVisible": false,
+        "familyContextVisible": true,
+        "mobileLabels": [
+          "Home",
+          "Schedule",
+          "Messages",
+          "Family",
+          "More"
+        ],
+        "mobileNavVisible": true,
+        "desktopNavVisible": false,
+        "activeTabs": [
+          "Messages"
+        ],
+        "colorScheme": "light",
+        "backgroundColor": "rgb(253, 248, 241)",
+        "undersizedShellControls": [],
+        "expectedFamilyTabs": [
+          "Home",
+          "Schedule",
+          "Messages",
+          "Family",
+          "More"
+        ],
+        "expectedShell": "family"
+      },
+      "initialMetrics": {
+        "shell": "family",
+        "surfaceFamily": "family",
+        "routeAuthority": "route-required",
+        "resolvedRole": "parent",
+        "dataScopeRole": "parent",
+        "publicShellVisible": false,
+        "documentWidth": 390,
+        "viewportWidth": 390,
+        "contextBarVisible": false,
+        "sidebarVideoVisible": false,
+        "familyContextVisible": true,
+        "mobileLabels": [
+          "Home",
+          "Schedule",
+          "Messages",
+          "Family",
+          "More"
+        ],
+        "mobileNavVisible": true,
+        "desktopNavVisible": false,
+        "activeTabs": [
+          "Messages"
+        ],
+        "colorScheme": "light",
+        "backgroundColor": "rgb(253, 248, 241)",
+        "undersizedShellControls": [],
+        "expectedFamilyTabs": [
+          "Home",
+          "Schedule",
+          "Messages",
+          "Family",
+          "More"
+        ],
+        "expectedShell": "family"
+      },
+      "axeChecked": true,
+      "axeViolations": [],
+      "keyboardFocus": {
+        "tagName": "A",
+        "outlineStyle": "solid",
+        "outlineWidth": "2px"
+      },
+      "pageErrors": [],
+      "requestFailures": [],
+      "screenshotPath": "output/playwright/lp-ux-002-corrected-family-shell/parent-messages-mobile-390.png"
+    },
+    {
+      "route": "/parent/messages",
+      "role": "parent",
+      "viewport": {
+        "name": "tablet-768",
+        "width": 768,
+        "height": 1024
+      },
+      "metrics": {
+        "shell": "family",
+        "surfaceFamily": "family",
+        "routeAuthority": "route-required",
+        "resolvedRole": "parent",
+        "dataScopeRole": "parent",
+        "publicShellVisible": false,
+        "documentWidth": 768,
+        "viewportWidth": 768,
+        "contextBarVisible": false,
+        "sidebarVideoVisible": false,
+        "familyContextVisible": true,
+        "mobileLabels": [
+          "Home",
+          "Schedule",
+          "Messages",
+          "Family",
+          "More"
+        ],
+        "mobileNavVisible": true,
+        "desktopNavVisible": false,
+        "activeTabs": [
+          "Messages"
+        ],
+        "colorScheme": "light",
+        "backgroundColor": "rgb(253, 248, 241)",
+        "undersizedShellControls": [],
+        "expectedFamilyTabs": [
+          "Home",
+          "Schedule",
+          "Messages",
+          "Family",
+          "More"
+        ],
+        "expectedShell": "family"
+      },
+      "initialMetrics": {
+        "shell": "family",
+        "surfaceFamily": "family",
+        "routeAuthority": "route-required",
+        "resolvedRole": "parent",
+        "dataScopeRole": "parent",
+        "publicShellVisible": false,
+        "documentWidth": 768,
+        "viewportWidth": 768,
+        "contextBarVisible": false,
+        "sidebarVideoVisible": false,
+        "familyContextVisible": true,
+        "mobileLabels": [
+          "Home",
+          "Schedule",
+          "Messages",
+          "Family",
+          "More"
+        ],
+        "mobileNavVisible": true,
+        "desktopNavVisible": false,
+        "activeTabs": [
+          "Messages"
+        ],
+        "colorScheme": "light",
+        "backgroundColor": "rgb(253, 248, 241)",
+        "undersizedShellControls": [],
+        "expectedFamilyTabs": [
+          "Home",
+          "Schedule",
+          "Messages",
+          "Family",
+          "More"
+        ],
+        "expectedShell": "family"
+      },
+      "axeChecked": true,
+      "axeViolations": [],
+      "keyboardFocus": {
+        "tagName": "A",
+        "outlineStyle": "solid",
+        "outlineWidth": "2px"
+      },
+      "pageErrors": [],
+      "requestFailures": [],
+      "screenshotPath": "output/playwright/lp-ux-002-corrected-family-shell/parent-messages-tablet-768.png"
+    },
+    {
+      "route": "/parent/messages",
+      "role": "parent",
+      "viewport": {
+        "name": "desktop-1024",
+        "width": 1024,
+        "height": 900
+      },
+      "metrics": {
+        "shell": "family",
+        "surfaceFamily": "family",
+        "routeAuthority": "route-required",
+        "resolvedRole": "parent",
+        "dataScopeRole": "parent",
+        "publicShellVisible": false,
+        "documentWidth": 1024,
+        "viewportWidth": 1024,
+        "contextBarVisible": false,
+        "sidebarVideoVisible": false,
+        "familyContextVisible": true,
+        "mobileLabels": [
+          "Home",
+          "Schedule",
+          "Messages",
+          "Family",
+          "More"
+        ],
+        "mobileNavVisible": false,
+        "desktopNavVisible": true,
+        "activeTabs": [
+          "Messages"
+        ],
+        "colorScheme": "light",
+        "backgroundColor": "rgb(253, 248, 241)",
+        "undersizedShellControls": [],
+        "expectedFamilyTabs": [
+          "Home",
+          "Schedule",
+          "Messages",
+          "Family",
+          "More"
+        ],
+        "expectedShell": "family"
+      },
+      "initialMetrics": {
+        "shell": "family",
+        "surfaceFamily": "family",
+        "routeAuthority": "route-required",
+        "resolvedRole": "parent",
+        "dataScopeRole": "parent",
+        "publicShellVisible": false,
+        "documentWidth": 1024,
+        "viewportWidth": 1024,
+        "contextBarVisible": false,
+        "sidebarVideoVisible": false,
+        "familyContextVisible": true,
+        "mobileLabels": [
+          "Home",
+          "Schedule",
+          "Messages",
+          "Family",
+          "More"
+        ],
+        "mobileNavVisible": false,
+        "desktopNavVisible": true,
+        "activeTabs": [
+          "Messages"
+        ],
+        "colorScheme": "light",
+        "backgroundColor": "rgb(253, 248, 241)",
+        "undersizedShellControls": [],
+        "expectedFamilyTabs": [
+          "Home",
+          "Schedule",
+          "Messages",
+          "Family",
+          "More"
+        ],
+        "expectedShell": "family"
+      },
+      "axeChecked": true,
+      "axeViolations": [],
+      "keyboardFocus": {
+        "tagName": "A",
+        "outlineStyle": "solid",
+        "outlineWidth": "2px"
+      },
+      "pageErrors": [],
+      "requestFailures": [],
+      "screenshotPath": "output/playwright/lp-ux-002-corrected-family-shell/parent-messages-desktop-1024.png"
+    },
+    {
+      "route": "/parent/messages",
+      "role": "parent",
+      "viewport": {
+        "name": "desktop-1440",
+        "width": 1440,
+        "height": 1000
+      },
+      "metrics": {
+        "shell": "family",
+        "surfaceFamily": "family",
+        "routeAuthority": "route-required",
+        "resolvedRole": "parent",
+        "dataScopeRole": "parent",
+        "publicShellVisible": false,
+        "documentWidth": 1440,
+        "viewportWidth": 1440,
+        "contextBarVisible": false,
+        "sidebarVideoVisible": false,
+        "familyContextVisible": true,
+        "mobileLabels": [
+          "Home",
+          "Schedule",
+          "Messages",
+          "Family",
+          "More"
+        ],
+        "mobileNavVisible": false,
+        "desktopNavVisible": true,
+        "activeTabs": [
+          "Messages"
+        ],
+        "colorScheme": "light",
+        "backgroundColor": "rgb(253, 248, 241)",
+        "undersizedShellControls": [],
+        "expectedFamilyTabs": [
+          "Home",
+          "Schedule",
+          "Messages",
+          "Family",
+          "More"
+        ],
+        "expectedShell": "family"
+      },
+      "initialMetrics": {
+        "shell": "family",
+        "surfaceFamily": "family",
+        "routeAuthority": "route-required",
+        "resolvedRole": "parent",
+        "dataScopeRole": "parent",
+        "publicShellVisible": false,
+        "documentWidth": 1440,
+        "viewportWidth": 1440,
+        "contextBarVisible": false,
+        "sidebarVideoVisible": false,
+        "familyContextVisible": true,
+        "mobileLabels": [
+          "Home",
+          "Schedule",
+          "Messages",
+          "Family",
+          "More"
+        ],
+        "mobileNavVisible": false,
+        "desktopNavVisible": true,
+        "activeTabs": [
+          "Messages"
+        ],
+        "colorScheme": "light",
+        "backgroundColor": "rgb(253, 248, 241)",
+        "undersizedShellControls": [],
+        "expectedFamilyTabs": [
+          "Home",
+          "Schedule",
+          "Messages",
+          "Family",
+          "More"
+        ],
+        "expectedShell": "family"
+      },
+      "axeChecked": true,
+      "axeViolations": [],
+      "keyboardFocus": {
+        "tagName": "A",
+        "outlineStyle": "solid",
+        "outlineWidth": "2px"
+      },
+      "pageErrors": [],
+      "requestFailures": [],
+      "screenshotPath": "output/playwright/lp-ux-002-corrected-family-shell/parent-messages-desktop-1440.png"
+    },
+    {
+      "route": "/parent/family-access",
+      "role": "parent",
+      "viewport": {
+        "name": "mobile-320",
+        "width": 320,
+        "height": 844
+      },
+      "metrics": {
+        "shell": "family",
+        "surfaceFamily": "family",
+        "routeAuthority": "route-required",
+        "resolvedRole": "parent",
+        "dataScopeRole": "parent",
+        "publicShellVisible": false,
+        "documentWidth": 320,
+        "viewportWidth": 320,
+        "contextBarVisible": false,
+        "sidebarVideoVisible": false,
+        "familyContextVisible": true,
+        "mobileLabels": [
+          "Home",
+          "Schedule",
+          "Messages",
+          "Family",
+          "More"
+        ],
+        "mobileNavVisible": true,
+        "desktopNavVisible": false,
+        "activeTabs": [
+          "Family"
+        ],
+        "colorScheme": "light",
+        "backgroundColor": "rgb(253, 248, 241)",
+        "undersizedShellControls": [],
+        "expectedFamilyTabs": [
+          "Home",
+          "Schedule",
+          "Messages",
+          "Family",
+          "More"
+        ],
+        "expectedShell": "family"
+      },
+      "initialMetrics": {
+        "shell": "family",
+        "surfaceFamily": "family",
+        "routeAuthority": "route-required",
+        "resolvedRole": "parent",
+        "dataScopeRole": "parent",
+        "publicShellVisible": false,
+        "documentWidth": 320,
+        "viewportWidth": 320,
+        "contextBarVisible": false,
+        "sidebarVideoVisible": false,
+        "familyContextVisible": true,
+        "mobileLabels": [
+          "Home",
+          "Schedule",
+          "Messages",
+          "Family",
+          "More"
+        ],
+        "mobileNavVisible": true,
+        "desktopNavVisible": false,
+        "activeTabs": [
+          "Family"
+        ],
+        "colorScheme": "light",
+        "backgroundColor": "rgb(253, 248, 241)",
+        "undersizedShellControls": [],
+        "expectedFamilyTabs": [
+          "Home",
+          "Schedule",
+          "Messages",
+          "Family",
+          "More"
+        ],
+        "expectedShell": "family"
+      },
+      "axeChecked": true,
+      "axeViolations": [],
+      "keyboardFocus": {
+        "tagName": "A",
+        "outlineStyle": "solid",
+        "outlineWidth": "2px"
+      },
+      "pageErrors": [],
+      "requestFailures": [],
+      "screenshotPath": "output/playwright/lp-ux-002-corrected-family-shell/parent-family-mobile-320.png"
+    },
+    {
+      "route": "/parent/family-access",
+      "role": "parent",
+      "viewport": {
+        "name": "mobile-390",
+        "width": 390,
+        "height": 844
+      },
+      "metrics": {
+        "shell": "family",
+        "surfaceFamily": "family",
+        "routeAuthority": "route-required",
+        "resolvedRole": "parent",
+        "dataScopeRole": "parent",
+        "publicShellVisible": false,
+        "documentWidth": 390,
+        "viewportWidth": 390,
+        "contextBarVisible": false,
+        "sidebarVideoVisible": false,
+        "familyContextVisible": true,
+        "mobileLabels": [
+          "Home",
+          "Schedule",
+          "Messages",
+          "Family",
+          "More"
+        ],
+        "mobileNavVisible": true,
+        "desktopNavVisible": false,
+        "activeTabs": [
+          "Family"
+        ],
+        "colorScheme": "light",
+        "backgroundColor": "rgb(253, 248, 241)",
+        "undersizedShellControls": [],
+        "expectedFamilyTabs": [
+          "Home",
+          "Schedule",
+          "Messages",
+          "Family",
+          "More"
+        ],
+        "expectedShell": "family"
+      },
+      "initialMetrics": {
+        "shell": "family",
+        "surfaceFamily": "family",
+        "routeAuthority": "route-required",
+        "resolvedRole": "parent",
+        "dataScopeRole": "parent",
+        "publicShellVisible": false,
+        "documentWidth": 390,
+        "viewportWidth": 390,
+        "contextBarVisible": false,
+        "sidebarVideoVisible": false,
+        "familyContextVisible": true,
+        "mobileLabels": [
+          "Home",
+          "Schedule",
+          "Messages",
+          "Family",
+          "More"
+        ],
+        "mobileNavVisible": true,
+        "desktopNavVisible": false,
+        "activeTabs": [
+          "Family"
+        ],
+        "colorScheme": "light",
+        "backgroundColor": "rgb(253, 248, 241)",
+        "undersizedShellControls": [],
+        "expectedFamilyTabs": [
+          "Home",
+          "Schedule",
+          "Messages",
+          "Family",
+          "More"
+        ],
+        "expectedShell": "family"
+      },
+      "axeChecked": true,
+      "axeViolations": [],
+      "keyboardFocus": {
+        "tagName": "A",
+        "outlineStyle": "solid",
+        "outlineWidth": "2px"
+      },
+      "pageErrors": [],
+      "requestFailures": [],
+      "screenshotPath": "output/playwright/lp-ux-002-corrected-family-shell/parent-family-mobile-390.png"
+    },
+    {
+      "route": "/parent/family-access",
+      "role": "parent",
+      "viewport": {
+        "name": "tablet-768",
+        "width": 768,
+        "height": 1024
+      },
+      "metrics": {
+        "shell": "family",
+        "surfaceFamily": "family",
+        "routeAuthority": "route-required",
+        "resolvedRole": "parent",
+        "dataScopeRole": "parent",
+        "publicShellVisible": false,
+        "documentWidth": 768,
+        "viewportWidth": 768,
+        "contextBarVisible": false,
+        "sidebarVideoVisible": false,
+        "familyContextVisible": true,
+        "mobileLabels": [
+          "Home",
+          "Schedule",
+          "Messages",
+          "Family",
+          "More"
+        ],
+        "mobileNavVisible": true,
+        "desktopNavVisible": false,
+        "activeTabs": [
+          "Family"
+        ],
+        "colorScheme": "light",
+        "backgroundColor": "rgb(253, 248, 241)",
+        "undersizedShellControls": [],
+        "expectedFamilyTabs": [
+          "Home",
+          "Schedule",
+          "Messages",
+          "Family",
+          "More"
+        ],
+        "expectedShell": "family"
+      },
+      "initialMetrics": {
+        "shell": "family",
+        "surfaceFamily": "family",
+        "routeAuthority": "route-required",
+        "resolvedRole": "parent",
+        "dataScopeRole": "parent",
+        "publicShellVisible": false,
+        "documentWidth": 768,
+        "viewportWidth": 768,
+        "contextBarVisible": false,
+        "sidebarVideoVisible": false,
+        "familyContextVisible": true,
+        "mobileLabels": [
+          "Home",
+          "Schedule",
+          "Messages",
+          "Family",
+          "More"
+        ],
+        "mobileNavVisible": true,
+        "desktopNavVisible": false,
+        "activeTabs": [
+          "Family"
+        ],
+        "colorScheme": "light",
+        "backgroundColor": "rgb(253, 248, 241)",
+        "undersizedShellControls": [],
+        "expectedFamilyTabs": [
+          "Home",
+          "Schedule",
+          "Messages",
+          "Family",
+          "More"
+        ],
+        "expectedShell": "family"
+      },
+      "axeChecked": true,
+      "axeViolations": [],
+      "keyboardFocus": {
+        "tagName": "A",
+        "outlineStyle": "solid",
+        "outlineWidth": "2px"
+      },
+      "pageErrors": [],
+      "requestFailures": [],
+      "screenshotPath": "output/playwright/lp-ux-002-corrected-family-shell/parent-family-tablet-768.png"
+    },
+    {
+      "route": "/parent/family-access",
+      "role": "parent",
+      "viewport": {
+        "name": "desktop-1024",
+        "width": 1024,
+        "height": 900
+      },
+      "metrics": {
+        "shell": "family",
+        "surfaceFamily": "family",
+        "routeAuthority": "route-required",
+        "resolvedRole": "parent",
+        "dataScopeRole": "parent",
+        "publicShellVisible": false,
+        "documentWidth": 1024,
+        "viewportWidth": 1024,
+        "contextBarVisible": false,
+        "sidebarVideoVisible": false,
+        "familyContextVisible": true,
+        "mobileLabels": [
+          "Home",
+          "Schedule",
+          "Messages",
+          "Family",
+          "More"
+        ],
+        "mobileNavVisible": false,
+        "desktopNavVisible": true,
+        "activeTabs": [
+          "Family"
+        ],
+        "colorScheme": "light",
+        "backgroundColor": "rgb(253, 248, 241)",
+        "undersizedShellControls": [],
+        "expectedFamilyTabs": [
+          "Home",
+          "Schedule",
+          "Messages",
+          "Family",
+          "More"
+        ],
+        "expectedShell": "family"
+      },
+      "initialMetrics": {
+        "shell": "family",
+        "surfaceFamily": "family",
+        "routeAuthority": "route-required",
+        "resolvedRole": "parent",
+        "dataScopeRole": "parent",
+        "publicShellVisible": false,
+        "documentWidth": 1024,
+        "viewportWidth": 1024,
+        "contextBarVisible": false,
+        "sidebarVideoVisible": false,
+        "familyContextVisible": true,
+        "mobileLabels": [
+          "Home",
+          "Schedule",
+          "Messages",
+          "Family",
+          "More"
+        ],
+        "mobileNavVisible": false,
+        "desktopNavVisible": true,
+        "activeTabs": [
+          "Family"
+        ],
+        "colorScheme": "light",
+        "backgroundColor": "rgb(253, 248, 241)",
+        "undersizedShellControls": [],
+        "expectedFamilyTabs": [
+          "Home",
+          "Schedule",
+          "Messages",
+          "Family",
+          "More"
+        ],
+        "expectedShell": "family"
+      },
+      "axeChecked": true,
+      "axeViolations": [],
+      "keyboardFocus": {
+        "tagName": "A",
+        "outlineStyle": "solid",
+        "outlineWidth": "2px"
+      },
+      "pageErrors": [],
+      "requestFailures": [],
+      "screenshotPath": "output/playwright/lp-ux-002-corrected-family-shell/parent-family-desktop-1024.png"
+    },
+    {
+      "route": "/parent/family-access",
+      "role": "parent",
+      "viewport": {
+        "name": "desktop-1440",
+        "width": 1440,
+        "height": 1000
+      },
+      "metrics": {
+        "shell": "family",
+        "surfaceFamily": "family",
+        "routeAuthority": "route-required",
+        "resolvedRole": "parent",
+        "dataScopeRole": "parent",
+        "publicShellVisible": false,
+        "documentWidth": 1440,
+        "viewportWidth": 1440,
+        "contextBarVisible": false,
+        "sidebarVideoVisible": false,
+        "familyContextVisible": true,
+        "mobileLabels": [
+          "Home",
+          "Schedule",
+          "Messages",
+          "Family",
+          "More"
+        ],
+        "mobileNavVisible": false,
+        "desktopNavVisible": true,
+        "activeTabs": [
+          "Family"
+        ],
+        "colorScheme": "light",
+        "backgroundColor": "rgb(253, 248, 241)",
+        "undersizedShellControls": [],
+        "expectedFamilyTabs": [
+          "Home",
+          "Schedule",
+          "Messages",
+          "Family",
+          "More"
+        ],
+        "expectedShell": "family"
+      },
+      "initialMetrics": {
+        "shell": "family",
+        "surfaceFamily": "family",
+        "routeAuthority": "route-required",
+        "resolvedRole": "parent",
+        "dataScopeRole": "parent",
+        "publicShellVisible": false,
+        "documentWidth": 1440,
+        "viewportWidth": 1440,
+        "contextBarVisible": false,
+        "sidebarVideoVisible": false,
+        "familyContextVisible": true,
+        "mobileLabels": [
+          "Home",
+          "Schedule",
+          "Messages",
+          "Family",
+          "More"
+        ],
+        "mobileNavVisible": false,
+        "desktopNavVisible": true,
+        "activeTabs": [
+          "Family"
+        ],
+        "colorScheme": "light",
+        "backgroundColor": "rgb(253, 248, 241)",
+        "undersizedShellControls": [],
+        "expectedFamilyTabs": [
+          "Home",
+          "Schedule",
+          "Messages",
+          "Family",
+          "More"
+        ],
+        "expectedShell": "family"
+      },
+      "axeChecked": true,
+      "axeViolations": [],
+      "keyboardFocus": {
+        "tagName": "A",
+        "outlineStyle": "solid",
+        "outlineWidth": "2px"
+      },
+      "pageErrors": [],
+      "requestFailures": [],
+      "screenshotPath": "output/playwright/lp-ux-002-corrected-family-shell/parent-family-desktop-1440.png"
+    },
+    {
+      "route": "/parent/more",
+      "role": "parent",
+      "viewport": {
+        "name": "mobile-320",
+        "width": 320,
+        "height": 844
+      },
+      "metrics": {
+        "shell": "family",
+        "surfaceFamily": "family",
+        "routeAuthority": "route-required",
+        "resolvedRole": "parent",
+        "dataScopeRole": "parent",
+        "publicShellVisible": false,
+        "documentWidth": 320,
+        "viewportWidth": 320,
+        "contextBarVisible": false,
+        "sidebarVideoVisible": false,
+        "familyContextVisible": true,
+        "mobileLabels": [
+          "Home",
+          "Schedule",
+          "Messages",
+          "Family",
+          "More"
+        ],
+        "mobileNavVisible": true,
+        "desktopNavVisible": false,
+        "activeTabs": [
+          "More"
+        ],
+        "colorScheme": "light",
+        "backgroundColor": "rgb(253, 248, 241)",
+        "undersizedShellControls": [],
+        "expectedFamilyTabs": [
+          "Home",
+          "Schedule",
+          "Messages",
+          "Family",
+          "More"
+        ],
+        "expectedShell": "family"
+      },
+      "initialMetrics": {
+        "shell": "family",
+        "surfaceFamily": "family",
+        "routeAuthority": "route-required",
+        "resolvedRole": "parent",
+        "dataScopeRole": "parent",
+        "publicShellVisible": false,
+        "documentWidth": 320,
+        "viewportWidth": 320,
+        "contextBarVisible": false,
+        "sidebarVideoVisible": false,
+        "familyContextVisible": true,
+        "mobileLabels": [
+          "Home",
+          "Schedule",
+          "Messages",
+          "Family",
+          "More"
+        ],
+        "mobileNavVisible": true,
+        "desktopNavVisible": false,
+        "activeTabs": [
+          "More"
+        ],
+        "colorScheme": "light",
+        "backgroundColor": "rgb(253, 248, 241)",
+        "undersizedShellControls": [],
+        "expectedFamilyTabs": [
+          "Home",
+          "Schedule",
+          "Messages",
+          "Family",
+          "More"
+        ],
+        "expectedShell": "family"
+      },
+      "axeChecked": true,
+      "axeViolations": [],
+      "keyboardFocus": {
+        "tagName": "A",
+        "outlineStyle": "solid",
+        "outlineWidth": "2px"
+      },
+      "pageErrors": [],
+      "requestFailures": [],
+      "screenshotPath": "output/playwright/lp-ux-002-corrected-family-shell/parent-more-mobile-320.png"
+    },
+    {
+      "route": "/parent/more",
+      "role": "parent",
+      "viewport": {
+        "name": "mobile-390",
+        "width": 390,
+        "height": 844
+      },
+      "metrics": {
+        "shell": "family",
+        "surfaceFamily": "family",
+        "routeAuthority": "route-required",
+        "resolvedRole": "parent",
+        "dataScopeRole": "parent",
+        "publicShellVisible": false,
+        "documentWidth": 390,
+        "viewportWidth": 390,
+        "contextBarVisible": false,
+        "sidebarVideoVisible": false,
+        "familyContextVisible": true,
+        "mobileLabels": [
+          "Home",
+          "Schedule",
+          "Messages",
+          "Family",
+          "More"
+        ],
+        "mobileNavVisible": true,
+        "desktopNavVisible": false,
+        "activeTabs": [
+          "More"
+        ],
+        "colorScheme": "light",
+        "backgroundColor": "rgb(253, 248, 241)",
+        "undersizedShellControls": [],
+        "expectedFamilyTabs": [
+          "Home",
+          "Schedule",
+          "Messages",
+          "Family",
+          "More"
+        ],
+        "expectedShell": "family"
+      },
+      "initialMetrics": {
+        "shell": "family",
+        "surfaceFamily": "family",
+        "routeAuthority": "route-required",
+        "resolvedRole": "parent",
+        "dataScopeRole": "parent",
+        "publicShellVisible": false,
+        "documentWidth": 390,
+        "viewportWidth": 390,
+        "contextBarVisible": false,
+        "sidebarVideoVisible": false,
+        "familyContextVisible": true,
+        "mobileLabels": [
+          "Home",
+          "Schedule",
+          "Messages",
+          "Family",
+          "More"
+        ],
+        "mobileNavVisible": true,
+        "desktopNavVisible": false,
+        "activeTabs": [
+          "More"
+        ],
+        "colorScheme": "light",
+        "backgroundColor": "rgb(253, 248, 241)",
+        "undersizedShellControls": [],
+        "expectedFamilyTabs": [
+          "Home",
+          "Schedule",
+          "Messages",
+          "Family",
+          "More"
+        ],
+        "expectedShell": "family"
+      },
+      "axeChecked": true,
+      "axeViolations": [],
+      "keyboardFocus": {
+        "tagName": "A",
+        "outlineStyle": "solid",
+        "outlineWidth": "2px"
+      },
+      "pageErrors": [],
+      "requestFailures": [],
+      "screenshotPath": "output/playwright/lp-ux-002-corrected-family-shell/parent-more-mobile-390.png"
+    },
+    {
+      "route": "/parent/more",
+      "role": "parent",
+      "viewport": {
+        "name": "tablet-768",
+        "width": 768,
+        "height": 1024
+      },
+      "metrics": {
+        "shell": "family",
+        "surfaceFamily": "family",
+        "routeAuthority": "route-required",
+        "resolvedRole": "parent",
+        "dataScopeRole": "parent",
+        "publicShellVisible": false,
+        "documentWidth": 768,
+        "viewportWidth": 768,
+        "contextBarVisible": false,
+        "sidebarVideoVisible": false,
+        "familyContextVisible": true,
+        "mobileLabels": [
+          "Home",
+          "Schedule",
+          "Messages",
+          "Family",
+          "More"
+        ],
+        "mobileNavVisible": true,
+        "desktopNavVisible": false,
+        "activeTabs": [
+          "More"
+        ],
+        "colorScheme": "light",
+        "backgroundColor": "rgb(253, 248, 241)",
+        "undersizedShellControls": [],
+        "expectedFamilyTabs": [
+          "Home",
+          "Schedule",
+          "Messages",
+          "Family",
+          "More"
+        ],
+        "expectedShell": "family"
+      },
+      "initialMetrics": {
+        "shell": "family",
+        "surfaceFamily": "family",
+        "routeAuthority": "route-required",
+        "resolvedRole": "parent",
+        "dataScopeRole": "parent",
+        "publicShellVisible": false,
+        "documentWidth": 768,
+        "viewportWidth": 768,
+        "contextBarVisible": false,
+        "sidebarVideoVisible": false,
+        "familyContextVisible": true,
+        "mobileLabels": [
+          "Home",
+          "Schedule",
+          "Messages",
+          "Family",
+          "More"
+        ],
+        "mobileNavVisible": true,
+        "desktopNavVisible": false,
+        "activeTabs": [
+          "More"
+        ],
+        "colorScheme": "light",
+        "backgroundColor": "rgb(253, 248, 241)",
+        "undersizedShellControls": [],
+        "expectedFamilyTabs": [
+          "Home",
+          "Schedule",
+          "Messages",
+          "Family",
+          "More"
+        ],
+        "expectedShell": "family"
+      },
+      "axeChecked": true,
+      "axeViolations": [],
+      "keyboardFocus": {
+        "tagName": "A",
+        "outlineStyle": "solid",
+        "outlineWidth": "2px"
+      },
+      "pageErrors": [],
+      "requestFailures": [],
+      "screenshotPath": "output/playwright/lp-ux-002-corrected-family-shell/parent-more-tablet-768.png"
+    },
+    {
+      "route": "/parent/more",
+      "role": "parent",
+      "viewport": {
+        "name": "desktop-1024",
+        "width": 1024,
+        "height": 900
+      },
+      "metrics": {
+        "shell": "family",
+        "surfaceFamily": "family",
+        "routeAuthority": "route-required",
+        "resolvedRole": "parent",
+        "dataScopeRole": "parent",
+        "publicShellVisible": false,
+        "documentWidth": 1024,
+        "viewportWidth": 1024,
+        "contextBarVisible": false,
+        "sidebarVideoVisible": false,
+        "familyContextVisible": true,
+        "mobileLabels": [
+          "Home",
+          "Schedule",
+          "Messages",
+          "Family",
+          "More"
+        ],
+        "mobileNavVisible": false,
+        "desktopNavVisible": true,
+        "activeTabs": [
+          "More"
+        ],
+        "colorScheme": "light",
+        "backgroundColor": "rgb(253, 248, 241)",
+        "undersizedShellControls": [],
+        "expectedFamilyTabs": [
+          "Home",
+          "Schedule",
+          "Messages",
+          "Family",
+          "More"
+        ],
+        "expectedShell": "family"
+      },
+      "initialMetrics": {
+        "shell": "family",
+        "surfaceFamily": "family",
+        "routeAuthority": "route-required",
+        "resolvedRole": "parent",
+        "dataScopeRole": "parent",
+        "publicShellVisible": false,
+        "documentWidth": 1024,
+        "viewportWidth": 1024,
+        "contextBarVisible": false,
+        "sidebarVideoVisible": false,
+        "familyContextVisible": true,
+        "mobileLabels": [
+          "Home",
+          "Schedule",
+          "Messages",
+          "Family",
+          "More"
+        ],
+        "mobileNavVisible": false,
+        "desktopNavVisible": true,
+        "activeTabs": [
+          "More"
+        ],
+        "colorScheme": "light",
+        "backgroundColor": "rgb(253, 248, 241)",
+        "undersizedShellControls": [],
+        "expectedFamilyTabs": [
+          "Home",
+          "Schedule",
+          "Messages",
+          "Family",
+          "More"
+        ],
+        "expectedShell": "family"
+      },
+      "axeChecked": true,
+      "axeViolations": [],
+      "keyboardFocus": {
+        "tagName": "A",
+        "outlineStyle": "solid",
+        "outlineWidth": "2px"
+      },
+      "pageErrors": [],
+      "requestFailures": [],
+      "screenshotPath": "output/playwright/lp-ux-002-corrected-family-shell/parent-more-desktop-1024.png"
+    },
+    {
+      "route": "/parent/more",
+      "role": "parent",
+      "viewport": {
+        "name": "desktop-1440",
+        "width": 1440,
+        "height": 1000
+      },
+      "metrics": {
+        "shell": "family",
+        "surfaceFamily": "family",
+        "routeAuthority": "route-required",
+        "resolvedRole": "parent",
+        "dataScopeRole": "parent",
+        "publicShellVisible": false,
+        "documentWidth": 1440,
+        "viewportWidth": 1440,
+        "contextBarVisible": false,
+        "sidebarVideoVisible": false,
+        "familyContextVisible": true,
+        "mobileLabels": [
+          "Home",
+          "Schedule",
+          "Messages",
+          "Family",
+          "More"
+        ],
+        "mobileNavVisible": false,
+        "desktopNavVisible": true,
+        "activeTabs": [
+          "More"
+        ],
+        "colorScheme": "light",
+        "backgroundColor": "rgb(253, 248, 241)",
+        "undersizedShellControls": [],
+        "expectedFamilyTabs": [
+          "Home",
+          "Schedule",
+          "Messages",
+          "Family",
+          "More"
+        ],
+        "expectedShell": "family"
+      },
+      "initialMetrics": {
+        "shell": "family",
+        "surfaceFamily": "family",
+        "routeAuthority": "route-required",
+        "resolvedRole": "parent",
+        "dataScopeRole": "parent",
+        "publicShellVisible": false,
+        "documentWidth": 1440,
+        "viewportWidth": 1440,
+        "contextBarVisible": false,
+        "sidebarVideoVisible": false,
+        "familyContextVisible": true,
+        "mobileLabels": [
+          "Home",
+          "Schedule",
+          "Messages",
+          "Family",
+          "More"
+        ],
+        "mobileNavVisible": false,
+        "desktopNavVisible": true,
+        "activeTabs": [
+          "More"
+        ],
+        "colorScheme": "light",
+        "backgroundColor": "rgb(253, 248, 241)",
+        "undersizedShellControls": [],
+        "expectedFamilyTabs": [
+          "Home",
+          "Schedule",
+          "Messages",
+          "Family",
+          "More"
+        ],
+        "expectedShell": "family"
+      },
+      "axeChecked": true,
+      "axeViolations": [],
+      "keyboardFocus": {
+        "tagName": "A",
+        "outlineStyle": "solid",
+        "outlineWidth": "2px"
+      },
+      "pageErrors": [],
+      "requestFailures": [],
+      "screenshotPath": "output/playwright/lp-ux-002-corrected-family-shell/parent-more-desktop-1440.png"
+    },
+    {
+      "route": "/account",
+      "role": "parent",
+      "viewport": {
+        "name": "mobile-320",
+        "width": 320,
+        "height": 844
+      },
+      "metrics": {
+        "shell": "family",
+        "surfaceFamily": "family",
+        "routeAuthority": "single-role-inferred",
+        "resolvedRole": "parent",
+        "dataScopeRole": null,
+        "publicShellVisible": false,
+        "documentWidth": 320,
+        "viewportWidth": 320,
+        "contextBarVisible": false,
+        "sidebarVideoVisible": false,
+        "familyContextVisible": true,
+        "mobileLabels": [
+          "Home",
+          "Schedule",
+          "Messages",
+          "Family",
+          "More"
+        ],
+        "mobileNavVisible": true,
+        "desktopNavVisible": false,
+        "activeTabs": [
+          "More"
+        ],
+        "colorScheme": "light",
+        "backgroundColor": "rgb(253, 248, 241)",
+        "undersizedShellControls": [],
+        "expectedFamilyTabs": [
+          "Home",
+          "Schedule",
+          "Messages",
+          "Family",
+          "More"
+        ],
+        "expectedShell": "family"
+      },
+      "initialMetrics": {
+        "shell": "family",
+        "surfaceFamily": "family",
+        "routeAuthority": "single-role-inferred",
+        "resolvedRole": "parent",
+        "dataScopeRole": null,
+        "publicShellVisible": false,
+        "documentWidth": 320,
+        "viewportWidth": 320,
+        "contextBarVisible": false,
+        "sidebarVideoVisible": false,
+        "familyContextVisible": true,
+        "mobileLabels": [
+          "Home",
+          "Schedule",
+          "Messages",
+          "Family",
+          "More"
+        ],
+        "mobileNavVisible": true,
+        "desktopNavVisible": false,
+        "activeTabs": [
+          "More"
+        ],
+        "colorScheme": "light",
+        "backgroundColor": "rgb(253, 248, 241)",
+        "undersizedShellControls": [],
+        "expectedFamilyTabs": [
+          "Home",
+          "Schedule",
+          "Messages",
+          "Family",
+          "More"
+        ],
+        "expectedShell": "family"
+      },
+      "axeChecked": true,
+      "axeViolations": [],
+      "keyboardFocus": {
+        "tagName": "A",
+        "outlineStyle": "solid",
+        "outlineWidth": "2px"
+      },
+      "accountSignOutFocus": {
+        "tagName": "BUTTON",
+        "visible": true,
+        "outlineStyle": "solid",
+        "outlineWidth": "2px"
+      },
+      "pageErrors": [],
+      "requestFailures": [],
+      "screenshotPath": "output/playwright/lp-ux-002-corrected-family-shell/account-mobile-320.png"
+    },
+    {
+      "route": "/account",
+      "role": "parent",
+      "viewport": {
+        "name": "mobile-390",
+        "width": 390,
+        "height": 844
+      },
+      "metrics": {
+        "shell": "family",
+        "surfaceFamily": "family",
+        "routeAuthority": "single-role-inferred",
+        "resolvedRole": "parent",
+        "dataScopeRole": null,
+        "publicShellVisible": false,
+        "documentWidth": 390,
+        "viewportWidth": 390,
+        "contextBarVisible": false,
+        "sidebarVideoVisible": false,
+        "familyContextVisible": true,
+        "mobileLabels": [
+          "Home",
+          "Schedule",
+          "Messages",
+          "Family",
+          "More"
+        ],
+        "mobileNavVisible": true,
+        "desktopNavVisible": false,
+        "activeTabs": [
+          "More"
+        ],
+        "colorScheme": "light",
+        "backgroundColor": "rgb(253, 248, 241)",
+        "undersizedShellControls": [],
+        "expectedFamilyTabs": [
+          "Home",
+          "Schedule",
+          "Messages",
+          "Family",
+          "More"
+        ],
+        "expectedShell": "family"
+      },
+      "initialMetrics": {
+        "shell": "family",
+        "surfaceFamily": "family",
+        "routeAuthority": "single-role-inferred",
+        "resolvedRole": "parent",
+        "dataScopeRole": null,
+        "publicShellVisible": false,
+        "documentWidth": 390,
+        "viewportWidth": 390,
+        "contextBarVisible": false,
+        "sidebarVideoVisible": false,
+        "familyContextVisible": true,
+        "mobileLabels": [
+          "Home",
+          "Schedule",
+          "Messages",
+          "Family",
+          "More"
+        ],
+        "mobileNavVisible": true,
+        "desktopNavVisible": false,
+        "activeTabs": [
+          "More"
+        ],
+        "colorScheme": "light",
+        "backgroundColor": "rgb(253, 248, 241)",
+        "undersizedShellControls": [],
+        "expectedFamilyTabs": [
+          "Home",
+          "Schedule",
+          "Messages",
+          "Family",
+          "More"
+        ],
+        "expectedShell": "family"
+      },
+      "axeChecked": true,
+      "axeViolations": [],
+      "keyboardFocus": {
+        "tagName": "A",
+        "outlineStyle": "solid",
+        "outlineWidth": "2px"
+      },
+      "accountSignOutFocus": {
+        "tagName": "BUTTON",
+        "visible": true,
+        "outlineStyle": "solid",
+        "outlineWidth": "2px"
+      },
+      "pageErrors": [],
+      "requestFailures": [],
+      "screenshotPath": "output/playwright/lp-ux-002-corrected-family-shell/account-mobile-390.png"
+    },
+    {
+      "route": "/account",
+      "role": "parent",
+      "viewport": {
+        "name": "tablet-768",
+        "width": 768,
+        "height": 1024
+      },
+      "metrics": {
+        "shell": "family",
+        "surfaceFamily": "family",
+        "routeAuthority": "single-role-inferred",
+        "resolvedRole": "parent",
+        "dataScopeRole": null,
+        "publicShellVisible": false,
+        "documentWidth": 768,
+        "viewportWidth": 768,
+        "contextBarVisible": false,
+        "sidebarVideoVisible": false,
+        "familyContextVisible": true,
+        "mobileLabels": [
+          "Home",
+          "Schedule",
+          "Messages",
+          "Family",
+          "More"
+        ],
+        "mobileNavVisible": true,
+        "desktopNavVisible": false,
+        "activeTabs": [
+          "More"
+        ],
+        "colorScheme": "light",
+        "backgroundColor": "rgb(253, 248, 241)",
+        "undersizedShellControls": [],
+        "expectedFamilyTabs": [
+          "Home",
+          "Schedule",
+          "Messages",
+          "Family",
+          "More"
+        ],
+        "expectedShell": "family"
+      },
+      "initialMetrics": {
+        "shell": "family",
+        "surfaceFamily": "family",
+        "routeAuthority": "single-role-inferred",
+        "resolvedRole": "parent",
+        "dataScopeRole": null,
+        "publicShellVisible": false,
+        "documentWidth": 768,
+        "viewportWidth": 768,
+        "contextBarVisible": false,
+        "sidebarVideoVisible": false,
+        "familyContextVisible": true,
+        "mobileLabels": [
+          "Home",
+          "Schedule",
+          "Messages",
+          "Family",
+          "More"
+        ],
+        "mobileNavVisible": true,
+        "desktopNavVisible": false,
+        "activeTabs": [
+          "More"
+        ],
+        "colorScheme": "light",
+        "backgroundColor": "rgb(253, 248, 241)",
+        "undersizedShellControls": [],
+        "expectedFamilyTabs": [
+          "Home",
+          "Schedule",
+          "Messages",
+          "Family",
+          "More"
+        ],
+        "expectedShell": "family"
+      },
+      "axeChecked": true,
+      "axeViolations": [],
+      "keyboardFocus": {
+        "tagName": "A",
+        "outlineStyle": "solid",
+        "outlineWidth": "2px"
+      },
+      "accountSignOutFocus": {
+        "tagName": "BUTTON",
+        "visible": true,
+        "outlineStyle": "solid",
+        "outlineWidth": "2px"
+      },
+      "pageErrors": [],
+      "requestFailures": [],
+      "screenshotPath": "output/playwright/lp-ux-002-corrected-family-shell/account-tablet-768.png"
+    },
+    {
+      "route": "/account",
+      "role": "parent",
+      "viewport": {
+        "name": "desktop-1024",
+        "width": 1024,
+        "height": 900
+      },
+      "metrics": {
+        "shell": "family",
+        "surfaceFamily": "family",
+        "routeAuthority": "single-role-inferred",
+        "resolvedRole": "parent",
+        "dataScopeRole": null,
+        "publicShellVisible": false,
+        "documentWidth": 1024,
+        "viewportWidth": 1024,
+        "contextBarVisible": false,
+        "sidebarVideoVisible": false,
+        "familyContextVisible": true,
+        "mobileLabels": [
+          "Home",
+          "Schedule",
+          "Messages",
+          "Family",
+          "More"
+        ],
+        "mobileNavVisible": false,
+        "desktopNavVisible": true,
+        "activeTabs": [
+          "More"
+        ],
+        "colorScheme": "light",
+        "backgroundColor": "rgb(253, 248, 241)",
+        "undersizedShellControls": [],
+        "expectedFamilyTabs": [
+          "Home",
+          "Schedule",
+          "Messages",
+          "Family",
+          "More"
+        ],
+        "expectedShell": "family"
+      },
+      "initialMetrics": {
+        "shell": "family",
+        "surfaceFamily": "family",
+        "routeAuthority": "single-role-inferred",
+        "resolvedRole": "parent",
+        "dataScopeRole": null,
+        "publicShellVisible": false,
+        "documentWidth": 1024,
+        "viewportWidth": 1024,
+        "contextBarVisible": false,
+        "sidebarVideoVisible": false,
+        "familyContextVisible": true,
+        "mobileLabels": [
+          "Home",
+          "Schedule",
+          "Messages",
+          "Family",
+          "More"
+        ],
+        "mobileNavVisible": false,
+        "desktopNavVisible": true,
+        "activeTabs": [
+          "More"
+        ],
+        "colorScheme": "light",
+        "backgroundColor": "rgb(253, 248, 241)",
+        "undersizedShellControls": [],
+        "expectedFamilyTabs": [
+          "Home",
+          "Schedule",
+          "Messages",
+          "Family",
+          "More"
+        ],
+        "expectedShell": "family"
+      },
+      "axeChecked": true,
+      "axeViolations": [],
+      "keyboardFocus": {
+        "tagName": "A",
+        "outlineStyle": "solid",
+        "outlineWidth": "2px"
+      },
+      "accountSignOutFocus": {
+        "tagName": "BUTTON",
+        "visible": true,
+        "outlineStyle": "solid",
+        "outlineWidth": "2px"
+      },
+      "pageErrors": [],
+      "requestFailures": [],
+      "screenshotPath": "output/playwright/lp-ux-002-corrected-family-shell/account-desktop-1024.png"
+    },
+    {
+      "route": "/account",
+      "role": "parent",
+      "viewport": {
+        "name": "desktop-1440",
+        "width": 1440,
+        "height": 1000
+      },
+      "metrics": {
+        "shell": "family",
+        "surfaceFamily": "family",
+        "routeAuthority": "single-role-inferred",
+        "resolvedRole": "parent",
+        "dataScopeRole": null,
+        "publicShellVisible": false,
+        "documentWidth": 1440,
+        "viewportWidth": 1440,
+        "contextBarVisible": false,
+        "sidebarVideoVisible": false,
+        "familyContextVisible": true,
+        "mobileLabels": [
+          "Home",
+          "Schedule",
+          "Messages",
+          "Family",
+          "More"
+        ],
+        "mobileNavVisible": false,
+        "desktopNavVisible": true,
+        "activeTabs": [
+          "More"
+        ],
+        "colorScheme": "light",
+        "backgroundColor": "rgb(253, 248, 241)",
+        "undersizedShellControls": [],
+        "expectedFamilyTabs": [
+          "Home",
+          "Schedule",
+          "Messages",
+          "Family",
+          "More"
+        ],
+        "expectedShell": "family"
+      },
+      "initialMetrics": {
+        "shell": "family",
+        "surfaceFamily": "family",
+        "routeAuthority": "single-role-inferred",
+        "resolvedRole": "parent",
+        "dataScopeRole": null,
+        "publicShellVisible": false,
+        "documentWidth": 1440,
+        "viewportWidth": 1440,
+        "contextBarVisible": false,
+        "sidebarVideoVisible": false,
+        "familyContextVisible": true,
+        "mobileLabels": [
+          "Home",
+          "Schedule",
+          "Messages",
+          "Family",
+          "More"
+        ],
+        "mobileNavVisible": false,
+        "desktopNavVisible": true,
+        "activeTabs": [
+          "More"
+        ],
+        "colorScheme": "light",
+        "backgroundColor": "rgb(253, 248, 241)",
+        "undersizedShellControls": [],
+        "expectedFamilyTabs": [
+          "Home",
+          "Schedule",
+          "Messages",
+          "Family",
+          "More"
+        ],
+        "expectedShell": "family"
+      },
+      "axeChecked": true,
+      "axeViolations": [],
+      "keyboardFocus": {
+        "tagName": "A",
+        "outlineStyle": "solid",
+        "outlineWidth": "2px"
+      },
+      "accountSignOutFocus": {
+        "tagName": "BUTTON",
+        "visible": true,
+        "outlineStyle": "solid",
+        "outlineWidth": "2px"
+      },
+      "pageErrors": [],
+      "requestFailures": [],
+      "screenshotPath": "output/playwright/lp-ux-002-corrected-family-shell/account-desktop-1440.png"
+    },
+    {
+      "route": "/team-chat",
+      "role": "parent",
+      "viewport": {
+        "name": "mobile-320",
+        "width": 320,
+        "height": 844
+      },
+      "metrics": {
+        "shell": "family",
+        "surfaceFamily": "family",
+        "routeAuthority": "single-role-inferred",
+        "resolvedRole": "parent",
+        "dataScopeRole": "parent",
+        "publicShellVisible": false,
+        "documentWidth": 320,
+        "viewportWidth": 320,
+        "contextBarVisible": false,
+        "sidebarVideoVisible": false,
+        "familyContextVisible": true,
+        "mobileLabels": [
+          "Home",
+          "Schedule",
+          "Messages",
+          "Family",
+          "More"
+        ],
+        "mobileNavVisible": true,
+        "desktopNavVisible": false,
+        "activeTabs": [
+          "Messages"
+        ],
+        "colorScheme": "light",
+        "backgroundColor": "rgb(253, 248, 241)",
+        "undersizedShellControls": [],
+        "expectedFamilyTabs": [
+          "Home",
+          "Schedule",
+          "Messages",
+          "Family",
+          "More"
+        ],
+        "expectedShell": "family"
+      },
+      "initialMetrics": {
+        "shell": "family",
+        "surfaceFamily": "family",
+        "routeAuthority": "single-role-inferred",
+        "resolvedRole": "parent",
+        "dataScopeRole": "parent",
+        "publicShellVisible": false,
+        "documentWidth": 320,
+        "viewportWidth": 320,
+        "contextBarVisible": false,
+        "sidebarVideoVisible": false,
+        "familyContextVisible": true,
+        "mobileLabels": [
+          "Home",
+          "Schedule",
+          "Messages",
+          "Family",
+          "More"
+        ],
+        "mobileNavVisible": true,
+        "desktopNavVisible": false,
+        "activeTabs": [
+          "Messages"
+        ],
+        "colorScheme": "light",
+        "backgroundColor": "rgb(253, 248, 241)",
+        "undersizedShellControls": [],
+        "expectedFamilyTabs": [
+          "Home",
+          "Schedule",
+          "Messages",
+          "Family",
+          "More"
+        ],
+        "expectedShell": "family"
+      },
+      "axeChecked": true,
+      "axeViolations": [],
+      "keyboardFocus": {
+        "tagName": "A",
+        "outlineStyle": "solid",
+        "outlineWidth": "2px"
+      },
+      "pageErrors": [],
+      "requestFailures": [],
+      "screenshotPath": "output/playwright/lp-ux-002-corrected-family-shell/team-chat-mobile-320.png"
+    },
+    {
+      "route": "/team-chat",
+      "role": "parent",
+      "viewport": {
+        "name": "mobile-390",
+        "width": 390,
+        "height": 844
+      },
+      "metrics": {
+        "shell": "family",
+        "surfaceFamily": "family",
+        "routeAuthority": "single-role-inferred",
+        "resolvedRole": "parent",
+        "dataScopeRole": "parent",
+        "publicShellVisible": false,
+        "documentWidth": 390,
+        "viewportWidth": 390,
+        "contextBarVisible": false,
+        "sidebarVideoVisible": false,
+        "familyContextVisible": true,
+        "mobileLabels": [
+          "Home",
+          "Schedule",
+          "Messages",
+          "Family",
+          "More"
+        ],
+        "mobileNavVisible": true,
+        "desktopNavVisible": false,
+        "activeTabs": [
+          "Messages"
+        ],
+        "colorScheme": "light",
+        "backgroundColor": "rgb(253, 248, 241)",
+        "undersizedShellControls": [],
+        "expectedFamilyTabs": [
+          "Home",
+          "Schedule",
+          "Messages",
+          "Family",
+          "More"
+        ],
+        "expectedShell": "family"
+      },
+      "initialMetrics": {
+        "shell": "family",
+        "surfaceFamily": "family",
+        "routeAuthority": "single-role-inferred",
+        "resolvedRole": "parent",
+        "dataScopeRole": "parent",
+        "publicShellVisible": false,
+        "documentWidth": 390,
+        "viewportWidth": 390,
+        "contextBarVisible": false,
+        "sidebarVideoVisible": false,
+        "familyContextVisible": true,
+        "mobileLabels": [
+          "Home",
+          "Schedule",
+          "Messages",
+          "Family",
+          "More"
+        ],
+        "mobileNavVisible": true,
+        "desktopNavVisible": false,
+        "activeTabs": [
+          "Messages"
+        ],
+        "colorScheme": "light",
+        "backgroundColor": "rgb(253, 248, 241)",
+        "undersizedShellControls": [],
+        "expectedFamilyTabs": [
+          "Home",
+          "Schedule",
+          "Messages",
+          "Family",
+          "More"
+        ],
+        "expectedShell": "family"
+      },
+      "axeChecked": true,
+      "axeViolations": [],
+      "keyboardFocus": {
+        "tagName": "A",
+        "outlineStyle": "solid",
+        "outlineWidth": "2px"
+      },
+      "pageErrors": [],
+      "requestFailures": [],
+      "screenshotPath": "output/playwright/lp-ux-002-corrected-family-shell/team-chat-mobile-390.png"
+    },
+    {
+      "route": "/team-chat",
+      "role": "parent",
+      "viewport": {
+        "name": "tablet-768",
+        "width": 768,
+        "height": 1024
+      },
+      "metrics": {
+        "shell": "family",
+        "surfaceFamily": "family",
+        "routeAuthority": "single-role-inferred",
+        "resolvedRole": "parent",
+        "dataScopeRole": "parent",
+        "publicShellVisible": false,
+        "documentWidth": 768,
+        "viewportWidth": 768,
+        "contextBarVisible": false,
+        "sidebarVideoVisible": false,
+        "familyContextVisible": true,
+        "mobileLabels": [
+          "Home",
+          "Schedule",
+          "Messages",
+          "Family",
+          "More"
+        ],
+        "mobileNavVisible": true,
+        "desktopNavVisible": false,
+        "activeTabs": [
+          "Messages"
+        ],
+        "colorScheme": "light",
+        "backgroundColor": "rgb(253, 248, 241)",
+        "undersizedShellControls": [],
+        "expectedFamilyTabs": [
+          "Home",
+          "Schedule",
+          "Messages",
+          "Family",
+          "More"
+        ],
+        "expectedShell": "family"
+      },
+      "initialMetrics": {
+        "shell": "family",
+        "surfaceFamily": "family",
+        "routeAuthority": "single-role-inferred",
+        "resolvedRole": "parent",
+        "dataScopeRole": "parent",
+        "publicShellVisible": false,
+        "documentWidth": 768,
+        "viewportWidth": 768,
+        "contextBarVisible": false,
+        "sidebarVideoVisible": false,
+        "familyContextVisible": true,
+        "mobileLabels": [
+          "Home",
+          "Schedule",
+          "Messages",
+          "Family",
+          "More"
+        ],
+        "mobileNavVisible": true,
+        "desktopNavVisible": false,
+        "activeTabs": [
+          "Messages"
+        ],
+        "colorScheme": "light",
+        "backgroundColor": "rgb(253, 248, 241)",
+        "undersizedShellControls": [],
+        "expectedFamilyTabs": [
+          "Home",
+          "Schedule",
+          "Messages",
+          "Family",
+          "More"
+        ],
+        "expectedShell": "family"
+      },
+      "axeChecked": true,
+      "axeViolations": [],
+      "keyboardFocus": {
+        "tagName": "A",
+        "outlineStyle": "solid",
+        "outlineWidth": "2px"
+      },
+      "pageErrors": [],
+      "requestFailures": [],
+      "screenshotPath": "output/playwright/lp-ux-002-corrected-family-shell/team-chat-tablet-768.png"
+    },
+    {
+      "route": "/team-chat",
+      "role": "parent",
+      "viewport": {
+        "name": "desktop-1024",
+        "width": 1024,
+        "height": 900
+      },
+      "metrics": {
+        "shell": "family",
+        "surfaceFamily": "family",
+        "routeAuthority": "single-role-inferred",
+        "resolvedRole": "parent",
+        "dataScopeRole": "parent",
+        "publicShellVisible": false,
+        "documentWidth": 1024,
+        "viewportWidth": 1024,
+        "contextBarVisible": false,
+        "sidebarVideoVisible": false,
+        "familyContextVisible": true,
+        "mobileLabels": [
+          "Home",
+          "Schedule",
+          "Messages",
+          "Family",
+          "More"
+        ],
+        "mobileNavVisible": false,
+        "desktopNavVisible": true,
+        "activeTabs": [
+          "Messages"
+        ],
+        "colorScheme": "light",
+        "backgroundColor": "rgb(253, 248, 241)",
+        "undersizedShellControls": [],
+        "expectedFamilyTabs": [
+          "Home",
+          "Schedule",
+          "Messages",
+          "Family",
+          "More"
+        ],
+        "expectedShell": "family"
+      },
+      "initialMetrics": {
+        "shell": "family",
+        "surfaceFamily": "family",
+        "routeAuthority": "single-role-inferred",
+        "resolvedRole": "parent",
+        "dataScopeRole": "parent",
+        "publicShellVisible": false,
+        "documentWidth": 1024,
+        "viewportWidth": 1024,
+        "contextBarVisible": false,
+        "sidebarVideoVisible": false,
+        "familyContextVisible": true,
+        "mobileLabels": [
+          "Home",
+          "Schedule",
+          "Messages",
+          "Family",
+          "More"
+        ],
+        "mobileNavVisible": false,
+        "desktopNavVisible": true,
+        "activeTabs": [
+          "Messages"
+        ],
+        "colorScheme": "light",
+        "backgroundColor": "rgb(253, 248, 241)",
+        "undersizedShellControls": [],
+        "expectedFamilyTabs": [
+          "Home",
+          "Schedule",
+          "Messages",
+          "Family",
+          "More"
+        ],
+        "expectedShell": "family"
+      },
+      "axeChecked": true,
+      "axeViolations": [],
+      "keyboardFocus": {
+        "tagName": "A",
+        "outlineStyle": "solid",
+        "outlineWidth": "2px"
+      },
+      "pageErrors": [],
+      "requestFailures": [],
+      "screenshotPath": "output/playwright/lp-ux-002-corrected-family-shell/team-chat-desktop-1024.png"
+    },
+    {
+      "route": "/team-chat",
+      "role": "parent",
+      "viewport": {
+        "name": "desktop-1440",
+        "width": 1440,
+        "height": 1000
+      },
+      "metrics": {
+        "shell": "family",
+        "surfaceFamily": "family",
+        "routeAuthority": "single-role-inferred",
+        "resolvedRole": "parent",
+        "dataScopeRole": "parent",
+        "publicShellVisible": false,
+        "documentWidth": 1440,
+        "viewportWidth": 1440,
+        "contextBarVisible": false,
+        "sidebarVideoVisible": false,
+        "familyContextVisible": true,
+        "mobileLabels": [
+          "Home",
+          "Schedule",
+          "Messages",
+          "Family",
+          "More"
+        ],
+        "mobileNavVisible": false,
+        "desktopNavVisible": true,
+        "activeTabs": [
+          "Messages"
+        ],
+        "colorScheme": "light",
+        "backgroundColor": "rgb(253, 248, 241)",
+        "undersizedShellControls": [],
+        "expectedFamilyTabs": [
+          "Home",
+          "Schedule",
+          "Messages",
+          "Family",
+          "More"
+        ],
+        "expectedShell": "family"
+      },
+      "initialMetrics": {
+        "shell": "family",
+        "surfaceFamily": "family",
+        "routeAuthority": "single-role-inferred",
+        "resolvedRole": "parent",
+        "dataScopeRole": "parent",
+        "publicShellVisible": false,
+        "documentWidth": 1440,
+        "viewportWidth": 1440,
+        "contextBarVisible": false,
+        "sidebarVideoVisible": false,
+        "familyContextVisible": true,
+        "mobileLabels": [
+          "Home",
+          "Schedule",
+          "Messages",
+          "Family",
+          "More"
+        ],
+        "mobileNavVisible": false,
+        "desktopNavVisible": true,
+        "activeTabs": [
+          "Messages"
+        ],
+        "colorScheme": "light",
+        "backgroundColor": "rgb(253, 248, 241)",
+        "undersizedShellControls": [],
+        "expectedFamilyTabs": [
+          "Home",
+          "Schedule",
+          "Messages",
+          "Family",
+          "More"
+        ],
+        "expectedShell": "family"
+      },
+      "axeChecked": true,
+      "axeViolations": [],
+      "keyboardFocus": {
+        "tagName": "A",
+        "outlineStyle": "solid",
+        "outlineWidth": "2px"
+      },
+      "pageErrors": [],
+      "requestFailures": [],
+      "screenshotPath": "output/playwright/lp-ux-002-corrected-family-shell/team-chat-desktop-1440.png"
+    },
+    {
+      "route": "/team-portal",
+      "role": "parent",
+      "viewport": {
+        "name": "mobile-320",
+        "width": 320,
+        "height": 844
+      },
+      "metrics": {
+        "shell": "family",
+        "surfaceFamily": "family",
+        "routeAuthority": "single-role-inferred",
+        "resolvedRole": "parent",
+        "dataScopeRole": "parent",
+        "publicShellVisible": false,
+        "documentWidth": 320,
+        "viewportWidth": 320,
+        "contextBarVisible": false,
+        "sidebarVideoVisible": false,
+        "familyContextVisible": true,
+        "mobileLabels": [
+          "Home",
+          "Schedule",
+          "Messages",
+          "Family",
+          "More"
+        ],
+        "mobileNavVisible": true,
+        "desktopNavVisible": false,
+        "activeTabs": [
+          "Family"
+        ],
+        "colorScheme": "light",
+        "backgroundColor": "rgb(253, 248, 241)",
+        "undersizedShellControls": [],
+        "expectedFamilyTabs": [
+          "Home",
+          "Schedule",
+          "Messages",
+          "Family",
+          "More"
+        ],
+        "expectedShell": "family"
+      },
+      "initialMetrics": {
+        "shell": "family",
+        "surfaceFamily": "family",
+        "routeAuthority": "single-role-inferred",
+        "resolvedRole": "parent",
+        "dataScopeRole": "parent",
+        "publicShellVisible": false,
+        "documentWidth": 320,
+        "viewportWidth": 320,
+        "contextBarVisible": false,
+        "sidebarVideoVisible": false,
+        "familyContextVisible": true,
+        "mobileLabels": [
+          "Home",
+          "Schedule",
+          "Messages",
+          "Family",
+          "More"
+        ],
+        "mobileNavVisible": true,
+        "desktopNavVisible": false,
+        "activeTabs": [
+          "Family"
+        ],
+        "colorScheme": "light",
+        "backgroundColor": "rgb(253, 248, 241)",
+        "undersizedShellControls": [],
+        "expectedFamilyTabs": [
+          "Home",
+          "Schedule",
+          "Messages",
+          "Family",
+          "More"
+        ],
+        "expectedShell": "family"
+      },
+      "axeChecked": true,
+      "axeViolations": [],
+      "keyboardFocus": {
+        "tagName": "A",
+        "outlineStyle": "solid",
+        "outlineWidth": "2px"
+      },
+      "pageErrors": [],
+      "requestFailures": [],
+      "screenshotPath": "output/playwright/lp-ux-002-corrected-family-shell/team-portal-parent-mobile-320.png"
+    },
+    {
+      "route": "/team-portal",
+      "role": "parent",
+      "viewport": {
+        "name": "mobile-390",
+        "width": 390,
+        "height": 844
+      },
+      "metrics": {
+        "shell": "family",
+        "surfaceFamily": "family",
+        "routeAuthority": "single-role-inferred",
+        "resolvedRole": "parent",
+        "dataScopeRole": "parent",
+        "publicShellVisible": false,
+        "documentWidth": 390,
+        "viewportWidth": 390,
+        "contextBarVisible": false,
+        "sidebarVideoVisible": false,
+        "familyContextVisible": true,
+        "mobileLabels": [
+          "Home",
+          "Schedule",
+          "Messages",
+          "Family",
+          "More"
+        ],
+        "mobileNavVisible": true,
+        "desktopNavVisible": false,
+        "activeTabs": [
+          "Family"
+        ],
+        "colorScheme": "light",
+        "backgroundColor": "rgb(253, 248, 241)",
+        "undersizedShellControls": [],
+        "expectedFamilyTabs": [
+          "Home",
+          "Schedule",
+          "Messages",
+          "Family",
+          "More"
+        ],
+        "expectedShell": "family"
+      },
+      "initialMetrics": {
+        "shell": "family",
+        "surfaceFamily": "family",
+        "routeAuthority": "single-role-inferred",
+        "resolvedRole": "parent",
+        "dataScopeRole": "parent",
+        "publicShellVisible": false,
+        "documentWidth": 390,
+        "viewportWidth": 390,
+        "contextBarVisible": false,
+        "sidebarVideoVisible": false,
+        "familyContextVisible": true,
+        "mobileLabels": [
+          "Home",
+          "Schedule",
+          "Messages",
+          "Family",
+          "More"
+        ],
+        "mobileNavVisible": true,
+        "desktopNavVisible": false,
+        "activeTabs": [
+          "Family"
+        ],
+        "colorScheme": "light",
+        "backgroundColor": "rgb(253, 248, 241)",
+        "undersizedShellControls": [],
+        "expectedFamilyTabs": [
+          "Home",
+          "Schedule",
+          "Messages",
+          "Family",
+          "More"
+        ],
+        "expectedShell": "family"
+      },
+      "axeChecked": true,
+      "axeViolations": [],
+      "keyboardFocus": {
+        "tagName": "A",
+        "outlineStyle": "solid",
+        "outlineWidth": "2px"
+      },
+      "pageErrors": [],
+      "requestFailures": [],
+      "screenshotPath": "output/playwright/lp-ux-002-corrected-family-shell/team-portal-parent-mobile-390.png"
+    },
+    {
+      "route": "/team-portal",
+      "role": "parent",
+      "viewport": {
+        "name": "tablet-768",
+        "width": 768,
+        "height": 1024
+      },
+      "metrics": {
+        "shell": "family",
+        "surfaceFamily": "family",
+        "routeAuthority": "single-role-inferred",
+        "resolvedRole": "parent",
+        "dataScopeRole": "parent",
+        "publicShellVisible": false,
+        "documentWidth": 768,
+        "viewportWidth": 768,
+        "contextBarVisible": false,
+        "sidebarVideoVisible": false,
+        "familyContextVisible": true,
+        "mobileLabels": [
+          "Home",
+          "Schedule",
+          "Messages",
+          "Family",
+          "More"
+        ],
+        "mobileNavVisible": true,
+        "desktopNavVisible": false,
+        "activeTabs": [
+          "Family"
+        ],
+        "colorScheme": "light",
+        "backgroundColor": "rgb(253, 248, 241)",
+        "undersizedShellControls": [],
+        "expectedFamilyTabs": [
+          "Home",
+          "Schedule",
+          "Messages",
+          "Family",
+          "More"
+        ],
+        "expectedShell": "family"
+      },
+      "initialMetrics": {
+        "shell": "family",
+        "surfaceFamily": "family",
+        "routeAuthority": "single-role-inferred",
+        "resolvedRole": "parent",
+        "dataScopeRole": "parent",
+        "publicShellVisible": false,
+        "documentWidth": 768,
+        "viewportWidth": 768,
+        "contextBarVisible": false,
+        "sidebarVideoVisible": false,
+        "familyContextVisible": true,
+        "mobileLabels": [
+          "Home",
+          "Schedule",
+          "Messages",
+          "Family",
+          "More"
+        ],
+        "mobileNavVisible": true,
+        "desktopNavVisible": false,
+        "activeTabs": [
+          "Family"
+        ],
+        "colorScheme": "light",
+        "backgroundColor": "rgb(253, 248, 241)",
+        "undersizedShellControls": [],
+        "expectedFamilyTabs": [
+          "Home",
+          "Schedule",
+          "Messages",
+          "Family",
+          "More"
+        ],
+        "expectedShell": "family"
+      },
+      "axeChecked": true,
+      "axeViolations": [],
+      "keyboardFocus": {
+        "tagName": "A",
+        "outlineStyle": "solid",
+        "outlineWidth": "2px"
+      },
+      "pageErrors": [],
+      "requestFailures": [],
+      "screenshotPath": "output/playwright/lp-ux-002-corrected-family-shell/team-portal-parent-tablet-768.png"
+    },
+    {
+      "route": "/team-portal",
+      "role": "parent",
+      "viewport": {
+        "name": "desktop-1024",
+        "width": 1024,
+        "height": 900
+      },
+      "metrics": {
+        "shell": "family",
+        "surfaceFamily": "family",
+        "routeAuthority": "single-role-inferred",
+        "resolvedRole": "parent",
+        "dataScopeRole": "parent",
+        "publicShellVisible": false,
+        "documentWidth": 1024,
+        "viewportWidth": 1024,
+        "contextBarVisible": false,
+        "sidebarVideoVisible": false,
+        "familyContextVisible": true,
+        "mobileLabels": [
+          "Home",
+          "Schedule",
+          "Messages",
+          "Family",
+          "More"
+        ],
+        "mobileNavVisible": false,
+        "desktopNavVisible": true,
+        "activeTabs": [
+          "Family"
+        ],
+        "colorScheme": "light",
+        "backgroundColor": "rgb(253, 248, 241)",
+        "undersizedShellControls": [],
+        "expectedFamilyTabs": [
+          "Home",
+          "Schedule",
+          "Messages",
+          "Family",
+          "More"
+        ],
+        "expectedShell": "family"
+      },
+      "initialMetrics": {
+        "shell": "family",
+        "surfaceFamily": "family",
+        "routeAuthority": "single-role-inferred",
+        "resolvedRole": "parent",
+        "dataScopeRole": "parent",
+        "publicShellVisible": false,
+        "documentWidth": 1024,
+        "viewportWidth": 1024,
+        "contextBarVisible": false,
+        "sidebarVideoVisible": false,
+        "familyContextVisible": true,
+        "mobileLabels": [
+          "Home",
+          "Schedule",
+          "Messages",
+          "Family",
+          "More"
+        ],
+        "mobileNavVisible": false,
+        "desktopNavVisible": true,
+        "activeTabs": [
+          "Family"
+        ],
+        "colorScheme": "light",
+        "backgroundColor": "rgb(253, 248, 241)",
+        "undersizedShellControls": [],
+        "expectedFamilyTabs": [
+          "Home",
+          "Schedule",
+          "Messages",
+          "Family",
+          "More"
+        ],
+        "expectedShell": "family"
+      },
+      "axeChecked": true,
+      "axeViolations": [],
+      "keyboardFocus": {
+        "tagName": "A",
+        "outlineStyle": "solid",
+        "outlineWidth": "2px"
+      },
+      "pageErrors": [],
+      "requestFailures": [],
+      "screenshotPath": "output/playwright/lp-ux-002-corrected-family-shell/team-portal-parent-desktop-1024.png"
+    },
+    {
+      "route": "/team-portal",
+      "role": "parent",
+      "viewport": {
+        "name": "desktop-1440",
+        "width": 1440,
+        "height": 1000
+      },
+      "metrics": {
+        "shell": "family",
+        "surfaceFamily": "family",
+        "routeAuthority": "single-role-inferred",
+        "resolvedRole": "parent",
+        "dataScopeRole": "parent",
+        "publicShellVisible": false,
+        "documentWidth": 1440,
+        "viewportWidth": 1440,
+        "contextBarVisible": false,
+        "sidebarVideoVisible": false,
+        "familyContextVisible": true,
+        "mobileLabels": [
+          "Home",
+          "Schedule",
+          "Messages",
+          "Family",
+          "More"
+        ],
+        "mobileNavVisible": false,
+        "desktopNavVisible": true,
+        "activeTabs": [
+          "Family"
+        ],
+        "colorScheme": "light",
+        "backgroundColor": "rgb(253, 248, 241)",
+        "undersizedShellControls": [],
+        "expectedFamilyTabs": [
+          "Home",
+          "Schedule",
+          "Messages",
+          "Family",
+          "More"
+        ],
+        "expectedShell": "family"
+      },
+      "initialMetrics": {
+        "shell": "family",
+        "surfaceFamily": "family",
+        "routeAuthority": "single-role-inferred",
+        "resolvedRole": "parent",
+        "dataScopeRole": "parent",
+        "publicShellVisible": false,
+        "documentWidth": 1440,
+        "viewportWidth": 1440,
+        "contextBarVisible": false,
+        "sidebarVideoVisible": false,
+        "familyContextVisible": true,
+        "mobileLabels": [
+          "Home",
+          "Schedule",
+          "Messages",
+          "Family",
+          "More"
+        ],
+        "mobileNavVisible": false,
+        "desktopNavVisible": true,
+        "activeTabs": [
+          "Family"
+        ],
+        "colorScheme": "light",
+        "backgroundColor": "rgb(253, 248, 241)",
+        "undersizedShellControls": [],
+        "expectedFamilyTabs": [
+          "Home",
+          "Schedule",
+          "Messages",
+          "Family",
+          "More"
+        ],
+        "expectedShell": "family"
+      },
+      "axeChecked": true,
+      "axeViolations": [],
+      "keyboardFocus": {
+        "tagName": "A",
+        "outlineStyle": "solid",
+        "outlineWidth": "2px"
+      },
+      "pageErrors": [],
+      "requestFailures": [],
+      "screenshotPath": "output/playwright/lp-ux-002-corrected-family-shell/team-portal-parent-desktop-1440.png"
+    },
+    {
+      "route": "/team-chat",
+      "role": "coach",
+      "viewport": {
+        "name": "mobile-320",
+        "width": 320,
+        "height": 844
+      },
+      "metrics": {
+        "shell": "staff",
+        "surfaceFamily": null,
+        "routeAuthority": "single-role-inferred",
+        "resolvedRole": "coach",
+        "dataScopeRole": "coach",
+        "publicShellVisible": false,
+        "documentWidth": 320,
+        "viewportWidth": 320,
+        "contextBarVisible": true,
+        "sidebarVideoVisible": false,
+        "familyContextVisible": false,
+        "mobileLabels": [
+          "Today",
+          "RSVPs4",
+          "Replay",
+          "Messages",
+          "Team"
+        ],
+        "mobileNavVisible": true,
+        "desktopNavVisible": false,
+        "activeTabs": [],
+        "colorScheme": "normal",
+        "backgroundColor": "rgba(0, 0, 0, 0)",
+        "undersizedShellControls": [],
+        "expectedFamilyTabs": [
+          "Home",
+          "Schedule",
+          "Messages",
+          "Family",
+          "More"
+        ],
+        "expectedShell": "staff"
+      },
+      "initialMetrics": {
+        "shell": "staff",
+        "surfaceFamily": null,
+        "routeAuthority": "single-role-inferred",
+        "resolvedRole": "coach",
+        "dataScopeRole": "coach",
+        "publicShellVisible": false,
+        "documentWidth": 320,
+        "viewportWidth": 320,
+        "contextBarVisible": true,
+        "sidebarVideoVisible": false,
+        "familyContextVisible": false,
+        "mobileLabels": [
+          "Today",
+          "RSVPs4",
+          "Replay",
+          "Messages",
+          "Team"
+        ],
+        "mobileNavVisible": true,
+        "desktopNavVisible": false,
+        "activeTabs": [],
+        "colorScheme": "normal",
+        "backgroundColor": "rgba(0, 0, 0, 0)",
+        "undersizedShellControls": [],
+        "expectedFamilyTabs": [
+          "Home",
+          "Schedule",
+          "Messages",
+          "Family",
+          "More"
+        ],
+        "expectedShell": "staff"
+      },
+      "axeChecked": false,
+      "axeViolations": [],
+      "keyboardFocus": {
+        "tagName": "A",
+        "outlineStyle": "solid",
+        "outlineWidth": "2px"
+      },
+      "pageErrors": [],
+      "requestFailures": [],
+      "screenshotPath": "output/playwright/lp-ux-002-corrected-family-shell/team-chat-coach-mobile-320.png"
+    },
+    {
+      "route": "/team-chat",
+      "role": "coach",
+      "viewport": {
+        "name": "mobile-390",
+        "width": 390,
+        "height": 844
+      },
+      "metrics": {
+        "shell": "staff",
+        "surfaceFamily": null,
+        "routeAuthority": "single-role-inferred",
+        "resolvedRole": "coach",
+        "dataScopeRole": "coach",
+        "publicShellVisible": false,
+        "documentWidth": 390,
+        "viewportWidth": 390,
+        "contextBarVisible": true,
+        "sidebarVideoVisible": false,
+        "familyContextVisible": false,
+        "mobileLabels": [
+          "Today",
+          "RSVPs4",
+          "Replay",
+          "Messages",
+          "Team"
+        ],
+        "mobileNavVisible": true,
+        "desktopNavVisible": false,
+        "activeTabs": [],
+        "colorScheme": "normal",
+        "backgroundColor": "rgba(0, 0, 0, 0)",
+        "undersizedShellControls": [],
+        "expectedFamilyTabs": [
+          "Home",
+          "Schedule",
+          "Messages",
+          "Family",
+          "More"
+        ],
+        "expectedShell": "staff"
+      },
+      "initialMetrics": {
+        "shell": "staff",
+        "surfaceFamily": null,
+        "routeAuthority": "single-role-inferred",
+        "resolvedRole": "coach",
+        "dataScopeRole": "coach",
+        "publicShellVisible": false,
+        "documentWidth": 390,
+        "viewportWidth": 390,
+        "contextBarVisible": true,
+        "sidebarVideoVisible": false,
+        "familyContextVisible": false,
+        "mobileLabels": [
+          "Today",
+          "RSVPs4",
+          "Replay",
+          "Messages",
+          "Team"
+        ],
+        "mobileNavVisible": true,
+        "desktopNavVisible": false,
+        "activeTabs": [],
+        "colorScheme": "normal",
+        "backgroundColor": "rgba(0, 0, 0, 0)",
+        "undersizedShellControls": [],
+        "expectedFamilyTabs": [
+          "Home",
+          "Schedule",
+          "Messages",
+          "Family",
+          "More"
+        ],
+        "expectedShell": "staff"
+      },
+      "axeChecked": false,
+      "axeViolations": [],
+      "keyboardFocus": {
+        "tagName": "A",
+        "outlineStyle": "solid",
+        "outlineWidth": "2px"
+      },
+      "pageErrors": [],
+      "requestFailures": [],
+      "screenshotPath": "output/playwright/lp-ux-002-corrected-family-shell/team-chat-coach-mobile-390.png"
+    },
+    {
+      "route": "/team-chat",
+      "role": "coach",
+      "viewport": {
+        "name": "tablet-768",
+        "width": 768,
+        "height": 1024
+      },
+      "metrics": {
+        "shell": "staff",
+        "surfaceFamily": null,
+        "routeAuthority": "single-role-inferred",
+        "resolvedRole": "coach",
+        "dataScopeRole": "coach",
+        "publicShellVisible": false,
+        "documentWidth": 768,
+        "viewportWidth": 768,
+        "contextBarVisible": true,
+        "sidebarVideoVisible": false,
+        "familyContextVisible": false,
+        "mobileLabels": [
+          "Today",
+          "RSVPs4",
+          "Replay",
+          "Messages",
+          "Team"
+        ],
+        "mobileNavVisible": true,
+        "desktopNavVisible": false,
+        "activeTabs": [],
+        "colorScheme": "normal",
+        "backgroundColor": "rgba(0, 0, 0, 0)",
+        "undersizedShellControls": [],
+        "expectedFamilyTabs": [
+          "Home",
+          "Schedule",
+          "Messages",
+          "Family",
+          "More"
+        ],
+        "expectedShell": "staff"
+      },
+      "initialMetrics": {
+        "shell": "staff",
+        "surfaceFamily": null,
+        "routeAuthority": "single-role-inferred",
+        "resolvedRole": "coach",
+        "dataScopeRole": "coach",
+        "publicShellVisible": false,
+        "documentWidth": 768,
+        "viewportWidth": 768,
+        "contextBarVisible": true,
+        "sidebarVideoVisible": false,
+        "familyContextVisible": false,
+        "mobileLabels": [
+          "Today",
+          "RSVPs4",
+          "Replay",
+          "Messages",
+          "Team"
+        ],
+        "mobileNavVisible": true,
+        "desktopNavVisible": false,
+        "activeTabs": [],
+        "colorScheme": "normal",
+        "backgroundColor": "rgba(0, 0, 0, 0)",
+        "undersizedShellControls": [],
+        "expectedFamilyTabs": [
+          "Home",
+          "Schedule",
+          "Messages",
+          "Family",
+          "More"
+        ],
+        "expectedShell": "staff"
+      },
+      "axeChecked": false,
+      "axeViolations": [],
+      "keyboardFocus": {
+        "tagName": "A",
+        "outlineStyle": "solid",
+        "outlineWidth": "2px"
+      },
+      "pageErrors": [],
+      "requestFailures": [],
+      "screenshotPath": "output/playwright/lp-ux-002-corrected-family-shell/team-chat-coach-tablet-768.png"
+    },
+    {
+      "route": "/team-chat",
+      "role": "coach",
+      "viewport": {
+        "name": "desktop-1024",
+        "width": 1024,
+        "height": 900
+      },
+      "metrics": {
+        "shell": "staff",
+        "surfaceFamily": null,
+        "routeAuthority": "single-role-inferred",
+        "resolvedRole": "coach",
+        "dataScopeRole": "coach",
+        "publicShellVisible": false,
+        "documentWidth": 1024,
+        "viewportWidth": 1024,
+        "contextBarVisible": true,
+        "sidebarVideoVisible": true,
+        "familyContextVisible": false,
+        "mobileLabels": [
+          "Today",
+          "RSVPs4",
+          "Replay",
+          "Messages",
+          "Team"
+        ],
+        "mobileNavVisible": false,
+        "desktopNavVisible": false,
+        "activeTabs": [],
+        "colorScheme": "normal",
+        "backgroundColor": "rgba(0, 0, 0, 0)",
+        "undersizedShellControls": [],
+        "expectedFamilyTabs": [
+          "Home",
+          "Schedule",
+          "Messages",
+          "Family",
+          "More"
+        ],
+        "expectedShell": "staff"
+      },
+      "initialMetrics": {
+        "shell": "staff",
+        "surfaceFamily": null,
+        "routeAuthority": "single-role-inferred",
+        "resolvedRole": "coach",
+        "dataScopeRole": "coach",
+        "publicShellVisible": false,
+        "documentWidth": 1024,
+        "viewportWidth": 1024,
+        "contextBarVisible": true,
+        "sidebarVideoVisible": true,
+        "familyContextVisible": false,
+        "mobileLabels": [
+          "Today",
+          "RSVPs4",
+          "Replay",
+          "Messages",
+          "Team"
+        ],
+        "mobileNavVisible": false,
+        "desktopNavVisible": false,
+        "activeTabs": [],
+        "colorScheme": "normal",
+        "backgroundColor": "rgba(0, 0, 0, 0)",
+        "undersizedShellControls": [],
+        "expectedFamilyTabs": [
+          "Home",
+          "Schedule",
+          "Messages",
+          "Family",
+          "More"
+        ],
+        "expectedShell": "staff"
+      },
+      "axeChecked": false,
+      "axeViolations": [],
+      "keyboardFocus": {
+        "tagName": "A",
+        "outlineStyle": "solid",
+        "outlineWidth": "2px"
+      },
+      "pageErrors": [],
+      "requestFailures": [],
+      "screenshotPath": "output/playwright/lp-ux-002-corrected-family-shell/team-chat-coach-desktop-1024.png"
+    },
+    {
+      "route": "/team-chat",
+      "role": "coach",
+      "viewport": {
+        "name": "desktop-1440",
+        "width": 1440,
+        "height": 1000
+      },
+      "metrics": {
+        "shell": "staff",
+        "surfaceFamily": null,
+        "routeAuthority": "single-role-inferred",
+        "resolvedRole": "coach",
+        "dataScopeRole": "coach",
+        "publicShellVisible": false,
+        "documentWidth": 1440,
+        "viewportWidth": 1440,
+        "contextBarVisible": true,
+        "sidebarVideoVisible": true,
+        "familyContextVisible": false,
+        "mobileLabels": [
+          "Today",
+          "RSVPs4",
+          "Replay",
+          "Messages",
+          "Team"
+        ],
+        "mobileNavVisible": false,
+        "desktopNavVisible": false,
+        "activeTabs": [],
+        "colorScheme": "normal",
+        "backgroundColor": "rgba(0, 0, 0, 0)",
+        "undersizedShellControls": [],
+        "expectedFamilyTabs": [
+          "Home",
+          "Schedule",
+          "Messages",
+          "Family",
+          "More"
+        ],
+        "expectedShell": "staff"
+      },
+      "initialMetrics": {
+        "shell": "staff",
+        "surfaceFamily": null,
+        "routeAuthority": "single-role-inferred",
+        "resolvedRole": "coach",
+        "dataScopeRole": "coach",
+        "publicShellVisible": false,
+        "documentWidth": 1440,
+        "viewportWidth": 1440,
+        "contextBarVisible": true,
+        "sidebarVideoVisible": true,
+        "familyContextVisible": false,
+        "mobileLabels": [
+          "Today",
+          "RSVPs4",
+          "Replay",
+          "Messages",
+          "Team"
+        ],
+        "mobileNavVisible": false,
+        "desktopNavVisible": false,
+        "activeTabs": [],
+        "colorScheme": "normal",
+        "backgroundColor": "rgba(0, 0, 0, 0)",
+        "undersizedShellControls": [],
+        "expectedFamilyTabs": [
+          "Home",
+          "Schedule",
+          "Messages",
+          "Family",
+          "More"
+        ],
+        "expectedShell": "staff"
+      },
+      "axeChecked": false,
+      "axeViolations": [],
+      "keyboardFocus": {
+        "tagName": "A",
+        "outlineStyle": "solid",
+        "outlineWidth": "2px"
+      },
+      "pageErrors": [],
+      "requestFailures": [],
+      "screenshotPath": "output/playwright/lp-ux-002-corrected-family-shell/team-chat-coach-desktop-1440.png"
+    },
+    {
+      "route": "/team-portal",
+      "role": "coach",
+      "viewport": {
+        "name": "mobile-320",
+        "width": 320,
+        "height": 844
+      },
+      "metrics": {
+        "shell": "staff",
+        "surfaceFamily": null,
+        "routeAuthority": "single-role-inferred",
+        "resolvedRole": "coach",
+        "dataScopeRole": "coach",
+        "publicShellVisible": false,
+        "documentWidth": 320,
+        "viewportWidth": 320,
+        "contextBarVisible": true,
+        "sidebarVideoVisible": false,
+        "familyContextVisible": false,
+        "mobileLabels": [
+          "Today",
+          "RSVPs4",
+          "Replay",
+          "Messages",
+          "Team"
+        ],
+        "mobileNavVisible": true,
+        "desktopNavVisible": false,
+        "activeTabs": [],
+        "colorScheme": "normal",
+        "backgroundColor": "rgba(0, 0, 0, 0)",
+        "undersizedShellControls": [],
+        "expectedFamilyTabs": [
+          "Home",
+          "Schedule",
+          "Messages",
+          "Family",
+          "More"
+        ],
+        "expectedShell": "staff"
+      },
+      "initialMetrics": {
+        "shell": "staff",
+        "surfaceFamily": null,
+        "routeAuthority": "single-role-inferred",
+        "resolvedRole": "coach",
+        "dataScopeRole": "coach",
+        "publicShellVisible": false,
+        "documentWidth": 320,
+        "viewportWidth": 320,
+        "contextBarVisible": true,
+        "sidebarVideoVisible": false,
+        "familyContextVisible": false,
+        "mobileLabels": [
+          "Today",
+          "RSVPs4",
+          "Replay",
+          "Messages",
+          "Team"
+        ],
+        "mobileNavVisible": true,
+        "desktopNavVisible": false,
+        "activeTabs": [],
+        "colorScheme": "normal",
+        "backgroundColor": "rgba(0, 0, 0, 0)",
+        "undersizedShellControls": [],
+        "expectedFamilyTabs": [
+          "Home",
+          "Schedule",
+          "Messages",
+          "Family",
+          "More"
+        ],
+        "expectedShell": "staff"
+      },
+      "axeChecked": false,
+      "axeViolations": [],
+      "keyboardFocus": {
+        "tagName": "A",
+        "outlineStyle": "solid",
+        "outlineWidth": "2px"
+      },
+      "pageErrors": [],
+      "requestFailures": [],
+      "screenshotPath": "output/playwright/lp-ux-002-corrected-family-shell/team-portal-coach-mobile-320.png"
+    },
+    {
+      "route": "/team-portal",
+      "role": "coach",
+      "viewport": {
+        "name": "mobile-390",
+        "width": 390,
+        "height": 844
+      },
+      "metrics": {
+        "shell": "staff",
+        "surfaceFamily": null,
+        "routeAuthority": "single-role-inferred",
+        "resolvedRole": "coach",
+        "dataScopeRole": "coach",
+        "publicShellVisible": false,
+        "documentWidth": 390,
+        "viewportWidth": 390,
+        "contextBarVisible": true,
+        "sidebarVideoVisible": false,
+        "familyContextVisible": false,
+        "mobileLabels": [
+          "Today",
+          "RSVPs4",
+          "Replay",
+          "Messages",
+          "Team"
+        ],
+        "mobileNavVisible": true,
+        "desktopNavVisible": false,
+        "activeTabs": [],
+        "colorScheme": "normal",
+        "backgroundColor": "rgba(0, 0, 0, 0)",
+        "undersizedShellControls": [],
+        "expectedFamilyTabs": [
+          "Home",
+          "Schedule",
+          "Messages",
+          "Family",
+          "More"
+        ],
+        "expectedShell": "staff"
+      },
+      "initialMetrics": {
+        "shell": "staff",
+        "surfaceFamily": null,
+        "routeAuthority": "single-role-inferred",
+        "resolvedRole": "coach",
+        "dataScopeRole": "coach",
+        "publicShellVisible": false,
+        "documentWidth": 390,
+        "viewportWidth": 390,
+        "contextBarVisible": true,
+        "sidebarVideoVisible": false,
+        "familyContextVisible": false,
+        "mobileLabels": [
+          "Today",
+          "RSVPs4",
+          "Replay",
+          "Messages",
+          "Team"
+        ],
+        "mobileNavVisible": true,
+        "desktopNavVisible": false,
+        "activeTabs": [],
+        "colorScheme": "normal",
+        "backgroundColor": "rgba(0, 0, 0, 0)",
+        "undersizedShellControls": [],
+        "expectedFamilyTabs": [
+          "Home",
+          "Schedule",
+          "Messages",
+          "Family",
+          "More"
+        ],
+        "expectedShell": "staff"
+      },
+      "axeChecked": false,
+      "axeViolations": [],
+      "keyboardFocus": {
+        "tagName": "A",
+        "outlineStyle": "solid",
+        "outlineWidth": "2px"
+      },
+      "pageErrors": [],
+      "requestFailures": [],
+      "screenshotPath": "output/playwright/lp-ux-002-corrected-family-shell/team-portal-coach-mobile-390.png"
+    },
+    {
+      "route": "/team-portal",
+      "role": "coach",
+      "viewport": {
+        "name": "tablet-768",
+        "width": 768,
+        "height": 1024
+      },
+      "metrics": {
+        "shell": "staff",
+        "surfaceFamily": null,
+        "routeAuthority": "single-role-inferred",
+        "resolvedRole": "coach",
+        "dataScopeRole": "coach",
+        "publicShellVisible": false,
+        "documentWidth": 768,
+        "viewportWidth": 768,
+        "contextBarVisible": true,
+        "sidebarVideoVisible": false,
+        "familyContextVisible": false,
+        "mobileLabels": [
+          "Today",
+          "RSVPs4",
+          "Replay",
+          "Messages",
+          "Team"
+        ],
+        "mobileNavVisible": true,
+        "desktopNavVisible": false,
+        "activeTabs": [],
+        "colorScheme": "normal",
+        "backgroundColor": "rgba(0, 0, 0, 0)",
+        "undersizedShellControls": [],
+        "expectedFamilyTabs": [
+          "Home",
+          "Schedule",
+          "Messages",
+          "Family",
+          "More"
+        ],
+        "expectedShell": "staff"
+      },
+      "initialMetrics": {
+        "shell": "staff",
+        "surfaceFamily": null,
+        "routeAuthority": "single-role-inferred",
+        "resolvedRole": "coach",
+        "dataScopeRole": "coach",
+        "publicShellVisible": false,
+        "documentWidth": 768,
+        "viewportWidth": 768,
+        "contextBarVisible": true,
+        "sidebarVideoVisible": false,
+        "familyContextVisible": false,
+        "mobileLabels": [
+          "Today",
+          "RSVPs4",
+          "Replay",
+          "Messages",
+          "Team"
+        ],
+        "mobileNavVisible": true,
+        "desktopNavVisible": false,
+        "activeTabs": [],
+        "colorScheme": "normal",
+        "backgroundColor": "rgba(0, 0, 0, 0)",
+        "undersizedShellControls": [],
+        "expectedFamilyTabs": [
+          "Home",
+          "Schedule",
+          "Messages",
+          "Family",
+          "More"
+        ],
+        "expectedShell": "staff"
+      },
+      "axeChecked": false,
+      "axeViolations": [],
+      "keyboardFocus": {
+        "tagName": "A",
+        "outlineStyle": "solid",
+        "outlineWidth": "2px"
+      },
+      "pageErrors": [],
+      "requestFailures": [],
+      "screenshotPath": "output/playwright/lp-ux-002-corrected-family-shell/team-portal-coach-tablet-768.png"
+    },
+    {
+      "route": "/team-portal",
+      "role": "coach",
+      "viewport": {
+        "name": "desktop-1024",
+        "width": 1024,
+        "height": 900
+      },
+      "metrics": {
+        "shell": "staff",
+        "surfaceFamily": null,
+        "routeAuthority": "single-role-inferred",
+        "resolvedRole": "coach",
+        "dataScopeRole": "coach",
+        "publicShellVisible": false,
+        "documentWidth": 1024,
+        "viewportWidth": 1024,
+        "contextBarVisible": true,
+        "sidebarVideoVisible": true,
+        "familyContextVisible": false,
+        "mobileLabels": [
+          "Today",
+          "RSVPs4",
+          "Replay",
+          "Messages",
+          "Team"
+        ],
+        "mobileNavVisible": false,
+        "desktopNavVisible": false,
+        "activeTabs": [],
+        "colorScheme": "normal",
+        "backgroundColor": "rgba(0, 0, 0, 0)",
+        "undersizedShellControls": [],
+        "expectedFamilyTabs": [
+          "Home",
+          "Schedule",
+          "Messages",
+          "Family",
+          "More"
+        ],
+        "expectedShell": "staff"
+      },
+      "initialMetrics": {
+        "shell": "staff",
+        "surfaceFamily": null,
+        "routeAuthority": "single-role-inferred",
+        "resolvedRole": "coach",
+        "dataScopeRole": "coach",
+        "publicShellVisible": false,
+        "documentWidth": 1024,
+        "viewportWidth": 1024,
+        "contextBarVisible": true,
+        "sidebarVideoVisible": true,
+        "familyContextVisible": false,
+        "mobileLabels": [
+          "Today",
+          "RSVPs4",
+          "Replay",
+          "Messages",
+          "Team"
+        ],
+        "mobileNavVisible": false,
+        "desktopNavVisible": false,
+        "activeTabs": [],
+        "colorScheme": "normal",
+        "backgroundColor": "rgba(0, 0, 0, 0)",
+        "undersizedShellControls": [],
+        "expectedFamilyTabs": [
+          "Home",
+          "Schedule",
+          "Messages",
+          "Family",
+          "More"
+        ],
+        "expectedShell": "staff"
+      },
+      "axeChecked": false,
+      "axeViolations": [],
+      "keyboardFocus": {
+        "tagName": "A",
+        "outlineStyle": "solid",
+        "outlineWidth": "2px"
+      },
+      "pageErrors": [],
+      "requestFailures": [],
+      "screenshotPath": "output/playwright/lp-ux-002-corrected-family-shell/team-portal-coach-desktop-1024.png"
+    },
+    {
+      "route": "/team-portal",
+      "role": "coach",
+      "viewport": {
+        "name": "desktop-1440",
+        "width": 1440,
+        "height": 1000
+      },
+      "metrics": {
+        "shell": "staff",
+        "surfaceFamily": null,
+        "routeAuthority": "single-role-inferred",
+        "resolvedRole": "coach",
+        "dataScopeRole": "coach",
+        "publicShellVisible": false,
+        "documentWidth": 1440,
+        "viewportWidth": 1440,
+        "contextBarVisible": true,
+        "sidebarVideoVisible": true,
+        "familyContextVisible": false,
+        "mobileLabels": [
+          "Today",
+          "RSVPs4",
+          "Replay",
+          "Messages",
+          "Team"
+        ],
+        "mobileNavVisible": false,
+        "desktopNavVisible": false,
+        "activeTabs": [],
+        "colorScheme": "normal",
+        "backgroundColor": "rgba(0, 0, 0, 0)",
+        "undersizedShellControls": [],
+        "expectedFamilyTabs": [
+          "Home",
+          "Schedule",
+          "Messages",
+          "Family",
+          "More"
+        ],
+        "expectedShell": "staff"
+      },
+      "initialMetrics": {
+        "shell": "staff",
+        "surfaceFamily": null,
+        "routeAuthority": "single-role-inferred",
+        "resolvedRole": "coach",
+        "dataScopeRole": "coach",
+        "publicShellVisible": false,
+        "documentWidth": 1440,
+        "viewportWidth": 1440,
+        "contextBarVisible": true,
+        "sidebarVideoVisible": true,
+        "familyContextVisible": false,
+        "mobileLabels": [
+          "Today",
+          "RSVPs4",
+          "Replay",
+          "Messages",
+          "Team"
+        ],
+        "mobileNavVisible": false,
+        "desktopNavVisible": false,
+        "activeTabs": [],
+        "colorScheme": "normal",
+        "backgroundColor": "rgba(0, 0, 0, 0)",
+        "undersizedShellControls": [],
+        "expectedFamilyTabs": [
+          "Home",
+          "Schedule",
+          "Messages",
+          "Family",
+          "More"
+        ],
+        "expectedShell": "staff"
+      },
+      "axeChecked": false,
+      "axeViolations": [],
+      "keyboardFocus": {
+        "tagName": "A",
+        "outlineStyle": "solid",
+        "outlineWidth": "2px"
+      },
+      "pageErrors": [],
+      "requestFailures": [],
+      "screenshotPath": "output/playwright/lp-ux-002-corrected-family-shell/team-portal-coach-desktop-1440.png"
+    },
+    {
+      "route": "/team-chat",
+      "role": "admin",
+      "viewport": {
+        "name": "mobile-320",
+        "width": 320,
+        "height": 844
+      },
+      "metrics": {
+        "shell": "staff",
+        "surfaceFamily": null,
+        "routeAuthority": "single-role-inferred",
+        "resolvedRole": "admin",
+        "dataScopeRole": "admin",
+        "publicShellVisible": false,
+        "documentWidth": 320,
+        "viewportWidth": 320,
+        "contextBarVisible": true,
+        "sidebarVideoVisible": false,
+        "familyContextVisible": false,
+        "mobileLabels": [
+          "Dashboard",
+          "Registrations1",
+          "Teams",
+          "Providers",
+          "Security"
+        ],
+        "mobileNavVisible": true,
+        "desktopNavVisible": false,
+        "activeTabs": [],
+        "colorScheme": "normal",
+        "backgroundColor": "rgba(0, 0, 0, 0)",
+        "undersizedShellControls": [],
+        "expectedFamilyTabs": [
+          "Home",
+          "Schedule",
+          "Messages",
+          "Family",
+          "More"
+        ],
+        "expectedShell": "staff"
+      },
+      "initialMetrics": {
+        "shell": "staff",
+        "surfaceFamily": null,
+        "routeAuthority": "single-role-inferred",
+        "resolvedRole": "admin",
+        "dataScopeRole": "admin",
+        "publicShellVisible": false,
+        "documentWidth": 320,
+        "viewportWidth": 320,
+        "contextBarVisible": true,
+        "sidebarVideoVisible": false,
+        "familyContextVisible": false,
+        "mobileLabels": [
+          "Dashboard",
+          "Registrations1",
+          "Teams",
+          "Providers",
+          "Security"
+        ],
+        "mobileNavVisible": true,
+        "desktopNavVisible": false,
+        "activeTabs": [],
+        "colorScheme": "normal",
+        "backgroundColor": "rgba(0, 0, 0, 0)",
+        "undersizedShellControls": [],
+        "expectedFamilyTabs": [
+          "Home",
+          "Schedule",
+          "Messages",
+          "Family",
+          "More"
+        ],
+        "expectedShell": "staff"
+      },
+      "axeChecked": false,
+      "axeViolations": [],
+      "keyboardFocus": {
+        "tagName": "A",
+        "outlineStyle": "solid",
+        "outlineWidth": "2px"
+      },
+      "pageErrors": [],
+      "requestFailures": [],
+      "screenshotPath": "output/playwright/lp-ux-002-corrected-family-shell/team-chat-admin-mobile-320.png"
+    },
+    {
+      "route": "/team-chat",
+      "role": "admin",
+      "viewport": {
+        "name": "mobile-390",
+        "width": 390,
+        "height": 844
+      },
+      "metrics": {
+        "shell": "staff",
+        "surfaceFamily": null,
+        "routeAuthority": "single-role-inferred",
+        "resolvedRole": "admin",
+        "dataScopeRole": "admin",
+        "publicShellVisible": false,
+        "documentWidth": 390,
+        "viewportWidth": 390,
+        "contextBarVisible": true,
+        "sidebarVideoVisible": false,
+        "familyContextVisible": false,
+        "mobileLabels": [
+          "Dashboard",
+          "Registrations1",
+          "Teams",
+          "Providers",
+          "Security"
+        ],
+        "mobileNavVisible": true,
+        "desktopNavVisible": false,
+        "activeTabs": [],
+        "colorScheme": "normal",
+        "backgroundColor": "rgba(0, 0, 0, 0)",
+        "undersizedShellControls": [],
+        "expectedFamilyTabs": [
+          "Home",
+          "Schedule",
+          "Messages",
+          "Family",
+          "More"
+        ],
+        "expectedShell": "staff"
+      },
+      "initialMetrics": {
+        "shell": "staff",
+        "surfaceFamily": null,
+        "routeAuthority": "single-role-inferred",
+        "resolvedRole": "admin",
+        "dataScopeRole": "admin",
+        "publicShellVisible": false,
+        "documentWidth": 390,
+        "viewportWidth": 390,
+        "contextBarVisible": true,
+        "sidebarVideoVisible": false,
+        "familyContextVisible": false,
+        "mobileLabels": [
+          "Dashboard",
+          "Registrations1",
+          "Teams",
+          "Providers",
+          "Security"
+        ],
+        "mobileNavVisible": true,
+        "desktopNavVisible": false,
+        "activeTabs": [],
+        "colorScheme": "normal",
+        "backgroundColor": "rgba(0, 0, 0, 0)",
+        "undersizedShellControls": [],
+        "expectedFamilyTabs": [
+          "Home",
+          "Schedule",
+          "Messages",
+          "Family",
+          "More"
+        ],
+        "expectedShell": "staff"
+      },
+      "axeChecked": false,
+      "axeViolations": [],
+      "keyboardFocus": {
+        "tagName": "A",
+        "outlineStyle": "solid",
+        "outlineWidth": "2px"
+      },
+      "pageErrors": [],
+      "requestFailures": [],
+      "screenshotPath": "output/playwright/lp-ux-002-corrected-family-shell/team-chat-admin-mobile-390.png"
+    },
+    {
+      "route": "/team-chat",
+      "role": "admin",
+      "viewport": {
+        "name": "tablet-768",
+        "width": 768,
+        "height": 1024
+      },
+      "metrics": {
+        "shell": "staff",
+        "surfaceFamily": null,
+        "routeAuthority": "single-role-inferred",
+        "resolvedRole": "admin",
+        "dataScopeRole": "admin",
+        "publicShellVisible": false,
+        "documentWidth": 768,
+        "viewportWidth": 768,
+        "contextBarVisible": true,
+        "sidebarVideoVisible": false,
+        "familyContextVisible": false,
+        "mobileLabels": [
+          "Dashboard",
+          "Registrations1",
+          "Teams",
+          "Providers",
+          "Security"
+        ],
+        "mobileNavVisible": true,
+        "desktopNavVisible": false,
+        "activeTabs": [],
+        "colorScheme": "normal",
+        "backgroundColor": "rgba(0, 0, 0, 0)",
+        "undersizedShellControls": [],
+        "expectedFamilyTabs": [
+          "Home",
+          "Schedule",
+          "Messages",
+          "Family",
+          "More"
+        ],
+        "expectedShell": "staff"
+      },
+      "initialMetrics": {
+        "shell": "staff",
+        "surfaceFamily": null,
+        "routeAuthority": "single-role-inferred",
+        "resolvedRole": "admin",
+        "dataScopeRole": "admin",
+        "publicShellVisible": false,
+        "documentWidth": 768,
+        "viewportWidth": 768,
+        "contextBarVisible": true,
+        "sidebarVideoVisible": false,
+        "familyContextVisible": false,
+        "mobileLabels": [
+          "Dashboard",
+          "Registrations1",
+          "Teams",
+          "Providers",
+          "Security"
+        ],
+        "mobileNavVisible": true,
+        "desktopNavVisible": false,
+        "activeTabs": [],
+        "colorScheme": "normal",
+        "backgroundColor": "rgba(0, 0, 0, 0)",
+        "undersizedShellControls": [],
+        "expectedFamilyTabs": [
+          "Home",
+          "Schedule",
+          "Messages",
+          "Family",
+          "More"
+        ],
+        "expectedShell": "staff"
+      },
+      "axeChecked": false,
+      "axeViolations": [],
+      "keyboardFocus": {
+        "tagName": "A",
+        "outlineStyle": "solid",
+        "outlineWidth": "2px"
+      },
+      "pageErrors": [],
+      "requestFailures": [],
+      "screenshotPath": "output/playwright/lp-ux-002-corrected-family-shell/team-chat-admin-tablet-768.png"
+    },
+    {
+      "route": "/team-chat",
+      "role": "admin",
+      "viewport": {
+        "name": "desktop-1024",
+        "width": 1024,
+        "height": 900
+      },
+      "metrics": {
+        "shell": "staff",
+        "surfaceFamily": null,
+        "routeAuthority": "single-role-inferred",
+        "resolvedRole": "admin",
+        "dataScopeRole": "admin",
+        "publicShellVisible": false,
+        "documentWidth": 1024,
+        "viewportWidth": 1024,
+        "contextBarVisible": true,
+        "sidebarVideoVisible": true,
+        "familyContextVisible": false,
+        "mobileLabels": [
+          "Dashboard",
+          "Registrations1",
+          "Teams",
+          "Providers",
+          "Security"
+        ],
+        "mobileNavVisible": false,
+        "desktopNavVisible": false,
+        "activeTabs": [],
+        "colorScheme": "normal",
+        "backgroundColor": "rgba(0, 0, 0, 0)",
+        "undersizedShellControls": [],
+        "expectedFamilyTabs": [
+          "Home",
+          "Schedule",
+          "Messages",
+          "Family",
+          "More"
+        ],
+        "expectedShell": "staff"
+      },
+      "initialMetrics": {
+        "shell": "staff",
+        "surfaceFamily": null,
+        "routeAuthority": "single-role-inferred",
+        "resolvedRole": "admin",
+        "dataScopeRole": "admin",
+        "publicShellVisible": false,
+        "documentWidth": 1024,
+        "viewportWidth": 1024,
+        "contextBarVisible": true,
+        "sidebarVideoVisible": true,
+        "familyContextVisible": false,
+        "mobileLabels": [
+          "Dashboard",
+          "Registrations1",
+          "Teams",
+          "Providers",
+          "Security"
+        ],
+        "mobileNavVisible": false,
+        "desktopNavVisible": false,
+        "activeTabs": [],
+        "colorScheme": "normal",
+        "backgroundColor": "rgba(0, 0, 0, 0)",
+        "undersizedShellControls": [],
+        "expectedFamilyTabs": [
+          "Home",
+          "Schedule",
+          "Messages",
+          "Family",
+          "More"
+        ],
+        "expectedShell": "staff"
+      },
+      "axeChecked": false,
+      "axeViolations": [],
+      "keyboardFocus": {
+        "tagName": "A",
+        "outlineStyle": "solid",
+        "outlineWidth": "2px"
+      },
+      "pageErrors": [],
+      "requestFailures": [],
+      "screenshotPath": "output/playwright/lp-ux-002-corrected-family-shell/team-chat-admin-desktop-1024.png"
+    },
+    {
+      "route": "/team-chat",
+      "role": "admin",
+      "viewport": {
+        "name": "desktop-1440",
+        "width": 1440,
+        "height": 1000
+      },
+      "metrics": {
+        "shell": "staff",
+        "surfaceFamily": null,
+        "routeAuthority": "single-role-inferred",
+        "resolvedRole": "admin",
+        "dataScopeRole": "admin",
+        "publicShellVisible": false,
+        "documentWidth": 1440,
+        "viewportWidth": 1440,
+        "contextBarVisible": true,
+        "sidebarVideoVisible": true,
+        "familyContextVisible": false,
+        "mobileLabels": [
+          "Dashboard",
+          "Registrations1",
+          "Teams",
+          "Providers",
+          "Security"
+        ],
+        "mobileNavVisible": false,
+        "desktopNavVisible": false,
+        "activeTabs": [],
+        "colorScheme": "normal",
+        "backgroundColor": "rgba(0, 0, 0, 0)",
+        "undersizedShellControls": [],
+        "expectedFamilyTabs": [
+          "Home",
+          "Schedule",
+          "Messages",
+          "Family",
+          "More"
+        ],
+        "expectedShell": "staff"
+      },
+      "initialMetrics": {
+        "shell": "staff",
+        "surfaceFamily": null,
+        "routeAuthority": "single-role-inferred",
+        "resolvedRole": "admin",
+        "dataScopeRole": "admin",
+        "publicShellVisible": false,
+        "documentWidth": 1440,
+        "viewportWidth": 1440,
+        "contextBarVisible": true,
+        "sidebarVideoVisible": true,
+        "familyContextVisible": false,
+        "mobileLabels": [
+          "Dashboard",
+          "Registrations1",
+          "Teams",
+          "Providers",
+          "Security"
+        ],
+        "mobileNavVisible": false,
+        "desktopNavVisible": false,
+        "activeTabs": [],
+        "colorScheme": "normal",
+        "backgroundColor": "rgba(0, 0, 0, 0)",
+        "undersizedShellControls": [],
+        "expectedFamilyTabs": [
+          "Home",
+          "Schedule",
+          "Messages",
+          "Family",
+          "More"
+        ],
+        "expectedShell": "staff"
+      },
+      "axeChecked": false,
+      "axeViolations": [],
+      "keyboardFocus": {
+        "tagName": "A",
+        "outlineStyle": "solid",
+        "outlineWidth": "2px"
+      },
+      "pageErrors": [],
+      "requestFailures": [],
+      "screenshotPath": "output/playwright/lp-ux-002-corrected-family-shell/team-chat-admin-desktop-1440.png"
+    },
+    {
+      "route": "/team-portal",
+      "role": "admin",
+      "viewport": {
+        "name": "mobile-320",
+        "width": 320,
+        "height": 844
+      },
+      "metrics": {
+        "shell": "staff",
+        "surfaceFamily": null,
+        "routeAuthority": "single-role-inferred",
+        "resolvedRole": "admin",
+        "dataScopeRole": "admin",
+        "publicShellVisible": false,
+        "documentWidth": 320,
+        "viewportWidth": 320,
+        "contextBarVisible": true,
+        "sidebarVideoVisible": false,
+        "familyContextVisible": false,
+        "mobileLabels": [
+          "Dashboard",
+          "Registrations1",
+          "Teams",
+          "Providers",
+          "Security"
+        ],
+        "mobileNavVisible": true,
+        "desktopNavVisible": false,
+        "activeTabs": [],
+        "colorScheme": "normal",
+        "backgroundColor": "rgba(0, 0, 0, 0)",
+        "undersizedShellControls": [],
+        "expectedFamilyTabs": [
+          "Home",
+          "Schedule",
+          "Messages",
+          "Family",
+          "More"
+        ],
+        "expectedShell": "staff"
+      },
+      "initialMetrics": {
+        "shell": "staff",
+        "surfaceFamily": null,
+        "routeAuthority": "single-role-inferred",
+        "resolvedRole": "admin",
+        "dataScopeRole": "admin",
+        "publicShellVisible": false,
+        "documentWidth": 320,
+        "viewportWidth": 320,
+        "contextBarVisible": true,
+        "sidebarVideoVisible": false,
+        "familyContextVisible": false,
+        "mobileLabels": [
+          "Dashboard",
+          "Registrations1",
+          "Teams",
+          "Providers",
+          "Security"
+        ],
+        "mobileNavVisible": true,
+        "desktopNavVisible": false,
+        "activeTabs": [],
+        "colorScheme": "normal",
+        "backgroundColor": "rgba(0, 0, 0, 0)",
+        "undersizedShellControls": [],
+        "expectedFamilyTabs": [
+          "Home",
+          "Schedule",
+          "Messages",
+          "Family",
+          "More"
+        ],
+        "expectedShell": "staff"
+      },
+      "axeChecked": false,
+      "axeViolations": [],
+      "keyboardFocus": {
+        "tagName": "A",
+        "outlineStyle": "solid",
+        "outlineWidth": "2px"
+      },
+      "pageErrors": [],
+      "requestFailures": [],
+      "screenshotPath": "output/playwright/lp-ux-002-corrected-family-shell/team-portal-admin-mobile-320.png"
+    },
+    {
+      "route": "/team-portal",
+      "role": "admin",
+      "viewport": {
+        "name": "mobile-390",
+        "width": 390,
+        "height": 844
+      },
+      "metrics": {
+        "shell": "staff",
+        "surfaceFamily": null,
+        "routeAuthority": "single-role-inferred",
+        "resolvedRole": "admin",
+        "dataScopeRole": "admin",
+        "publicShellVisible": false,
+        "documentWidth": 390,
+        "viewportWidth": 390,
+        "contextBarVisible": true,
+        "sidebarVideoVisible": false,
+        "familyContextVisible": false,
+        "mobileLabels": [
+          "Dashboard",
+          "Registrations1",
+          "Teams",
+          "Providers",
+          "Security"
+        ],
+        "mobileNavVisible": true,
+        "desktopNavVisible": false,
+        "activeTabs": [],
+        "colorScheme": "normal",
+        "backgroundColor": "rgba(0, 0, 0, 0)",
+        "undersizedShellControls": [],
+        "expectedFamilyTabs": [
+          "Home",
+          "Schedule",
+          "Messages",
+          "Family",
+          "More"
+        ],
+        "expectedShell": "staff"
+      },
+      "initialMetrics": {
+        "shell": "staff",
+        "surfaceFamily": null,
+        "routeAuthority": "single-role-inferred",
+        "resolvedRole": "admin",
+        "dataScopeRole": "admin",
+        "publicShellVisible": false,
+        "documentWidth": 390,
+        "viewportWidth": 390,
+        "contextBarVisible": true,
+        "sidebarVideoVisible": false,
+        "familyContextVisible": false,
+        "mobileLabels": [
+          "Dashboard",
+          "Registrations1",
+          "Teams",
+          "Providers",
+          "Security"
+        ],
+        "mobileNavVisible": true,
+        "desktopNavVisible": false,
+        "activeTabs": [],
+        "colorScheme": "normal",
+        "backgroundColor": "rgba(0, 0, 0, 0)",
+        "undersizedShellControls": [],
+        "expectedFamilyTabs": [
+          "Home",
+          "Schedule",
+          "Messages",
+          "Family",
+          "More"
+        ],
+        "expectedShell": "staff"
+      },
+      "axeChecked": false,
+      "axeViolations": [],
+      "keyboardFocus": {
+        "tagName": "A",
+        "outlineStyle": "solid",
+        "outlineWidth": "2px"
+      },
+      "pageErrors": [],
+      "requestFailures": [],
+      "screenshotPath": "output/playwright/lp-ux-002-corrected-family-shell/team-portal-admin-mobile-390.png"
+    },
+    {
+      "route": "/team-portal",
+      "role": "admin",
+      "viewport": {
+        "name": "tablet-768",
+        "width": 768,
+        "height": 1024
+      },
+      "metrics": {
+        "shell": "staff",
+        "surfaceFamily": null,
+        "routeAuthority": "single-role-inferred",
+        "resolvedRole": "admin",
+        "dataScopeRole": "admin",
+        "publicShellVisible": false,
+        "documentWidth": 768,
+        "viewportWidth": 768,
+        "contextBarVisible": true,
+        "sidebarVideoVisible": false,
+        "familyContextVisible": false,
+        "mobileLabels": [
+          "Dashboard",
+          "Registrations1",
+          "Teams",
+          "Providers",
+          "Security"
+        ],
+        "mobileNavVisible": true,
+        "desktopNavVisible": false,
+        "activeTabs": [],
+        "colorScheme": "normal",
+        "backgroundColor": "rgba(0, 0, 0, 0)",
+        "undersizedShellControls": [],
+        "expectedFamilyTabs": [
+          "Home",
+          "Schedule",
+          "Messages",
+          "Family",
+          "More"
+        ],
+        "expectedShell": "staff"
+      },
+      "initialMetrics": {
+        "shell": "staff",
+        "surfaceFamily": null,
+        "routeAuthority": "single-role-inferred",
+        "resolvedRole": "admin",
+        "dataScopeRole": "admin",
+        "publicShellVisible": false,
+        "documentWidth": 768,
+        "viewportWidth": 768,
+        "contextBarVisible": true,
+        "sidebarVideoVisible": false,
+        "familyContextVisible": false,
+        "mobileLabels": [
+          "Dashboard",
+          "Registrations1",
+          "Teams",
+          "Providers",
+          "Security"
+        ],
+        "mobileNavVisible": true,
+        "desktopNavVisible": false,
+        "activeTabs": [],
+        "colorScheme": "normal",
+        "backgroundColor": "rgba(0, 0, 0, 0)",
+        "undersizedShellControls": [],
+        "expectedFamilyTabs": [
+          "Home",
+          "Schedule",
+          "Messages",
+          "Family",
+          "More"
+        ],
+        "expectedShell": "staff"
+      },
+      "axeChecked": false,
+      "axeViolations": [],
+      "keyboardFocus": {
+        "tagName": "A",
+        "outlineStyle": "solid",
+        "outlineWidth": "2px"
+      },
+      "pageErrors": [],
+      "requestFailures": [],
+      "screenshotPath": "output/playwright/lp-ux-002-corrected-family-shell/team-portal-admin-tablet-768.png"
+    },
+    {
+      "route": "/team-portal",
+      "role": "admin",
+      "viewport": {
+        "name": "desktop-1024",
+        "width": 1024,
+        "height": 900
+      },
+      "metrics": {
+        "shell": "staff",
+        "surfaceFamily": null,
+        "routeAuthority": "single-role-inferred",
+        "resolvedRole": "admin",
+        "dataScopeRole": "admin",
+        "publicShellVisible": false,
+        "documentWidth": 1024,
+        "viewportWidth": 1024,
+        "contextBarVisible": true,
+        "sidebarVideoVisible": true,
+        "familyContextVisible": false,
+        "mobileLabels": [
+          "Dashboard",
+          "Registrations1",
+          "Teams",
+          "Providers",
+          "Security"
+        ],
+        "mobileNavVisible": false,
+        "desktopNavVisible": false,
+        "activeTabs": [],
+        "colorScheme": "normal",
+        "backgroundColor": "rgba(0, 0, 0, 0)",
+        "undersizedShellControls": [],
+        "expectedFamilyTabs": [
+          "Home",
+          "Schedule",
+          "Messages",
+          "Family",
+          "More"
+        ],
+        "expectedShell": "staff"
+      },
+      "initialMetrics": {
+        "shell": "staff",
+        "surfaceFamily": null,
+        "routeAuthority": "single-role-inferred",
+        "resolvedRole": "admin",
+        "dataScopeRole": "admin",
+        "publicShellVisible": false,
+        "documentWidth": 1024,
+        "viewportWidth": 1024,
+        "contextBarVisible": true,
+        "sidebarVideoVisible": true,
+        "familyContextVisible": false,
+        "mobileLabels": [
+          "Dashboard",
+          "Registrations1",
+          "Teams",
+          "Providers",
+          "Security"
+        ],
+        "mobileNavVisible": false,
+        "desktopNavVisible": false,
+        "activeTabs": [],
+        "colorScheme": "normal",
+        "backgroundColor": "rgba(0, 0, 0, 0)",
+        "undersizedShellControls": [],
+        "expectedFamilyTabs": [
+          "Home",
+          "Schedule",
+          "Messages",
+          "Family",
+          "More"
+        ],
+        "expectedShell": "staff"
+      },
+      "axeChecked": false,
+      "axeViolations": [],
+      "keyboardFocus": {
+        "tagName": "A",
+        "outlineStyle": "solid",
+        "outlineWidth": "2px"
+      },
+      "pageErrors": [],
+      "requestFailures": [],
+      "screenshotPath": "output/playwright/lp-ux-002-corrected-family-shell/team-portal-admin-desktop-1024.png"
+    },
+    {
+      "route": "/team-portal",
+      "role": "admin",
+      "viewport": {
+        "name": "desktop-1440",
+        "width": 1440,
+        "height": 1000
+      },
+      "metrics": {
+        "shell": "staff",
+        "surfaceFamily": null,
+        "routeAuthority": "single-role-inferred",
+        "resolvedRole": "admin",
+        "dataScopeRole": "admin",
+        "publicShellVisible": false,
+        "documentWidth": 1440,
+        "viewportWidth": 1440,
+        "contextBarVisible": true,
+        "sidebarVideoVisible": true,
+        "familyContextVisible": false,
+        "mobileLabels": [
+          "Dashboard",
+          "Registrations1",
+          "Teams",
+          "Providers",
+          "Security"
+        ],
+        "mobileNavVisible": false,
+        "desktopNavVisible": false,
+        "activeTabs": [],
+        "colorScheme": "normal",
+        "backgroundColor": "rgba(0, 0, 0, 0)",
+        "undersizedShellControls": [],
+        "expectedFamilyTabs": [
+          "Home",
+          "Schedule",
+          "Messages",
+          "Family",
+          "More"
+        ],
+        "expectedShell": "staff"
+      },
+      "initialMetrics": {
+        "shell": "staff",
+        "surfaceFamily": null,
+        "routeAuthority": "single-role-inferred",
+        "resolvedRole": "admin",
+        "dataScopeRole": "admin",
+        "publicShellVisible": false,
+        "documentWidth": 1440,
+        "viewportWidth": 1440,
+        "contextBarVisible": true,
+        "sidebarVideoVisible": true,
+        "familyContextVisible": false,
+        "mobileLabels": [
+          "Dashboard",
+          "Registrations1",
+          "Teams",
+          "Providers",
+          "Security"
+        ],
+        "mobileNavVisible": false,
+        "desktopNavVisible": false,
+        "activeTabs": [],
+        "colorScheme": "normal",
+        "backgroundColor": "rgba(0, 0, 0, 0)",
+        "undersizedShellControls": [],
+        "expectedFamilyTabs": [
+          "Home",
+          "Schedule",
+          "Messages",
+          "Family",
+          "More"
+        ],
+        "expectedShell": "staff"
+      },
+      "axeChecked": false,
+      "axeViolations": [],
+      "keyboardFocus": {
+        "tagName": "A",
+        "outlineStyle": "solid",
+        "outlineWidth": "2px"
+      },
+      "pageErrors": [],
+      "requestFailures": [],
+      "screenshotPath": "output/playwright/lp-ux-002-corrected-family-shell/team-portal-admin-desktop-1440.png"
+    },
+    {
+      "route": "/access/status",
+      "role": "parent",
+      "viewport": {
+        "name": "mobile-320",
+        "width": 320,
+        "height": 844
+      },
+      "metrics": {
+        "shell": "neutral",
+        "surfaceFamily": null,
+        "routeAuthority": "neutral-transition",
+        "resolvedRole": null,
+        "dataScopeRole": null,
+        "publicShellVisible": false,
+        "documentWidth": 320,
+        "viewportWidth": 320,
+        "contextBarVisible": true,
+        "sidebarVideoVisible": false,
+        "familyContextVisible": false,
+        "mobileLabels": [],
+        "mobileNavVisible": false,
+        "desktopNavVisible": false,
+        "activeTabs": [],
+        "colorScheme": "normal",
+        "backgroundColor": "rgba(0, 0, 0, 0)",
+        "undersizedShellControls": [],
+        "expectedFamilyTabs": [
+          "Home",
+          "Schedule",
+          "Messages",
+          "Family",
+          "More"
+        ],
+        "expectedShell": "neutral"
+      },
+      "initialMetrics": {
+        "shell": "neutral",
+        "surfaceFamily": null,
+        "routeAuthority": "neutral-transition",
+        "resolvedRole": null,
+        "dataScopeRole": null,
+        "publicShellVisible": false,
+        "documentWidth": 320,
+        "viewportWidth": 320,
+        "contextBarVisible": true,
+        "sidebarVideoVisible": false,
+        "familyContextVisible": false,
+        "mobileLabels": [],
+        "mobileNavVisible": false,
+        "desktopNavVisible": false,
+        "activeTabs": [],
+        "colorScheme": "normal",
+        "backgroundColor": "rgba(0, 0, 0, 0)",
+        "undersizedShellControls": [],
+        "expectedFamilyTabs": [
+          "Home",
+          "Schedule",
+          "Messages",
+          "Family",
+          "More"
+        ],
+        "expectedShell": "neutral"
+      },
+      "axeChecked": false,
+      "axeViolations": [],
+      "keyboardFocus": {
+        "tagName": "A",
+        "outlineStyle": "solid",
+        "outlineWidth": "2px"
+      },
+      "pageErrors": [],
+      "requestFailures": [],
+      "screenshotPath": "output/playwright/lp-ux-002-corrected-family-shell/access-status-parent-mobile-320.png"
+    },
+    {
+      "route": "/access/status",
+      "role": "parent",
+      "viewport": {
+        "name": "mobile-390",
+        "width": 390,
+        "height": 844
+      },
+      "metrics": {
+        "shell": "neutral",
+        "surfaceFamily": null,
+        "routeAuthority": "neutral-transition",
+        "resolvedRole": null,
+        "dataScopeRole": null,
+        "publicShellVisible": false,
+        "documentWidth": 390,
+        "viewportWidth": 390,
+        "contextBarVisible": true,
+        "sidebarVideoVisible": false,
+        "familyContextVisible": false,
+        "mobileLabels": [],
+        "mobileNavVisible": false,
+        "desktopNavVisible": false,
+        "activeTabs": [],
+        "colorScheme": "normal",
+        "backgroundColor": "rgba(0, 0, 0, 0)",
+        "undersizedShellControls": [],
+        "expectedFamilyTabs": [
+          "Home",
+          "Schedule",
+          "Messages",
+          "Family",
+          "More"
+        ],
+        "expectedShell": "neutral"
+      },
+      "initialMetrics": {
+        "shell": "neutral",
+        "surfaceFamily": null,
+        "routeAuthority": "neutral-transition",
+        "resolvedRole": null,
+        "dataScopeRole": null,
+        "publicShellVisible": false,
+        "documentWidth": 390,
+        "viewportWidth": 390,
+        "contextBarVisible": true,
+        "sidebarVideoVisible": false,
+        "familyContextVisible": false,
+        "mobileLabels": [],
+        "mobileNavVisible": false,
+        "desktopNavVisible": false,
+        "activeTabs": [],
+        "colorScheme": "normal",
+        "backgroundColor": "rgba(0, 0, 0, 0)",
+        "undersizedShellControls": [],
+        "expectedFamilyTabs": [
+          "Home",
+          "Schedule",
+          "Messages",
+          "Family",
+          "More"
+        ],
+        "expectedShell": "neutral"
+      },
+      "axeChecked": false,
+      "axeViolations": [],
+      "keyboardFocus": {
+        "tagName": "A",
+        "outlineStyle": "solid",
+        "outlineWidth": "2px"
+      },
+      "pageErrors": [],
+      "requestFailures": [],
+      "screenshotPath": "output/playwright/lp-ux-002-corrected-family-shell/access-status-parent-mobile-390.png"
+    },
+    {
+      "route": "/access/status",
+      "role": "parent",
+      "viewport": {
+        "name": "tablet-768",
+        "width": 768,
+        "height": 1024
+      },
+      "metrics": {
+        "shell": "neutral",
+        "surfaceFamily": null,
+        "routeAuthority": "neutral-transition",
+        "resolvedRole": null,
+        "dataScopeRole": null,
+        "publicShellVisible": false,
+        "documentWidth": 768,
+        "viewportWidth": 768,
+        "contextBarVisible": true,
+        "sidebarVideoVisible": false,
+        "familyContextVisible": false,
+        "mobileLabels": [],
+        "mobileNavVisible": false,
+        "desktopNavVisible": false,
+        "activeTabs": [],
+        "colorScheme": "normal",
+        "backgroundColor": "rgba(0, 0, 0, 0)",
+        "undersizedShellControls": [],
+        "expectedFamilyTabs": [
+          "Home",
+          "Schedule",
+          "Messages",
+          "Family",
+          "More"
+        ],
+        "expectedShell": "neutral"
+      },
+      "initialMetrics": {
+        "shell": "neutral",
+        "surfaceFamily": null,
+        "routeAuthority": "neutral-transition",
+        "resolvedRole": null,
+        "dataScopeRole": null,
+        "publicShellVisible": false,
+        "documentWidth": 768,
+        "viewportWidth": 768,
+        "contextBarVisible": true,
+        "sidebarVideoVisible": false,
+        "familyContextVisible": false,
+        "mobileLabels": [],
+        "mobileNavVisible": false,
+        "desktopNavVisible": false,
+        "activeTabs": [],
+        "colorScheme": "normal",
+        "backgroundColor": "rgba(0, 0, 0, 0)",
+        "undersizedShellControls": [],
+        "expectedFamilyTabs": [
+          "Home",
+          "Schedule",
+          "Messages",
+          "Family",
+          "More"
+        ],
+        "expectedShell": "neutral"
+      },
+      "axeChecked": false,
+      "axeViolations": [],
+      "keyboardFocus": {
+        "tagName": "BUTTON",
+        "outlineStyle": "solid",
+        "outlineWidth": "2px"
+      },
+      "pageErrors": [],
+      "requestFailures": [],
+      "screenshotPath": "output/playwright/lp-ux-002-corrected-family-shell/access-status-parent-tablet-768.png"
+    },
+    {
+      "route": "/access/status",
+      "role": "parent",
+      "viewport": {
+        "name": "desktop-1024",
+        "width": 1024,
+        "height": 900
+      },
+      "metrics": {
+        "shell": "neutral",
+        "surfaceFamily": null,
+        "routeAuthority": "neutral-transition",
+        "resolvedRole": null,
+        "dataScopeRole": null,
+        "publicShellVisible": false,
+        "documentWidth": 1024,
+        "viewportWidth": 1024,
+        "contextBarVisible": true,
+        "sidebarVideoVisible": true,
+        "familyContextVisible": false,
+        "mobileLabels": [],
+        "mobileNavVisible": false,
+        "desktopNavVisible": false,
+        "activeTabs": [],
+        "colorScheme": "normal",
+        "backgroundColor": "rgba(0, 0, 0, 0)",
+        "undersizedShellControls": [],
+        "expectedFamilyTabs": [
+          "Home",
+          "Schedule",
+          "Messages",
+          "Family",
+          "More"
+        ],
+        "expectedShell": "neutral"
+      },
+      "initialMetrics": {
+        "shell": "neutral",
+        "surfaceFamily": null,
+        "routeAuthority": "neutral-transition",
+        "resolvedRole": null,
+        "dataScopeRole": null,
+        "publicShellVisible": false,
+        "documentWidth": 1024,
+        "viewportWidth": 1024,
+        "contextBarVisible": true,
+        "sidebarVideoVisible": true,
+        "familyContextVisible": false,
+        "mobileLabels": [],
+        "mobileNavVisible": false,
+        "desktopNavVisible": false,
+        "activeTabs": [],
+        "colorScheme": "normal",
+        "backgroundColor": "rgba(0, 0, 0, 0)",
+        "undersizedShellControls": [],
+        "expectedFamilyTabs": [
+          "Home",
+          "Schedule",
+          "Messages",
+          "Family",
+          "More"
+        ],
+        "expectedShell": "neutral"
+      },
+      "axeChecked": false,
+      "axeViolations": [],
+      "keyboardFocus": {
+        "tagName": "BUTTON",
+        "outlineStyle": "solid",
+        "outlineWidth": "2px"
+      },
+      "pageErrors": [],
+      "requestFailures": [],
+      "screenshotPath": "output/playwright/lp-ux-002-corrected-family-shell/access-status-parent-desktop-1024.png"
+    },
+    {
+      "route": "/access/status",
+      "role": "parent",
+      "viewport": {
+        "name": "desktop-1440",
+        "width": 1440,
+        "height": 1000
+      },
+      "metrics": {
+        "shell": "neutral",
+        "surfaceFamily": null,
+        "routeAuthority": "neutral-transition",
+        "resolvedRole": null,
+        "dataScopeRole": null,
+        "publicShellVisible": false,
+        "documentWidth": 1440,
+        "viewportWidth": 1440,
+        "contextBarVisible": true,
+        "sidebarVideoVisible": true,
+        "familyContextVisible": false,
+        "mobileLabels": [],
+        "mobileNavVisible": false,
+        "desktopNavVisible": false,
+        "activeTabs": [],
+        "colorScheme": "normal",
+        "backgroundColor": "rgba(0, 0, 0, 0)",
+        "undersizedShellControls": [],
+        "expectedFamilyTabs": [
+          "Home",
+          "Schedule",
+          "Messages",
+          "Family",
+          "More"
+        ],
+        "expectedShell": "neutral"
+      },
+      "initialMetrics": {
+        "shell": "neutral",
+        "surfaceFamily": null,
+        "routeAuthority": "neutral-transition",
+        "resolvedRole": null,
+        "dataScopeRole": null,
+        "publicShellVisible": false,
+        "documentWidth": 1440,
+        "viewportWidth": 1440,
+        "contextBarVisible": true,
+        "sidebarVideoVisible": true,
+        "familyContextVisible": false,
+        "mobileLabels": [],
+        "mobileNavVisible": false,
+        "desktopNavVisible": false,
+        "activeTabs": [],
+        "colorScheme": "normal",
+        "backgroundColor": "rgba(0, 0, 0, 0)",
+        "undersizedShellControls": [],
+        "expectedFamilyTabs": [
+          "Home",
+          "Schedule",
+          "Messages",
+          "Family",
+          "More"
+        ],
+        "expectedShell": "neutral"
+      },
+      "axeChecked": false,
+      "axeViolations": [],
+      "keyboardFocus": {
+        "tagName": "BUTTON",
+        "outlineStyle": "solid",
+        "outlineWidth": "2px"
+      },
+      "pageErrors": [],
+      "requestFailures": [],
+      "screenshotPath": "output/playwright/lp-ux-002-corrected-family-shell/access-status-parent-desktop-1440.png"
+    },
+    {
+      "route": "/invite/accept",
+      "role": "parent",
+      "viewport": {
+        "name": "mobile-320",
+        "width": 320,
+        "height": 844
+      },
+      "metrics": {
+        "shell": "neutral",
+        "surfaceFamily": null,
+        "routeAuthority": "neutral-transition",
+        "resolvedRole": null,
+        "dataScopeRole": null,
+        "publicShellVisible": false,
+        "documentWidth": 320,
+        "viewportWidth": 320,
+        "contextBarVisible": true,
+        "sidebarVideoVisible": false,
+        "familyContextVisible": false,
+        "mobileLabels": [],
+        "mobileNavVisible": false,
+        "desktopNavVisible": false,
+        "activeTabs": [],
+        "colorScheme": "normal",
+        "backgroundColor": "rgba(0, 0, 0, 0)",
+        "undersizedShellControls": [],
+        "expectedFamilyTabs": [
+          "Home",
+          "Schedule",
+          "Messages",
+          "Family",
+          "More"
+        ],
+        "expectedShell": "neutral"
+      },
+      "initialMetrics": {
+        "shell": "neutral",
+        "surfaceFamily": null,
+        "routeAuthority": "neutral-transition",
+        "resolvedRole": null,
+        "dataScopeRole": null,
+        "publicShellVisible": false,
+        "documentWidth": 320,
+        "viewportWidth": 320,
+        "contextBarVisible": true,
+        "sidebarVideoVisible": false,
+        "familyContextVisible": false,
+        "mobileLabels": [],
+        "mobileNavVisible": false,
+        "desktopNavVisible": false,
+        "activeTabs": [],
+        "colorScheme": "normal",
+        "backgroundColor": "rgba(0, 0, 0, 0)",
+        "undersizedShellControls": [],
+        "expectedFamilyTabs": [
+          "Home",
+          "Schedule",
+          "Messages",
+          "Family",
+          "More"
+        ],
+        "expectedShell": "neutral"
+      },
+      "axeChecked": false,
+      "axeViolations": [],
+      "keyboardFocus": {
+        "tagName": "A",
+        "outlineStyle": "solid",
+        "outlineWidth": "2px"
+      },
+      "pageErrors": [],
+      "requestFailures": [],
+      "screenshotPath": "output/playwright/lp-ux-002-corrected-family-shell/invite-accept-parent-mobile-320.png"
+    },
+    {
+      "route": "/invite/accept",
+      "role": "parent",
+      "viewport": {
+        "name": "mobile-390",
+        "width": 390,
+        "height": 844
+      },
+      "metrics": {
+        "shell": "neutral",
+        "surfaceFamily": null,
+        "routeAuthority": "neutral-transition",
+        "resolvedRole": null,
+        "dataScopeRole": null,
+        "publicShellVisible": false,
+        "documentWidth": 390,
+        "viewportWidth": 390,
+        "contextBarVisible": true,
+        "sidebarVideoVisible": false,
+        "familyContextVisible": false,
+        "mobileLabels": [],
+        "mobileNavVisible": false,
+        "desktopNavVisible": false,
+        "activeTabs": [],
+        "colorScheme": "normal",
+        "backgroundColor": "rgba(0, 0, 0, 0)",
+        "undersizedShellControls": [],
+        "expectedFamilyTabs": [
+          "Home",
+          "Schedule",
+          "Messages",
+          "Family",
+          "More"
+        ],
+        "expectedShell": "neutral"
+      },
+      "initialMetrics": {
+        "shell": "neutral",
+        "surfaceFamily": null,
+        "routeAuthority": "neutral-transition",
+        "resolvedRole": null,
+        "dataScopeRole": null,
+        "publicShellVisible": false,
+        "documentWidth": 390,
+        "viewportWidth": 390,
+        "contextBarVisible": true,
+        "sidebarVideoVisible": false,
+        "familyContextVisible": false,
+        "mobileLabels": [],
+        "mobileNavVisible": false,
+        "desktopNavVisible": false,
+        "activeTabs": [],
+        "colorScheme": "normal",
+        "backgroundColor": "rgba(0, 0, 0, 0)",
+        "undersizedShellControls": [],
+        "expectedFamilyTabs": [
+          "Home",
+          "Schedule",
+          "Messages",
+          "Family",
+          "More"
+        ],
+        "expectedShell": "neutral"
+      },
+      "axeChecked": false,
+      "axeViolations": [],
+      "keyboardFocus": {
+        "tagName": "A",
+        "outlineStyle": "solid",
+        "outlineWidth": "2px"
+      },
+      "pageErrors": [],
+      "requestFailures": [],
+      "screenshotPath": "output/playwright/lp-ux-002-corrected-family-shell/invite-accept-parent-mobile-390.png"
+    },
+    {
+      "route": "/invite/accept",
+      "role": "parent",
+      "viewport": {
+        "name": "tablet-768",
+        "width": 768,
+        "height": 1024
+      },
+      "metrics": {
+        "shell": "neutral",
+        "surfaceFamily": null,
+        "routeAuthority": "neutral-transition",
+        "resolvedRole": null,
+        "dataScopeRole": null,
+        "publicShellVisible": false,
+        "documentWidth": 768,
+        "viewportWidth": 768,
+        "contextBarVisible": true,
+        "sidebarVideoVisible": false,
+        "familyContextVisible": false,
+        "mobileLabels": [],
+        "mobileNavVisible": false,
+        "desktopNavVisible": false,
+        "activeTabs": [],
+        "colorScheme": "normal",
+        "backgroundColor": "rgba(0, 0, 0, 0)",
+        "undersizedShellControls": [],
+        "expectedFamilyTabs": [
+          "Home",
+          "Schedule",
+          "Messages",
+          "Family",
+          "More"
+        ],
+        "expectedShell": "neutral"
+      },
+      "initialMetrics": {
+        "shell": "neutral",
+        "surfaceFamily": null,
+        "routeAuthority": "neutral-transition",
+        "resolvedRole": null,
+        "dataScopeRole": null,
+        "publicShellVisible": false,
+        "documentWidth": 768,
+        "viewportWidth": 768,
+        "contextBarVisible": true,
+        "sidebarVideoVisible": false,
+        "familyContextVisible": false,
+        "mobileLabels": [],
+        "mobileNavVisible": false,
+        "desktopNavVisible": false,
+        "activeTabs": [],
+        "colorScheme": "normal",
+        "backgroundColor": "rgba(0, 0, 0, 0)",
+        "undersizedShellControls": [],
+        "expectedFamilyTabs": [
+          "Home",
+          "Schedule",
+          "Messages",
+          "Family",
+          "More"
+        ],
+        "expectedShell": "neutral"
+      },
+      "axeChecked": false,
+      "axeViolations": [],
+      "keyboardFocus": {
+        "tagName": "BUTTON",
+        "outlineStyle": "solid",
+        "outlineWidth": "2px"
+      },
+      "pageErrors": [],
+      "requestFailures": [],
+      "screenshotPath": "output/playwright/lp-ux-002-corrected-family-shell/invite-accept-parent-tablet-768.png"
+    },
+    {
+      "route": "/invite/accept",
+      "role": "parent",
+      "viewport": {
+        "name": "desktop-1024",
+        "width": 1024,
+        "height": 900
+      },
+      "metrics": {
+        "shell": "neutral",
+        "surfaceFamily": null,
+        "routeAuthority": "neutral-transition",
+        "resolvedRole": null,
+        "dataScopeRole": null,
+        "publicShellVisible": false,
+        "documentWidth": 1024,
+        "viewportWidth": 1024,
+        "contextBarVisible": true,
+        "sidebarVideoVisible": true,
+        "familyContextVisible": false,
+        "mobileLabels": [],
+        "mobileNavVisible": false,
+        "desktopNavVisible": false,
+        "activeTabs": [],
+        "colorScheme": "normal",
+        "backgroundColor": "rgba(0, 0, 0, 0)",
+        "undersizedShellControls": [],
+        "expectedFamilyTabs": [
+          "Home",
+          "Schedule",
+          "Messages",
+          "Family",
+          "More"
+        ],
+        "expectedShell": "neutral"
+      },
+      "initialMetrics": {
+        "shell": "neutral",
+        "surfaceFamily": null,
+        "routeAuthority": "neutral-transition",
+        "resolvedRole": null,
+        "dataScopeRole": null,
+        "publicShellVisible": false,
+        "documentWidth": 1024,
+        "viewportWidth": 1024,
+        "contextBarVisible": true,
+        "sidebarVideoVisible": true,
+        "familyContextVisible": false,
+        "mobileLabels": [],
+        "mobileNavVisible": false,
+        "desktopNavVisible": false,
+        "activeTabs": [],
+        "colorScheme": "normal",
+        "backgroundColor": "rgba(0, 0, 0, 0)",
+        "undersizedShellControls": [],
+        "expectedFamilyTabs": [
+          "Home",
+          "Schedule",
+          "Messages",
+          "Family",
+          "More"
+        ],
+        "expectedShell": "neutral"
+      },
+      "axeChecked": false,
+      "axeViolations": [],
+      "keyboardFocus": {
+        "tagName": "BUTTON",
+        "outlineStyle": "solid",
+        "outlineWidth": "2px"
+      },
+      "pageErrors": [],
+      "requestFailures": [],
+      "screenshotPath": "output/playwright/lp-ux-002-corrected-family-shell/invite-accept-parent-desktop-1024.png"
+    },
+    {
+      "route": "/invite/accept",
+      "role": "parent",
+      "viewport": {
+        "name": "desktop-1440",
+        "width": 1440,
+        "height": 1000
+      },
+      "metrics": {
+        "shell": "neutral",
+        "surfaceFamily": null,
+        "routeAuthority": "neutral-transition",
+        "resolvedRole": null,
+        "dataScopeRole": null,
+        "publicShellVisible": false,
+        "documentWidth": 1440,
+        "viewportWidth": 1440,
+        "contextBarVisible": true,
+        "sidebarVideoVisible": true,
+        "familyContextVisible": false,
+        "mobileLabels": [],
+        "mobileNavVisible": false,
+        "desktopNavVisible": false,
+        "activeTabs": [],
+        "colorScheme": "normal",
+        "backgroundColor": "rgba(0, 0, 0, 0)",
+        "undersizedShellControls": [],
+        "expectedFamilyTabs": [
+          "Home",
+          "Schedule",
+          "Messages",
+          "Family",
+          "More"
+        ],
+        "expectedShell": "neutral"
+      },
+      "initialMetrics": {
+        "shell": "neutral",
+        "surfaceFamily": null,
+        "routeAuthority": "neutral-transition",
+        "resolvedRole": null,
+        "dataScopeRole": null,
+        "publicShellVisible": false,
+        "documentWidth": 1440,
+        "viewportWidth": 1440,
+        "contextBarVisible": true,
+        "sidebarVideoVisible": true,
+        "familyContextVisible": false,
+        "mobileLabels": [],
+        "mobileNavVisible": false,
+        "desktopNavVisible": false,
+        "activeTabs": [],
+        "colorScheme": "normal",
+        "backgroundColor": "rgba(0, 0, 0, 0)",
+        "undersizedShellControls": [],
+        "expectedFamilyTabs": [
+          "Home",
+          "Schedule",
+          "Messages",
+          "Family",
+          "More"
+        ],
+        "expectedShell": "neutral"
+      },
+      "axeChecked": false,
+      "axeViolations": [],
+      "keyboardFocus": {
+        "tagName": "BUTTON",
+        "outlineStyle": "solid",
+        "outlineWidth": "2px"
+      },
+      "pageErrors": [],
+      "requestFailures": [],
+      "screenshotPath": "output/playwright/lp-ux-002-corrected-family-shell/invite-accept-parent-desktop-1440.png"
+    },
+    {
+      "route": "/parent/more",
+      "role": "signedOut",
+      "viewport": {
+        "name": "mobile-320",
+        "width": 320,
+        "height": 844
+      },
+      "metrics": {
+        "shell": null,
+        "surfaceFamily": null,
+        "routeAuthority": null,
+        "resolvedRole": null,
+        "dataScopeRole": null,
+        "publicShellVisible": true,
+        "documentWidth": 320,
+        "viewportWidth": 320,
+        "contextBarVisible": false,
+        "sidebarVideoVisible": false,
+        "familyContextVisible": false,
+        "mobileLabels": [],
+        "mobileNavVisible": false,
+        "desktopNavVisible": false,
+        "activeTabs": [],
+        "colorScheme": null,
+        "backgroundColor": null,
+        "undersizedShellControls": [],
+        "expectedFamilyTabs": [
+          "Home",
+          "Schedule",
+          "Messages",
+          "Family",
+          "More"
+        ],
+        "expectedShell": "public"
+      },
+      "initialMetrics": {
+        "shell": null,
+        "surfaceFamily": null,
+        "routeAuthority": null,
+        "resolvedRole": null,
+        "dataScopeRole": null,
+        "publicShellVisible": true,
+        "documentWidth": 320,
+        "viewportWidth": 320,
+        "contextBarVisible": false,
+        "sidebarVideoVisible": false,
+        "familyContextVisible": false,
+        "mobileLabels": [],
+        "mobileNavVisible": false,
+        "desktopNavVisible": false,
+        "activeTabs": [],
+        "colorScheme": null,
+        "backgroundColor": null,
+        "undersizedShellControls": [],
+        "expectedFamilyTabs": [
+          "Home",
+          "Schedule",
+          "Messages",
+          "Family",
+          "More"
+        ],
+        "expectedShell": "public"
+      },
+      "axeChecked": false,
+      "axeViolations": [],
+      "keyboardFocus": {
+        "tagName": "A",
+        "outlineStyle": "solid",
+        "outlineWidth": "2px"
+      },
+      "pageErrors": [],
+      "requestFailures": [],
+      "screenshotPath": "output/playwright/lp-ux-002-corrected-family-shell/parent-more-signed-out-mobile-320.png"
+    },
+    {
+      "route": "/parent/more",
+      "role": "signedOut",
+      "viewport": {
+        "name": "mobile-390",
+        "width": 390,
+        "height": 844
+      },
+      "metrics": {
+        "shell": null,
+        "surfaceFamily": null,
+        "routeAuthority": null,
+        "resolvedRole": null,
+        "dataScopeRole": null,
+        "publicShellVisible": true,
+        "documentWidth": 390,
+        "viewportWidth": 390,
+        "contextBarVisible": false,
+        "sidebarVideoVisible": false,
+        "familyContextVisible": false,
+        "mobileLabels": [],
+        "mobileNavVisible": false,
+        "desktopNavVisible": false,
+        "activeTabs": [],
+        "colorScheme": null,
+        "backgroundColor": null,
+        "undersizedShellControls": [],
+        "expectedFamilyTabs": [
+          "Home",
+          "Schedule",
+          "Messages",
+          "Family",
+          "More"
+        ],
+        "expectedShell": "public"
+      },
+      "initialMetrics": {
+        "shell": null,
+        "surfaceFamily": null,
+        "routeAuthority": null,
+        "resolvedRole": null,
+        "dataScopeRole": null,
+        "publicShellVisible": true,
+        "documentWidth": 390,
+        "viewportWidth": 390,
+        "contextBarVisible": false,
+        "sidebarVideoVisible": false,
+        "familyContextVisible": false,
+        "mobileLabels": [],
+        "mobileNavVisible": false,
+        "desktopNavVisible": false,
+        "activeTabs": [],
+        "colorScheme": null,
+        "backgroundColor": null,
+        "undersizedShellControls": [],
+        "expectedFamilyTabs": [
+          "Home",
+          "Schedule",
+          "Messages",
+          "Family",
+          "More"
+        ],
+        "expectedShell": "public"
+      },
+      "axeChecked": false,
+      "axeViolations": [],
+      "keyboardFocus": {
+        "tagName": "A",
+        "outlineStyle": "solid",
+        "outlineWidth": "2px"
+      },
+      "pageErrors": [],
+      "requestFailures": [],
+      "screenshotPath": "output/playwright/lp-ux-002-corrected-family-shell/parent-more-signed-out-mobile-390.png"
+    },
+    {
+      "route": "/parent/more",
+      "role": "signedOut",
+      "viewport": {
+        "name": "tablet-768",
+        "width": 768,
+        "height": 1024
+      },
+      "metrics": {
+        "shell": null,
+        "surfaceFamily": null,
+        "routeAuthority": null,
+        "resolvedRole": null,
+        "dataScopeRole": null,
+        "publicShellVisible": true,
+        "documentWidth": 768,
+        "viewportWidth": 768,
+        "contextBarVisible": false,
+        "sidebarVideoVisible": false,
+        "familyContextVisible": false,
+        "mobileLabels": [],
+        "mobileNavVisible": false,
+        "desktopNavVisible": false,
+        "activeTabs": [],
+        "colorScheme": null,
+        "backgroundColor": null,
+        "undersizedShellControls": [],
+        "expectedFamilyTabs": [
+          "Home",
+          "Schedule",
+          "Messages",
+          "Family",
+          "More"
+        ],
+        "expectedShell": "public"
+      },
+      "initialMetrics": {
+        "shell": null,
+        "surfaceFamily": null,
+        "routeAuthority": null,
+        "resolvedRole": null,
+        "dataScopeRole": null,
+        "publicShellVisible": true,
+        "documentWidth": 768,
+        "viewportWidth": 768,
+        "contextBarVisible": false,
+        "sidebarVideoVisible": false,
+        "familyContextVisible": false,
+        "mobileLabels": [],
+        "mobileNavVisible": false,
+        "desktopNavVisible": false,
+        "activeTabs": [],
+        "colorScheme": null,
+        "backgroundColor": null,
+        "undersizedShellControls": [],
+        "expectedFamilyTabs": [
+          "Home",
+          "Schedule",
+          "Messages",
+          "Family",
+          "More"
+        ],
+        "expectedShell": "public"
+      },
+      "axeChecked": false,
+      "axeViolations": [],
+      "keyboardFocus": {
+        "tagName": "A",
+        "outlineStyle": "solid",
+        "outlineWidth": "2px"
+      },
+      "pageErrors": [],
+      "requestFailures": [],
+      "screenshotPath": "output/playwright/lp-ux-002-corrected-family-shell/parent-more-signed-out-tablet-768.png"
+    },
+    {
+      "route": "/parent/more",
+      "role": "signedOut",
+      "viewport": {
+        "name": "desktop-1024",
+        "width": 1024,
+        "height": 900
+      },
+      "metrics": {
+        "shell": null,
+        "surfaceFamily": null,
+        "routeAuthority": null,
+        "resolvedRole": null,
+        "dataScopeRole": null,
+        "publicShellVisible": true,
+        "documentWidth": 1024,
+        "viewportWidth": 1024,
+        "contextBarVisible": false,
+        "sidebarVideoVisible": false,
+        "familyContextVisible": false,
+        "mobileLabels": [],
+        "mobileNavVisible": false,
+        "desktopNavVisible": false,
+        "activeTabs": [],
+        "colorScheme": null,
+        "backgroundColor": null,
+        "undersizedShellControls": [],
+        "expectedFamilyTabs": [
+          "Home",
+          "Schedule",
+          "Messages",
+          "Family",
+          "More"
+        ],
+        "expectedShell": "public"
+      },
+      "initialMetrics": {
+        "shell": null,
+        "surfaceFamily": null,
+        "routeAuthority": null,
+        "resolvedRole": null,
+        "dataScopeRole": null,
+        "publicShellVisible": true,
+        "documentWidth": 1024,
+        "viewportWidth": 1024,
+        "contextBarVisible": false,
+        "sidebarVideoVisible": false,
+        "familyContextVisible": false,
+        "mobileLabels": [],
+        "mobileNavVisible": false,
+        "desktopNavVisible": false,
+        "activeTabs": [],
+        "colorScheme": null,
+        "backgroundColor": null,
+        "undersizedShellControls": [],
+        "expectedFamilyTabs": [
+          "Home",
+          "Schedule",
+          "Messages",
+          "Family",
+          "More"
+        ],
+        "expectedShell": "public"
+      },
+      "axeChecked": false,
+      "axeViolations": [],
+      "keyboardFocus": {
+        "tagName": "A",
+        "outlineStyle": "solid",
+        "outlineWidth": "2px"
+      },
+      "pageErrors": [],
+      "requestFailures": [],
+      "screenshotPath": "output/playwright/lp-ux-002-corrected-family-shell/parent-more-signed-out-desktop-1024.png"
+    },
+    {
+      "route": "/parent/more",
+      "role": "signedOut",
+      "viewport": {
+        "name": "desktop-1440",
+        "width": 1440,
+        "height": 1000
+      },
+      "metrics": {
+        "shell": null,
+        "surfaceFamily": null,
+        "routeAuthority": null,
+        "resolvedRole": null,
+        "dataScopeRole": null,
+        "publicShellVisible": true,
+        "documentWidth": 1440,
+        "viewportWidth": 1440,
+        "contextBarVisible": false,
+        "sidebarVideoVisible": false,
+        "familyContextVisible": false,
+        "mobileLabels": [],
+        "mobileNavVisible": false,
+        "desktopNavVisible": false,
+        "activeTabs": [],
+        "colorScheme": null,
+        "backgroundColor": null,
+        "undersizedShellControls": [],
+        "expectedFamilyTabs": [
+          "Home",
+          "Schedule",
+          "Messages",
+          "Family",
+          "More"
+        ],
+        "expectedShell": "public"
+      },
+      "initialMetrics": {
+        "shell": null,
+        "surfaceFamily": null,
+        "routeAuthority": null,
+        "resolvedRole": null,
+        "dataScopeRole": null,
+        "publicShellVisible": true,
+        "documentWidth": 1440,
+        "viewportWidth": 1440,
+        "contextBarVisible": false,
+        "sidebarVideoVisible": false,
+        "familyContextVisible": false,
+        "mobileLabels": [],
+        "mobileNavVisible": false,
+        "desktopNavVisible": false,
+        "activeTabs": [],
+        "colorScheme": null,
+        "backgroundColor": null,
+        "undersizedShellControls": [],
+        "expectedFamilyTabs": [
+          "Home",
+          "Schedule",
+          "Messages",
+          "Family",
+          "More"
+        ],
+        "expectedShell": "public"
+      },
+      "axeChecked": false,
+      "axeViolations": [],
+      "keyboardFocus": {
+        "tagName": "A",
+        "outlineStyle": "solid",
+        "outlineWidth": "2px"
+      },
+      "pageErrors": [],
+      "requestFailures": [],
+      "screenshotPath": "output/playwright/lp-ux-002-corrected-family-shell/parent-more-signed-out-desktop-1440.png"
+    },
+    {
+      "route": "/coach",
+      "role": "coach",
+      "viewport": {
+        "name": "mobile-320",
+        "width": 320,
+        "height": 844
+      },
+      "metrics": {
+        "shell": "staff",
+        "surfaceFamily": null,
+        "routeAuthority": "route-required",
+        "resolvedRole": "coach",
+        "dataScopeRole": "coach",
+        "publicShellVisible": false,
+        "documentWidth": 320,
+        "viewportWidth": 320,
+        "contextBarVisible": true,
+        "sidebarVideoVisible": false,
+        "familyContextVisible": false,
+        "mobileLabels": [
+          "Today",
+          "RSVPs4",
+          "Replay",
+          "Messages",
+          "Team"
+        ],
+        "mobileNavVisible": true,
+        "desktopNavVisible": false,
+        "activeTabs": [
+          "Today"
+        ],
+        "colorScheme": "normal",
+        "backgroundColor": "rgba(0, 0, 0, 0)",
+        "undersizedShellControls": [],
+        "expectedFamilyTabs": [
+          "Home",
+          "Schedule",
+          "Messages",
+          "Family",
+          "More"
+        ],
+        "expectedShell": "staff"
+      },
+      "initialMetrics": {
+        "shell": "staff",
+        "surfaceFamily": null,
+        "routeAuthority": "route-required",
+        "resolvedRole": "coach",
+        "dataScopeRole": "coach",
+        "publicShellVisible": false,
+        "documentWidth": 320,
+        "viewportWidth": 320,
+        "contextBarVisible": true,
+        "sidebarVideoVisible": false,
+        "familyContextVisible": false,
+        "mobileLabels": [
+          "Today",
+          "RSVPs4",
+          "Replay",
+          "Messages",
+          "Team"
+        ],
+        "mobileNavVisible": true,
+        "desktopNavVisible": false,
+        "activeTabs": [
+          "Today"
+        ],
+        "colorScheme": "normal",
+        "backgroundColor": "rgba(0, 0, 0, 0)",
+        "undersizedShellControls": [],
+        "expectedFamilyTabs": [
+          "Home",
+          "Schedule",
+          "Messages",
+          "Family",
+          "More"
+        ],
+        "expectedShell": "staff"
+      },
+      "axeChecked": false,
+      "axeViolations": [],
+      "keyboardFocus": {
+        "tagName": "A",
+        "outlineStyle": "solid",
+        "outlineWidth": "2px"
+      },
+      "pageErrors": [],
+      "requestFailures": [],
+      "screenshotPath": "output/playwright/lp-ux-002-corrected-family-shell/coach-home-mobile-320.png"
+    },
+    {
+      "route": "/coach",
+      "role": "coach",
+      "viewport": {
+        "name": "mobile-390",
+        "width": 390,
+        "height": 844
+      },
+      "metrics": {
+        "shell": "staff",
+        "surfaceFamily": null,
+        "routeAuthority": "route-required",
+        "resolvedRole": "coach",
+        "dataScopeRole": "coach",
+        "publicShellVisible": false,
+        "documentWidth": 390,
+        "viewportWidth": 390,
+        "contextBarVisible": true,
+        "sidebarVideoVisible": false,
+        "familyContextVisible": false,
+        "mobileLabels": [
+          "Today",
+          "RSVPs4",
+          "Replay",
+          "Messages",
+          "Team"
+        ],
+        "mobileNavVisible": true,
+        "desktopNavVisible": false,
+        "activeTabs": [
+          "Today"
+        ],
+        "colorScheme": "normal",
+        "backgroundColor": "rgba(0, 0, 0, 0)",
+        "undersizedShellControls": [],
+        "expectedFamilyTabs": [
+          "Home",
+          "Schedule",
+          "Messages",
+          "Family",
+          "More"
+        ],
+        "expectedShell": "staff"
+      },
+      "initialMetrics": {
+        "shell": "staff",
+        "surfaceFamily": null,
+        "routeAuthority": "route-required",
+        "resolvedRole": "coach",
+        "dataScopeRole": "coach",
+        "publicShellVisible": false,
+        "documentWidth": 390,
+        "viewportWidth": 390,
+        "contextBarVisible": true,
+        "sidebarVideoVisible": false,
+        "familyContextVisible": false,
+        "mobileLabels": [
+          "Today",
+          "RSVPs4",
+          "Replay",
+          "Messages",
+          "Team"
+        ],
+        "mobileNavVisible": true,
+        "desktopNavVisible": false,
+        "activeTabs": [
+          "Today"
+        ],
+        "colorScheme": "normal",
+        "backgroundColor": "rgba(0, 0, 0, 0)",
+        "undersizedShellControls": [],
+        "expectedFamilyTabs": [
+          "Home",
+          "Schedule",
+          "Messages",
+          "Family",
+          "More"
+        ],
+        "expectedShell": "staff"
+      },
+      "axeChecked": false,
+      "axeViolations": [],
+      "keyboardFocus": {
+        "tagName": "A",
+        "outlineStyle": "solid",
+        "outlineWidth": "2px"
+      },
+      "pageErrors": [],
+      "requestFailures": [],
+      "screenshotPath": "output/playwright/lp-ux-002-corrected-family-shell/coach-home-mobile-390.png"
+    },
+    {
+      "route": "/coach",
+      "role": "coach",
+      "viewport": {
+        "name": "tablet-768",
+        "width": 768,
+        "height": 1024
+      },
+      "metrics": {
+        "shell": "staff",
+        "surfaceFamily": null,
+        "routeAuthority": "route-required",
+        "resolvedRole": "coach",
+        "dataScopeRole": "coach",
+        "publicShellVisible": false,
+        "documentWidth": 768,
+        "viewportWidth": 768,
+        "contextBarVisible": true,
+        "sidebarVideoVisible": false,
+        "familyContextVisible": false,
+        "mobileLabels": [
+          "Today",
+          "RSVPs4",
+          "Replay",
+          "Messages",
+          "Team"
+        ],
+        "mobileNavVisible": true,
+        "desktopNavVisible": false,
+        "activeTabs": [
+          "Today"
+        ],
+        "colorScheme": "normal",
+        "backgroundColor": "rgba(0, 0, 0, 0)",
+        "undersizedShellControls": [],
+        "expectedFamilyTabs": [
+          "Home",
+          "Schedule",
+          "Messages",
+          "Family",
+          "More"
+        ],
+        "expectedShell": "staff"
+      },
+      "initialMetrics": {
+        "shell": "staff",
+        "surfaceFamily": null,
+        "routeAuthority": "route-required",
+        "resolvedRole": "coach",
+        "dataScopeRole": "coach",
+        "publicShellVisible": false,
+        "documentWidth": 768,
+        "viewportWidth": 768,
+        "contextBarVisible": true,
+        "sidebarVideoVisible": false,
+        "familyContextVisible": false,
+        "mobileLabels": [
+          "Today",
+          "RSVPs4",
+          "Replay",
+          "Messages",
+          "Team"
+        ],
+        "mobileNavVisible": true,
+        "desktopNavVisible": false,
+        "activeTabs": [
+          "Today"
+        ],
+        "colorScheme": "normal",
+        "backgroundColor": "rgba(0, 0, 0, 0)",
+        "undersizedShellControls": [],
+        "expectedFamilyTabs": [
+          "Home",
+          "Schedule",
+          "Messages",
+          "Family",
+          "More"
+        ],
+        "expectedShell": "staff"
+      },
+      "axeChecked": false,
+      "axeViolations": [],
+      "keyboardFocus": {
+        "tagName": "A",
+        "outlineStyle": "solid",
+        "outlineWidth": "2px"
+      },
+      "pageErrors": [],
+      "requestFailures": [],
+      "screenshotPath": "output/playwright/lp-ux-002-corrected-family-shell/coach-home-tablet-768.png"
+    },
+    {
+      "route": "/coach",
+      "role": "coach",
+      "viewport": {
+        "name": "desktop-1024",
+        "width": 1024,
+        "height": 900
+      },
+      "metrics": {
+        "shell": "staff",
+        "surfaceFamily": null,
+        "routeAuthority": "route-required",
+        "resolvedRole": "coach",
+        "dataScopeRole": "coach",
+        "publicShellVisible": false,
+        "documentWidth": 1024,
+        "viewportWidth": 1024,
+        "contextBarVisible": true,
+        "sidebarVideoVisible": true,
+        "familyContextVisible": false,
+        "mobileLabels": [
+          "Today",
+          "RSVPs4",
+          "Replay",
+          "Messages",
+          "Team"
+        ],
+        "mobileNavVisible": false,
+        "desktopNavVisible": false,
+        "activeTabs": [],
+        "colorScheme": "normal",
+        "backgroundColor": "rgba(0, 0, 0, 0)",
+        "undersizedShellControls": [],
+        "expectedFamilyTabs": [
+          "Home",
+          "Schedule",
+          "Messages",
+          "Family",
+          "More"
+        ],
+        "expectedShell": "staff"
+      },
+      "initialMetrics": {
+        "shell": "staff",
+        "surfaceFamily": null,
+        "routeAuthority": "route-required",
+        "resolvedRole": "coach",
+        "dataScopeRole": "coach",
+        "publicShellVisible": false,
+        "documentWidth": 1024,
+        "viewportWidth": 1024,
+        "contextBarVisible": true,
+        "sidebarVideoVisible": true,
+        "familyContextVisible": false,
+        "mobileLabels": [
+          "Today",
+          "RSVPs4",
+          "Replay",
+          "Messages",
+          "Team"
+        ],
+        "mobileNavVisible": false,
+        "desktopNavVisible": false,
+        "activeTabs": [],
+        "colorScheme": "normal",
+        "backgroundColor": "rgba(0, 0, 0, 0)",
+        "undersizedShellControls": [],
+        "expectedFamilyTabs": [
+          "Home",
+          "Schedule",
+          "Messages",
+          "Family",
+          "More"
+        ],
+        "expectedShell": "staff"
+      },
+      "axeChecked": false,
+      "axeViolations": [],
+      "keyboardFocus": {
+        "tagName": "A",
+        "outlineStyle": "solid",
+        "outlineWidth": "2px"
+      },
+      "pageErrors": [],
+      "requestFailures": [],
+      "screenshotPath": "output/playwright/lp-ux-002-corrected-family-shell/coach-home-desktop-1024.png"
+    },
+    {
+      "route": "/coach",
+      "role": "coach",
+      "viewport": {
+        "name": "desktop-1440",
+        "width": 1440,
+        "height": 1000
+      },
+      "metrics": {
+        "shell": "staff",
+        "surfaceFamily": null,
+        "routeAuthority": "route-required",
+        "resolvedRole": "coach",
+        "dataScopeRole": "coach",
+        "publicShellVisible": false,
+        "documentWidth": 1440,
+        "viewportWidth": 1440,
+        "contextBarVisible": true,
+        "sidebarVideoVisible": true,
+        "familyContextVisible": false,
+        "mobileLabels": [
+          "Today",
+          "RSVPs4",
+          "Replay",
+          "Messages",
+          "Team"
+        ],
+        "mobileNavVisible": false,
+        "desktopNavVisible": false,
+        "activeTabs": [],
+        "colorScheme": "normal",
+        "backgroundColor": "rgba(0, 0, 0, 0)",
+        "undersizedShellControls": [],
+        "expectedFamilyTabs": [
+          "Home",
+          "Schedule",
+          "Messages",
+          "Family",
+          "More"
+        ],
+        "expectedShell": "staff"
+      },
+      "initialMetrics": {
+        "shell": "staff",
+        "surfaceFamily": null,
+        "routeAuthority": "route-required",
+        "resolvedRole": "coach",
+        "dataScopeRole": "coach",
+        "publicShellVisible": false,
+        "documentWidth": 1440,
+        "viewportWidth": 1440,
+        "contextBarVisible": true,
+        "sidebarVideoVisible": true,
+        "familyContextVisible": false,
+        "mobileLabels": [
+          "Today",
+          "RSVPs4",
+          "Replay",
+          "Messages",
+          "Team"
+        ],
+        "mobileNavVisible": false,
+        "desktopNavVisible": false,
+        "activeTabs": [],
+        "colorScheme": "normal",
+        "backgroundColor": "rgba(0, 0, 0, 0)",
+        "undersizedShellControls": [],
+        "expectedFamilyTabs": [
+          "Home",
+          "Schedule",
+          "Messages",
+          "Family",
+          "More"
+        ],
+        "expectedShell": "staff"
+      },
+      "axeChecked": false,
+      "axeViolations": [],
+      "keyboardFocus": {
+        "tagName": "A",
+        "outlineStyle": "solid",
+        "outlineWidth": "2px"
+      },
+      "pageErrors": [],
+      "requestFailures": [],
+      "screenshotPath": "output/playwright/lp-ux-002-corrected-family-shell/coach-home-desktop-1440.png"
+    }
+  ]
+}

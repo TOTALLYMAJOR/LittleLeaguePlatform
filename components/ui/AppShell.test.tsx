@@ -15,6 +15,8 @@ type WorkerResponse = {
   clone: () => WorkerResponse;
 };
 
+type CachePut = (request: string | WorkerRequest, response: WorkerResponse) => Promise<void>;
+
 type FetchEvent = {
   request: WorkerRequest;
   respondWith: (response: Promise<unknown>) => void;
@@ -33,10 +35,7 @@ function serviceWorkerHarness(
   cachedFallback?: WorkerResponse
 ) {
   const listeners = new Map<string, (event: FetchEvent) => void>();
-  const cachePut = vi.fn(async (
-    _request: string | WorkerRequest,
-    _response: WorkerResponse
-  ) => undefined);
+  const cachePut = vi.fn<CachePut>(async () => undefined);
   const cacheOpen = vi.fn(async () => ({ put: cachePut }));
   const cacheMatch = vi.fn(async (request: string | WorkerRequest) => (
     request === "/offline.html" ? cachedFallback : undefined
@@ -86,30 +85,49 @@ function serviceWorkerHarness(
 }
 
 describe("AppShell private sign-out boundary", () => {
-  it("awaits the actor-scoped generation-fenced clear before Supabase sign-out and navigation", () => {
+  it("moves sign-out into Account while preserving the generation-fenced clear order", () => {
     const shell = readFileSync(join(process.cwd(), "components", "ui", "AppShell.tsx"), "utf8");
-    const clearIndex = shell.indexOf("await clearPrivateGameDayData(access.userId)");
-    const authIndex = shell.indexOf("await supabase.auth.signOut()");
-    const navigationIndex = shell.indexOf('window.location.assign("/auth")');
+    const account = readFileSync(join(process.cwd(), "components", "feature-panels.tsx"), "utf8");
+    const clearIndex = account.indexOf("await clearPrivateGameDayData(data.user.id)");
+    const authIndex = account.indexOf("await supabase.auth.signOut()", clearIndex);
+    const navigationIndex = account.indexOf('window.location.assign("/auth")', authIndex);
 
-    expect(shell).toContain("Sign out");
+    expect(shell).not.toContain(">Sign out<");
+    expect(account).toContain("Account security");
+    expect(account).toContain("Sign out");
     expect(clearIndex).toBeGreaterThan(-1);
     expect(authIndex).toBeGreaterThan(clearIndex);
     expect(navigationIndex).toBeGreaterThan(authIndex);
-    expect(shell).toContain("if (error) throw error");
-    expect(shell).toContain("detail: { actorId: access.userId }");
-    expect(shell).not.toContain("clearPrivateGameDayData()");
+    expect(account).toContain("if (error) throw error");
+    expect(account).toContain("detail: { actorId: data.user.id }");
+    expect(account).not.toContain("clearPrivateGameDayData()");
   });
 
-  it("wires queue and replay to current actor, session, and owner-generation checks", () => {
+  it("selects the Family shell and both navigation presentations from route topology", () => {
+    const shell = readFileSync(join(process.cwd(), "components", "ui", "AppShell.tsx"), "utf8");
+
+    expect(shell).toContain("getProductShellFamily");
+    expect(shell).toContain("resolveRouteAuthorityContext");
+    expect(shell).toContain("getFamilyPrimaryNavEntries");
+    expect(shell).toContain("getMobileNavEntries");
+    expect(shell).toContain("data-route-authority");
+    expect(shell).toContain("data-data-scope-role");
+    expect(shell).toContain('data-surface-family={usesFamilyShell ? "family" : undefined}');
+    expect(shell).toContain('className="family-primary-link"');
+    expect(shell).toContain('className="family-shell-context"');
+    expect(shell).toContain("access.activeRole");
+    expect(shell).toContain('fetch("/api/auth/active-role"');
+    expect(shell).not.toContain('pathname === "/parent"');
+    expect(shell).not.toContain('pathname.startsWith("/parent")');
+    expect(shell).not.toContain("setPreservedRole");
+  });
+
+  it("keeps parent RSVP online-only while coach replay remains actor and generation fenced", () => {
     const source = readFileSync(join(process.cwd(), "components", "feature-panels.tsx"), "utf8");
+    const rsvpControl = readFileSync(join(process.cwd(), "components", "family", "rsvp-control.tsx"), "utf8");
     const replaySession = source.slice(
       source.indexOf("async function getOfflineReplaySession"),
       source.indexOf("function mediaReviewPriority")
-    );
-    const parentOffline = source.slice(
-      source.indexOf("export function ParentRsvpClient"),
-      source.indexOf("export function CoachDashboardClient")
     );
     const coachOffline = source.slice(
       source.indexOf("export function CoachDashboardClient"),
@@ -121,10 +139,11 @@ describe("AppShell private sign-out boundary", () => {
     expect(replaySession).toContain("await supabase.auth.getUser()");
     expect(replaySession).toContain("userData.user?.id !== expectedActorId");
     expect(replaySession).toContain("queueOfflineGameDayAction(action, expectedOwnerGeneration)");
-    expect(parentOffline).toContain('dashboardData?.accessStatus === "live"');
-    expect(parentOffline).toContain("dashboardData.isSupabaseBacked");
-    expect(parentOffline).toContain("captureOfflineOwnerGeneration(parentUserId)");
-    expect(parentOffline).toContain("queueOfflineActionForCurrentSession");
+    expect(rsvpControl).toContain("!navigator.onLine");
+    expect(rsvpControl).toContain("No response was saved.");
+    expect(rsvpControl).toContain("supabase.auth.getSession()");
+    expect(rsvpControl).toContain('authenticatedPost("/api/rsvps"');
+    expect(rsvpControl).not.toContain("queueOfflineGameDayAction");
     expect(coachOffline).toContain('dashboardData?.accessStatus === "live"');
     expect(coachOffline).toContain("dashboardData.isSupabaseBacked");
     expect(coachOffline).toContain("captureOfflineOwnerGeneration(coachId)");

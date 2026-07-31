@@ -61,7 +61,13 @@ function TransitionScope({ transition }: { transition: SeasonTransitionView }) {
   );
 }
 
-export function ParentSeasonTransitionReview({ data }: { data: ParentSeasonTransitionData }) {
+export function ParentSeasonTransitionReview({
+  data,
+  embedded = false
+}: {
+  data: ParentSeasonTransitionData;
+  embedded?: boolean;
+}) {
   const [transitions, setTransitions] = useState(data.transitions);
   const [notes, setNotes] = useState<Record<string, string>>({});
   const [message, setMessage] = useState(data.message);
@@ -93,10 +99,10 @@ export function ParentSeasonTransitionReview({ data }: { data: ParentSeasonTrans
   }
 
   return (
-    <section className="page season-transition-page">
-      <div className="hero">
+    <section className={`${embedded ? "family-access-review-queue" : "page"} season-transition-page`}>
+      <div className={embedded ? "section-heading" : "hero"}>
         <span className="eyebrow">Season and team changes</span>
-        <h1>Know exactly what moves—and what does not.</h1>
+        {embedded ? <h2>Review a proposed team or season move</h2> : <h1>Know exactly what moves—and what does not.</h1>}
         <p className="lead">A league administrator can propose a new team or season. Every current guardian reviews the same scope before an administrator can apply it.</p>
       </div>
       <p className={`notice ${data.ok ? "ok" : "warning"}`} role="status">{message}</p>
@@ -136,7 +142,7 @@ export function ParentSeasonTransitionReview({ data }: { data: ParentSeasonTrans
           )}
         </article>
       ))}
-      {!transitions.length ? <div className="card empty-state"><h2>No team or season change needs review.</h2><p>Your current family access remains unchanged.</p></div> : null}
+      {!embedded && !transitions.length ? <div className="card empty-state"><h2>No team or season change needs review.</h2><p>Your current family access remains unchanged.</p></div> : null}
     </section>
   );
 }

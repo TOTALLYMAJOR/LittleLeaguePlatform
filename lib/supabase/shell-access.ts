@@ -1,5 +1,6 @@
 import "server-only";
 
+import { cookies } from "next/headers";
 import { seedState, type AppState } from "@/lib/domain";
 import {
   buildShellAttentionBadges,
@@ -7,7 +8,7 @@ import {
   countUnreadMessages,
   type ShellAttentionBadge
 } from "@/lib/navigation/shell-attention";
-import type { ClientShellAccess, RoleSwitchLink } from "@/lib/navigation/route-topology";
+import type { ClientShellAccess, ProductRole, RoleSwitchLink, RouteAuthoritySource } from "@/lib/navigation/route-topology";
 import type { ActiveContext, LeaguePilotRole } from "@/lib/operational-truth";
 import { createSupabaseAdminClient } from "./admin";
 import type { ParentCoachDashboardData } from "./dashboard-data";
@@ -136,6 +137,7 @@ export async function getServerShellAccess(
         adminOrganizationIds
       })
       : undefined;
+    const activeRole = await readValidatedPersistedRole(contexts);
 
     return {
       signedIn: true,
@@ -143,6 +145,8 @@ export async function getServerShellAccess(
       canParent: parentTeamIds.length > 0,
       canCoach: coachTeamIds.length > 0,
       canAdmin: adminOrganizationIds.length > 0,
+      activeRole: activeRole.role,
+      activeRoleSource: activeRole.source,
       roleSwitchLinks,
       parentTeamIds,
       coachTeamIds,
@@ -158,6 +162,18 @@ export async function getServerShellAccess(
       userId: user.id
     };
   }
+}
+
+async function readValidatedPersistedRole(contexts: ActiveContext[]): Promise<{
+  role?: ProductRole;
+  source?: RouteAuthoritySource;
+}> {
+  const cookieStore = await cookies();
+  const rawRole = cookieStore.get("leaguepilot-active-role")?.value;
+  if (rawRole !== "parent" && rawRole !== "coach" && rawRole !== "admin") return {};
+  return contexts.some((context) => context.role === rawRole)
+    ? { role: rawRole, source: "server-persisted" }
+    : { source: "unsupported" };
 }
 
 export async function requireParentPageAccess(): Promise<PageAccessDecision> {

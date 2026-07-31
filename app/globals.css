@@ -54,6 +54,8 @@
   --warning-soft: #fff3c4;
   --danger:       #b42318;
   --danger-soft:  #fee4e2;
+  --status-changed:      #4c4ddc;
+  --status-changed-soft: #ececff;
 
   /* — Team colours (overridden per-team via inline style) — */
   --team-primary:   #1570ef;
@@ -2914,6 +2916,33 @@ button.month-calendar-day:hover {
   --portal-soft-primary:   color-mix(in srgb, var(--team-primary, #1570ef) 15%, #ffffff);
   --portal-soft-secondary: color-mix(in srgb, var(--team-secondary, #dff4ff) 24%, #ffffff);
   --portal-line:           color-mix(in srgb, var(--team-primary, #1570ef) 30%, #d9e0ea);
+}
+.team-portal-page .card,
+.team-portal-page .card-header,
+.team-portal-page .card-header > div {
+  min-width: 0;
+}
+.team-portal-page .card-header {
+  flex-wrap: wrap;
+}
+.team-portal-page .grid.three {
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 220px), 1fr));
+}
+.team-portal-page .card-header h2,
+.team-portal-page .card-header .eyebrow,
+.team-portal-page p,
+.team-portal-page .badge,
+.team-portal-page pre {
+  max-width: 100%;
+  overflow-wrap: anywhere;
+  word-break: break-word;
+}
+.team-portal-page .badge {
+  white-space: normal;
+}
+.team-portal-page pre {
+  overflow-x: auto;
+  white-space: pre-wrap;
 }
 .team-portal-hero { background: linear-gradient(135deg, var(--portal-soft-primary), var(--portal-soft-secondary)); border: 1px solid var(--portal-line); border-radius: var(--radius); box-shadow: var(--shadow); padding: var(--sp-5); }
 .team-portal-mark { align-items: center; background: var(--team-primary, var(--text)); border: 4px solid var(--team-secondary, #fff); border-radius: var(--radius); color: #fff; display: inline-flex; font-size: 2.2rem; font-weight: 900; height: 76px; justify-content: center; margin-bottom: 6px; width: 76px; }
@@ -8006,6 +8035,10 @@ button.month-calendar-day:hover {
   justify-content: flex-end;
 }
 .context-back { min-height: 44px; padding: 10px var(--sp-4); }
+.context-back:focus {
+  outline: 2px solid var(--accent);
+  outline-offset: 3px;
+}
 
 .verified-context-bar {
   align-items: stretch;
@@ -9720,15 +9753,13 @@ caption {
   text-decoration: none;
 }
 
-.parent-rsvp-glow {
+.parent-rsvp-action {
   align-items: center;
-  background: #22c55e;
-  border: 1px solid #16a34a;
+  background: var(--action);
+  border: 1px solid var(--action-strong);
   border-radius: 8px;
-  box-shadow:
-    0 0 0 3px rgba(34, 197, 94, .18),
-    0 8px 22px rgba(22, 163, 74, .3);
-  color: #052e16;
+  box-shadow: var(--shadow-sm);
+  color: #fff;
   display: inline-flex;
   font-size: .78rem;
   font-weight: 950;
@@ -9878,16 +9909,14 @@ caption {
   }
 }
 
-.parent-rsvp-glow:hover,
-.parent-rsvp-glow:focus-visible {
-  background: #4ade80;
-  box-shadow:
-    0 0 0 4px rgba(34, 197, 94, .24),
-    0 10px 28px rgba(22, 163, 74, .38);
-  color: #052e16;
+.parent-rsvp-action:hover,
+.parent-rsvp-action:focus-visible {
+  background: var(--action-strong);
+  box-shadow: var(--shadow);
+  color: #fff;
 }
 
-.parent-rsvp-glow.compact {
+.parent-rsvp-action.compact {
   min-height: 34px;
   padding: 7px 12px;
 }
@@ -11146,7 +11175,7 @@ caption {
 
   .landing-certainty-band a,
   .certainty-band > .season-status,
-  .certainty-band > .parent-rsvp-glow {
+  .certainty-band > .parent-rsvp-action {
     grid-column: 2;
     justify-self: start;
   }
@@ -11323,7 +11352,7 @@ caption {
     width: 34px;
   }
 
-  .parent-rsvp-glow {
+  .parent-rsvp-action {
     min-height: 40px;
     padding-inline: 11px;
   }

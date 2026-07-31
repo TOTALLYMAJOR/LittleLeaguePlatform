@@ -60,6 +60,7 @@ describe("route data scoping", () => {
       users: seedState.users,
       events: seedState.events,
       mediaItems: seedState.mediaItems,
+      familyReleasedMediaItemIds: [seedState.mediaItems[0]?.id ?? "missing"],
       parentReplays: seedState.parentReplays
     };
 
@@ -74,5 +75,6 @@ describe("route data scoping", () => {
     expect(scoped.parentInvites).toEqual([]);
     expect(scoped.parentReplays.every((replay) => replay.status === "queued")).toBe(true);
     expect(scoped.players.some((player) => player.id === allowedPlayer.id)).toBe(true);
+    expect(scoped.familyReleasedMediaItemIds?.every((id) => scoped.mediaItems.some((item) => item.id === id))).toBe(true);
   });
 });

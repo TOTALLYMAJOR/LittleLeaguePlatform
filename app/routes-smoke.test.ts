@@ -40,6 +40,7 @@ const appRoutes = [
   "/parent",
   "/parent/family-access",
   "/parent/messages",
+  "/parent/more",
   "/parent/photos",
   "/parent/practice-recaps",
   "/parent/schedule",
@@ -130,6 +131,7 @@ describe("route smoke coverage", () => {
   it("keeps PWA install and standalone usage measurement wired", () => {
     const provider = readFileSync(join(process.cwd(), "app", "providers.tsx"), "utf8");
     const featurePanels = readFileSync(join(process.cwd(), "components", "feature-panels.tsx"), "utf8");
+    const rsvpControl = readFileSync(join(process.cwd(), "components", "family", "rsvp-control.tsx"), "utf8");
     const communicationRoom = readFileSync(join(process.cwd(), "components", "communication-room.tsx"), "utf8");
     const layout = readFileSync(join(process.cwd(), "app", "layout.tsx"), "utf8");
     const css = readFileSync(join(process.cwd(), "app", "globals.css"), "utf8");
@@ -144,7 +146,7 @@ describe("route smoke coverage", () => {
     expect(provider).toContain("leaguepilot:value-experienced");
     expect(provider).toContain("hasExperiencedValue");
     expect(provider).toContain("valueGate: true");
-    expect(featurePanels).toContain("parent_rsvp_confirmed");
+    expect(rsvpControl).toContain("parent_rsvp_confirmed");
     expect(communicationRoom).toContain("critical_message_acknowledged");
     expect(featurePanels).not.toContain("markLeaguePilotValueExperienced(\"public_schedule_event_opened\")");
     expect(provider).toContain("standalone_launch");
@@ -183,7 +185,7 @@ describe("route smoke coverage", () => {
     expect(shell).toContain("playsInline");
     expect(css).toContain(".mobile-tabbar");
     expect(css).toContain(".sidebar-video-backdrop");
-    expect(css).toContain(".parent-rsvp-glow");
+    expect(css).toContain(".parent-rsvp-action");
     expect(css).toContain("@media print");
     expect(css).toContain("@media (forced-colors: active)");
   });
