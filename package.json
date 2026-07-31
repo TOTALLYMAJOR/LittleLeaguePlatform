@@ -38,6 +38,7 @@
     "qa:family-shell-proof": "node scripts/capture-family-shell-proof.mjs",
     "qa:saturday-ready-proof": "node scripts/capture-saturday-ready-state-proof.mjs",
     "qa:schedule-rsvp-proof": "node scripts/capture-schedule-rsvp-proof.mjs",
+    "qa:family-utilities-proof": "node scripts/capture-family-utilities-proof.mjs",
     "qa:private-media-storage-readiness": "node scripts/verify-private-media-storage-readiness.mjs",
     "qa:provider-sandbox-readiness": "node scripts/verify-provider-sandbox-readiness.mjs",
     "qa:weather-provider-readiness": "node scripts/verify-weather-provider-readiness.mjs",

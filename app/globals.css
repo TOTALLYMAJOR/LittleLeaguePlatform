@@ -5205,6 +5205,7 @@ button.month-calendar-day:hover {
   --replay-warm: #a94726;
   --replay-warm-soft: #fff0e5;
   --replay-sage: #dfeee6;
+  grid-template-columns: minmax(0, 1fr);
 }
 
 .family-replay-hero {
@@ -5463,14 +5464,22 @@ button.month-calendar-day:hover {
 .family-replay-timeline {
   display: grid;
   gap: var(--sp-4);
+  grid-template-columns: minmax(0, 1fr);
+  min-width: 0;
 }
 
 .family-replay-timeline > ol {
   display: grid;
   gap: var(--sp-3);
+  grid-template-columns: minmax(0, 1fr);
   list-style: none;
   margin: 0;
+  min-width: 0;
   padding: 0;
+}
+
+.family-replay-timeline li {
+  min-width: 0;
 }
 
 .family-replay-timeline li button {
@@ -5494,6 +5503,7 @@ button.month-calendar-day:hover {
 .family-replay-timeline time,
 .family-replay-timeline small {
   color: var(--muted);
+  font-size: var(--text-xs);
 }
 
 .family-replay-empty {
