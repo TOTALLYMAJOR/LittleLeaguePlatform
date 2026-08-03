@@ -1,21 +1,26 @@
 import Image from "next/image";
 import Link from "next/link";
+import { redirect } from "next/navigation";
 import { getServerShellAccess, toClientShellAccess } from "@/lib/supabase/shell-access";
+import type { ClientShellAccess } from "@/lib/navigation/route-topology";
 
 export const dynamic = "force-dynamic";
 
+function roleHomeHref(access: ClientShellAccess) {
+  if (access.activeRole === "coach" && access.canCoach) return "/coach";
+  if (access.activeRole === "admin" && access.canAdmin) return "/admin";
+  if (access.activeRole === "parent" && access.canParent) return "/parent";
+  if (access.canParent) return "/parent";
+  if (access.canCoach) return "/coach";
+  if (access.canAdmin) return "/admin";
+  return "/account";
+}
+
 export default async function HomePage() {
   const access = toClientShellAccess(await getServerShellAccess());
-  const accountHref = access.canParent
-    ? "/parent"
-    : access.canCoach
-      ? "/coach"
-      : access.canAdmin
-        ? "/admin"
-        : access.signedIn
-          ? "/account"
-          : "/auth";
-  const accountLabel = access.signedIn ? "Open my home" : "Sign in";
+  if (access.signedIn) redirect(roleHomeHref(access));
+  const accountHref = "/auth";
+  const accountLabel = "Sign in";
 
   return (
     <div className="landing-gateway">
@@ -55,7 +60,7 @@ export default async function HomePage() {
           <Link className="landing-gateway-action is-primary" href={accountHref}>
             <span>Account</span>
             <strong>{accountLabel}</strong>
-            <small>{access.signedIn ? "Continue in your approved role" : "For approved families and staff"}</small>
+            <small>For approved families and staff</small>
           </Link>
         </nav>
       </section>

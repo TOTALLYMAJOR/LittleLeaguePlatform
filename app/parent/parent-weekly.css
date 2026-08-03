@@ -413,30 +413,10 @@
   line-height: 1.35;
 }
 
+/* Base .offline-sync-status styles live in globals.css; only family-shell centering here. */
 .main.parent-weekly-main > .offline-sync-status {
-  display: grid;
-  gap: var(--sp-1);
   width: min(100%, 1152px);
   margin: var(--sp-6) auto 0;
-  padding: var(--sp-3) var(--sp-4);
-  border: 1px solid var(--line);
-  border-radius: var(--radius);
-  background: var(--surface-soft);
-  color: var(--text);
-}
-
-.main.parent-weekly-main > .offline-sync-status span,
-.main.parent-weekly-main > .offline-sync-status small {
-  color: var(--muted);
-  line-height: 1.45;
-}
-
-.main.parent-weekly-main > .offline-sync-status ul {
-  display: flex;
-  flex-wrap: wrap;
-  gap: var(--sp-2) var(--sp-4);
-  margin: 0;
-  padding-left: var(--sp-5);
 }
 
 .parent-weekly-dashboard {

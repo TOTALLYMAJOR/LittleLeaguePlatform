@@ -161,6 +161,13 @@ export function AppShell({ access = signedOutShellAccess, children }: { access?:
   const usesFamilyShell = productShellFamily === "family";
   const usesImmersiveFamilyHeader = usesFamilyShell;
   const usesPublicGateway = pathname === "/";
+  const brandHomeHref = activeProductRole === "coach"
+    ? "/coach"
+    : activeProductRole === "admin"
+      ? "/admin"
+      : activeProductRole === "parent"
+        ? "/parent"
+        : "/";
   const showMobileTabbar = Boolean(activeProductRole) && activeMobileItems.length >= 3;
 
   const filteredNav = useMemo(() => {
@@ -397,7 +404,7 @@ export function AppShell({ access = signedOutShellAccess, children }: { access?:
             <span />
           </div>
           <div className="sidebar-topline">
-            <Link href="/" className="brand" aria-label="LeaguePilot home">
+            <Link href={brandHomeHref} className="brand" aria-label="LeaguePilot home">
               <span className="brand-mark">LP</span>
               <span className="brand-copy">
                 <strong>LeaguePilot</strong>

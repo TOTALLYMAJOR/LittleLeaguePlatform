@@ -13522,13 +13522,19 @@ caption {
   }
 }
 
-/* Compact public entry gateway: bright, high contrast, three choices, no desktop scroll. */
-.public-app-shell-gateway {
+/* Compact public entry gateway: bright, high contrast, three choices, no desktop scroll.
+   The palette lives on .landing-gateway too so the composition stays a forced-light island
+   even when rendered outside the signed-out public shell. */
+.public-app-shell-gateway,
+.landing-gateway {
   --gateway-ink: #17324d;
   --gateway-paper: #fffaf4;
   --gateway-muted: #52677b;
   --gateway-line: #d9d2c8;
   --gateway-action: #f36c2d;
+}
+
+.public-app-shell-gateway {
   background: var(--gateway-paper);
 }
 
@@ -13944,4 +13950,31 @@ caption {
   .landing-gateway-action:focus-visible {
     transform: none;
   }
+}
+
+/* Offline sync footer: base styles are shell-independent because AppShell renders it on
+   every signed-in route; the family shell only overrides width/centering. */
+.offline-sync-status {
+  display: grid;
+  gap: var(--sp-1);
+  margin-top: var(--sp-6);
+  padding: var(--sp-3) var(--sp-4);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--surface-soft);
+  color: var(--text);
+}
+
+.offline-sync-status span,
+.offline-sync-status small {
+  color: var(--muted);
+  line-height: 1.45;
+}
+
+.offline-sync-status ul {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--sp-2) var(--sp-4);
+  margin: 0;
+  padding-left: var(--sp-5);
 }

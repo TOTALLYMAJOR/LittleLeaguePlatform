@@ -10,6 +10,7 @@ This repo is now a root-level Next.js + TypeScript production scaffold for Leagu
 - `lib/supabase/` owns Supabase adapters, authenticated session checks, access-control helpers, and provider-boundary services.
 - `supabase/migrations/` defines the staged Supabase schema and RLS policy contract.
 - `docs/Features.md` and `docs/capability-matrix.md` track shipped capability, provider-boundary state, and remaining production gaps.
+- `docs/product-experience/leaguepilot/` tracks the numbered UX remediation series (`lp-ux-NNN-*.md`). Before starting UX work, read the highest-numbered entry: it records applied fixes, verification status, and explicitly deferred items awaiting user approval.
 - `public/prototype/index.html` keeps the old static prototype available at `/prototype/index.html`.
 
 The app now has Supabase-backed slices for registration, approval, memberships, Team Portal reads/theme writes, Team Chat persistence, parent/coach dashboard reads, authenticated mutation routes, QA session proof, and provider/mobile foundations. Some screens still use typed seed fallback when live rows or auth context are unavailable. External provider sends remain disconnected unless a slice explicitly enables provider delivery.

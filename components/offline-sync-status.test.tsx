@@ -13,7 +13,7 @@ describe("OfflineSyncStatus", () => {
     const html = renderToStaticMarkup(<OfflineSyncStatus actorId="actor-1" contextKey="parent:org-1:season-1:team-1" />);
     expect(html).toContain('aria-label="Offline sync status"');
     expect(html).toContain('aria-live="polite"');
-    expect(html).toContain("No saved actions or recent sync receipts.");
+    expect(html).toContain("Nothing waiting to sync.");
     expect(html).toContain("Counts only.");
     expect(html).not.toContain("actor-1");
     expect(html).not.toContain("team-1");
