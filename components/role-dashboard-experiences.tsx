@@ -220,6 +220,7 @@ export function CoachGameDayRadar({
   const planGapCount = snackCount + volunteerCount;
   const planProgress = planGapCount === 0 ? 100 : Math.max(20, 100 - planGapCount * 25);
   const groupedActionCount = Number(missingRsvpCount > 0) + Number(planGapCount > 0) + Number(weatherReviewCount > 0);
+  const topAsk = missingRsvpCount > 0 ? "people" : planGapCount > 0 ? "plan" : weatherReviewCount > 0 ? "place" : null;
 
   return (
     <section className="coach-game-day-radar" aria-labelledby="coach-game-day-radar-title">
@@ -262,33 +263,32 @@ export function CoachGameDayRadar({
         <aside className="coach-radar-actions" aria-label="Action queue">
           <header>
             <div><span>Action queue</span><h2>{groupedActionCount ? `${groupedActionCount} task${groupedActionCount === 1 ? "" : "s"} to do` : "All clear"}</h2></div>
-            <strong>{reviewCount}</strong>
           </header>
           <p>Everything here saves a draft for your review. Nothing is sent to families until you approve it.</p>
 
           <div className={missingRsvpCount ? "coach-radar-action needs-action" : "coach-radar-action is-clear"}>
             <span>People</span>
             <h3>{missingRsvpCount ? `${missingRsvpCount} RSVP response${missingRsvpCount === 1 ? "" : "s"} missing` : "RSVP responses covered"}</h3>
-            <button className="secondary" disabled={isPending || missingRsvpCount === 0} onClick={onNudgeRsvp}>Draft RSVP reminder</button>
+            <button className={topAsk === "people" ? undefined : "secondary"} disabled={isPending || missingRsvpCount === 0} onClick={onNudgeRsvp}>Draft RSVP reminder</button>
           </div>
 
           <div className={planGapCount ? "coach-radar-action needs-action" : "coach-radar-action is-clear"}>
             <span>Plan</span>
             <h3>{planGapCount ? `${snackCount} snack and ${volunteerCount} volunteer gap${planGapCount === 1 ? "" : "s"}` : "Family help covered"}</h3>
-            <a className="button secondary" href="/coach/snacks-volunteers">Assign snacks &amp; volunteers</a>
+            <a className={topAsk === "plan" ? "button" : "button secondary"} href="/coach/snacks-volunteers">Assign snacks &amp; volunteers</a>
           </div>
 
           <div className={weatherReviewCount ? "coach-radar-action needs-action" : "coach-radar-action"}>
             <span>Place</span>
-            <h3>{weatherReviewCount ? `${weatherReviewCount} weather draft${weatherReviewCount === 1 ? "" : "s"} need review` : "No weather draft needs review"}</h3>
+            <h3>{weatherReviewCount ? `${weatherReviewCount} weather draft${weatherReviewCount === 1 ? " needs" : "s need"} review` : "No weather draft needs review"}</h3>
             {weatherReviewCount ? (
-              <a className="button secondary" href="/coach/weather-fields">Review weather draft</a>
+              <a className={topAsk === "place" ? "button" : "button secondary"} href="/coach/weather-fields">Review weather draft</a>
             ) : (
               <button className="secondary" disabled={isPending || !canDraftWeather} onClick={onDraftWeather}>Draft weather alert</button>
             )}
           </div>
 
-          <button disabled={isPending} onClick={onSaveWeeklyUpdate}>Save weekly update draft</button>
+          <button className="secondary" disabled={isPending} onClick={onSaveWeeklyUpdate}>Save weekly update draft</button>
         </aside>
       </div>
     </section>

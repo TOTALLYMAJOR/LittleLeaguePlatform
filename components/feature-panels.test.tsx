@@ -571,7 +571,7 @@ describe("ScheduleAlertsClient", () => {
     expect(html).toContain("No response");
     expect(html).toContain("Help gaps");
     expect(html).toContain("Weather");
-    expect(html).toContain("Queue schedule alert records");
+    expect(html).toContain("Save schedule change (drafts family alerts for review)");
   });
 
   it("renders the admin calendar with a selected-event inspector and change lens", () => {

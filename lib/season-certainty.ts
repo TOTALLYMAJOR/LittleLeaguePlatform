@@ -467,7 +467,7 @@ export function buildAdminSeasonCertaintyView(input: {
     queueAction("weather-fields", "Weather & Fields", weatherFieldReview, "/admin/safety-weather"),
     queueAction("media-review", "Media Review", mediaReview, "/admin/media-review"),
     queueAction("message-delivery", "Message Delivery Review", messageDeliveryReview, "/admin/message-delivery-review"),
-    queueAction("branding", "Branding issues", pendingSponsors, "/admin/branding"),
+    queueAction("branding", "Branding issues", pendingSponsors, "/admin/sponsors"),
     queueAction("reports-archive", "Reports/archive tasks", 0, "/admin/reports-archive"),
     queueAction("security-audit", "Security & Audit", 0, "/admin/security-audit")
   ].sort((left, right) => compareActionPriority(

@@ -6966,7 +6966,7 @@ export function ScheduleAlertsClient({
             disabled={isReadonly || isSchedulePending || !title.trim() || !locationName.trim() || !locationAddress.trim()}
             onClick={saveScheduleChange}
           >
-            {isReadonly ? "Read-only route" : "Queue schedule alert records"}
+            {isReadonly ? "Read-only route" : "Save schedule change (drafts family alerts for review)"}
           </button>
         </article>
 
