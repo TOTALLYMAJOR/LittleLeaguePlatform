@@ -297,11 +297,11 @@ describe("CoachDashboardClient", () => {
     expect(html).toContain("Plan");
     expect(html).toContain("Action queue");
     expect(html).not.toContain("<img");
-    expect(html).toContain("items need attention");
+    expect(html).toContain("in your queue");
     expect(html).toContain("Your 15-minute sideline check");
     expect(html).toContain("Next event");
-    expect(html).toContain("Draft RSVP nudge");
-    expect(html).toContain("These actions save drafts for review");
+    expect(html).toContain("Draft RSVP reminder");
+    expect(html).toContain("saves a draft for your review");
     expect(html).toContain("More coach context");
     expect(html).toContain("Attendance");
     expect(html).toContain("No reply");

@@ -74,7 +74,7 @@ const routeSpecs = [
     path: "/coach",
     credentialKeys: ["QA_COACH_EMAIL", "QA_COACH_PASSWORD"],
     readyTexts: [
-      "items need attention",
+      "in your queue",
       "Next event ready",
       "Sign in to see coach readiness.",
       "No active coach team is assigned."

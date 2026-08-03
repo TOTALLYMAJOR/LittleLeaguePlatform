@@ -229,7 +229,7 @@ export function CoachGameDayRadar({
           <h1 id="coach-game-day-radar-title">{teamName}</h1>
           <p>Your 15-minute sideline check for people, place, and plan.</p>
         </div>
-        <strong>{reviewCount ? `${reviewCount} items need attention` : "Next event ready"}</strong>
+        <strong>{reviewCount ? `${reviewCount} task${reviewCount === 1 ? "" : "s"} in your queue` : "Next event ready"}</strong>
       </header>
 
       <div className="coach-radar-layout">
@@ -248,7 +248,7 @@ export function CoachGameDayRadar({
               <small>Next event</small>
               <h2>{eventTitle}</h2>
               <p>{eventMeta}</p>
-              <strong>{groupedActionCount ? `Ready with ${groupedActionCount} action${groupedActionCount === 1 ? "" : "s"}` : "Ready"}</strong>
+              <strong>{groupedActionCount ? `${groupedActionCount} task${groupedActionCount === 1 ? "" : "s"} open` : "Ready"}</strong>
             </div>
           </div>
 
@@ -261,20 +261,21 @@ export function CoachGameDayRadar({
 
         <aside className="coach-radar-actions" aria-label="Action queue">
           <header>
-            <div><span>Action queue</span><h2>{groupedActionCount} grouped action{groupedActionCount === 1 ? "" : "s"}</h2></div>
+            <div><span>Action queue</span><h2>{groupedActionCount ? `${groupedActionCount} task${groupedActionCount === 1 ? "" : "s"} to do` : "All clear"}</h2></div>
             <strong>{reviewCount}</strong>
           </header>
+          <p>Everything here saves a draft for your review. Nothing is sent to families until you approve it.</p>
 
           <div className={missingRsvpCount ? "coach-radar-action needs-action" : "coach-radar-action is-clear"}>
             <span>People</span>
             <h3>{missingRsvpCount ? `${missingRsvpCount} RSVP response${missingRsvpCount === 1 ? "" : "s"} missing` : "RSVP responses covered"}</h3>
-            <button className="secondary" disabled={isPending || missingRsvpCount === 0} onClick={onNudgeRsvp}>Draft RSVP nudge</button>
+            <button className="secondary" disabled={isPending || missingRsvpCount === 0} onClick={onNudgeRsvp}>Draft RSVP reminder</button>
           </div>
 
           <div className={planGapCount ? "coach-radar-action needs-action" : "coach-radar-action is-clear"}>
             <span>Plan</span>
             <h3>{planGapCount ? `${snackCount} snack and ${volunteerCount} volunteer gap${planGapCount === 1 ? "" : "s"}` : "Family help covered"}</h3>
-            <a className="button secondary" href="/coach/snacks-volunteers">Open family help</a>
+            <a className="button secondary" href="/coach/snacks-volunteers">Assign snacks &amp; volunteers</a>
           </div>
 
           <div className={weatherReviewCount ? "coach-radar-action needs-action" : "coach-radar-action"}>
@@ -287,8 +288,7 @@ export function CoachGameDayRadar({
             )}
           </div>
 
-          <button disabled={isPending} onClick={onSaveWeeklyUpdate}>Save weekly update</button>
-          <p>These actions save drafts for review. They do not send external messages.</p>
+          <button disabled={isPending} onClick={onSaveWeeklyUpdate}>Save weekly update draft</button>
         </aside>
       </div>
     </section>
