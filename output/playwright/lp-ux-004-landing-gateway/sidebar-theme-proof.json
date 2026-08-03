@@ -1,0 +1,111 @@
+{
+  "generatedAt": "2026-08-03T19:48:43.887Z",
+  "baseUrl": "http://127.0.0.1:3024",
+  "role": "coach",
+  "viewport": {
+    "width": 1440,
+    "height": 1000
+  },
+  "results": [
+    {
+      "route": "/coach",
+      "mode": "dark",
+      "metrics": {
+        "backgroundColor": "rgb(17, 24, 33)",
+        "borderRightColor": "rgba(231, 222, 209, 0.22)",
+        "brandColor": "rgb(246, 241, 233)",
+        "subtitleColor": "rgb(198, 190, 179)",
+        "inactiveNavColor": "rgb(198, 190, 179)",
+        "navSectionColor": "rgb(198, 190, 179)",
+        "videoDisplay": "block",
+        "videoOpacity": "0.13",
+        "scrimBackgroundImage": "linear-gradient(color(srgb 0.0666667 0.0941176 0.129412 / 0.82), color(srgb 0.0666667 0.0941176 0.129412 / 0.9) 48%, color(srgb 0.0666667 0.0941176 0.129412 / 0.94)), linear-gradient(90deg, color(srgb 0.623529 0.752941 0.909804 / 0.06), rgba(0, 0, 0, 0) 56%)",
+        "darkPreference": true,
+        "shell": "staff",
+        "documentWidth": 1440,
+        "viewportWidth": 1440,
+        "brandContrast": 15.88,
+        "subtitleContrast": 9.71,
+        "inactiveNavContrast": 9.71,
+        "navSectionContrast": 9.71
+      },
+      "pageErrors": [],
+      "screenshotPath": "output/playwright/lp-ux-004-landing-gateway/coach-sidebar-dark-after.png"
+    },
+    {
+      "route": "/account",
+      "mode": "dark",
+      "metrics": {
+        "backgroundColor": "rgb(17, 24, 33)",
+        "borderRightColor": "rgba(231, 222, 209, 0.22)",
+        "brandColor": "rgb(246, 241, 233)",
+        "subtitleColor": "rgb(198, 190, 179)",
+        "inactiveNavColor": "rgb(198, 190, 179)",
+        "navSectionColor": "rgb(198, 190, 179)",
+        "videoDisplay": "block",
+        "videoOpacity": "0.13",
+        "scrimBackgroundImage": "linear-gradient(color(srgb 0.0666667 0.0941176 0.129412 / 0.82), color(srgb 0.0666667 0.0941176 0.129412 / 0.9) 48%, color(srgb 0.0666667 0.0941176 0.129412 / 0.94)), linear-gradient(90deg, color(srgb 0.623529 0.752941 0.909804 / 0.06), rgba(0, 0, 0, 0) 56%)",
+        "darkPreference": true,
+        "shell": "staff",
+        "documentWidth": 1440,
+        "viewportWidth": 1440,
+        "brandContrast": 15.88,
+        "subtitleContrast": 9.71,
+        "inactiveNavContrast": 9.71,
+        "navSectionContrast": 9.71
+      },
+      "pageErrors": [],
+      "screenshotPath": "output/playwright/lp-ux-004-landing-gateway/account-sidebar-dark-after.png"
+    },
+    {
+      "route": "/coach",
+      "mode": "light",
+      "metrics": {
+        "backgroundColor": "rgb(253, 248, 241)",
+        "borderRightColor": "rgb(231, 222, 209)",
+        "brandColor": "rgb(28, 36, 56)",
+        "subtitleColor": "rgb(104, 102, 95)",
+        "inactiveNavColor": "rgb(104, 102, 95)",
+        "navSectionColor": "rgb(104, 102, 95)",
+        "videoDisplay": "block",
+        "videoOpacity": "0.13",
+        "scrimBackgroundImage": "linear-gradient(color(srgb 0.992157 0.972549 0.945098 / 0.82), color(srgb 0.992157 0.972549 0.945098 / 0.9) 48%, color(srgb 0.992157 0.972549 0.945098 / 0.94)), linear-gradient(90deg, color(srgb 0.121569 0.227451 0.388235 / 0.06), rgba(0, 0, 0, 0) 56%)",
+        "darkPreference": false,
+        "shell": "staff",
+        "documentWidth": 1440,
+        "viewportWidth": 1440,
+        "brandContrast": 14.63,
+        "subtitleContrast": 5.44,
+        "inactiveNavContrast": 5.44,
+        "navSectionContrast": 5.44
+      },
+      "pageErrors": [],
+      "screenshotPath": "output/playwright/lp-ux-004-landing-gateway/coach-sidebar-light-after.png"
+    },
+    {
+      "route": "/account",
+      "mode": "light",
+      "metrics": {
+        "backgroundColor": "rgb(253, 248, 241)",
+        "borderRightColor": "rgb(231, 222, 209)",
+        "brandColor": "rgb(28, 36, 56)",
+        "subtitleColor": "rgb(104, 102, 95)",
+        "inactiveNavColor": "rgb(104, 102, 95)",
+        "navSectionColor": "rgb(104, 102, 95)",
+        "videoDisplay": "block",
+        "videoOpacity": "0.13",
+        "scrimBackgroundImage": "linear-gradient(color(srgb 0.992157 0.972549 0.945098 / 0.82), color(srgb 0.992157 0.972549 0.945098 / 0.9) 48%, color(srgb 0.992157 0.972549 0.945098 / 0.94)), linear-gradient(90deg, color(srgb 0.121569 0.227451 0.388235 / 0.06), rgba(0, 0, 0, 0) 56%)",
+        "darkPreference": false,
+        "shell": "staff",
+        "documentWidth": 1440,
+        "viewportWidth": 1440,
+        "brandContrast": 14.63,
+        "subtitleContrast": 5.44,
+        "inactiveNavContrast": 5.44,
+        "navSectionContrast": 5.44
+      },
+      "pageErrors": [],
+      "screenshotPath": "output/playwright/lp-ux-004-landing-gateway/account-sidebar-light-after.png"
+    }
+  ]
+}

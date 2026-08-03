@@ -30,6 +30,7 @@
    §1  DESIGN TOKENS
 ───────────────────────────────────────────────────────────────────────────── */
 :root {
+  color-scheme: light;
   /* — Neutrals — */
   --bg:             #fdf8f1;
   --surface:        #ffffff;
@@ -6298,8 +6299,10 @@ button.month-calendar-day:hover {
 /* ─────────────────────────────────────────────────────────────────────────────
    §29  DARK MODE
 ───────────────────────────────────────────────────────────────────────────── */
-@media (prefers-color-scheme: dark) {
-  :root {
+html[data-theme="dark"] {
+  color-scheme: dark;
+
+  & {
     --bg:             #111821;
     --surface:        #19232f;
     --surface-soft:   #151e28;
@@ -7938,12 +7941,43 @@ button.month-calendar-day:hover {
 }
 .sidebar-video-backdrop span {
   background:
-    linear-gradient(180deg, rgba(253, 248, 241, .82), rgba(253, 248, 241, .9) 48%, rgba(253, 248, 241, .94)),
-    linear-gradient(90deg, rgba(31, 58, 99, .06), transparent 56%);
+    linear-gradient(
+      180deg,
+      color-mix(in srgb, var(--bg) 82%, transparent),
+      color-mix(in srgb, var(--bg) 90%, transparent) 48%,
+      color-mix(in srgb, var(--bg) 94%, transparent)
+    ),
+    linear-gradient(90deg, color-mix(in srgb, var(--accent) 6%, transparent), transparent 56%);
 }
 .sidebar-topline { display: flex; align-items: center; justify-content: space-between; gap: var(--sp-2); margin-bottom: var(--sp-2); }
 .sidebar-topline .brand { margin-bottom: 0; min-width: 0; }
 .sidebar-collapse { flex: 0 0 auto; }
+
+.theme-toggle {
+  align-items: center;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-pill);
+  color: var(--text);
+  display: inline-flex;
+  flex: 0 0 auto;
+  gap: 7px;
+  justify-content: center;
+  min-height: 40px;
+  padding: 8px 12px;
+  white-space: nowrap;
+}
+.theme-toggle:hover {
+  background: var(--surface-strong);
+  border-color: color-mix(in srgb, var(--accent) 48%, var(--line));
+}
+.theme-toggle:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 3px;
+}
+.theme-toggle svg { color: var(--accent-strong); }
+.theme-toggle span { font-size: var(--text-xs); font-weight: 850; }
+.theme-toggle-compact { min-width: 44px; padding-inline: 10px; }
 
 .command-launch {
   align-items: center;
@@ -8794,10 +8828,78 @@ caption {
   color: var(--accent-strong);
 }
 
-@media (prefers-color-scheme: dark) {
-  .public-brand-mark {
+:root[data-theme="dark"] .public-brand-mark {
     color: #111821;
-  }
+}
+
+/* Family Mission Control predates manual theming and carried literal light
+   surfaces. Keep its hierarchy while binding it to the selected root theme. */
+:root[data-theme="dark"] [data-surface-family="family"] :is(
+  .family-mission-control,
+  .family-week,
+  .mission-rail-card
+) {
+  border-color: var(--line);
+  background: var(--surface);
+  color: var(--text);
+}
+
+:root[data-theme="dark"] [data-surface-family="family"] .family-mission-control :is(article, .mission-rail-card) {
+  border-color: var(--line);
+  background: var(--surface);
+  color: var(--text);
+}
+
+:root[data-theme="dark"] [data-surface-family="family"] :is(
+  .mission-section-icon,
+  .mission-quick-link-icon
+) {
+  background: var(--action-soft);
+  color: var(--action-strong);
+}
+
+:root[data-theme="dark"] [data-surface-family="family"] :is(
+  .mission-section-icon-green,
+  .mission-live-state,
+  .mission-week-status
+) {
+  background: var(--ok-soft);
+  color: var(--ok);
+}
+
+:root[data-theme="dark"] .field-mode:not(.field-mode-active) {
+  border-color: var(--line);
+  background: var(--surface);
+  color: var(--text);
+}
+
+:root[data-theme="dark"] .verified-context-bar .state-current {
+  background: var(--ok-soft);
+}
+
+:root[data-theme="dark"] .verified-context-bar .state-readonly {
+  background: var(--warning-soft);
+}
+
+:root[data-theme="dark"] .mobile-tabbar a {
+  color: var(--muted);
+}
+
+:root[data-theme="dark"] .season-parent-home { --certainty-accent: #78dfa6; }
+:root[data-theme="dark"] .season-coach-home { --certainty-accent: #9fc0e8; }
+:root[data-theme="dark"] .season-admin-home { --certainty-accent: #7dd3c7; }
+
+button.theme-toggle,
+button.theme-toggle:hover:not(:disabled) {
+  border-color: var(--line);
+  background: var(--surface);
+  color: var(--text);
+  transform: none;
+}
+
+button.theme-toggle:hover:not(:disabled) {
+  background: var(--surface-strong);
+  border-color: color-mix(in srgb, var(--accent) 48%, var(--line));
 }
 
 .public-main {
@@ -13522,9 +13624,8 @@ caption {
   }
 }
 
-/* Compact public entry gateway: bright, high contrast, three choices, no desktop scroll.
-   The palette lives on .landing-gateway too so the composition stays a forced-light island
-   even when rendered outside the signed-out public shell. */
+/* Compact public entry gateway: three choices, one viewport, and a palette that
+   follows the root Light/Dark selection even outside the signed-out shell. */
 .public-app-shell-gateway,
 .landing-gateway {
   --gateway-ink: #17324d;
@@ -13839,6 +13940,114 @@ caption {
   font-size: 0.78rem;
 }
 
+:root[data-theme="dark"] :is(.public-app-shell-gateway, .landing-gateway) {
+  --gateway-ink: var(--text);
+  --gateway-paper: var(--bg);
+  --gateway-muted: var(--muted);
+  --gateway-line: var(--line);
+  --gateway-action: #f36c2d;
+}
+
+:root[data-theme="dark"] .public-header-gateway {
+  border-color: var(--line);
+  background: color-mix(in srgb, var(--bg) 96%, transparent);
+}
+
+:root[data-theme="dark"] .public-header-gateway .public-brand-mark {
+  background: #1f3a63;
+  color: #fff;
+}
+
+:root[data-theme="dark"] .public-header-gateway .public-nav a:hover {
+  background: var(--surface-strong);
+  color: var(--text);
+}
+
+:root[data-theme="dark"] .public-header-gateway .public-nav .button.secondary,
+:root[data-theme="dark"] .public-header-gateway .public-nav .button.secondary:hover {
+  border-color: var(--line);
+  background: var(--surface-strong);
+  color: var(--text);
+}
+
+:root[data-theme="dark"] .landing-gateway {
+  background:
+    radial-gradient(circle at 13% 10%, color-mix(in srgb, var(--surface) 72%, transparent), transparent 42%),
+    var(--gateway-paper);
+}
+
+:root[data-theme="dark"] :is(
+  .landing-gateway-kicker,
+  .landing-gateway-action span
+) {
+  color: var(--action-strong);
+}
+
+:root[data-theme="dark"] .landing-gateway-copy h1 {
+  color: var(--text);
+}
+
+:root[data-theme="dark"] .landing-gateway-summary {
+  color: var(--muted);
+}
+
+:root[data-theme="dark"] .landing-gateway-media::before {
+  background:
+    linear-gradient(90deg, var(--gateway-paper) 0%, color-mix(in srgb, var(--gateway-paper) 68%, transparent) 22%, transparent 58%),
+    linear-gradient(0deg, color-mix(in srgb, var(--gateway-paper) 48%, transparent) 0%, transparent 38%);
+}
+
+:root[data-theme="dark"] .landing-gateway-media::after {
+  background: rgb(17 24 33 / 16%);
+}
+
+:root[data-theme="dark"] .landing-gateway-actions {
+  border-color: var(--line);
+  background: color-mix(in srgb, var(--surface) 92%, transparent);
+  box-shadow: var(--shadow-lg);
+}
+
+:root[data-theme="dark"] .landing-gateway-action:hover,
+:root[data-theme="dark"] .landing-gateway-action:focus-visible {
+  background: var(--surface-strong);
+  color: var(--text);
+}
+
+:root[data-theme="dark"] .landing-gateway-action.is-primary {
+  color: #142f47;
+}
+
+:root[data-theme="dark"] .public-sponsor-page {
+  background:
+    radial-gradient(circle at 88% 18%, rgb(255 122 47 / 12%), transparent 32%),
+    var(--bg);
+}
+
+:root[data-theme="dark"] :is(
+  .public-sponsor-intro h1,
+  .public-sponsor-boundary strong
+) {
+  color: var(--text);
+}
+
+:root[data-theme="dark"] :is(
+  .public-sponsor-intro > p:not(.public-sponsor-kicker),
+  .public-sponsor-boundary p,
+  .public-sponsor-boundary small
+) {
+  color: var(--muted);
+}
+
+:root[data-theme="dark"] .public-sponsor-kicker {
+  color: var(--action-strong);
+}
+
+:root[data-theme="dark"] .public-sponsor-boundary {
+  border-color: var(--line);
+  background: var(--surface);
+  box-shadow: var(--shadow);
+}
+
 @media (max-width: 760px) {
   .landing-gateway,
   .landing-gateway-hero {
@@ -13876,6 +14085,12 @@ caption {
     background:
       linear-gradient(180deg, var(--gateway-paper) 0%, rgb(255 250 244 / 90%) 40%, rgb(255 250 244 / 34%) 60%, var(--gateway-paper) 86%),
       linear-gradient(90deg, rgb(255 250 244 / 42%), transparent);
+  }
+
+  :root[data-theme="dark"] .landing-gateway-media::before {
+    background:
+      linear-gradient(180deg, var(--gateway-paper) 0%, color-mix(in srgb, var(--gateway-paper) 90%, transparent) 40%, color-mix(in srgb, var(--gateway-paper) 34%, transparent) 60%, var(--gateway-paper) 86%),
+      linear-gradient(90deg, color-mix(in srgb, var(--gateway-paper) 42%, transparent), transparent);
   }
 
   .landing-gateway-actions {

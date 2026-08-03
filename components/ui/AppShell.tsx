@@ -25,6 +25,7 @@ import {
 import { formatBadgeCount, getAttentionBadge } from "@/lib/navigation/shell-attention";
 import { StatusBadge } from "./primitives";
 import { RouteIcon } from "./route-icons";
+import { ThemeToggle } from "./ThemeToggle";
 
 const groups: RouteTopologyEntry["group"][] = [
   "Family",
@@ -296,6 +297,7 @@ export function AppShell({ access = signedOutShellAccess, children }: { access?:
               <Link href="/schedule">Schedule</Link>
               {usesPublicGateway ? <Link href="/sponsors">Sponsors</Link> : <Link className="button" href="/registration">Request Team Access</Link>}
               <Link className="button secondary" href="/auth">Sign in</Link>
+              <ThemeToggle />
             </nav>
           </header>
           <main id="main-content" className="public-main">{children}</main>
@@ -366,6 +368,7 @@ export function AppShell({ access = signedOutShellAccess, children }: { access?:
                   <Menu aria-hidden="true" size={21} />
                   <span>Menu</span>
                 </button>
+                <ThemeToggle compact />
                 <Link className="parent-weekly-avatar" href="/account" aria-label="Open parent account">
                   <ShieldCheck aria-hidden="true" size={18} />
                   <span className="sr-only">Verified parent account</span>
@@ -479,6 +482,7 @@ export function AppShell({ access = signedOutShellAccess, children }: { access?:
                   <small>{shellContext.body}</small>
                 </div>
                 <div className="context-actions">
+                  <ThemeToggle />
                   <button type="button" className="secondary context-back" onClick={() => (window.history.length > 1 ? router.back() : router.push(getRouteParent(pathname)))}>
                     Back
                   </button>

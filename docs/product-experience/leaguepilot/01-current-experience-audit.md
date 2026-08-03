@@ -2,6 +2,8 @@
 
 Read-only audit, 2026-07-29. Evidence: full repository inspection (routes, shells, domain, migrations, CSS, docs, git history) + authenticated runtime browsing as the seeded demo parent at 390×844 and 1440×900, light and dark preference. No screenshots were attached to the engagement brief in this session; the brief's descriptions were verified against locally captured runtime screenshots.
 
+Amendment, 2026-08-03: the automatic inversion and Family light-only deferral described below are historical findings. LP-UX-005 replaced them with an app-wide Light-default, explicit saved Light/Dark selection and authenticated dark-route proof.
+
 ## 1. The two-visual-systems hypothesis: resolved
 
 **Finding: the "competing dark operational system" is not a designed system.** In source, every parent-facing surface is light/warm. The dark appearance in the supplied screenshots has three distinct causes:

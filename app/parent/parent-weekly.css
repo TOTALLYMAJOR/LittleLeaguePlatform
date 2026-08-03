@@ -27,7 +27,34 @@
   --family-inverse-muted: #d7e3f2;
   --family-inverse-badge-bg: #f1f5f9;
   --family-inverse-badge-text: #24334d;
-  color-scheme: light;
+  color-scheme: inherit;
+}
+
+:root[data-theme="dark"] [data-surface-family="family"] {
+  --bg: #111821;
+  --surface: #19232f;
+  --surface-soft: #151e28;
+  --surface-strong: #263342;
+  --text: #f6f1e9;
+  --muted: #c6beb3;
+  --line: rgb(231 222 209 / 22%);
+  --accent: #9fc0e8;
+  --accent-strong: #d9e9fb;
+  --accent-soft: rgb(159 192 232 / 14%);
+  --action: #b8470f;
+  --action-strong: #ffad80;
+  --action-soft: rgb(215 102 46 / 15%);
+  --ok: #78dfa6;
+  --ok-soft: rgb(120 223 166 / 15%);
+  --warning: #f4c95d;
+  --warning-soft: rgb(244 201 93 / 16%);
+  --danger: #ff9b90;
+  --danger-soft: rgb(255 155 144 / 15%);
+  --family-inverse-surface: #22304a;
+  --family-inverse-text: #ffffff;
+  --family-inverse-muted: #d7e3f2;
+  --family-inverse-badge-bg: #f1f5f9;
+  --family-inverse-badge-text: #24334d;
 }
 
 [data-surface-family="family"] input,
@@ -240,6 +267,16 @@
 .parent-weekly-header-nav > a:not(.parent-weekly-avatar),
 .parent-weekly-header-nav > button {
   padding: 0 10px;
+}
+
+.parent-weekly-header-nav > .theme-toggle {
+  border: 1px solid var(--line);
+  background: var(--surface);
+  color: var(--text);
+}
+
+.parent-weekly-header-nav > .theme-toggle svg {
+  color: var(--accent-strong);
 }
 
 .parent-weekly-header-nav > a:hover,
@@ -1771,4 +1808,203 @@
   .parent-weekly-access-link {
     transition: none;
   }
+}
+
+/* Manual dark theme: neutralize the legacy light-only Family surface values. */
+:root[data-theme="dark"] [data-surface-family="family"] :is(
+  .parent-weekly-brand,
+  .parent-weekly-dashboard h1,
+  .parent-weekly-dashboard h2,
+  .parent-weekly-dashboard h3,
+  .parent-weekly-access-link,
+  .parent-weekly-deep-operations
+) {
+  color: var(--text);
+}
+
+:root[data-theme="dark"] [data-surface-family="family"] :is(
+  .parent-weekly-brand small,
+  .parent-weekly-player p,
+  .parent-weekly-player-stats span,
+  .parent-weekly-privacy,
+  .parent-weekly-replay-meta,
+  .parent-weekly-replay-item p,
+  .parent-weekly-boundary-note,
+  .parent-weekly-schedule-copy p,
+  .parent-weekly-updates li span,
+  .parent-weekly-updates li p,
+  .parent-weekly-readiness li span,
+  .parent-weekly-readiness > p,
+  .parent-weekly-empty p,
+  .parent-weekly-deep-operations > summary small,
+  .parent-weekly-access-link small
+) {
+  color: var(--muted);
+}
+
+:root[data-theme="dark"] [data-surface-family="family"] .parent-season-next > span {
+  color: var(--warning);
+}
+
+:root[data-theme="dark"] [data-surface-family="family"] :is(
+  .transportation-hero,
+  .transportation-action-box
+) {
+  border-color: var(--line);
+  border-left-color: var(--ok);
+  background: var(--surface);
+  color: var(--text);
+}
+
+:root[data-theme="dark"] [data-surface-family="family"] .segmented-control label:has(input:checked) {
+  border-color: var(--ok);
+  background: var(--ok-soft);
+  color: var(--text);
+  box-shadow: inset 0 0 0 1px var(--ok);
+}
+
+:root[data-theme="dark"] [data-surface-family="family"] .avatar[style] {
+  color: #111821;
+}
+
+:root[data-theme="dark"] [data-surface-family="family"] :is(
+  .parent-weekly-kicker,
+  .parent-weekly-schedule-copy > span
+) {
+  color: var(--action-strong);
+}
+
+:root[data-theme="dark"] [data-surface-family="family"] :is(
+  .parent-weekly-section-heading > a,
+  .parent-weekly-replay-actions > a,
+  .parent-weekly-empty-compact > a
+) {
+  color: var(--accent-strong);
+}
+
+:root[data-theme="dark"] [data-surface-family="family"] .parent-weekly-header-nav > :is(a, button) {
+  color: var(--accent-strong);
+}
+
+:root[data-theme="dark"] [data-surface-family="family"] .parent-weekly-header-nav > :is(a, button):hover,
+:root[data-theme="dark"] [data-surface-family="family"] .parent-weekly-message-link,
+:root[data-theme="dark"] [data-surface-family="family"] .parent-weekly-date-tile,
+:root[data-theme="dark"] [data-surface-family="family"] .parent-weekly-deep-operations > summary > span:last-child {
+  background: var(--surface-strong);
+  color: var(--accent-strong);
+}
+
+:root[data-theme="dark"] [data-surface-family="family"] .parent-weekly-header-nav > a[data-active="true"],
+:root[data-theme="dark"] [data-surface-family="family"] :is(
+  .parent-weekly-replay,
+  .parent-weekly-replay-icon,
+  .parent-weekly-update-icon,
+  .parent-weekly-response-badge
+) {
+  background: var(--action-soft);
+  color: var(--action-strong);
+}
+
+:root[data-theme="dark"] [data-surface-family="family"] :is(
+  .parent-weekly-card,
+  .parent-weekly-player-stats > div,
+  .parent-weekly-replay-item,
+  .parent-weekly-empty,
+  .parent-weekly-access-link,
+  .parent-weekly-changes li,
+  .parent-weekly-deep-operations
+) {
+  border-color: var(--line);
+  background: var(--surface);
+  color: var(--text);
+  box-shadow: var(--shadow-sm);
+}
+
+:root[data-theme="dark"] [data-surface-family="family"] .parent-weekly-progress {
+  background: var(--surface-strong);
+}
+
+:root[data-theme="dark"] [data-surface-family="family"] :is(
+  .parent-weekly-status,
+  .parent-weekly-changes
+) {
+  border-color: color-mix(in srgb, var(--action) 32%, var(--line));
+  background: var(--action-soft);
+  color: var(--text);
+}
+
+:root[data-theme="dark"] [data-surface-family="family"] .parent-weekly-deep-content {
+  background: var(--surface-soft);
+  color: var(--text);
+}
+
+:root[data-theme="dark"] [data-surface-family="family"] :is(button.secondary, .button.secondary) {
+  border-color: var(--line);
+  background: var(--surface-strong);
+  color: var(--text);
+}
+
+:root[data-theme="dark"] [data-surface-family="family"] .family-mission-control {
+  --mission-accent: var(--action-strong);
+  --mission-accent-soft: var(--action-soft);
+  --mission-canvas: var(--surface-soft);
+  --mission-green: var(--ok);
+  --mission-ink: var(--text);
+  --mission-line: var(--line);
+  --mission-muted: var(--muted);
+}
+
+:root[data-theme="dark"] [data-surface-family="family"] .mobile-tabbar a {
+  color: var(--muted);
+}
+
+:root[data-theme="dark"] [data-surface-family="family"] .mobile-tabbar a[aria-current="page"] {
+  color: var(--accent-strong);
+}
+
+:root[data-theme="dark"] [data-surface-family="family"] .status-pill.warning {
+  border-color: color-mix(in srgb, var(--warning) 32%, var(--line));
+  background: var(--warning-soft);
+  color: var(--warning);
+}
+
+:root[data-theme="dark"] [data-surface-family="family"] .communication-family-filters button.active {
+  color: #111821;
+}
+
+:root[data-theme="dark"] [data-surface-family="family"] .communication-family-filters button.active small {
+  color: rgb(17 24 33 / 76%);
+}
+
+:root[data-theme="dark"] [data-surface-family="family"] .family-replay-page {
+  --replay-ink: var(--text);
+  --replay-paper: var(--surface);
+  --replay-warm: var(--action-strong);
+  --replay-warm-soft: var(--action-soft);
+  --replay-sage: var(--ok-soft);
+}
+
+:root[data-theme="dark"] [data-surface-family="family"] :is(
+  .family-replay-hero,
+  .family-replay-story,
+  .family-replay-activity,
+  .family-replay-takeaways > div
+) {
+  border-color: var(--line);
+  background: var(--surface);
+  color: var(--text);
+}
+
+:root[data-theme="dark"] [data-surface-family="family"] .family-replay-privacy-promise {
+  border-color: var(--line);
+  background: var(--surface-soft);
+}
+
+:root[data-theme="dark"] [data-surface-family="family"] :is(
+  .family-replay-story > header p,
+  .family-replay-publisher time,
+  .family-replay-media-grid figcaption,
+  .family-replay-goal
+) {
+  color: var(--muted);
 }

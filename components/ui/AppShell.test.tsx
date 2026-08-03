@@ -122,6 +122,18 @@ describe("AppShell private sign-out boundary", () => {
     expect(shell).not.toContain("setPreservedRole");
   });
 
+  it("offers the same explicit theme control in public, Family, and staff chrome", () => {
+    const shell = readFileSync(join(process.cwd(), "components", "ui", "AppShell.tsx"), "utf8");
+    const toggle = readFileSync(join(process.cwd(), "components", "ui", "ThemeToggle.tsx"), "utf8");
+
+    expect(shell.match(/<ThemeToggle/g)).toHaveLength(3);
+    expect(toggle).toContain("COLOR_THEME_STORAGE_KEY");
+    expect(toggle).toContain("document.documentElement.dataset.theme");
+    expect(toggle).toContain("Use ${nextTheme} mode");
+    expect(toggle).not.toContain("matchMedia");
+    expect(toggle).not.toContain("prefers-color-scheme");
+  });
+
   it("wires queue and replay to current actor, session, and owner-generation checks", () => {
     const source = readFileSync(join(process.cwd(), "components", "feature-panels.tsx"), "utf8");
     const replaySession = source.slice(

@@ -1,0 +1,95 @@
+{
+  "generatedAt": "2026-08-03T19:21:41.579Z",
+  "baseUrl": "http://127.0.0.1:3024",
+  "role": "coach",
+  "colorScheme": "dark",
+  "rootRedirect": {
+    "destination": "/coach",
+    "darkPreference": true
+  },
+  "coachFooterBeforeBrand": {
+    "display": "grid",
+    "rowGap": "4px",
+    "borderTopStyle": "solid",
+    "borderTopWidth": "1px",
+    "borderTopColor": "rgba(231, 222, 209, 0.22)",
+    "backgroundColor": "rgb(21, 30, 40)",
+    "text": "Offline syncNothing waiting to sync.Counts only. Message contents and player details are never shown here.",
+    "boxes": [
+      {
+        "top": 1740.65625,
+        "bottom": 1765.453125,
+        "text": "Offline sync"
+      },
+      {
+        "top": 1769.453125,
+        "bottom": 1792.640625,
+        "text": "Nothing waiting to sync."
+      },
+      {
+        "top": 1796.640625,
+        "bottom": 1815.953125,
+        "text": "Counts only. Message contents and player details are never shown here."
+      }
+    ],
+    "viewportDark": true
+  },
+  "brandClick": {
+    "href": "/coach",
+    "destination": "/coach"
+  },
+  "coachFooterAfterBrand": {
+    "display": "grid",
+    "rowGap": "4px",
+    "borderTopStyle": "solid",
+    "borderTopWidth": "1px",
+    "borderTopColor": "rgba(231, 222, 209, 0.22)",
+    "backgroundColor": "rgb(21, 30, 40)",
+    "text": "Offline syncNothing waiting to sync.Counts only. Message contents and player details are never shown here.",
+    "boxes": [
+      {
+        "top": 1740.65625,
+        "bottom": 1765.453125,
+        "text": "Offline sync"
+      },
+      {
+        "top": 1769.453125,
+        "bottom": 1792.640625,
+        "text": "Nothing waiting to sync."
+      },
+      {
+        "top": 1796.640625,
+        "bottom": 1815.953125,
+        "text": "Counts only. Message contents and player details are never shown here."
+      }
+    ],
+    "viewportDark": true
+  },
+  "accountFooter": {
+    "display": "grid",
+    "rowGap": "4px",
+    "borderTopStyle": "solid",
+    "borderTopWidth": "1px",
+    "borderTopColor": "rgba(231, 222, 209, 0.22)",
+    "backgroundColor": "rgb(21, 30, 40)",
+    "text": "Offline syncNothing waiting to sync.Counts only. Message contents and player details are never shown here.",
+    "boxes": [
+      {
+        "top": 891.921875,
+        "bottom": 916.71875,
+        "text": "Offline sync"
+      },
+      {
+        "top": 920.71875,
+        "bottom": 943.90625,
+        "text": "Nothing waiting to sync."
+      },
+      {
+        "top": 947.90625,
+        "bottom": 967.21875,
+        "text": "Counts only. Message contents and player details are never shown here."
+      }
+    ],
+    "viewportDark": true
+  }
+}
