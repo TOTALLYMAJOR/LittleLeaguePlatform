@@ -350,25 +350,59 @@ export async function saveCoachWeeklyUpdate(input: {
   }
 }
 
+export type CoachRsvpReminderDraftCode =
+  | "created"
+  | "duplicate"
+  | "invalid_input"
+  | "forbidden"
+  | "scope_mismatch"
+  | "already_responded"
+  | "unavailable"
+  | "audit_unavailable";
+
+export interface CoachRsvpReminderDraftResult {
+  ok: boolean;
+  code: CoachRsvpReminderDraftCode;
+  message: string;
+  notificationId?: string;
+  notificationCount?: number;
+  duplicate?: boolean;
+  draftPersisted?: boolean;
+}
+
 export async function createCoachRsvpReminderDraft(input: {
   teamId: string;
   eventId: string;
   parentUserId: string;
   actorUserId: string;
-}) {
-  if (!input.teamId || !input.eventId || !input.parentUserId || !input.actorUserId) {
-    return { ok: false, message: "RSVP reminder drafts require a team, event, linked family, and acting coach." };
+}): Promise<CoachRsvpReminderDraftResult> {
+  const teamId = input.teamId.trim();
+  const eventId = input.eventId.trim();
+  const parentUserId = input.parentUserId.trim();
+  const actorUserId = input.actorUserId.trim();
+  if (!teamId || !eventId || !parentUserId || !actorUserId) {
+    return {
+      ok: false,
+      code: "invalid_input",
+      message: "RSVP reminder drafts require a team, event, linked family, and acting coach."
+    };
   }
 
   try {
     const db = adminDb();
     const access = await requireActiveTeamCoachOrOrgAdmin({
       db,
-      teamId: input.teamId,
-      userId: input.actorUserId,
+      teamId,
+      userId: actorUserId,
       action: "draft RSVP reminders"
     });
-    if (!access.ok || !access.team) return { ok: false, message: access.message };
+    if (!access.ok || !access.team) {
+      return {
+        ok: false,
+        code: "forbidden",
+        message: "The selected team is not available for this coach."
+      };
+    }
 
     const [{ data: event, error: eventError }, { data: guardianRows, error: guardianError }] = await Promise.all([
       runDynamicQuery<{
@@ -378,49 +412,99 @@ export async function createCoachRsvpReminderDraft(input: {
       }>(db
         .from("events")
         .select("id,team_id,title")
-        .eq("id", input.eventId)
-        .eq("team_id", input.teamId)
+        .eq("id", eventId)
+        .eq("team_id", teamId)
         .maybeSingle()),
       runDynamicQuery<Array<{
         player_id: string;
       }>>(db
         .from("player_guardians")
         .select("player_id,players!inner(team_id)")
-        .eq("parent_user_id", input.parentUserId)
+        .eq("parent_user_id", parentUserId)
         .eq("status", "active")
-        .eq("players.team_id", input.teamId))
+        .eq("players.team_id", teamId))
     ]);
 
-    if (eventError || !event) return { ok: false, message: "The selected event is not available in this coach's team scope." };
-    if (guardianError || !guardianRows?.length) return { ok: false, message: "The selected family is not actively linked to this team." };
+    if (eventError || guardianError) {
+      return {
+        ok: false,
+        code: "unavailable",
+        message: "Team scope could not be verified, so no reminder draft was saved."
+      };
+    }
+    if (!event || !guardianRows?.length) {
+      return {
+        ok: false,
+        code: "scope_mismatch",
+        message: "The selected event and family combination is not available in this coach's team scope."
+      };
+    }
 
     const { data: existingRsvps, error: rsvpError } = await runDynamicQuery<Array<{ player_id: string }>>(db
       .from("rsvps")
       .select("player_id")
-      .eq("event_id", input.eventId)
-      .eq("parent_user_id", input.parentUserId));
-    if (rsvpError) return { ok: false, message: "RSVP responses could not be checked, so no reminder draft was saved." };
+      .eq("event_id", eventId)
+      .eq("parent_user_id", parentUserId));
+    if (rsvpError) {
+      return {
+        ok: false,
+        code: "unavailable",
+        message: "RSVP responses could not be checked, so no reminder draft was saved."
+      };
+    }
 
     const respondedPlayerIds = new Set((existingRsvps ?? []).map((rsvp) => rsvp.player_id));
     const missingResponseCount = guardianRows.filter((row) => !respondedPlayerIds.has(row.player_id)).length;
-    if (!missingResponseCount) return { ok: false, message: "This family has already responded for the selected event." };
+    if (!missingResponseCount) {
+      return {
+        ok: false,
+        code: "already_responded",
+        message: "This family has already responded for the selected event."
+      };
+    }
 
     const title = `RSVP needed: ${event.title}`;
     const body = `Please open Team Portal and record ${missingResponseCount === 1 ? "the missing RSVP" : `${missingResponseCount} missing RSVPs`} for ${event.title}.`;
     const { data: existingDraft, error: duplicateCheckError } = await runDynamicQuery<{ id: string }>(db
       .from("notifications")
       .select("id")
-      .eq("recipient_user_id", input.parentUserId)
-      .eq("team_id", input.teamId)
-      .eq("event_id", input.eventId)
+      .eq("recipient_user_id", parentUserId)
+      .eq("team_id", teamId)
+      .eq("event_id", eventId)
       .eq("notification_type", "team_broadcast")
       .eq("title", title)
       .eq("status", "pending")
       .maybeSingle());
-    if (duplicateCheckError) return { ok: false, message: "Existing reminder drafts could not be checked, so no duplicate was created." };
+    if (duplicateCheckError) {
+      return {
+        ok: false,
+        code: "unavailable",
+        message: "Existing reminder drafts could not be checked, so no duplicate was created."
+      };
+    }
     if (existingDraft) {
+      const auditResult = await insertCommunityAudit(db, {
+        organizationId: access.team.organization_id,
+        actorUserId,
+        action: "rsvp_reminder_draft_reused",
+        targetType: "notification",
+        targetId: existingDraft.id,
+        summary: `An existing pending RSVP reminder draft was reused for event ${eventId}. No provider send occurred.`
+      });
+      if (auditResult.error) {
+        return {
+          ok: false,
+          code: "audit_unavailable",
+          message: "The existing draft is still saved, but its review receipt could not be recorded. No message was sent.",
+          notificationId: existingDraft.id,
+          notificationCount: 1,
+          duplicate: true,
+          draftPersisted: true
+        };
+      }
       return {
         ok: true,
+        code: "duplicate",
         message: "This family already has a pending RSVP reminder draft. No duplicate was created and no message was sent.",
         notificationId: existingDraft.id,
         notificationCount: 1,
@@ -432,9 +516,9 @@ export async function createCoachRsvpReminderDraft(input: {
       .from("notifications")
       .insert({
         organization_id: access.team.organization_id,
-        recipient_user_id: input.parentUserId,
-        team_id: input.teamId,
-        event_id: input.eventId,
+        recipient_user_id: parentUserId,
+        team_id: teamId,
+        event_id: eventId,
         notification_type: "team_broadcast",
         title,
         body,
@@ -443,26 +527,48 @@ export async function createCoachRsvpReminderDraft(input: {
       })
       .select("id")
       .single());
-    if (notificationError || !notification) return { ok: false, message: "The RSVP reminder draft could not be saved." };
+    if (notificationError || !notification) {
+      return {
+        ok: false,
+        code: "unavailable",
+        message: "The RSVP reminder draft could not be saved."
+      };
+    }
 
-    await insertCommunityAudit(db, {
+    const auditResult = await insertCommunityAudit(db, {
       organizationId: access.team.organization_id,
-      actorUserId: input.actorUserId,
+      actorUserId,
       action: "rsvp_reminder_draft_created",
       targetType: "notification",
       targetId: notification.id,
-      summary: `One pending RSVP reminder draft was created for event ${input.eventId}. No provider send occurred.`
+      summary: `One pending RSVP reminder draft was created for event ${eventId}. No provider send occurred.`
     });
+    if (auditResult.error) {
+      return {
+        ok: false,
+        code: "audit_unavailable",
+        message: "The draft was saved, but its review receipt could not be recorded. No message was sent.",
+        notificationId: notification.id,
+        notificationCount: 1,
+        duplicate: false,
+        draftPersisted: true
+      };
+    }
 
     return {
       ok: true,
+      code: "created",
       message: "RSVP reminder saved in Drafts to Review. No message was sent.",
       notificationId: notification.id,
       notificationCount: 1,
       duplicate: false
     };
   } catch {
-    return { ok: false, message: "The RSVP reminder draft could not reach team records. No message was sent." };
+    return {
+      ok: false,
+      code: "unavailable",
+      message: "The RSVP reminder draft could not reach team records. No message was sent."
+    };
   }
 }
 
@@ -973,7 +1079,7 @@ async function insertCommunityAudit(db: UnsafeSupabase, input: {
   targetId: string;
   summary: string;
 }) {
-  await runDynamicQuery(db.from("audit_events").insert({
+  return runDynamicQuery(db.from("audit_events").insert({
     organization_id: input.organizationId,
     actor_user_id: input.actorUserId,
     action: input.action,

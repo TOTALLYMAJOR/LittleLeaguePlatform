@@ -594,6 +594,7 @@ describe("live action API routes", () => {
   it("uses the authenticated coach session for a family-scoped RSVP reminder draft", async () => {
     createCoachRsvpReminderDraftMock.mockResolvedValue({
       ok: true,
+      code: "created",
       message: "RSVP reminder saved in Drafts to Review. No message was sent.",
       notificationId: "notification-1",
       notificationCount: 1,
@@ -614,6 +615,49 @@ describe("live action API routes", () => {
       parentUserId: "parent-1",
       actorUserId: "user-live-session"
     });
+  });
+
+  it("rejects malformed RSVP reminder identifiers before the service boundary", async () => {
+    const response = await postCoachRsvpReminderDraft(jsonRequest({
+      teamId: { spoofed: "team-1" },
+      eventId: "event-1",
+      parentUserId: "parent-1"
+    }));
+
+    expect(response.status).toBe(400);
+    expect(await response.json()).toMatchObject({
+      ok: false,
+      code: "invalid_input"
+    });
+    expect(createCoachRsvpReminderDraftMock).not.toHaveBeenCalled();
+  });
+
+  it.each([
+    ["duplicate", true, 200],
+    ["forbidden", false, 403],
+    ["scope_mismatch", false, 404],
+    ["already_responded", false, 409],
+    ["unavailable", false, 503],
+    ["audit_unavailable", false, 503]
+  ] as const)("maps RSVP reminder %s outcomes to status %i", async (code, ok, status) => {
+    createCoachRsvpReminderDraftMock.mockResolvedValue({
+      ok,
+      code,
+      message: `RSVP reminder ${code}.`,
+      ...(code === "duplicate" ? {
+        notificationId: "notification-1",
+        notificationCount: 1,
+        duplicate: true
+      } : {})
+    });
+
+    const response = await postCoachRsvpReminderDraft(jsonRequest({
+      teamId: "team-1",
+      eventId: "event-1",
+      parentUserId: "parent-1"
+    }));
+
+    expect(response.status).toBe(status);
   });
 
   it("uses the authenticated coach session for Parent Replay publishing", async () => {
