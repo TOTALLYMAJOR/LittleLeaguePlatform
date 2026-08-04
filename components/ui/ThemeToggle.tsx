@@ -1,20 +1,31 @@
 "use client";
 
 import { Moon, Sun } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useSyncExternalStore } from "react";
 import { COLOR_THEME_STORAGE_KEY, isColorTheme, type ColorTheme } from "@/lib/theme";
+
+const COLOR_THEME_CHANGE_EVENT = "leaguepilot:color-theme-change";
 
 function readTheme(): ColorTheme {
   const rootTheme = document.documentElement.dataset.theme;
   return isColorTheme(rootTheme) ? rootTheme : "light";
 }
 
-export function ThemeToggle({ compact = false }: { compact?: boolean }) {
-  const [theme, setTheme] = useState<ColorTheme>("light");
+function readServerTheme(): ColorTheme {
+  return "light";
+}
 
-  useEffect(() => {
-    setTheme(readTheme());
-  }, []);
+function subscribeToTheme(onStoreChange: () => void) {
+  window.addEventListener("storage", onStoreChange);
+  window.addEventListener(COLOR_THEME_CHANGE_EVENT, onStoreChange);
+  return () => {
+    window.removeEventListener("storage", onStoreChange);
+    window.removeEventListener(COLOR_THEME_CHANGE_EVENT, onStoreChange);
+  };
+}
+
+export function ThemeToggle({ compact = false }: { compact?: boolean }) {
+  const theme = useSyncExternalStore(subscribeToTheme, readTheme, readServerTheme);
 
   function selectTheme(nextTheme: ColorTheme) {
     document.documentElement.dataset.theme = nextTheme;
@@ -24,7 +35,7 @@ export function ThemeToggle({ compact = false }: { compact?: boolean }) {
     } catch {
       // The selected theme still applies for this page when storage is unavailable.
     }
-    setTheme(nextTheme);
+    window.dispatchEvent(new Event(COLOR_THEME_CHANGE_EVENT));
   }
 
   const nextTheme: ColorTheme = theme === "light" ? "dark" : "light";

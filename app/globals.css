@@ -394,6 +394,11 @@ code, .mono {
   flex-wrap: wrap; font-size: var(--text-sm);
   color: var(--muted); list-style: none; margin: 0; padding: 0;
 }
+.breadcrumb a {
+  display: inline-flex;
+  align-items: center;
+  min-height: 32px;
+}
 .breadcrumb li + li::before { content: "/"; color: var(--line); margin-right: var(--sp-2); }
 .breadcrumb a:hover { color: var(--text); text-decoration: underline; }
 .breadcrumb [aria-current="page"] { color: var(--text); font-weight: 600; }
@@ -8195,7 +8200,7 @@ html[data-theme="dark"] {
   height: 18px;
   padding: 0 5px;
   border-radius: 999px;
-  background: #d6472f;
+  background: #cc402a;
   color: #fff;
   font-size: 0.66rem;
   font-weight: 900;
@@ -8786,6 +8791,8 @@ caption {
   display: inline-flex;
   align-items: center;
   gap: 11px;
+  min-width: 44px;
+  min-height: 44px;
   color: var(--text);
   text-decoration: none;
 }

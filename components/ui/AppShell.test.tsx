@@ -129,6 +129,8 @@ describe("AppShell private sign-out boundary", () => {
     expect(shell.match(/<ThemeToggle/g)).toHaveLength(3);
     expect(toggle).toContain("COLOR_THEME_STORAGE_KEY");
     expect(toggle).toContain("document.documentElement.dataset.theme");
+    expect(toggle).toContain("useSyncExternalStore");
+    expect(toggle).not.toContain("useEffect");
     expect(toggle).toContain("Use ${nextTheme} mode");
     expect(toggle).not.toContain("matchMedia");
     expect(toggle).not.toContain("prefers-color-scheme");
