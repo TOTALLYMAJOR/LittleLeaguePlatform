@@ -1,9 +1,9 @@
-import { CoachPracticeRecapsSurface } from "../_surfaces";
+import { redirect } from "next/navigation";
 
 export const dynamic = "force-dynamic";
 
 export default async function CoachParentReplayPage() {
-  return <CoachPracticeRecapsSurface />;
+  redirect("/coach/practice-recaps");
 }
 
 export const metadata = {

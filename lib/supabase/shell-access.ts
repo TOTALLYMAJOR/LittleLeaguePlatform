@@ -58,7 +58,8 @@ export function toClientShellAccess(access: ServerShellAccess): ClientShellAcces
     canAdmin: access.canAdmin,
     roleSwitchLinks: access.roleSwitchLinks,
     contexts: access.contexts,
-    attentionBadges: access.attentionBadges
+    attentionBadges: access.attentionBadges,
+    attentionStatus: access.attentionStatus
   };
 }
 
@@ -128,13 +129,14 @@ export async function getServerShellAccess(
       adminTeamIds
     });
 
-    const attentionBadges = options.includeAttention
+    const attention = options.includeAttention
       ? await readShellAttentionBadges(db, {
         viewerUserId: user.id,
         parentTeamIds,
         guardianPlayerIds,
         coachTeamIds,
-        adminOrganizationIds
+        adminOrganizationIds,
+        adminTeamIds
       })
       : undefined;
     const activeRole = await readValidatedPersistedRole(contexts);
@@ -153,7 +155,8 @@ export async function getServerShellAccess(
       adminOrganizationIds,
       adminTeamIds,
       contexts,
-      attentionBadges
+      attentionBadges: attention?.badges,
+      attentionStatus: attention?.status
     };
   } catch {
     return {
@@ -429,7 +432,8 @@ async function readShellAttentionBadges(db: UnsafeSupabase, input: {
   guardianPlayerIds: string[];
   coachTeamIds: string[];
   adminOrganizationIds: string[];
-}): Promise<ShellAttentionBadge[]> {
+  adminTeamIds: string[];
+}): Promise<{ badges: ShellAttentionBadge[]; status: "ready" | "error" }> {
   try {
     const now = new Date();
     const horizon = new Date(now.getTime() + ATTENTION_HORIZON_DAYS * 24 * 60 * 60 * 1000);
@@ -495,7 +499,47 @@ async function readShellAttentionBadges(db: UnsafeSupabase, input: {
       readByUserIds: row.read_by_user_ids ?? []
     }));
 
-    return buildShellAttentionBadges({
+    const adminCounts = {
+      registrations: pendingRegistrations.count ?? 0,
+      familyAccess: 0,
+      weatherFields: 0,
+      mediaReview: 0,
+      messageDelivery: 0,
+      branding: 0
+    };
+    if (input.adminOrganizationIds.length) {
+      const [adminPlayers, weather, media, delivery, branding] = await Promise.all([
+        input.adminTeamIds.length
+          ? withSupabaseTimeout(db.from("players").select("id").in("team_id", input.adminTeamIds), 5000)
+          : Promise.resolve({ data: [] }),
+        input.adminTeamIds.length
+          ? withSupabaseTimeout(db.from("weather_alerts").select("id", { count: "exact", head: true }).in("team_id", input.adminTeamIds).eq("status", "draft"), 5000)
+          : Promise.resolve({ count: 0 }),
+        input.adminTeamIds.length
+          ? withSupabaseTimeout(db.from("media_items").select("id", { count: "exact", head: true }).in("team_id", input.adminTeamIds).or("moderation_status.eq.pending,report_count.gt.0"), 5000)
+          : Promise.resolve({ count: 0 }),
+        withSupabaseTimeout(db.from("notifications").select("id", { count: "exact", head: true }).in("organization_id", input.adminOrganizationIds).eq("status", "pending"), 5000),
+        withSupabaseTimeout(db.from("sponsors").select("id", { count: "exact", head: true }).in("organization_id", input.adminOrganizationIds).eq("status", "pending"), 5000)
+      ]) as [
+        { data: Array<{ id: string }> | null },
+        { count: number | null },
+        { count: number | null },
+        { count: number | null },
+        { count: number | null }
+      ];
+      const adminPlayerIds = (adminPlayers.data ?? []).map((player) => player.id);
+      const activeGuardians = adminPlayerIds.length
+        ? await withSupabaseTimeout(db.from("player_guardians").select("player_id").in("player_id", adminPlayerIds).eq("status", "active"), 5000) as { data: Array<{ player_id: string }> | null }
+        : { data: [] };
+      const linkedPlayerIds = new Set((activeGuardians.data ?? []).map((guardian) => guardian.player_id));
+      adminCounts.familyAccess = adminPlayerIds.filter((playerId) => !linkedPlayerIds.has(playerId)).length;
+      adminCounts.weatherFields = weather.count ?? 0;
+      adminCounts.mediaReview = media.count ?? 0;
+      adminCounts.messageDelivery = delivery.count ?? 0;
+      adminCounts.branding = branding.count ?? 0;
+    }
+
+    return { badges: buildShellAttentionBadges({
       parentMissingRsvps: countMissingRsvpSlots(
         parentEvents,
         (guardianPlayerRows ?? []).map((row) => ({ id: row.id, teamId: row.team_id })),
@@ -508,11 +552,11 @@ async function readShellAttentionBadges(db: UnsafeSupabase, input: {
       ),
       pendingRegistrations: pendingRegistrations.count ?? 0,
       parentUnreadMessages: countUnreadMessages(messages, input.viewerUserId, input.parentTeamIds),
-      coachUnreadMessages: countUnreadMessages(messages, input.viewerUserId, input.coachTeamIds)
-    });
+      coachUnreadMessages: countUnreadMessages(messages, input.viewerUserId, input.coachTeamIds),
+      adminQueues: input.adminOrganizationIds.length ? adminCounts : undefined
+    }), status: "ready" };
   } catch {
-    // Badges are advisory; the shell renders without them when reads fail.
-    return [];
+    return { badges: [], status: "error" };
   }
 }
 

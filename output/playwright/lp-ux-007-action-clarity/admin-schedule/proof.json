@@ -1,0 +1,52 @@
+{
+  "baseUrl": "http://127.0.0.1:3001",
+  "capturedAt": "2026-08-03T23:27:46.434Z",
+  "proofs": [
+    {
+      "role": "admin-schedule",
+      "path": "/admin/schedule-venues",
+      "signedIn": true,
+      "matchedText": "Game-Day Resolution Room",
+      "firstViewportText": "Skip to main content League office: Schedule & Venues Dark Signed in 16 items need attention Admin · Little League HQ CONTEXT DETAILS GAME-DAY RESOLUTION ROOM · ADMIN Turn weather uncertainty into one reviewed, auditable decision. Weather evidence informs the room; it never changes or cancels an event by itself. A coach or admin must review the affected families and apply the decision. Game-day decision receipts and live team evidence are ready for review. Event Tiny Tigers vs Rookie Rockets · Jul 11, 10:00 AM Tiny Tigers Practice · Jul 15, 6:00 PM 2 going 0 no response 2 affected players Light rain watch Coach will confirm field status 90 minutes before first pitch. watch HUMAN DECISION Review and resolve Provider sends: 0 Decision Monitor only Confirm on time Delay Cancel Decision reason Save reviewed resolution Monitor creates evidence only. Confirm, delay, and cancel create pending notification drafts; they do not execute provider delivery. Recent resolution receipts No reviewed game-day decisions exist for this team scope yet. Edit a scheduled event Open the event form after reviewing the Resolution Room evidence and affected families. Event form Offline sync Nothing waiting to sync. Counts only. Message contents and player details are never shown here. Dashboard Registrations 6 review Teams Message approvals 7 review Security Route ready",
+      "browserErrors": [],
+      "browserWarnings": [],
+      "viewports": [
+        {
+          "name": "mobile-375",
+          "width": 375,
+          "height": 812,
+          "clientWidth": 375,
+          "scrollWidth": 375
+        },
+        {
+          "name": "mobile-390",
+          "width": 390,
+          "height": 844,
+          "clientWidth": 390,
+          "scrollWidth": 390
+        },
+        {
+          "name": "tablet-768",
+          "width": 768,
+          "height": 1024,
+          "clientWidth": 768,
+          "scrollWidth": 768
+        },
+        {
+          "name": "laptop-1024",
+          "width": 1024,
+          "height": 900,
+          "clientWidth": 1024,
+          "scrollWidth": 1024
+        },
+        {
+          "name": "desktop-1440",
+          "width": 1440,
+          "height": 1100,
+          "clientWidth": 1440,
+          "scrollWidth": 1440
+        }
+      ]
+    }
+  ]
+}

@@ -1,11 +1,11 @@
-import { AdminSecurityAuditSurface } from "../_surfaces";
+import { redirect } from "next/navigation";
 
 export const dynamic = "force-dynamic";
 
 export default async function AdminSecurityProofPage() {
-  return <AdminSecurityAuditSurface />;
+  redirect("/admin/security-audit");
 }
 
 export const metadata = {
-  title: "Security"
+  title: "Security & Audit"
 };

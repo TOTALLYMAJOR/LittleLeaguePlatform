@@ -198,7 +198,9 @@ describe("route smoke coverage", () => {
 
     expect(layout).toContain('data-theme="light"');
     expect(layout).toContain('id="leaguepilot-color-theme"');
-    expect(layout).toContain('strategy="beforeInteractive"');
+    expect(layout).toContain("<head>");
+    expect(layout.indexOf('id="leaguepilot-color-theme"')).toBeLessThan(layout.indexOf("<body>"));
+    expect(layout).toContain("dangerouslySetInnerHTML={{ __html: COLOR_THEME_PREPAINT_SCRIPT }}");
     expect(layout).toContain("suppressHydrationWarning");
     expect(theme).toContain('leaguepilot-color-theme:v1');
     expect(theme).toContain('savedTheme === "dark" ? "dark" : "light"');
@@ -258,10 +260,12 @@ describe("route smoke coverage", () => {
 
   it("keeps the admin security proof page tied to RLS and audit evidence", () => {
     const page = readFileSync(join(process.cwd(), "app", "admin", "security", "page.tsx"), "utf8");
+    const canonicalPage = readFileSync(join(process.cwd(), "app", "admin", "security-audit", "page.tsx"), "utf8");
     const surfaces = readFileSync(join(process.cwd(), "app", "admin", "_surfaces.tsx"), "utf8");
     const proof = readFileSync(join(process.cwd(), "lib", "supabase", "security-proof.ts"), "utf8");
 
-    expect(page).toContain("AdminSecurityAuditSurface");
+    expect(page).toContain('redirect("/admin/security-audit")');
+    expect(canonicalPage).toContain("AdminSecurityAuditSurface");
     expect(surfaces).toContain("buildSecurityProofDashboard");
     expect(proof).toContain("parent cannot read cross-team players");
     expect(proof).toContain("coach cannot update archived-season events");

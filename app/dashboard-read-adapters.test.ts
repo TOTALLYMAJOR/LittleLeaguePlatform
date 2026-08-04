@@ -8,12 +8,13 @@ function source(path: string) {
 
 describe("parent and coach dashboard Supabase reads", () => {
   it("keeps parent and coach routes wired through the shared Supabase read adapter", () => {
-    for (const route of ["app/parent/page.tsx", "app/parent/rsvp/page.tsx", "app/coach/page.tsx", "app/coach/rsvps/page.tsx"]) {
+    for (const route of ["app/parent/page.tsx", "app/parent/rsvp/page.tsx", "app/coach/page.tsx", "app/coach/attendance/page.tsx"]) {
       const file = source(route);
 
       expect(file, `${route} should render through a guarded route surface`).toContain("Surface");
       expect(file, `${route} should not prerender live Supabase reads at build time`).toContain("force-dynamic");
     }
+    expect(source("app/coach/rsvps/page.tsx")).toContain('redirect("/coach/attendance")');
 
     const parentSurfaces = source("app/parent/_surfaces.tsx");
     const coachSurfaces = source("app/coach/_surfaces.tsx");

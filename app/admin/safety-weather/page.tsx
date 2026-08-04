@@ -1,11 +1,11 @@
-import { AdminScheduleVenuesSurface } from "../_surfaces";
+import { redirect } from "next/navigation";
 
 export const dynamic = "force-dynamic";
 
 export default async function AdminSafetyWeatherPage() {
-  return <AdminScheduleVenuesSurface />;
+  redirect("/admin/schedule-venues");
 }
 
 export const metadata = {
-  title: "Safety & Weather"
+  title: "Schedule & Venues"
 };

@@ -8,6 +8,7 @@ import { POST as postProviderDeliveryReview } from "./api/provider-delivery/revi
 import { GET as getProviderDeliveryRetryPlan } from "./api/provider-delivery/retry-plan/route";
 import { POST as postParentReplay } from "./api/coach/parent-replay/route";
 import { POST as postWeeklyUpdate } from "./api/coach/weekly-update/route";
+import { POST as postCoachRsvpReminderDraft } from "./api/coach/rsvp-reminders/draft/route";
 import { POST as postSponsorSave } from "./api/admin/sponsors/route";
 import { GET as getAdminRevenueSummary } from "./api/admin/revenue-summary/route";
 import { GET as getFamilyWallet } from "./api/parent/family-wallet/route";
@@ -40,6 +41,7 @@ import { listProviderDeliveryRetryQueue, reviewNotificationDelivery } from "@/li
 import { listSponsorAdminData } from "@/lib/supabase/sponsors";
 import {
   claimSnackSlot,
+  createCoachRsvpReminderDraft,
   createWeatherAlertDraft,
   saveCoachWeeklyUpdate,
   saveSponsor,
@@ -77,6 +79,7 @@ vi.mock("@/lib/supabase/sponsors", () => ({
 
 vi.mock("@/lib/supabase/operations", () => ({
   claimSnackSlot: vi.fn(),
+  createCoachRsvpReminderDraft: vi.fn(),
   createWeatherAlertDraft: vi.fn(),
   saveCoachWeeklyUpdate: vi.fn(),
   saveSponsor: vi.fn(),
@@ -139,6 +142,7 @@ const listParentCoachDashboardDataMock = vi.mocked(listParentCoachDashboardData)
 const listSponsorAdminDataMock = vi.mocked(listSponsorAdminData);
 const updateParentRsvpMock = vi.mocked(updateParentRsvp);
 const claimSnackSlotMock = vi.mocked(claimSnackSlot);
+const createCoachRsvpReminderDraftMock = vi.mocked(createCoachRsvpReminderDraft);
 const claimVolunteerRoleMock = vi.mocked(claimVolunteerRoleSafely);
 const listFamilyBalanceSummaryMock = vi.mocked(listFamilyBalanceSummary);
 const createWeatherAlertDraftMock = vi.mocked(createWeatherAlertDraft);
@@ -584,6 +588,31 @@ describe("live action API routes", () => {
       coachUserId: "user-live-session",
       title: "Weekly update",
       body: "Please review RSVP and snack openings."
+    });
+  });
+
+  it("uses the authenticated coach session for a family-scoped RSVP reminder draft", async () => {
+    createCoachRsvpReminderDraftMock.mockResolvedValue({
+      ok: true,
+      message: "RSVP reminder saved in Drafts to Review. No message was sent.",
+      notificationId: "notification-1",
+      notificationCount: 1,
+      duplicate: false
+    });
+
+    const response = await postCoachRsvpReminderDraft(jsonRequest({
+      teamId: "team-1",
+      eventId: "event-1",
+      parentUserId: "parent-1",
+      actorUserId: "client-spoof"
+    }));
+
+    expect(response.status).toBe(201);
+    expect(createCoachRsvpReminderDraftMock).toHaveBeenCalledWith({
+      teamId: "team-1",
+      eventId: "event-1",
+      parentUserId: "parent-1",
+      actorUserId: "user-live-session"
     });
   });
 

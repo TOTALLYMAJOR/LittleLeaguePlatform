@@ -4,7 +4,8 @@ import {
   countMissingRsvpSlots,
   countUnreadMessages,
   formatBadgeCount,
-  getAttentionBadge
+  getAttentionBadge,
+  selectAdminQueueAttention
 } from "./shell-attention";
 
 describe("countMissingRsvpSlots", () => {
@@ -63,10 +64,27 @@ describe("buildShellAttentionBadges", () => {
       coachUnreadMessages: 0
     });
     expect(badges).toEqual([
-      { href: "/parent/rsvp", count: 1, label: "1 RSVP needs a reply" },
-      { href: "/admin/registrations", count: 3, label: "3 registrations awaiting review" },
-      { href: "/parent/messages", count: 2, label: "2 unread team messages" }
+      { href: "/parent/rsvp", count: 1, label: "1 RSVP needs a reply", meaning: "due" },
+      { href: "/admin/registrations", count: 3, label: "3 registrations awaiting review", meaning: "review" },
+      { href: "/parent/messages", count: 2, label: "2 unread team messages", meaning: "unread" }
     ]);
+  });
+
+  it("uses the same selector count for admin page queues and shell badges", () => {
+    const counts = {
+      registrations: 2,
+      familyAccess: 4,
+      weatherFields: 1,
+      mediaReview: 3,
+      messageDelivery: 5,
+      branding: 1
+    };
+    const queues = selectAdminQueueAttention(counts);
+    const badges = buildShellAttentionBadges({ pendingRegistrations: counts.registrations, adminQueues: counts });
+
+    for (const queue of queues.filter((item) => item.count > 0)) {
+      expect(getAttentionBadge(badges, queue.href)?.count).toBe(queue.count);
+    }
   });
 
   it("returns no badges when nothing needs attention", () => {

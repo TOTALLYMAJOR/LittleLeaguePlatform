@@ -1,5 +1,7 @@
 import {
   CoachDashboardClient,
+  CoachCommunityClient,
+  CoachDraftsClient,
   CoachRsvpsClient,
   ParentReplayClient,
   ScheduleAlertsClient,
@@ -12,6 +14,7 @@ import {
 } from "@/components/coordination-workbenches";
 import { listParentCoachDashboardData } from "@/lib/supabase/dashboard-data";
 import { listCoachInjuryContacts } from "@/lib/supabase/coach-injury-contacts";
+import { listCoachDraftReviewData } from "@/lib/supabase/coach-drafts";
 import { listCoachDrillVideoLibraryData } from "@/lib/supabase/drill-videos";
 import { listGameDayResolutionReviews } from "@/lib/supabase/game-day-resolution";
 import { listPracticeRunReceipts } from "@/lib/supabase/practice-runs";
@@ -85,7 +88,10 @@ export async function CoachScheduleSurface() {
         mode="coach"
         message={resolutionData.message}
       />
-      <ScheduleAlertsClient scheduleData={scopedScheduleData} dashboardData={dashboardData} mode="coach" />
+      <details className="compact-disclosure schedule-edit-disclosure">
+        <summary><span><strong>Edit a scheduled event</strong><small>Open the auditable event form only when the Resolution Room decision requires a schedule change.</small></span><span className="badge">Event form</span></summary>
+        <ScheduleAlertsClient scheduleData={scopedScheduleData} dashboardData={dashboardData} mode="coach" />
+      </details>
     </>
   );
 }
@@ -119,4 +125,43 @@ export async function CoachRosterSurface() {
 
 export async function CoachDashboardSliceSurface() {
   return <CoachHomeSurface />;
+}
+
+export async function CoachDraftsSurface() {
+  const pageAccess = await requireCoachPageAccess();
+  if (!pageAccess.ok) {
+    return (
+      <CoachDraftsClient
+        dashboardData={pageAccess.dashboardData}
+        draftData={{ drafts: [], isSupabaseBacked: false, message: pageAccess.dashboardData?.message ?? "Coach draft access is unavailable." }}
+      />
+    );
+  }
+  const [dashboardData, draftData] = await Promise.all([
+    listParentCoachDashboardData({ viewerUserId: pageAccess.access.userId, surface: "coach" }),
+    listCoachDraftReviewData({ teamIds: pageAccess.access.coachTeamIds })
+  ]);
+  return <CoachDraftsClient dashboardData={dashboardData} draftData={draftData} />;
+}
+
+export async function CoachCommunitySurface() {
+  const dashboardData = await loadCoachDashboardForPage();
+  return <CoachCommunityClient dashboardData={dashboardData} />;
+}
+
+export async function CoachWeatherFieldsSurface() {
+  const pageAccess = await requireCoachPageAccess();
+  if (!pageAccess.ok) return <CoachDashboardClient dashboardData={pageAccess.dashboardData} />;
+  const [dashboardData, resolutionData] = await Promise.all([
+    listParentCoachDashboardData({ viewerUserId: pageAccess.access.userId, surface: "coach" }),
+    listGameDayResolutionReviews({ teamIds: pageAccess.access.coachTeamIds })
+  ]);
+  return (
+    <GameDayResolutionRoomClient
+      state={dashboardData.state}
+      initialReviews={resolutionData.reviews}
+      mode="coach"
+      message={resolutionData.message}
+    />
+  );
 }

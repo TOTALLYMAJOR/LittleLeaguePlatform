@@ -1,9 +1,9 @@
-import { CoachAttendanceSurface } from "../_surfaces";
+import { redirect } from "next/navigation";
 
 export const dynamic = "force-dynamic";
 
 export default async function CoachRsvpsPage() {
-  return <CoachAttendanceSurface />;
+  redirect("/coach/attendance");
 }
 
 export const metadata = {

@@ -201,8 +201,24 @@ export async function AdminReportsArchiveSurface() {
 export async function AdminOperationsSurface() {
   const pageAccess = await requireAdminPageAccess();
   if (!pageAccess.ok) return <AdminAccessDeniedSurface message={pageAccess.message} />;
-  const data = await listAdminOperationsData();
-  return <AdminOperationsView data={data} />;
+  const [data, scheduleData] = await Promise.all([
+    listAdminOperationsData(),
+    listScheduleOperationsData()
+  ]);
+  const scopedScheduleData = scopeScheduleOperationsData(
+    scheduleData,
+    pageAccess.access.adminTeamIds,
+    "Showing schedule telemetry scoped to the signed-in admin's organizations."
+  );
+  return (
+    <>
+      <AdminOperationsView data={data} />
+      <details className="compact-disclosure schedule-telemetry-disclosure">
+        <summary><span><strong>Schedule and delivery telemetry</strong><small>Provider readiness, retry, device, alert, and schedule workflow evidence.</small></span><span className="badge">Operations evidence</span></summary>
+        <ScheduleAlertsClient scheduleData={scopedScheduleData} mode="operations" />
+      </details>
+    </>
+  );
 }
 
 export async function AdminCommunicationsSurface() {
@@ -413,7 +429,10 @@ export async function AdminScheduleVenuesSurface() {
           ? "Game-day decision receipts and live team evidence are ready for review."
           : `${resolutionData.message} ${resolutionEvidence.message}`}
       />
-      <ScheduleAlertsClient scheduleData={scopedScheduleData} mode="admin" />
+      <details className="compact-disclosure schedule-edit-disclosure">
+        <summary><span><strong>Edit a scheduled event</strong><small>Open the event form after reviewing the Resolution Room evidence and affected families.</small></span><span className="badge">Event form</span></summary>
+        <ScheduleAlertsClient scheduleData={scopedScheduleData} mode="admin" />
+      </details>
     </>
   );
 }

@@ -43,19 +43,21 @@ export function StatusBadge({ state = "ready", label }: { state?: SeasonCardStat
 
 export function ActionRow({ action }: { action: SeasonActionItem }) {
   return (
-    <a className={`season-action-row priority-${action.priority}`} href={action.href}>
-      <span>
-        <strong>{action.label}</strong>
-        <small>{action.description}</small>
-        {action.ranking ? (
-          <span className="season-priority-evidence">
-            <b>{action.ranking.band} priority, score {action.ranking.score}</b>
-            <small>{action.ranking.reasons.slice(0, 3).join(" | ")}</small>
-          </span>
-        ) : null}
-      </span>
-      <em>{action.cta}</em>
-    </a>
+    <div className={`season-action-row priority-${action.priority}`}>
+      <a className="season-action-row-link" href={action.href}>
+        <span>
+          <strong>{action.label}</strong>
+          <small>{action.description}</small>
+        </span>
+        <em>{action.cta}</em>
+      </a>
+      {action.ranking ? (
+        <details className="season-priority-evidence">
+          <summary>Why this is next</summary>
+          <small>Ordered by urgency, dependencies, and required authority. The person named in this row acts next.</small>
+        </details>
+      ) : null}
+    </div>
   );
 }
 
@@ -398,30 +400,34 @@ export function LeagueHealthSummaryCard({ view }: { view: AdminSeasonCertaintyVi
       <p className="season-page-kicker">League operations - {view.organizationName}</p>
       <h1 id="admin-home-title">What is blocking launch?</h1>
       <div className="season-count-grid league-health-grid">
-        <Metric label="Teams needing help" value={view.health.teamsNeedingHelp} />
-        <Metric label="Low RSVP teams" value={view.health.lowRsvpTeams} />
-        <Metric label="Family access gaps" value={view.health.brokenFamilyAccess} />
-        <Metric label="Pending registrations" value={view.health.pendingRegistrations} />
-        <Metric label="Weather & field review" value={view.health.weatherFieldReview} />
-        <Metric label="Media review" value={view.health.mediaReview} />
-        <Metric label="Message delivery review" value={view.health.messageDeliveryReview} />
-        <Metric label="Setup gaps" value={view.health.setupGaps} />
+        <Metric href="/admin/teams" label="Teams needing help" value={view.health.teamsNeedingHelp} />
+        <Metric href="/admin/schedule-venues" label="Low RSVP teams" value={view.health.lowRsvpTeams} />
+        <Metric href="/admin/family-access" label="Family access gaps" value={view.health.brokenFamilyAccess} />
+        <Metric href="/admin/registrations" label="Pending registrations" value={view.health.pendingRegistrations} />
+        <Metric href="/admin/schedule-venues" label="Weather & field review" value={view.health.weatherFieldReview} />
+        <Metric href="/admin/media-review" label="Media review" value={view.health.mediaReview} />
+        <Metric href="/admin/message-delivery-review" label="Message delivery review" value={view.health.messageDeliveryReview} />
+        <Metric href="/admin/teams" label="Setup gaps" value={view.health.setupGaps} />
       </div>
     </SeasonCard>
   );
 }
 
 export function PendingActionsPanel({ view }: { view: AdminSeasonCertaintyView }) {
-  const hasOpenQueue = view.pendingQueues.some((queue) => queue.permissionState !== "empty");
+  const openQueues = view.pendingQueues.filter((queue) => queue.permissionState !== "empty");
+  const hasOpenQueue = openQueues.length > 0;
   return (
     <SeasonCard state={hasOpenQueue ? "needs_attention" : "empty"} className="pending-actions-panel">
       <SectionHeader title="Pending reviews" />
-      {view.pendingQueues.length ? (
-        <div className="season-action-list">
-          {view.pendingQueues.map((action) => <ActionRow action={action} key={action.id} />)}
-        </div>
+      {hasOpenQueue ? (
+        <>
+          <a className="button season-primary-action" href={openQueues[0].href}>Fix next hold: {openQueues[0].label}</a>
+          <div className="season-action-list">
+            {openQueues.map((action) => <ActionRow action={action} key={action.id} />)}
+          </div>
+        </>
       ) : (
-        <EmptyState title="No open review queues." body="Registration, family access, weather, media, delivery, branding, archive, and security queues are clear." />
+        <EmptyState title={`All clear: ${view.pendingQueues.length} queues`} body="Registration, family access, weather, media, delivery, branding, archive, and security queues are clear." />
       )}
     </SeasonCard>
   );
@@ -446,7 +452,7 @@ export function TeamStatusTable({ view }: { view: AdminSeasonCertaintyView }) {
               <span role="cell">{row.weatherField}</span>
               <span role="cell">{row.media}</span>
               <span role="cell">{row.setup}</span>
-              <span role="cell"><StatusBadge state={row.status === "ready" ? "ready" : row.status === "blocked" ? "urgent" : "needs_attention"} label={row.status.replace("_", " ")} /></span>
+              <span role="cell"><StatusBadge state={row.status === "ready" ? "ready" : row.status === "blocked" ? "urgent" : "needs_attention"} label={row.status === "ready" ? "Ready — no action" : row.status === "blocked" ? "Blocked — admin acts next" : "Admin action needed"} /></span>
               <span role="cell"><a href={row.primaryAction.href}>{row.primaryAction.cta}</a></span>
             </div>
           ))}
@@ -489,12 +495,17 @@ function ReadinessPills({ readiness }: { readiness: TeamReadinessSnapshot }) {
   );
 }
 
-function Metric({ label, value }: { label: string; value: number | string }) {
-  return (
-    <div className="season-metric">
+function Metric({ label, value, href }: { label: string; value: number | string; href?: string }) {
+  const content = (
+    <>
       <span>{label}</span>
       <strong>{value}</strong>
-    </div>
+    </>
+  );
+  return (
+    href
+      ? <a className="season-metric" href={href}>{content}</a>
+      : <div className="season-metric">{content}</div>
   );
 }
 

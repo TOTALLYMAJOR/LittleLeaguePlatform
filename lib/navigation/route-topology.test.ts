@@ -259,7 +259,7 @@ describe("route topology", () => {
   });
 
   it("keeps compatibility and prototype routes hidden with canonical targets", () => {
-    for (const href of ["/coach/rsvps", "/coach/parent-replay", "/admin/themes", "/admin/security", "/admin/archive"]) {
+    for (const href of ["/coach/rsvps", "/coach/parent-replay", "/admin/settings", "/admin/safety-weather", "/admin/themes", "/admin/security", "/admin/archive"]) {
       const entry = getRouteEntry(href);
       expect(entry?.lifecycle).toBe("compatibility");
       expect(entry?.canonicalHref).toBeTruthy();

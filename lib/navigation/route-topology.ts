@@ -73,6 +73,7 @@ export interface ClientShellAccess {
   roleSwitchLinks: RoleSwitchLink[];
   contexts?: import("@/lib/operational-truth").ActiveContext[];
   attentionBadges?: import("@/lib/navigation/shell-attention").ShellAttentionBadge[];
+  attentionStatus?: "ready" | "error";
 }
 
 export interface NavigationRoleContext {
@@ -197,14 +198,14 @@ export const routeTopology = [
 
   route("/coach", "Home", "HM", "coach", "Command", ["coach"], true, true, true, true, 1),
   route("/coach/schedule", "Schedule", "SC", "coach", "Calendar", ["coach"], true, true, true, true, 2),
-  route("/coach/attendance", "Attendance", "AT", "coach", "Team", ["coach"], true, true, true, true, 3),
+  route("/coach/attendance", "RSVPs", "RS", "coach", "Team", ["coach"], true, true, true, true, 3),
   route("/coach/messages", "Messages", "MS", "coach", "Communication", ["coach"], true, true, true, true, 4),
-  route("/coach/practice-recaps", "Practice Recaps", "PR", "coach", "Replay", ["coach"], true, true, true, true, 5),
-  route("/coach/roster", "Roster", "RO", "coach", "Team", ["coach"], true, true, true, true),
+  route("/coach/practice-recaps", "Parent Replay", "PR", "coach", "Replay", ["coach"], true, true, true, true, 5),
+  route("/coach/roster", "Team Portal", "TP", "coach", "Team", ["coach"], true, true, true, true),
   route("/coach/snacks-volunteers", "Snacks & Volunteers", "SV", "coach", "Team", ["coach"], true, true, true, true),
   route("/coach/weather-fields", "Weather & Fields", "WF", "coach", "Tools", ["coach"], true, true, true, true),
   route("/coach/drafts", "Drafts to Review", "DR", "coach", "Communication", ["coach"], true, true, true, true),
-  route("/coach/settings", "Settings", "ST", "coach", "Tools", ["coach"], true, true, true, true),
+  route("/coach/settings", "Settings", "ST", "coach", "Tools", ["coach"], false, false, false, true),
   compatibility("/coach/rsvps", "Coach RSVPs", "CR", "coach", "Team", "/coach/attendance", ["coach"], true),
   compatibility("/coach/parent-replay", "Parent Replay", "PR", "coach", "Replay", "/coach/practice-recaps", ["coach"], true),
 
@@ -214,14 +215,14 @@ export const routeTopology = [
   route("/admin/family-access", "Family Access", "FA", "admin", "Launch", ["admin"], true, true, true, true, 4, true),
   route("/admin/schedule-venues", "Schedule & Venues", "SV", "admin", "Operations", ["admin"], true, true, true, true, 5, true),
   route("/admin/communications", "Communications", "CM", "admin", "Communication", ["admin"], true, true, true, true, undefined, true),
-  route("/admin/safety-weather", "Safety & Weather", "SW", "admin", "Trust & Safety", ["admin"], true, true, true, true, undefined, true),
+  compatibility("/admin/safety-weather", "Schedule & Venues", "SV", "admin", "Operations", "/admin/schedule-venues", ["admin"], true),
   route("/admin/media-review", "Media Review", "MR", "admin", "Trust & Safety", ["admin"], true, true, true, true, undefined, true),
   route("/admin/sponsors", "Sponsors", "SP", "admin", "Business", ["admin"], true, true, true, true, undefined, true),
   route("/admin/branding", "Branding", "BR", "admin", "Configuration", ["admin"], true, true, true, true, undefined, true),
   route("/admin/reports-archive", "Reports & Archive", "AR", "admin", "Configuration", ["admin"], true, true, true, true, undefined, true),
   route("/admin/security-audit", "Security & Audit", "SA", "admin", "Trust & Safety", ["admin"], true, true, true, true, undefined, true),
   route("/admin/message-delivery-review", "Message Delivery Review", "MD", "admin", "Communication", ["admin"], true, true, true, true, undefined, true),
-  route("/admin/settings", "Settings", "ST", "admin", "Configuration", ["admin"], true, true, true, true, undefined, true),
+  compatibility("/admin/settings", "Operations", "OP", "admin", "Operations", "/admin/operations", ["admin"], true),
   route("/admin/operations", "Operations", "OP", "admin", "Operations", ["admin"], true, true, true, true, undefined, true),
   route("/admin/imports", "Imports", "IM", "admin", "Operations", ["admin"], true, true, true, true, undefined, true),
   route("/admin/invites", "Invites", "IN", "admin", "Launch", ["admin"], true, true, true, true, undefined, true),
@@ -489,7 +490,7 @@ export function getMobileNavEntries(
     "/coach/practice-recaps": "Replay",
     "/coach/roster": "Team",
     "/admin": "Dashboard",
-    "/admin/message-delivery-review": "Providers",
+    "/admin/message-delivery-review": "Message approvals",
     "/admin/security-audit": "Security"
   };
   const preferredHrefs = role ? roleMobileHrefs[role] : undefined;

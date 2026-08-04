@@ -10,6 +10,20 @@ export interface AssistiveSuggestion {
   body: string;
   recommendation: string;
   boundary: string;
+  href?: string;
+}
+
+function healthGapHref(id: string | undefined) {
+  return {
+    registrations: "/admin/registrations",
+    "family-access": "/admin/family-access",
+    "weather-fields": "/admin/schedule-venues",
+    "media-review": "/admin/media-review",
+    "message-delivery": "/admin/message-delivery-review",
+    branding: "/admin/branding",
+    "reports-archive": "/admin/reports-archive",
+    "security-audit": "/admin/security-audit"
+  }[id ?? ""] ?? "/admin/operations";
 }
 
 export function buildAdminAssistiveSuggestions(state: AppState, now: string): AssistiveSuggestion[] {
@@ -22,9 +36,12 @@ export function buildAdminAssistiveSuggestions(state: AppState, now: string): As
       id: "admin-registration-review",
       surface: "admin",
       title: "Registration review queue",
-      body: `${pendingRegistrations} pending registration request(s) need human review before access is granted.`,
+      body: pendingRegistrations === 1
+        ? "1 pending registration request needs league-admin review before access is granted."
+        : `${pendingRegistrations} pending registration requests need league-admin review before access is granted.`,
       recommendation: pendingRegistrations ? "Review oldest pending requests and confirm guardian/team scope before approval." : "No registration review action is needed right now.",
-      boundary: "Suggests review order only; it cannot approve, reject, invite, or grant access."
+      boundary: "Suggests review order only; it cannot approve, reject, invite, or grant access.",
+      href: "/admin/registrations"
     },
     {
       id: "admin-readiness-summary",
@@ -32,7 +49,8 @@ export function buildAdminAssistiveSuggestions(state: AppState, now: string): As
       title: "Readiness summary",
       body: topHealthGap ? `${topHealthGap.title}: ${topHealthGap.count}` : "No readiness gaps detected.",
       recommendation: topHealthGap ? topHealthGap.detail : "Keep monitoring teams, schedules, media, and invites before launch.",
-      boundary: "Summarizes existing records only; it does not create records or send providers."
+      boundary: "Summarizes existing records only; it does not create records or send providers.",
+      href: healthGapHref(topHealthGap?.id)
     }
   ];
 }

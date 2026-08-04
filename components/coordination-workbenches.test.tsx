@@ -41,7 +41,7 @@ describe("FamilyFlightPlanClient", () => {
 });
 
 describe("AdminDeliveryReviewClient", () => {
-  it("shows an indeterminate Pingram request as reconciliation required", () => {
+  it("opens on pending approvals and keeps completed evidence behind filters", () => {
     const receipt: NotificationReceipt = {
       notificationId: "notification-1",
       organizationId: "organization-1",
@@ -73,13 +73,10 @@ describe("AdminDeliveryReviewClient", () => {
       />
     );
 
-    expect(html).toContain("Transport:");
-    expect(html).toContain("Pingram");
-    expect(html).toContain("Request outcome:");
-    expect(html).toContain("Reconciliation required");
-    expect(html).toContain("This is not proof of delivery");
-    expect(html).toContain("not proved; reconcile first");
+    expect(html).toContain("All clear. No delivery drafts await approval.");
+    expect(html).toContain("Awaiting approval");
+    expect(html).not.toContain("Transport:");
+    expect(html).not.toContain("Pingram");
     expect(html).toContain(">reconcile<");
-    expect(html).not.toContain("badge danger\">failed");
   });
 });

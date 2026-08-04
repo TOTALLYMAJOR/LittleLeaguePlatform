@@ -324,23 +324,30 @@
 }
 
 .family-shell-context {
-  display: grid;
-  grid-template-columns: repeat(6, minmax(120px, 1fr));
   width: min(100% - 40px, 1152px);
   margin-inline: auto;
-  overflow-x: auto;
   border-top: 1px solid var(--line);
+}
+
+.family-shell-context > summary {
+  display: none;
+}
+
+.family-shell-context-details {
+  display: grid;
+  grid-template-columns: repeat(6, minmax(120px, 1fr));
+  overflow-x: auto;
   scrollbar-width: thin;
 }
 
-.family-shell-context > span {
+.family-shell-context-details > span {
   display: grid;
   gap: 1px;
   min-width: 0;
   padding: 7px 10px 8px;
 }
 
-.family-shell-context > span + span {
+.family-shell-context-details > span + span {
   border-left: 1px solid var(--line);
 }
 
@@ -1379,9 +1386,34 @@
   }
 
   .family-shell-context {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
     width: min(100% - 24px, 1152px);
+  }
+
+  .family-shell-context > summary {
+    align-items: center;
+    display: flex;
+    gap: 8px;
+    justify-content: space-between;
+    list-style-position: inside;
+    min-height: 38px;
+    padding: 7px 10px;
+  }
+
+  .family-shell-context > summary strong {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .family-shell-context-details {
+    display: none;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
     overflow-x: visible;
+  }
+
+  .family-shell-context[open] .family-shell-context-details {
+    display: grid;
   }
 }
 

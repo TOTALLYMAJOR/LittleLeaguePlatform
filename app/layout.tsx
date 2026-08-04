@@ -1,6 +1,5 @@
 import type { Metadata, Viewport } from "next";
 import { Fredoka, Geist } from "next/font/google";
-import Script from "next/script";
 import "./globals.css";
 import "./parent/parent-weekly.css";
 import { AppShell } from "@/components/ui/AppShell";
@@ -82,10 +81,8 @@ export default async function RootLayout({ children }: Readonly<{ children: Reac
     >
       <head>
         <style id="critical-shell-css" dangerouslySetInnerHTML={{ __html: criticalShellCss }} />
+        <script id="leaguepilot-color-theme" dangerouslySetInnerHTML={{ __html: COLOR_THEME_PREPAINT_SCRIPT }} />
       </head>
-      <Script id="leaguepilot-color-theme" strategy="beforeInteractive">
-        {COLOR_THEME_PREPAINT_SCRIPT}
-      </Script>
       <body>
         <AppShell access={shellAccess}>{children}</AppShell>
       </body>

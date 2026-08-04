@@ -3355,16 +3355,31 @@ button.month-calendar-day:hover {
   min-height: 48px;
 }
 .season-action-row {
-  align-items: center;
   background: color-mix(in srgb, var(--surface) 92%, transparent);
   border: 1px solid color-mix(in srgb, var(--certainty-accent) 14%, var(--line));
   border-radius: var(--radius-sm);
   color: var(--text);
+  display: block;
+  min-height: 54px;
+  padding: 10px var(--sp-3);
+}
+.season-action-row-link {
+  align-items: center;
+  color: inherit;
   display: grid;
   gap: var(--sp-3);
   grid-template-columns: minmax(0, 1fr) auto;
-  min-height: 54px;
-  padding: 10px var(--sp-3);
+}
+.season-priority-evidence {
+  border-top: 1px solid var(--line);
+  margin-top: 8px;
+  padding-top: 8px;
+}
+.season-priority-evidence summary {
+  color: var(--muted);
+  cursor: pointer;
+  font-size: var(--text-xs);
+  font-weight: 700;
 }
 .season-action-row strong,
 .season-action-row small,
@@ -6545,6 +6560,7 @@ html[data-theme="dark"] {
     box-shadow: 0 4px 16px rgba(23, 32, 51, 0.08);
     flex-direction: column; gap: 0;
   }
+  .sidebar-video-backdrop video { display: none; }
 
   .brand { margin-bottom: var(--sp-2); }
   .brand-mark { width: 36px; height: 36px; }
@@ -6697,6 +6713,8 @@ html[data-theme="dark"] {
   }
   .season-action-row {
     align-items: start;
+  }
+  .season-action-row-link {
     grid-template-columns: 1fr;
   }
   .season-action-row em {
@@ -8077,21 +8095,25 @@ html[data-theme="dark"] {
   background: color-mix(in srgb, var(--surface) 94%, var(--page));
   border: 1px solid var(--line);
   border-radius: var(--radius-lg);
-  display: grid;
-  gap: 1px;
-  grid-template-columns: repeat(5, minmax(0, 1fr));
   margin: calc(var(--sp-5) * -0.35) 0 var(--sp-5);
   overflow: hidden;
 }
 
-.verified-context-bar > span {
+.verified-context-bar > summary { display: none; }
+.verified-context-details {
+  display: grid;
+  gap: 1px;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+}
+
+.verified-context-details > span {
   display: grid;
   gap: 2px;
   min-width: 0;
   padding: 10px 12px;
 }
 
-.verified-context-bar > span + span {
+.verified-context-details > span + span {
   border-left: 1px solid var(--line);
 }
 
@@ -8186,6 +8208,11 @@ html[data-theme="dark"] {
   position: absolute;
   top: 3px;
   right: max(6px, calc(50% - 24px));
+}
+.parent-weekly-nav-attention,
+.nav-attention-badge,
+.mobile-tab-attention {
+  white-space: nowrap;
 }
 .mobile-tabbar a[data-active="true"] .mobile-tab-icon svg {
   stroke-width: 2.6;
@@ -10978,15 +11005,18 @@ button.theme-toggle:hover:not(:disabled) {
 }
 
 .season-admin-context {
-  display: flex;
-  flex-wrap: wrap;
   overflow: hidden;
   border: 1px solid var(--line);
   border-radius: var(--radius-md);
   background: var(--surface);
 }
+.season-admin-context > summary { display: none; }
+.season-admin-context-details {
+  display: flex;
+  flex-wrap: wrap;
+}
 
-.season-admin-context span {
+.season-admin-context-details span {
   flex: 1 1 180px;
   min-width: 0;
   padding: 13px 16px;
@@ -10994,7 +11024,7 @@ button.theme-toggle:hover:not(:disabled) {
   font-size: 0.76rem;
 }
 
-.season-admin-context span + span {
+.season-admin-context-details span + span {
   border-left: 1px solid var(--line);
 }
 
@@ -11365,24 +11395,50 @@ button.theme-toggle:hover:not(:disabled) {
     flex: 0 0 auto;
   }
 
-  .verified-context-bar {
+  .verified-context-bar > summary {
+    align-items: center;
+    display: flex;
+    gap: 8px;
+    justify-content: space-between;
+    list-style-position: inside;
+    min-height: 40px;
+    padding: 8px 10px;
+  }
+
+  .verified-context-bar > summary strong {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    text-transform: capitalize;
+    white-space: nowrap;
+  }
+
+  .verified-context-details {
+    display: none;
     grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .verified-context-bar[open] .verified-context-details {
+    display: grid;
+  }
+
+  .verified-context-bar {
     margin-top: -8px;
   }
 
-  .verified-context-bar > span + span {
+  .verified-context-details > span + span {
     border-left: 0;
   }
 
-  .verified-context-bar > span:nth-child(even) {
+  .verified-context-details > span:nth-child(even) {
     border-left: 1px solid var(--line);
   }
 
-  .verified-context-bar > span:nth-child(n + 3) {
+  .verified-context-details > span:nth-child(n + 3) {
     border-top: 1px solid var(--line);
   }
 
-  .verified-context-bar > span:last-child:nth-child(odd) {
+  .verified-context-details > span:last-child:nth-child(odd) {
     grid-column: 1 / -1;
   }
 
@@ -11604,11 +11660,34 @@ button.theme-toggle:hover:not(:disabled) {
     border-left: 0;
   }
 
-  .season-admin-context span {
+  .season-admin-home > .season-admin-context { order: -3; }
+  .season-admin-home > .pending-actions-panel { order: -2; }
+  .season-admin-home > .league-health-card { order: -1; }
+
+  .season-admin-context > summary {
+    align-items: center;
+    display: flex;
+    gap: 8px;
+    justify-content: space-between;
+    min-height: 40px;
+    padding: 8px 10px;
+  }
+
+  .season-admin-context > summary strong {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .season-admin-context-details { display: none; }
+  .season-admin-context[open] .season-admin-context-details { display: flex; }
+
+  .season-admin-context-details span {
     flex-basis: 100%;
   }
 
-  .season-admin-context span + span {
+  .season-admin-context-details span + span {
     border-top: 1px solid var(--line);
     border-left: 0;
   }
@@ -13492,6 +13571,37 @@ button.theme-toggle:hover:not(:disabled) {
   .coach-announcement-item {
     padding-inline: var(--sp-4);
   }
+
+  .coach-announcement-ticker {
+    grid-template-columns: auto minmax(0, 1fr);
+    min-height: 44px;
+  }
+
+  .coach-announcement-label {
+    border-bottom: 0;
+    border-right: 1px solid #36506d;
+    grid-column: auto;
+    min-height: 44px;
+    padding-inline: 10px;
+  }
+
+  .coach-announcement-track { animation: none; transform: none; }
+  .coach-announcement-group:last-child,
+  .coach-announcement-item:not(:first-child),
+  .coach-announcement-toggle { display: none; }
+  .coach-announcement-item:first-child {
+    display: block;
+    overflow: hidden;
+    padding-inline: 10px;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .coach-announcement-item:first-child::after,
+  .coach-announcement-item:first-child span,
+  .coach-announcement-item:first-child small { display: none; }
+
+  .coach-radar-layout { display: flex; flex-direction: column; }
+  .coach-radar-actions { order: -1; }
 
   .parent-season-timeline,
   .parent-season-next,

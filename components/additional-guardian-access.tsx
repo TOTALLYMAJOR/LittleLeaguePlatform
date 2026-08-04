@@ -349,6 +349,7 @@ export function AdminAdditionalGuardianClient({ data }: { data: AdditionalGuardi
                 Decline request
               </button>
             </div>
+            {(reasons[request.id]?.trim().length ?? 0) < 10 ? <p className="muted">Add a family-visible decision note of at least 10 characters to enable approval or decline.</p> : null}
             <p className="muted">Approval creates a seven-day link but does not send it. The exact invited email must sign in.</p>
           </article>
         ))}

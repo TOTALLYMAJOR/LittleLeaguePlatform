@@ -28,6 +28,7 @@ const privateMutationRoutes = [
   "app/api/coach/parent-replay/approve/route.ts",
   "app/api/coach/parent-replay/publish/route.ts",
   "app/api/coach/parent-replay/route.ts",
+  "app/api/coach/rsvp-reminders/draft/route.ts",
   "app/api/coach/weekly-update/route.ts",
   "app/api/field-locations/route.ts",
   "app/api/media/moderation/route.ts",

@@ -1,0 +1,98 @@
+{
+  "baseUrl": "http://127.0.0.1:3001",
+  "capturedAt": "2026-08-03T23:30:08.298Z",
+  "proofs": [
+    {
+      "role": "coach-drafts",
+      "path": "/coach/drafts",
+      "signedIn": true,
+      "matchedText": "Drafts to Review",
+      "firstViewportText": "Skip to main content Coach tools: Drafts to Review Dark Signed in All caught up Coach · Little League HQ · Tiny Tigers CONTEXT DETAILS COACH COMMUNICATION Drafts to Review Review pending family messages for assigned teams. Opening a draft does not approve or send it. Pending drafts 4 pending drafts loaded for assigned teams. 4 pending Parent Replay is ready Tiny Tigers | 4 recipients Pending Review draft Weekly update for Tiny Tigers Tiny Tigers | 1 recipient Pending Review draft Weekly update for Tiny Tigers Tiny Tigers | 1 recipient Pending Review draft Weekly update for Tiny Tigers Tiny Tigers | 1 recipient Pending Review draft Offline sync Nothing waiting to sync. Counts only. Message contents and player details are never shown here. Today RSVPs Replay Messages Team Route ready",
+      "browserErrors": [],
+      "browserWarnings": [],
+      "viewports": [
+        {
+          "name": "mobile-375",
+          "width": 375,
+          "height": 812,
+          "clientWidth": 375,
+          "scrollWidth": 375
+        },
+        {
+          "name": "mobile-390",
+          "width": 390,
+          "height": 844,
+          "clientWidth": 390,
+          "scrollWidth": 390
+        },
+        {
+          "name": "tablet-768",
+          "width": 768,
+          "height": 1024,
+          "clientWidth": 768,
+          "scrollWidth": 768
+        },
+        {
+          "name": "laptop-1024",
+          "width": 1024,
+          "height": 900,
+          "clientWidth": 1024,
+          "scrollWidth": 1024
+        },
+        {
+          "name": "desktop-1440",
+          "width": 1440,
+          "height": 1100,
+          "clientWidth": 1440,
+          "scrollWidth": 1440
+        }
+      ]
+    },
+    {
+      "role": "coach-attendance",
+      "path": "/coach/attendance",
+      "signedIn": true,
+      "matchedText": "Attendance summaries for assigned teams",
+      "firstViewportText": "Skip to main content Coach tools: RSVPs Dark Signed in All caught up Coach · Little League HQ · Tiny Tigers CONTEXT DETAILS COACH ATTENDANCE VIEW Attendance summaries for assigned teams. Assigned coaches see only their team events and aggregate RSVP counts. Attendance is current for your assigned teams. Tiny Tigers vs Rookie Rockets Tiny Tigers · Jul 11, 10:00 AM Going 2 Maybe 0 Not going 0 No response: 0 of 2 Nothing needed. Every family has responded. Tiny Tigers Practice Tiny Tigers · Jul 15, 6:00 PM Going 0 Maybe 0 Not going 0 No response: 2 of 2 QA Parent Jordan No response for Avery P., Mason T. Save reminder draft Saves one pending draft for review. It does not send a message. Offline sync Nothing waiting to sync. Counts only. Message contents and player details are never shown here. Today RSVPs Replay Messages Team Route ready",
+      "browserErrors": [],
+      "browserWarnings": [],
+      "viewports": [
+        {
+          "name": "mobile-375",
+          "width": 375,
+          "height": 812,
+          "clientWidth": 375,
+          "scrollWidth": 375
+        },
+        {
+          "name": "mobile-390",
+          "width": 390,
+          "height": 844,
+          "clientWidth": 390,
+          "scrollWidth": 390
+        },
+        {
+          "name": "tablet-768",
+          "width": 768,
+          "height": 1024,
+          "clientWidth": 768,
+          "scrollWidth": 768
+        },
+        {
+          "name": "laptop-1024",
+          "width": 1024,
+          "height": 900,
+          "clientWidth": 1024,
+          "scrollWidth": 1024
+        },
+        {
+          "name": "desktop-1440",
+          "width": 1440,
+          "height": 1100,
+          "clientWidth": 1440,
+          "scrollWidth": 1440
+        }
+      ]
+    }
+  ]
+}

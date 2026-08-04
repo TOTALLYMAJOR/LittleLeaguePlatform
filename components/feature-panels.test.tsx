@@ -300,8 +300,11 @@ describe("CoachDashboardClient", () => {
     expect(html).toContain("in your queue");
     expect(html).toContain("Your 15-minute sideline check");
     expect(html).toContain("Next event");
-    expect(html).toContain("Draft RSVP reminder");
-    expect(html).toContain("saves a draft for your review");
+    expect(html).toContain("Save reminder draft");
+    expect(html).toContain("Each numbered row is one task");
+    expect(html).toContain("5 tasks in your queue");
+    expect(html).toContain("5 tasks to do");
+    expect(html).toContain("Open resolution room");
     expect(html).toContain("More coach context");
     expect(html).toContain("Attendance");
     expect(html).toContain("No reply");
@@ -588,7 +591,7 @@ describe("ScheduleAlertsClient", () => {
     expect(html).toContain("Original");
     expect(html).toContain("Proposed");
     expect(html).toContain("Proposed start");
-    expect(html).toContain("Review impact and save");
+    expect(html).toContain("Go to schedule change form");
     expect(html).toContain("does not execute provider delivery");
   });
 
@@ -660,7 +663,7 @@ describe("ScheduleAlertsClient", () => {
 });
 
 describe("AdminDashboardClient", () => {
-  it("renders admin operations, registrations, sponsors, and notifications", () => {
+  it("ends the admin home at linked review queues without focused workbenches", () => {
     const html = renderToStaticMarkup(
       <AppStateProvider>
         <AdminDashboardClient drillVideoData={drillVideoLibraryData} />
@@ -672,73 +675,22 @@ describe("AdminDashboardClient", () => {
     expect(html).toContain("Current admin context");
     expect(html).toContain("League admin");
     expect(html).toContain("Teams needing help");
+    expect(html).toContain('href="/admin/teams"');
+    expect(html).toContain('href="/admin/registrations"');
+    expect(html).toContain('href="/admin/message-delivery-review"');
     expect(html).toContain("Pending reviews");
-    expect(html).toContain("Team status");
-    expect(html).toContain("Message Delivery Review");
-    expect(html).toContain("Review &amp; Safety");
-    expect(html).toContain("Suggested reviews");
-    expect(html).toContain("Registration queue");
-    expect(html).toContain("Media governance");
-    expect(html).toContain("Family reports");
-    expect(html).toContain("Upload storage");
-    expect(html).toContain("Link-based only");
-    expect(html).toContain("Approve media");
-    expect(html).toContain("Reject media");
-    expect(html).toContain("Role-based media visibility");
-    expect(html).toContain("Retention:");
-    expect(html).toContain("Family visibility");
-    expect(html).toContain("Review request");
-    expect(html).toContain("Team/org visibility");
-    expect(html).toContain("Open source link");
-    expect(html).toContain("Coach drill videos");
-    expect(html).toContain("Reference review");
-    expect(html).toContain("Sponsor-Safe Media Gallery");
-    expect(html).toContain("Approved recap framing");
-    expect(html).toContain("Equipment Exchange");
-    expect(html).toContain("Moderation queue");
-    expect(html).toContain("Approve source");
-    expect(html).toContain("Approve video");
-    expect(html).toContain("Hide media");
-    expect(html).toContain("Restore media");
-    expect(html).toContain("Sponsor management");
-    expect(html).toContain("Sponsor placement");
-    expect(html).toContain("Public display policy");
-    expect(html).toContain("Sponsor billing records");
-    expect(html).toContain("League Revenue Dashboard");
-    expect(html).toContain("Community Sponsor Matchmaker");
-    expect(html).toContain("Sponsor suggestions are leads for admin review");
-    expect(html).toContain("Stripe Product/Price");
-    expect(html).toContain("invoice reference");
-    expect(html).toContain("payment status");
-    expect(html).toContain("Sponsor billing stays separate from child-facing display");
-    expect(html).toContain("Schedule sponsor placement");
-    expect(html).toContain("media gallery sponsor placement");
-    expect(html).toContain("email sponsor placement");
-    expect(html).toContain("banner sponsor placement");
-    expect(html).toContain("Save sponsor");
-    expect(html).toContain("Message draft review");
-    expect(html).toContain("SMS draft");
-    expect(html).toContain("Drag and drop SVG lineup");
-    expect(html).toContain("Roster maker readiness");
-    expect(html).toContain("Automatic team builder preview");
-    expect(html).toContain("Sibling/friend constraints");
-    expect(html).toContain("Admin review inputs");
-    expect(html).toContain("age bands, cutoff-age labels, and player evaluations");
-    expect(html).toContain("Review metadata");
-    expect(html).toContain("Mason T. 3U, Age 3 on league cutoff, eval 4");
-    expect(html).toContain("skill-balance score");
-    expect(html).toContain("Preview -&gt; Edit -&gt; Approve -&gt; Publish");
-    expect(html).not.toContain("Mason Taylor");
-    expect(html).not.toContain("2019-");
-    expect(html).toContain("Bracket maker");
-    expect(html).toContain("Queued message records");
-    expect(html).toContain("Touch target check");
-    expect(html).toContain("Offline label");
-    expect(html).toContain("Contrast checks");
-    expect(html).toContain("Privacy filters");
-    expect(html).toContain("Weather + Safety Decision Assistant");
-    expect(html).toContain("Family Availability Intelligence");
-    expect(html).toContain("Engagement and delivery-rate metrics stay out of this home card");
+    expect(html).toContain("Fix next hold:");
+    expect(html).toContain("Why this is next");
+    expect(html).toContain("Fix family access");
+    expect(html).not.toContain("Message Delivery Review");
+    expect(html).toContain("Suggested review");
+    expect(html).toContain("Go to registration review queue");
+    expect(html).not.toContain("Team status");
+    expect(html).not.toContain("Media governance");
+    expect(html).not.toContain("Sponsor management");
+    expect(html).not.toContain("Message draft review");
+    expect(html).not.toContain("Roster maker readiness");
+    expect(html).not.toContain("Queued message records");
     expect(html).not.toContain("Provider sends live");
   });
 
@@ -753,7 +705,7 @@ describe("AdminDashboardClient", () => {
     expect(html).toContain("Media governance");
     expect(html).toContain("Coach drill videos");
     expect(html).toContain("Reference review");
-    expect(html).toContain("Hide media");
+    expect(html).toContain("All clear. No media items need review.");
     expect(html).not.toContain("Roster maker readiness");
     expect(html).not.toContain("Sponsor management");
   });
