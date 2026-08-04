@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import { useEffect, useMemo, useState, useTransition, type CSSProperties, type ChangeEvent, type ReactNode } from "react";
 import { markLeaguePilotValueExperienced, useAppState } from "@/app/providers";
 import {
@@ -1836,16 +1837,6 @@ export function ParentDashboardClient({ dashboardData }: { dashboardData?: Paren
       meta: entry.meta,
       tone: entry.tone
     }));
-  const parentChanges = dashboard.latestAnnouncement
-    ? [`Coach posted ${dashboard.latestAnnouncement.title} (${formatDate(dashboard.latestAnnouncement.createdAt)})`]
-    : [];
-  let parentUnreadCount = 0;
-  try {
-    parentUnreadCount = primaryTeamId ? getTeamChatView(sourceState, parentUserId, primaryTeamId, NOW).unreadCount : 0;
-  } catch {
-    parentUnreadCount = 0;
-  }
-  const latestMediaItem = mediaFeed[0];
   const firstMissingRsvp = nextParentRsvp ?? dashboard.rsvpNeeded[0];
   const parentPrimaryAction = firstMissingRsvp
     ? { href: "/parent/rsvp", label: "RSVP now" }
@@ -1962,38 +1953,6 @@ export function ParentDashboardClient({ dashboardData }: { dashboardData?: Paren
     `Family help: ${parentHelpCopy}`,
     "Local checklist only. It does not save attendance or send alerts."
   ].join("\n");
-  const pendingParentActions = [
-    ...(firstMissingRsvp ? [{
-      id: "missing-rsvp",
-      label: `Confirm whether ${firstMissingRsvp.player.firstName} is coming ${formatShortDay(firstMissingRsvp.event.startsAt)}`,
-      cta: "RSVP now",
-      href: "/parent/rsvp"
-    }] : []),
-    ...(openSnackSlots[0] ? [{
-      id: "snack-open",
-      label: `${openSnackSlots[0].item} is still open for ${eventById.get(openSnackSlots[0].eventId)?.title ?? "a team event"}`,
-      cta: "View snacks",
-      href: "#family-help"
-    }] : []),
-    ...(openVolunteerSignups[0] ? [{
-      id: "volunteer-open",
-      label: `${openVolunteerSignups.length} volunteer slot${openVolunteerSignups.length === 1 ? "" : "s"} open for your team`,
-      cta: "Sign up",
-      href: "#family-help"
-    }] : []),
-    ...(!sourceState.notificationPreferences.some((item) => item.userId === parentUserId && item.notificationType === "schedule_changed") ? [{
-      id: "notification-preference",
-      label: "Set schedule alert preferences for this team",
-      cta: "Set up",
-      href: "#schedule-alerts"
-    }] : []),
-    ...(dashboard.children.length === 0 ? [{
-      id: "guardian-link",
-      label: "Your family access is not yet verified",
-      cta: "Verify now",
-      href: "/registration"
-    }] : [])
-  ].slice(0, 3);
   const actionChecklist = [
     {
       label: "Check the family calendar",
@@ -2674,14 +2633,6 @@ export function ParentRsvpClient({ dashboardData }: { dashboardData?: ParentCoac
       rsvp: displayState.rsvps.find((item) => item.eventId === event.id && item.playerId === player.id)
     })));
 
-  const parentOfflineScope = {
-    actorId: parentUserId,
-    organizationId: sourceState.organization.id,
-    seasonId: sourceState.activeSeason.id,
-    contextKey: parentContextKey,
-    familyId: parentUserId
-  };
-
   async function sendQueuedRsvp(
     action: OfflineGameDayAction,
     endpoint: string,
@@ -2706,7 +2657,13 @@ export function ParentRsvpClient({ dashboardData }: { dashboardData?: ParentCoac
           setMessage("Sign-in required before saved RSVP actions can sync.");
           return [];
         }
-        return syncContextOutbox(parentOfflineScope, session, sendQueuedRsvp);
+        return syncContextOutbox({
+          actorId: parentUserId,
+          organizationId: sourceState.organization.id,
+          seasonId: sourceState.activeSeason.id,
+          contextKey: parentContextKey,
+          familyId: parentUserId
+        }, session, sendQueuedRsvp);
       }).then((results) => {
         const conflict = results.find((result) => "conflictDetail" in result && result.conflictDetail);
         if (conflict && "conflictDetail" in conflict) setMessage(`Sync conflict: ${conflict.conflictDetail}`);
@@ -2870,7 +2827,6 @@ export function CoachDashboardClient({ dashboardData }: { dashboardData?: Parent
   const [fieldAttendanceVersions, setFieldAttendanceVersions] = useState<Record<string, number>>({});
   const sourceState = dashboardData?.state ?? state;
   const coachId = dashboardData?.coachUserId ?? "user-coach-taylor";
-  const coachUser = sourceState.users.find((user) => user.id === coachId);
   const assignedTeamIds = new Set(sourceState.teamMemberships.filter((membership) => (
     membership.userId === coachId && membership.role === "coach" && membership.status === "active"
   )).map((membership) => membership.teamId));
@@ -3000,14 +2956,6 @@ export function CoachDashboardClient({ dashboardData }: { dashboardData?: Parent
     now: NOW
   });
 
-  const coachOfflineScope = {
-    actorId: coachId,
-    organizationId: sourceState.organization.id,
-    seasonId: sourceState.activeSeason.id,
-    contextKey: coachContextKey,
-    teamId: primaryCoachTeam?.id ?? "none"
-  };
-
   async function sendQueuedFieldAction(
     action: OfflineGameDayAction,
     endpoint: string,
@@ -3045,7 +2993,7 @@ export function CoachDashboardClient({ dashboardData }: { dashboardData?: Parent
     } catch {
       // Field Mode remains online-only when private cache storage is unavailable.
     }
-  }, [coachContextKey, fieldPlayers, nextAssignedEvent]);
+  }, [coachContextKey, coachId, fieldPlayers, nextAssignedEvent]);
 
   useEffect(() => {
     if (!offlineWritesEnabled || typeof window === "undefined") return;
@@ -3055,7 +3003,13 @@ export function CoachDashboardClient({ dashboardData }: { dashboardData?: Parent
           setActionMessage("Sign-in required before saved Field Mode actions can sync.");
           return [];
         }
-        return syncContextOutbox(coachOfflineScope, session, sendQueuedFieldAction);
+        return syncContextOutbox({
+          actorId: coachId,
+          organizationId: sourceState.organization.id,
+          seasonId: sourceState.activeSeason.id,
+          contextKey: coachContextKey,
+          teamId: primaryCoachTeam?.id ?? "none"
+        }, session, sendQueuedFieldAction);
       }).then((results) => {
         const conflict = results.find((result) => "conflictDetail" in result && result.conflictDetail);
         if (conflict && "conflictDetail" in conflict) setActionMessage(`Sync conflict: ${conflict.conflictDetail}`);
@@ -4201,20 +4155,6 @@ export function AdminDashboardClient({ registrationRequests, sponsorData, mediaD
   const offlineStateSummary = getOfflineStateSummary();
   const contrastChecks = getAccessibilityContrastChecks();
   const privacyFilters = getPrivacyFilters();
-  const teamsWithUpcomingEvents = new Set(state.events
-    .filter((event) => event.status === "scheduled" && new Date(event.startsAt).getTime() >= new Date(NOW).getTime())
-    .map((event) => event.teamId));
-  const teamHelpRows = state.teams.map((team) => {
-    const issues = [
-      !team.coachUserId ? "coach" : undefined,
-      !teamsWithUpcomingEvents.has(team.id) ? "event" : undefined
-    ].filter(Boolean) as string[];
-    return { team, issues };
-  }).filter((row) => row.issues.length > 0);
-  const pendingSponsorReviews = sponsors.filter((sponsor) => sponsor.status === "pending").length;
-  const pendingDrillReviews = drillVideos.filter((video) => video.approvalStatus === "pending").length +
-    drillSources.filter((source) => source.approvalStatus === "pending").length;
-  const pendingReviewCount = pendingRegistrations.length + mediaReportingSummary.pendingReview + pendingSponsorReviews + pendingDrillReviews;
   const [communicationTeamId, setCommunicationTeamId] = useState("team-tigers");
   const [communicationChannel, setCommunicationChannel] = useState<AdminCommunicationChannel>("email");
   const [communicationTemplate, setCommunicationTemplate] = useState<CommunicationTemplate>("weekly_digest");
@@ -5590,14 +5530,14 @@ export function AdminThemesClient({ initialData }: { initialData: AdminThemeData
             <div className="team-branding-preview brand-studio-preview" style={teamBrandStyle(draft.primaryColor, draft.secondaryColor)}>
               {previewElements.mascotMark ? (
                 <strong className="mascot-preview-mark">
-                  {mascotPreviewDataUrl ? <img src={mascotPreviewDataUrl} alt="" /> : draft.mascot.slice(0, 2)}
+                  {mascotPreviewDataUrl ? <Image src={mascotPreviewDataUrl} alt="" width={72} height={72} unoptimized /> : draft.mascot.slice(0, 2)}
                 </strong>
               ) : null}
               <span>{team.name} portal</span>
             </div>
             {previewElements.mobileHeader ? (
               <div className="team-branding-preview mobile-preview brand-mobile-preview" style={teamBrandStyle(draft.primaryColor, draft.secondaryColor)}>
-                <strong>{mascotPreviewDataUrl ? <img src={mascotPreviewDataUrl} alt="" /> : draft.mascot.slice(0, 1)}</strong>
+                <strong>{mascotPreviewDataUrl ? <Image src={mascotPreviewDataUrl} alt="" width={72} height={72} unoptimized /> : draft.mascot.slice(0, 1)}</strong>
                 <span>{team.name} mobile</span>
               </div>
             ) : null}

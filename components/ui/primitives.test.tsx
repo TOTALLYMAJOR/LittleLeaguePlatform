@@ -126,5 +126,8 @@ describe("UI concept scorecard", () => {
     expect(html).toContain("First-run coach checklist");
     expect(html).toContain("Who are you");
     expect(html).toContain("Denied");
+    expect(html).toContain('data-sort="ascending"');
+    expect(html).toContain('aria-label="Status, sorted ascending"');
+    expect(html).not.toContain('aria-sort="ascending"');
   });
 });
