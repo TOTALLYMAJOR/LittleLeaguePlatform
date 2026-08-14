@@ -110,37 +110,6 @@ async function authenticatedPost(url: string, payload: unknown, extraHeaders?: R
   });
 }
 
-function ProgressRow({
-  label,
-  value,
-  detail
-}: {
-  label: string;
-  value: number;
-  detail: string;
-}) {
-  const safeValue = Math.min(100, Math.max(0, value));
-  return (
-    <li>
-      <div>
-        <strong>{label}</strong>
-        <span>{detail}</span>
-      </div>
-      <div
-        className="parent-weekly-progress"
-        role="progressbar"
-        aria-label={label}
-        aria-valuemin={0}
-        aria-valuemax={100}
-        aria-valuenow={safeValue}
-        style={{ "--parent-weekly-progress": `${safeValue}%` } as CSSProperties}
-      >
-        <span />
-      </div>
-    </li>
-  );
-}
-
 function RsvpButtons({
   event,
   response,
@@ -262,7 +231,6 @@ export function ParentWeeklyDashboard({ view, dashboardData, replayData }: Paren
   }).length;
   const goingEvents = weeklyEvents.filter((event) => getRsvp(event) === "going").length;
   const needsReply = weeklyEvents.filter((event) => !getRsvp(event) || getRsvp(event) === "cancelled").length;
-  const rsvpCoverage = weeklyEvents.length ? Math.round((answeredEvents / weeklyEvents.length) * 100) : 0;
   const assignedSnack = nextEvent
     ? dashboardData.state.snackScheduleSlots.find((slot) => (
       slot.eventId === nextEvent.eventId &&
@@ -294,22 +262,39 @@ export function ParentWeeklyDashboard({ view, dashboardData, replayData }: Paren
     : `${firstName}'s week`;
   const teamMark = initials(primaryTeam?.mascot || primaryTeam?.name || "LP");
 
-  const snapshotRows = [
-    {
-      label: "RSVP coverage",
-      value: rsvpCoverage,
-      detail: weeklyEvents.length ? `${answeredEvents} of ${weeklyEvents.length} answered` : "No events this week"
-    },
-    {
-      label: "Family help",
-      value: Math.min(100, familyAssignments * 34),
-      detail: familyAssignments ? `${familyAssignments} current assignment${familyAssignments === 1 ? "" : "s"}` : "No current assignments"
-    },
-    {
-      label: "Published Replays",
-      value: Math.min(100, replayData.replays.length * 25),
-      detail: replayData.replays.length ? `${replayData.replays.length} ready for your family` : "None published yet"
-    }
+  const readinessItems = [
+    ...(needsReply ? [{
+      id: "rsvp",
+      label: `${needsReply} ${needsReply === 1 ? "RSVP needs" : "RSVPs need"} your answer`,
+      detail: weeklyEvents.length ? `${answeredEvents} of ${weeklyEvents.length} answered this week` : "No events this week",
+      href: "/parent/rsvp",
+      cta: "Answer RSVP",
+      Icon: CalendarDays
+    }] : []),
+    ...(nextEvent && !nextEvent.transportationAssigned ? [{
+      id: "ride",
+      label: "Ride plan not set",
+      detail: `${nextEvent.childLabel} at ${nextEvent.title}`,
+      href: "/parent/transportation",
+      cta: "Open rides",
+      Icon: CarFront
+    }] : []),
+    ...(view.criticalChange ? [{
+      id: "change",
+      label: "Schedule change needs review",
+      detail: view.criticalChange.summary,
+      href: nextEvent?.primaryAction?.href?.startsWith("/") ? nextEvent.primaryAction.href : "/parent/schedule",
+      cta: "Review change",
+      Icon: TriangleAlert
+    }] : []),
+    ...(view.conflicts.length ? [{
+      id: "conflict",
+      label: `${view.conflicts.length} schedule ${view.conflicts.length === 1 ? "conflict" : "conflicts"}`,
+      detail: view.conflicts[0]?.summary ?? "Review overlapping family events.",
+      href: "/parent/schedule",
+      cta: "Check schedule",
+      Icon: TriangleAlert
+    }] : [])
   ];
 
   async function saveRsvp(
@@ -610,6 +595,45 @@ export function ParentWeeklyDashboard({ view, dashboardData, replayData }: Paren
             )}
           </section>
 
+          <section
+            className={`parent-weekly-card parent-weekly-readiness ${readinessItems.length ? "has-actions" : "is-clear"}`}
+            aria-labelledby="parent-readiness-title"
+          >
+            <header className="parent-weekly-section-heading">
+              <div>
+                <span className="parent-weekly-kicker">Ready for Saturday</span>
+                <h2 id="parent-readiness-title">
+                  {readinessItems.length
+                    ? `${readinessItems.length} ${readinessItems.length === 1 ? "thing needs" : "things need"} you`
+                    : "Nothing unresolved for Saturday"}
+                </h2>
+              </div>
+              <ShieldCheck aria-hidden="true" size={20} />
+            </header>
+            {readinessItems.length ? (
+              <ol className="parent-weekly-readiness-actions">
+                {readinessItems.map(({ id, label, detail, href, cta, Icon }) => (
+                  <li key={id}>
+                    <Icon aria-hidden="true" size={18} />
+                    <span>
+                      <strong>{label}</strong>
+                      <small>{detail}</small>
+                    </span>
+                    <Link href={href}>
+                      {cta}
+                      <ArrowRight aria-hidden="true" size={15} />
+                    </Link>
+                  </li>
+                ))}
+              </ol>
+            ) : (
+              <p className="parent-weekly-readiness-clear">
+                <CheckCircle2 aria-hidden="true" size={17} />
+                RSVP, ride, changes, and family assignments do not show unresolved items for the next event.
+              </p>
+            )}
+          </section>
+
           <section className="parent-weekly-card parent-weekly-replay" aria-labelledby="parent-replay-title">
             <header className="parent-weekly-section-heading">
               <div>
@@ -744,23 +768,6 @@ export function ParentWeeklyDashboard({ view, dashboardData, replayData }: Paren
               Open Communication Room
               <ArrowRight aria-hidden="true" size={16} />
             </Link>
-          </section>
-
-          <section className="parent-weekly-card parent-weekly-readiness" aria-labelledby="parent-readiness-title">
-            <header className="parent-weekly-section-heading">
-              <div>
-                <span className="parent-weekly-kicker">Family readiness</span>
-                <h2 id="parent-readiness-title">This season at home</h2>
-              </div>
-              <ShieldCheck aria-hidden="true" size={20} />
-            </header>
-            <ul>
-              {snapshotRows.map((row) => <ProgressRow key={row.label} {...row} />)}
-            </ul>
-            <p>
-              <ShieldCheck aria-hidden="true" size={15} />
-              Family logistics only. This view does not evaluate athlete performance.
-            </p>
           </section>
 
           <Link className="parent-weekly-access-link" href="/parent/family-access">

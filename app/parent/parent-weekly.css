@@ -1021,7 +1021,7 @@
 
 .parent-weekly-schedule > ol,
 .parent-weekly-updates > ol,
-.parent-weekly-readiness > ul {
+.parent-weekly-readiness-actions {
   margin: 0;
   padding: 0;
   list-style: none;
@@ -1182,73 +1182,91 @@
   font-weight: 850;
 }
 
-.parent-weekly-readiness > ul {
-  display: grid;
-  gap: 18px;
-  padding: 1px 20px 18px;
+.parent-weekly-readiness.has-actions {
+  border-color: #f0d3b5;
+  background: #fff8ee;
 }
 
-.parent-weekly-readiness > ul > li {
-  display: grid;
-  gap: 8px;
+.parent-weekly-readiness.is-clear {
+  border-color: color-mix(in srgb, var(--ok) 24%, var(--line));
+  background: color-mix(in srgb, var(--ok-soft) 42%, var(--surface));
 }
 
-.parent-weekly-readiness li > div:first-child {
-  display: flex;
-  align-items: baseline;
-  justify-content: space-between;
+.parent-weekly-readiness-actions {
+  display: grid;
+  gap: 10px;
+  padding: 0 20px 18px;
+}
+
+.parent-weekly-readiness-actions > li {
+  display: grid;
+  grid-template-columns: 34px minmax(0, 1fr) auto;
+  align-items: center;
   gap: 12px;
+  min-height: 64px;
+  padding: 12px;
+  border: 1px solid #f0d3b5;
+  border-radius: 14px;
+  background: #fff;
 }
 
-.parent-weekly-readiness li strong {
-  font-size: 0.8rem;
+.parent-weekly-readiness-actions > li > svg {
+  display: grid;
+  place-self: center;
+  color: var(--action-strong);
 }
 
-.parent-weekly-readiness li span {
+.parent-weekly-readiness-actions span {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+}
+
+.parent-weekly-readiness-actions strong {
+  color: #1c2438;
+  font-size: 0.9rem;
+  line-height: 1.25;
+}
+
+.parent-weekly-readiness-actions small {
   color: #6b6559;
-  font-size: 0.68rem;
-  text-align: right;
+  font-size: 0.78rem;
+  line-height: 1.35;
 }
 
-.parent-weekly-progress {
-  height: 9px;
-  overflow: hidden;
+.parent-weekly-readiness-actions a {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  min-height: 44px;
+  padding: 8px 12px;
   border-radius: 999px;
-  background: #eee9e0;
+  background: var(--action);
+  color: #fff;
+  font-size: 0.78rem;
+  font-weight: 800;
+  white-space: nowrap;
 }
 
-.parent-weekly-progress > span {
-  display: block;
-  width: var(--parent-weekly-progress);
-  height: 100%;
-  border-radius: inherit;
-  background: #2f9e5b;
-  transition: width 240ms ease;
+.parent-weekly-readiness-actions a:hover {
+  background: var(--action-strong);
 }
 
-.parent-weekly-readiness li:nth-child(2) .parent-weekly-progress > span {
-  background: #ff7a2f;
-}
-
-.parent-weekly-readiness li:nth-child(3) .parent-weekly-progress > span {
-  background: #3d9be9;
-}
-
-.parent-weekly-readiness > p {
+.parent-weekly-readiness-clear {
   display: flex;
   align-items: flex-start;
   gap: 7px;
   margin: 0;
   padding: 13px 20px 16px;
-  border-top: 1px solid #ede5d8;
-  color: #6b6559;
-  font-size: 0.68rem;
+  color: #38564a;
+  font-size: 0.82rem;
   line-height: 1.45;
 }
 
-.parent-weekly-readiness > p svg {
+.parent-weekly-readiness-clear svg {
   flex: 0 0 auto;
-  color: #2f9e5b;
+  color: var(--ok);
 }
 
 .parent-weekly-empty {
@@ -1286,6 +1304,82 @@
   font-size: 0.73rem;
   font-weight: 850;
   white-space: nowrap;
+}
+
+.parent-weekly-loading-card,
+.parent-weekly-loading-passport,
+.parent-weekly-route-error {
+  padding: 20px;
+}
+
+.parent-weekly-loading-passport {
+  display: grid;
+  align-content: end;
+  min-height: 260px;
+  background: var(--accent-strong);
+}
+
+.parent-weekly-loading-line,
+.parent-weekly-loading-actions span {
+  display: block;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--accent) 14%, var(--surface-strong));
+}
+
+.parent-weekly-loading-passport .parent-weekly-loading-line,
+.parent-weekly-loading-passport .parent-weekly-loading-actions span {
+  background: rgba(255, 255, 255, 0.24);
+}
+
+.parent-weekly-loading-line {
+  width: min(100%, 320px);
+  height: 18px;
+  margin-top: 12px;
+}
+
+.parent-weekly-loading-line.wide {
+  width: min(100%, 520px);
+  height: 24px;
+  margin-top: 0;
+}
+
+.parent-weekly-loading-line.short {
+  width: min(62%, 220px);
+}
+
+.parent-weekly-loading-actions {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+  margin-top: 18px;
+}
+
+.parent-weekly-loading-actions span {
+  min-height: 48px;
+}
+
+.parent-weekly-route-error {
+  display: grid;
+  gap: 12px;
+  border-color: color-mix(in srgb, var(--danger) 28%, var(--line));
+  background: var(--danger-soft);
+}
+
+.parent-weekly-route-error h1 {
+  color: var(--text);
+  font-family: var(--font-sans);
+  font-size: var(--text-3xl);
+  line-height: 1.12;
+}
+
+.parent-weekly-route-error p {
+  max-width: 64ch;
+  color: var(--text);
+}
+
+.parent-weekly-route-error button {
+  justify-self: start;
+  min-height: 48px;
 }
 
 .parent-weekly-deep-operations {
@@ -1615,6 +1709,20 @@
     width: 100%;
   }
 
+  .parent-weekly-readiness-actions {
+    padding-inline: 14px;
+  }
+
+  .parent-weekly-readiness-actions > li {
+    grid-template-columns: 28px minmax(0, 1fr);
+  }
+
+  .parent-weekly-readiness-actions a {
+    grid-column: 2;
+    justify-self: start;
+    width: 100%;
+  }
+
   .parent-weekly-empty-compact {
     align-items: flex-start;
     flex-wrap: wrap;
@@ -1689,13 +1797,22 @@
     text-overflow: ellipsis;
     white-space: nowrap;
   }
+
+  .parent-weekly-readiness-actions > li {
+    gap: 9px;
+    padding-inline: 10px;
+  }
+
+  .parent-weekly-readiness-actions a {
+    padding-inline: 10px;
+  }
 }
 
 @media (prefers-reduced-motion: reduce) {
   .parent-weekly-header-nav > a,
   .parent-weekly-header-nav > button,
   .parent-weekly-rsvp button,
-  .parent-weekly-progress > span {
+  .parent-weekly-readiness-actions a {
     transition: none;
   }
 }
@@ -1865,8 +1982,8 @@
   .parent-weekly-schedule-copy p,
   .parent-weekly-updates li span,
   .parent-weekly-updates li p,
-  .parent-weekly-readiness li span,
-  .parent-weekly-readiness > p,
+  .parent-weekly-readiness-actions small,
+  .parent-weekly-readiness-clear,
   .parent-weekly-empty p,
   .parent-weekly-deep-operations > summary small,
   .parent-weekly-access-link small
@@ -1944,6 +2061,7 @@
   .parent-weekly-empty,
   .parent-weekly-access-link,
   .parent-weekly-changes li,
+  .parent-weekly-readiness-actions > li,
   .parent-weekly-deep-operations
 ) {
   border-color: var(--line);
@@ -1952,8 +2070,13 @@
   box-shadow: var(--shadow-sm);
 }
 
-:root[data-theme="dark"] [data-surface-family="family"] .parent-weekly-progress {
-  background: var(--surface-strong);
+:root[data-theme="dark"] [data-surface-family="family"] .parent-weekly-readiness-actions strong {
+  color: var(--text);
+}
+
+:root[data-theme="dark"] [data-surface-family="family"] .parent-weekly-readiness.is-clear {
+  border-color: color-mix(in srgb, var(--ok) 32%, var(--line));
+  background: var(--ok-soft);
 }
 
 :root[data-theme="dark"] [data-surface-family="family"] :is(

@@ -106,15 +106,17 @@ describe("ParentWeeklyDashboard", () => {
     expect(html).toContain("Will Mason T. be there?");
     expect(html).toContain("Sock-ball high five");
     expect(html).toContain("Opening weekend notes");
-    expect(html).toContain("Family logistics only");
-    expect(html).toContain("does not evaluate athlete performance");
+    expect(html).toContain("Ready for Saturday");
+    expect(html).toContain("things need you");
+    expect(html).toContain("Ride plan not set");
+    expect(html).toContain("Open rides");
     expect(html).toContain("%2Fimages%2Fleaguepilot-baseball-field-overhead.webp");
     expect(html).toContain("data-response=\"going\"");
     expect(html).toContain("Family access");
     expect(html).toContain("revoke access anytime");
-    expect(html).toContain("Ride plan not set");
     expect(html).toContain("/parent/transportation");
     expect(html).not.toContain("What changed");
+    expect(html).not.toContain("Detailed family operations");
     expect(html).not.toContain("Avery P.");
     expect(html).not.toContain("Noah B.");
     expect(html).not.toContain("day streak");
@@ -177,6 +179,7 @@ describe("ParentWeeklyDashboard", () => {
     expect(html).toContain("What changed");
     expect(html).toContain("Official schedule version changed");
     expect(html).toContain("schedule version 2");
+    expect(html).toContain("Schedule change needs review");
     expect(html).toContain("RSVP");
     expect(html).toContain("parent-weekly-changes-action");
   });
@@ -208,5 +211,48 @@ describe("ParentWeeklyDashboard", () => {
     expect(html).toContain("Outbound: Jordan P.");
     expect(html).toContain("Return: Riley P.");
     expect(html).not.toContain("Ride plan not set");
+  });
+
+  it("renders a clear Saturday state when RSVP and ride evidence are resolved", () => {
+    const dashboardData = parentDashboardData();
+    dashboardData.state = {
+      ...dashboardData.state,
+      rsvps: [{
+        id: "rsvp-mason-game",
+        eventId: "event-tigers-game",
+        playerId: "player-mason",
+        parentUserId: "user-parent-jordan",
+        response: "going",
+        respondedAt: "2026-04-01T09:30:00.000Z",
+        confirmedScheduleVersion: 1,
+        lockVersion: 1,
+        createdAt: "2026-04-01T09:30:00.000Z",
+        updatedAt: "2026-04-01T09:30:00.000Z"
+      }]
+    };
+    const view = buildFamilyMissionControl({
+      state: dashboardData.state,
+      parentUserId: dashboardData.parentUserId,
+      handoffs: [],
+      transportationResponsibilities: [
+        { eventId: "event-tigers-game", playerId: "player-mason", direction: "outbound", state: "assigned", adultLabel: "Jordan P." },
+        { eventId: "event-tigers-game", playerId: "player-mason", direction: "return", state: "assigned", adultLabel: "Riley P." }
+      ],
+      accessStatus: dashboardData.accessStatus,
+      isSupabaseBacked: dashboardData.isSupabaseBacked,
+      message: dashboardData.message,
+      now: "2026-04-01T12:00:00.000Z"
+    });
+
+    const html = renderToStaticMarkup(
+      <ParentWeeklyDashboard
+        view={view}
+        dashboardData={dashboardData}
+        replayData={{ ok: true, message: "No published Replay yet.", replays: [] }}
+      />
+    );
+
+    expect(html).toContain("Nothing unresolved for Saturday");
+    expect(html).toContain("RSVP, ride, changes, and family assignments");
   });
 });
