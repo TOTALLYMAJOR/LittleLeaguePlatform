@@ -18,6 +18,19 @@ describe("LandingIntroOverlay", () => {
     expect(source).toContain("Escape");
   });
 
+  it("keeps the cinematic beats: weather layers, photo interludes, and the mascot flip", () => {
+    const source = readFileSync(join(process.cwd(), "components", "landing-intro-overlay.tsx"), "utf8");
+    expect(source).toContain("li-rain");
+    expect(source).toContain("li-clouds");
+    expect(source).toContain("li-sun");
+    expect(source).toContain("li-cinema");
+    expect(source).toContain("leaguepilot-game-day-parent.png");
+    expect(source).toContain("leaguepilot-baseball-field-overhead.webp");
+    expect(source).toContain("li-mascots");
+    expect(source).toContain("li-badge-final");
+    expect(source).toContain("Every Saturday starts in a parking lot");
+  });
+
   it("tells the story in accessible text and keeps child privacy rules on the schedule board", () => {
     const source = readFileSync(join(process.cwd(), "components", "landing-intro-overlay.tsx"), "utf8");
     expect(source).toContain("sr-only");

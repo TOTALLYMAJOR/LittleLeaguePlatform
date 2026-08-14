@@ -1,10 +1,24 @@
 "use client";
 
+import Image from "next/image";
 import { useEffect, useRef, useState } from "react";
+import parentPhoto from "@/public/images/leaguepilot-game-day-parent.png";
+import fieldPhoto from "@/public/images/leaguepilot-baseball-field-overhead.webp";
 
 const STORAGE_KEY = "leaguepilot-intro-seen:v1";
-const INTRO_MS = 13500;
+const INTRO_MS = 18000;
 const LEAVE_MS = 600;
+
+const MASCOT_BADGES = [
+  { color: "#c62f2f", glyph: "M60 34 66 52h19l-15 11 6 19-16-12-16 12 6-19-15-11h19z" },
+  { color: "#1f5fbf", glyph: "M66 30 44 66h13l-7 24 26-38H62z" },
+  { color: "#1f7a4d", glyph: "M60 40c-8 0-13 6-13 12 0 9 13 22 13 22s13-13 13-22c0-6-5-12-13-12zM43 36a6 6 0 1 1 0 12 6 6 0 0 1 0-12zm34 0a6 6 0 1 1 0 12 6 6 0 0 1 0-12z" },
+  { color: "#6b3fa0", glyph: "M34 66c10-22 42-30 52-28-4 8-10 10-16 12 6 1 10 1 14 0-6 12-24 20-38 18l-12 8z" },
+  { color: "#d97a1f", glyph: "M60 30c4 12 18 18 18 32a18 18 0 0 1-36 0c0-14 14-20 18-32z" },
+  { color: "#0e7c86", glyph: "M38 74c8-24 30-38 46-40-4 8-6 16-14 22l10 2c-10 10-24 16-34 16z" },
+  { color: "#b3323f", glyph: "M42 76V50l18-16 18 16v26H66V60H54v16z" },
+  { color: "#c9962a", glyph: "M60 32a26 26 0 1 0 18 44l-8-6a16 16 0 1 1 0-24l8-6a26 26 0 0 0-18-8z" }
+];
 
 const BOARD_ROWS = [
   { team: "Rockets", color: "#c62f2f", line: "Sat 9:00 · Field 2 · Coach Maya R." },
@@ -102,10 +116,12 @@ export function LandingIntroOverlay() {
       </header>
 
       <p className="sr-only">
-        Five youth teams play in joyful disorder. The color drains: nobody gets paid, and the
-        season does not run itself. Coaches, parents, sponsors, and league admins arrive on
-        their phones, gear trucks pull up, schedules go up with team colors — and the season
-        comes back in full color, organized.
+        Five youth teams play in joyful disorder under gathering clouds. The color drains and
+        rain falls on an empty field: nobody gets paid, and the season does not run itself.
+        A parent loads the car before dawn; families watch a game from the bleachers. Coaches,
+        parents, sponsors, and league admins arrive on their phones, gear trucks pull up,
+        schedules go up with team colors. Team mascots flash past like trading cards, the sun
+        breaks through — and the season comes back in full color, organized.
       </p>
 
       <svg className="landing-intro-scene" viewBox="0 0 1200 800" aria-hidden="true" focusable="false">
@@ -145,6 +161,28 @@ export function LandingIntroOverlay() {
           <rect x="0" y="560" width="1200" height="240" fill="#7fae7a" />
           <path d="M0 560 H1200" stroke="#ffffff" strokeWidth="4" opacity="0.7" />
           <circle cx="600" cy="700" r="90" fill="none" stroke="#ffffff" strokeWidth="4" opacity="0.55" />
+
+          <g className="li-sun">
+            <circle cx="690" cy="88" r="40" fill="#f2c14e" />
+            <g stroke="#f2c14e" strokeWidth="6" strokeLinecap="round">
+              <path d="M690 24v-16M690 152v16M626 88h-16M754 88h16M645 43l-12-12M735 133l12 12M735 43l12-12M645 133l-12 12" />
+            </g>
+          </g>
+
+          <g className="li-clouds" fill="#d3dae0">
+            <g className="li-cloud-drift li-cloud-a">
+              <ellipse cx="220" cy="120" rx="86" ry="30" />
+              <ellipse cx="290" cy="100" rx="60" ry="24" />
+            </g>
+            <g className="li-cloud-drift li-cloud-b">
+              <ellipse cx="640" cy="80" rx="100" ry="30" />
+              <ellipse cx="720" cy="104" rx="64" ry="22" />
+            </g>
+            <g className="li-cloud-drift li-cloud-c">
+              <ellipse cx="1010" cy="140" rx="78" ry="26" />
+              <ellipse cx="940" cy="118" rx="52" ry="20" />
+            </g>
+          </g>
 
           <g className="li-chaos">
             <g className="li-team li-team-1" fill="#c62f2f" color="#c62f2f">
@@ -204,6 +242,16 @@ export function LandingIntroOverlay() {
               ))}
             </g>
           </g>
+
+          <g className="li-rain-wrap">
+            <g className="li-rain" stroke="#8fa3b3" strokeWidth="3" strokeLinecap="round" opacity="0.8">
+              {Array.from({ length: 22 }, (_, i) => {
+                const x = 40 + ((i * 129) % 1140);
+                const y = -30 + ((i * 197) % 740);
+                return <line key={i} x1={x} y1={y} x2={x - 8} y2={y + 26} />;
+              })}
+            </g>
+          </g>
         </g>
 
         {/* Phone screens sit outside li-world so they are the FIRST color on screen. */}
@@ -215,9 +263,32 @@ export function LandingIntroOverlay() {
         </g>
       </svg>
 
+      <div className="li-cinema" aria-hidden="true">
+        <figure className="li-cine li-cine-1">
+          <Image alt="" fill placeholder="blur" sizes="100vw" src={parentPhoto} />
+        </figure>
+        <figure className="li-cine li-cine-2">
+          <Image alt="" fill placeholder="blur" sizes="100vw" src={fieldPhoto} />
+        </figure>
+      </div>
+
+      <div className="li-mascots" aria-hidden="true">
+        {MASCOT_BADGES.map((badge, index) => (
+          <svg key={badge.color} className={`li-badge li-badge-${index + 1}`} viewBox="0 0 120 120">
+            <circle cx="60" cy="60" r="54" fill={badge.color} stroke="#fff" strokeWidth="5" />
+            <path d={badge.glyph} fill="#fff" />
+          </svg>
+        ))}
+        <svg className="li-badge li-badge-final" viewBox="0 0 120 120">
+          <path d="M60 10 22 25v30c0 26 16.5 45.6 38 53 21.5-7.4 38-27 38-53V25L60 10z" fill="#17324d" stroke="#fff" strokeWidth="4" />
+          <text x="60" y="74" textAnchor="middle" fontSize="36" fontWeight="800" fill="#fff">LP</text>
+        </svg>
+      </div>
+
       <div className="landing-intro-captions" aria-hidden="true">
         <p className="li-cap li-cap-1">The joy is easy. Five teams of it, every Saturday.</p>
         <p className="li-cap li-cap-2">The work is not. Nobody gets paid, and the season does not run itself.</p>
+        <p className="li-cap li-cap-4">Every Saturday starts in a parking lot, rain or shine.</p>
         <p className="li-cap li-cap-3">Communication is the key to all of it.</p>
       </div>
     </div>
