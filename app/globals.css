@@ -14310,3 +14310,237 @@ button.theme-toggle:hover:not(:disabled) {
   margin: 0;
   padding-left: var(--sp-5);
 }
+
+/* ── Landing intro overlay (LP-UX-007): gray disorder → phones light up → organized color.
+   Plays once per session over the public landing. Pure CSS timeline; transform/opacity/filter
+   only. Chaos figures position via SVG attribute transforms — CSS animates their parent
+   groups only, never <use> elements, so attribute transforms are never overridden. */
+.landing-intro {
+  position: fixed;
+  inset: 0;
+  z-index: 1300;
+  display: grid;
+  grid-template-rows: auto 1fr auto;
+  overflow: hidden;
+  background: #eceff1;
+  animation: li-overlay-in 0.4s ease, li-overlay-out 0.6s ease 12.9s forwards;
+}
+
+.landing-intro.is-leaving {
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.45s ease;
+  animation: none;
+}
+
+.landing-intro-top {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  gap: var(--sp-4);
+  align-items: center;
+  padding: clamp(14px, 2.5vw, 26px) clamp(18px, 4vw, 48px);
+}
+
+.landing-intro-kicker {
+  color: #5a6470;
+  font-size: 0.72rem;
+  font-weight: 850;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  animation: li-kicker-color 1.2s ease 9.8s forwards;
+}
+
+.landing-intro-dedication {
+  margin: 0;
+  color: #6a7480;
+  font-size: clamp(0.72rem, 1.4vw, 0.85rem);
+  font-style: italic;
+  text-align: center;
+}
+
+.landing-intro-skip {
+  min-height: 34px;
+  padding: 5px 14px;
+  border: 1px solid #aeb6bd;
+  border-radius: 999px;
+  background: transparent;
+  color: #4a5561;
+  font-size: 0.78rem;
+  cursor: pointer;
+}
+
+.landing-intro-skip:hover,
+.landing-intro-skip:focus-visible {
+  border-color: #4a5561;
+  color: #1d2831;
+}
+
+.landing-intro-scene {
+  align-self: center;
+  justify-self: center;
+  width: min(96vw, 1180px);
+  max-height: min(66vh, 660px);
+}
+
+.li-world {
+  filter: grayscale(1) saturate(0.85);
+  animation: li-world-color 2.2s ease 9.8s forwards;
+}
+
+.li-team {
+  opacity: 0;
+  animation: li-chaos-life 3.2s ease-in-out both;
+}
+
+.li-team-1 { animation-delay: 0.6s; }
+.li-team-2 { animation-delay: 1.3s; }
+.li-team-3 { animation-delay: 2s; }
+.li-team-4 { animation-delay: 2.7s; }
+.li-team-5 { animation-delay: 3.4s; }
+
+.li-adult-1,
+.li-adult-2,
+.li-adult-3,
+.li-adult-4,
+.li-board,
+.li-phones {
+  opacity: 0;
+  animation: li-rise 0.7s ease both;
+}
+
+.li-adult-1 { animation-delay: 7.2s; }
+.li-adult-2 { animation-delay: 7.4s; }
+.li-adult-3 { animation-delay: 7.6s; }
+.li-adult-4 { animation-delay: 7.8s; }
+.li-phones { animation-delay: 7.9s; }
+.li-board { animation-delay: 8.6s; animation-duration: 0.8s; }
+
+.li-board-row {
+  opacity: 0;
+  animation: li-rise 0.5s ease both;
+}
+
+.li-board-row-1 { animation-delay: 9s; }
+.li-board-row-2 { animation-delay: 9.15s; }
+.li-board-row-3 { animation-delay: 9.3s; }
+.li-board-row-4 { animation-delay: 9.45s; }
+.li-board-row-5 { animation-delay: 9.6s; }
+
+.li-truck-roll {
+  opacity: 0;
+  animation: li-truck-in 1.6s cubic-bezier(0.2, 0.8, 0.3, 1) 7.8s both;
+}
+
+.li-phones rect {
+  fill: #b9c0c6;
+  animation:
+    li-phone-on 0.6s ease 8.4s forwards,
+    li-phone-pulse 1.6s ease-in-out 9.2s 3 alternate;
+}
+
+.li-role {
+  fill: #4a5561;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.li-board-title { fill: #fff; font-size: 19px; font-weight: 750; }
+.li-board-team { fill: #22303d; font-size: 16px; font-weight: 750; }
+.li-board-line { fill: #5a6470; font-size: 12px; }
+
+.landing-intro-captions {
+  position: relative;
+  min-height: 3.2em;
+  padding: 0 clamp(18px, 5vw, 48px) clamp(18px, 3.5vh, 34px);
+}
+
+.li-cap {
+  position: absolute;
+  right: 0;
+  bottom: clamp(18px, 3.5vh, 34px);
+  left: 0;
+  margin: 0;
+  color: #37424d;
+  font-size: clamp(1rem, 2.4vw, 1.45rem);
+  font-weight: 650;
+  letter-spacing: -0.01em;
+  text-align: center;
+  text-wrap: balance;
+  opacity: 0;
+}
+
+.li-cap-1 { animation: li-cap 4.6s ease 0.8s both; }
+.li-cap-2 { animation: li-cap 2.8s ease 5.7s both; }
+.li-cap-3 { animation: li-cap 3s ease 8.5s both; }
+
+@keyframes li-overlay-in { from { opacity: 0; } to { opacity: 1; } }
+@keyframes li-overlay-out { to { opacity: 0; pointer-events: none; } }
+@keyframes li-kicker-color { to { color: #a33b0d; } }
+@keyframes li-world-color { to { filter: grayscale(0) saturate(1); } }
+
+@keyframes li-chaos-life {
+  0% { opacity: 0; transform: translate(-10px, 6px) rotate(-1.5deg); }
+  15% { opacity: 1; }
+  70% { opacity: 1; transform: translate(10px, -6px) rotate(1.5deg); }
+  100% { opacity: 0; transform: translate(22px, -12px) rotate(2.5deg); }
+}
+
+@keyframes li-rise {
+  from { opacity: 0; transform: translateY(14px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes li-truck-in {
+  from { opacity: 0; transform: translateX(240px); }
+  to { opacity: 1; transform: translateX(0); }
+}
+
+@keyframes li-phone-on {
+  to { fill: #4da3ff; filter: drop-shadow(0 0 7px rgb(77 163 255 / 80%)); }
+}
+
+@keyframes li-phone-pulse {
+  from { opacity: 1; }
+  to { opacity: 0.78; }
+}
+
+@keyframes li-cap {
+  0% { opacity: 0; transform: translateY(8px); }
+  14% { opacity: 1; transform: translateY(0); }
+  80% { opacity: 1; }
+  100% { opacity: 0; }
+}
+
+@media (max-width: 640px) {
+  .landing-intro-top {
+    grid-template-columns: 1fr auto;
+  }
+
+  .landing-intro-dedication {
+    grid-row: 2;
+    grid-column: 1 / -1;
+    text-align: left;
+  }
+
+  .landing-intro-scene {
+    max-height: 54vh;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .landing-intro {
+    display: none;
+  }
+}
+
+/* Permanent dedication line on the landing hero, independent of the intro overlay. */
+.landing-gateway-dedication {
+  margin: 0;
+  padding-left: 10px;
+  border-left: 3px solid var(--gateway-action);
+  color: var(--gateway-muted);
+  font-size: 0.78rem;
+  font-style: italic;
+}

@@ -1,6 +1,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import { redirect } from "next/navigation";
+import { LandingIntroOverlay } from "@/components/landing-intro-overlay";
 import { getServerShellAccess, toClientShellAccess } from "@/lib/supabase/shell-access";
 import type { ClientShellAccess } from "@/lib/navigation/route-topology";
 
@@ -24,9 +25,13 @@ export default async function HomePage() {
 
   return (
     <div className="landing-gateway">
+      <LandingIntroOverlay />
       <section className="landing-gateway-hero" aria-labelledby="landing-title">
         <div className="landing-gateway-copy">
           <p className="landing-gateway-kicker">LeaguePilot</p>
+          <p className="landing-gateway-dedication">
+            Built in honor of Pearl River Youth Sport Administrators and Volunteers
+          </p>
           <h1 id="landing-title">Your season, organized.</h1>
           <p className="landing-gateway-summary">
             Schedules, team access, and local support—clear from the first click.
