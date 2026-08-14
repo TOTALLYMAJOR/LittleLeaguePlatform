@@ -13968,7 +13968,7 @@ button.theme-toggle:hover:not(:disabled) {
 
 .landing-gateway-action.is-primary span,
 .landing-gateway-action.is-primary small {
-  color: #263b4d;
+  color: #142f47;
 }
 
 .landing-gateway-action.is-primary:hover,
@@ -14543,4 +14543,144 @@ button.theme-toggle:hover:not(:disabled) {
   color: var(--gateway-muted);
   font-size: 0.78rem;
   font-style: italic;
+}
+
+/* ── Landing enhancements (LP-UX-008): game-day chip, assurance chips, card arrows, replay. */
+.landing-gateway-gameday {
+  display: inline-flex;
+  gap: 10px;
+  align-items: center;
+  justify-self: start;
+  padding: 8px 14px;
+  border: 1px solid var(--gateway-line);
+  border-radius: 999px;
+  color: var(--gateway-ink);
+  font-size: 0.82rem;
+  font-weight: 700;
+  text-decoration: none;
+  transition: border-color 180ms ease, background-color 180ms ease;
+}
+
+.landing-gateway-gameday:hover,
+.landing-gateway-gameday:focus-visible {
+  border-color: var(--gateway-action);
+  background: color-mix(in srgb, var(--gateway-action) 8%, transparent);
+}
+
+.landing-gateway-gameday em {
+  color: var(--gateway-muted);
+  font-style: normal;
+  font-weight: 600;
+}
+
+.landing-gateway-gameday-dot {
+  flex: 0 0 auto;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--gateway-action);
+  animation: landing-gameday-pulse 2.2s ease-in-out infinite;
+}
+
+@keyframes landing-gameday-pulse {
+  0%, 100% { box-shadow: 0 0 0 0 color-mix(in srgb, var(--gateway-action) 45%, transparent); }
+  55% { box-shadow: 0 0 0 6px transparent; }
+}
+
+.landing-gateway-assurances {
+  display: grid;
+  gap: 8px;
+  margin: 2px 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.landing-gateway-assurances li {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  color: var(--gateway-muted);
+  font-size: 0.8rem;
+  font-weight: 650;
+}
+
+.landing-gateway-assurances svg {
+  flex: 0 0 auto;
+  color: var(--gateway-action);
+}
+
+.landing-gateway-action {
+  position: relative;
+}
+
+.landing-gateway-action-arrow {
+  position: absolute;
+  right: 18px;
+  bottom: 16px;
+  font-size: 1rem;
+  font-style: normal;
+  font-weight: 700;
+  opacity: 0;
+  transform: translateX(-8px);
+  transition: opacity 200ms ease, transform 200ms ease;
+}
+
+.landing-gateway-action:hover .landing-gateway-action-arrow,
+.landing-gateway-action:focus-visible .landing-gateway-action-arrow {
+  opacity: 1;
+  transform: translateX(0);
+}
+
+.landing-gateway-action:focus-visible {
+  outline: 2px solid var(--gateway-action);
+  outline-offset: -2px;
+}
+
+.landing-gateway-footer {
+  position: absolute;
+  right: clamp(20px, 4vw, 64px);
+  bottom: 2px;
+  z-index: 3;
+  grid-column: 1 / -1;
+}
+
+.landing-gateway-replay {
+  padding: 4px 2px;
+  border: 0;
+  background: transparent;
+  color: var(--gateway-muted);
+  font-size: 0.72rem;
+  font-weight: 650;
+  text-decoration: underline dotted;
+  text-underline-offset: 3px;
+  cursor: pointer;
+}
+
+.landing-gateway-replay:hover,
+.landing-gateway-replay:focus-visible {
+  color: var(--gateway-ink);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .landing-gateway-gameday-dot {
+    animation: none;
+  }
+
+  .landing-gateway-footer {
+    display: none;
+  }
+
+  .landing-gateway-action-arrow {
+    opacity: 1;
+    transform: none;
+    transition: none;
+  }
+}
+
+@media (max-width: 760px) {
+  .landing-gateway-footer {
+    position: static;
+    justify-self: end;
+    padding: 0 20px 12px;
+  }
 }

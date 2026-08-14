@@ -49,6 +49,22 @@ export function LandingIntroOverlay() {
   }, []);
 
   useEffect(() => {
+    function onReplay() {
+      if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+      dismissed.current = false;
+      try {
+        window.sessionStorage.removeItem(STORAGE_KEY);
+      } catch {
+        // Ignore: replay still works for this page view.
+      }
+      setPhase("hidden");
+      window.requestAnimationFrame(() => setPhase("playing"));
+    }
+    window.addEventListener("leaguepilot:intro-replay", onReplay);
+    return () => window.removeEventListener("leaguepilot:intro-replay", onReplay);
+  }, []);
+
+  useEffect(() => {
     if (phase !== "playing") return;
     // The exit is driven by the li-overlay-out animationend; this timer is only
     // a fallback in case animations are suspended (e.g. background tab).
