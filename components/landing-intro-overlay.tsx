@@ -1,12 +1,9 @@
 "use client";
 
-import Image from "next/image";
 import { useEffect, useRef, useState } from "react";
-import parentPhoto from "@/public/images/leaguepilot-game-day-parent.png";
-import fieldPhoto from "@/public/images/leaguepilot-baseball-field-overhead.webp";
 
 const STORAGE_KEY = "leaguepilot-intro-seen:v1";
-const INTRO_MS = 18000;
+const INTRO_MS = 14500;
 const LEAVE_MS = 600;
 
 const MASCOT_BADGES = [
@@ -27,6 +24,95 @@ const BOARD_ROWS = [
   { team: "Stars", color: "#6b3fa0", line: "Sat 1:30 · Field 5 · Coach Sam K." },
   { team: "Wolves", color: "#d97a1f", line: "Sat 3:00 · Track · Coach Lee P." }
 ];
+
+// Eight youth sports, one badge each — small, soft, cheery. Positioned outside
+// li-world so they read in full color from frame one, against the still-gray field.
+const JOY_SPORTS = [
+  { key: "soccer", color: "#c62f2f", cx: 90, cy: 630 },
+  { key: "basketball", color: "#1f5fbf", cx: 235, cy: 690 },
+  { key: "baseball", color: "#1f7a4d", cx: 380, cy: 620 },
+  { key: "football", color: "#6b3fa0", cx: 525, cy: 685 },
+  { key: "track", color: "#d97a1f", cx: 670, cy: 625 },
+  { key: "swimming", color: "#0e7c86", cx: 815, cy: 690 },
+  { key: "volleyball", color: "#b3323f", cx: 960, cy: 620 },
+  { key: "tennis", color: "#c9962a", cx: 1105, cy: 685 }
+];
+
+const TICKER_ITEMS = [
+  "GAME POSTPONED — RAIN",
+  "ROCKETS VS COMETS MOVED TO NEXT SATURDAY",
+  "FAMILIES NOTIFIED VIA LEAGUEPILOT",
+  "COACH APPROVED THE CALL"
+];
+
+function JoySportGlyph({ sport }: { sport: (typeof JOY_SPORTS)[number] }) {
+  switch (sport.key) {
+    case "soccer":
+      return (
+        <>
+          <path d="M0 -14 12 -4 7 12 -7 12 -12 -4Z" fill="#fff" opacity="0.9" />
+          <path d="M0 -14 0 -20M12 -4 20 -8M7 12 11 20M-7 12 -11 20M-12 -4 -20 -8" stroke="#fff" strokeWidth="2.5" strokeLinecap="round" opacity="0.9" />
+        </>
+      );
+    case "basketball":
+      return (
+        <>
+          <circle r="16" fill="none" stroke="#fff" strokeWidth="2.5" opacity="0.9" />
+          <path d="M-16 0H16M0 -16V16M-11 -11Q0 0 -11 11M11 -11Q0 0 11 11" stroke="#fff" strokeWidth="2.2" fill="none" opacity="0.9" strokeLinecap="round" />
+        </>
+      );
+    case "baseball":
+      return (
+        <>
+          <path d="M-18 18 18 -18" stroke="#fff" strokeWidth="4" strokeLinecap="round" opacity="0.85" />
+          <circle r="13" fill="#fff" opacity="0.92" />
+          <path d="M-9 -6Q0 -12 9 -6M-9 6Q0 12 9 6" stroke="#b3323f" strokeWidth="1.6" fill="none" opacity="0.8" />
+        </>
+      );
+    case "football":
+      return (
+        <>
+          <ellipse rx="20" ry="12" fill="#fff" opacity="0.92" />
+          <path d="M-9 0H9M-4 -4V4M0 -5V5M4 -4V4" stroke="#6b3fa0" strokeWidth="1.8" strokeLinecap="round" />
+        </>
+      );
+    case "track":
+      return (
+        <>
+          <path d="M-8 6 -14 22 -4 16Z M8 6 14 22 4 16Z" fill="#fff" opacity="0.75" />
+          <circle cy="-4" r="13" fill="#fff" opacity="0.92" />
+          <circle cy="-4" r="7" fill="none" stroke="#d97a1f" strokeWidth="1.6" opacity="0.7" />
+        </>
+      );
+    case "swimming":
+      return (
+        <>
+          <path d="M-20 -6Q-14 -12 -8 -6T4 -6T16 -6" stroke="#fff" strokeWidth="3" fill="none" strokeLinecap="round" opacity="0.9" />
+          <path d="M-20 6Q-14 0 -8 6T4 6T16 6" stroke="#fff" strokeWidth="3" fill="none" strokeLinecap="round" opacity="0.75" />
+          <path d="M-20 18Q-14 12 -8 18T4 18T16 18" stroke="#fff" strokeWidth="3" fill="none" strokeLinecap="round" opacity="0.55" />
+        </>
+      );
+    case "volleyball":
+      return (
+        <>
+          <circle r="15" fill="none" stroke="#fff" strokeWidth="2.5" opacity="0.9" />
+          <path d="M-15 0Q0 -14 15 0M-15 0Q0 14 15 0M-11 -10Q4 0 -6 12" stroke="#fff" strokeWidth="2" fill="none" opacity="0.85" strokeLinecap="round" />
+          <path d="M-21 20H21" stroke="#fff" strokeWidth="2" opacity="0.5" strokeDasharray="2 3" />
+        </>
+      );
+    case "tennis":
+      return (
+        <>
+          <rect x="-2.5" y="9" width="5" height="16" rx="2.5" fill="#fff" opacity="0.9" />
+          <ellipse cy="-6" rx="12" ry="15" fill="none" stroke="#fff" strokeWidth="3" opacity="0.9" />
+          <path d="M-8 -18Q0 -6 8 -18M-8 6Q0 -6 8 6M-11 -6H11" stroke="#fff" strokeWidth="1.4" fill="none" opacity="0.6" />
+          <circle cx="14" cy="16" r="6" fill="#fff" opacity="0.85" />
+        </>
+      );
+    default:
+      return null;
+  }
+}
 
 /**
  * Plays once per browser session on the public landing, on top of the app.
@@ -146,48 +232,47 @@ export function LandingIntroOverlay() {
       </header>
 
       <p className="sr-only">
-        Five youth teams play in joyful disorder under gathering clouds. The color drains and
-        rain falls on an empty field: nobody gets paid, and the season does not run itself.
-        A parent loads the car before dawn; families watch a game from the bleachers. Coaches,
-        parents, sponsors, and league admins arrive on their phones, gear trucks pull up,
-        schedules go up with team colors. Team mascots flash past like trading cards, the sun
-        breaks through — and the season comes back in full color, organized.
+        Cheerful icons for eight different youth sports appear one by one under drifting
+        clouds, then fade as the color drains: nobody gets paid, and the season does not run
+        itself. A news-style ticker announces the game is postponed for rain. Coaches,
+        parents, sponsors, and league admins arrive on their phones, a gear truck pulls up,
+        and a schedule board fills in with team colors. Team mascots flash past like trading
+        cards, the sun breaks through — and the season returns in full color, organized.
       </p>
 
+      {/* li-stage is the positioned ancestor for the ticker and mascot layers, so their
+          inset:0/percentage offsets resolve against just this scene row — not the full
+          fixed overlay (header + captions included), which would misplace them. */}
+      <div className="li-stage">
       <svg className="landing-intro-scene" viewBox="0 0 1200 800" aria-hidden="true" focusable="false">
         <defs>
-          <g id="li-runner-a" strokeLinecap="round">
-            <circle cx="0" cy="-46" r="11" />
-            <path d="M0 -35 L-2 -6" strokeWidth="9" fill="none" stroke="currentColor" />
-            <path d="M-1 -28 L-18 -14 M-1 -28 L16 -18" strokeWidth="7" fill="none" stroke="currentColor" />
-            <path d="M-2 -6 L-20 22 M-2 -6 L14 24" strokeWidth="8" fill="none" stroke="currentColor" />
-          </g>
-          <g id="li-runner-b" strokeLinecap="round">
-            <circle cx="0" cy="-48" r="11" />
-            <path d="M0 -37 L3 -8" strokeWidth="9" fill="none" stroke="currentColor" />
-            <path d="M1 -30 L20 -34 M1 -30 L-16 -16" strokeWidth="7" fill="none" stroke="currentColor" />
-            <path d="M3 -8 L24 12 M3 -8 L-12 26" strokeWidth="8" fill="none" stroke="currentColor" />
-          </g>
-          <g id="li-adult" strokeLinecap="round">
-            <circle cx="0" cy="-64" r="12" />
-            <path d="M0 -51 L0 -8" strokeWidth="10" fill="none" stroke="currentColor" />
-            <path d="M0 -42 L-16 -26 L-8 -20 M0 -42 L16 -26 L8 -20" strokeWidth="7" fill="none" stroke="currentColor" />
-            <path d="M0 -8 L-10 24 M0 -8 L10 24" strokeWidth="8" fill="none" stroke="currentColor" />
+          <filter id="li-cloud-soft" x="-30%" y="-30%" width="160%" height="160%">
+            <feGaussianBlur stdDeviation="2.4" />
+          </filter>
+          <linearGradient id="li-sky-gradient" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stopColor="#dfe6ea" />
+            <stop offset="100%" stopColor="#f2f6ef" />
+          </linearGradient>
+          {/* A soft person mark — rounded head + shoulders, no stick limbs — so the
+              cast reads as modern iconography rather than a cartoon sketch. */}
+          <g id="li-adult">
+            <circle cx="0" cy="-30" r="13" />
+            <path d="M-21 6a21 21 0 0 1 42 0z" />
           </g>
           <g id="li-truck">
-            <rect x="0" y="-46" width="120" height="46" rx="4" />
-            <rect x="120" y="-34" width="42" height="34" rx="4" />
-            <rect x="128" y="-28" width="20" height="12" rx="2" fill="#e8eef4" />
-            <circle cx="30" cy="6" r="13" fill="#2a2f36" />
-            <circle cx="138" cy="6" r="13" fill="#2a2f36" />
-            <rect x="10" y="-70" width="30" height="22" rx="3" opacity="0.9" />
-            <rect x="46" y="-64" width="24" height="16" rx="3" opacity="0.75" />
+            <rect x="0" y="-46" width="120" height="46" rx="9" />
+            <rect x="116" y="-34" width="46" height="34" rx="10" />
+            <rect x="126" y="-27" width="22" height="13" rx="4" fill="#e8eef4" />
+            <circle cx="30" cy="6" r="12" fill="#2a2f36" />
+            <circle cx="138" cy="6" r="12" fill="#2a2f36" />
+            <rect x="12" y="-68" width="30" height="22" rx="6" opacity="0.9" />
+            <rect x="48" y="-62" width="24" height="16" rx="5" opacity="0.72" />
           </g>
         </defs>
 
         {/* Everything inside li-world starts grayscale; color floods at the finale. */}
         <g className="li-world">
-          <rect x="0" y="0" width="1200" height="800" fill="#f2f6ef" />
+          <rect x="0" y="0" width="1200" height="800" fill="url(#li-sky-gradient)" />
           <rect x="0" y="560" width="1200" height="240" fill="#7fae7a" />
           <path d="M0 560 H1200" stroke="#ffffff" strokeWidth="4" opacity="0.7" />
           <circle cx="600" cy="700" r="90" fill="none" stroke="#ffffff" strokeWidth="4" opacity="0.55" />
@@ -199,60 +284,12 @@ export function LandingIntroOverlay() {
             </g>
           </g>
 
-          <g className="li-clouds" fill="#d3dae0">
-            <g className="li-cloud-drift li-cloud-a">
-              <ellipse cx="220" cy="120" rx="86" ry="30" />
-              <ellipse cx="290" cy="100" rx="60" ry="24" />
-            </g>
-            <g className="li-cloud-drift li-cloud-b">
-              <ellipse cx="640" cy="80" rx="100" ry="30" />
-              <ellipse cx="720" cy="104" rx="64" ry="22" />
-            </g>
-            <g className="li-cloud-drift li-cloud-c">
-              <ellipse cx="1010" cy="140" rx="78" ry="26" />
-              <ellipse cx="940" cy="118" rx="52" ry="20" />
-            </g>
-          </g>
-
-          <g className="li-chaos">
-            <g className="li-team li-team-1" fill="#c62f2f" color="#c62f2f">
-              <use href="#li-runner-a" transform="translate(210 640) rotate(-8)" />
-              <use href="#li-runner-b" transform="translate(290 600) scale(0.9) rotate(12)" />
-              <use href="#li-runner-a" transform="translate(150 580) scale(0.8) rotate(20)" />
-              <circle cx="255" cy="668" r="12" fill="#ffffff" stroke="#333" strokeWidth="2" />
-            </g>
-            <g className="li-team li-team-2" fill="#1f5fbf" color="#1f5fbf">
-              <use href="#li-runner-b" transform="translate(880 620) rotate(6)" />
-              <use href="#li-runner-a" transform="translate(960 660) scale(0.85) rotate(-14)" />
-              <use href="#li-runner-b" transform="translate(820 690) scale(0.95) rotate(-4)" />
-              <circle cx="905" cy="700" r="14" fill="#e8862c" />
-            </g>
-            <g className="li-team li-team-3" fill="#1f7a4d" color="#1f7a4d">
-              <use href="#li-runner-a" transform="translate(520 610) scale(1.05) rotate(14)" />
-              <use href="#li-runner-b" transform="translate(600 650) scale(0.9) rotate(-10)" />
-              <use href="#li-runner-a" transform="translate(450 690) scale(0.85) rotate(4)" />
-              <rect x="612" y="586" width="34" height="7" rx="3" fill="#8a5a2b" transform="rotate(-32 612 586)" />
-            </g>
-            <g className="li-team li-team-4" fill="#6b3fa0" color="#6b3fa0">
-              <use href="#li-runner-b" transform="translate(350 720) rotate(-16)" />
-              <use href="#li-runner-a" transform="translate(430 750) scale(0.9) rotate(10)" />
-              <use href="#li-runner-b" transform="translate(280 760) scale(0.8) rotate(2)" />
-              <circle cx="395" cy="770" r="10" fill="#f2d43d" />
-            </g>
-            <g className="li-team li-team-5" fill="#d97a1f" color="#d97a1f">
-              <use href="#li-runner-a" transform="translate(700 740) rotate(18)" />
-              <use href="#li-runner-b" transform="translate(770 700) scale(0.95) rotate(-8)" />
-              <use href="#li-runner-a" transform="translate(640 770) scale(0.85) rotate(-2)" />
-              <path d="M700 780 h64" stroke="#ffffff" strokeWidth="5" opacity="0.8" />
-            </g>
-          </g>
-
           <g className="li-order">
             <g className="li-adults" fill="#33404d" color="#33404d">
-              <g className="li-adult-1"><use href="#li-adult" transform="translate(180 548)" /><text x="180" y="576" textAnchor="middle" className="li-role">Coach</text></g>
-              <g className="li-adult-2"><use href="#li-adult" transform="translate(330 548)" /><text x="330" y="576" textAnchor="middle" className="li-role">Parent</text></g>
-              <g className="li-adult-3"><use href="#li-adult" transform="translate(480 548)" /><text x="480" y="576" textAnchor="middle" className="li-role">Sponsor</text></g>
-              <g className="li-adult-4"><use href="#li-adult" transform="translate(630 548)" /><text x="630" y="576" textAnchor="middle" className="li-role">League admin</text></g>
+              <g className="li-adult-1"><use href="#li-adult" transform="translate(180 545)" /><text x="180" y="580" textAnchor="middle" className="li-role">Coach</text></g>
+              <g className="li-adult-2"><use href="#li-adult" transform="translate(330 545)" /><text x="330" y="580" textAnchor="middle" className="li-role">Parent</text></g>
+              <g className="li-adult-3"><use href="#li-adult" transform="translate(480 545)" /><text x="480" y="580" textAnchor="middle" className="li-role">Sponsor</text></g>
+              <g className="li-adult-4"><use href="#li-adult" transform="translate(630 545)" /><text x="630" y="580" textAnchor="middle" className="li-role">League admin</text></g>
             </g>
 
             <g className="li-truck-roll" fill="#5a6b7d">
@@ -272,34 +309,69 @@ export function LandingIntroOverlay() {
               ))}
             </g>
           </g>
+        </g>
 
-          <g className="li-rain-wrap">
-            <g className="li-rain" stroke="#8fa3b3" strokeWidth="3" strokeLinecap="round" opacity="0.8">
-              {Array.from({ length: 22 }, (_, i) => {
-                const x = 40 + ((i * 129) % 1140);
-                const y = -30 + ((i * 197) % 740);
-                return <line key={i} x1={x} y1={y} x2={x - 8} y2={y + 26} />;
-              })}
-            </g>
+        {/* Soft clouds float along the top edge, outside li-world so their own
+            fixed light fill always reads clearly regardless of the site theme. */}
+        <g className="li-clouds" fill="#e4e9ee" filter="url(#li-cloud-soft)">
+          <g className="li-cloud-drift li-cloud-a">
+            <ellipse cx="140" cy="95" rx="70" ry="26" />
+            <ellipse cx="200" cy="80" rx="55" ry="22" />
+            <ellipse cx="255" cy="98" rx="48" ry="20" />
           </g>
+          <g className="li-cloud-drift li-cloud-b">
+            <ellipse cx="560" cy="78" rx="80" ry="28" />
+            <ellipse cx="625" cy="60" rx="60" ry="24" />
+            <ellipse cx="690" cy="82" rx="50" ry="20" />
+          </g>
+          <g className="li-cloud-drift li-cloud-c">
+            <ellipse cx="950" cy="108" rx="62" ry="22" />
+            <ellipse cx="1005" cy="88" rx="54" ry="20" />
+            <ellipse cx="1055" cy="105" rx="42" ry="18" />
+          </g>
+        </g>
+
+        {/* Sport badges sit outside li-world so they pop in full, cheery color
+            against the still-gray field — same device the phones use below. */}
+        {/* Outer <g> carries the SVG position attribute untouched; CSS only ever
+            animates the inner, un-positioned group — same rule as the chaos
+            figures used to follow, so a transform animation can never collide
+            with an attribute transform and collapse every badge to the origin. */}
+        <g className="li-joy">
+          {JOY_SPORTS.map((sport, index) => (
+            <g key={sport.key} transform={`translate(${sport.cx} ${sport.cy})`}>
+              <g className={`li-joy-badge li-joy-badge-${index + 1}`}>
+                <circle r="34" fill={sport.color} />
+                <ellipse cx="-10" cy="-12" rx="15" ry="9" fill="#fff" opacity="0.22" />
+                <JoySportGlyph sport={sport} />
+              </g>
+            </g>
+          ))}
         </g>
 
         {/* Phone screens sit outside li-world so they are the FIRST color on screen. */}
         <g className="li-phones">
-          <rect x="196" y="490" width="16" height="26" rx="3" />
-          <rect x="346" y="490" width="16" height="26" rx="3" />
-          <rect x="496" y="490" width="16" height="26" rx="3" />
-          <rect x="646" y="490" width="16" height="26" rx="3" />
+          <rect x="199" y="519" width="15" height="24" rx="4" />
+          <rect x="349" y="519" width="15" height="24" rx="4" />
+          <rect x="499" y="519" width="15" height="24" rx="4" />
+          <rect x="649" y="519" width="15" height="24" rx="4" />
         </g>
       </svg>
 
-      <div className="li-cinema" aria-hidden="true">
-        <figure className="li-cine li-cine-1">
-          <Image alt="" fill placeholder="blur" sizes="100vw" src={parentPhoto} />
-        </figure>
-        <figure className="li-cine li-cine-2">
-          <Image alt="" fill placeholder="blur" sizes="100vw" src={fieldPhoto} />
-        </figure>
+      <div className="li-ticker" aria-hidden="true">
+        <span className="li-ticker-tag">
+          <span className="li-ticker-dot" />
+          Alert
+        </span>
+        <div className="li-ticker-track">
+          {["a", "b"].map((group) => (
+            <span className="li-ticker-group" key={group}>
+              {TICKER_ITEMS.map((item) => (
+                <span className="li-ticker-item" key={`${group}-${item}`}>{item} <span aria-hidden="true">•</span></span>
+              ))}
+            </span>
+          ))}
+        </div>
       </div>
 
       <div className="li-mascots" aria-hidden="true">
@@ -314,11 +386,11 @@ export function LandingIntroOverlay() {
           <text x="60" y="74" textAnchor="middle" fontSize="36" fontWeight="800" fill="#fff">LP</text>
         </svg>
       </div>
+      </div>
 
       <div className="landing-intro-captions" aria-hidden="true">
-        <p className="li-cap li-cap-1">The joy is easy. Five teams of it, every Saturday.</p>
+        <p className="li-cap li-cap-1">The joy is easy. Every sport, every Saturday.</p>
         <p className="li-cap li-cap-2">The work is not. Nobody gets paid, and the season does not run itself.</p>
-        <p className="li-cap li-cap-4">Every Saturday starts in a parking lot, rain or shine.</p>
         <p className="li-cap li-cap-3">Communication is the key to all of it.</p>
       </div>
     </div>

@@ -18,17 +18,26 @@ describe("LandingIntroOverlay", () => {
     expect(source).toContain("Escape");
   });
 
-  it("keeps the cinematic beats: weather layers, photo interludes, and the mascot flip", () => {
+  it("keeps the sky, the rain-delay ticker, and the mascot flip — and drops the stick-figure chaos, photo interludes, and falling rain", () => {
     const source = readFileSync(join(process.cwd(), "components", "landing-intro-overlay.tsx"), "utf8");
-    expect(source).toContain("li-rain");
     expect(source).toContain("li-clouds");
     expect(source).toContain("li-sun");
-    expect(source).toContain("li-cinema");
-    expect(source).toContain("leaguepilot-game-day-parent.png");
-    expect(source).toContain("leaguepilot-baseball-field-overhead.webp");
     expect(source).toContain("li-mascots");
     expect(source).toContain("li-badge-final");
-    expect(source).toContain("Every Saturday starts in a parking lot");
+    expect(source).toContain("li-ticker");
+    expect(source).toContain("GAME POSTPONED");
+    expect(source).not.toContain("li-chaos");
+    expect(source).not.toContain("li-cinema");
+    expect(source).not.toContain("li-rain");
+    expect(source).not.toContain("next/image");
+  });
+
+  it("shows eight cheery, full-color sport badges outside the grayscale world", () => {
+    const source = readFileSync(join(process.cwd(), "components", "landing-intro-overlay.tsx"), "utf8");
+    expect(source).toContain("li-joy-badge");
+    const joySportsBlock = source.slice(source.indexOf("const JOY_SPORTS"), source.indexOf("const TICKER_ITEMS"));
+    const sportCount = (joySportsBlock.match(/key: "/g) ?? []).length;
+    expect(sportCount).toBe(8);
   });
 
   it("tells the story in accessible text and keeps child privacy rules on the schedule board", () => {
