@@ -1,16 +1,21 @@
 "use client";
 
+import { useEffect, useRef } from "react";
+
 export default function ParentHomeError({ reset }: { reset: () => void }) {
+  const headingRef = useRef<HTMLHeadingElement>(null);
+  useEffect(() => {
+    headingRef.current?.focus();
+  }, []);
+
   return (
-    <main className="parent-weekly-dashboard">
-      <section className="parent-weekly-card parent-weekly-route-error" role="alert">
-        <span className="parent-weekly-kicker">Family Home unavailable</span>
-        <h1>We could not safely load your family plan.</h1>
-        <p>
-          No RSVP, ride, message, or access record was changed. Try again when your connection is stable.
-        </p>
-        <button type="button" onClick={reset}>Try again</button>
+    <div className="page parent-weekly-dashboard">
+      <section className="communication-empty-state" role="alert">
+        <span className="eyebrow">Family Home unavailable</span>
+        <h1 ref={headingRef} tabIndex={-1}>We could not safely load your Saturday view.</h1>
+        <p>No schedule, RSVP, attendance, acknowledgement, ride, or access state was changed. Try again when records are reachable.</p>
+        <button onClick={reset} type="button">Try again</button>
       </section>
-    </main>
+    </div>
   );
 }

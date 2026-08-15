@@ -142,7 +142,7 @@ export const routeTopology = [
   }),
   route("/invite/recover", "Recover Invite", "RI", "support", "Support", ["signed_in"], false, false, true, true, undefined, false, {
     familyMobileTab: "more",
-    parentMoreDescription: "Get help with an invitation or access review.",
+    parentMoreDescription: "Get help with an invitation, access review, or account question.",
     parentMorePriority: 6
   }),
   route("/invite/expired", "Expired Invite", "EX", "support", "Support", ["signed_out", "parent", "coach", "admin"], false, false, false, false),

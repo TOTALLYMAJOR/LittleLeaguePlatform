@@ -2,19 +2,20 @@ import {
   ParentDashboardClient,
   ParentReplayClient,
   ParentRsvpClient,
-  ScheduleAlertsClient,
-  TeamPortalClient
+  ScheduleAlertsClient
 } from "@/components/feature-panels";
 import { CommunicationRoom } from "@/components/communication-room";
-import { ParentAdditionalGuardianClient } from "@/components/additional-guardian-access";
 import { ParentWeeklyDashboard } from "@/components/parent-weekly-dashboard";
 import { ParentTransportationClient } from "@/components/family-transportation";
-import { ParentTemporaryCaregiverClient } from "@/components/temporary-caregiver-access";
+import { FamilyFlightPlanClient } from "@/components/coordination-workbenches";
 import { FamilyParentReplay } from "@/components/family-parent-replay";
-import { ParentSeasonTransitionReview } from "@/components/season-transition-review";
+import { FamilySettingsClient } from "@/components/family-first-sign-in";
+import { FamilyPhotos } from "@/components/family-photos";
+import { FamilyAccessProgression } from "@/components/family-access-progression";
 import { listParentCoachDashboardData } from "@/lib/supabase/dashboard-data";
 import { listParentFamilyHandoffs } from "@/lib/supabase/family-flight-plan";
 import { listParentNotificationReceipts } from "@/lib/supabase/notification-receipts";
+import { listParentEventChangeLogs } from "@/lib/supabase/event-change-log-reads";
 import { scopeScheduleOperationsData, scopeTeamChatData, scopeTeamPortalData } from "@/lib/supabase/route-scopes";
 import { listScheduleOperationsData } from "@/lib/supabase/schedule-management";
 import { requireParentPageAccess } from "@/lib/supabase/shell-access";
@@ -38,11 +39,19 @@ export async function ParentHomeSurface() {
   if (!pageAccess.ok || !pageAccess.access.userId) {
     return <ParentDashboardClient dashboardData={pageAccess.dashboardData} />;
   }
-  const [dashboardData, handoffData, transportationData, replayData] = await Promise.all([
-    listParentCoachDashboardData({ viewerUserId: pageAccess.access.userId, surface: "parent" }),
+  const dashboardData = await listParentCoachDashboardData({
+    viewerUserId: pageAccess.access.userId,
+    surface: "parent"
+  });
+  const familyTimeZone = dashboardData.state.notificationPreferences.find((preference) => (
+    preference.userId === pageAccess.access.userId && preference.timezone
+  ))?.timezone ?? "America/Chicago";
+  const [notificationData, handoffData, transportationData, replayData, eventChangeData] = await Promise.all([
+    listParentNotificationReceipts({ parentUserId: pageAccess.access.userId }),
     listParentFamilyHandoffs({ parentUserId: pageAccess.access.userId }),
     listParentTransportationData(pageAccess.access.userId),
-    listFamilyReplays({ parentUserId: pageAccess.access.userId })
+    listFamilyReplays({ parentUserId: pageAccess.access.userId }),
+    listParentEventChangeLogs({ parentUserId: pageAccess.access.userId, timeZone: familyTimeZone })
   ]);
   const missionControl = buildFamilyMissionControl({
     state: dashboardData.state,
@@ -55,11 +64,17 @@ export async function ParentHomeSurface() {
     now: new Date().toISOString()
   });
   return (
-    <ParentWeeklyDashboard
-      view={missionControl}
-      dashboardData={dashboardData}
-      replayData={replayData}
-    />
+    <>
+      <ParentWeeklyDashboard
+        view={missionControl}
+        dashboardData={dashboardData}
+        replayData={replayData}
+        notificationReceipts={notificationData.receipts}
+        notificationLoadOk={notificationData.ok}
+        transportationData={transportationData}
+        eventChangeData={eventChangeData}
+      />
+    </>
   );
 }
 
@@ -105,17 +120,34 @@ export async function ParentMessagesSurface() {
   );
 }
 
-export async function ParentPortalSurface({ audience = "parent" }: { audience?: "parent" | "coach" | "admin" } = {}) {
+export async function ParentPhotosSurface() {
   const pageAccess = await requireParentPageAccess();
   if (!pageAccess.ok) return <ParentDashboardClient dashboardData={pageAccess.dashboardData} />;
   const teamPortalData = await listTeamPortalData();
   const scopedTeamPortalData = teamPortalData
     ? scopeTeamPortalData(teamPortalData, pageAccess.access.parentTeamIds, {
-      audience,
+      audience: "parent",
       viewerUserId: pageAccess.access.userId
     })
     : null;
-  return <TeamPortalClient teamPortalData={scopedTeamPortalData} audience={audience} />;
+  const familyReleasedIds = new Set(scopedTeamPortalData?.familyReleasedMediaItemIds ?? []);
+  const teamNames = new Map(scopedTeamPortalData?.teams.map((team) => [team.id, team.name]) ?? []);
+  const photos = (scopedTeamPortalData?.mediaItems ?? [])
+    .filter((item) => familyReleasedIds.has(item.id) && item.moderationStatus === "approved")
+    .map((item) => ({
+      ...item,
+      teamName: teamNames.get(item.teamId) ?? "Linked team"
+    }));
+  const childLabels = (scopedTeamPortalData?.players ?? []).map((player) => (
+    `${player.firstName} ${player.lastInitial}.`
+  ));
+  return (
+    <FamilyPhotos
+      photos={photos}
+      childLabels={childLabels}
+      isCurrent={Boolean(scopedTeamPortalData)}
+    />
+  );
 }
 
 export async function ParentPracticeRecapsSurface() {
@@ -137,13 +169,11 @@ export async function ParentFamilyAccessSurface() {
     listParentTemporaryCaregiverData(pageAccess.access.userId),
     listParentSeasonTransitions(pageAccess.access.userId)
   ]);
-  return (
-    <>
-      <ParentSeasonTransitionReview data={transitionData} />
-      <ParentAdditionalGuardianClient data={guardianData} />
-      <ParentTemporaryCaregiverClient data={caregiverData} />
-    </>
-  );
+  return <FamilyAccessProgression
+    guardianData={guardianData}
+    caregiverData={caregiverData}
+    transitionData={transitionData}
+  />;
 }
 
 export async function ParentTransportationSurface() {
@@ -151,13 +181,36 @@ export async function ParentTransportationSurface() {
   if (!pageAccess.ok || !pageAccess.access.userId) {
     return <ParentDashboardClient dashboardData={pageAccess.dashboardData} />;
   }
-  const data = await listParentTransportationData(pageAccess.access.userId);
-  return <ParentTransportationClient data={data} />;
+  const [data, dashboardData, handoffData] = await Promise.all([
+    listParentTransportationData(pageAccess.access.userId),
+    listParentCoachDashboardData({ viewerUserId: pageAccess.access.userId, surface: "parent" }),
+    listParentFamilyHandoffs({ parentUserId: pageAccess.access.userId })
+  ]);
+  return (
+    <>
+      <ParentTransportationClient data={data} />
+      <div id="caregiver-coordination">
+        <FamilyFlightPlanClient
+          state={dashboardData.state}
+          parentUserId={pageAccess.access.userId}
+          initialHandoffs={handoffData.handoffs}
+          message={handoffData.message}
+        />
+      </div>
+    </>
+  );
 }
 
 export async function ParentSettingsSurface() {
-  const dashboardData = await loadParentDashboardForPage();
-  return <ParentDashboardClient dashboardData={dashboardData} />;
+  const pageAccess = await requireParentPageAccess();
+  if (!pageAccess.ok || !pageAccess.access.userId) {
+    return <ParentDashboardClient dashboardData={pageAccess.dashboardData} />;
+  }
+  const dashboardData = await listParentCoachDashboardData({
+    viewerUserId: pageAccess.access.userId,
+    surface: "parent"
+  });
+  return <FamilySettingsClient dashboardData={dashboardData} />;
 }
 
 export async function ParentReplayReadSurface() {

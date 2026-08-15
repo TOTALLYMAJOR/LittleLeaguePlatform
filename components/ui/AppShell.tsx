@@ -428,7 +428,7 @@ export function AppShell({ access = signedOutShellAccess, children }: { access?:
               <span className="brand-mark">LP</span>
               <span className="brand-copy">
                 <strong>LeaguePilot</strong>
-                <small>Little League HQ demo</small>
+                <small>{activeContext?.organizationName ?? "Youth sports operations"}</small>
               </span>
             </Link>
             <button

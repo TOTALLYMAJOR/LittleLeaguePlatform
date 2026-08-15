@@ -55,6 +55,8 @@
   --warning-soft: #fff3c4;
   --danger:       #b42318;
   --danger-soft:  #fee4e2;
+  --status-changed:      #4c4ddc;
+  --status-changed-soft: #ececff;
 
   /* — Team colours (overridden per-team via inline style) — */
   --team-primary:   #1570ef;
@@ -5224,6 +5226,7 @@ button.month-calendar-day:hover {
   --replay-warm: #a94726;
   --replay-warm-soft: #fff0e5;
   --replay-sage: #dfeee6;
+  grid-template-columns: minmax(0, 1fr);
 }
 
 .family-replay-hero {
@@ -5482,14 +5485,22 @@ button.month-calendar-day:hover {
 .family-replay-timeline {
   display: grid;
   gap: var(--sp-4);
+  grid-template-columns: minmax(0, 1fr);
+  min-width: 0;
 }
 
 .family-replay-timeline > ol {
   display: grid;
   gap: var(--sp-3);
+  grid-template-columns: minmax(0, 1fr);
   list-style: none;
   margin: 0;
+  min-width: 0;
   padding: 0;
+}
+
+.family-replay-timeline li {
+  min-width: 0;
 }
 
 .family-replay-timeline li button {
@@ -5513,6 +5524,7 @@ button.month-calendar-day:hover {
 .family-replay-timeline time,
 .family-replay-timeline small {
   color: var(--muted);
+  font-size: var(--text-xs);
 }
 
 .family-replay-empty {
@@ -9887,15 +9899,13 @@ button.theme-toggle:hover:not(:disabled) {
   text-decoration: none;
 }
 
-.parent-rsvp-glow {
+.parent-rsvp-action {
   align-items: center;
-  background: #22c55e;
-  border: 1px solid #16a34a;
+  background: var(--action);
+  border: 1px solid var(--action-strong);
   border-radius: 8px;
-  box-shadow:
-    0 0 0 3px rgba(34, 197, 94, .18),
-    0 8px 22px rgba(22, 163, 74, .3);
-  color: #052e16;
+  box-shadow: var(--shadow-sm);
+  color: #fff;
   display: inline-flex;
   font-size: .78rem;
   font-weight: 950;
@@ -10045,16 +10055,14 @@ button.theme-toggle:hover:not(:disabled) {
   }
 }
 
-.parent-rsvp-glow:hover,
-.parent-rsvp-glow:focus-visible {
-  background: #4ade80;
-  box-shadow:
-    0 0 0 4px rgba(34, 197, 94, .24),
-    0 10px 28px rgba(22, 163, 74, .38);
-  color: #052e16;
+.parent-rsvp-action:hover,
+.parent-rsvp-action:focus-visible {
+  background: var(--action-strong);
+  box-shadow: var(--shadow);
+  color: #fff;
 }
 
-.parent-rsvp-glow.compact {
+.parent-rsvp-action.compact {
   min-height: 34px;
   padding: 7px 12px;
 }
@@ -10236,6 +10244,15 @@ button.theme-toggle:hover:not(:disabled) {
   white-space: nowrap;
 }
 
+.parent-schedule-directions,
+.parent-schedule-sheet-trigger {
+  align-items: center;
+  display: inline-flex;
+  justify-content: center;
+  min-height: 44px;
+  padding: 8px 4px;
+}
+
 .parent-schedule-directions {
   color: var(--accent-strong);
   font-size: .76rem;
@@ -10256,8 +10273,6 @@ button.theme-toggle:hover:not(:disabled) {
   color: var(--accent-strong);
   font-size: .76rem;
   font-weight: 900;
-  min-height: 0;
-  padding: 0;
 }
 
 .parent-schedule-sheet-trigger:hover,
@@ -10373,7 +10388,7 @@ button.theme-toggle:hover:not(:disabled) {
 
 .parent-week-ribbon > header small {
   color: var(--muted);
-  font-size: .7rem;
+  font-size: var(--text-xs);
   margin-top: 2px;
 }
 
@@ -10381,8 +10396,8 @@ button.theme-toggle:hover:not(:disabled) {
   background: transparent;
   border: 1px solid var(--line);
   color: var(--muted);
-  font-size: .72rem;
-  min-height: 34px;
+  font-size: var(--text-xs);
+  min-height: 44px;
   padding: 7px 10px;
 }
 
@@ -10422,7 +10437,7 @@ button.theme-toggle:hover:not(:disabled) {
 
 .parent-week-days span,
 .parent-week-days small {
-  font-size: .62rem;
+  font-size: var(--text-xs);
   font-weight: 850;
 }
 
@@ -11316,7 +11331,7 @@ button.theme-toggle:hover:not(:disabled) {
 
   .landing-certainty-band a,
   .certainty-band > .season-status,
-  .certainty-band > .parent-rsvp-glow {
+  .certainty-band > .parent-rsvp-action {
     grid-column: 2;
     justify-self: start;
   }
@@ -11519,7 +11534,7 @@ button.theme-toggle:hover:not(:disabled) {
     width: 34px;
   }
 
-  .parent-rsvp-glow {
+  .parent-rsvp-action {
     min-height: 40px;
     padding-inline: 11px;
   }
@@ -11531,11 +11546,16 @@ button.theme-toggle:hover:not(:disabled) {
 
   .parent-week-days {
     gap: 3px;
+    grid-template-columns: repeat(7, minmax(44px, 1fr));
+    overflow-x: auto;
+    overscroll-behavior-inline: contain;
+    scroll-snap-type: x proximity;
   }
 
   .parent-week-days button {
     min-height: 60px;
     padding-inline: 2px;
+    scroll-snap-align: start;
   }
 
   .parent-game-day-sheet {

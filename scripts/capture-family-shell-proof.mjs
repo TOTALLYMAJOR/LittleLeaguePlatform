@@ -415,8 +415,9 @@ async function main() {
           assert.equal(initialMetrics.resolvedRole, metrics.resolvedRole, `${spec.path} ${viewportName} changed resolved role during hydration.`);
           assert.equal(initialMetrics.dataScopeRole, metrics.dataScopeRole, `${spec.path} ${viewportName} changed data scope during hydration.`);
 
+          await page.evaluate(() => window.scrollTo({ top: 0, left: 0, behavior: "instant" }));
           const screenshotPath = join(outputDir, `${spec.name}-${viewportName}.png`);
-          await page.screenshot({ path: screenshotPath, fullPage: false });
+          await page.screenshot({ path: screenshotPath, fullPage: false, caret: "initial" });
           proof.results.push({
             route: spec.path,
             role: spec.role,

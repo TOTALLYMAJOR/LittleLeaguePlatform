@@ -69,7 +69,7 @@ export function ParentTransportationClient({ data }: { data: ParentTransportatio
   }
 
   return (
-    <main className="page transportation-page" data-analytics-surface="family_transportation">
+    <div className="page transportation-page" data-analytics-surface="family_transportation">
       <header className="transportation-hero">
         <div>
           <span className="eyebrow">Transportation responsibility</span>
@@ -84,6 +84,21 @@ export function ParentTransportationClient({ data }: { data: ParentTransportatio
 
       {!data.ok ? <p className="notice warning" role="status">{data.message}</p> : null}
       {message ? <p className={`notice ${messageOk ? "ok" : "warning"}`} aria-live="polite">{message}</p> : null}
+
+      <ol className="transportation-step-rail" aria-label="Transportation coordination steps">
+        <li>
+          <span>1</span>
+          <div><strong>Ask for help</strong><small>Choose there or home for one child and event.</small></div>
+        </li>
+        <li>
+          <span>2</span>
+          <div><strong>Someone offers</strong><small>Another active guardian accepts the driver side.</small></div>
+        </li>
+        <li>
+          <span>3</span>
+          <div><strong>You confirm</strong><small>Responsibility changes only after mutual acceptance.</small></div>
+        </li>
+      </ol>
 
       <section className="transportation-next" aria-labelledby="transportation-next-title">
         <div className="mission-section-heading">
@@ -112,10 +127,10 @@ export function ParentTransportationClient({ data }: { data: ParentTransportatio
         </p>
       </section>
 
-      <section className="grid two transportation-workspace">
+      <section className="transportation-workspace">
         <article className="card stack">
-          <span className="eyebrow">Request one direction</span>
-          <h2>Ask another team guardian for help</h2>
+          <span className="eyebrow">Step 1 · Ask for help</span>
+          <h2>Request one direction</h2>
           <label>
             Child and event
             <select
@@ -162,8 +177,8 @@ export function ParentTransportationClient({ data }: { data: ParentTransportatio
         </article>
 
         <article className="card stack">
-          <span className="eyebrow">How mutual acceptance works</span>
-          <h2>Two adults, two explicit decisions</h2>
+          <span className="eyebrow">Steps 2 and 3</span>
+          <h2>Offer, then confirm</h2>
           <ol className="plain-list">
             <li>A linked guardian requests outbound or return help for one child and event version.</li>
             <li>Another active team guardian offers seats and accepts the driver side.</li>
@@ -180,7 +195,7 @@ export function ParentTransportationClient({ data }: { data: ParentTransportatio
       <section className="transportation-board" aria-labelledby="transportation-board-title">
         <div>
           <span className="eyebrow">Current team coordination</span>
-          <h2 id="transportation-board-title">Requests, offers, and accepted responsibility</h2>
+          <h2 id="transportation-board-title">Status and history</h2>
         </div>
         {!data.requests.length ? (
           <article className="card empty-state">
@@ -204,7 +219,7 @@ export function ParentTransportationClient({ data }: { data: ParentTransportatio
           />
         ))}
       </section>
-    </main>
+    </div>
   );
 }
 
@@ -236,7 +251,10 @@ function TransportationRequestCard({
   const directionLabel = request.direction === "outbound" ? "Outbound · getting there" : "Return · getting home";
   const canWithdraw = request.canWithdrawRequest || request.canWithdrawAssignment;
   return (
-    <article className="card transportation-request-card">
+    <article
+      className="card transportation-request-card"
+      id={`transportation-request-${encodeURIComponent(request.id)}`}
+    >
       <header>
         <div>
           <span className="eyebrow">{request.teamName} · {directionLabel}</span>

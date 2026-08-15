@@ -136,15 +136,12 @@ describe("AppShell private sign-out boundary", () => {
     expect(toggle).not.toContain("prefers-color-scheme");
   });
 
-  it("wires queue and replay to current actor, session, and owner-generation checks", () => {
+  it("keeps parent RSVP online-only while coach replay remains actor and generation fenced", () => {
     const source = readFileSync(join(process.cwd(), "components", "feature-panels.tsx"), "utf8");
+    const rsvpControl = readFileSync(join(process.cwd(), "components", "family", "rsvp-control.tsx"), "utf8");
     const replaySession = source.slice(
       source.indexOf("async function getOfflineReplaySession"),
       source.indexOf("function mediaReviewPriority")
-    );
-    const parentOffline = source.slice(
-      source.indexOf("export function ParentRsvpClient"),
-      source.indexOf("export function CoachDashboardClient")
     );
     const coachOffline = source.slice(
       source.indexOf("export function CoachDashboardClient"),
@@ -156,10 +153,11 @@ describe("AppShell private sign-out boundary", () => {
     expect(replaySession).toContain("await supabase.auth.getUser()");
     expect(replaySession).toContain("userData.user?.id !== expectedActorId");
     expect(replaySession).toContain("queueOfflineGameDayAction(action, expectedOwnerGeneration)");
-    expect(parentOffline).toContain('dashboardData?.accessStatus === "live"');
-    expect(parentOffline).toContain("dashboardData.isSupabaseBacked");
-    expect(parentOffline).toContain("captureOfflineOwnerGeneration(parentUserId)");
-    expect(parentOffline).toContain("queueOfflineActionForCurrentSession");
+    expect(rsvpControl).toContain("!navigator.onLine");
+    expect(rsvpControl).toContain("No response was saved.");
+    expect(rsvpControl).toContain("supabase.auth.getSession()");
+    expect(rsvpControl).toContain('authenticatedPost("/api/rsvps"');
+    expect(rsvpControl).not.toContain("queueOfflineGameDayAction");
     expect(coachOffline).toContain('dashboardData?.accessStatus === "live"');
     expect(coachOffline).toContain("dashboardData.isSupabaseBacked");
     expect(coachOffline).toContain("captureOfflineOwnerGeneration(coachId)");

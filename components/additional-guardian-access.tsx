@@ -56,7 +56,15 @@ function ScopeExplanation() {
   );
 }
 
-export function ParentAdditionalGuardianClient({ data }: { data: AdditionalGuardianParentData }) {
+export function ParentAdditionalGuardianClient({
+  data,
+  embedded = false,
+  selectedPlayerId
+}: {
+  data: AdditionalGuardianParentData;
+  embedded?: boolean;
+  selectedPlayerId?: string;
+}) {
   const router = useRouter();
   const [playerId, setPlayerId] = useState(data.children[0]?.playerId ?? "");
   const [email, setEmail] = useState("");
@@ -65,16 +73,19 @@ export function ParentAdditionalGuardianClient({ data }: { data: AdditionalGuard
   const [message, setMessage] = useState("");
   const [messageOk, setMessageOk] = useState(false);
   const [isPending, startTransition] = useTransition();
+  const effectivePlayerId = selectedPlayerId && data.children.some((child) => child.playerId === selectedPlayerId)
+    ? selectedPlayerId
+    : playerId;
   const selectedChild = useMemo(
-    () => data.children.find((child) => child.playerId === playerId),
-    [data.children, playerId]
+    () => data.children.find((child) => child.playerId === effectivePlayerId),
+    [data.children, effectivePlayerId]
   );
 
   function submitRequest() {
     setMessage("");
     startTransition(async () => {
       const response = await authenticatedFetch("/api/parent/additional-guardians", {
-        playerId,
+        playerId: effectivePlayerId,
         email,
         relationship
       });
@@ -101,15 +112,15 @@ export function ParentAdditionalGuardianClient({ data }: { data: AdditionalGuard
   }
 
   return (
-    <div className="page additional-guardian-page">
-      <section className="hero">
+    <section className={`${embedded ? "family-access-embedded" : "page"} additional-guardian-page`}>
+      {!embedded ? <section className="hero">
         <span className="eyebrow">Family access</span>
         <h1>Ask the league to connect another trusted adult.</h1>
         <p className="lead">
           Choose one child and team. A league administrator verifies the request before any invitation exists.
           Most reviews should take one to two business days.
         </p>
-      </section>
+      </section> : null}
 
       {!data.ok ? <p className="notice warning" role="status">{data.message}</p> : null}
       {message ? <p className={`notice ${messageOk ? "ok" : "warning"}`} aria-live="polite">{message}</p> : null}
@@ -118,7 +129,7 @@ export function ParentAdditionalGuardianClient({ data }: { data: AdditionalGuard
         <article className="card stack">
           <span className="eyebrow">1 · Propose an adult</span>
           <h2>Who needs access?</h2>
-          <label>
+          {!embedded ? <label>
             Child and team
             <select disabled={!data.ok || !data.children.length} value={playerId} onChange={(event) => setPlayerId(event.target.value)}>
               {!data.children.length ? <option value="">No linked children available</option> : null}
@@ -126,7 +137,12 @@ export function ParentAdditionalGuardianClient({ data }: { data: AdditionalGuard
                 <option key={child.playerId} value={child.playerId}>{child.playerName} · {child.teamName}</option>
               ))}
             </select>
-          </label>
+          </label> : (
+            <p className="family-access-selected-child">
+              <strong>{selectedChild?.playerName ?? "No child selected"}</strong>
+              <span>{selectedChild?.teamName ?? "Linked team unavailable"}</span>
+            </p>
+          )}
           <label>
             Adult email
             <input
@@ -154,7 +170,7 @@ export function ParentAdditionalGuardianClient({ data }: { data: AdditionalGuard
             I confirm this adult should be reviewed for {selectedChild?.playerName ?? "this child"} and {selectedChild?.teamName ?? "this team"} only.
           </label>
           <button
-            disabled={!data.ok || !playerId || !email.trim() || !confirmed || isPending}
+            disabled={!data.ok || !effectivePlayerId || !email.trim() || !confirmed || isPending}
             onClick={submitRequest}
           >
             {isPending ? "Saving request…" : "Send for league review"}
@@ -216,7 +232,7 @@ export function ParentAdditionalGuardianClient({ data }: { data: AdditionalGuard
           </article>
         ))}
       </section>
-    </div>
+    </section>
   );
 }
 

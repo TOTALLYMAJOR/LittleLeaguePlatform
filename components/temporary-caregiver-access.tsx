@@ -26,7 +26,15 @@ async function authenticatedFetch(path: string, body: unknown) {
   });
 }
 
-export function ParentTemporaryCaregiverClient({ data }: { data: ParentTemporaryCaregiverData }) {
+export function ParentTemporaryCaregiverClient({
+  data,
+  embedded = false,
+  selectedPlayerId
+}: {
+  data: ParentTemporaryCaregiverData;
+  embedded?: boolean;
+  selectedPlayerId?: string;
+}) {
   const router = useRouter();
   const [playerId, setPlayerId] = useState(data.children[0]?.playerId ?? "");
   const [caregiverEmail, setCaregiverEmail] = useState("");
@@ -40,9 +48,12 @@ export function ParentTemporaryCaregiverClient({ data }: { data: ParentTemporary
   const [message, setMessage] = useState("");
   const [messageOk, setMessageOk] = useState(false);
   const [isPending, startTransition] = useTransition();
+  const effectivePlayerId = selectedPlayerId && data.children.some((child) => child.playerId === selectedPlayerId)
+    ? selectedPlayerId
+    : playerId;
   const selectedChild = useMemo(
-    () => data.children.find((child) => child.playerId === playerId),
-    [data.children, playerId]
+    () => data.children.find((child) => child.playerId === effectivePlayerId),
+    [data.children, effectivePlayerId]
   );
 
   function createAuthorization() {
@@ -50,7 +61,7 @@ export function ParentTemporaryCaregiverClient({ data }: { data: ParentTemporary
     setInvitation(null);
     startTransition(async () => {
       const response = await authenticatedFetch("/api/parent/caregiver-authorizations", {
-        playerId,
+        playerId: effectivePlayerId,
         caregiverEmail,
         eventIds,
         allowPickup,
@@ -103,8 +114,8 @@ export function ParentTemporaryCaregiverClient({ data }: { data: ParentTemporary
   }
 
   return (
-    <section className="page temporary-caregiver-parent" aria-labelledby="temporary-caregiver-title">
-      <header className="temporary-caregiver-hero">
+    <section className={`${embedded ? "family-access-embedded" : "page"} temporary-caregiver-parent`} aria-labelledby={embedded ? undefined : "temporary-caregiver-title"}>
+      {!embedded ? <header className="temporary-caregiver-hero">
         <div>
           <span className="eyebrow">Temporary caregiver access</span>
           <h2 id="temporary-caregiver-title">Choose exactly what one adult may see and do.</h2>
@@ -114,7 +125,7 @@ export function ParentTemporaryCaregiverClient({ data }: { data: ParentTemporary
           </p>
         </div>
         <span className="status-pill warning">Caregiver acceptance required</span>
-      </header>
+      </header> : null}
 
       {!data.ok ? <p className="notice warning" role="status">{data.message}</p> : null}
       {message ? <p className={`notice ${messageOk ? "ok" : "warning"}`} aria-live="polite">{message}</p> : null}
@@ -136,7 +147,7 @@ export function ParentTemporaryCaregiverClient({ data }: { data: ParentTemporary
         <article className="card stack">
           <span className="eyebrow">1 · Person and child</span>
           <h2>Who needs temporary access?</h2>
-          <label>
+          {!embedded ? <label>
             Child and team
             <select
               disabled={!data.ok || !data.children.length}
@@ -152,7 +163,12 @@ export function ParentTemporaryCaregiverClient({ data }: { data: ParentTemporary
                 <option key={child.playerId} value={child.playerId}>{child.childLabel} · {child.teamName}</option>
               ))}
             </select>
-          </label>
+          </label> : (
+            <p className="family-access-selected-child">
+              <strong>{selectedChild?.childLabel ?? "No child selected"}</strong>
+              <span>{selectedChild?.teamName ?? "Linked team unavailable"}</span>
+            </p>
+          )}
           <label>
             Caregiver email
             <input
@@ -243,7 +259,7 @@ export function ParentTemporaryCaregiverClient({ data }: { data: ParentTemporary
         </label>
         <button
           data-analytics-event="caregiver_scope_reviewed"
-          disabled={!data.ok || !playerId || !caregiverEmail.trim() || !eventIds.length || !startsAt || !expiresAt || !reviewed || isPending}
+          disabled={!data.ok || !effectivePlayerId || !caregiverEmail.trim() || !eventIds.length || !startsAt || !expiresAt || !reviewed || isPending}
           onClick={createAuthorization}
           type="button"
         >

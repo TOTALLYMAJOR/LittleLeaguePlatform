@@ -1,23 +1,23 @@
 export default function ParentHomeLoading() {
   return (
-    <main className="parent-weekly-dashboard" aria-busy="true" aria-label="Loading Family Home">
-      <section className="parent-weekly-card parent-weekly-loading-card">
-        <div className="parent-weekly-loading-line wide" />
-        <div className="parent-weekly-loading-line" />
-      </section>
-      <section className="parent-weekly-card parent-weekly-loading-passport">
-        <div className="parent-weekly-loading-line wide" />
-        <div className="parent-weekly-loading-line short" />
-        <div className="parent-weekly-loading-actions">
-          <span />
-          <span />
-          <span />
+    <section
+      className="page parent-weekly-dashboard"
+      aria-busy="true"
+      aria-labelledby="parent-home-loading-title"
+      role="status"
+    >
+      <h1 className="sr-only" id="parent-home-loading-title">Loading Family Home</h1>
+      <section className="parent-weekly-player">
+        <div className="communication-loading-block" />
+        <div className="communication-loading-tabs">
+          <div />
+          <div />
+          <div />
         </div>
       </section>
-      <section className="parent-weekly-card parent-weekly-loading-card">
-        <div className="parent-weekly-loading-line" />
-        <div className="parent-weekly-loading-line short" />
-      </section>
-    </main>
+      <div className="communication-loading-block" />
+      <div className="communication-loading-block tall" />
+      <div className="communication-loading-block" />
+    </section>
   );
 }

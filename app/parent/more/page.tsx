@@ -25,6 +25,10 @@ const destinationIcons: Record<string, typeof BookOpenCheck> = {
   "/offline": CloudOff
 };
 
+const destinationLabels: Record<string, string> = {
+  "/invite/recover": "Support"
+};
+
 function getDestinationIcon(entry: RouteTopologyEntry) {
   return destinationIcons[entry.href] ?? CircleHelp;
 }
@@ -52,7 +56,7 @@ export default async function ParentMorePage() {
                 <Link href={destination.href}>
                   <Icon aria-hidden="true" size={22} strokeWidth={2.2} />
                   <span>
-                    <strong>{destination.label}</strong>
+                    <strong>{destinationLabels[destination.href] ?? destination.label}</strong>
                     <small>{destination.parentMoreDescription}</small>
                   </span>
                 </Link>

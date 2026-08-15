@@ -1,4 +1,5 @@
 import { SharedAccessRequiredSurface } from "@/app/_access-state";
+import { FamilyTeamPage, type FamilyTeamView } from "@/components/family-team-page";
 import { TeamPortalClient } from "@/components/feature-panels";
 import { resolveRouteAuthorityContext, type ProductRole } from "@/lib/navigation/route-topology";
 import { scopeTeamPortalData } from "@/lib/supabase/route-scopes";
@@ -60,6 +61,39 @@ export default async function TeamPortalPage() {
         actionLabel="Submit registration request"
       />
     );
+  }
+
+  if (scope.audience === "parent" && scopedTeamPortalData) {
+    const usersById = new Map(scopedTeamPortalData.users.map((user) => [user.id, user]));
+    const view: FamilyTeamView = {
+      teams: scopedTeamPortalData.teams.map((team) => {
+        const nextEvent = scopedTeamPortalData.events
+          .filter((event) => event.teamId === team.id && event.status === "scheduled")
+          .sort((left, right) => Date.parse(left.startsAt) - Date.parse(right.startsAt))[0];
+        const coachNames = scopedTeamPortalData.teamMemberships
+          .filter((membership) => (
+            membership.teamId === team.id &&
+            membership.role === "coach" &&
+            membership.status === "active"
+          ))
+          .flatMap((membership) => {
+            const user = usersById.get(membership.userId);
+            return user ? [user.name] : [];
+          });
+        return {
+          id: team.id,
+          name: team.name,
+          mascot: team.mascot,
+          coachNames,
+          nextEvent: nextEvent ? {
+            title: nextEvent.title,
+            startsAt: nextEvent.startsAt,
+            locationName: nextEvent.locationName
+          } : undefined
+        };
+      })
+    };
+    return <FamilyTeamPage view={view} />;
   }
 
   return <TeamPortalClient teamPortalData={scopedTeamPortalData} audience={scope.audience} />;

@@ -131,6 +131,7 @@ describe("route smoke coverage", () => {
   it("keeps PWA install and standalone usage measurement wired", () => {
     const provider = readFileSync(join(process.cwd(), "app", "providers.tsx"), "utf8");
     const featurePanels = readFileSync(join(process.cwd(), "components", "feature-panels.tsx"), "utf8");
+    const rsvpControl = readFileSync(join(process.cwd(), "components", "family", "rsvp-control.tsx"), "utf8");
     const communicationRoom = readFileSync(join(process.cwd(), "components", "communication-room.tsx"), "utf8");
     const layout = readFileSync(join(process.cwd(), "app", "layout.tsx"), "utf8");
     const css = readFileSync(join(process.cwd(), "app", "globals.css"), "utf8");
@@ -145,7 +146,7 @@ describe("route smoke coverage", () => {
     expect(provider).toContain("leaguepilot:value-experienced");
     expect(provider).toContain("hasExperiencedValue");
     expect(provider).toContain("valueGate: true");
-    expect(featurePanels).toContain("parent_rsvp_confirmed");
+    expect(rsvpControl).toContain("parent_rsvp_confirmed");
     expect(communicationRoom).toContain("critical_message_acknowledged");
     expect(featurePanels).not.toContain("markLeaguePilotValueExperienced(\"public_schedule_event_opened\")");
     expect(provider).toContain("standalone_launch");
@@ -184,7 +185,7 @@ describe("route smoke coverage", () => {
     expect(shell).toContain("playsInline");
     expect(css).toContain(".mobile-tabbar");
     expect(css).toContain(".sidebar-video-backdrop");
-    expect(css).toContain(".parent-rsvp-glow");
+    expect(css).toContain(".parent-rsvp-action");
     expect(css).toContain("@media print");
     expect(css).toContain("@media (forced-colors: active)");
   });
@@ -373,5 +374,34 @@ describe("route smoke coverage", () => {
     expect(proofScript).toContain("Northside Waves");
     expect(proofScript).toContain("providerSendsExecuted: 0");
     expect(proofScript).toContain("provider_call === true");
+  });
+
+  it("keeps Schedule and RSVP browser proof provider-free and mutation-safe", () => {
+    const packageJson = readFileSync(join(process.cwd(), "package.json"), "utf8");
+    const proofScript = readFileSync(join(process.cwd(), "scripts", "capture-schedule-rsvp-proof.mjs"), "utf8");
+
+    expect(packageJson).toContain("\"qa:schedule-rsvp-proof\"");
+    expect(proofScript).toContain("/parent/schedule");
+    expect(proofScript).toContain("/parent/rsvp");
+    expect(proofScript).toContain("schedule_changed");
+    expect(proofScript).toContain("guardian_conflict");
+    expect(proofScript).toContain("hostedRowsMutated: false");
+    expect(proofScript).toContain("providerCallsExecuted: 0");
+    expect(proofScript).toContain('page.route("**/api/rsvps"');
+  });
+
+  it("keeps Family utility browser proof provider-free and mutation-safe", () => {
+    const packageJson = readFileSync(join(process.cwd(), "package.json"), "utf8");
+    const proofScript = readFileSync(join(process.cwd(), "scripts", "capture-family-utilities-proof.mjs"), "utf8");
+
+    expect(packageJson).toContain("\"qa:family-utilities-proof\"");
+    expect(proofScript).toContain("/parent/settings");
+    expect(proofScript).toContain("/parent/more");
+    expect(proofScript).toContain("/account");
+    expect(proofScript).toContain("/parent/practice-recaps");
+    expect(proofScript).toContain("hostedRowsMutated: false");
+    expect(proofScript).toContain("providerCallsExecuted: 0");
+    expect(proofScript).toContain('page.route("**/api/parent/setup"');
+    expect(proofScript).toContain('page.route("**/api/parent/replays/*/engagement"');
   });
 });

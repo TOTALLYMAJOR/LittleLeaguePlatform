@@ -421,12 +421,12 @@ function deriveState(input: {
 
 function stateLabel(state: TransportationState) {
   return {
-    open: "Ride requested · not assigned",
-    awaiting_requester_acceptance: "Awaiting requesting guardian",
-    assigned: "Assigned · both adults accepted",
-    schedule_changed: "Needs review after schedule change",
+    open: "Requested",
+    awaiting_requester_acceptance: "Offered · awaiting your confirmation",
+    assigned: "Accepted",
+    schedule_changed: "Needs review · schedule changed",
     cancelled: "Event cancelled",
-    expired: "Expired",
+    expired: "Past event",
     withdrawn: "Withdrawn"
   }[state];
 }

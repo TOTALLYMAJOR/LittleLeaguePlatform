@@ -48,7 +48,7 @@ describe("transportation responsibility", () => {
     const data = mapParentTransportationData(baseInput);
     expect(data.requests[0]).toMatchObject({
       state: "open",
-      stateLabel: "Ride requested · not assigned",
+      stateLabel: "Requested",
       canOffer: false,
       canWithdrawRequest: true
     });
