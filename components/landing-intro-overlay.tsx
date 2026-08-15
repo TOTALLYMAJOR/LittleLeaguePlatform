@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 
 const STORAGE_KEY = "leaguepilot-intro-seen:v1";
-const INTRO_MS = 14500;
+const INTRO_MS = 20000;
 const LEAVE_MS = 600;
 
 const MASCOT_BADGES = [
@@ -183,10 +183,14 @@ export function LandingIntroOverlay() {
     previousFocus.current = document.activeElement instanceof HTMLElement ? document.activeElement : null;
     if (hero) hero.inert = true;
     if (header) header.inert = true;
+    // Lets the page hold back its own timed elements (the weather card) so they
+    // don't compete with the intro's ticker telling the same weather story.
+    document.documentElement.dataset.intro = "playing";
     document.getElementById("landing-intro-skip")?.focus();
     return () => {
       if (hero) hero.inert = false;
       if (header) header.inert = false;
+      delete document.documentElement.dataset.intro;
       previousFocus.current?.focus();
     };
   }, [phase]);
