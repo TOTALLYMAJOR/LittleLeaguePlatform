@@ -124,7 +124,6 @@ export function LandingIntroOverlay() {
   const dismissed = useRef(false);
   const leaveTimer = useRef<number | null>(null);
   const rootRef = useRef<HTMLDivElement | null>(null);
-  const previousFocus = useRef<HTMLElement | null>(null);
 
   function clearLeaveTimer() {
     if (leaveTimer.current !== null) {
@@ -178,21 +177,26 @@ export function LandingIntroOverlay() {
 
   useEffect(() => {
     if (phase !== "playing") return;
-    const hero = rootRef.current?.nextElementSibling as HTMLElement | null;
-    const header = document.querySelector<HTMLElement>(".public-header");
-    previousFocus.current = document.activeElement instanceof HTMLElement ? document.activeElement : null;
-    if (hero) hero.inert = true;
-    if (header) header.inert = true;
-    // Lets the page hold back its own timed elements (the weather card) so they
-    // don't compete with the intro's ticker telling the same weather story.
+    // The overlay is transparent and pointer-transparent, so the page underneath is
+    // both visible and usable from the first frame — someone can hit Sign in without
+    // waiting out the animation. (This deliberately replaces the earlier `inert`
+    // containment, which existed only because the overlay used to be opaque and hid
+    // the controls it was trapping focus away from; with the page in plain view,
+    // blocking it would be the accessibility problem rather than the fix.)
+    // Any interaction with the page also ends the intro, so it never fights the user.
     document.documentElement.dataset.intro = "playing";
-    document.getElementById("landing-intro-skip")?.focus();
+    function onInteract(event: Event) {
+      if (event.target instanceof Element && event.target.closest(".landing-intro")) return;
+      dismiss();
+    }
+    window.addEventListener("pointerdown", onInteract);
+    window.addEventListener("focusin", onInteract);
     return () => {
-      if (hero) hero.inert = false;
-      if (header) header.inert = false;
       delete document.documentElement.dataset.intro;
-      previousFocus.current?.focus();
+      window.removeEventListener("pointerdown", onInteract);
+      window.removeEventListener("focusin", onInteract);
     };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [phase]);
 
   useEffect(() => {
@@ -246,9 +250,6 @@ export function LandingIntroOverlay() {
       <div className="li-stage">
       <svg className="landing-intro-scene" viewBox="0 0 1200 800" aria-hidden="true" focusable="false">
         <defs>
-          <filter id="li-cloud-soft" x="-30%" y="-30%" width="160%" height="160%">
-            <feGaussianBlur stdDeviation="2.4" />
-          </filter>
           {/* A soft person mark — rounded head + shoulders, no stick limbs — so the
               cast reads as modern iconography rather than a cartoon sketch. */}
           <g id="li-adult">
@@ -304,25 +305,8 @@ export function LandingIntroOverlay() {
           </g>
         </g>
 
-        {/* Soft clouds float along the top edge, outside li-world so their own
-            fixed light fill always reads clearly regardless of the site theme. */}
-        <g className="li-clouds" fill="#e4e9ee" filter="url(#li-cloud-soft)">
-          <g className="li-cloud-drift li-cloud-a">
-            <ellipse cx="140" cy="95" rx="70" ry="26" />
-            <ellipse cx="200" cy="80" rx="55" ry="22" />
-            <ellipse cx="255" cy="98" rx="48" ry="20" />
-          </g>
-          <g className="li-cloud-drift li-cloud-b">
-            <ellipse cx="560" cy="78" rx="80" ry="28" />
-            <ellipse cx="625" cy="60" rx="60" ry="24" />
-            <ellipse cx="690" cy="82" rx="50" ry="20" />
-          </g>
-          <g className="li-cloud-drift li-cloud-c">
-            <ellipse cx="950" cy="108" rx="62" ry="22" />
-            <ellipse cx="1005" cy="88" rx="54" ry="20" />
-            <ellipse cx="1055" cy="105" rx="42" ry="18" />
-          </g>
-        </g>
+        {/* No clouds here: the landing page's own drifting sky (LandingSky) shows
+            through the transparent overlay, so a second cloud layer would double it. */}
 
         {/* Sport badges sit outside li-world so they pop in full, cheery color
             against the still-gray field — same device the phones use below. */}

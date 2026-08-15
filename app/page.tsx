@@ -3,6 +3,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { LandingIntroOverlay } from "@/components/landing-intro-overlay";
+import { LandingSky } from "@/components/landing-sky";
 import { LandingWeatherNotification } from "@/components/landing-weather-notification";
 import { ReplayIntroButton } from "@/components/replay-intro-button";
 import { getServerShellAccess, toClientShellAccess } from "@/lib/supabase/shell-access";
@@ -86,26 +87,7 @@ export default async function HomePage() {
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(STRUCTURED_DATA) }} />
       <LandingIntroOverlay />
       <section className="landing-gateway-hero" aria-labelledby="landing-title">
-        <svg
-          className="landing-gateway-sky"
-          viewBox="0 0 900 400"
-          preserveAspectRatio="xMidYMid slice"
-          aria-hidden="true"
-          focusable="false"
-        >
-          <g className="landing-gateway-cloud landing-gateway-cloud-1" fill="currentColor">
-            <ellipse cx="120" cy="90" rx="86" ry="30" />
-            <ellipse cx="196" cy="72" rx="58" ry="24" />
-          </g>
-          <g className="landing-gateway-cloud landing-gateway-cloud-2" fill="currentColor">
-            <ellipse cx="560" cy="150" rx="104" ry="32" />
-            <ellipse cx="646" cy="128" rx="62" ry="24" />
-          </g>
-          <g className="landing-gateway-cloud landing-gateway-cloud-3" fill="currentColor">
-            <ellipse cx="330" cy="230" rx="70" ry="24" />
-            <ellipse cx="392" cy="214" rx="46" ry="18" />
-          </g>
-        </svg>
+        <LandingSky />
 
         <div className="landing-gateway-copy">
           <p className="landing-gateway-kicker">LeaguePilot</p>

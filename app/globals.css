@@ -14327,6 +14327,9 @@ button.theme-toggle:hover:not(:disabled) {
   grid-template-rows: 1fr;
   padding-top: 72px;
   overflow: hidden;
+  /* Clicks pass straight through to the live page, so Sign in is reachable from
+     the first frame. Only the overlay's own controls re-enable pointer events. */
+  pointer-events: none;
   /* Transparent: the animation plays directly over the live landing page rather
      than behind its own panel, so the intro reads as one continuous transition
      that dissolves into the page instead of cutting to it. */
@@ -14345,6 +14348,7 @@ button.theme-toggle:hover:not(:disabled) {
    page it lands on (cream, photo, or the orange Account card). */
 .landing-intro-skip {
   position: absolute;
+  pointer-events: auto;
   right: clamp(14px, 3vw, 28px);
   /* Same baseline as the captions, so it sits in the clear band above the
      action cards rather than on top of them and the page's Replay link. */
@@ -14730,18 +14734,6 @@ button.theme-toggle:hover:not(:disabled) {
 }
 
 /* ── Intro v2/v3 (LP-UX-009, reworked LP-UX-012): weather + ticker, mascot flip. */
-.li-cloud-drift {
-  animation: li-cloud-drift 14s ease-in-out infinite alternate;
-}
-
-.li-cloud-b { animation-duration: 17s; animation-delay: -5s; }
-.li-cloud-c { animation-duration: 12s; animation-delay: -7s; }
-
-@keyframes li-cloud-drift {
-  from { transform: translateX(-22px); }
-  to { transform: translateX(30px); }
-}
-
 .li-sun {
   opacity: 0;
   transform-box: fill-box;
@@ -14765,12 +14757,12 @@ button.theme-toggle:hover:not(:disabled) {
   z-index: 3;
   display: flex;
   align-items: center;
-  height: 32px;
+  height: 26px;
   overflow: hidden;
   opacity: 0;
-  background: #10151c;
-  box-shadow: 0 1px 0 rgb(255 255 255 / 8%), 0 4px 16px rgb(0 0 0 / 35%);
-  animation: li-ticker-fade 8.6s linear 4.6s both;
+  background: rgb(16 21 28 / 62%);
+  backdrop-filter: blur(4px);
+  animation: li-ticker-fade 6s ease 4.6s forwards;
 }
 
 /* The scrolling track slides under the tag, so the tag needs its own stacking
@@ -14783,11 +14775,11 @@ button.theme-toggle:hover:not(:disabled) {
   align-items: center;
   gap: 6px;
   height: 100%;
-  padding: 0 12px;
-  background: #c62f2f;
+  padding: 0 11px;
+  background: rgb(198 47 47 / 82%);
   color: #fff;
-  font-size: 0.68rem;
-  font-weight: 850;
+  font-size: 0.6rem;
+  font-weight: 800;
   letter-spacing: 0.06em;
   text-transform: uppercase;
 }
@@ -14804,7 +14796,7 @@ button.theme-toggle:hover:not(:disabled) {
   display: flex;
   flex: 1 1 auto;
   white-space: nowrap;
-  animation: li-ticker-scroll 14s linear infinite;
+  animation: li-ticker-scroll 30s linear infinite;
 }
 
 .li-ticker-group {
@@ -14813,19 +14805,20 @@ button.theme-toggle:hover:not(:disabled) {
 }
 
 .li-ticker-item {
-  padding: 0 18px;
-  color: #f2c14e;
-  font-size: 0.72rem;
-  font-weight: 800;
-  letter-spacing: 0.04em;
+  padding: 0 20px;
+  color: rgb(242 193 78 / 78%);
+  font-size: 0.64rem;
+  font-weight: 700;
+  letter-spacing: 0.05em;
   text-transform: uppercase;
 }
 
+/* Settles to a low, ambient presence rather than disappearing outright. */
 @keyframes li-ticker-fade {
   0% { opacity: 0; }
-  10% { opacity: 1; }
-  88% { opacity: 1; }
-  100% { opacity: 0; }
+  12% { opacity: 1; }
+  62% { opacity: 1; }
+  100% { opacity: 0.34; }
 }
 
 @keyframes li-ticker-blink { to { opacity: 0; } }
@@ -14896,42 +14889,29 @@ button.theme-toggle:hover:not(:disabled) {
 }
 
 /* ── Landing ambient weather + coach notification card (LP-UX-010). */
+/* Ambient sky, driven by Framer Motion (components/landing-sky.tsx). Tuned to the
+   signed-in navigation panel's backdrop: a barely-there desaturated texture under a
+   soft scrim, so it reads as atmosphere and never competes with the hero copy. */
 .landing-gateway-sky {
   position: absolute;
-  inset: 0 auto 0 0;
+  inset: 0;
   z-index: 1;
-  width: 62%;
-  height: 100%;
-  overflow: visible;
+  overflow: hidden;
   color: var(--gateway-ink);
-  opacity: 0.05;
+  opacity: 0.09;
   pointer-events: none;
 }
 
 .landing-gateway-cloud {
-  animation: landing-cloud-drift 70s linear infinite;
-}
-
-.landing-gateway-cloud-2 {
-  animation-duration: 92s;
-  animation-delay: -30s;
-  opacity: 0.75;
-}
-
-.landing-gateway-cloud-3 {
-  animation-duration: 58s;
-  animation-delay: -18s;
-  opacity: 0.6;
-}
-
-@keyframes landing-cloud-drift {
-  from { transform: translateX(-140px); }
-  to { transform: translateX(940px); }
+  position: absolute;
+  left: 0;
+  transform-origin: left center;
+  will-change: transform;
 }
 
 :root[data-theme="dark"] .landing-gateway-sky {
   color: var(--text);
-  opacity: 0.06;
+  opacity: 0.13;
 }
 
 .landing-weather-card {
@@ -15025,6 +15005,99 @@ button.theme-toggle:hover:not(:disabled) {
 .landing-weather-card-severity.is-cancel_risk {
   background: #fbe1de;
   color: #b42318;
+}
+
+/* Weather-channel widget treatment: conditions readout, then a metrics strip. */
+.landing-weather-conditions {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  gap: 10px;
+  align-items: center;
+  margin-top: 2px;
+}
+
+.landing-weather-glyph {
+  width: 40px;
+  height: 40px;
+}
+
+.landing-weather-readout {
+  display: grid;
+  gap: 1px;
+  min-width: 0;
+}
+
+.landing-weather-readout strong {
+  color: #142f47;
+  font-size: 1.5rem;
+  font-weight: 750;
+  line-height: 1;
+  letter-spacing: -0.02em;
+}
+
+.landing-weather-readout span {
+  overflow: hidden;
+  color: #52677b;
+  font-size: 0.72rem;
+  font-weight: 650;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.landing-weather-metrics {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 6px;
+  margin: 2px 0 0;
+  padding: 8px 0 0;
+  border-top: 1px solid rgb(20 47 71 / 12%);
+  list-style: none;
+}
+
+.landing-weather-metrics li {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+  color: #46576a;
+}
+
+.landing-weather-metrics svg {
+  flex: 0 0 auto;
+  color: #6b7f93;
+}
+
+.landing-weather-metrics span {
+  display: grid;
+  font-size: 0.74rem;
+  font-weight: 700;
+  line-height: 1.15;
+}
+
+.landing-weather-metrics em {
+  color: #7c8ea0;
+  font-size: 0.6rem;
+  font-style: normal;
+  font-weight: 650;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+:root[data-theme="dark"] .landing-weather-readout strong {
+  color: var(--text);
+}
+
+:root[data-theme="dark"] .landing-weather-readout span,
+:root[data-theme="dark"] .landing-weather-metrics li {
+  color: var(--muted);
+}
+
+:root[data-theme="dark"] .landing-weather-metrics {
+  border-top-color: var(--line);
+}
+
+:root[data-theme="dark"] .landing-weather-metrics em,
+:root[data-theme="dark"] .landing-weather-metrics svg {
+  color: var(--muted);
 }
 
 @keyframes landing-weather-card-in {
