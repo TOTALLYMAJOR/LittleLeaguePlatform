@@ -16,10 +16,17 @@ function readServerTheme(): ColorTheme {
 }
 
 function subscribeToTheme(onStoreChange: () => void) {
-  window.addEventListener("storage", onStoreChange);
+  function onStorage(event: StorageEvent) {
+    if (event.key !== null && event.key !== COLOR_THEME_STORAGE_KEY) return;
+    const nextTheme: ColorTheme = isColorTheme(event.newValue) ? event.newValue : "light";
+    document.documentElement.dataset.theme = nextTheme;
+    document.documentElement.style.colorScheme = nextTheme;
+    onStoreChange();
+  }
+  window.addEventListener("storage", onStorage);
   window.addEventListener(COLOR_THEME_CHANGE_EVENT, onStoreChange);
   return () => {
-    window.removeEventListener("storage", onStoreChange);
+    window.removeEventListener("storage", onStorage);
     window.removeEventListener(COLOR_THEME_CHANGE_EVENT, onStoreChange);
   };
 }

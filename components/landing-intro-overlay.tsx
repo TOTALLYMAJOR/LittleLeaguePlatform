@@ -36,6 +36,16 @@ const BOARD_ROWS = [
 export function LandingIntroOverlay() {
   const [phase, setPhase] = useState<"hidden" | "playing" | "leaving">("hidden");
   const dismissed = useRef(false);
+  const leaveTimer = useRef<number | null>(null);
+  const rootRef = useRef<HTMLDivElement | null>(null);
+  const previousFocus = useRef<HTMLElement | null>(null);
+
+  function clearLeaveTimer() {
+    if (leaveTimer.current !== null) {
+      window.clearTimeout(leaveTimer.current);
+      leaveTimer.current = null;
+    }
+  }
 
   function dismiss() {
     if (dismissed.current) return;
@@ -46,7 +56,8 @@ export function LandingIntroOverlay() {
       // Storage failure only means the intro may replay next visit.
     }
     setPhase("leaving");
-    window.setTimeout(() => setPhase("hidden"), LEAVE_MS);
+    clearLeaveTimer();
+    leaveTimer.current = window.setTimeout(() => setPhase("hidden"), LEAVE_MS);
   }
 
   useEffect(() => {
@@ -65,6 +76,7 @@ export function LandingIntroOverlay() {
   useEffect(() => {
     function onReplay() {
       if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+      clearLeaveTimer();
       dismissed.current = false;
       try {
         window.sessionStorage.removeItem(STORAGE_KEY);
@@ -80,6 +92,21 @@ export function LandingIntroOverlay() {
 
   useEffect(() => {
     if (phase !== "playing") return;
+    const hero = rootRef.current?.nextElementSibling as HTMLElement | null;
+    const header = document.querySelector<HTMLElement>(".public-header");
+    previousFocus.current = document.activeElement instanceof HTMLElement ? document.activeElement : null;
+    if (hero) hero.inert = true;
+    if (header) header.inert = true;
+    document.getElementById("landing-intro-skip")?.focus();
+    return () => {
+      if (hero) hero.inert = false;
+      if (header) header.inert = false;
+      previousFocus.current?.focus();
+    };
+  }, [phase]);
+
+  useEffect(() => {
+    if (phase !== "playing") return;
     // The exit is driven by the li-overlay-out animationend; this timer is only
     // a fallback in case animations are suspended (e.g. background tab).
     const timer = window.setTimeout(dismiss, INTRO_MS + 4000);
@@ -91,13 +118,16 @@ export function LandingIntroOverlay() {
       window.clearTimeout(timer);
       window.removeEventListener("keydown", onKeyDown);
     };
-     
+    // dismiss is a stable-enough plain function re-created each render; depending on
+    // it here would re-arm the fallback timer every render instead of once per phase.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [phase]);
 
   if (phase === "hidden") return null;
 
   return (
     <div
+      ref={rootRef}
       className={`landing-intro${phase === "leaving" ? " is-leaving" : ""}`}
       role="region"
       aria-label="Season intro animation"

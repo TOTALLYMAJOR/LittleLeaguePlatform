@@ -59,14 +59,18 @@ function roleHomeHref(access: ClientShellAccess) {
   return "/account";
 }
 
+const LEAGUE_TIME_ZONE = "America/Chicago";
+const WEEKDAYS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+
 function nextGameDay() {
   const now = new Date();
-  const daysUntilSaturday = (6 - now.getDay() + 7) % 7;
-  const gameDay = new Date(now);
-  gameDay.setDate(now.getDate() + daysUntilSaturday);
+  const weekday = new Intl.DateTimeFormat("en-US", { timeZone: LEAGUE_TIME_ZONE, weekday: "short" }).format(now);
+  const weekdayIndex = WEEKDAYS.indexOf(weekday);
+  const daysUntilSaturday = (6 - weekdayIndex + 7) % 7;
+  const gameDay = new Date(now.getTime() + daysUntilSaturday * 24 * 60 * 60 * 1000);
   return {
     isToday: daysUntilSaturday === 0,
-    label: new Intl.DateTimeFormat("en-US", { month: "long", day: "numeric" }).format(gameDay)
+    label: new Intl.DateTimeFormat("en-US", { timeZone: LEAGUE_TIME_ZONE, month: "long", day: "numeric" }).format(gameDay)
   };
 }
 
@@ -116,6 +120,7 @@ export default async function HomePage() {
           <Link className="landing-gateway-gameday" href="/schedule">
             <span className="landing-gateway-gameday-dot" aria-hidden="true" />
             {gameDay.isToday ? "Game day is today" : `Next game day: Saturday, ${gameDay.label}`}
+            {" "}
             <em>See the public schedule →</em>
           </Link>
 

@@ -387,7 +387,11 @@ export function AppShell({ access = signedOutShellAccess, children }: { access?:
             </div>
             {activeContext ? (
               <details className="family-shell-context" aria-label="Verified family context">
-                <summary><strong>Parent · {activeContext.organizationName} · {activeContext.teamName ?? "Family teams"}</strong><small>Context details</small></summary>
+                <summary>
+                  <strong>Parent · {activeContext.organizationName} · {activeContext.teamName ?? "Family teams"}</strong>
+                  {activeContext.readOnly ? <span className="badge warning">Archived</span> : null}
+                  <small>Context details</small>
+                </summary>
                 <div className="family-shell-context-details">
                   <span><small>Role</small><strong>Parent</strong></span>
                   <span><small>Organization</small><strong>{activeContext.organizationName}</strong></span>
@@ -505,7 +509,11 @@ export function AppShell({ access = signedOutShellAccess, children }: { access?:
               </div>
               {activeContext ? (
                 <details className="verified-context-bar" aria-label="Verified role and organization context">
-                  <summary><strong>{activeContext.role} · {activeContext.organizationName}{activeContext.teamName ? ` · ${activeContext.teamName}` : ""}</strong><small>Context details</small></summary>
+                  <summary>
+                    <strong>{activeContext.role} · {activeContext.organizationName}{activeContext.teamName ? ` · ${activeContext.teamName}` : ""}</strong>
+                    {activeContext.readOnly ? <span className="badge warning">Archived</span> : null}
+                    <small>Context details</small>
+                  </summary>
                   <div className="verified-context-details">
                     <span><small>Role</small><strong>{activeContext.role}</strong></span>
                     <span><small>Organization</small><strong>{activeContext.organizationName}</strong></span>

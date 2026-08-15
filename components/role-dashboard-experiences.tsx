@@ -197,6 +197,7 @@ export function CoachGameDayRadar({
   respondedRsvpCount,
   rosterCount,
   coachCount,
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars -- kept in the prop contract for callers; the People "Nothing needed" checkmark now derives from `tasks` instead (see hasPeopleTask) so this count no longer drives any render here.
   missingRsvpCount,
   snackCount,
   volunteerCount,
@@ -231,6 +232,8 @@ export function CoachGameDayRadar({
   const planGapCount = snackCount + volunteerCount;
   const planProgress = planGapCount === 0 ? 100 : Math.max(20, 100 - planGapCount * 25);
   const taskCount = tasks.length;
+  const hasPeopleTask = tasks.some((task) => task.category === "People");
+  const hasPlanTask = tasks.some((task) => task.category === "Plan");
 
   return (
     <section className="coach-game-day-radar" aria-labelledby="coach-game-day-radar-title">
@@ -308,10 +311,10 @@ export function CoachGameDayRadar({
             </div>
           )}
 
-          {missingRsvpCount === 0 ? (
+          {!hasPeopleTask ? (
             <div className="coach-radar-action is-clear"><span aria-hidden="true">✓</span><h3>People: Nothing needed</h3></div>
           ) : null}
-          {planGapCount === 0 ? (
+          {!hasPlanTask ? (
             <div className="coach-radar-action is-clear"><span aria-hidden="true">✓</span><h3>Plan: Nothing needed</h3></div>
           ) : null}
 
