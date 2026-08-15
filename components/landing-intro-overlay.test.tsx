@@ -9,13 +9,20 @@ describe("LandingIntroOverlay", () => {
     expect(renderToStaticMarkup(<LandingIntroOverlay />)).toBe("");
   });
 
-  it("keeps the dedication, replay guard, skip control, and reduced-motion opt-out", () => {
+  it("keeps the replay guard, skip control, and reduced-motion opt-out", () => {
     const source = readFileSync(join(process.cwd(), "components", "landing-intro-overlay.tsx"), "utf8");
-    expect(source).toContain("Built in honor of Pearl River Youth Sport Administrators and Volunteers");
     expect(source).toContain("leaguepilot-intro-seen:v1");
     expect(source).toContain("prefers-reduced-motion");
     expect(source).toContain("Skip intro");
     expect(source).toContain("Escape");
+  });
+
+  it("leaves the dedication to the landing page, which shows through the transparent overlay", () => {
+    const overlay = readFileSync(join(process.cwd(), "components", "landing-intro-overlay.tsx"), "utf8");
+    const page = readFileSync(join(process.cwd(), "app", "page.tsx"), "utf8");
+    // Rendered once, by the page — repeating it in the overlay would double the text.
+    expect(page).toContain("Built in honor of Pearl River Youth Sport Administrators and Volunteers");
+    expect(overlay).not.toContain("Built in honor of Pearl River");
   });
 
   it("keeps the sky, the rain-delay ticker, and the mascot flip — and drops the stick-figure chaos, photo interludes, and falling rain", () => {

@@ -14321,9 +14321,16 @@ button.theme-toggle:hover:not(:disabled) {
   inset: 0;
   z-index: 1300;
   display: grid;
-  grid-template-rows: auto 1fr auto;
+  /* One row: the stage. Skip and captions are positioned against this fixed layer.
+     padding-top clears the live public header so the ticker reads as a banner
+     sitting under it rather than covering the site nav. */
+  grid-template-rows: 1fr;
+  padding-top: 72px;
   overflow: hidden;
-  background: #eceff1;
+  /* Transparent: the animation plays directly over the live landing page rather
+     than behind its own panel, so the intro reads as one continuous transition
+     that dissolves into the page instead of cutting to it. */
+  background: transparent;
   animation: li-overlay-in 0.4s ease, li-overlay-out 0.6s ease 13.9s forwards;
 }
 
@@ -14334,46 +14341,31 @@ button.theme-toggle:hover:not(:disabled) {
   animation: none;
 }
 
-.landing-intro-top {
-  display: grid;
-  grid-template-columns: auto 1fr auto;
-  gap: var(--sp-4);
-  align-items: center;
-  padding: clamp(14px, 2.5vw, 26px) clamp(18px, 4vw, 48px);
-}
-
-.landing-intro-kicker {
-  color: #5a6470;
-  font-size: 0.72rem;
-  font-weight: 850;
-  letter-spacing: 0.16em;
-  text-transform: uppercase;
-  animation: li-kicker-color 1.2s ease 11.7s forwards;
-}
-
-.landing-intro-dedication {
-  margin: 0;
-  color: #6a7480;
-  font-size: clamp(0.72rem, 1.4vw, 0.85rem);
-  font-style: italic;
-  text-align: center;
-}
-
+/* Floating control: solid pill so it stays legible over whatever part of the live
+   page it lands on (cream, photo, or the orange Account card). */
 .landing-intro-skip {
-  min-height: 34px;
-  padding: 5px 14px;
-  border: 1px solid #aeb6bd;
+  position: absolute;
+  right: clamp(14px, 3vw, 28px);
+  /* Same baseline as the captions, so it sits in the clear band above the
+     action cards rather than on top of them and the page's Replay link. */
+  bottom: clamp(150px, 20vh, 210px);
+  z-index: 5;
+  min-height: 36px;
+  padding: 7px 16px;
+  border: 0;
   border-radius: 999px;
-  background: transparent;
-  color: #4a5561;
+  background: rgb(16 21 28 / 88%);
+  color: #f4f7fa;
   font-size: 0.78rem;
+  font-weight: 700;
   cursor: pointer;
+  backdrop-filter: blur(6px);
 }
 
 .landing-intro-skip:hover,
 .landing-intro-skip:focus-visible {
-  border-color: #4a5561;
-  color: #1d2831;
+  background: #10151c;
+  color: #fff;
 }
 
 /* Positioned ancestor for the ticker and mascot overlays, so their inset/percentage
@@ -14461,25 +14453,39 @@ button.theme-toggle:hover:not(:disabled) {
 .li-board-team { fill: #22303d; font-size: 16px; font-weight: 750; }
 .li-board-line { fill: #5a6470; font-size: 12px; }
 
+/* Sits above the landing page's action cards, which are anchored to the bottom
+   of the hero — hence the generous bottom offset rather than a flush one. */
 .landing-intro-captions {
-  position: relative;
-  min-height: 3.2em;
-  padding: 0 clamp(18px, 5vw, 48px) clamp(18px, 3.5vh, 34px);
+  position: absolute;
+  right: 0;
+  bottom: clamp(150px, 20vh, 210px);
+  left: 0;
+  z-index: 4;
+  padding: 0 clamp(18px, 5vw, 48px);
+  pointer-events: none;
 }
 
 .li-cap {
   position: absolute;
   right: 0;
-  bottom: clamp(18px, 3.5vh, 34px);
+  /* Anchored at the container's baseline so a two-line caption grows upward,
+     into empty space, instead of downward onto the action cards. */
+  bottom: 0;
   left: 0;
-  margin: 0;
-  color: #37424d;
-  font-size: clamp(1rem, 2.4vw, 1.45rem);
+  width: fit-content;
+  max-width: min(90%, 44rem);
+  margin: 0 auto;
+  padding: 10px 22px;
+  border-radius: 999px;
+  background: rgb(16 21 28 / 82%);
+  color: #f4f7fa;
+  font-size: clamp(0.95rem, 2.1vw, 1.3rem);
   font-weight: 650;
   letter-spacing: -0.01em;
   text-align: center;
   text-wrap: balance;
   opacity: 0;
+  backdrop-filter: blur(6px);
 }
 
 .li-cap-1 { animation: li-cap 4s ease 0.3s both; }
@@ -14488,7 +14494,6 @@ button.theme-toggle:hover:not(:disabled) {
 
 @keyframes li-overlay-in { from { opacity: 0; } to { opacity: 1; } }
 @keyframes li-overlay-out { to { opacity: 0; pointer-events: none; } }
-@keyframes li-kicker-color { to { color: #a33b0d; } }
 @keyframes li-world-color { to { filter: grayscale(0) saturate(1); } }
 
 @keyframes li-joy-pop {
@@ -14524,49 +14529,34 @@ button.theme-toggle:hover:not(:disabled) {
   100% { opacity: 0; }
 }
 
-:root[data-theme="dark"] .landing-intro {
-  background: var(--bg);
-}
-
-:root[data-theme="dark"] .landing-intro-kicker {
-  color: var(--muted);
-  animation-name: li-kicker-color-dark;
-}
-
-@keyframes li-kicker-color-dark { to { color: var(--action-strong); } }
-
-:root[data-theme="dark"] .landing-intro-dedication {
-  color: var(--muted);
-}
-
-:root[data-theme="dark"] .landing-intro-skip {
-  border-color: var(--line);
-  color: var(--text);
-}
-
-:root[data-theme="dark"] .landing-intro-skip:hover,
-:root[data-theme="dark"] .landing-intro-skip:focus-visible {
-  border-color: var(--accent);
-  color: var(--text);
-}
-
-:root[data-theme="dark"] .li-cap {
-  color: var(--text);
-}
+/* The Skip pill and captions carry their own dark surfaces, so they need no
+   per-theme overrides — they read against a cream or a dark page equally. */
 
 @media (max-width: 640px) {
-  .landing-intro-top {
-    grid-template-columns: 1fr auto;
-  }
-
-  .landing-intro-dedication {
-    grid-row: 2;
-    grid-column: 1 / -1;
-    text-align: left;
+  .landing-intro {
+    padding-top: 64px;
   }
 
   .landing-intro-scene {
     max-height: 54vh;
+  }
+
+  /* Phone layout has no clear mid-page band, so the caption and Skip stack at the
+     bottom instead — both carry their own surfaces, so they stay legible there. */
+  .landing-intro-captions {
+    bottom: 76px;
+    padding-inline: 14px;
+  }
+
+  .li-cap {
+    max-width: 100%;
+    padding: 8px 16px;
+    font-size: 0.88rem;
+  }
+
+  .landing-intro-skip {
+    right: 14px;
+    bottom: 18px;
   }
 }
 

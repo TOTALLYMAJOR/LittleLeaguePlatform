@@ -221,15 +221,11 @@ export function LandingIntroOverlay() {
         if (event.animationName === "li-overlay-out") dismiss();
       }}
     >
-      <header className="landing-intro-top">
-        <span className="landing-intro-kicker">LeaguePilot</span>
-        <p className="landing-intro-dedication">
-          Built in honor of Pearl River Youth Sport Administrators and Volunteers
-        </p>
-        <button type="button" id="landing-intro-skip" className="landing-intro-skip" onClick={dismiss}>
-          Skip intro
-        </button>
-      </header>
+      {/* No kicker or dedication here: the live landing page behind the transparent
+          overlay already shows both, so repeating them would double the text. */}
+      <button type="button" id="landing-intro-skip" className="landing-intro-skip" onClick={dismiss}>
+        Skip intro
+      </button>
 
       <p className="sr-only">
         Cheerful icons for eight different youth sports appear one by one under drifting
@@ -249,10 +245,6 @@ export function LandingIntroOverlay() {
           <filter id="li-cloud-soft" x="-30%" y="-30%" width="160%" height="160%">
             <feGaussianBlur stdDeviation="2.4" />
           </filter>
-          <linearGradient id="li-sky-gradient" x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0%" stopColor="#dfe6ea" />
-            <stop offset="100%" stopColor="#f2f6ef" />
-          </linearGradient>
           {/* A soft person mark — rounded head + shoulders, no stick limbs — so the
               cast reads as modern iconography rather than a cartoon sketch. */}
           <g id="li-adult">
@@ -270,13 +262,10 @@ export function LandingIntroOverlay() {
           </g>
         </defs>
 
-        {/* Everything inside li-world starts grayscale; color floods at the finale. */}
+        {/* No backdrop rects: the overlay is transparent so the real landing page shows
+            through behind every element. Everything inside li-world starts grayscale and
+            resolves to color at the finale, so the animation dissolves into the live page. */}
         <g className="li-world">
-          <rect x="0" y="0" width="1200" height="800" fill="url(#li-sky-gradient)" />
-          <rect x="0" y="560" width="1200" height="240" fill="#7fae7a" />
-          <path d="M0 560 H1200" stroke="#ffffff" strokeWidth="4" opacity="0.7" />
-          <circle cx="600" cy="700" r="90" fill="none" stroke="#ffffff" strokeWidth="4" opacity="0.55" />
-
           <g className="li-sun">
             <circle cx="690" cy="88" r="40" fill="#f2c14e" />
             <g stroke="#f2c14e" strokeWidth="6" strokeLinecap="round">
