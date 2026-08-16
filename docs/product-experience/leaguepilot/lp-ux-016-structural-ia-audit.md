@@ -76,7 +76,7 @@ Severity: high.
 | 9 | Missing empty states — Family Access, security proof, archived seasons, and approval queues rendered empty grids with no guidance | admin | medium |
 | 10 | Security & Audit listed covered and uncovered checks with identical weight, so "what needs my attention" required reading all of them | admin | medium |
 | 11 | Three controls below the 44px touch minimum: skip-intro (36px), landing game-day link (38px), offline "Return home" (25px) | all | medium |
-| 12 | `/admin` Overview carries a second product inside one disclosure — message composer, team management, sponsors, media, drill videos, season planning | admin | high (deferred, see §7) |
+| 12 | `/admin` Overview appeared to carry a second product inside one disclosure. **Corrected on inspection:** LP-UX-007 (`aa38e37`) added an early return for the overview surface, orphaning ~640 lines of `showOverview`-guarded UI below it. None of it had rendered since. See §5.7 | admin | high |
 
 ---
 
@@ -181,8 +181,10 @@ it was a phantom destination rather than a page; the route still resolves.
 10. Attention-first ordering on Security & Audit and Settings & Providers; reference material into disclosures.
 11. Touch targets to 44px.
 
+**High impact — done in this branch (second pass)**
+12. Remove the unreachable admin workspace and finish the staff page template (§5.7).
+
 **Deferred — needs product-owner input, see §7**
-12. Split `/admin` Overview's embedded second product into its dedicated routes.
 13. Table column prioritization inside `components/feature-panels.tsx`.
 
 ---
@@ -240,6 +242,35 @@ Skeleton loading and focus-managed error boundaries mirroring the existing
 `/parent` pair, each naming what was *not* changed and offering both retry and a
 route back to the role home.
 
+### 5.7 Unreachable admin workspace — `components/feature-panels.tsx`, `components/season-certainty-cards.tsx`
+The deferred "split the Overview" item turned out to be a dead-code problem, not
+an IA problem. LP-UX-007 made the admin home queue-only by adding
+`if (showOverview) return (...)` near the top of `AdminDashboardClient`. Every
+`showOverview`-guarded block *below* that return — the family-message composer,
+team management, season planning, tournament preview, lineup board, roster
+chips, queued-message and registration-queue cards, and the readiness card —
+became unreachable and has not rendered since.
+
+Removed: those three branches, plus the state, memos and handlers that only fed
+them (communication composer state and `queueCommunication`, lineup positions
+and `assignLineupPlayer`, season planning and `previewBalancedTeamBuild`, and
+eight derived values used only by the dead readiness card), plus
+`TeamStatusTable`, `RegistrationQueueCard`, `SecurityStatusCard` whose only call
+site was that block, plus the CSS that styled the removed markup.
+
+Restoring those cards to the Overview was considered and rejected: LP-UX-007
+records "queue-only Admin home" as a deliberate goal, and a cleanup pass should
+not silently reverse a documented product decision.
+
+Changed: `/admin` Overview leads with a `PageHeader` and a badge counting queues
+that need attention, then pending reviews, then league health; its own
+role/organization/season strip is removed because the shell context strip now
+carries it, and the health card's `h1` drops to `h2` so the page has exactly one
+`h1`. Media Review and Sponsors move from the ad-hoc `admin-focus-hero` to the
+same `PageHeader` template.
+
+Net: **-698 / +55 lines**. Lint returns to the single pre-existing warning.
+
 ### Assumptions recorded
 * "Today" is a better name than "Home" for the coach landing page, because the
   page is a readiness board and the mobile tab bar already used that word.
@@ -268,7 +299,7 @@ Browser proof (Chromium, production standalone build) at **390 / 768 / 1280 /
 | Page errors / console errors | none |
 | `main#main-content` landmark | exactly 1 per page |
 | Pages with no `h1` | none (was: `/coach`, `/parent`) |
-| Interactive targets below 44px | none (was: 3) |
+| Interactive targets below 44px | none except the off-screen skip link (was: 3 at a 40px threshold, 7 at 44px) |
 
 Other verification:
 * Navigation behavior — role filtering, role-switch entries, compatibility
@@ -300,13 +331,12 @@ Other verification:
 
 ## 7. Remaining decisions (product-owner input required)
 
-1. **`/admin` Overview carries a second product.** Its "Operations workspace"
-   disclosure contains a family-message composer, team management, sponsor
-   records, media moderation, drill videos, and season planning — each of which
-   also has a dedicated route. Splitting it would materially improve the admin
-   home, but deciding *which* tools are duplicates safe to drop versus
-   deliberate shortcuts requires knowing how admins actually use that panel.
-   Not a decision to make from the code alone.
+1. **Was any of the removed admin workspace meant to come back?** The composer,
+   lineup board, and season planning tools described in §5.7 had been
+   unreachable since `aa38e37`, so removing them changes nothing a user could
+   do today. If any of them was meant to return to a dedicated route rather
+   than be dropped, that intent is not recorded anywhere in the repo and the
+   code should be recovered from history rather than rebuilt.
 
 2. **Coach settings.** Is `/coach/settings` meant to be a real page? If yes it
    needs a surface and a nav slot; if no, the alias is the end state.
