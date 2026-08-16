@@ -166,11 +166,17 @@ describe("route smoke coverage", () => {
     const css = readFileSync(join(process.cwd(), "app", "globals.css"), "utf8");
 
     expect(shell).toContain("Skip to main content");
-    expect(shell).toContain("You are here");
     expect(shell).toContain("getShellContext");
     expect(shell).toContain("Current access");
     expect(shell).toContain("Private team details stay hidden on this page");
     expect(shell).toContain("Sign-in required");
+    // One context strip, not two stacked chrome bars: identity and route help
+    // stay collapsed, and every destination stays reachable without a keyboard.
+    expect(shell).toContain('className="context-identity"');
+    expect(shell).toContain('className="context-help"');
+    expect(shell).not.toContain("verified-context-bar");
+    expect(shell).toContain('className="command-launch"');
+    expect(shell).toContain('className="staff-mobile-bar"');
     expect(shell).toContain("little-league-shell-collapsed");
     expect(shell).toContain("Quick navigation");
     expect(shell).toContain("aria-current");

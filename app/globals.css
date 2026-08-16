@@ -718,6 +718,10 @@ a.card:hover, .card.interactive:hover { transform: translateY(-2px); box-shadow:
   gap: var(--sp-4);
   padding: var(--sp-4);
 }
+/* Disclosures that hold page sections directly still need the body inset. */
+.compact-disclosure > summary + *:not(.compact-disclosure-body) {
+  padding: var(--sp-4);
+}
 
 .game-day-calm-card,
 .coach-command-card {
@@ -8107,20 +8111,113 @@ html[data-theme="dark"] {
   outline-offset: 3px;
 }
 
-.verified-context-bar {
-  align-items: stretch;
-  background: color-mix(in srgb, var(--surface) 94%, var(--page));
-  border: 1px solid var(--line);
-  border-radius: var(--radius-lg);
-  margin: calc(var(--sp-5) * -0.35) 0 var(--sp-5);
-  overflow: hidden;
+.context-identity {
+  min-width: 0;
 }
 
-.verified-context-bar > summary { display: none; }
+.context-identity > summary {
+  align-items: center;
+  cursor: pointer;
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--sp-2);
+  list-style: none;
+  min-height: 34px;
+  min-width: 0;
+}
+
+.context-identity > summary::-webkit-details-marker { display: none; }
+
+.context-identity > summary:focus-visible {
+  border-radius: var(--radius-sm);
+  outline: 2px solid var(--accent);
+  outline-offset: 3px;
+}
+
+.context-identity-line {
+  align-items: center;
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--sp-2);
+  min-width: 0;
+}
+
+.context-identity-line strong {
+  color: var(--text);
+  font-size: var(--text-sm);
+}
+
+.context-identity-line > span {
+  color: var(--muted);
+  font-size: var(--text-sm);
+  font-weight: 700;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.context-identity-line > span::before {
+  color: var(--line);
+  content: "\00b7";
+  margin-right: var(--sp-2);
+}
+
+.context-identity-toggle,
+.context-help > summary {
+  color: var(--accent-strong);
+  cursor: pointer;
+  font-size: var(--text-xs);
+  font-weight: 900;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.context-identity[open] .context-identity-toggle::after { content: " \2013"; }
+.context-identity:not([open]) .context-identity-toggle::after { content: " +"; }
+
+.context-identity-unavailable {
+  color: var(--muted);
+  font-size: var(--text-sm);
+  font-weight: 700;
+  margin: 0;
+  min-height: 34px;
+}
+
+.context-help {
+  min-width: 0;
+}
+
+.context-help > summary {
+  list-style: none;
+  min-height: 24px;
+}
+
+.context-help > summary::-webkit-details-marker { display: none; }
+
+.context-help > summary:focus-visible {
+  border-radius: var(--radius-sm);
+  outline: 2px solid var(--accent);
+  outline-offset: 3px;
+}
+
+.context-help > p {
+  color: var(--muted);
+  font-size: var(--text-sm);
+  font-weight: 700;
+  line-height: 1.4;
+  margin: var(--sp-2) 0 0;
+  max-width: 74ch;
+}
+
 .verified-context-details {
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
   display: grid;
   gap: 1px;
   grid-template-columns: repeat(5, minmax(0, 1fr));
+  margin-top: var(--sp-2);
+  overflow: hidden;
 }
 
 .verified-context-details > span {
@@ -8134,7 +8231,7 @@ html[data-theme="dark"] {
   border-left: 1px solid var(--line);
 }
 
-.verified-context-bar small {
+.verified-context-details small {
   color: var(--muted);
   font-size: 0.65rem;
   font-weight: 900;
@@ -8143,7 +8240,7 @@ html[data-theme="dark"] {
   text-transform: uppercase;
 }
 
-.verified-context-bar strong {
+.verified-context-details strong {
   color: var(--text);
   font-size: var(--text-sm);
   line-height: 1.25;
@@ -8152,16 +8249,86 @@ html[data-theme="dark"] {
   white-space: nowrap;
 }
 
-.verified-context-bar .state-current {
+.verified-context-details .state-current {
   background: #eefbf5;
 }
 
-.verified-context-bar .state-readonly {
+.verified-context-details .state-readonly {
   background: #fff7ed;
 }
 
-.verified-context-bar.context-unavailable {
-  grid-template-columns: 1fr;
+.shell-access-notice {
+  display: grid;
+  gap: 4px;
+  margin-bottom: var(--sp-3);
+}
+
+.shell-access-notice p { margin: 0; }
+
+.sidebar-footer {
+  border-top: 1px solid var(--line);
+  margin-top: auto;
+  padding-top: var(--sp-3);
+}
+
+.command-launch {
+  align-items: center;
+  background: var(--surface-soft);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  color: var(--muted);
+  display: flex;
+  font-size: var(--text-sm);
+  font-weight: 800;
+  gap: var(--sp-2);
+  min-height: 44px;
+  padding: 0 var(--sp-3);
+  width: 100%;
+}
+
+.command-launch:hover { color: var(--text); }
+
+.command-launch kbd {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  font-size: 0.68rem;
+  margin-left: auto;
+  padding: 2px 6px;
+}
+
+.staff-mobile-bar { display: none; }
+
+.staff-mobile-brand {
+  align-items: center;
+  display: flex;
+  gap: var(--sp-2);
+  font-weight: 900;
+  min-width: 0;
+  text-decoration: none;
+}
+
+.staff-mobile-brand > span:last-child {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.staff-mobile-menu {
+  align-items: center;
+  display: inline-flex;
+  flex: 0 0 auto;
+  gap: var(--sp-2);
+  min-height: 44px;
+}
+
+.staff-mobile-menu-count {
+  background: var(--accent);
+  border-radius: 999px;
+  color: #fff;
+  font-size: 0.68rem;
+  font-weight: 900;
+  padding: 1px 7px;
 }
 
 .mobile-tabbar {
@@ -8636,6 +8803,22 @@ caption {
   .sidebar.app-sidebar { display: none; }
   .mobile-tabbar { display: grid; }
   .main { padding-bottom: calc(112px + env(safe-area-inset-bottom)); }
+
+  /* Below the sidebar breakpoint the command dialog is the only route to
+     destinations outside the five mobile tabs, so give staff a visible way in. */
+  .staff-mobile-bar {
+    align-items: center;
+    background: color-mix(in srgb, var(--surface) 96%, transparent);
+    backdrop-filter: blur(8px);
+    border-bottom: 1px solid var(--line);
+    display: flex;
+    gap: var(--sp-3);
+    justify-content: space-between;
+    padding: var(--sp-2) var(--sp-4);
+    position: sticky;
+    top: 0;
+    z-index: var(--z-sticky);
+  }
   .context-bar {
     grid-template-columns: 1fr;
   }
@@ -8919,11 +9102,11 @@ caption {
   color: var(--text);
 }
 
-:root[data-theme="dark"] .verified-context-bar .state-current {
+:root[data-theme="dark"] .verified-context-details .state-current {
   background: var(--ok-soft);
 }
 
-:root[data-theme="dark"] .verified-context-bar .state-readonly {
+:root[data-theme="dark"] .verified-context-details .state-readonly {
   background: var(--warning-soft);
 }
 
@@ -11399,16 +11582,15 @@ button.theme-toggle:hover:not(:disabled) {
   }
 
   .context-copy {
-    gap: 0;
+    gap: 4px;
   }
 
-  .context-copy .context-kicker,
-  .context-copy small,
   .context-back {
     display: none;
   }
 
-  .context-copy strong {
+  .context-identity-line strong,
+  .context-identity-line > span {
     font-size: 0.86rem;
     line-height: 1.2;
   }
@@ -11417,35 +11599,8 @@ button.theme-toggle:hover:not(:disabled) {
     flex: 0 0 auto;
   }
 
-  .verified-context-bar > summary {
-    align-items: center;
-    display: flex;
-    gap: 8px;
-    justify-content: space-between;
-    list-style-position: inside;
-    min-height: 40px;
-    padding: 8px 10px;
-  }
-
-  .verified-context-bar > summary strong {
-    min-width: 0;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    text-transform: capitalize;
-    white-space: nowrap;
-  }
-
   .verified-context-details {
-    display: none;
     grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
-
-  .verified-context-bar[open] .verified-context-details {
-    display: grid;
-  }
-
-  .verified-context-bar {
-    margin-top: -8px;
   }
 
   .verified-context-details > span + span {
@@ -11464,7 +11619,7 @@ button.theme-toggle:hover:not(:disabled) {
     grid-column: 1 / -1;
   }
 
-  .verified-context-bar strong {
+  .verified-context-details strong {
     white-space: normal;
   }
 

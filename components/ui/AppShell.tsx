@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { Menu, ShieldCheck } from "lucide-react";
+import { Menu, Search, ShieldCheck } from "lucide-react";
 import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { AppStateProvider } from "@/app/providers";
 import { OfflineSyncStatus } from "@/components/offline-sync-status";
@@ -27,61 +27,39 @@ import { StatusBadge } from "./primitives";
 import { RouteIcon } from "./route-icons";
 import { ThemeToggle } from "./ThemeToggle";
 
+/**
+ * Sidebar section order. Highest-frequency work first, configuration and
+ * account last, so the top of the sidebar always holds the daily jobs.
+ */
 const groups: RouteTopologyEntry["group"][] = [
   "Family",
-  "Command",
-  "Calendar",
+  "Today",
   "Team",
+  "Schedule",
   "Communication",
-  "Replay",
-  "Tools",
-  "Launch",
-  "Operations",
+  "Registration & Access",
+  "Season Operations",
   "Trust & Safety",
-  "Business",
-  "Configuration",
-  "League Ops",
-  "Admin Tools",
+  "League Setup",
+  "Public",
   "Switch role",
-  "Support"
+  "Account"
 ];
 
-const routeHelpByRole: Record<RouteTopologyEntry["role"], { title: string; body: string; tone: string }> = {
-  public: {
-    title: "Start here",
-    body: "Sign in, sign up, or check the public calendar before private team tools unlock.",
-    tone: "public"
-  },
-  parent: {
-    title: "Family tools",
-    body: "Use this area for the next game, RSVP, messages, photos, and coach-approved practice help.",
-    tone: "family"
-  },
-  coach: {
-    title: "Coach tools",
-    body: "Use this area for RSVPs, Parent Replay, team messages, Team Portal, weather, and planning.",
-    tone: "coach"
-  },
-  admin: {
-    title: "League office",
-    body: "Use this area for registration, team setup, safety review, media review, providers, and audit proof.",
-    tone: "admin"
-  },
-  support: {
-    title: "Account help",
-    body: "Use this area for sign in, account status, invite recovery, temporary-care review, and support.",
-    tone: "support"
-  },
-  shared: {
-    title: "Shared team surface",
-    body: "Private team details are limited to your verified role and current team access.",
-    tone: "shared"
-  },
-  prototype: {
-    title: "Prototype reference",
-    body: "This is the preserved static prototype, not the live production app surface.",
-    tone: "support"
-  }
+const roleToneByRole: Record<RouteTopologyEntry["role"], string> = {
+  public: "public",
+  parent: "family",
+  coach: "coach",
+  admin: "admin",
+  support: "support",
+  shared: "shared",
+  prototype: "support"
+};
+
+const roleDisplayName: Record<string, string> = {
+  parent: "Parent",
+  coach: "Coach",
+  admin: "League admin"
 };
 
 const routeHelpByHref: Record<string, string> = {
@@ -100,24 +78,34 @@ const routeHelpByHref: Record<string, string> = {
   "/admin/security-audit": "Use this page to confirm role boundaries, access-policy proof, and audit evidence."
 };
 
+/**
+ * Resolves the one-line shell context strip. Page purpose now lives in each
+ * page's own header, so the strip carries only identity, blocking access
+ * states, and optional route help behind a disclosure.
+ */
 function getShellContext(pathname: string, access: ClientShellAccess) {
   const entry = getRouteEntry(pathname);
   if (entry && !canAccessRouteEntry(entry, access)) {
     return {
-      title: "Access not available",
-      body: "This account does not have access to the requested area. Private labels and navigation remain hidden.",
       tone: "support",
-      badge: "Permission denied",
-      badgeVariant: "warning" as const
+      help: undefined,
+      blocked: {
+        title: "Access not available",
+        body: "This account does not have access to the requested area. Private labels and navigation remain hidden."
+      }
     };
   }
-  const roleHelp = routeHelpByRole[entry?.role ?? "public"];
-  const title = entry?.label ? `${roleHelp.title}: ${entry.label}` : roleHelp.title;
-  const body = entry?.href && routeHelpByHref[entry.href] ? routeHelpByHref[entry.href] : roleHelp.body;
   const signInRequired = Boolean(entry?.requiresAuth && !access.signedIn);
-  const badge = signInRequired ? "Sign-in required" : access.signedIn ? "Signed in" : "Public entry";
-  const badgeVariant = signInRequired ? "warning" : access.signedIn ? "info" : "neutral";
-  return { ...roleHelp, title, body, badge, badgeVariant: badgeVariant as "warning" | "info" | "neutral" };
+  return {
+    tone: roleToneByRole[entry?.role ?? "public"],
+    help: entry?.href ? routeHelpByHref[entry.href] : undefined,
+    blocked: signInRequired
+      ? {
+        title: "Sign-in required",
+        body: "Sign in with an approved account to open this area. Private team details stay hidden until then."
+      }
+      : undefined
+  };
 }
 
 export function AppShell({ access = signedOutShellAccess, children }: { access?: ClientShellAccess; children: ReactNode }) {
@@ -481,8 +469,34 @@ export function AppShell({ access = signedOutShellAccess, children }: { access?:
               );
             })}
           </nav>
+
+          <div className="sidebar-footer">
+            <button type="button" className="command-launch" onClick={() => setCommandOpen(true)}>
+              <span className="nav-icon" aria-hidden="true"><Search size={16} /></span>
+              <span>Find a page</span>
+              <kbd aria-hidden="true">⌘K</kbd>
+            </button>
+          </div>
         </aside>
         )}
+
+        {!usesFamilyShell ? (
+          <header className="staff-mobile-bar">
+            <Link href={brandHomeHref} className="staff-mobile-brand" aria-label="LeaguePilot home">
+              <span className="brand-mark" aria-hidden="true">LP</span>
+              <span>{activeContext?.organizationName ?? "LeaguePilot"}</span>
+            </Link>
+            <button type="button" className="secondary staff-mobile-menu" onClick={() => setCommandOpen(true)}>
+              <Menu aria-hidden="true" size={18} />
+              <span>All pages</span>
+              {roleAttentionCount ? (
+                <span className="staff-mobile-menu-count" aria-label={attentionSummary}>
+                  {formatBadgeCount(roleAttentionCount)}
+                </span>
+              ) : null}
+            </button>
+          </header>
+        ) : null}
 
         <main
           id="main-content"
@@ -492,44 +506,59 @@ export function AppShell({ access = signedOutShellAccess, children }: { access?:
         >
           {!usesImmersiveFamilyHeader ? (
             <>
-              <div className={`context-bar context-bar-${shellContext.tone}`} aria-label="Current app area">
+              {shellContext.blocked ? (
+                <section className="notice warning shell-access-notice" role="status">
+                  <strong>{shellContext.blocked.title}</strong>
+                  <p>{shellContext.blocked.body}</p>
+                </section>
+              ) : null}
+              <div className={`context-bar context-bar-${shellContext.tone}`} aria-label="Current role and organization context">
                 <div className="context-copy">
-                  <span className="context-kicker">You are here</span>
-                  <strong>{shellContext.title}</strong>
-                  <small>{shellContext.body}</small>
+                  {activeContext ? (
+                    <details className="context-identity">
+                      <summary>
+                        <span className="context-identity-line">
+                          <strong>{roleDisplayName[activeContext.role] ?? activeContext.role}</strong>
+                          <span>{activeContext.organizationName}</span>
+                          <span>{activeContext.seasonName}</span>
+                          {activeContext.teamName ? <span>{activeContext.teamName}</span> : null}
+                        </span>
+                        {activeContext.readOnly ? <span className="badge warning">Archived</span> : null}
+                        <small className="context-identity-toggle">Details</small>
+                      </summary>
+                      <div className="verified-context-details">
+                        <span><small>Role</small><strong>{roleDisplayName[activeContext.role] ?? activeContext.role}</strong></span>
+                        <span><small>Organization</small><strong>{activeContext.organizationName}</strong></span>
+                        <span><small>Season</small><strong>{activeContext.seasonName}</strong></span>
+                        {activeContext.teamName ? <span><small>Team</small><strong>{activeContext.teamName}</strong></span> : null}
+                        <span className={activeContext.readOnly ? "state-readonly" : "state-current"}>
+                          <small>Access</small>
+                          <strong>{activeContext.readOnly ? "Archived, read-only" : "Current access"}</strong>
+                        </span>
+                      </div>
+                    </details>
+                  ) : (
+                    <p className="context-identity-unavailable" role="status">
+                      Private team details stay hidden on this page.
+                    </p>
+                  )}
+                  {shellContext.help ? (
+                    <details className="context-help">
+                      <summary>What is this page for?</summary>
+                      <p>{shellContext.help}</p>
+                    </details>
+                  ) : null}
                 </div>
                 <div className="context-actions">
+                  {roleAttentionCount || access.attentionStatus === "error" ? (
+                    <StatusBadge label={attentionSummary} variant={access.attentionStatus === "error" ? "warning" : "info"} />
+                  ) : null}
                   <ThemeToggle />
                   <button type="button" className="secondary context-back" onClick={() => (window.history.length > 1 ? router.back() : router.push(getRouteParent(pathname)))}>
                     Back
                   </button>
-                  <StatusBadge label={shellContext.badge} variant={shellContext.badgeVariant} />
-                  <StatusBadge label={attentionSummary} variant={access.attentionStatus === "error" ? "warning" : roleAttentionCount ? "info" : "neutral"} />
                 </div>
               </div>
-              {activeContext ? (
-                <details className="verified-context-bar" aria-label="Verified role and organization context">
-                  <summary>
-                    <strong>{activeContext.role} · {activeContext.organizationName}{activeContext.teamName ? ` · ${activeContext.teamName}` : ""}</strong>
-                    {activeContext.readOnly ? <span className="badge warning">Archived</span> : null}
-                    <small>Context details</small>
-                  </summary>
-                  <div className="verified-context-details">
-                    <span><small>Role</small><strong>{activeContext.role}</strong></span>
-                    <span><small>Organization</small><strong>{activeContext.organizationName}</strong></span>
-                    <span><small>Season</small><strong>{activeContext.seasonName}</strong></span>
-                    {activeContext.teamName ? <span><small>Team</small><strong>{activeContext.teamName}</strong></span> : null}
-                    <span className={activeContext.readOnly ? "state-readonly" : "state-current"}>
-                      <small>Access</small>
-                      <strong>{activeContext.readOnly ? "Archived, read-only" : "Current access"}</strong>
-                    </span>
-                  </div>
-                </details>
-              ) : (
-                <div className="verified-context-bar context-unavailable" role="status">
-                  <span><small>Privacy</small><strong>Private team details stay hidden on this page</strong></span>
-                </div>
-              )}
             </>
           ) : null}
           {children}

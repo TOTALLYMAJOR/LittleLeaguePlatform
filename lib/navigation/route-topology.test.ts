@@ -208,9 +208,13 @@ describe("route topology", () => {
 
     expect(nav).toContain("/coach/attendance");
     expect(nav).toContain("/coach/practice-recaps");
-    expect(coachHome?.label).toBe("Home");
+    expect(coachHome?.label).toBe("Today");
     expect(nav).not.toContain("/coach/rsvps");
     expect(nav).not.toContain("/coach/parent-replay");
+    // /coach/settings renders the coach home surface, so it stays a
+    // compatibility alias instead of a duplicate nav destination.
+    expect(nav).not.toContain("/coach/settings");
+    expect(getRouteEntry("/coach/settings")?.canonicalHref).toBe("/coach");
   });
 
   it("lets coach-admin users switch to admin home without showing full admin IA on coach routes", () => {
