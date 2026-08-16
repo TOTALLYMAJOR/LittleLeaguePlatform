@@ -1,0 +1,792 @@
+{
+  "generatedAt": "2026-08-03T20:25:34.230Z",
+  "baseUrl": "http://127.0.0.1:3122",
+  "defaultContract": "light regardless of device preference",
+  "persistenceContract": "explicit light or dark selection applies to every route",
+  "results": [
+    {
+      "route": "/",
+      "state": "default-light",
+      "metrics": {
+        "theme": "light",
+        "rootColorScheme": "light",
+        "bodyBackground": "rgb(253, 248, 241)",
+        "bodyColor": "rgb(28, 36, 56)",
+        "shellBackground": "rgb(255, 250, 244)",
+        "gatewayBackground": "rgb(255, 250, 244)",
+        "gatewayHeadingColor": "rgb(16, 47, 75)",
+        "documentWidth": 1440,
+        "viewportWidth": 1440,
+        "toggleLabel": "Use dark mode"
+      }
+    },
+    {
+      "route": "/",
+      "state": "selected-dark",
+      "metrics": {
+        "theme": "dark",
+        "rootColorScheme": "dark",
+        "bodyBackground": "rgb(17, 24, 33)",
+        "bodyColor": "rgb(246, 241, 233)",
+        "shellBackground": "rgb(17, 24, 33)",
+        "gatewayBackground": "rgb(17, 24, 33)",
+        "gatewayHeadingColor": "rgb(246, 241, 233)",
+        "documentWidth": 1440,
+        "viewportWidth": 1440,
+        "toggleLabel": "Use light mode"
+      }
+    },
+    {
+      "route": "/",
+      "state": "persisted-dark",
+      "metrics": {
+        "theme": "dark",
+        "rootColorScheme": "dark",
+        "bodyBackground": "rgb(17, 24, 33)",
+        "bodyColor": "rgb(246, 241, 233)",
+        "shellBackground": "rgb(17, 24, 33)",
+        "gatewayBackground": "rgb(17, 24, 33)",
+        "gatewayHeadingColor": "rgb(246, 241, 233)",
+        "documentWidth": 1440,
+        "viewportWidth": 1440,
+        "toggleLabel": "Use light mode"
+      },
+      "pageErrors": []
+    },
+    {
+      "route": "/parent",
+      "role": "parent",
+      "state": "selected-dark",
+      "viewport": {
+        "name": "mobile-390",
+        "width": 390,
+        "height": 844
+      },
+      "metrics": {
+        "theme": "dark",
+        "rootColorScheme": "dark",
+        "bodyBackground": "rgb(17, 24, 33)",
+        "bodyColor": "rgb(246, 241, 233)",
+        "shellBackground": "rgb(17, 24, 33)",
+        "gatewayBackground": null,
+        "gatewayHeadingColor": null,
+        "documentWidth": 390,
+        "viewportWidth": 390,
+        "toggleLabel": "Use dark mode"
+      },
+      "lightPanels": [],
+      "axeViolations": [],
+      "pageErrors": [],
+      "screenshotPath": "output/playwright/lp-ux-005-manual-theme/parent-mobile-390-dark.png"
+    },
+    {
+      "route": "/parent/family-access",
+      "role": "parent",
+      "state": "selected-dark",
+      "viewport": {
+        "name": "mobile-390",
+        "width": 390,
+        "height": 844
+      },
+      "metrics": {
+        "theme": "dark",
+        "rootColorScheme": "dark",
+        "bodyBackground": "rgb(17, 24, 33)",
+        "bodyColor": "rgb(246, 241, 233)",
+        "shellBackground": "rgb(17, 24, 33)",
+        "gatewayBackground": null,
+        "gatewayHeadingColor": null,
+        "documentWidth": 390,
+        "viewportWidth": 390,
+        "toggleLabel": "Use light mode"
+      },
+      "lightPanels": [],
+      "axeViolations": [],
+      "pageErrors": [],
+      "screenshotPath": null
+    },
+    {
+      "route": "/parent/messages",
+      "role": "parent",
+      "state": "selected-dark",
+      "viewport": {
+        "name": "mobile-390",
+        "width": 390,
+        "height": 844
+      },
+      "metrics": {
+        "theme": "dark",
+        "rootColorScheme": "dark",
+        "bodyBackground": "rgb(17, 24, 33)",
+        "bodyColor": "rgb(246, 241, 233)",
+        "shellBackground": "rgb(17, 24, 33)",
+        "gatewayBackground": null,
+        "gatewayHeadingColor": null,
+        "documentWidth": 390,
+        "viewportWidth": 390,
+        "toggleLabel": "Use light mode"
+      },
+      "lightPanels": [],
+      "axeViolations": [],
+      "pageErrors": [],
+      "screenshotPath": null
+    },
+    {
+      "route": "/parent/more",
+      "role": "parent",
+      "state": "selected-dark",
+      "viewport": {
+        "name": "mobile-390",
+        "width": 390,
+        "height": 844
+      },
+      "metrics": {
+        "theme": "dark",
+        "rootColorScheme": "dark",
+        "bodyBackground": "rgb(17, 24, 33)",
+        "bodyColor": "rgb(246, 241, 233)",
+        "shellBackground": "rgb(17, 24, 33)",
+        "gatewayBackground": null,
+        "gatewayHeadingColor": null,
+        "documentWidth": 390,
+        "viewportWidth": 390,
+        "toggleLabel": "Use light mode"
+      },
+      "lightPanels": [],
+      "axeViolations": [],
+      "pageErrors": [],
+      "screenshotPath": null
+    },
+    {
+      "route": "/parent/photos",
+      "role": "parent",
+      "state": "selected-dark",
+      "viewport": {
+        "name": "mobile-390",
+        "width": 390,
+        "height": 844
+      },
+      "metrics": {
+        "theme": "dark",
+        "rootColorScheme": "dark",
+        "bodyBackground": "rgb(17, 24, 33)",
+        "bodyColor": "rgb(246, 241, 233)",
+        "shellBackground": "rgb(17, 24, 33)",
+        "gatewayBackground": null,
+        "gatewayHeadingColor": null,
+        "documentWidth": 390,
+        "viewportWidth": 390,
+        "toggleLabel": "Use dark mode"
+      },
+      "lightPanels": [],
+      "axeViolations": [],
+      "pageErrors": [],
+      "screenshotPath": null
+    },
+    {
+      "route": "/parent/practice-recaps",
+      "role": "parent",
+      "state": "selected-dark",
+      "viewport": {
+        "name": "mobile-390",
+        "width": 390,
+        "height": 844
+      },
+      "metrics": {
+        "theme": "dark",
+        "rootColorScheme": "dark",
+        "bodyBackground": "rgb(17, 24, 33)",
+        "bodyColor": "rgb(246, 241, 233)",
+        "shellBackground": "rgb(17, 24, 33)",
+        "gatewayBackground": null,
+        "gatewayHeadingColor": null,
+        "documentWidth": 390,
+        "viewportWidth": 390,
+        "toggleLabel": "Use light mode"
+      },
+      "lightPanels": [],
+      "axeViolations": [],
+      "pageErrors": [],
+      "screenshotPath": null
+    },
+    {
+      "route": "/parent/schedule",
+      "role": "parent",
+      "state": "selected-dark",
+      "viewport": {
+        "name": "mobile-390",
+        "width": 390,
+        "height": 844
+      },
+      "metrics": {
+        "theme": "dark",
+        "rootColorScheme": "dark",
+        "bodyBackground": "rgb(17, 24, 33)",
+        "bodyColor": "rgb(246, 241, 233)",
+        "shellBackground": "rgb(17, 24, 33)",
+        "gatewayBackground": null,
+        "gatewayHeadingColor": null,
+        "documentWidth": 390,
+        "viewportWidth": 390,
+        "toggleLabel": "Use light mode"
+      },
+      "lightPanels": [],
+      "axeViolations": [],
+      "pageErrors": [],
+      "screenshotPath": "output/playwright/lp-ux-005-manual-theme/parent-schedule-mobile-390-dark.png"
+    },
+    {
+      "route": "/parent/settings",
+      "role": "parent",
+      "state": "selected-dark",
+      "viewport": {
+        "name": "mobile-390",
+        "width": 390,
+        "height": 844
+      },
+      "metrics": {
+        "theme": "dark",
+        "rootColorScheme": "dark",
+        "bodyBackground": "rgb(17, 24, 33)",
+        "bodyColor": "rgb(246, 241, 233)",
+        "shellBackground": "rgb(17, 24, 33)",
+        "gatewayBackground": null,
+        "gatewayHeadingColor": null,
+        "documentWidth": 390,
+        "viewportWidth": 390,
+        "toggleLabel": "Use light mode"
+      },
+      "lightPanels": [],
+      "axeViolations": [],
+      "pageErrors": [],
+      "screenshotPath": null
+    },
+    {
+      "route": "/parent/setup",
+      "role": "parent",
+      "state": "selected-dark",
+      "viewport": {
+        "name": "mobile-390",
+        "width": 390,
+        "height": 844
+      },
+      "metrics": {
+        "theme": "dark",
+        "rootColorScheme": "dark",
+        "bodyBackground": "rgb(17, 24, 33)",
+        "bodyColor": "rgb(246, 241, 233)",
+        "shellBackground": "rgb(17, 24, 33)",
+        "gatewayBackground": null,
+        "gatewayHeadingColor": null,
+        "documentWidth": 390,
+        "viewportWidth": 390,
+        "toggleLabel": "Use dark mode"
+      },
+      "lightPanels": [],
+      "axeViolations": [],
+      "pageErrors": [],
+      "screenshotPath": null
+    },
+    {
+      "route": "/parent/transportation",
+      "role": "parent",
+      "state": "selected-dark",
+      "viewport": {
+        "name": "mobile-390",
+        "width": 390,
+        "height": 844
+      },
+      "metrics": {
+        "theme": "dark",
+        "rootColorScheme": "dark",
+        "bodyBackground": "rgb(17, 24, 33)",
+        "bodyColor": "rgb(246, 241, 233)",
+        "shellBackground": "rgb(17, 24, 33)",
+        "gatewayBackground": null,
+        "gatewayHeadingColor": null,
+        "documentWidth": 390,
+        "viewportWidth": 390,
+        "toggleLabel": "Use light mode"
+      },
+      "lightPanels": [],
+      "axeViolations": [],
+      "pageErrors": [],
+      "screenshotPath": null
+    },
+    {
+      "route": "/account",
+      "role": "parent",
+      "state": "selected-dark",
+      "viewport": {
+        "name": "mobile-390",
+        "width": 390,
+        "height": 844
+      },
+      "metrics": {
+        "theme": "dark",
+        "rootColorScheme": "dark",
+        "bodyBackground": "rgb(17, 24, 33)",
+        "bodyColor": "rgb(246, 241, 233)",
+        "shellBackground": "rgb(17, 24, 33)",
+        "gatewayBackground": null,
+        "gatewayHeadingColor": null,
+        "documentWidth": 390,
+        "viewportWidth": 390,
+        "toggleLabel": "Use light mode"
+      },
+      "lightPanels": [],
+      "axeViolations": [],
+      "pageErrors": [],
+      "screenshotPath": null
+    },
+    {
+      "route": "/team-chat",
+      "role": "parent",
+      "state": "selected-dark",
+      "viewport": {
+        "name": "mobile-390",
+        "width": 390,
+        "height": 844
+      },
+      "metrics": {
+        "theme": "dark",
+        "rootColorScheme": "dark",
+        "bodyBackground": "rgb(17, 24, 33)",
+        "bodyColor": "rgb(246, 241, 233)",
+        "shellBackground": "rgb(17, 24, 33)",
+        "gatewayBackground": null,
+        "gatewayHeadingColor": null,
+        "documentWidth": 390,
+        "viewportWidth": 390,
+        "toggleLabel": "Use light mode"
+      },
+      "lightPanels": [],
+      "axeViolations": [],
+      "pageErrors": [],
+      "screenshotPath": "output/playwright/lp-ux-005-manual-theme/team-chat-mobile-390-dark.png"
+    },
+    {
+      "route": "/team-portal",
+      "role": "parent",
+      "state": "selected-dark",
+      "viewport": {
+        "name": "mobile-390",
+        "width": 390,
+        "height": 844
+      },
+      "metrics": {
+        "theme": "dark",
+        "rootColorScheme": "dark",
+        "bodyBackground": "rgb(17, 24, 33)",
+        "bodyColor": "rgb(246, 241, 233)",
+        "shellBackground": "rgb(17, 24, 33)",
+        "gatewayBackground": null,
+        "gatewayHeadingColor": null,
+        "documentWidth": 390,
+        "viewportWidth": 390,
+        "toggleLabel": "Use light mode"
+      },
+      "lightPanels": [],
+      "axeViolations": [],
+      "pageErrors": [],
+      "screenshotPath": null
+    },
+    {
+      "route": "/parent",
+      "role": "parent",
+      "state": "selected-dark",
+      "viewport": {
+        "name": "desktop-1440",
+        "width": 1440,
+        "height": 1000
+      },
+      "metrics": {
+        "theme": "dark",
+        "rootColorScheme": "dark",
+        "bodyBackground": "rgb(17, 24, 33)",
+        "bodyColor": "rgb(246, 241, 233)",
+        "shellBackground": "rgb(17, 24, 33)",
+        "gatewayBackground": null,
+        "gatewayHeadingColor": null,
+        "documentWidth": 1440,
+        "viewportWidth": 1440,
+        "toggleLabel": "Use dark mode"
+      },
+      "lightPanels": [],
+      "axeViolations": [],
+      "pageErrors": [],
+      "screenshotPath": "output/playwright/lp-ux-005-manual-theme/parent-desktop-1440-dark.png"
+    },
+    {
+      "route": "/parent/family-access",
+      "role": "parent",
+      "state": "selected-dark",
+      "viewport": {
+        "name": "desktop-1440",
+        "width": 1440,
+        "height": 1000
+      },
+      "metrics": {
+        "theme": "dark",
+        "rootColorScheme": "dark",
+        "bodyBackground": "rgb(17, 24, 33)",
+        "bodyColor": "rgb(246, 241, 233)",
+        "shellBackground": "rgb(17, 24, 33)",
+        "gatewayBackground": null,
+        "gatewayHeadingColor": null,
+        "documentWidth": 1440,
+        "viewportWidth": 1440,
+        "toggleLabel": "Use light mode"
+      },
+      "lightPanels": [],
+      "axeViolations": [],
+      "pageErrors": [],
+      "screenshotPath": null
+    },
+    {
+      "route": "/parent/messages",
+      "role": "parent",
+      "state": "selected-dark",
+      "viewport": {
+        "name": "desktop-1440",
+        "width": 1440,
+        "height": 1000
+      },
+      "metrics": {
+        "theme": "dark",
+        "rootColorScheme": "dark",
+        "bodyBackground": "rgb(17, 24, 33)",
+        "bodyColor": "rgb(246, 241, 233)",
+        "shellBackground": "rgb(17, 24, 33)",
+        "gatewayBackground": null,
+        "gatewayHeadingColor": null,
+        "documentWidth": 1440,
+        "viewportWidth": 1440,
+        "toggleLabel": "Use light mode"
+      },
+      "lightPanels": [],
+      "axeViolations": [],
+      "pageErrors": [],
+      "screenshotPath": null
+    },
+    {
+      "route": "/parent/more",
+      "role": "parent",
+      "state": "selected-dark",
+      "viewport": {
+        "name": "desktop-1440",
+        "width": 1440,
+        "height": 1000
+      },
+      "metrics": {
+        "theme": "dark",
+        "rootColorScheme": "dark",
+        "bodyBackground": "rgb(17, 24, 33)",
+        "bodyColor": "rgb(246, 241, 233)",
+        "shellBackground": "rgb(17, 24, 33)",
+        "gatewayBackground": null,
+        "gatewayHeadingColor": null,
+        "documentWidth": 1440,
+        "viewportWidth": 1440,
+        "toggleLabel": "Use light mode"
+      },
+      "lightPanels": [],
+      "axeViolations": [],
+      "pageErrors": [],
+      "screenshotPath": null
+    },
+    {
+      "route": "/parent/photos",
+      "role": "parent",
+      "state": "selected-dark",
+      "viewport": {
+        "name": "desktop-1440",
+        "width": 1440,
+        "height": 1000
+      },
+      "metrics": {
+        "theme": "dark",
+        "rootColorScheme": "dark",
+        "bodyBackground": "rgb(17, 24, 33)",
+        "bodyColor": "rgb(246, 241, 233)",
+        "shellBackground": "rgb(17, 24, 33)",
+        "gatewayBackground": null,
+        "gatewayHeadingColor": null,
+        "documentWidth": 1440,
+        "viewportWidth": 1440,
+        "toggleLabel": "Use dark mode"
+      },
+      "lightPanels": [],
+      "axeViolations": [],
+      "pageErrors": [],
+      "screenshotPath": null
+    },
+    {
+      "route": "/parent/practice-recaps",
+      "role": "parent",
+      "state": "selected-dark",
+      "viewport": {
+        "name": "desktop-1440",
+        "width": 1440,
+        "height": 1000
+      },
+      "metrics": {
+        "theme": "dark",
+        "rootColorScheme": "dark",
+        "bodyBackground": "rgb(17, 24, 33)",
+        "bodyColor": "rgb(246, 241, 233)",
+        "shellBackground": "rgb(17, 24, 33)",
+        "gatewayBackground": null,
+        "gatewayHeadingColor": null,
+        "documentWidth": 1440,
+        "viewportWidth": 1440,
+        "toggleLabel": "Use light mode"
+      },
+      "lightPanels": [],
+      "axeViolations": [],
+      "pageErrors": [],
+      "screenshotPath": null
+    },
+    {
+      "route": "/parent/schedule",
+      "role": "parent",
+      "state": "selected-dark",
+      "viewport": {
+        "name": "desktop-1440",
+        "width": 1440,
+        "height": 1000
+      },
+      "metrics": {
+        "theme": "dark",
+        "rootColorScheme": "dark",
+        "bodyBackground": "rgb(17, 24, 33)",
+        "bodyColor": "rgb(246, 241, 233)",
+        "shellBackground": "rgb(17, 24, 33)",
+        "gatewayBackground": null,
+        "gatewayHeadingColor": null,
+        "documentWidth": 1440,
+        "viewportWidth": 1440,
+        "toggleLabel": "Use light mode"
+      },
+      "lightPanels": [],
+      "axeViolations": [],
+      "pageErrors": [],
+      "screenshotPath": "output/playwright/lp-ux-005-manual-theme/parent-schedule-desktop-1440-dark.png"
+    },
+    {
+      "route": "/parent/settings",
+      "role": "parent",
+      "state": "selected-dark",
+      "viewport": {
+        "name": "desktop-1440",
+        "width": 1440,
+        "height": 1000
+      },
+      "metrics": {
+        "theme": "dark",
+        "rootColorScheme": "dark",
+        "bodyBackground": "rgb(17, 24, 33)",
+        "bodyColor": "rgb(246, 241, 233)",
+        "shellBackground": "rgb(17, 24, 33)",
+        "gatewayBackground": null,
+        "gatewayHeadingColor": null,
+        "documentWidth": 1440,
+        "viewportWidth": 1440,
+        "toggleLabel": "Use dark mode"
+      },
+      "lightPanels": [],
+      "axeViolations": [],
+      "pageErrors": [],
+      "screenshotPath": null
+    },
+    {
+      "route": "/parent/setup",
+      "role": "parent",
+      "state": "selected-dark",
+      "viewport": {
+        "name": "desktop-1440",
+        "width": 1440,
+        "height": 1000
+      },
+      "metrics": {
+        "theme": "dark",
+        "rootColorScheme": "dark",
+        "bodyBackground": "rgb(17, 24, 33)",
+        "bodyColor": "rgb(246, 241, 233)",
+        "shellBackground": "rgb(17, 24, 33)",
+        "gatewayBackground": null,
+        "gatewayHeadingColor": null,
+        "documentWidth": 1440,
+        "viewportWidth": 1440,
+        "toggleLabel": "Use dark mode"
+      },
+      "lightPanels": [],
+      "axeViolations": [],
+      "pageErrors": [],
+      "screenshotPath": null
+    },
+    {
+      "route": "/parent/transportation",
+      "role": "parent",
+      "state": "selected-dark",
+      "viewport": {
+        "name": "desktop-1440",
+        "width": 1440,
+        "height": 1000
+      },
+      "metrics": {
+        "theme": "dark",
+        "rootColorScheme": "dark",
+        "bodyBackground": "rgb(17, 24, 33)",
+        "bodyColor": "rgb(246, 241, 233)",
+        "shellBackground": "rgb(17, 24, 33)",
+        "gatewayBackground": null,
+        "gatewayHeadingColor": null,
+        "documentWidth": 1440,
+        "viewportWidth": 1440,
+        "toggleLabel": "Use light mode"
+      },
+      "lightPanels": [],
+      "axeViolations": [],
+      "pageErrors": [],
+      "screenshotPath": null
+    },
+    {
+      "route": "/account",
+      "role": "parent",
+      "state": "selected-dark",
+      "viewport": {
+        "name": "desktop-1440",
+        "width": 1440,
+        "height": 1000
+      },
+      "metrics": {
+        "theme": "dark",
+        "rootColorScheme": "dark",
+        "bodyBackground": "rgb(17, 24, 33)",
+        "bodyColor": "rgb(246, 241, 233)",
+        "shellBackground": "rgb(17, 24, 33)",
+        "gatewayBackground": null,
+        "gatewayHeadingColor": null,
+        "documentWidth": 1440,
+        "viewportWidth": 1440,
+        "toggleLabel": "Use dark mode"
+      },
+      "lightPanels": [],
+      "axeViolations": [],
+      "pageErrors": [],
+      "screenshotPath": null
+    },
+    {
+      "route": "/team-chat",
+      "role": "parent",
+      "state": "selected-dark",
+      "viewport": {
+        "name": "desktop-1440",
+        "width": 1440,
+        "height": 1000
+      },
+      "metrics": {
+        "theme": "dark",
+        "rootColorScheme": "dark",
+        "bodyBackground": "rgb(17, 24, 33)",
+        "bodyColor": "rgb(246, 241, 233)",
+        "shellBackground": "rgb(17, 24, 33)",
+        "gatewayBackground": null,
+        "gatewayHeadingColor": null,
+        "documentWidth": 1440,
+        "viewportWidth": 1440,
+        "toggleLabel": "Use light mode"
+      },
+      "lightPanels": [],
+      "axeViolations": [],
+      "pageErrors": [],
+      "screenshotPath": "output/playwright/lp-ux-005-manual-theme/team-chat-desktop-1440-dark.png"
+    },
+    {
+      "route": "/team-portal",
+      "role": "parent",
+      "state": "selected-dark",
+      "viewport": {
+        "name": "desktop-1440",
+        "width": 1440,
+        "height": 1000
+      },
+      "metrics": {
+        "theme": "dark",
+        "rootColorScheme": "dark",
+        "bodyBackground": "rgb(17, 24, 33)",
+        "bodyColor": "rgb(246, 241, 233)",
+        "shellBackground": "rgb(17, 24, 33)",
+        "gatewayBackground": null,
+        "gatewayHeadingColor": null,
+        "documentWidth": 1440,
+        "viewportWidth": 1440,
+        "toggleLabel": "Use dark mode"
+      },
+      "lightPanels": [],
+      "axeViolations": [],
+      "pageErrors": [],
+      "screenshotPath": null
+    },
+    {
+      "route": "/parent",
+      "role": "parent",
+      "state": "selected-light",
+      "metrics": {
+        "theme": "light",
+        "rootColorScheme": "light",
+        "bodyBackground": "rgb(253, 248, 241)",
+        "bodyColor": "rgb(28, 36, 56)",
+        "shellBackground": "rgb(253, 248, 241)",
+        "gatewayBackground": null,
+        "gatewayHeadingColor": null,
+        "documentWidth": 1440,
+        "viewportWidth": 1440,
+        "toggleLabel": "Use dark mode"
+      }
+    },
+    {
+      "route": "/coach",
+      "role": "coach",
+      "state": "selected-dark",
+      "metrics": {
+        "theme": "dark",
+        "rootColorScheme": "dark",
+        "bodyBackground": "rgb(17, 24, 33)",
+        "bodyColor": "rgb(246, 241, 233)",
+        "shellBackground": "rgba(0, 0, 0, 0)",
+        "gatewayBackground": null,
+        "gatewayHeadingColor": null,
+        "documentWidth": 1440,
+        "viewportWidth": 1440,
+        "toggleLabel": "Use dark mode"
+      },
+      "lightPanels": [],
+      "axeViolations": [],
+      "pageErrors": [],
+      "screenshotPath": "output/playwright/lp-ux-005-manual-theme/coach-selected-dark.png"
+    },
+    {
+      "route": "/admin",
+      "role": "admin",
+      "state": "selected-dark",
+      "metrics": {
+        "theme": "dark",
+        "rootColorScheme": "dark",
+        "bodyBackground": "rgb(17, 24, 33)",
+        "bodyColor": "rgb(246, 241, 233)",
+        "shellBackground": "rgba(0, 0, 0, 0)",
+        "gatewayBackground": null,
+        "gatewayHeadingColor": null,
+        "documentWidth": 1440,
+        "viewportWidth": 1440,
+        "toggleLabel": "Use dark mode"
+      },
+      "lightPanels": [],
+      "axeViolations": [],
+      "pageErrors": [],
+      "screenshotPath": "output/playwright/lp-ux-005-manual-theme/admin-selected-dark.png"
+    }
+  ]
+}

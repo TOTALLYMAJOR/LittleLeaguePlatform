@@ -142,8 +142,8 @@ export async function listAdminOperationsData(): Promise<AdminOperationsData> {
       ],
       approvalQueues: [
         { queue: "Registration review", count: registrationRequests?.length ?? 0, actionHref: "/admin/registrations", boundary: "Approval creates guardian/team access only after admin review." },
-        { queue: "Provider delivery review", count: notifications?.filter((item) => item.provider_approval_status !== "approved").length ?? 0, actionHref: "/admin/security", boundary: "Pending notification records are not external sends." },
-        { queue: "Media moderation", count: mediaItems?.length ?? 0, actionHref: "/admin", boundary: "Reported media can be hidden while review is pending." }
+        { queue: "Provider delivery review", count: notifications?.filter((item) => item.provider_approval_status !== "approved").length ?? 0, actionHref: "/admin/message-delivery-review", boundary: "Pending notification records are not external sends." },
+        { queue: "Media moderation", count: mediaItems?.length ?? 0, actionHref: "/admin/media-review", boundary: "Reported media can be hidden while review is pending." }
       ],
       auditLogs: (auditEvents ?? []).map((event) => ({
         id: event.id,

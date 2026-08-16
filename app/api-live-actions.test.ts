@@ -8,6 +8,7 @@ import { POST as postProviderDeliveryReview } from "./api/provider-delivery/revi
 import { GET as getProviderDeliveryRetryPlan } from "./api/provider-delivery/retry-plan/route";
 import { POST as postParentReplay } from "./api/coach/parent-replay/route";
 import { POST as postWeeklyUpdate } from "./api/coach/weekly-update/route";
+import { POST as postCoachRsvpReminderDraft } from "./api/coach/rsvp-reminders/draft/route";
 import { POST as postSponsorSave } from "./api/admin/sponsors/route";
 import { GET as getAdminRevenueSummary } from "./api/admin/revenue-summary/route";
 import { GET as getFamilyWallet } from "./api/parent/family-wallet/route";
@@ -40,6 +41,7 @@ import { listProviderDeliveryRetryQueue, reviewNotificationDelivery } from "@/li
 import { listSponsorAdminData } from "@/lib/supabase/sponsors";
 import {
   claimSnackSlot,
+  createCoachRsvpReminderDraft,
   createWeatherAlertDraft,
   saveCoachWeeklyUpdate,
   saveSponsor,
@@ -77,6 +79,7 @@ vi.mock("@/lib/supabase/sponsors", () => ({
 
 vi.mock("@/lib/supabase/operations", () => ({
   claimSnackSlot: vi.fn(),
+  createCoachRsvpReminderDraft: vi.fn(),
   createWeatherAlertDraft: vi.fn(),
   saveCoachWeeklyUpdate: vi.fn(),
   saveSponsor: vi.fn(),
@@ -139,6 +142,7 @@ const listParentCoachDashboardDataMock = vi.mocked(listParentCoachDashboardData)
 const listSponsorAdminDataMock = vi.mocked(listSponsorAdminData);
 const updateParentRsvpMock = vi.mocked(updateParentRsvp);
 const claimSnackSlotMock = vi.mocked(claimSnackSlot);
+const createCoachRsvpReminderDraftMock = vi.mocked(createCoachRsvpReminderDraft);
 const claimVolunteerRoleMock = vi.mocked(claimVolunteerRoleSafely);
 const listFamilyBalanceSummaryMock = vi.mocked(listFamilyBalanceSummary);
 const createWeatherAlertDraftMock = vi.mocked(createWeatherAlertDraft);
@@ -604,6 +608,75 @@ describe("live action API routes", () => {
       title: "Weekly update",
       body: "Please review RSVP and snack openings."
     });
+  });
+
+  it("uses the authenticated coach session for a family-scoped RSVP reminder draft", async () => {
+    createCoachRsvpReminderDraftMock.mockResolvedValue({
+      ok: true,
+      code: "created",
+      message: "RSVP reminder saved in Drafts to Review. No message was sent.",
+      notificationId: "notification-1",
+      notificationCount: 1,
+      duplicate: false
+    });
+
+    const response = await postCoachRsvpReminderDraft(jsonRequest({
+      teamId: "team-1",
+      eventId: "event-1",
+      parentUserId: "parent-1",
+      actorUserId: "client-spoof"
+    }));
+
+    expect(response.status).toBe(201);
+    expect(createCoachRsvpReminderDraftMock).toHaveBeenCalledWith({
+      teamId: "team-1",
+      eventId: "event-1",
+      parentUserId: "parent-1",
+      actorUserId: "user-live-session"
+    });
+  });
+
+  it("rejects malformed RSVP reminder identifiers before the service boundary", async () => {
+    const response = await postCoachRsvpReminderDraft(jsonRequest({
+      teamId: { spoofed: "team-1" },
+      eventId: "event-1",
+      parentUserId: "parent-1"
+    }));
+
+    expect(response.status).toBe(400);
+    expect(await response.json()).toMatchObject({
+      ok: false,
+      code: "invalid_input"
+    });
+    expect(createCoachRsvpReminderDraftMock).not.toHaveBeenCalled();
+  });
+
+  it.each([
+    ["duplicate", true, 200],
+    ["forbidden", false, 403],
+    ["scope_mismatch", false, 404],
+    ["already_responded", false, 409],
+    ["unavailable", false, 503],
+    ["audit_unavailable", false, 503]
+  ] as const)("maps RSVP reminder %s outcomes to status %i", async (code, ok, status) => {
+    createCoachRsvpReminderDraftMock.mockResolvedValue({
+      ok,
+      code,
+      message: `RSVP reminder ${code}.`,
+      ...(code === "duplicate" ? {
+        notificationId: "notification-1",
+        notificationCount: 1,
+        duplicate: true
+      } : {})
+    });
+
+    const response = await postCoachRsvpReminderDraft(jsonRequest({
+      teamId: "team-1",
+      eventId: "event-1",
+      parentUserId: "parent-1"
+    }));
+
+    expect(response.status).toBe(status);
   });
 
   it("uses the authenticated coach session for Parent Replay publishing", async () => {

@@ -1,11 +1,11 @@
-import { AdminBrandingSurface } from "../_surfaces";
+import { redirect } from "next/navigation";
 
 export const dynamic = "force-dynamic";
 
 export default async function AdminThemesPage() {
-  return <AdminBrandingSurface />;
+  redirect("/admin/branding");
 }
 
 export const metadata = {
-  title: "Themes"
+  title: "Branding"
 };

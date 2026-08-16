@@ -74,7 +74,7 @@ const routeSpecs = [
     path: "/coach",
     credentialKeys: ["QA_COACH_EMAIL", "QA_COACH_PASSWORD"],
     readyTexts: [
-      "items need attention",
+      "in your queue",
       "Next event ready",
       "Sign in to see coach readiness.",
       "No active coach team is assigned."
@@ -85,11 +85,36 @@ const routeSpecs = [
     path: "/coach/schedule",
     credentialKeys: ["QA_COACH_EMAIL", "QA_COACH_PASSWORD"],
     readyTexts: [
+      "Game-Day Resolution Room",
       "Now, next, later",
       "Readiness matrix",
       "Sign in to see coach readiness.",
       "No active coach team is assigned."
     ]
+  },
+  {
+    role: "coach-drafts",
+    path: "/coach/drafts",
+    credentialKeys: ["QA_COACH_EMAIL", "QA_COACH_PASSWORD"],
+    readyTexts: ["Drafts to Review", "Sign in to see coach readiness.", "No active coach team is assigned."]
+  },
+  {
+    role: "coach-attendance",
+    path: "/coach/attendance",
+    credentialKeys: ["QA_COACH_EMAIL", "QA_COACH_PASSWORD"],
+    readyTexts: ["Attendance summaries for assigned teams", "Sign in to see coach readiness.", "No active coach team is assigned."]
+  },
+  {
+    role: "coach-community",
+    path: "/coach/snacks-volunteers",
+    credentialKeys: ["QA_COACH_EMAIL", "QA_COACH_PASSWORD"],
+    readyTexts: ["Snacks and Volunteers", "Sign in to see coach readiness.", "No active coach team is assigned."]
+  },
+  {
+    role: "coach-weather",
+    path: "/coach/weather-fields",
+    credentialKeys: ["QA_COACH_EMAIL", "QA_COACH_PASSWORD"],
+    readyTexts: ["RESOLUTION ROOM", "Sign in to see coach readiness.", "No active coach team is assigned."]
   },
   {
     role: "parent-replay",
@@ -115,10 +140,17 @@ const routeSpecs = [
     path: "/admin/schedule-venues",
     credentialKeys: ["QA_ADMIN_EMAIL", "QA_ADMIN_PASSWORD"],
     readyTexts: [
+      "Game-Day Resolution Room",
       "League schedule control room",
       "Change lens",
       "Organization admin access is required"
     ]
+  },
+  {
+    role: "admin-operations",
+    path: "/admin/operations",
+    credentialKeys: ["QA_ADMIN_EMAIL", "QA_ADMIN_PASSWORD"],
+    readyTexts: ["ADMIN OPERATIONS", "Organization admin access is required"]
   }
 ];
 const viewportSpecs = [
@@ -190,14 +222,15 @@ async function signIn(page, [emailKey, passwordKey]) {
 }
 
 async function waitForAnyText(page, texts) {
-  try {
-    return await Promise.any(texts.map(async (text) => {
-      await page.getByText(text, { exact: false }).first().waitFor({ timeout: 12_000 });
-      return text;
-    }));
-  } catch {
-    throw new Error(`None of the expected route texts rendered: ${texts.join(" | ")}`);
+  const deadline = Date.now() + 12_000;
+  let visibleBody = "";
+  while (Date.now() < deadline) {
+    visibleBody = await page.locator("body").innerText().catch(() => "");
+    const match = texts.find((text) => visibleBody.includes(text));
+    if (match) return match;
+    await page.waitForTimeout(200);
   }
+  throw new Error(`None of the expected route texts rendered: ${texts.join(" | ")}. Visible body: ${normalizeText(visibleBody).slice(0, 800)}`);
 }
 
 function normalizeText(value) {
@@ -299,6 +332,8 @@ async function captureRoute(browser, routeSpec) {
         }
       }
       if (routeSpec.role === "admin-schedule" && name === "desktop-1440") {
+        const editDisclosure = page.locator("details.schedule-edit-disclosure").first();
+        if (await editDisclosure.count()) await editDisclosure.evaluate((details) => { details.open = true; });
         const proposedLocation = page.getByLabel("Proposed location").first();
         if (await proposedLocation.count()) {
           await proposedLocation.fill("Field 2");

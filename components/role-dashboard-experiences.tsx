@@ -9,6 +9,19 @@ export interface CoachAnnouncementItem {
   teamName?: string;
 }
 
+export interface CoachRadarTask {
+  id: string;
+  category: "People" | "Plan";
+  title: string;
+  detail: string;
+  actionLabel: string;
+  href?: string;
+  parentUserId?: string;
+  teamId?: string;
+  eventId?: string;
+  disabledReason?: string;
+}
+
 export function CoachAnnouncementTicker({
   announcements,
   label = "Coach announcements"
@@ -184,17 +197,17 @@ export function CoachGameDayRadar({
   respondedRsvpCount,
   rosterCount,
   coachCount,
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars -- kept in the prop contract for callers; the People "Nothing needed" checkmark now derives from `tasks` instead (see hasPeopleTask) so this count no longer drives any render here.
   missingRsvpCount,
   snackCount,
   volunteerCount,
   weatherReviewCount,
-  reviewCount,
+  tasks,
   weatherSummary,
   isPending,
   canDraftWeather,
   onNudgeRsvp,
-  onDraftWeather,
-  onSaveWeeklyUpdate
+  onDraftWeather
 }: {
   teamName: string;
   eventTitle: string;
@@ -207,19 +220,20 @@ export function CoachGameDayRadar({
   snackCount: number;
   volunteerCount: number;
   weatherReviewCount: number;
-  reviewCount: number;
+  tasks: CoachRadarTask[];
   weatherSummary: string;
   isPending: boolean;
   canDraftWeather: boolean;
-  onNudgeRsvp: () => void;
+  onNudgeRsvp: (task: CoachRadarTask) => void;
   onDraftWeather: () => void;
-  onSaveWeeklyUpdate: () => void;
 }) {
   const peopleProgress = rosterCount ? (respondedRsvpCount / rosterCount) * 100 : 0;
   const placeProgress = ((location !== "Location pending" ? 1 : 0) + (weatherReviewCount === 0 ? 1 : 0)) * 50;
   const planGapCount = snackCount + volunteerCount;
   const planProgress = planGapCount === 0 ? 100 : Math.max(20, 100 - planGapCount * 25);
-  const groupedActionCount = Number(missingRsvpCount > 0) + Number(planGapCount > 0) + Number(weatherReviewCount > 0);
+  const taskCount = tasks.length;
+  const hasPeopleTask = tasks.some((task) => task.category === "People");
+  const hasPlanTask = tasks.some((task) => task.category === "Plan");
 
   return (
     <section className="coach-game-day-radar" aria-labelledby="coach-game-day-radar-title">
@@ -229,7 +243,7 @@ export function CoachGameDayRadar({
           <h1 id="coach-game-day-radar-title">{teamName}</h1>
           <p>Your 15-minute sideline check for people, place, and plan.</p>
         </div>
-        <strong>{reviewCount ? `${reviewCount} items need attention` : "Next event ready"}</strong>
+        <a href="#coach-action-queue"><strong>{taskCount ? `${taskCount} task${taskCount === 1 ? "" : "s"} in your queue` : "Next event ready"}</strong></a>
       </header>
 
       <div className="coach-radar-layout">
@@ -248,7 +262,7 @@ export function CoachGameDayRadar({
               <small>Next event</small>
               <h2>{eventTitle}</h2>
               <p>{eventMeta}</p>
-              <strong>{groupedActionCount ? `Ready with ${groupedActionCount} action${groupedActionCount === 1 ? "" : "s"}` : "Ready"}</strong>
+              <strong>{taskCount ? `${taskCount} task${taskCount === 1 ? "" : "s"} open` : "Ready"}</strong>
             </div>
           </div>
 
@@ -259,36 +273,61 @@ export function CoachGameDayRadar({
           </div>
         </div>
 
-        <aside className="coach-radar-actions" aria-label="Action queue">
+        <aside className="coach-radar-actions" id="coach-action-queue" aria-label="Action queue">
           <header>
-            <div><span>Action queue</span><h2>{groupedActionCount} grouped action{groupedActionCount === 1 ? "" : "s"}</h2></div>
-            <strong>{reviewCount}</strong>
+            <div><span>Action queue</span><h2>{taskCount ? `${taskCount} task${taskCount === 1 ? "" : "s"} to do` : "All clear"}</h2></div>
           </header>
+          <p>Each numbered row is one task. Reminder actions save a draft only; they do not send a message.</p>
 
-          <div className={missingRsvpCount ? "coach-radar-action needs-action" : "coach-radar-action is-clear"}>
-            <span>People</span>
-            <h3>{missingRsvpCount ? `${missingRsvpCount} RSVP response${missingRsvpCount === 1 ? "" : "s"} missing` : "RSVP responses covered"}</h3>
-            <button className="secondary" disabled={isPending || missingRsvpCount === 0} onClick={onNudgeRsvp}>Draft RSVP nudge</button>
-          </div>
+          {taskCount ? (
+            <ol className="stack compact">
+              {tasks.map((task, index) => (
+                <li className="coach-radar-action needs-action" key={task.id}>
+                  <span>{index + 1}. {task.category}</span>
+                  <h3>{task.title}</h3>
+                  <p className="muted">{task.detail}</p>
+                  {task.href ? (
+                    <a className={index === 0 ? "button" : "button secondary"} href={task.href}>{task.actionLabel}</a>
+                  ) : (
+                    <>
+                      <button
+                        className={index === 0 ? undefined : "secondary"}
+                        disabled={isPending || !task.parentUserId}
+                        onClick={() => onNudgeRsvp(task)}
+                      >
+                        {task.actionLabel}
+                      </button>
+                      {task.disabledReason ? <p className="muted">{task.disabledReason}</p> : null}
+                    </>
+                  )}
+                </li>
+              ))}
+            </ol>
+          ) : (
+            <div className="coach-radar-action is-clear">
+              <span>Ready</span>
+              <h3>Nothing needed</h3>
+              <p className="muted">RSVP responses and family-help coverage are current for the next event.</p>
+            </div>
+          )}
 
-          <div className={planGapCount ? "coach-radar-action needs-action" : "coach-radar-action is-clear"}>
-            <span>Plan</span>
-            <h3>{planGapCount ? `${snackCount} snack and ${volunteerCount} volunteer gap${planGapCount === 1 ? "" : "s"}` : "Family help covered"}</h3>
-            <a className="button secondary" href="/coach/snacks-volunteers">Open family help</a>
-          </div>
+          {!hasPeopleTask ? (
+            <div className="coach-radar-action is-clear"><span aria-hidden="true">✓</span><h3>People: Nothing needed</h3></div>
+          ) : null}
+          {!hasPlanTask ? (
+            <div className="coach-radar-action is-clear"><span aria-hidden="true">✓</span><h3>Plan: Nothing needed</h3></div>
+          ) : null}
 
-          <div className={weatherReviewCount ? "coach-radar-action needs-action" : "coach-radar-action"}>
+          <div className="coach-radar-action">
             <span>Place</span>
-            <h3>{weatherReviewCount ? `${weatherReviewCount} weather draft${weatherReviewCount === 1 ? "" : "s"} need review` : "No weather draft needs review"}</h3>
+            <h3>{weatherReviewCount ? `${weatherReviewCount} weather draft${weatherReviewCount === 1 ? " is" : "s are"} available as decision evidence` : "No weather evidence is waiting"}</h3>
             {weatherReviewCount ? (
-              <a className="button secondary" href="/coach/weather-fields">Review weather draft</a>
+              <a className="button secondary" href="/coach/schedule">Open resolution room</a>
             ) : (
               <button className="secondary" disabled={isPending || !canDraftWeather} onClick={onDraftWeather}>Draft weather alert</button>
             )}
           </div>
 
-          <button disabled={isPending} onClick={onSaveWeeklyUpdate}>Save weekly update</button>
-          <p>These actions save drafts for review. They do not send external messages.</p>
         </aside>
       </div>
     </section>

@@ -27,7 +27,34 @@
   --family-inverse-muted: #d7e3f2;
   --family-inverse-badge-bg: #f1f5f9;
   --family-inverse-badge-text: #24334d;
-  color-scheme: light;
+  color-scheme: inherit;
+}
+
+:root[data-theme="dark"] [data-surface-family="family"] {
+  --bg: #111821;
+  --surface: #19232f;
+  --surface-soft: #151e28;
+  --surface-strong: #263342;
+  --text: #f6f1e9;
+  --muted: #c6beb3;
+  --line: rgb(231 222 209 / 22%);
+  --accent: #9fc0e8;
+  --accent-strong: #d9e9fb;
+  --accent-soft: rgb(159 192 232 / 14%);
+  --action: #b8470f;
+  --action-strong: #ffad80;
+  --action-soft: rgb(215 102 46 / 15%);
+  --ok: #78dfa6;
+  --ok-soft: rgb(120 223 166 / 15%);
+  --warning: #f4c95d;
+  --warning-soft: rgb(244 201 93 / 16%);
+  --danger: #ff9b90;
+  --danger-soft: rgb(255 155 144 / 15%);
+  --family-inverse-surface: #22304a;
+  --family-inverse-text: #ffffff;
+  --family-inverse-muted: #d7e3f2;
+  --family-inverse-badge-bg: #f1f5f9;
+  --family-inverse-badge-text: #24334d;
 }
 
 [data-surface-family="family"] input,
@@ -470,30 +497,10 @@
   line-height: 1.35;
 }
 
+/* Base .offline-sync-status styles live in globals.css; only family-shell centering here. */
 .main.parent-weekly-main > .offline-sync-status {
-  display: grid;
-  gap: var(--sp-1);
   width: min(100%, 1152px);
   margin: var(--sp-6) auto 0;
-  padding: var(--sp-3) var(--sp-4);
-  border: 1px solid var(--line);
-  border-radius: var(--radius);
-  background: var(--surface-soft);
-  color: var(--text);
-}
-
-.main.parent-weekly-main > .offline-sync-status span,
-.main.parent-weekly-main > .offline-sync-status small {
-  color: var(--muted);
-  line-height: 1.45;
-}
-
-.main.parent-weekly-main > .offline-sync-status ul {
-  display: flex;
-  flex-wrap: wrap;
-  gap: var(--sp-2) var(--sp-4);
-  margin: 0;
-  padding-left: var(--sp-5);
 }
 
 .parent-weekly-dashboard {

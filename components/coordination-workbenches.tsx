@@ -145,7 +145,7 @@ export function AdminDeliveryReviewClient({ initialReceipts, message }: {
   message: string;
 }) {
   const [receipts, setReceipts] = useState(initialReceipts);
-  const [filter, setFilter] = useState<"all" | "pending" | "failed" | "reconcile" | "proved">("all");
+  const [filter, setFilter] = useState<"all" | "pending" | "failed" | "reconcile" | "proved">("pending");
   const [statusMessage, setStatusMessage] = useState(message);
   const [pendingId, setPendingId] = useState("");
   const [isPending, startTransition] = useTransition();
@@ -170,6 +170,7 @@ export function AdminDeliveryReviewClient({ initialReceipts, message }: {
     !requiresDeliveryReconciliation(receipt) && receipt.evidence.deliveredAt
   )).length;
   const acknowledgmentCount = receipts.filter((receipt) => receipt.evidence.acknowledgedAt).length;
+  const pendingApprovalCount = receipts.filter((receipt) => receipt.providerApprovalStatus === "pending").length;
 
   function review(receipt: NotificationReceipt, decision: "approved" | "rejected") {
     setPendingId(receipt.notificationId);
@@ -224,8 +225,11 @@ export function AdminDeliveryReviewClient({ initialReceipts, message }: {
         <p className="lead">Every stage stays separate. A queued attempt is not called sent, provider acceptance is not called delivery, and a delivery webhook is not called a parent acknowledgment.</p>
       </section>
       <p className="notice">{statusMessage}</p>
+      <p className={`notice ${pendingApprovalCount ? "warning" : "ok"}`}>
+        {pendingApprovalCount ? `${pendingApprovalCount} await your approval.` : "All clear. No delivery drafts await approval."}
+      </p>
       <section className="grid three">
-        <article className="card metric"><span className="muted">Draft records</span><strong>{receipts.length}</strong></article>
+        <article className="card metric"><span className="muted">Awaiting approval</span><strong>{pendingApprovalCount}</strong></article>
         <article className="card metric"><span className="muted">Delivery proved</span><strong>{evidenceCount}</strong></article>
         <article className="card metric"><span className="muted">Acknowledged</span><strong>{acknowledgmentCount}</strong></article>
       </section>
@@ -267,7 +271,7 @@ export function AdminDeliveryReviewClient({ initialReceipts, message }: {
             </div>
           </article>
         ))}
-        {!visible.length ? <article className="card"><p className="muted">No notification records match this evidence filter.</p></article> : null}
+        {!visible.length ? <article className="card"><p className="muted">{filter === "pending" ? "All clear. No delivery drafts await approval." : "No notification records match this evidence filter."}</p></article> : null}
       </section>
     </div>
   );
@@ -493,6 +497,9 @@ export function SeasonLaunchWizardClient({ data }: { data: SeasonLaunchData }) {
               >
                 Approve traced roster commit
               </button>
+              {analysis.errorRows > 0 ? <p className="muted">Resolve every error row before approving the roster.</p> : null}
+              {analysis.errorRows === 0 && !stagedImportId && !imports.some((item) => item.status === "validated") ? <p className="muted">Validate and stage this roster before approval.</p> : null}
+              {analysis.errorRows === 0 && analysis.warningRows > 0 && !confirmWarnings ? <p className="muted">Confirm that every warning row was reviewed before approval.</p> : null}
               <p className="muted">Approval creates players and guardian/invite records with import provenance. It executes zero email, SMS, or push sends.</p>
             </article>
             <article className="card stack">
@@ -506,7 +513,10 @@ export function SeasonLaunchWizardClient({ data }: { data: SeasonLaunchData }) {
                   </div>
                   {Object.keys(item.manifest).length ? <p className="muted">{Object.entries(item.manifest).map(([key, value]) => `${key}: ${String(value)}`).join(" · ")}</p> : null}
                   {item.status === "committed" && !item.rolledBackAt ? (
-                    <button className="secondary" disabled={isPending || rollbackReason.trim().length < 10} onClick={() => rollbackImport(item)}>Rollback provenance-created rows</button>
+                    <>
+                      <button className="secondary" disabled={isPending || rollbackReason.trim().length < 10} onClick={() => rollbackImport(item)}>Rollback provenance-created rows</button>
+                      {rollbackReason.trim().length < 10 ? <p className="muted">Add a rollback reason of at least 10 characters to enable this action.</p> : null}
+                    </>
                   ) : null}
                 </div>
               ))}
@@ -1043,7 +1053,10 @@ export function GameDayResolutionRoomClient({ state, initialReviews, mode, messa
           </select></label>
           {decision === "delay" ? <label>New start time<input value={startsAt} onChange={(event) => setStartsAt(event.target.value)} /></label> : null}
           <label>Decision reason<textarea value={reason} onChange={(event) => setReason(event.target.value)} /></label>
-          <button disabled={isPending || reason.trim().length < 10 || !selectedEvent} onClick={applyResolution}>Save reviewed resolution</button>
+          <button disabled={isPending || reason.trim().length < 10 || !selectedEvent || (decision === "delay" && !startsAt)} onClick={applyResolution}>Save reviewed resolution</button>
+          {!selectedEvent ? <p className="muted">Choose an assigned-team event before saving a resolution.</p> : null}
+          {selectedEvent && reason.trim().length < 10 ? <p className="muted">Add a decision reason of at least 10 characters to enable this action.</p> : null}
+          {selectedEvent && decision === "delay" && !startsAt ? <p className="muted">Choose the new start time before saving a delay.</p> : null}
           <p className="muted">Monitor creates evidence only. Confirm, delay, and cancel create pending notification drafts; they do not execute provider delivery.</p>
         </article>
       </section>

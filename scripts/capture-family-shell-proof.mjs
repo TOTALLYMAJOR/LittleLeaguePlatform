@@ -11,6 +11,74 @@ const baseUrl = process.env.QA_PROOF_BASE_URL || "http://127.0.0.1:3020";
 const outputDir = process.env.FAMILY_SHELL_PROOF_DIR || "output/playwright/family-shell";
 const envFile = ".env.local";
 const expectedFamilyTabs = ["Home", "Schedule", "Messages", "Family", "More"];
+const AUTH_COOKIE_CHUNK_SIZE = 3180;
+const AUTH_COOKIE_TTL_SECONDS = 60 * 60;
+
+function splitCookieValueIntoChunks(value) {
+  let encodedValue = encodeURIComponent(value);
+  if (encodedValue.length <= AUTH_COOKIE_CHUNK_SIZE) {
+    return [{ nameSuffix: null, value }];
+  }
+
+  const chunks = [];
+  while (encodedValue.length > 0) {
+    let encodedChunkHead = encodedValue.slice(0, AUTH_COOKIE_CHUNK_SIZE);
+    const lastEscapePos = encodedChunkHead.lastIndexOf("%");
+    if (lastEscapePos > AUTH_COOKIE_CHUNK_SIZE - 3) {
+      encodedChunkHead = encodedChunkHead.slice(0, lastEscapePos);
+    }
+
+    let valueHead = "";
+    while (encodedChunkHead.length > 0) {
+      try {
+        valueHead = decodeURIComponent(encodedChunkHead);
+        break;
+      } catch (error) {
+        if (
+          error instanceof URIError &&
+          encodedChunkHead.at(-3) === "%" &&
+          encodedChunkHead.length > 3
+        ) {
+          encodedChunkHead = encodedChunkHead.slice(0, encodedChunkHead.length - 3);
+          continue;
+        }
+        throw error;
+      }
+    }
+
+    chunks.push(valueHead);
+    encodedValue = encodedValue.slice(encodedChunkHead.length);
+  }
+
+  return chunks.map((chunkValue, index) => ({ nameSuffix: index, value: chunkValue }));
+}
+
+function buildSupabaseCookieEntries(baseName, value, options) {
+  const chunkedValue = splitCookieValueIntoChunks(value);
+  const expiresAt = Math.floor(Date.now() / 1000);
+  const staleExpiresAt = expiresAt - 10;
+  const staleChunkCount = 5;
+  const clearEntries = [
+    { name: baseName, value: "", expires: staleExpiresAt },
+    ...Array.from({ length: staleChunkCount }, (_, index) => ({
+      name: `${baseName}.${index}`,
+      value: "",
+      expires: staleExpiresAt
+    }))
+  ];
+
+  const sessionEntries = chunkedValue.map((chunk) => ({
+    name: chunk.nameSuffix === null ? baseName : `${baseName}.${chunk.nameSuffix}`,
+    value: chunk.value,
+    expires: expiresAt + AUTH_COOKIE_TTL_SECONDS,
+    ...options
+  }));
+
+  return [
+    ...clearEntries.map((cookie) => ({ ...options, ...cookie })),
+    ...sessionEntries
+  ];
+}
 
 const viewports = [
   ["mobile-320", 320, 844],
@@ -91,16 +159,19 @@ async function addRoleSession(context, role) {
   if (error || !data.session) throw new Error(error?.message ?? `${role} demo session was not returned.`);
 
   const encodedSession = Buffer.from(JSON.stringify(data.session), "utf8").toString("base64url");
-  await context.addCookies([{
-    name: `sb-${supabaseProjectRef()}-auth-token`,
-    value: `base64-${encodedSession}`,
+  const authCookieBaseName = `sb-${supabaseProjectRef()}-auth-token`;
+  const cookieBaseOptions = {
     domain: new URL(baseUrl).hostname,
     path: "/",
     httpOnly: false,
     secure: false,
-    sameSite: "Lax",
-    expires: Math.floor(Date.now() / 1000) + 60 * 60
-  }]);
+    sameSite: "Lax"
+  };
+  await context.addCookies(buildSupabaseCookieEntries(
+    authCookieBaseName,
+    `base64-${encodedSession}`,
+    cookieBaseOptions
+  ));
   if (role === "parent" || role === "coach" || role === "admin") {
     await context.addCookies([{
       name: "leaguepilot-active-role",

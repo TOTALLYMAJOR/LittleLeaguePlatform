@@ -190,6 +190,28 @@ describe("route smoke coverage", () => {
     expect(css).toContain("@media (forced-colors: active)");
   });
 
+  it("uses one light-default, explicitly selected theme across every shell", () => {
+    const layout = readFileSync(join(process.cwd(), "app", "layout.tsx"), "utf8");
+    const shell = readFileSync(join(process.cwd(), "components", "ui", "AppShell.tsx"), "utf8");
+    const theme = readFileSync(join(process.cwd(), "lib", "theme.ts"), "utf8");
+    const css = readFileSync(join(process.cwd(), "app", "globals.css"), "utf8");
+    const familyCss = readFileSync(join(process.cwd(), "app", "parent", "parent-weekly.css"), "utf8");
+
+    expect(layout).toContain('data-theme="light"');
+    expect(layout).toContain('id="leaguepilot-color-theme"');
+    expect(layout).toContain("<head>");
+    expect(layout.indexOf('id="leaguepilot-color-theme"')).toBeLessThan(layout.indexOf("<body>"));
+    expect(layout).toContain("dangerouslySetInnerHTML={{ __html: COLOR_THEME_PREPAINT_SCRIPT }}");
+    expect(layout).toContain("suppressHydrationWarning");
+    expect(theme).toContain('leaguepilot-color-theme:v1');
+    expect(theme).toContain('savedTheme === "dark" ? "dark" : "light"');
+    expect(shell.match(/<ThemeToggle/g)).toHaveLength(3);
+    expect(css).toContain('html[data-theme="dark"]');
+    expect(css).not.toContain("@media (prefers-color-scheme: dark)");
+    expect(familyCss).toContain(':root[data-theme="dark"] [data-surface-family="family"]');
+    expect(familyCss).not.toContain("color-scheme: light");
+  });
+
   it("keeps the parent weekly visual language in the shared app design system", () => {
     const layout = readFileSync(join(process.cwd(), "app", "layout.tsx"), "utf8");
     const css = readFileSync(join(process.cwd(), "app", "globals.css"), "utf8");
@@ -205,7 +227,11 @@ describe("route smoke coverage", () => {
     expect(css).toContain(".temporary-caregiver-builder input");
     expect(css).toContain(".admin-calendar-split");
     expect(css).toContain(".admin-inspector-edit input");
-    expect(layout).toContain("background:#fdf8f1");
+    expect(layout).toContain("background:var(--bg,#fdf8f1)");
+    expect(layout).toContain("border-right:1px solid var(--line,#e7ded1)");
+    expect(layout).toContain("color:var(--muted,#68665f)");
+    expect(css).toContain("color-mix(in srgb, var(--bg) 82%, transparent)");
+    expect(css).toContain("color-mix(in srgb, var(--accent) 6%, transparent)");
     expect(layout).toContain("background:#1f3a63");
   });
 
@@ -235,10 +261,12 @@ describe("route smoke coverage", () => {
 
   it("keeps the admin security proof page tied to RLS and audit evidence", () => {
     const page = readFileSync(join(process.cwd(), "app", "admin", "security", "page.tsx"), "utf8");
+    const canonicalPage = readFileSync(join(process.cwd(), "app", "admin", "security-audit", "page.tsx"), "utf8");
     const surfaces = readFileSync(join(process.cwd(), "app", "admin", "_surfaces.tsx"), "utf8");
     const proof = readFileSync(join(process.cwd(), "lib", "supabase", "security-proof.ts"), "utf8");
 
-    expect(page).toContain("AdminSecurityAuditSurface");
+    expect(page).toContain('redirect("/admin/security-audit")');
+    expect(canonicalPage).toContain("AdminSecurityAuditSurface");
     expect(surfaces).toContain("buildSecurityProofDashboard");
     expect(proof).toContain("parent cannot read cross-team players");
     expect(proof).toContain("coach cannot update archived-season events");

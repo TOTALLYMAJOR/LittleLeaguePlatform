@@ -25,6 +25,7 @@ import {
 import { formatBadgeCount, getAttentionBadge } from "@/lib/navigation/shell-attention";
 import { StatusBadge } from "./primitives";
 import { RouteIcon } from "./route-icons";
+import { ThemeToggle } from "./ThemeToggle";
 
 const groups: RouteTopologyEntry["group"][] = [
   "Family",
@@ -58,7 +59,7 @@ const routeHelpByRole: Record<RouteTopologyEntry["role"], { title: string; body:
   },
   coach: {
     title: "Coach tools",
-    body: "Use this area for attendance, Practice Replays, team messages, roster, weather, and planning.",
+    body: "Use this area for RSVPs, Parent Replay, team messages, Team Portal, weather, and planning.",
     tone: "coach"
   },
   admin: {
@@ -73,7 +74,7 @@ const routeHelpByRole: Record<RouteTopologyEntry["role"], { title: string; body:
   },
   shared: {
     title: "Shared team surface",
-    body: "This route reuses one private team surface and scopes what appears by your active role.",
+    body: "Private team details are limited to your verified role and current team access.",
     tone: "shared"
   },
   prototype: {
@@ -91,6 +92,7 @@ const routeHelpByHref: Record<string, string> = {
   "/parent/rsvp": "Pick going, maybe, or not going for linked children only.",
   "/coach": "Start with readiness: RSVP gaps, snack or volunteer needs, weather drafts, and practice follow-up.",
   "/coach/practice-recaps": "Paste YouTube drill references, pick practice focus areas, and review drafts before anything is published.",
+  "/team-portal": "View roster-safe team details, approved media, and current team information.",
   "/admin": "Start here to see review queues, registration status, setup gaps, and safety/provider boundaries.",
   "/admin/registrations": "Approve or reject pending registration requests before families receive private access.",
   "/admin/media-review": "Review reported media and approve or reject coach drill video sources and videos.",
@@ -157,10 +159,26 @@ export function AppShell({ access = signedOutShellAccess, children }: { access?:
   const routeAuthority = resolveRouteAuthorityContext(access, pathname, navigationContext);
   const activeProductRole = resolveNavigationRole(access, pathname, navigationContext);
   const activeContext = access.contexts?.find((context) => context.role === activeProductRole);
+  const roleAttentionBadges = (access.attentionBadges ?? []).filter((badge) => (
+    activeProductRole ? badge.href.startsWith(`/${activeProductRole}/`) : false
+  ));
+  const roleAttentionCount = roleAttentionBadges.reduce((total, badge) => total + badge.count, 0);
+  const attentionSummary = access.attentionStatus === "error"
+    ? "Task counts unavailable"
+    : roleAttentionCount > 0
+      ? `${roleAttentionCount} ${roleAttentionCount === 1 ? "item needs" : "items need"} attention`
+      : "All caught up";
   const productShellFamily = getProductShellFamily(access, pathname, navigationContext);
   const usesFamilyShell = productShellFamily === "family";
   const usesImmersiveFamilyHeader = usesFamilyShell;
   const usesPublicGateway = pathname === "/";
+  const brandHomeHref = activeProductRole === "coach"
+    ? "/coach"
+    : activeProductRole === "admin"
+      ? "/admin"
+      : activeProductRole === "parent"
+        ? "/parent"
+        : "/";
   const showMobileTabbar = Boolean(activeProductRole) && activeMobileItems.length >= 3;
 
   const filteredNav = useMemo(() => {
@@ -289,6 +307,7 @@ export function AppShell({ access = signedOutShellAccess, children }: { access?:
               <Link href="/schedule">Schedule</Link>
               {usesPublicGateway ? <Link href="/sponsors">Sponsors</Link> : <Link className="button" href="/registration">Request Team Access</Link>}
               <Link className="button secondary" href="/auth">Sign in</Link>
+              <ThemeToggle />
             </nav>
           </header>
           <main id="main-content" className="public-main">{children}</main>
@@ -344,8 +363,8 @@ export function AppShell({ access = signedOutShellAccess, children }: { access?:
                       <RouteIcon href={item.href} short={item.short} role={item.role} size={20} />
                       <span>{item.label}</span>
                       {attention ? (
-                        <span className="parent-weekly-nav-attention" aria-hidden="true">
-                          {formatBadgeCount(attention.count)}
+                        <span className="parent-weekly-nav-attention" aria-label={attention.label}>
+                          {formatBadgeCount(attention.count)} {attention.meaning}
                         </span>
                       ) : null}
                     </Link>
@@ -359,6 +378,7 @@ export function AppShell({ access = signedOutShellAccess, children }: { access?:
                   <Menu aria-hidden="true" size={21} />
                   <span>Menu</span>
                 </button>
+                <ThemeToggle compact />
                 <Link className="parent-weekly-avatar" href="/account" aria-label="Open parent account">
                   <ShieldCheck aria-hidden="true" size={18} />
                   <span className="sr-only">Verified parent account</span>
@@ -366,14 +386,21 @@ export function AppShell({ access = signedOutShellAccess, children }: { access?:
               </nav>
             </div>
             {activeContext ? (
-              <div className="family-shell-context" aria-label="Verified family context" tabIndex={0}>
-                <span><small>Role</small><strong>Parent</strong></span>
-                <span><small>Organization</small><strong>{activeContext.organizationName}</strong></span>
-                <span><small>Season</small><strong>{activeContext.seasonName}</strong></span>
-                <span><small>Team</small><strong>{activeContext.teamName ?? "Family teams"}</strong></span>
-                <span><small>Family</small><strong>{activeContext.permittedPlayerIds.length} linked {activeContext.permittedPlayerIds.length === 1 ? "player" : "players"}</strong></span>
-                <span><small>Access</small><strong>{activeContext.readOnly ? "Archived, read-only" : "Current access"}</strong></span>
-              </div>
+              <details className="family-shell-context" aria-label="Verified family context">
+                <summary>
+                  <strong>Parent · {activeContext.organizationName} · {activeContext.teamName ?? "Family teams"}</strong>
+                  {activeContext.readOnly ? <span className="badge warning">Archived</span> : null}
+                  <small>Context details</small>
+                </summary>
+                <div className="family-shell-context-details">
+                  <span><small>Role</small><strong>Parent</strong></span>
+                  <span><small>Organization</small><strong>{activeContext.organizationName}</strong></span>
+                  <span><small>Season</small><strong>{activeContext.seasonName}</strong></span>
+                  <span><small>Team</small><strong>{activeContext.teamName ?? "Family teams"}</strong></span>
+                  <span><small>Family</small><strong>{activeContext.permittedPlayerIds.length} linked {activeContext.permittedPlayerIds.length === 1 ? "player" : "players"}</strong></span>
+                  <span><small>Access</small><strong>{activeContext.readOnly ? "Archived, read-only" : "Current access"}</strong></span>
+                </div>
+              </details>
             ) : (
               <div className="family-shell-context family-shell-context-unavailable" role="status">
                 Private team details stay hidden until parent access is confirmed.
@@ -397,7 +424,7 @@ export function AppShell({ access = signedOutShellAccess, children }: { access?:
             <span />
           </div>
           <div className="sidebar-topline">
-            <Link href="/" className="brand" aria-label="LeaguePilot home">
+            <Link href={brandHomeHref} className="brand" aria-label="LeaguePilot home">
               <span className="brand-mark">LP</span>
               <span className="brand-copy">
                 <strong>LeaguePilot</strong>
@@ -444,7 +471,7 @@ export function AppShell({ access = signedOutShellAccess, children }: { access?:
                         <span className="nav-label">{item.label}</span>
                         {attention ? (
                           <span className="nav-attention-badge" aria-label={attention.label}>
-                            {formatBadgeCount(attention.count)}
+                            {formatBadgeCount(attention.count)} {attention.meaning}
                           </span>
                         ) : null}
                       </Link>
@@ -472,23 +499,32 @@ export function AppShell({ access = signedOutShellAccess, children }: { access?:
                   <small>{shellContext.body}</small>
                 </div>
                 <div className="context-actions">
+                  <ThemeToggle />
                   <button type="button" className="secondary context-back" onClick={() => (window.history.length > 1 ? router.back() : router.push(getRouteParent(pathname)))}>
                     Back
                   </button>
                   <StatusBadge label={shellContext.badge} variant={shellContext.badgeVariant} />
+                  <StatusBadge label={attentionSummary} variant={access.attentionStatus === "error" ? "warning" : roleAttentionCount ? "info" : "neutral"} />
                 </div>
               </div>
               {activeContext ? (
-                <div className="verified-context-bar" aria-label="Verified role and organization context">
-                  <span><small>Role</small><strong>{activeContext.role}</strong></span>
-                  <span><small>Organization</small><strong>{activeContext.organizationName}</strong></span>
-                  <span><small>Season</small><strong>{activeContext.seasonName}</strong></span>
-                  {activeContext.teamName ? <span><small>Team</small><strong>{activeContext.teamName}</strong></span> : null}
-                  <span className={activeContext.readOnly ? "state-readonly" : "state-current"}>
-                    <small>Access</small>
-                    <strong>{activeContext.readOnly ? "Archived, read-only" : "Current access"}</strong>
-                  </span>
-                </div>
+                <details className="verified-context-bar" aria-label="Verified role and organization context">
+                  <summary>
+                    <strong>{activeContext.role} · {activeContext.organizationName}{activeContext.teamName ? ` · ${activeContext.teamName}` : ""}</strong>
+                    {activeContext.readOnly ? <span className="badge warning">Archived</span> : null}
+                    <small>Context details</small>
+                  </summary>
+                  <div className="verified-context-details">
+                    <span><small>Role</small><strong>{activeContext.role}</strong></span>
+                    <span><small>Organization</small><strong>{activeContext.organizationName}</strong></span>
+                    <span><small>Season</small><strong>{activeContext.seasonName}</strong></span>
+                    {activeContext.teamName ? <span><small>Team</small><strong>{activeContext.teamName}</strong></span> : null}
+                    <span className={activeContext.readOnly ? "state-readonly" : "state-current"}>
+                      <small>Access</small>
+                      <strong>{activeContext.readOnly ? "Archived, read-only" : "Current access"}</strong>
+                    </span>
+                  </div>
+                </details>
               ) : (
                 <div className="verified-context-bar context-unavailable" role="status">
                   <span><small>Privacy</small><strong>Private team details stay hidden on this page</strong></span>
@@ -513,7 +549,7 @@ export function AppShell({ access = signedOutShellAccess, children }: { access?:
                   <small>{item.label.replace("Parent ", "")}</small>
                   {attention ? (
                     <span className="mobile-tab-attention" aria-label={attention.label}>
-                      {formatBadgeCount(attention.count)}
+                      {formatBadgeCount(attention.count)} {attention.meaning}
                     </span>
                   ) : null}
                 </Link>
@@ -525,7 +561,7 @@ export function AppShell({ access = signedOutShellAccess, children }: { access?:
 
       {sessionWarningVisible ? (
         <aside className="session-warning" role="status" aria-live="polite">
-          <StatusBadge label="Pending review" variant="warning" />
+          <StatusBadge label="Session expiring" variant="warning" />
           <span>Your session will need a fresh sign-in soon. Drafts stay in this browser until submitted.</span>
           <button type="button" className="secondary" onClick={() => setSessionWarningVisible(false)}>Dismiss</button>
         </aside>

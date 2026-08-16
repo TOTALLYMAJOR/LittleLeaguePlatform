@@ -22,6 +22,18 @@ export interface ParentCoachDashboardData {
   isSupabaseBacked: boolean;
   accessStatus: "live" | "signed_out" | "missing_parent_link" | "missing_coach_membership" | "unavailable";
   message: string;
+  coachRsvpTargets?: CoachRsvpReminderTarget[];
+}
+
+export interface CoachRsvpReminderTarget {
+  id: string;
+  teamId: string;
+  eventId: string;
+  eventTitle: string;
+  parentUserId: string;
+  familyLabel: string;
+  playerDisplayNames: string[];
+  noResponse: number;
 }
 
 export interface RsvpChangeLog {
@@ -669,11 +681,44 @@ export async function listParentCoachDashboardData(options: ParentCoachDashboard
     const hasAccess = hasCoachSurface(coachState, options.viewerUserId);
     const coachPlayerIds = new Set(coachState.players.map((player) => player.id));
     const coachEventIds = new Set(coachState.events.map((event) => event.id));
+    const coachTeamIds = new Set(coachState.teams.map((team) => team.id));
+    const coachRsvpTargets: CoachRsvpReminderTarget[] = [];
+    for (const event of coachState.events.filter((item) => item.status === "scheduled")) {
+      const missingByParent = new Map<string, string[]>();
+      for (const link of guardianLinks.filter((item) => item.status === "active" && item.parentUserId)) {
+        const parentUserId = link.parentUserId;
+        if (!parentUserId) continue;
+        const player = players.find((item) => item.id === link.playerId);
+        if (!player || player.teamId !== event.teamId || !coachTeamIds.has(player.teamId)) continue;
+        const hasResponse = rsvps.some((rsvp) => (
+          rsvp.eventId === event.id &&
+          rsvp.playerId === player.id &&
+          rsvp.parentUserId === parentUserId
+        ));
+        if (hasResponse) continue;
+        const names = missingByParent.get(parentUserId) ?? [];
+        names.push(`${player.firstName} ${player.lastInitial}.`);
+        missingByParent.set(parentUserId, names);
+      }
+      for (const [parentUserId, playerDisplayNames] of missingByParent) {
+        coachRsvpTargets.push({
+          id: `${event.id}:${parentUserId}`,
+          teamId: event.teamId,
+          eventId: event.id,
+          eventTitle: event.title,
+          parentUserId,
+          familyLabel: users.find((user) => user.id === parentUserId)?.name ?? "Linked family",
+          playerDisplayNames,
+          noResponse: playerDisplayNames.length
+        });
+      }
+    }
 
     return {
       state: coachState,
       parentUserId: "",
       coachUserId: options.viewerUserId,
+      coachRsvpTargets,
       rsvpChangeLogs: rsvpChangeLogs.filter((log) => (
         coachPlayerIds.has(log.playerId) &&
         coachEventIds.has(log.eventId)

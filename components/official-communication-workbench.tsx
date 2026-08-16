@@ -267,6 +267,10 @@ export function OfficialCommunicationWorkbench({
           >
             {isPending ? "Recording reviewed message…" : action === "corrected" ? "Publish correction" : action === "withdrawn" ? "Publish withdrawal" : "Publish official message"}
           </button>
+          {!selectedEvent ? <p className="muted">Choose an event before publishing.</p> : null}
+          {selectedEvent && (title.trim().length < 3 || body.trim().length < 3) ? <p className="muted">Add a family-facing title and message before publishing.</p> : null}
+          {selectedEvent && title.trim().length >= 3 && body.trim().length >= 3 && reason.trim().length < 10 ? <p className="muted">Add an audit reason of at least 10 characters before publishing.</p> : null}
+          {selectedEvent && title.trim().length >= 3 && body.trim().length >= 3 && reason.trim().length >= 10 && !reviewed ? <p className="muted">Confirm the human-review checkbox before publishing.</p> : null}
           <p className="notice" role="status">{statusMessage}</p>
         </article>
 

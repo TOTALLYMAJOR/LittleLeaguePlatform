@@ -81,11 +81,6 @@ function requirePattern(blockers, sources, family, code, keys, pattern, message)
   if (!ok) addBlocker(blockers, family, code, keys, message);
 }
 
-function requireNoPattern(blockers, sources, family, code, keys, pattern, message) {
-  const text = combined(sources, keys);
-  if (pattern.test(text)) addBlocker(blockers, family, code, keys, message);
-}
-
 export function readRepositorySources(rootDir = process.cwd(), sourceFiles = DEFAULT_SOURCE_FILES) {
   return Object.fromEntries(
     Object.entries(sourceFiles).map(([key, relativePath]) => [

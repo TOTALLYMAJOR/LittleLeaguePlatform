@@ -110,19 +110,20 @@ describe("role route guards and compatibility wrappers", () => {
 
   it("keeps coach attendance canonical and RSVP compatibility on the same guarded surface", () => {
     expect(source("app/coach/attendance/page.tsx")).toContain("CoachAttendanceSurface");
-    expect(source("app/coach/rsvps/page.tsx")).toContain("CoachAttendanceSurface");
+    expect(source("app/coach/rsvps/page.tsx")).toContain('redirect("/coach/attendance")');
     expect(source("app/coach/_surfaces.tsx")).toContain("requireCoachPageAccess");
     expect(source("app/coach/_surfaces.tsx")).toContain("CoachRsvpsClient dashboardData");
   });
 
   it("keeps practice recap aliases on the review-only Parent Replay surface", () => {
     expect(source("app/coach/practice-recaps/page.tsx")).toContain("CoachPracticeRecapsSurface");
-    expect(source("app/coach/parent-replay/page.tsx")).toContain("CoachPracticeRecapsSurface");
+    expect(source("app/coach/parent-replay/page.tsx")).toContain('redirect("/coach/practice-recaps")');
     const panel = source("components/feature-panels.tsx");
 
     expect(panel).toContain("ParentReplayClient");
     expect(panel).toContain("Preview");
     expect(panel).toContain("Approval is required before publish");
+    expect(panel).toContain("Confirm and publish");
     expect(panel).toContain("Publishing creates in-app notification drafts only. External delivery still requires separate approval and provider evidence.");
     expect(panel).toContain("/api/coach/ai-workspace");
   });

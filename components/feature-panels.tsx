@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import { useEffect, useMemo, useState, useTransition, type CSSProperties, type ChangeEvent, type ReactNode } from "react";
 import { markLeaguePilotValueExperienced, useAppState } from "@/app/providers";
 import {
@@ -170,6 +171,7 @@ import type { AdminThemeData, TeamLogoAsset, TeamThemeAudit, TenantThemeDefaults
 import type { TeamChatData } from "@/lib/supabase/team-chat";
 import type { TenantReadinessData, TenantReadinessCheckStatus } from "@/lib/supabase/tenant-readiness";
 import type { ParentCoachDashboardData } from "@/lib/supabase/dashboard-data";
+import type { CoachDraftReviewData } from "@/lib/supabase/coach-drafts";
 import type { PracticeRunReceipt } from "@/lib/supabase/practice-runs";
 import type { AdminTeamManagementData } from "@/lib/supabase/team-management";
 import type { ScheduleOperationsData } from "@/lib/supabase/schedule-management";
@@ -209,6 +211,7 @@ import {
   CoachGameDayRadar,
   ParentSeasonStory,
   SponsorCommunityProofLedger,
+  type CoachRadarTask,
   type ParentSeasonStoryEntry,
   type SponsorProofLedgerRow
 } from "@/components/role-dashboard-experiences";
@@ -1840,16 +1843,6 @@ export function ParentDashboardClient({ dashboardData }: { dashboardData?: Paren
       meta: entry.meta,
       tone: entry.tone
     }));
-  const parentChanges = dashboard.latestAnnouncement
-    ? [`Coach posted ${dashboard.latestAnnouncement.title} (${formatDate(dashboard.latestAnnouncement.createdAt)})`]
-    : [];
-  let parentUnreadCount = 0;
-  try {
-    parentUnreadCount = primaryTeamId ? getTeamChatView(sourceState, parentUserId, primaryTeamId, NOW).unreadCount : 0;
-  } catch {
-    parentUnreadCount = 0;
-  }
-  const latestMediaItem = mediaFeed[0];
   const firstMissingRsvp = nextParentRsvp ?? dashboard.rsvpNeeded[0];
   const parentPrimaryAction = firstMissingRsvp
     ? { href: "/parent/rsvp", label: "RSVP now" }
@@ -1966,38 +1959,6 @@ export function ParentDashboardClient({ dashboardData }: { dashboardData?: Paren
     `Family help: ${parentHelpCopy}`,
     "Local checklist only. It does not save attendance or send alerts."
   ].join("\n");
-  const pendingParentActions = [
-    ...(firstMissingRsvp ? [{
-      id: "missing-rsvp",
-      label: `Confirm whether ${firstMissingRsvp.player.firstName} is coming ${formatShortDay(firstMissingRsvp.event.startsAt)}`,
-      cta: "RSVP now",
-      href: "/parent/rsvp"
-    }] : []),
-    ...(openSnackSlots[0] ? [{
-      id: "snack-open",
-      label: `${openSnackSlots[0].item} is still open for ${eventById.get(openSnackSlots[0].eventId)?.title ?? "a team event"}`,
-      cta: "View snacks",
-      href: "#family-help"
-    }] : []),
-    ...(openVolunteerSignups[0] ? [{
-      id: "volunteer-open",
-      label: `${openVolunteerSignups.length} volunteer slot${openVolunteerSignups.length === 1 ? "" : "s"} open for your team`,
-      cta: "Sign up",
-      href: "#family-help"
-    }] : []),
-    ...(!sourceState.notificationPreferences.some((item) => item.userId === parentUserId && item.notificationType === "schedule_changed") ? [{
-      id: "notification-preference",
-      label: "Set schedule alert preferences for this team",
-      cta: "Set up",
-      href: "#schedule-alerts"
-    }] : []),
-    ...(dashboard.children.length === 0 ? [{
-      id: "guardian-link",
-      label: "Your family access is not yet verified",
-      cta: "Verify now",
-      href: "/registration"
-    }] : [])
-  ].slice(0, 3);
   const actionChecklist = [
     {
       label: "Check the family calendar",
@@ -2134,6 +2095,7 @@ export function ParentDashboardClient({ dashboardData }: { dashboardData?: Paren
       <section className="season-certainty-home parent-certainty-home" aria-label="Parent home">
         {accessGate ? <NextEventCard view={parentSeasonView} /> : (
           <>
+            <ActionChecklist actions={parentSeasonView.actions.slice(0, 1)} />
             <CoachAnnouncementTicker announcements={parentAnnouncementItems} />
             <ParentSeasonStory
               seasonName={sourceState.activeSeason.name}
@@ -2187,7 +2149,7 @@ export function ParentDashboardClient({ dashboardData }: { dashboardData?: Paren
               summary="Tasks, changes, coach update, messages, photos, and privacy."
               badge={`${parentSeasonView.actions.length} item(s)`}
             >
-              <ActionChecklist actions={parentSeasonView.actions} />
+              <ActionChecklist actions={parentSeasonView.actions.slice(1)} />
               <WhatChangedCard changes={parentSeasonView.changes} />
               <CoachUpdateCard view={parentSeasonView} />
               <MessagesSummaryCard unreadCount={parentSeasonView.messages.unreadCount} href={parentSeasonView.messages.href} />
@@ -2765,7 +2727,6 @@ export function CoachDashboardClient({ dashboardData }: { dashboardData?: Parent
   const [fieldAttendanceVersions, setFieldAttendanceVersions] = useState<Record<string, number>>({});
   const sourceState = dashboardData?.state ?? state;
   const coachId = dashboardData?.coachUserId ?? "user-coach-taylor";
-  const coachUser = sourceState.users.find((user) => user.id === coachId);
   const assignedTeamIds = new Set(sourceState.teamMemberships.filter((membership) => (
     membership.userId === coachId && membership.role === "coach" && membership.status === "active"
   )).map((membership) => membership.teamId));
@@ -2773,10 +2734,21 @@ export function CoachDashboardClient({ dashboardData }: { dashboardData?: Parent
   const summaries = getCoachRsvpSummaries(sourceState, coachId, NOW);
   const coachSuggestions = buildCoachAssistiveSuggestions(sourceState, coachId, NOW);
   const reliabilityRows = getCoachRsvpReliability(sourceState, coachId, NOW);
-  const rsvpReminderQueue = reliabilityRows.filter((row) => row.noResponse > 0);
   const teamIds = new Set(teams.map((team) => team.id));
   const assignedEvents = sourceState.events.filter((event) => teamIds.has(event.teamId) && event.status === "scheduled");
   const nextAssignedEvent = assignedEvents[0];
+  const rsvpReminderQueue = dashboardData?.coachRsvpTargets ?? reliabilityRows
+    .filter((row) => row.noResponse > 0)
+    .map((row) => ({
+      id: `preview:${nextAssignedEvent?.id ?? "event"}:${row.parentUser?.id ?? row.linkedPlayers.map((player) => player.id).join("-")}`,
+      teamId: nextAssignedEvent?.teamId ?? row.linkedPlayers[0]?.teamId ?? "",
+      eventId: nextAssignedEvent?.id ?? "",
+      eventTitle: nextAssignedEvent?.title ?? "Upcoming event",
+      parentUserId: row.parentUser?.id ?? "",
+      familyLabel: row.parentUser?.name ?? "Linked family",
+      playerDisplayNames: row.linkedPlayers.map((player) => `${player.firstName} ${player.lastInitial}.`),
+      noResponse: row.noResponse
+    }));
   const primaryCoachTeam = teams.find((team) => team.id === nextAssignedEvent?.teamId)
     ?? teams.find((team) => team.seasonId === sourceState.activeSeason.id)
     ?? teams[0];
@@ -2812,12 +2784,36 @@ export function CoachDashboardClient({ dashboardData }: { dashboardData?: Parent
   const accessGate = privateAccessGate(dashboardData, "coach");
   const nextCoachSummary = summaries[0];
   const nextCoachEvent = nextCoachSummary?.event ?? nextAssignedEvent;
-  const coachReviewCount = (nextCoachSummary?.noResponse ?? 0) + weatherApprovalQueue.length + snackNeeds.length + volunteerNeeds.length;
-  const coachReviewItems = [
-    nextCoachSummary?.noResponse ? `${nextCoachSummary.noResponse} RSVP response${nextCoachSummary.noResponse === 1 ? "" : "s"} still missing.` : "No RSVP gaps on the next event.",
-    weatherApprovalQueue.length ? `${weatherApprovalQueue.length} weather draft${weatherApprovalQueue.length === 1 ? "" : "s"} need review.` : "No weather draft needs review.",
-    snackNeeds.length || volunteerNeeds.length ? `${snackNeeds.length + volunteerNeeds.length} snack or volunteer item${snackNeeds.length + volunteerNeeds.length === 1 ? "" : "s"} open.` : "Family help coverage looks set."
+  const coachActionTasks: CoachRadarTask[] = [
+    ...rsvpReminderQueue.map((row) => ({
+      id: `rsvp-${row.id}`,
+      category: "People" as const,
+      title: `${row.familyLabel}: ${row.noResponse} RSVP response${row.noResponse === 1 ? "" : "s"} missing`,
+      detail: `${row.eventTitle} | ${row.playerDisplayNames.join(", ")}`,
+      actionLabel: "Save reminder draft",
+      parentUserId: row.parentUserId,
+      teamId: row.teamId,
+      eventId: row.eventId,
+      disabledReason: row.parentUserId && row.teamId && row.eventId ? undefined : "A current linked-family account and assigned-team event are required before a reminder can be drafted."
+    })),
+    ...snackNeeds.map((slot) => ({
+      id: `snack-${slot.id}`,
+      category: "Plan" as const,
+      title: `Snack slot: ${slot.item}`,
+      detail: sourceState.events.find((event) => event.id === slot.eventId)?.title ?? "Assigned-team event",
+      actionLabel: "Review snack coverage",
+      href: `/coach/snacks-volunteers#snack-${slot.id}`
+    })),
+    ...volunteerNeeds.map((signup) => ({
+      id: `volunteer-${signup.id}`,
+      category: "Plan" as const,
+      title: `Volunteer role: ${signup.role}`,
+      detail: sourceState.events.find((event) => event.id === signup.eventId)?.title ?? "Assigned-team event",
+      actionLabel: "Review volunteer coverage",
+      href: `/coach/snacks-volunteers#volunteer-${signup.id}`
+    }))
   ];
+  const coachReviewCount = coachActionTasks.length;
   const coachAnnouncements = sourceState.announcements
     .filter((announcement) => teamIds.has(announcement.teamId))
     .sort((left, right) => new Date(right.createdAt).getTime() - new Date(left.createdAt).getTime())
@@ -2860,14 +2856,6 @@ export function CoachDashboardClient({ dashboardData }: { dashboardData?: Parent
     now: NOW
   });
 
-  const coachOfflineScope = {
-    actorId: coachId,
-    organizationId: sourceState.organization.id,
-    seasonId: sourceState.activeSeason.id,
-    contextKey: coachContextKey,
-    teamId: primaryCoachTeam?.id ?? "none"
-  };
-
   async function sendQueuedFieldAction(
     action: OfflineGameDayAction,
     endpoint: string,
@@ -2905,7 +2893,7 @@ export function CoachDashboardClient({ dashboardData }: { dashboardData?: Parent
     } catch {
       // Field Mode remains online-only when private cache storage is unavailable.
     }
-  }, [coachContextKey, fieldPlayers, nextAssignedEvent]);
+  }, [coachContextKey, coachId, fieldPlayers, nextAssignedEvent]);
 
   useEffect(() => {
     if (!offlineWritesEnabled || typeof window === "undefined") return;
@@ -2915,7 +2903,13 @@ export function CoachDashboardClient({ dashboardData }: { dashboardData?: Parent
           setActionMessage("Sign-in required before saved Field Mode actions can sync.");
           return [];
         }
-        return syncContextOutbox(coachOfflineScope, session, sendQueuedFieldAction);
+        return syncContextOutbox({
+          actorId: coachId,
+          organizationId: sourceState.organization.id,
+          seasonId: sourceState.activeSeason.id,
+          contextKey: coachContextKey,
+          teamId: primaryCoachTeam?.id ?? "none"
+        }, session, sendQueuedFieldAction);
       }).then((results) => {
         const conflict = results.find((result) => "conflictDetail" in result && result.conflictDetail);
         if (conflict && "conflictDetail" in conflict) setActionMessage(`Sync conflict: ${conflict.conflictDetail}`);
@@ -3065,11 +3059,17 @@ export function CoachDashboardClient({ dashboardData }: { dashboardData?: Parent
     });
   }
 
-  function draftRsvpReminder(parentName: string, noResponse: number) {
-    setActionMessage(`RSVP reminder saved as a draft for ${parentName}: ${noResponse} missing response(s). No message was sent.`);
+  function draftRsvpReminder(target: { parentUserId?: string; teamId?: string; eventId?: string }) {
+    if (!target.teamId || !target.eventId || !target.parentUserId) {
+      setActionMessage("A linked family and upcoming assigned-team event are required before an RSVP reminder draft can be saved.");
+      return;
+    }
+    runCoachAction("/api/coach/rsvp-reminders/draft", {
+      teamId: target.teamId,
+      eventId: target.eventId,
+      parentUserId: target.parentUserId
+    });
   }
-  const firstRsvpReminder = rsvpReminderQueue[0];
-
   return (
     <div className="page">
       <section className="season-home season-coach-home" aria-label="Coach home">
@@ -3088,13 +3088,12 @@ export function CoachDashboardClient({ dashboardData }: { dashboardData?: Parent
               snackCount={snackNeeds.length}
               volunteerCount={volunteerNeeds.length}
               weatherReviewCount={weatherApprovalQueue.length}
-              reviewCount={coachReviewCount}
+              tasks={coachActionTasks}
               weatherSummary={coachWeatherSummary}
               isPending={isActionPending}
               canDraftWeather={Boolean(nextAssignedEvent)}
-              onNudgeRsvp={() => draftRsvpReminder(firstRsvpReminder?.parentUser?.name ?? "linked family", firstRsvpReminder?.noResponse ?? nextCoachSummary?.noResponse ?? 0)}
+              onNudgeRsvp={draftRsvpReminder}
               onDraftWeather={() => nextAssignedEvent ? runCoachAction("/api/weather-alerts/draft", { eventId: nextAssignedEvent.id }) : undefined}
-              onSaveWeeklyUpdate={saveWeeklyUpdate}
             />
             <CompactDisclosure
               title="More coach context"
@@ -3444,12 +3443,12 @@ export function CoachDashboardClient({ dashboardData }: { dashboardData?: Parent
             <span className="badge warning">{rsvpReminderQueue.length} queued</span>
           </div>
           {rsvpReminderQueue.map((row) => (
-            <div className="stack compact" key={row.parentUser?.id ?? row.linkedPlayers.map((player) => player.id).join("-")}>
-              <p><strong>{row.parentUser?.name ?? "Linked family"}</strong><br /><span className="muted">{row.noResponse} no response · {row.linkedPlayers.map((player) => `${player.firstName} ${player.lastInitial}.`).join(", ")}</span></p>
+            <div className="stack compact" key={row.id}>
+              <p><strong>{row.familyLabel}</strong><br /><span className="muted">{row.eventTitle} | {row.noResponse} no response | {row.playerDisplayNames.join(", ")}</span></p>
               <button
                 className="secondary"
-                disabled={isActionPending}
-                onClick={() => draftRsvpReminder(row.parentUser?.name ?? "linked family", row.noResponse)}
+                disabled={isActionPending || !row.parentUserId || !row.teamId || !row.eventId}
+                onClick={() => draftRsvpReminder(row)}
               >
                 Queue RSVP reminder draft
               </button>
@@ -3977,8 +3976,8 @@ export type AdminDashboardSurfaceMode = "overview" | "media" | "sponsors";
 export function AdminDashboardClient({ registrationRequests, sponsorData, mediaData, drillVideoData, surface = "overview" }: AdminDashboardClientProps = {}) {
   const { state, dispatch } = useAppState();
   const showOverview = surface === "overview";
-  const showMedia = surface === "overview" || surface === "media";
-  const showSponsors = surface === "overview" || surface === "sponsors";
+  const showMedia = surface === "media";
+  const showSponsors = surface === "sponsors";
   const focusedSurfaceCopy = surface === "media"
     ? {
       eyebrow: "Media review",
@@ -4008,7 +4007,9 @@ export function AdminDashboardClient({ registrationRequests, sponsorData, mediaD
   const [drillVideos, setDrillVideos] = useState<DrillVideo[]>(initialDrillVideos);
   const [drillSources, setDrillSources] = useState<DrillVideoSource[]>(initialDrillSources);
   const mediaReportingSummary = getMediaReportingSummary(mediaItems);
-  const mediaReviewQueue = [...mediaItems].sort((first, second) => mediaReviewPriority(first) - mediaReviewPriority(second));
+  const mediaReviewQueue = mediaItems
+    .filter((item) => item.moderationStatus === "pending" || (item.reportCount ?? 0) > 0)
+    .sort((first, second) => mediaReviewPriority(first) - mediaReviewPriority(second));
   const uploadStorageProvider = getUploadStorageProviderStatus(false);
   const mediaRetentionPolicy = getMediaRetentionPolicy();
   const parentVisibleMediaCount = mediaItems.filter((item) => canViewMediaByRole(item, "parent")).length;
@@ -4054,20 +4055,6 @@ export function AdminDashboardClient({ registrationRequests, sponsorData, mediaD
   const offlineStateSummary = getOfflineStateSummary();
   const contrastChecks = getAccessibilityContrastChecks();
   const privacyFilters = getPrivacyFilters();
-  const teamsWithUpcomingEvents = new Set(state.events
-    .filter((event) => event.status === "scheduled" && new Date(event.startsAt).getTime() >= new Date(NOW).getTime())
-    .map((event) => event.teamId));
-  const teamHelpRows = state.teams.map((team) => {
-    const issues = [
-      !team.coachUserId ? "coach" : undefined,
-      !teamsWithUpcomingEvents.has(team.id) ? "event" : undefined
-    ].filter(Boolean) as string[];
-    return { team, issues };
-  }).filter((row) => row.issues.length > 0);
-  const pendingSponsorReviews = sponsors.filter((sponsor) => sponsor.status === "pending").length;
-  const pendingDrillReviews = drillVideos.filter((video) => video.approvalStatus === "pending").length +
-    drillSources.filter((source) => source.approvalStatus === "pending").length;
-  const pendingReviewCount = pendingRegistrations.length + mediaReportingSummary.pendingReview + pendingSponsorReviews + pendingDrillReviews;
   const [communicationTeamId, setCommunicationTeamId] = useState("team-tigers");
   const [communicationChannel, setCommunicationChannel] = useState<AdminCommunicationChannel>("email");
   const [communicationTemplate, setCommunicationTemplate] = useState<CommunicationTemplate>("weekly_digest");
@@ -4366,6 +4353,37 @@ export function AdminDashboardClient({ registrationRequests, sponsorData, mediaD
       return next;
     });
     setDraggedPlayerId("");
+  }
+
+  if (showOverview) {
+    return (
+      <div className="page">
+        <section className="season-home season-admin-home" aria-labelledby="admin-home-title">
+          <details className="season-admin-context" aria-label="Current admin context">
+            <summary><strong>League admin · {state.organization.name} · {state.activeSeason.name}</strong><small>Context details</small></summary>
+            <div className="season-admin-context-details">
+              <span><small>Organization</small><strong>{state.organization.name}</strong></span>
+              <span><small>Season</small><strong>{state.activeSeason.name}</strong></span>
+              <span><small>Role</small><strong>League admin</strong></span>
+            </div>
+          </details>
+          <LeagueHealthSummaryCard view={adminSeasonView} />
+          <section className="grid two" aria-label="Suggested reviews">
+            {adminSuggestions.map((suggestion) => (
+              <article className="card stack" key={suggestion.id}>
+                <span className="eyebrow">Suggested review</span>
+                <h2>{suggestion.title}</h2>
+                <p><strong>{suggestion.body}</strong></p>
+                <p>{suggestion.recommendation}</p>
+                <p className="muted">{suggestion.boundary}</p>
+                {suggestion.href ? <a className="text-link" href={suggestion.href}>Go to {suggestion.title.toLowerCase()}</a> : null}
+              </article>
+            ))}
+          </section>
+          <PendingActionsPanel view={adminSeasonView} />
+        </section>
+      </div>
+    );
   }
 
   return (
@@ -4725,7 +4743,7 @@ export function AdminDashboardClient({ registrationRequests, sponsorData, mediaD
             );
 	          })}
           </div>
-	          {mediaItems.length === 0 ? <p className="muted">No media links yet.</p> : null}
+          {mediaReviewQueue.length === 0 ? <p className="notice ok">All clear. No media items need review.</p> : null}
 	          <section className="grid two">
 	            <div className="stack compact">
 	              <div className="card-header">
@@ -5412,14 +5430,14 @@ export function AdminThemesClient({ initialData }: { initialData: AdminThemeData
             <div className="team-branding-preview brand-studio-preview" style={teamBrandStyle(draft.primaryColor, draft.secondaryColor)}>
               {previewElements.mascotMark ? (
                 <strong className="mascot-preview-mark">
-                  {mascotPreviewDataUrl ? <img src={mascotPreviewDataUrl} alt="" /> : draft.mascot.slice(0, 2)}
+                  {mascotPreviewDataUrl ? <Image src={mascotPreviewDataUrl} alt="" width={72} height={72} unoptimized /> : draft.mascot.slice(0, 2)}
                 </strong>
               ) : null}
               <span>{team.name} portal</span>
             </div>
             {previewElements.mobileHeader ? (
               <div className="team-branding-preview mobile-preview brand-mobile-preview" style={teamBrandStyle(draft.primaryColor, draft.secondaryColor)}>
-                <strong>{mascotPreviewDataUrl ? <img src={mascotPreviewDataUrl} alt="" /> : draft.mascot.slice(0, 1)}</strong>
+                <strong>{mascotPreviewDataUrl ? <Image src={mascotPreviewDataUrl} alt="" width={72} height={72} unoptimized /> : draft.mascot.slice(0, 1)}</strong>
                 <span>{team.name} mobile</span>
               </div>
             ) : null}
@@ -5840,6 +5858,8 @@ export function RegistrationReviewClient({ initialData }: { initialData: Registr
                   Reject
                 </button>
               </div>
+              {note.trim().length < 10 ? <p className="muted">Add a review note of at least 10 characters to enable a decision.</p> : null}
+              {busyRequestId === request.id ? <p className="muted">This registration decision is being recorded.</p> : null}
             </div>
           ))}
           {pendingRequests.length === 0 ? <p className="muted">No pending registration requests.</p> : null}
@@ -5861,12 +5881,210 @@ export function RegistrationReviewClient({ initialData }: { initialData: Registr
   );
 }
 
+export function CoachDraftsClient({
+  dashboardData,
+  draftData
+}: {
+  dashboardData?: ParentCoachDashboardData | null;
+  draftData: CoachDraftReviewData;
+}) {
+  const accessGate = privateAccessGate(dashboardData, "coach");
+  const sourceState = dashboardData?.state;
+
+  return (
+    <div className="page">
+      <section className="hero compact-hero">
+        <span className="eyebrow">Coach communication</span>
+        <h1>Drafts to Review</h1>
+        <p className="lead">Review pending family messages for assigned teams. Opening a draft does not approve or send it.</p>
+      </section>
+
+      {accessGate ?? (
+        <section className="card stack" aria-labelledby="coach-draft-queue-title">
+          <div className="card-header">
+            <div>
+              <h2 id="coach-draft-queue-title">Pending drafts</h2>
+              <p className="muted">{draftData.message}</p>
+            </div>
+            <span className={`badge ${draftData.drafts.length ? "warning" : "ok"}`}>
+              {draftData.drafts.length} pending
+            </span>
+          </div>
+
+          {draftData.drafts.map((draft) => {
+            const team = sourceState?.teams.find((item) => item.id === draft.teamId);
+            const event = sourceState?.events.find((item) => item.id === draft.eventId);
+            return (
+              <article className="notice" key={draft.id}>
+                <div className="card-header">
+                  <div>
+                    <strong>{draft.title}</strong>
+                    <p className="muted">
+                      {team?.name ?? "Assigned team"}{event ? ` | ${event.title}` : ""} | {draft.recipientCount} recipient{draft.recipientCount === 1 ? "" : "s"}
+                    </p>
+                  </div>
+                  <span className="badge warning">Pending</span>
+                </div>
+                <details>
+                  <summary className="button secondary">Review draft</summary>
+                  <div className="stack compact">
+                    <p>{draft.body}</p>
+                    <p className="muted">Channel: {draft.channel}. Saved {formatDate(draft.createdAt)}. Provider delivery still requires separate approval.</p>
+                  </div>
+                </details>
+              </article>
+            );
+          })}
+
+          {!draftData.drafts.length ? (
+            <p className={`notice ${draftData.isSupabaseBacked ? "ok" : "warning"}`}>
+              {draftData.isSupabaseBacked ? "All clear. No pending drafts need review." : draftData.message}
+            </p>
+          ) : null}
+        </section>
+      )}
+    </div>
+  );
+}
+
+export function CoachCommunityClient({ dashboardData }: { dashboardData?: ParentCoachDashboardData | null } = {}) {
+  const { state } = useAppState();
+  const sourceState = dashboardData?.state ?? state;
+  const accessGate = privateAccessGate(dashboardData, "coach");
+  const [message, setMessage] = useState("");
+  const [claimedIds, setClaimedIds] = useState<Set<string>>(() => new Set());
+  const [isPending, startTransition] = useTransition();
+  const openSnacks = sourceState.snackScheduleSlots.filter((slot) => slot.status === "open" && !claimedIds.has(slot.id));
+  const openVolunteers = sourceState.volunteerSignups.filter((signup) => signup.status === "open" && !claimedIds.has(signup.id));
+  const openCount = openSnacks.length + openVolunteers.length;
+
+  function claim(kind: "snack" | "volunteer", id: string) {
+    setMessage("");
+    startTransition(async () => {
+      const actionId = typeof crypto !== "undefined" && "randomUUID" in crypto
+        ? crypto.randomUUID()
+        : `community-claim-${Date.now()}-${Math.random().toString(16).slice(2)}`;
+      const response = await authenticatedJsonFetch(
+        kind === "snack" ? "/api/snack-slots/claim" : "/api/volunteer-signups/claim",
+        kind === "snack" ? { slotId: id } : { signupId: id },
+        { "Idempotency-Key": actionId }
+      );
+      const result = await response.json().catch(() => null) as { ok?: boolean; message?: string } | null;
+      setMessage(result?.message ?? "The claim could not be saved.");
+      if (result?.ok) setClaimedIds((current) => new Set(current).add(id));
+    });
+  }
+
+  return (
+    <div className="page">
+      <section className="hero compact-hero">
+        <span className="eyebrow">Family help</span>
+        <h1>Snacks and Volunteers</h1>
+        <p className="lead">Start with the open tasks for your assigned teams. Claims are saved only after the team record confirms them.</p>
+      </section>
+
+      {message ? <p className="notice">{message}</p> : null}
+      {accessGate ?? (
+        <>
+          <section className="card stack" aria-labelledby="coach-community-open-title">
+            <div className="card-header">
+              <div>
+                <h2 id="coach-community-open-title">Open team-help tasks</h2>
+                <p className="muted">Claiming uses the signed-in coach account. It does not contact families.</p>
+              </div>
+              <span className={`badge ${openCount ? "warning" : "ok"}`}>{openCount} open</span>
+            </div>
+            {openSnacks.map((slot) => {
+              const event = sourceState.events.find((item) => item.id === slot.eventId);
+              return (
+                <article className="notice" id={`snack-${slot.id}`} key={slot.id}>
+                  <strong>{slot.item}</strong>
+                  <p className="muted">Snack | {event?.title ?? "Assigned-team event"}</p>
+                  <button disabled={isPending} onClick={() => claim("snack", slot.id)}>Claim for me</button>
+                </article>
+              );
+            })}
+            {openVolunteers.map((signup) => {
+              const event = sourceState.events.find((item) => item.id === signup.eventId);
+              return (
+                <article className="notice" id={`volunteer-${signup.id}`} key={signup.id}>
+                  <strong>{signup.role}</strong>
+                  <p className="muted">Volunteer | {event?.title ?? "Assigned-team event"}</p>
+                  <button disabled={isPending} onClick={() => claim("volunteer", signup.id)}>Claim for me</button>
+                </article>
+              );
+            })}
+            {!openCount ? <p className="notice ok">All clear. Every snack slot and volunteer role is covered.</p> : null}
+          </section>
+
+          <section className="card stack">
+            <h2>Current coverage</h2>
+            {sourceState.snackScheduleSlots.filter((slot) => slot.status !== "open" || claimedIds.has(slot.id)).map((slot) => (
+              <p key={slot.id}><strong>{slot.item}</strong><br /><span className="muted">Snack | Covered</span></p>
+            ))}
+            {sourceState.volunteerSignups.filter((signup) => signup.status !== "open" || claimedIds.has(signup.id)).map((signup) => (
+              <p key={signup.id}><strong>{signup.role}</strong><br /><span className="muted">Volunteer | Covered</span></p>
+            ))}
+          </section>
+        </>
+      )}
+    </div>
+  );
+}
+
 export function CoachRsvpsClient({ dashboardData }: { dashboardData?: ParentCoachDashboardData | null } = {}) {
   const { state } = useAppState();
   const sourceState = dashboardData?.state ?? state;
   const coachId = dashboardData?.coachUserId ?? "user-coach-taylor";
   const accessGate = privateAccessGate(dashboardData, "coach");
   const summaries = getCoachRsvpSummaries(sourceState, coachId, NOW);
+  const [message, setMessage] = useState("");
+  const [isPending, startTransition] = useTransition();
+  const previewTargets = summaries.flatMap((summary) => {
+    const groups = new Map<string, { familyLabel: string; playerDisplayNames: string[] }>();
+    for (const link of sourceState.guardianLinks.filter((item) => item.status === "active")) {
+      const parentUserId = link.parentUserId;
+      if (!parentUserId) continue;
+      const player = sourceState.players.find((item) => item.id === link.playerId);
+      if (!player || player.teamId !== summary.team.id) continue;
+      const hasResponse = sourceState.rsvps.some((rsvp) => (
+        rsvp.eventId === summary.event.id &&
+        rsvp.playerId === player.id &&
+        rsvp.parentUserId === parentUserId
+      ));
+      if (hasResponse) continue;
+      const current = groups.get(parentUserId) ?? {
+        familyLabel: sourceState.users.find((user) => user.id === parentUserId)?.name ?? "Linked family",
+        playerDisplayNames: []
+      };
+      current.playerDisplayNames.push(`${player.firstName} ${player.lastInitial}.`);
+      groups.set(parentUserId, current);
+    }
+    return Array.from(groups.entries()).map(([parentUserId, group]) => ({
+      id: `preview:${summary.event.id}:${parentUserId}`,
+      teamId: summary.team.id,
+      eventId: summary.event.id,
+      eventTitle: summary.event.title,
+      parentUserId,
+      familyLabel: group.familyLabel,
+      playerDisplayNames: group.playerDisplayNames,
+      noResponse: group.playerDisplayNames.length
+    }));
+  });
+  const reminderTargets = dashboardData?.coachRsvpTargets ?? previewTargets;
+
+  function saveReminderDraft(target: (typeof reminderTargets)[number]) {
+    setMessage("");
+    startTransition(async () => {
+      const response = await authenticatedJsonFetch("/api/coach/rsvp-reminders/draft", {
+        teamId: target.teamId,
+        eventId: target.eventId,
+        parentUserId: target.parentUserId
+      });
+      const result = await response.json().catch(() => null) as { ok?: boolean; message?: string } | null;
+      setMessage(result?.message ?? "The RSVP reminder draft could not be saved.");
+    });
+  }
 
   return (
     <div className="page">
@@ -5883,6 +6101,7 @@ export function CoachRsvpsClient({ dashboardData }: { dashboardData?: ParentCoac
             : "Preview attendance is shown until an approved coach assignment is available."}
         </p>
       ) : null}
+      {message ? <p className="notice">{message}</p> : null}
       {accessGate ?? (
       <section className="grid two">
         {summaries.map((summary) => (
@@ -5895,6 +6114,18 @@ export function CoachRsvpsClient({ dashboardData }: { dashboardData?: ParentCoac
               <div className="metric"><span className="muted">Not going</span><strong>{summary.notGoing}</strong></div>
             </div>
             <p>No response: {summary.noResponse} of {summary.totalPlayers}</p>
+            {reminderTargets.filter((target) => target.eventId === summary.event.id).map((target) => (
+              <div className="notice" id={`rsvp-${target.id}`} key={target.id}>
+                <strong>{target.familyLabel}</strong>
+                <p className="muted">No response for {target.playerDisplayNames.join(", ")}</p>
+                <button disabled={isPending} onClick={() => saveReminderDraft(target)}>Save reminder draft</button>
+                <p className="muted">Saves one pending draft for review. It does not send a message.</p>
+              </div>
+            ))}
+            {summary.noResponse > 0 && !reminderTargets.some((target) => target.eventId === summary.event.id) ? (
+              <p className="notice warning">Family reminder targets are unavailable, so no draft action is offered.</p>
+            ) : null}
+            {summary.noResponse === 0 ? <p className="notice ok">Nothing needed. Every family has responded.</p> : null}
           </article>
         ))}
       </section>
@@ -6526,7 +6757,7 @@ function AdminCalendarControlRoom({
                 ))}
               </div>
               <p className="admin-inspector-boundary">Changes remain local to this review form until saved. Saving queues notification records for review and does not execute provider delivery.</p>
-              <a className="button" href="#schedule-change-form">Review impact and save</a>
+              <a className="text-link" href="#schedule-change-form">Go to schedule change form</a>
             </>
           ) : <p className="muted">No event is available for inspection.</p>}
         </aside>
@@ -6857,7 +7088,7 @@ export function ScheduleAlertsClient({
             disabled={isReadonly || isSchedulePending || !title.trim() || !locationName.trim() || !locationAddress.trim()}
             onClick={saveScheduleChange}
           >
-            {isReadonly ? "Read-only route" : "Queue schedule alert records"}
+            {isReadonly ? "Read-only route" : "Save schedule change (drafts family alerts for review)"}
           </button>
         </article>
 
@@ -6880,6 +7111,7 @@ export function ScheduleAlertsClient({
         </article>
       </section>
 
+      {mode === "operations" ? <>
       <section className="grid two">
         <article className="card stack">
           <div className="card-header">
@@ -7157,6 +7389,7 @@ export function ScheduleAlertsClient({
           <p className="muted">This prevents accidental blast records and makes schedule edits auditable before production delivery exists.</p>
         </article>
       </section>
+      </> : null}
     </div>
   );
 }
@@ -7398,19 +7631,26 @@ export function ParentReplayClient({
     });
   }
 
-  function advanceParentReplay(operation: "approve" | "publish") {
+  function confirmAndPublishParentReplay() {
     if (!activeReplayId) {
-      setMessage("Save a Parent Replay draft before approval or publish.");
+      setMessage("Save a Parent Replay draft before confirming publication.");
       return;
     }
     setMessage("");
     startReplayTransition(async () => {
-      const response = await authenticatedJsonFetch(`/api/coach/parent-replay/${operation}`, {
-        parentReplayId: activeReplayId
-      });
-      const result = await response.json().catch(() => null) as { ok?: boolean; message?: string } | null;
-      setMessage(result?.message ?? `Parent Replay ${operation} could not be completed.`);
-      if (result?.ok) setReplayCheckpoint(operation === "approve" ? "approved" : "published");
+      if (replayCheckpoint === "draft") {
+        const approvalResponse = await authenticatedJsonFetch("/api/coach/parent-replay/approve", { parentReplayId: activeReplayId });
+        const approvalResult = await approvalResponse.json().catch(() => null) as { ok?: boolean; message?: string } | null;
+        if (!approvalResult?.ok) {
+          setMessage(approvalResult?.message ?? "Parent Replay approval could not be completed.");
+          return;
+        }
+        setReplayCheckpoint("approved");
+      }
+      const publishResponse = await authenticatedJsonFetch("/api/coach/parent-replay/publish", { parentReplayId: activeReplayId });
+      const publishResult = await publishResponse.json().catch(() => null) as { ok?: boolean; message?: string } | null;
+      setMessage(publishResult?.message ?? "Parent Replay publication could not be completed.");
+      if (publishResult?.ok) setReplayCheckpoint("published");
     });
   }
 
@@ -7884,24 +8124,15 @@ export function ParentReplayClient({
         <ol>
           <li data-state="complete">Preview</li>
           <li data-state={replayCheckpoint === "draft" ? "current" : "complete"}>Edit and save draft</li>
-          <li data-state={replayCheckpoint === "approved" ? "current" : replayCheckpoint === "published" ? "complete" : undefined}>Approve</li>
-          <li data-state={replayCheckpoint === "published" ? "complete" : undefined}>Publish</li>
+          <li data-state={replayCheckpoint === "published" ? "complete" : "current"}>Confirm and publish</li>
         </ol>
         <div className="toolbar">
           <button
             type="button"
-            className="secondary"
-            disabled={!activeReplayId || isReplayPending || replayCheckpoint !== "draft"}
-            onClick={() => advanceParentReplay("approve")}
+            disabled={!activeReplayId || isReplayPending || replayCheckpoint === "published"}
+            onClick={confirmAndPublishParentReplay}
           >
-            Approve reviewed draft
-          </button>
-          <button
-            type="button"
-            disabled={!activeReplayId || isReplayPending || replayCheckpoint !== "approved"}
-            onClick={() => advanceParentReplay("publish")}
-          >
-            Publish in LeaguePilot
+            {isReplayPending ? "Confirming..." : "Confirm and publish"}
           </button>
         </div>
         <p>Publishing creates in-app notification drafts only. External delivery still requires separate approval and provider evidence.</p>
@@ -9457,8 +9688,8 @@ export function TeamChatClient({
                 />
               </label>
               <div className="toolbar">
-                <button disabled={isChatPending || !view.access.canAnnounce || !announcementBody.trim()}>{isChatPending ? "Saving..." : "Send Coach Note"}</button>
-                <span className="muted">Announcements appear visually distinct from normal Team Chat messages.</span>
+                <button disabled={isChatPending || !view.access.canAnnounce || !announcementBody.trim()}>{isChatPending ? "Posting..." : "Send coach note to team now"}</button>
+                <span className="muted">Posts immediately in Team Chat for this team. It does not send email, SMS, or push.</span>
               </div>
               {announcementNotice ? <p className="notice">{announcementNotice}</p> : null}
             </form>
@@ -9605,8 +9836,8 @@ export function TeamChatClient({
                 </label>
               ) : null}
               <div className="toolbar">
-                <button disabled={isChatPending || !view.access.canPost || !draftMessage.trim()}>{isChatPending ? "Saving..." : "Send Team Chat Message"}</button>
-                <span className="muted">{view.access.canPost ? "Visible to this team only." : "Posting is blocked for this viewer."}</span>
+                <button disabled={isChatPending || !view.access.canPost || !draftMessage.trim()}>{isChatPending ? "Posting..." : "Send to team now"}</button>
+                <span className="muted">{view.access.canPost ? "Posts immediately for this team. It does not send email, SMS, or push." : "Posting is blocked because this viewer does not have active team access."}</span>
               </div>
               {postNotice ? <p className="notice">{postNotice}</p> : null}
             </form>

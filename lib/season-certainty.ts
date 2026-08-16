@@ -18,6 +18,7 @@ import {
   type OperationalTruth,
   type TruthEvidence
 } from "@/lib/operational-truth";
+import { selectAdminQueueAttention } from "@/lib/navigation/shell-attention";
 
 export type SeasonCertaintyRole = "parent" | "coach" | "admin";
 export type SeasonCardState =
@@ -461,16 +462,14 @@ export function buildAdminSeasonCertaintyView(input: {
   const brokenFamilyAccess = input.state.players.filter((player) => !input.state.guardianLinks.some((link) => link.playerId === player.id && link.status === "active")).length;
   const lowRsvpTeams = rows.filter((row) => row.status !== "ready").length;
   const setupGaps = teams.filter((team) => !team.coachUserId).length;
-  const pendingQueues = [
-    queueAction("registrations", "Registrations", pendingRegistrations, "/admin/registrations"),
-    queueAction("family-access", "Family Access", brokenFamilyAccess, "/admin/family-access"),
-    queueAction("weather-fields", "Weather & Fields", weatherFieldReview, "/admin/safety-weather"),
-    queueAction("media-review", "Media Review", mediaReview, "/admin/media-review"),
-    queueAction("message-delivery", "Message Delivery Review", messageDeliveryReview, "/admin/message-delivery-review"),
-    queueAction("branding", "Branding issues", pendingSponsors, "/admin/branding"),
-    queueAction("reports-archive", "Reports/archive tasks", 0, "/admin/reports-archive"),
-    queueAction("security-audit", "Security & Audit", 0, "/admin/security-audit")
-  ].sort((left, right) => compareActionPriority(
+  const pendingQueues = selectAdminQueueAttention({
+    registrations: pendingRegistrations,
+    familyAccess: brokenFamilyAccess,
+    weatherFields: weatherFieldReview,
+    mediaReview,
+    messageDelivery: messageDeliveryReview,
+    branding: pendingSponsors
+  }).map((queue) => queueAction(queue)).sort((left, right) => compareActionPriority(
     { id: left.id, createdAt: input.now, priority: left.ranking! },
     { id: right.id, createdAt: input.now, priority: right.ranking! }
   ));
@@ -913,12 +912,13 @@ function buildAdminTeamStatusRow(state: AppState, team: Team, now: string): Admi
   };
 }
 
-function queueAction(id: string, label: string, count: number, href: string): SeasonActionItem {
+function queueAction(queue: ReturnType<typeof selectAdminQueueAttention>[number]): SeasonActionItem {
+  const { id, label, count, href, cta } = queue;
   return {
     id,
     label,
-    description: count ? `${count} ${label.toLowerCase()} item${count === 1 ? "" : "s"} need review.` : `${label} has no open review items.`,
-    cta: "Open",
+    description: count ? adminQueueDescription(queue) : `${label} is clear. No admin action is needed.`,
+    cta,
     href,
     priority: count > 0 ? "primary" : "secondary",
     permissionState: count > 0 ? "needs_attention" : "empty",
@@ -929,6 +929,21 @@ function queueAction(id: string, label: string, count: number, href: string): Se
       "admin"
     )
   };
+}
+
+function adminQueueDescription(queue: ReturnType<typeof selectAdminQueueAttention>[number]) {
+  const nouns: Record<string, [string, string]> = {
+    registrations: ["registration", "registrations"],
+    "family-access": ["family access record", "family access records"],
+    "weather-fields": ["weather or field draft", "weather or field drafts"],
+    "media-review": ["media item", "media items"],
+    "message-delivery": ["message draft", "message drafts"],
+    branding: ["branding item", "branding items"],
+    "reports-archive": ["report or archive task", "report or archive tasks"],
+    "security-audit": ["security review", "security reviews"]
+  };
+  const noun = nouns[queue.id]?.[queue.count === 1 ? 0 : 1] ?? (queue.count === 1 ? "item" : "items");
+  return `${queue.count} ${noun} ${queue.count === 1 ? "awaits" : "await"} review. League admin acts next.`;
 }
 
 function evidenceLane(

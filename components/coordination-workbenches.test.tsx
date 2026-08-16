@@ -41,7 +41,7 @@ describe("FamilyFlightPlanClient", () => {
 });
 
 describe("AdminDeliveryReviewClient", () => {
-  it("shows an indeterminate Pingram request as reconciliation required", () => {
+  it("opens on pending approvals and keeps completed evidence behind filters", () => {
     const receipt: NotificationReceipt = {
       notificationId: "notification-1",
       organizationId: "organization-1",
@@ -73,13 +73,51 @@ describe("AdminDeliveryReviewClient", () => {
       />
     );
 
+    expect(html).toContain("All clear. No delivery drafts await approval.");
+    expect(html).toContain("Awaiting approval");
+    expect(html).not.toContain("Transport:");
+    expect(html).not.toContain("Pingram");
+    expect(html).toContain(">reconcile<");
+  });
+
+  it("keeps the reconciliation-required disclaimer visible for a pending, indeterminate delivery attempt", () => {
+    const receipt: NotificationReceipt = {
+      notificationId: "notification-2",
+      organizationId: "organization-1",
+      teamId: "team-1",
+      recipientUserId: "parent-1",
+      title: "Field update",
+      body: "Practice moved to Field 2.",
+      channel: "sms",
+      notificationType: "schedule_changed",
+      notificationStatus: "pending",
+      providerApprovalStatus: "pending",
+      createdAt: "2026-07-20T10:00:00.000Z",
+      evidence: {
+        attemptId: "attempt-2",
+        provider: "sms",
+        transportProvider: "pingram",
+        attemptStatus: "failed",
+        requestOutcome: "indeterminate",
+        approvedAt: "2026-07-20T10:00:30.000Z",
+        reconciliationRequiredAt: "2026-07-20T10:01:30.000Z",
+        errorMessage: "The request timed out after submission."
+      }
+    };
+
+    const html = renderToStaticMarkup(
+      <AdminDeliveryReviewClient
+        initialReceipts={[receipt]}
+        message="Delivery evidence loaded."
+      />
+    );
+
+    // Default filter is "pending" (providerApprovalStatus-scoped), so an
+    // indeterminate, unresolved attempt must still surface its disclaimer here.
     expect(html).toContain("Transport:");
     expect(html).toContain("Pingram");
-    expect(html).toContain("Request outcome:");
     expect(html).toContain("Reconciliation required");
     expect(html).toContain("This is not proof of delivery");
     expect(html).toContain("not proved; reconcile first");
-    expect(html).toContain(">reconcile<");
-    expect(html).not.toContain("badge danger\">failed");
   });
 });

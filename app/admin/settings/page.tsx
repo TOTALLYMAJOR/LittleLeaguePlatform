@@ -1,11 +1,11 @@
-import { AdminOperationsSurface } from "../_surfaces";
+import { redirect } from "next/navigation";
 
 export const dynamic = "force-dynamic";
 
 export default async function AdminSettingsPage() {
-  return <AdminOperationsSurface />;
+  redirect("/admin/operations");
 }
 
 export const metadata = {
-  title: "League Settings"
+  title: "Operations"
 };

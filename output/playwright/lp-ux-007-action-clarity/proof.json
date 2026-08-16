@@ -1,0 +1,52 @@
+{
+  "baseUrl": "http://127.0.0.1:3001",
+  "capturedAt": "2026-08-03T23:24:40.910Z",
+  "proofs": [
+    {
+      "role": "coach",
+      "path": "/coach",
+      "signedIn": true,
+      "matchedText": "in your queue",
+      "firstViewportText": "Skip to main content Coach tools: Home Dark Signed in All caught up Coach · Little League HQ · Tiny Tigers CONTEXT DETAILS COACH ANNOUNCEMENTS Weekly update for Tiny Tigers Weekly update for Tiny Tigers: QA hosted weekly update proof qa-weekly-1784274940693. Please review RSVP gaps, snack coverage, and field arrival details. This proof must create pending team broadcast drafts only; no provider send should occur. Weekly update for Tiny Tigers: QA hosted weekly update proof qa-weekly-1784274500263. Please review RSVP gaps, snack coverage, and field arrival details. This proof must create pending team broadcast drafts only; no provider send should occur. Weekly update for Tiny Tigers: QA hosted weekly update proof qa-weekly-1783004563731. Please review RSVP gaps, snack coverage, and field arrival details. This proof must create pending team broadcast drafts only; no provider send should occur. GAME-DAY RADAR Tiny Tigers Your 15-minute sideline check for people, place, and plan. 3 tasks in your queue RSVP 2/2 WEATHER Light rain watch FIELD Confirmed PEOPLE PLACE PLAN NEXT EVENT Tiny Tigers vs Rookie Rockets 3 tasks open COACHES 1 assigned FAMILY HELP 2 open WEATHER DRAFTS 1 review ACTION QUEUE 3 tasks to do Each numbered row is one task. Reminder actions save a draft only; they do not send a message. 1. PEOPLE QA Parent Jordan: 2 RSVP responses missing Tiny Tigers Practice | Avery P., Mason T. Save reminder draft 2. PLAN Snack slot: Practice snack Tiny Tigers Practice Review snack coverage 3. PLAN Volunteer role: Field setup Tiny Tigers vs Rookie Rockets Review volunteer coverage ✓ People: Nothing needed PLACE 1 weather draft is available as decision evidence Open resolution room More coach context Attendance, recent changes, fields, drafts, and practice recaps. 3 review Team details are current and scoped to your approved coach assignment. SIDELINE COMMAND BOARD Field Mode Tiny Tigers vs Rookie Rockets at 10:00 AM Open Field Mode Coach readiness details Assigned teams, setup checks, attendance, weather, and assistive suggestions. 3 review Weather policy details Thresholds, field closure drafts, escalation rules, and provider retry proof. 1 draft(s) Family response details RSVP reliability patterns and no-response reminder drafts. 1 queued Drafts and team help Weekly update draft, practice recap, snack, and volunteer controls. drafts Offline sync Nothing waiting to sync. Counts only. Message contents and player details are never shown here. Today RSVPs Replay Messages Team Route ready",
+      "browserErrors": [],
+      "browserWarnings": [],
+      "viewports": [
+        {
+          "name": "mobile-375",
+          "width": 375,
+          "height": 812,
+          "clientWidth": 375,
+          "scrollWidth": 375
+        },
+        {
+          "name": "mobile-390",
+          "width": 390,
+          "height": 844,
+          "clientWidth": 390,
+          "scrollWidth": 390
+        },
+        {
+          "name": "tablet-768",
+          "width": 768,
+          "height": 1024,
+          "clientWidth": 768,
+          "scrollWidth": 768
+        },
+        {
+          "name": "laptop-1024",
+          "width": 1024,
+          "height": 900,
+          "clientWidth": 1024,
+          "scrollWidth": 1024
+        },
+        {
+          "name": "desktop-1440",
+          "width": 1440,
+          "height": 1100,
+          "clientWidth": 1440,
+          "scrollWidth": 1440
+        }
+      ]
+    }
+  ]
+}

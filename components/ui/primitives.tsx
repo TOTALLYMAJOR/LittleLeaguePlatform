@@ -291,8 +291,9 @@ export function ResponsiveTable({
 }
 
 export function SortableHeader({ label, sort = "none" }: { label: string; sort?: "ascending" | "descending" | "none" }) {
+  const sortLabel = sort === "none" ? "not sorted" : `sorted ${sort}`;
   return (
-    <button type="button" className="th-sort" aria-sort={sort}>
+    <button type="button" className="th-sort" data-sort={sort} aria-label={`${label}, ${sortLabel}`}>
       {label}
       <span aria-hidden="true">{sort === "descending" ? "v" : "^"}</span>
     </button>

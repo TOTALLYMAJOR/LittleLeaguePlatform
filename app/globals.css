@@ -30,6 +30,7 @@
    §1  DESIGN TOKENS
 ───────────────────────────────────────────────────────────────────────────── */
 :root {
+  color-scheme: light;
   /* — Neutrals — */
   --bg:             #fdf8f1;
   --surface:        #ffffff;
@@ -394,6 +395,11 @@ code, .mono {
   display: flex; align-items: center; gap: var(--sp-2);
   flex-wrap: wrap; font-size: var(--text-sm);
   color: var(--muted); list-style: none; margin: 0; padding: 0;
+}
+.breadcrumb a {
+  display: inline-flex;
+  align-items: center;
+  min-height: 32px;
 }
 .breadcrumb li + li::before { content: "/"; color: var(--line); margin-right: var(--sp-2); }
 .breadcrumb a:hover { color: var(--text); text-decoration: underline; }
@@ -3356,16 +3362,31 @@ button.month-calendar-day:hover {
   min-height: 48px;
 }
 .season-action-row {
-  align-items: center;
   background: color-mix(in srgb, var(--surface) 92%, transparent);
   border: 1px solid color-mix(in srgb, var(--certainty-accent) 14%, var(--line));
   border-radius: var(--radius-sm);
   color: var(--text);
+  display: block;
+  min-height: 54px;
+  padding: 10px var(--sp-3);
+}
+.season-action-row-link {
+  align-items: center;
+  color: inherit;
   display: grid;
   gap: var(--sp-3);
   grid-template-columns: minmax(0, 1fr) auto;
-  min-height: 54px;
-  padding: 10px var(--sp-3);
+}
+.season-priority-evidence {
+  border-top: 1px solid var(--line);
+  margin-top: 8px;
+  padding-top: 8px;
+}
+.season-priority-evidence summary {
+  color: var(--muted);
+  cursor: pointer;
+  font-size: var(--text-xs);
+  font-weight: 700;
 }
 .season-action-row strong,
 .season-action-row small,
@@ -6310,8 +6331,10 @@ button.month-calendar-day:hover {
 /* ─────────────────────────────────────────────────────────────────────────────
    §29  DARK MODE
 ───────────────────────────────────────────────────────────────────────────── */
-@media (prefers-color-scheme: dark) {
-  :root {
+html[data-theme="dark"] {
+  color-scheme: dark;
+
+  & {
     --bg:             #111821;
     --surface:        #19232f;
     --surface-soft:   #151e28;
@@ -6554,6 +6577,7 @@ button.month-calendar-day:hover {
     box-shadow: 0 4px 16px rgba(23, 32, 51, 0.08);
     flex-direction: column; gap: 0;
   }
+  .sidebar-video-backdrop video { display: none; }
 
   .brand { margin-bottom: var(--sp-2); }
   .brand-mark { width: 36px; height: 36px; }
@@ -6706,6 +6730,8 @@ button.month-calendar-day:hover {
   }
   .season-action-row {
     align-items: start;
+  }
+  .season-action-row-link {
     grid-template-columns: 1fr;
   }
   .season-action-row em {
@@ -7950,12 +7976,43 @@ button.month-calendar-day:hover {
 }
 .sidebar-video-backdrop span {
   background:
-    linear-gradient(180deg, rgba(253, 248, 241, .82), rgba(253, 248, 241, .9) 48%, rgba(253, 248, 241, .94)),
-    linear-gradient(90deg, rgba(31, 58, 99, .06), transparent 56%);
+    linear-gradient(
+      180deg,
+      color-mix(in srgb, var(--bg) 82%, transparent),
+      color-mix(in srgb, var(--bg) 90%, transparent) 48%,
+      color-mix(in srgb, var(--bg) 94%, transparent)
+    ),
+    linear-gradient(90deg, color-mix(in srgb, var(--accent) 6%, transparent), transparent 56%);
 }
 .sidebar-topline { display: flex; align-items: center; justify-content: space-between; gap: var(--sp-2); margin-bottom: var(--sp-2); }
 .sidebar-topline .brand { margin-bottom: 0; min-width: 0; }
 .sidebar-collapse { flex: 0 0 auto; }
+
+.theme-toggle {
+  align-items: center;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-pill);
+  color: var(--text);
+  display: inline-flex;
+  flex: 0 0 auto;
+  gap: 7px;
+  justify-content: center;
+  min-height: 44px;
+  padding: 8px 12px;
+  white-space: nowrap;
+}
+.theme-toggle:hover {
+  background: var(--surface-strong);
+  border-color: color-mix(in srgb, var(--accent) 48%, var(--line));
+}
+.theme-toggle:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 3px;
+}
+.theme-toggle svg { color: var(--accent-strong); }
+.theme-toggle span { font-size: var(--text-xs); font-weight: 850; }
+.theme-toggle-compact { min-width: 44px; padding-inline: 10px; }
 
 .command-launch {
   align-items: center;
@@ -8055,21 +8112,25 @@ button.month-calendar-day:hover {
   background: color-mix(in srgb, var(--surface) 94%, var(--page));
   border: 1px solid var(--line);
   border-radius: var(--radius-lg);
-  display: grid;
-  gap: 1px;
-  grid-template-columns: repeat(5, minmax(0, 1fr));
   margin: calc(var(--sp-5) * -0.35) 0 var(--sp-5);
   overflow: hidden;
 }
 
-.verified-context-bar > span {
+.verified-context-bar > summary { display: none; }
+.verified-context-details {
+  display: grid;
+  gap: 1px;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+}
+
+.verified-context-details > span {
   display: grid;
   gap: 2px;
   min-width: 0;
   padding: 10px 12px;
 }
 
-.verified-context-bar > span + span {
+.verified-context-details > span + span {
   border-left: 1px solid var(--line);
 }
 
@@ -8151,7 +8212,7 @@ button.month-calendar-day:hover {
   height: 18px;
   padding: 0 5px;
   border-radius: 999px;
-  background: #d6472f;
+  background: #cc402a;
   color: #fff;
   font-size: 0.66rem;
   font-weight: 900;
@@ -8164,6 +8225,11 @@ button.month-calendar-day:hover {
   position: absolute;
   top: 3px;
   right: max(6px, calc(50% - 24px));
+}
+.parent-weekly-nav-attention,
+.nav-attention-badge,
+.mobile-tab-attention {
+  white-space: nowrap;
 }
 .mobile-tabbar a[data-active="true"] .mobile-tab-icon svg {
   stroke-width: 2.6;
@@ -8737,6 +8803,8 @@ caption {
   display: inline-flex;
   align-items: center;
   gap: 11px;
+  min-width: 44px;
+  min-height: 44px;
   color: var(--text);
   text-decoration: none;
 }
@@ -8806,10 +8874,78 @@ caption {
   color: var(--accent-strong);
 }
 
-@media (prefers-color-scheme: dark) {
-  .public-brand-mark {
+:root[data-theme="dark"] .public-brand-mark {
     color: #111821;
-  }
+}
+
+/* Family Mission Control predates manual theming and carried literal light
+   surfaces. Keep its hierarchy while binding it to the selected root theme. */
+:root[data-theme="dark"] [data-surface-family="family"] :is(
+  .family-mission-control,
+  .family-week,
+  .mission-rail-card
+) {
+  border-color: var(--line);
+  background: var(--surface);
+  color: var(--text);
+}
+
+:root[data-theme="dark"] [data-surface-family="family"] .family-mission-control :is(article, .mission-rail-card) {
+  border-color: var(--line);
+  background: var(--surface);
+  color: var(--text);
+}
+
+:root[data-theme="dark"] [data-surface-family="family"] :is(
+  .mission-section-icon,
+  .mission-quick-link-icon
+) {
+  background: var(--action-soft);
+  color: var(--action-strong);
+}
+
+:root[data-theme="dark"] [data-surface-family="family"] :is(
+  .mission-section-icon-green,
+  .mission-live-state,
+  .mission-week-status
+) {
+  background: var(--ok-soft);
+  color: var(--ok);
+}
+
+:root[data-theme="dark"] .field-mode:not(.field-mode-active) {
+  border-color: var(--line);
+  background: var(--surface);
+  color: var(--text);
+}
+
+:root[data-theme="dark"] .verified-context-bar .state-current {
+  background: var(--ok-soft);
+}
+
+:root[data-theme="dark"] .verified-context-bar .state-readonly {
+  background: var(--warning-soft);
+}
+
+:root[data-theme="dark"] .mobile-tabbar a {
+  color: var(--muted);
+}
+
+:root[data-theme="dark"] .season-parent-home { --certainty-accent: #78dfa6; }
+:root[data-theme="dark"] .season-coach-home { --certainty-accent: #9fc0e8; }
+:root[data-theme="dark"] .season-admin-home { --certainty-accent: #7dd3c7; }
+
+button.theme-toggle,
+button.theme-toggle:hover:not(:disabled) {
+  border-color: var(--line);
+  background: var(--surface);
+  color: var(--text);
+  transform: none;
+}
+
+button.theme-toggle:hover:not(:disabled) {
+  background: var(--surface-strong);
+  border-color: color-mix(in srgb, var(--accent) 48%, var(--line));
 }
 
 .public-main {
@@ -10891,15 +11027,18 @@ caption {
 }
 
 .season-admin-context {
-  display: flex;
-  flex-wrap: wrap;
   overflow: hidden;
   border: 1px solid var(--line);
   border-radius: var(--radius-md);
   background: var(--surface);
 }
+.season-admin-context > summary { display: none; }
+.season-admin-context-details {
+  display: flex;
+  flex-wrap: wrap;
+}
 
-.season-admin-context span {
+.season-admin-context-details span {
   flex: 1 1 180px;
   min-width: 0;
   padding: 13px 16px;
@@ -10907,7 +11046,7 @@ caption {
   font-size: 0.76rem;
 }
 
-.season-admin-context span + span {
+.season-admin-context-details span + span {
   border-left: 1px solid var(--line);
 }
 
@@ -11278,24 +11417,50 @@ caption {
     flex: 0 0 auto;
   }
 
-  .verified-context-bar {
+  .verified-context-bar > summary {
+    align-items: center;
+    display: flex;
+    gap: 8px;
+    justify-content: space-between;
+    list-style-position: inside;
+    min-height: 40px;
+    padding: 8px 10px;
+  }
+
+  .verified-context-bar > summary strong {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    text-transform: capitalize;
+    white-space: nowrap;
+  }
+
+  .verified-context-details {
+    display: none;
     grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .verified-context-bar[open] .verified-context-details {
+    display: grid;
+  }
+
+  .verified-context-bar {
     margin-top: -8px;
   }
 
-  .verified-context-bar > span + span {
+  .verified-context-details > span + span {
     border-left: 0;
   }
 
-  .verified-context-bar > span:nth-child(even) {
+  .verified-context-details > span:nth-child(even) {
     border-left: 1px solid var(--line);
   }
 
-  .verified-context-bar > span:nth-child(n + 3) {
+  .verified-context-details > span:nth-child(n + 3) {
     border-top: 1px solid var(--line);
   }
 
-  .verified-context-bar > span:last-child:nth-child(odd) {
+  .verified-context-details > span:last-child:nth-child(odd) {
     grid-column: 1 / -1;
   }
 
@@ -11522,11 +11687,34 @@ caption {
     border-left: 0;
   }
 
-  .season-admin-context span {
+  .season-admin-home > .season-admin-context { order: -3; }
+  .season-admin-home > .pending-actions-panel { order: -2; }
+  .season-admin-home > .league-health-card { order: -1; }
+
+  .season-admin-context > summary {
+    align-items: center;
+    display: flex;
+    gap: 8px;
+    justify-content: space-between;
+    min-height: 40px;
+    padding: 8px 10px;
+  }
+
+  .season-admin-context > summary strong {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .season-admin-context-details { display: none; }
+  .season-admin-context[open] .season-admin-context-details { display: flex; }
+
+  .season-admin-context-details span {
     flex-basis: 100%;
   }
 
-  .season-admin-context span + span {
+  .season-admin-context-details span + span {
     border-top: 1px solid var(--line);
     border-left: 0;
   }
@@ -13411,6 +13599,37 @@ caption {
     padding-inline: var(--sp-4);
   }
 
+  .coach-announcement-ticker {
+    grid-template-columns: auto minmax(0, 1fr);
+    min-height: 44px;
+  }
+
+  .coach-announcement-label {
+    border-bottom: 0;
+    border-right: 1px solid #36506d;
+    grid-column: auto;
+    min-height: 44px;
+    padding-inline: 10px;
+  }
+
+  .coach-announcement-track { animation: none; transform: none; }
+  .coach-announcement-group:last-child,
+  .coach-announcement-item:not(:first-child),
+  .coach-announcement-toggle { display: none; }
+  .coach-announcement-item:first-child {
+    display: block;
+    overflow: hidden;
+    padding-inline: 10px;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .coach-announcement-item:first-child::after,
+  .coach-announcement-item:first-child span,
+  .coach-announcement-item:first-child small { display: none; }
+
+  .coach-radar-layout { display: flex; flex-direction: column; }
+  .coach-radar-actions { order: -1; }
+
   .parent-season-timeline,
   .parent-season-next,
   .coach-radar-board,
@@ -13542,13 +13761,18 @@ caption {
   }
 }
 
-/* Compact public entry gateway: bright, high contrast, three choices, no desktop scroll. */
-.public-app-shell-gateway {
+/* Compact public entry gateway: three choices, one viewport, and a palette that
+   follows the root Light/Dark selection even outside the signed-out shell. */
+.public-app-shell-gateway,
+.landing-gateway {
   --gateway-ink: #17324d;
   --gateway-paper: #fffaf4;
   --gateway-muted: #52677b;
   --gateway-line: #d9d2c8;
   --gateway-action: #f36c2d;
+}
+
+.public-app-shell-gateway {
   background: var(--gateway-paper);
 }
 
@@ -13618,9 +13842,9 @@ caption {
   z-index: 2;
   display: grid;
   align-content: center;
-  gap: clamp(14px, 2vw, 22px);
+  gap: clamp(10px, 1.4vw, 16px);
   max-width: 820px;
-  padding: clamp(44px, 7vw, 100px) clamp(24px, 6vw, 96px) clamp(150px, 19vh, 220px);
+  padding: clamp(32px, 5vh, 64px) clamp(24px, 6vw, 96px) clamp(24px, 4vh, 48px);
 }
 
 .landing-gateway-kicker {
@@ -13764,7 +13988,7 @@ caption {
 
 .landing-gateway-action.is-primary span,
 .landing-gateway-action.is-primary small {
-  color: #263b4d;
+  color: #142f47;
 }
 
 .landing-gateway-action.is-primary:hover,
@@ -13853,6 +14077,114 @@ caption {
   font-size: 0.78rem;
 }
 
+:root[data-theme="dark"] :is(.public-app-shell-gateway, .landing-gateway) {
+  --gateway-ink: var(--text);
+  --gateway-paper: var(--bg);
+  --gateway-muted: var(--muted);
+  --gateway-line: var(--line);
+  --gateway-action: #f36c2d;
+}
+
+:root[data-theme="dark"] .public-header-gateway {
+  border-color: var(--line);
+  background: color-mix(in srgb, var(--bg) 96%, transparent);
+}
+
+:root[data-theme="dark"] .public-header-gateway .public-brand-mark {
+  background: #1f3a63;
+  color: #fff;
+}
+
+:root[data-theme="dark"] .public-header-gateway .public-nav a:hover {
+  background: var(--surface-strong);
+  color: var(--text);
+}
+
+:root[data-theme="dark"] .public-header-gateway .public-nav .button.secondary,
+:root[data-theme="dark"] .public-header-gateway .public-nav .button.secondary:hover {
+  border-color: var(--line);
+  background: var(--surface-strong);
+  color: var(--text);
+}
+
+:root[data-theme="dark"] .landing-gateway {
+  background:
+    radial-gradient(circle at 13% 10%, color-mix(in srgb, var(--surface) 72%, transparent), transparent 42%),
+    var(--gateway-paper);
+}
+
+:root[data-theme="dark"] :is(
+  .landing-gateway-kicker,
+  .landing-gateway-action span
+) {
+  color: var(--action-strong);
+}
+
+:root[data-theme="dark"] .landing-gateway-copy h1 {
+  color: var(--text);
+}
+
+:root[data-theme="dark"] .landing-gateway-summary {
+  color: var(--muted);
+}
+
+:root[data-theme="dark"] .landing-gateway-media::before {
+  background:
+    linear-gradient(90deg, var(--gateway-paper) 0%, color-mix(in srgb, var(--gateway-paper) 68%, transparent) 22%, transparent 58%),
+    linear-gradient(0deg, color-mix(in srgb, var(--gateway-paper) 48%, transparent) 0%, transparent 38%);
+}
+
+:root[data-theme="dark"] .landing-gateway-media::after {
+  background: rgb(17 24 33 / 16%);
+}
+
+:root[data-theme="dark"] .landing-gateway-actions {
+  border-color: var(--line);
+  background: color-mix(in srgb, var(--surface) 92%, transparent);
+  box-shadow: var(--shadow-lg);
+}
+
+:root[data-theme="dark"] .landing-gateway-action:hover,
+:root[data-theme="dark"] .landing-gateway-action:focus-visible {
+  background: var(--surface-strong);
+  color: var(--text);
+}
+
+:root[data-theme="dark"] .landing-gateway-action.is-primary {
+  color: #142f47;
+}
+
+:root[data-theme="dark"] .public-sponsor-page {
+  background:
+    radial-gradient(circle at 88% 18%, rgb(255 122 47 / 12%), transparent 32%),
+    var(--bg);
+}
+
+:root[data-theme="dark"] :is(
+  .public-sponsor-intro h1,
+  .public-sponsor-boundary strong
+) {
+  color: var(--text);
+}
+
+:root[data-theme="dark"] :is(
+  .public-sponsor-intro > p:not(.public-sponsor-kicker),
+  .public-sponsor-boundary p,
+  .public-sponsor-boundary small
+) {
+  color: var(--muted);
+}
+
+:root[data-theme="dark"] .public-sponsor-kicker {
+  color: var(--action-strong);
+}
+
+:root[data-theme="dark"] .public-sponsor-boundary {
+  border-color: var(--line);
+  background: var(--surface);
+  box-shadow: var(--shadow);
+}
+
 @media (max-width: 760px) {
   .landing-gateway,
   .landing-gateway-hero {
@@ -13890,6 +14222,12 @@ caption {
     background:
       linear-gradient(180deg, var(--gateway-paper) 0%, rgb(255 250 244 / 90%) 40%, rgb(255 250 244 / 34%) 60%, var(--gateway-paper) 86%),
       linear-gradient(90deg, rgb(255 250 244 / 42%), transparent);
+  }
+
+  :root[data-theme="dark"] .landing-gateway-media::before {
+    background:
+      linear-gradient(180deg, var(--gateway-paper) 0%, color-mix(in srgb, var(--gateway-paper) 90%, transparent) 40%, color-mix(in srgb, var(--gateway-paper) 34%, transparent) 60%, var(--gateway-paper) 86%),
+      linear-gradient(90deg, color-mix(in srgb, var(--gateway-paper) 42%, transparent), transparent);
   }
 
   .landing-gateway-actions {
@@ -13963,5 +14301,896 @@ caption {
   .landing-gateway-action:hover,
   .landing-gateway-action:focus-visible {
     transform: none;
+  }
+}
+
+/* Offline sync footer: base styles are shell-independent because AppShell renders it on
+   every signed-in route; the family shell only overrides width/centering. */
+.offline-sync-status {
+  display: grid;
+  gap: var(--sp-1);
+  margin-top: var(--sp-6);
+  padding: var(--sp-3) var(--sp-4);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--surface-soft);
+  color: var(--text);
+}
+
+.offline-sync-status span,
+.offline-sync-status small {
+  color: var(--muted);
+  line-height: 1.45;
+}
+
+.offline-sync-status ul {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--sp-2) var(--sp-4);
+  margin: 0;
+  padding-left: var(--sp-5);
+}
+
+/* ── Landing intro overlay (LP-UX-007, reworked LP-UX-012): eight sports fade in cheery
+   and small → weather turns and a ticker announces the postponement → the app resolves
+   it (phones, truck, board) → a comic-book mascot flip → organized color. One continuous
+   pass, no hard scene cuts. Pure CSS timeline; transform/opacity/filter only, so it stays
+   compositor-only end to end. */
+.landing-intro {
+  position: fixed;
+  inset: 0;
+  z-index: 1300;
+  display: grid;
+  /* One row: the stage. Skip and captions are positioned against this fixed layer.
+     padding-top clears the live public header so the ticker reads as a banner
+     sitting under it rather than covering the site nav. */
+  grid-template-rows: 1fr;
+  padding-top: 72px;
+  overflow: hidden;
+  /* Clicks pass straight through to the live page, so Sign in is reachable from
+     the first frame. Only the overlay's own controls re-enable pointer events. */
+  pointer-events: none;
+  /* Transparent: the animation plays directly over the live landing page rather
+     than behind its own panel, so the intro reads as one continuous transition
+     that dissolves into the page instead of cutting to it. */
+  background: transparent;
+  animation: li-overlay-in 0.4s ease, li-overlay-out 0.6s ease 19.4s forwards;
+}
+
+.landing-intro.is-leaving {
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.45s ease;
+  animation: none;
+}
+
+/* Floating control: solid pill so it stays legible over whatever part of the live
+   page it lands on (cream, photo, or the orange Account card). */
+.landing-intro-skip {
+  position: absolute;
+  pointer-events: auto;
+  right: clamp(14px, 3vw, 28px);
+  /* Same baseline as the captions, so it sits in the clear band above the
+     action cards rather than on top of them and the page's Replay link. */
+  bottom: clamp(150px, 20vh, 210px);
+  z-index: 5;
+  min-height: 36px;
+  padding: 7px 16px;
+  border: 0;
+  border-radius: 999px;
+  background: rgb(16 21 28 / 88%);
+  color: #f4f7fa;
+  font-size: 0.78rem;
+  font-weight: 700;
+  cursor: pointer;
+  backdrop-filter: blur(6px);
+}
+
+.landing-intro-skip:hover,
+.landing-intro-skip:focus-visible {
+  background: #10151c;
+  color: #fff;
+}
+
+/* Positioned ancestor for the ticker and mascot overlays, so their inset/percentage
+   offsets resolve against the scene row only, not the full fixed-overlay viewport. */
+.li-stage {
+  position: relative;
+  display: grid;
+  place-items: center;
+}
+
+.landing-intro-scene {
+  width: min(96vw, 1180px);
+  max-height: min(66vh, 660px);
+}
+
+.li-world {
+  filter: grayscale(1) saturate(0.85);
+  animation: li-world-color 2.8s ease 16.4s forwards;
+}
+
+.li-joy-badge {
+  opacity: 0;
+  filter: drop-shadow(0 6px 10px rgb(20 30 40 / 22%));
+  animation: li-joy-pop 1.6s ease both;
+}
+
+.li-joy-badge-1 { animation-delay: 0.4s; }
+.li-joy-badge-2 { animation-delay: 1s; }
+.li-joy-badge-3 { animation-delay: 1.6s; }
+.li-joy-badge-4 { animation-delay: 2.2s; }
+.li-joy-badge-5 { animation-delay: 2.8s; }
+.li-joy-badge-6 { animation-delay: 3.4s; }
+.li-joy-badge-7 { animation-delay: 4s; }
+.li-joy-badge-8 { animation-delay: 4.6s; }
+
+.li-adult-1,
+.li-adult-2,
+.li-adult-3,
+.li-adult-4,
+.li-board,
+.li-phones {
+  opacity: 0;
+  animation: li-rise 0.9s ease both;
+}
+
+.li-adult-1 { animation-delay: 11.2s; }
+.li-adult-2 { animation-delay: 11.5s; }
+.li-adult-3 { animation-delay: 11.8s; }
+.li-adult-4 { animation-delay: 12.1s; }
+.li-phones { animation-delay: 12.2s; }
+.li-board { animation-delay: 13.4s; animation-duration: 1s; }
+
+.li-board-row {
+  opacity: 0;
+  animation: li-rise 0.65s ease both;
+}
+
+.li-board-row-1 { animation-delay: 13.8s; }
+.li-board-row-2 { animation-delay: 14s; }
+.li-board-row-3 { animation-delay: 14.2s; }
+.li-board-row-4 { animation-delay: 14.4s; }
+.li-board-row-5 { animation-delay: 14.6s; }
+
+.li-truck-roll {
+  opacity: 0;
+  animation: li-truck-in 2s cubic-bezier(0.2, 0.8, 0.3, 1) 11.5s both;
+}
+
+.li-phones rect {
+  fill: #b9c0c6;
+  animation:
+    li-phone-on 0.6s ease 12.5s forwards,
+    li-phone-pulse 2s ease-in-out 13.2s 3 alternate;
+}
+
+.li-role {
+  fill: #4a5561;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.li-board-title { fill: #fff; font-size: 19px; font-weight: 750; }
+.li-board-team { fill: #22303d; font-size: 16px; font-weight: 750; }
+.li-board-line { fill: #5a6470; font-size: 12px; }
+
+/* Sits above the landing page's action cards, which are anchored to the bottom
+   of the hero — hence the generous bottom offset rather than a flush one. */
+.landing-intro-captions {
+  position: absolute;
+  right: 0;
+  bottom: clamp(150px, 20vh, 210px);
+  left: 0;
+  z-index: 4;
+  padding: 0 clamp(18px, 5vw, 48px);
+  pointer-events: none;
+}
+
+.li-cap {
+  position: absolute;
+  right: 0;
+  /* Anchored at the container's baseline so a two-line caption grows upward,
+     into empty space, instead of downward onto the action cards. */
+  bottom: 0;
+  left: 0;
+  width: fit-content;
+  max-width: min(90%, 44rem);
+  margin: 0 auto;
+  padding: 10px 22px;
+  border-radius: 999px;
+  background: rgb(16 21 28 / 82%);
+  color: #f4f7fa;
+  font-size: clamp(0.95rem, 2.1vw, 1.3rem);
+  font-weight: 650;
+  letter-spacing: -0.01em;
+  text-align: center;
+  text-wrap: balance;
+  opacity: 0;
+  backdrop-filter: blur(6px);
+}
+
+.li-cap-1 { animation: li-cap 5.5s ease 0.4s both; }
+.li-cap-2 { animation: li-cap 4.2s ease 5.4s both; }
+.li-cap-3 { animation: li-cap 3.6s ease 12.8s both; }
+
+@keyframes li-overlay-in { from { opacity: 0; } to { opacity: 1; } }
+@keyframes li-overlay-out { to { opacity: 0; pointer-events: none; } }
+@keyframes li-world-color { to { filter: grayscale(0) saturate(1); } }
+
+@keyframes li-joy-pop {
+  0% { opacity: 0; transform: translateY(10px) scale(0.86); }
+  35% { opacity: 1; transform: translateY(0) scale(1); }
+  75% { opacity: 1; transform: translateY(0) scale(1); }
+  100% { opacity: 0; transform: translateY(-6px) scale(0.94); }
+}
+
+@keyframes li-rise {
+  from { opacity: 0; transform: translateY(14px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes li-truck-in {
+  from { opacity: 0; transform: translateX(240px); }
+  to { opacity: 1; transform: translateX(0); }
+}
+
+@keyframes li-phone-on {
+  to { fill: #4da3ff; filter: drop-shadow(0 0 7px rgb(77 163 255 / 80%)); }
+}
+
+@keyframes li-phone-pulse {
+  from { opacity: 1; }
+  to { opacity: 0.78; }
+}
+
+@keyframes li-cap {
+  0% { opacity: 0; transform: translateY(8px); }
+  14% { opacity: 1; transform: translateY(0); }
+  80% { opacity: 1; }
+  100% { opacity: 0; }
+}
+
+/* The Skip pill and captions carry their own dark surfaces, so they need no
+   per-theme overrides — they read against a cream or a dark page equally. */
+
+@media (max-width: 640px) {
+  .landing-intro {
+    padding-top: 64px;
+  }
+
+  .landing-intro-scene {
+    max-height: 54vh;
+  }
+
+  /* Phone layout has no clear mid-page band, so the caption and Skip stack at the
+     bottom instead — both carry their own surfaces, so they stay legible there. */
+  .landing-intro-captions {
+    bottom: 76px;
+    padding-inline: 14px;
+  }
+
+  .li-cap {
+    max-width: 100%;
+    padding: 8px 16px;
+    font-size: 0.88rem;
+  }
+
+  .landing-intro-skip {
+    right: 14px;
+    bottom: 18px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .landing-intro {
+    display: none;
+  }
+}
+
+/* Permanent dedication line on the landing hero, independent of the intro overlay. */
+.landing-gateway-dedication {
+  margin: 0;
+  padding-left: 10px;
+  border-left: 3px solid var(--gateway-action);
+  color: var(--gateway-muted);
+  font-size: 0.78rem;
+  font-style: italic;
+}
+
+/* ── Landing enhancements (LP-UX-008): game-day chip, assurance chips, card arrows, replay. */
+.landing-gateway-gameday {
+  display: inline-flex;
+  gap: 10px;
+  align-items: center;
+  justify-self: start;
+  padding: 8px 14px;
+  border: 1px solid var(--gateway-line);
+  border-radius: 999px;
+  color: var(--gateway-ink);
+  font-size: 0.82rem;
+  font-weight: 700;
+  text-decoration: none;
+  transition: border-color 180ms ease, background-color 180ms ease;
+}
+
+.landing-gateway-gameday:hover,
+.landing-gateway-gameday:focus-visible {
+  border-color: var(--gateway-action);
+  background: color-mix(in srgb, var(--gateway-action) 8%, transparent);
+}
+
+.landing-gateway-gameday em {
+  color: var(--gateway-muted);
+  font-style: normal;
+  font-weight: 600;
+}
+
+.landing-gateway-gameday-dot {
+  position: relative;
+  flex: 0 0 auto;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--gateway-action);
+}
+
+/* Compositor-only ring pulse (transform + opacity) instead of animating
+   box-shadow, since this runs infinitely for as long as the dot is on screen. */
+.landing-gateway-gameday-dot::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  background: var(--gateway-action);
+  opacity: 0.45;
+  animation: landing-gameday-pulse 2.2s ease-in-out infinite;
+}
+
+@keyframes landing-gameday-pulse {
+  0% { opacity: 0.45; transform: scale(1); }
+  100% { opacity: 0; transform: scale(2.4); }
+}
+
+.landing-gateway-assurances {
+  display: grid;
+  gap: 8px;
+  margin: 2px 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.landing-gateway-assurances li {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  color: var(--gateway-muted);
+  font-size: 0.8rem;
+  font-weight: 650;
+}
+
+.landing-gateway-assurances svg {
+  flex: 0 0 auto;
+  color: var(--gateway-action);
+}
+
+.landing-gateway-action {
+  position: relative;
+}
+
+.landing-gateway-action-arrow {
+  position: absolute;
+  right: 18px;
+  bottom: 16px;
+  font-size: 1rem;
+  font-style: normal;
+  font-weight: 700;
+  opacity: 0;
+  transform: translateX(-8px);
+  transition: opacity 200ms ease, transform 200ms ease;
+}
+
+.landing-gateway-action:hover .landing-gateway-action-arrow,
+.landing-gateway-action:focus-visible .landing-gateway-action-arrow {
+  opacity: 1;
+  transform: translateX(0);
+}
+
+.landing-gateway-action:focus-visible {
+  outline: 2px solid var(--gateway-action);
+  outline-offset: -2px;
+}
+
+.landing-gateway-footer {
+  position: absolute;
+  right: clamp(20px, 4vw, 64px);
+  bottom: 2px;
+  z-index: 3;
+  grid-column: 1 / -1;
+}
+
+.landing-gateway-replay {
+  padding: 4px 2px;
+  border: 0;
+  background: transparent;
+  color: var(--gateway-muted);
+  font-size: 0.72rem;
+  font-weight: 650;
+  text-decoration: underline dotted;
+  text-underline-offset: 3px;
+  cursor: pointer;
+}
+
+.landing-gateway-replay:hover,
+.landing-gateway-replay:focus-visible {
+  color: var(--gateway-ink);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .landing-gateway-gameday-dot::after {
+    animation: none;
+    opacity: 0;
+  }
+
+  .landing-gateway-footer {
+    display: none;
+  }
+
+  .landing-gateway-action-arrow {
+    opacity: 1;
+    transform: none;
+    transition: none;
+  }
+}
+
+@media (max-width: 760px) {
+  .landing-gateway-footer {
+    position: static;
+    justify-self: end;
+    padding: 0 20px 12px;
+  }
+}
+
+/* ── Intro v2/v3 (LP-UX-009, reworked LP-UX-012): weather + ticker, mascot flip. */
+.li-sun {
+  opacity: 0;
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: li-sun-in 2.2s ease 16.4s forwards;
+}
+
+@keyframes li-sun-in {
+  from { opacity: 0; transform: scale(0.85); }
+  to { opacity: 1; transform: scale(1); }
+}
+
+/* Nasdaq/news-chyron style banner: a fixed alert tag plus a seamlessly looping
+   scroll track (duplicated content, same technique as .coach-announcement-track),
+   fading in only for the rain window. */
+.li-ticker {
+  position: absolute;
+  top: 0;
+  right: 0;
+  left: 0;
+  z-index: 3;
+  display: flex;
+  align-items: center;
+  height: 26px;
+  overflow: hidden;
+  opacity: 0;
+  background: rgb(16 21 28 / 62%);
+  backdrop-filter: blur(4px);
+  animation: li-ticker-fade 6s ease 4.6s forwards;
+}
+
+/* The scrolling track slides under the tag, so the tag needs its own stacking
+   context above it — otherwise the moving text shows through the red chip. */
+.li-ticker-tag {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  flex: 0 0 auto;
+  align-items: center;
+  gap: 6px;
+  height: 100%;
+  padding: 0 11px;
+  background: rgb(198 47 47 / 82%);
+  color: #fff;
+  font-size: 0.6rem;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.li-ticker-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: #fff;
+  animation: li-ticker-blink 1.4s steps(2) infinite;
+}
+
+.li-ticker-track {
+  display: flex;
+  flex: 1 1 auto;
+  white-space: nowrap;
+  animation: li-ticker-scroll 30s linear infinite;
+}
+
+.li-ticker-group {
+  display: flex;
+  flex: 0 0 auto;
+}
+
+.li-ticker-item {
+  padding: 0 20px;
+  color: rgb(242 193 78 / 78%);
+  font-size: 0.64rem;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+/* Settles to a low, ambient presence rather than disappearing outright. */
+@keyframes li-ticker-fade {
+  0% { opacity: 0; }
+  12% { opacity: 1; }
+  62% { opacity: 1; }
+  100% { opacity: 0.34; }
+}
+
+@keyframes li-ticker-blink { to { opacity: 0; } }
+
+@keyframes li-ticker-scroll {
+  from { transform: translateX(0); }
+  to { transform: translateX(-50%); }
+}
+
+.landing-intro-captions {
+  z-index: 4;
+}
+
+.li-mascots {
+  position: absolute;
+  inset: 0;
+  z-index: 3;
+  opacity: 0;
+  pointer-events: none;
+  animation:
+    li-mascots-in 0.4s ease 14.9s forwards,
+    li-mascots-out 0.7s ease 18.6s forwards;
+}
+
+.li-badge {
+  position: absolute;
+  inset: 0;
+  width: clamp(150px, 22vw, 230px);
+  aspect-ratio: 1;
+  height: auto;
+  margin: auto;
+  opacity: 0;
+  filter: drop-shadow(0 18px 40px rgb(9 13 18 / 35%));
+}
+
+.li-badge-1 { animation: li-badge-frame 0.32s ease 15s; }
+.li-badge-2 { animation: li-badge-frame 0.32s ease 15.2s; }
+.li-badge-3 { animation: li-badge-frame 0.32s ease 15.4s; }
+.li-badge-4 { animation: li-badge-frame 0.32s ease 15.6s; }
+.li-badge-5 { animation: li-badge-frame 0.32s ease 15.8s; }
+.li-badge-6 { animation: li-badge-frame 0.32s ease 16s; }
+.li-badge-7 { animation: li-badge-frame 0.32s ease 16.2s; }
+.li-badge-8 { animation: li-badge-frame 0.32s ease 16.4s; }
+.li-badge-final { animation: li-badge-hold 2.6s ease 16.5s forwards; }
+
+/* Cross-fades, not hard cuts: no instant on/off swap between badges,
+   and no full-viewport strobe — stays well under the ~3 Hz general-flash
+   safety threshold regardless of reduced-motion. */
+@keyframes li-badge-frame {
+  0%, 100% { opacity: 0; }
+  30%, 70% { opacity: 1; }
+}
+
+@keyframes li-badge-hold {
+  0% { opacity: 1; transform: scale(1.14); }
+  14% { transform: scale(1); }
+  100% { opacity: 1; transform: scale(1); }
+}
+
+@keyframes li-mascots-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes li-mascots-out {
+  from { opacity: 1; }
+  to { opacity: 0; }
+}
+
+/* ── Landing ambient weather + coach notification card (LP-UX-010). */
+/* Ambient sky, driven by Framer Motion (components/landing-sky.tsx). Tuned to the
+   signed-in navigation panel's backdrop: a barely-there desaturated texture under a
+   soft scrim, so it reads as atmosphere and never competes with the hero copy. */
+.landing-gateway-sky {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  overflow: hidden;
+  color: var(--gateway-ink);
+  opacity: 0.09;
+  pointer-events: none;
+}
+
+.landing-gateway-cloud {
+  position: absolute;
+  left: 0;
+  transform-origin: left center;
+  will-change: transform;
+}
+
+:root[data-theme="dark"] .landing-gateway-sky {
+  color: var(--text);
+  opacity: 0.13;
+}
+
+.landing-weather-card {
+  position: absolute;
+  top: clamp(20px, 4vh, 40px);
+  right: clamp(20px, 4vw, 48px);
+  z-index: 3;
+  display: grid;
+  gap: 6px;
+  width: min(300px, calc(100% - 40px));
+  padding: 14px 16px 15px;
+  border: 1px solid rgb(255 255 255 / 50%);
+  border-radius: 18px;
+  background: rgb(255 255 255 / 86%);
+  box-shadow: 0 20px 45px rgb(15 30 48 / 28%);
+  backdrop-filter: blur(14px);
+  opacity: 0;
+  animation: landing-weather-card-in 700ms cubic-bezier(0.2, 0.8, 0.2, 1) 1.4s forwards;
+}
+
+.landing-weather-card header {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  gap: 8px;
+  align-items: center;
+}
+
+.landing-weather-card-icon {
+  display: grid;
+  place-items: center;
+  width: 22px;
+  height: 22px;
+  border-radius: 7px;
+  background: #17324d;
+  color: #fff;
+  font-size: 0.6rem;
+  font-weight: 850;
+  letter-spacing: 0.02em;
+}
+
+.landing-weather-card-app {
+  overflow: hidden;
+  color: #52677b;
+  font-size: 0.7rem;
+  font-weight: 700;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.landing-weather-card-time {
+  color: #7c8ea0;
+  font-size: 0.68rem;
+  font-weight: 600;
+}
+
+.landing-weather-card-headline {
+  margin: 0;
+  color: #142f47;
+  font-size: 0.9rem;
+  font-weight: 750;
+  line-height: 1.3;
+}
+
+.landing-weather-card-detail {
+  margin: 0;
+  color: #46576a;
+  font-size: 0.76rem;
+  line-height: 1.42;
+}
+
+.landing-weather-card-severity {
+  justify-self: start;
+  padding: 3px 9px;
+  border-radius: 999px;
+  font-size: 0.65rem;
+  font-weight: 800;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+}
+
+.landing-weather-card-severity.is-watch {
+  background: #e5edf7;
+  color: #1f5fbf;
+}
+
+.landing-weather-card-severity.is-delay {
+  background: #fdecd2;
+  color: #92400e;
+}
+
+.landing-weather-card-severity.is-cancel_risk {
+  background: #fbe1de;
+  color: #b42318;
+}
+
+/* Weather-channel widget treatment: conditions readout, then a metrics strip. */
+.landing-weather-conditions {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  gap: 10px;
+  align-items: center;
+  margin-top: 2px;
+}
+
+.landing-weather-glyph {
+  width: 40px;
+  height: 40px;
+}
+
+.landing-weather-readout {
+  display: grid;
+  gap: 1px;
+  min-width: 0;
+}
+
+.landing-weather-readout strong {
+  color: #142f47;
+  font-size: 1.5rem;
+  font-weight: 750;
+  line-height: 1;
+  letter-spacing: -0.02em;
+}
+
+.landing-weather-readout span {
+  overflow: hidden;
+  color: #52677b;
+  font-size: 0.72rem;
+  font-weight: 650;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.landing-weather-metrics {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 6px;
+  margin: 2px 0 0;
+  padding: 8px 0 0;
+  border-top: 1px solid rgb(20 47 71 / 12%);
+  list-style: none;
+}
+
+.landing-weather-metrics li {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+  color: #46576a;
+}
+
+.landing-weather-metrics svg {
+  flex: 0 0 auto;
+  color: #6b7f93;
+}
+
+.landing-weather-metrics span {
+  display: grid;
+  font-size: 0.74rem;
+  font-weight: 700;
+  line-height: 1.15;
+}
+
+.landing-weather-metrics em {
+  color: #7c8ea0;
+  font-size: 0.6rem;
+  font-style: normal;
+  font-weight: 650;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+:root[data-theme="dark"] .landing-weather-readout strong {
+  color: var(--text);
+}
+
+:root[data-theme="dark"] .landing-weather-readout span,
+:root[data-theme="dark"] .landing-weather-metrics li {
+  color: var(--muted);
+}
+
+:root[data-theme="dark"] .landing-weather-metrics {
+  border-top-color: var(--line);
+}
+
+:root[data-theme="dark"] .landing-weather-metrics em,
+:root[data-theme="dark"] .landing-weather-metrics svg {
+  color: var(--muted);
+}
+
+@keyframes landing-weather-card-in {
+  from { opacity: 0; transform: translateY(-12px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* While the intro plays, the page holds its weather card back — the intro's own
+   ticker is already telling the postponement story, and two weather messages at
+   once reads as clutter. Clearing `animation` here and restoring it when the
+   attribute is removed restarts the entrance, so the card fades in afterwards
+   rather than snapping to its end state. */
+html[data-intro="playing"] .landing-weather-card {
+  opacity: 0;
+  animation: none;
+}
+
+:root[data-theme="dark"] .landing-weather-card {
+  border-color: rgb(255 255 255 / 12%);
+  background: color-mix(in srgb, var(--surface) 88%, transparent);
+  box-shadow: var(--shadow-lg);
+}
+
+:root[data-theme="dark"] .landing-weather-card-app,
+:root[data-theme="dark"] .landing-weather-card-time,
+:root[data-theme="dark"] .landing-weather-card-detail {
+  color: var(--muted);
+}
+
+:root[data-theme="dark"] .landing-weather-card-headline {
+  color: var(--text);
+}
+
+:root[data-theme="dark"] .landing-weather-card-severity.is-watch {
+  background: var(--accent-soft);
+  color: var(--accent-strong);
+}
+
+:root[data-theme="dark"] .landing-weather-card-severity.is-delay {
+  background: var(--warning-soft);
+  color: var(--warning);
+}
+
+:root[data-theme="dark"] .landing-weather-card-severity.is-cancel_risk {
+  background: var(--danger-soft);
+  color: var(--danger);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .landing-gateway-cloud {
+    animation: none;
+  }
+
+  .landing-weather-card {
+    opacity: 1;
+    animation: none;
+  }
+}
+
+@media (max-width: 760px) {
+  .landing-gateway-sky {
+    width: 100%;
+    opacity: 0.07;
+  }
+
+  .landing-weather-card {
+    top: 14px;
+    right: 14px;
+    left: 14px;
+    width: auto;
+  }
+
+  .landing-gateway-copy {
+    padding-top: 200px;
   }
 }

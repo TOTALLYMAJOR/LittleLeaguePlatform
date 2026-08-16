@@ -51,7 +51,7 @@ export function OfflineSyncStatus({ actorId, contextKey }: { actorId?: string; c
   return (
     <section id="offline-sync-status" className="offline-sync-status" aria-label="Offline sync status" role="status" aria-live="polite">
       <strong>Offline sync</strong>
-      {total === 0 ? <span>No saved actions or recent sync receipts.</span> : (
+      {total === 0 ? <span>Nothing waiting to sync.</span> : (
         <ul>
           <li>Queued: {summary.queued}</li>
           <li>Retrying: {summary.retrying}</li>
@@ -61,7 +61,7 @@ export function OfflineSyncStatus({ actorId, contextKey }: { actorId?: string; c
           <li>Synced: {summary.synced}</li>
         </ul>
       )}
-      <small>Counts only. Saved action contents and private player details are never shown here.</small>
+      <small>Counts only. Message contents and player details are never shown here.</small>
     </section>
   );
 }

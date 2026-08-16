@@ -34,7 +34,7 @@ LP-UX-001 through LP-UX-004 are done-local-accepted. LP-UX-005 through LP-UX-007
 
 ## Headline findings (full detail in 01)
 
-- The warm light Family Home system already won in source (token palette shipped 2026-07-27, commit `ffb1c9b`); the "dark operational system" is `prefers-color-scheme` auto-inversion over CSS that mostly postdates the dark block, plus 14 hard-coded navy panels. Decision: light foundation; dark becomes deliberate or deferred on family routes.
+- The warm light Family Home system remains the visual foundation (token palette shipped 2026-07-27, commit `ffb1c9b`). The accidental `prefers-color-scheme` inversion identified by this audit was retired on 2026-08-03: Light is now the first-visit default, and a deliberate, locally contrast-proven Dark theme is available only by explicit user selection (`lp-ux-005-manual-global-theme.md`).
 - Six shells, three simultaneous parent nav models, 9,716-line `feature-panels.tsx`, `/parent/settings` = duplicated dashboard, `/parent/photos` = team-portal capability inventory (14,224px mobile).
 - Domain truth is strong: RSVP, transportation (mutual acceptance), official comms + acknowledgement, guardians/caregivers, season transitions are LIVE AND AUTHORITATIVE with version binding and in-SQL authorization. The UX debt is composition, not capability.
 - "What Changed" is version-derived; `event_change_logs` (full field diffs) is write-only — the highest-leverage single upgrade.
@@ -45,7 +45,7 @@ LP-UX-001 through LP-UX-004 are done-local-accepted. LP-UX-005 through LP-UX-007
 1. Light family system = foundation (evidence-based; resolves brief hypothesis).
 2. Parent IA: Home / Schedule / Messages / Family / More; RSVP is an action + task view, not a nav destination (records an explicit amendment to blueprint §5's "Replay" slot).
 3. Warm palette adopted as palette of record; blueprint's semantic token names and component API adopted over raw names (recorded amendment of blueprint §8 cobalt).
-4. Dark mode: family routes light-only until a deliberate, authenticated, contrast-proven dark theme exists.
+4. Theme selection (amended 2026-08-03): the deliberate, authenticated, contrast-proven dark theme now exists locally. All routes default to Light and follow a saved explicit Light/Dark selection; device preference does not select the app theme.
 5. Reference slice: Family Home → What Changed → Next Event → RSVP (Stage A shell + Stage B surface); Transportation and Communication follow in later slices.
 
 ## Git status at current handoff

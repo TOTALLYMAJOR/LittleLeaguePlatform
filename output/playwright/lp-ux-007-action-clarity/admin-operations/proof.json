@@ -1,0 +1,52 @@
+{
+  "baseUrl": "http://127.0.0.1:3001",
+  "capturedAt": "2026-08-03T23:32:03.221Z",
+  "proofs": [
+    {
+      "role": "admin-operations",
+      "path": "/admin/operations",
+      "signedIn": true,
+      "matchedText": "ADMIN OPERATIONS",
+      "firstViewportText": "Skip to main content League office: Operations Dark Signed in 16 items need attention Admin · Little League HQ CONTEXT DETAILS ADMIN OPERATIONS Organization settings, provider inventory, approval queues, and audit logs. Showing Supabase admin operations data. Organization Little League HQ Season Demo Summer 2026 Status active Provider inventory Supabase Auth (auth) configured Verified session required before private mutations. Tomorrow.io (weather) configured Creates weather drafts only; parent delivery stays approval-gated. Google Maps (maps) configured Stores map URLs/embed URLs; no route tracking. YouTube Data API (drill_video_metadata) configured Validates metadata for coach-only drill video references; no video download, rehost, clipping, or parent-facing display. Email/SMS/Web Push (notifications) missing Provider sends remain disconnected; approval creates queued or suppressed delivery-attempt records after preference and readiness checks. Approval queues Registration review: 7 Open queue Approval creates guardian/team access only after admin review. Provider delivery review: 5 Open queue Pending notification records are not external sends. Media moderation: 1 Open queue Reported media can be hidden while review is pending. Audit logs snack_slot_claimed snack_schedule_slot - 7/29/2026, 5:21:46 PM Practice snack claimed. family_first_sign_in_completed profile - 7/29/2026, 5:10:51 PM Family language, privacy preview, and notification preferences saved by the signed-in adult. No provider message was sent. team_membership_saved team_membership - 7/20/2026, 9:05:06 PM coach membership saved for team ae70ac41-048d-4a63-89f5-e0c6a7c1cc26. team_membership_saved team_membership - 7/20/2026, 9:04:56 PM coach membership saved for team ae70ac41-048d-4a63-89f5-e0c6a7c1cc26. team_created team - 7/20/2026, 8:41:31 PM Cougars saved in 3-6y for season d2000000-0000-4000-8000-000000000001 with active lifecycle status. registration_request_approved registration_request - 7/20/2026, 8:40:26 PM Registration approved; player, guardian, invite or membership, and approval action records were created. registration_request_rejected registration_request - 7/20/2026, 8:40:23 PM Registration request rejected with an approval-action record. team_portal_branding_updated team - 7/17/2026, 10:50:06 AM Archived Tigers portal colors, mascot, and theme updated. team_portal_branding_updated team - 7/17/2026, 10:49:40 AM Archived Tigers portal colors, mascot, and theme updated. team_logo_asset_submitted team_logo_asset - 7/17/2026, 10:49:38 AM Team logo asset submitted for brand governance review. team_portal_branding_updated team - 7/17/2026, 10:49:28 AM Archived Tigers portal colors, mascot, and theme updated. sponsor_saved sponsor - 7/17/2026, 10:49:01 AM Sponsor Demo Family Dentistry saved with active status and team_portal placement. provider_delivery_approved notification - 7/17/2026, 2:55:59 AM email delivery approved; attempt status queued. parent_replay_published parent_replay - 7/17/2026, 2:55:52 AM Parent Replay published for Tiny Tigers with 3 focus areas. provider_delivery_approved notification - 7/17/2026, 2:48:47 AM email delivery approved; attempt status queued. parent_replay_published parent_replay - 7/17/2026, 2:48:36 AM Parent Replay published for Tiny Tigers with 3 focus areas. media_reported media_item - 7/17/2026, 2:24:16 AM Family reported this media link for review. demo_seed_loaded organization - 7/16/2026, 8:47:59 PM Fictional LeaguePilot demo tenant loaded. No external provider sends or payments were executed. roster_player_created player - 7/16/2026, 6:47:33 PM Major Mike B. saved to roster with active status. provider_delivery_approved notification - 7/2/2026, 10:03:05 AM email delivery approved; attempt status suppressed. Schedule and delivery telemetry Provider readiness, retry, device, alert, and schedule workflow evidence. Operations evidence Offline sync Nothing waiting to sync. Counts only. Message contents and player details are never shown here. Dashboard Registrations 6 review Teams Message approvals 7 review Security Route ready",
+      "browserErrors": [],
+      "browserWarnings": [],
+      "viewports": [
+        {
+          "name": "mobile-375",
+          "width": 375,
+          "height": 812,
+          "clientWidth": 375,
+          "scrollWidth": 375
+        },
+        {
+          "name": "mobile-390",
+          "width": 390,
+          "height": 844,
+          "clientWidth": 390,
+          "scrollWidth": 390
+        },
+        {
+          "name": "tablet-768",
+          "width": 768,
+          "height": 1024,
+          "clientWidth": 768,
+          "scrollWidth": 768
+        },
+        {
+          "name": "laptop-1024",
+          "width": 1024,
+          "height": 900,
+          "clientWidth": 1024,
+          "scrollWidth": 1024
+        },
+        {
+          "name": "desktop-1440",
+          "width": 1440,
+          "height": 1100,
+          "clientWidth": 1440,
+          "scrollWidth": 1440
+        }
+      ]
+    }
+  ]
+}

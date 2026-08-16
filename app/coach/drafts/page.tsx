@@ -1,9 +1,9 @@
-import { CoachDashboardSliceSurface } from "../_surfaces";
+import { CoachDraftsSurface } from "../_surfaces";
 
 export const dynamic = "force-dynamic";
 
 export default async function CoachDraftsPage() {
-  return <CoachDashboardSliceSurface />;
+  return <CoachDraftsSurface />;
 }
 
 export const metadata = {

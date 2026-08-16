@@ -1,0 +1,52 @@
+{
+  "baseUrl": "http://127.0.0.1:3001",
+  "capturedAt": "2026-08-03T23:33:05.517Z",
+  "proofs": [
+    {
+      "role": "admin",
+      "path": "/admin",
+      "signedIn": true,
+      "matchedText": "What is blocking launch?",
+      "firstViewportText": "Skip to main content League office: Overview Dark Signed in 16 items need attention Admin · Little League HQ CONTEXT DETAILS League admin · Little League HQ · Spring 2026 Context details × Launch blockers need administrator action. 1 critical evidence lane need attention. Blocked Evidence and exceptions League operations - Little League HQ What is blocking launch? Teams needing help 4 Low RSVP teams 4 Family access gaps 3 Pending registrations 7 Weather & field review 1 Media review 2 Message delivery review 0 Setup gaps 2 SUGGESTED REVIEW Registration review queue 1 pending registration request needs league-admin review before access is granted. Review oldest pending requests and confirm guardian/team scope before approval. Suggests review order only; it cannot approve, reject, invite, or grant access. Go to registration review queue SUGGESTED REVIEW Readiness summary Teams without coaches: 2 Teams should have an active coach before launch. Summarizes existing records only; it does not create records or send providers. Go to readiness summary Pending reviews Fix next hold: Family Access Family Access 3 family access records await review. League admin acts next. Fix family access Why this is next Weather & Fields 1 weather or field draft awaits review. League admin acts next. Resolve weather and fields Why this is next Media Review 2 media items await review. League admin acts next. Review media Why this is next Registrations 7 registrations await review. League admin acts next. Review registrations Why this is next Offline sync Nothing waiting to sync. Counts only. Message contents and player details are never shown here. Dashboard Registrations 6 review Teams Message approvals 7 review Security Route ready",
+      "browserErrors": [],
+      "browserWarnings": [],
+      "viewports": [
+        {
+          "name": "mobile-375",
+          "width": 375,
+          "height": 812,
+          "clientWidth": 375,
+          "scrollWidth": 375
+        },
+        {
+          "name": "mobile-390",
+          "width": 390,
+          "height": 844,
+          "clientWidth": 390,
+          "scrollWidth": 390
+        },
+        {
+          "name": "tablet-768",
+          "width": 768,
+          "height": 1024,
+          "clientWidth": 768,
+          "scrollWidth": 768
+        },
+        {
+          "name": "laptop-1024",
+          "width": 1024,
+          "height": 900,
+          "clientWidth": 1024,
+          "scrollWidth": 1024
+        },
+        {
+          "name": "desktop-1440",
+          "width": 1440,
+          "height": 1100,
+          "clientWidth": 1440,
+          "scrollWidth": 1440
+        }
+      ]
+    }
+  ]
+}
