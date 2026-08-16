@@ -112,7 +112,7 @@ export function EventPassport({
         />
       ) : (
         <div className="family-event-passport-rsvp">
-          <span>Persisted RSVP</span>
+          <span>Answer saved</span>
           <StatusChip tone={currentResponse && currentResponse !== "cancelled" ? "confirmed" : "action"}>
             {responseLabel(currentResponse)}
           </StatusChip>

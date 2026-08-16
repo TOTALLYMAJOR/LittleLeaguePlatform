@@ -552,7 +552,7 @@ function privateAccessGate(
       </article>
       <article className="card stack">
         <h2>{surface === "coach" ? "Coach role access checklist" : "What stays protected"}</h2>
-        <p>Private child, team, RSVP, media, weather, snack, volunteer, and coach workflow rows stay hidden until the signed-in account has the required approved relationship.</p>
+        <p>Child, team, RSVP, photo, weather, snack, volunteer, and coach details stay hidden until your account is approved for that team.</p>
         <p className="muted">{surface === "coach" ? "A user account is not enough; the coach route requires an active coach team membership." : "Signup proves identity only; team or guardian records grant access."}</p>
       </article>
     </section>
@@ -1408,7 +1408,7 @@ export function MembershipAdminClient({ initialData }: { initialData: Membership
       <section className="hero">
         <span className="eyebrow">Membership admin</span>
         <h1>Connect signed-in adults to team-scoped coach and parent access.</h1>
-        <p className="lead">This is the access grant step. Signup alone creates identity; membership rows decide what private team data a user can see or manage.</p>
+        <p className="lead">This is where access is granted. Signing up only creates an account; team membership decides what someone can see or change.</p>
       </section>
 
       {message ? <p className="notice">{message}</p> : null}
@@ -1629,7 +1629,7 @@ export function AdminHealthClient({ tenantReadinessData }: { tenantReadinessData
       <section className="hero">
         <span className="eyebrow">Admin health dashboard</span>
         <h1>Launch readiness issues before parents complain.</h1>
-        <p className="lead">Health cards combine local workflow checks with tenant setup readiness from Supabase for the signed-in organization admin.</p>
+        <p className="lead">These checks combine your league’s setup progress with what is still outstanding.</p>
       </section>
 
       {tenantReadinessData ? (
@@ -1689,7 +1689,7 @@ export function AdminHealthClient({ tenantReadinessData }: { tenantReadinessData
             {!tenantReadinessData.tenants.length ? (
               <article className="card stack">
                 <h2>No tenant scope loaded.</h2>
-                <p className="muted">Sign in as an active organization admin and confirm Supabase access before inviting families.</p>
+                <p className="muted">Sign in as a league admin and confirm your access before inviting families.</p>
               </article>
             ) : null}
           </section>
@@ -2573,7 +2573,7 @@ export function ParentDashboardClient({ dashboardData }: { dashboardData?: Paren
             <textarea value={supportDetail} onChange={(event) => setSupportDetail(event.target.value)} rows={4} />
           </label>
           <button disabled={isHelpPending || !supportDetail.trim()} onClick={submitSupportRequest}>Submit support request</button>
-          <p className="muted">Submitting saves a staff-review support record. It does not imply a connected helpdesk or provider send.</p>
+          <p className="muted">Submitting saves a request for staff to review. It does not open a support ticket elsewhere or send a message.</p>
         </article>
         <article className="card stack">
           <h2>Support routing context</h2>
@@ -3161,7 +3161,7 @@ export function CoachDashboardClient({ dashboardData }: { dashboardData?: Parent
             <button type="button" disabled={isActionPending || !fieldNote.trim()} onClick={saveFieldNote}>
               Save private note
             </button>
-            <p className="muted">Notes are not Parent Replay, announcements, or provider messages.</p>
+            <p className="muted">Notes are private to staff. They are not Parent Replay, announcements, or messages to families.</p>
           </>
         ) : null}
       </section>
@@ -3358,7 +3358,7 @@ export function CoachDashboardClient({ dashboardData }: { dashboardData?: Parent
           {weatherRetryLogs.map((item) => (
             <p key={item.alert.id}><strong>{item.provider}</strong><br /><span className="muted">{item.alert.headline} · retry {formatDate(item.nextRetryAt)} · {item.reason}</span></p>
           ))}
-          {!weatherRetryLogs.length ? <p className="muted">No high-risk weather provider retries are pending.</p> : null}
+          {!weatherRetryLogs.length ? <p className="muted">No urgent weather alerts are waiting to be retried.</p> : null}
         </article>
       </section>
 
@@ -4447,7 +4447,7 @@ export function AdminDashboardClient({ registrationRequests, sponsorData, mediaD
                   <span className="muted">{opportunity.need.replace("_", " ")} - {formatCents(opportunity.targetAmountCents)} target - {opportunity.status}. {opportunity.sponsorFit}. {opportunity.evidence}</span>
                 </p>
               ))}
-              <p className="notice">Sponsor suggestions are leads for admin review. They are not contracts, public placements, provider sends, or payment claims.</p>
+              <p className="notice">Sponsor suggestions are leads for you to review. They are not agreements, public placements, messages, or payments.</p>
             </div>
           </section>
           <div className="grid two">
@@ -4721,7 +4721,7 @@ export function AdminThemesClient({ initialData }: { initialData: AdminThemeData
 
   function renderEnvironmentPreview() {
     if (!team || !draft || !activePreset) {
-      return <p className="muted">No team records are available for tenant environment preview.</p>;
+      return <p className="muted">No teams are set up for this league yet.</p>;
     }
 
     if (activeEnvironmentSurface === "portal") {
@@ -4766,7 +4766,7 @@ export function AdminThemesClient({ initialData }: { initialData: AdminThemeData
             <span>{teamInitials}</span>
           </div>
           <p>Game reminder, RSVP status, coach note, and portal link preview use the same team tokens.</p>
-          <p className="muted">Email, SMS, and push sends stay provider-gated until review approval and delivery logs exist.</p>
+          <p className="muted">Email, text, and push messages are not sent until someone approves them and the send is recorded.</p>
         </div>
       );
     }
@@ -4788,8 +4788,8 @@ export function AdminThemesClient({ initialData }: { initialData: AdminThemeData
     if (activeEnvironmentSurface === "governance") {
       return (
         <div className="tenant-preview-governance">
-          <p><strong>Write boundary:</strong> Admin theme saves and logo queue requests use verified Supabase sessions.</p>
-          <p><strong>Provider boundary:</strong> Binary storage, email rendering, push identity, and public cache invalidation require separate proof.</p>
+          <p><strong>Write boundary:</strong> Saving a theme or requesting a logo review is recorded against your signed-in account.</p>
+          <p><strong>Provider boundary:</strong> File storage, email and push appearance, and public page refresh are handled separately.</p>
           <p><strong>Child privacy:</strong> Player names, guardian access, media visibility, and direct messaging stay role-scoped.</p>
         </div>
       );
@@ -4827,8 +4827,8 @@ export function AdminThemesClient({ initialData }: { initialData: AdminThemeData
       <section className="hero">
         <span className="eyebrow">Admin customization workbench</span>
         <h1>First-class team branding control across every portal.</h1>
-        <p className="lead">Update team identity, tenant defaults, logo review metadata, and launch proof from Supabase-backed admin controls.</p>
-        <p className="muted">Admin theme console writes still derive the acting user from the verified Supabase session. Preview controls do not grant access.</p>
+        <p className="lead">Update team names, colors, league defaults, and logos, and see what is still needed before launch.</p>
+        <p className="muted">Every change here is recorded against your signed-in account. Previewing does not grant anyone access.</p>
       </section>
 
       {message ? <p className="notice">{message}</p> : null}
@@ -4860,7 +4860,7 @@ export function AdminThemesClient({ initialData }: { initialData: AdminThemeData
         <div className="card-header">
           <div>
             <span className="eyebrow">Tenant environment studio</span>
-            <h2>One control surface for every branded tenant touchpoint.</h2>
+            <h2>One place to control how your league’s brand appears everywhere.</h2>
           </div>
           <span className="badge ok">{coveredBrandSurfaces} / {brandLaunchValidation.surfaceChecks.length} surfaces mapped</span>
         </div>
@@ -5009,7 +5009,7 @@ export function AdminThemesClient({ initialData }: { initialData: AdminThemeData
               {tenantDefaults.logoStatus.replace("_", " ")}
             </span>
           </div>
-          <p className="muted">Admins can register an HTTPS logo URL for review. This does not upload a binary file, publish a family-facing logo, or connect provider storage.</p>
+          <p className="muted">You can submit a logo web address for review. This does not upload a file or publish the logo to families yet.</p>
           <div className="grid two">
             <label>
               Logo applies to
@@ -5032,7 +5032,7 @@ export function AdminThemesClient({ initialData }: { initialData: AdminThemeData
             <label>
               Policy notes
               <textarea value={logoPolicyNotes} onChange={(event) => setLogoPolicyNotes(event.target.value)} />
-              <span className="field-hint">Use notes for child-safety, sponsor-separation, and contrast review evidence.</span>
+              <span className="field-hint">Use notes to record child-safety, sponsor-separation, and readability checks.</span>
             </label>
           </div>
           <button onClick={saveLogoAsset} disabled={isPending || !logoUrl.trim()}>{isPending ? "Queueing..." : "Queue logo review"}</button>
@@ -5055,7 +5055,7 @@ export function AdminThemesClient({ initialData }: { initialData: AdminThemeData
             );
           })}
           {!logoAssets.length ? <p className="muted">No logo assets queued yet.</p> : null}
-          <p className="notice">Binary upload, public rendering, and email/push logo use still require provider configuration, review approval, and browser proof.</p>
+          <p className="notice">Uploading files and using this logo in email or push still needs setup and approval.</p>
         </article>
       </section>
 
@@ -6298,7 +6298,7 @@ function AdminCalendarControlRoom({
                   </div>
                 ))}
               </div>
-              <p className="admin-inspector-boundary">Changes remain local to this review form until saved. Saving queues notification records for review and does not execute provider delivery.</p>
+              <p className="admin-inspector-boundary">Nothing is saved until you save. Saving queues an update for review; it does not send anything to families.</p>
               <a className="text-link" href="#schedule-change-form">Go to schedule change form</a>
             </>
           ) : <p className="muted">No event is available for inspection.</p>}
@@ -6767,7 +6767,7 @@ export function ScheduleAlertsClient({
           {impactPreview.rsvps.slice(0, 4).map((rsvp) => (
             <p className="muted" key={rsvp.id}>{rsvp.player?.firstName ?? "Player"} {rsvp.player?.lastInitial ?? ""}. · {rsvp.parentUser?.name ?? "Parent"} · {rsvp.response.replace("_", " ")}</p>
           ))}
-          <p className="notice">Preview only. Saving queues local notification records; provider blast messages are not sent.</p>
+          <p className="notice">Preview only. Saving queues an update for review; no message goes out to families.</p>
         </article>
 
         <article className="card stack">
@@ -6855,7 +6855,7 @@ export function ScheduleAlertsClient({
             <span className="badge warning">Preference record</span>
           </div>
           <p>Unsubscribes create or update disabled notification preference records for the exact user, channel, and notification type.</p>
-          <p className="muted">No global account deletion or provider call is implied by an unsubscribe.</p>
+          <p className="muted">Unsubscribing does not delete your account.</p>
         </article>
 
         <article className="card stack">
@@ -6909,7 +6909,7 @@ export function ScheduleAlertsClient({
             </div>
             <span className={`badge ${smsUrgentAllowed ? "ok" : "warning"}`}>{smsUrgentAllowed ? "Allowed" : "Blocked"}</span>
           </div>
-          <p className="muted">SMS delivery is reserved for urgent cancellation or weather cases after consent and provider approval.</p>
+          <p className="muted">Text messages are reserved for urgent cancellations and weather, and only after consent and approval.</p>
         </article>
 
         <article className="card stack">
@@ -7677,7 +7677,7 @@ export function ParentReplayClient({
             {isReplayPending ? "Confirming..." : "Confirm and publish"}
           </button>
         </div>
-        <p>Publishing creates in-app notification drafts only. External delivery still requires separate approval and provider evidence.</p>
+        <p>Publishing creates in-app drafts only. Email, text, and push still need separate approval before anything goes out.</p>
       </section>
 
       <section className="grid three">
@@ -8646,7 +8646,7 @@ export function TeamPortalClient({ teamPortalData, audience = "shared" }: { team
               <a href={`https://maps.google.com/?q=${encodeURIComponent(upcomingGame.locationAddress)}`}>Open field map</a>
             </>
           ) : <p className="muted">No game scheduled yet.</p>}
-          <p className="notice">Calm Mode keeps only essentials visible before the event. Weather and urgent alerts remain approval-gated; no automatic provider send occurs.</p>
+          <p className="notice">Calm Mode keeps only essentials visible before the event. Weather and urgent alerts still need someone to approve them. Nothing is sent automatically.</p>
         </article>
         <article className="card stack">
           <span className="badge">Roster</span>
@@ -8780,7 +8780,7 @@ export function TeamPortalClient({ teamPortalData, audience = "shared" }: { team
           {replayDraft.parentTranslations.map((translation) => (
             <p key={translation.coachTerm}><strong>{translation.coachTerm}</strong><br /><span className="muted">{translation.parentInstruction}</span></p>
           ))}
-          <p className="notice">AI learning plans are represented by local deterministic guidance; no AI provider is connected.</p>
+          <p className="notice">Learning plans use built-in guidance. No outside AI service is connected.</p>
         </article>
         <article className="card stack">
           <span className="badge">Skill cards</span>

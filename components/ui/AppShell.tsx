@@ -63,19 +63,19 @@ const roleDisplayName: Record<string, string> = {
 };
 
 const routeHelpByHref: Record<string, string> = {
-  "/registration": "Families submit a request here. Admin approval is still required before any private access appears.",
-  "/auth": "Use the role-specific email and password, then the shell will show only the pages that role can open.",
-  "/schedule": "Public calendar view. Private team details still require an approved account role.",
+  "/registration": "Families request access here. Someone from the league office reviews every request before private details appear.",
+  "/auth": "Sign in with your email and password. You will only see the pages your role can open.",
+  "/schedule": "The public calendar. Team details stay private until your account is approved.",
   "/parent": "Start with the next event card, then answer RSVP or open messages if a coach needs a response.",
   "/parent/rsvp": "Pick going, maybe, or not going for linked children only.",
-  "/coach": "Start with readiness: RSVP gaps, snack or volunteer needs, weather drafts, and practice follow-up.",
-  "/coach/practice-recaps": "Paste YouTube drill references, pick practice focus areas, and review drafts before anything is published.",
-  "/team-portal": "View roster-safe team details, approved media, and current team information.",
-  "/admin": "Start here to see review queues, registration status, setup gaps, and safety/provider boundaries.",
+  "/coach": "Start with what needs you today: missing RSVPs, snack and volunteer gaps, weather, and practice follow-up.",
+  "/coach/practice-recaps": "Add YouTube drill links, pick what you worked on, and review the draft before families see it.",
+  "/team-portal": "Team details and approved photos that are safe for families to see.",
+  "/admin": "Start here to see what is waiting on you: registrations, setup gaps, and anything about to reach families.",
   "/admin/registrations": "Approve or reject pending registration requests before families receive private access.",
-  "/admin/media-review": "Review reported media and approve or reject coach drill video sources and videos.",
-  "/admin/teams": "Set up active teams, seasons, divisions, and roster readiness before inviting families.",
-  "/admin/security-audit": "Use this page to confirm role boundaries, access-policy proof, and audit evidence."
+  "/admin/media-review": "Review reported photos and approve or reject the drill videos coaches want to use.",
+  "/admin/teams": "Set up teams, seasons, divisions, and rosters before you invite families.",
+  "/admin/security-audit": "Confirm that each role can only see what it should, and review a record of sensitive changes."
 };
 
 /**

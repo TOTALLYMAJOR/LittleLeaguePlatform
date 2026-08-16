@@ -78,7 +78,7 @@ export async function CoachScheduleSurface() {
   const scopedScheduleData = scopeScheduleOperationsData(
     scheduleData,
     pageAccess.access.coachTeamIds,
-    "Showing schedule rows scoped to the signed-in coach's active teams."
+    "Showing events for the teams you coach."
   );
   return (
     <>

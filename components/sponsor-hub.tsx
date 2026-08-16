@@ -264,7 +264,7 @@ export function SponsorHub({ initialData }: { initialData: SponsorAdminData }) {
         <div>
           <span className="sponsor-hub-kicker"><Sparkles aria-hidden="true" size={15} /> Community partnerships</span>
           <h1>Sponsor Hub</h1>
-          <p>Keep every local partner, promise, and proof item in one simple place.</p>
+          <p>Keep every local partner, what you promised them, and what you delivered in one place.</p>
         </div>
         <div className="sponsor-hub-header-actions">
           <button className="secondary" type="button" onClick={() => downloadSponsorCsv(sponsors)} disabled={!sponsors.length}>
@@ -381,7 +381,7 @@ export function SponsorHub({ initialData }: { initialData: SponsorAdminData }) {
             <header>
               <div>
                 <h2>Recent sponsor records</h2>
-                <p>Public placement stays separate from payment and fulfillment evidence.</p>
+                <p>Where a sponsor appears is tracked separately from payment and delivery.</p>
               </div>
               <button className="secondary" type="button" onClick={() => setView("sponsors")}>Manage sponsors</button>
             </header>
@@ -487,7 +487,7 @@ export function SponsorHub({ initialData }: { initialData: SponsorAdminData }) {
               <div><dt>Payment proof recorded</dt><dd>{initialData.isSupabaseBacked ? confirmedBillingRecords.length : "Unavailable"}</dd></div>
               <div><dt>Verified impact events</dt><dd>0</dd></div>
             </dl>
-            <p className="sponsor-hub-note">PDF impact reports remain unavailable until benefits, proof files, and privacy-safe engagement events have durable records.</p>
+            <p className="sponsor-hub-note">PDF impact reports are not available yet. They need saved benefits, files, and privacy-safe activity first.</p>
           </article>
           <aside className="sponsor-hub-panel sponsor-hub-renewal">
             <Mail aria-hidden="true" size={24} />

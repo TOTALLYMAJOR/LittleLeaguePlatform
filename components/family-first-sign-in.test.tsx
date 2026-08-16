@@ -11,7 +11,7 @@ describe("FamilyFirstSignInClient", () => {
     expect(html).toContain("Critical cancellations and safety updates");
     expect(html).toContain("Routine schedule and Replay updates");
     expect(html).toContain("Translations may contain errors");
-    expect(html).toContain("does not prove the channel is verified");
+    expect(html).toContain("does not confirm that the address or number is verified");
     expect(html).not.toContain("message was sent");
   });
 

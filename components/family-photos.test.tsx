@@ -23,7 +23,7 @@ describe("FamilyPhotos", () => {
       />
     );
 
-    expect(html).toContain("explicit family-release evidence");
+    expect(html).toContain("approved photos that were released to families");
     expect(html).toContain("Opening day");
     expect(html).toContain("Report for review");
     expect(html).toContain("this page has no consent writer");
@@ -37,6 +37,6 @@ describe("FamilyPhotos", () => {
     );
 
     expect(html).toContain("No released photos yet");
-    expect(html).toContain("required consent evidence");
+    expect(html).toContain("review, safety checks, consent, and release to families");
   });
 });

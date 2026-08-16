@@ -398,7 +398,7 @@ export function buildNextLevelCommandCenter(state: AppState, input: BuildNextLev
       status: approvedDrillVideos ? "ready" : "review",
       metric: `${approvedDrillVideos} approved video(s)`,
       detail: drillCollections.length ? `${drillCollections.length} sport/skill/age collection(s) are grouped for coach planning.` : "Approved YouTube metadata will group into sport, skill, and age collections.",
-      boundary: "References only; no download, rehost, clipping, proxying, or family-facing video release in v1."
+      boundary: "Links only. Videos are never downloaded, re-hosted, clipped, or released to families."
     },
     {
       id: "parent_recap_timeline",
@@ -428,7 +428,7 @@ export function buildNextLevelCommandCenter(state: AppState, input: BuildNextLev
       status: pendingNotifications + failedNotifications ? "review" : "ready",
       metric: `${pendingNotifications} pending / ${failedNotifications} failed`,
       detail: "Provider delivery is modeled as a review queue with retry planning, not automatic sending.",
-      boundary: "No live email, SMS, or push delivery occurs without configured adapters and approval."
+      boundary: "Nothing is emailed, texted, or pushed to families until a message service is set up and someone approves it."
     },
     {
       id: "mobile_pwa_install",

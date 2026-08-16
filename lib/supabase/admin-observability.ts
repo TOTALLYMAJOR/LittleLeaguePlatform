@@ -191,19 +191,19 @@ function observabilityHooks(env: ObservabilityEnv): ObservabilityHook[] {
       label: "External error dashboard",
       status: env.SENTRY_DSN || env.NEXT_PUBLIC_SENTRY_DSN ? "configured" : "missing",
       envKey: "SENTRY_DSN",
-      boundary: "Optional external exception tracking; Supabase-backed rows remain the source dashboard."
+      boundary: "Optional outside error tracking. The records in this app remain the source of truth."
     },
     {
       label: "Metrics drain",
       status: env.OBSERVABILITY_WEBHOOK_URL ? "configured" : "missing",
       envKey: "OBSERVABILITY_WEBHOOK_URL",
-      boundary: "Env-gated outbound alert hook; this page does not send alerts by itself."
+      boundary: "Alerts must be turned on separately. This page does not send anything by itself."
     },
     {
       label: "Supabase log drain",
       status: env.SUPABASE_LOG_DRAIN_URL ? "configured" : "missing",
       envKey: "SUPABASE_LOG_DRAIN_URL",
-      boundary: "Optional hosted log export; RLS and audit proof still need Supabase row evidence."
+      boundary: "Optional log export. Access and activity checks still rely on this app's own records."
     }
   ];
 }

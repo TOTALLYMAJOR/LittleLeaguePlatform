@@ -469,7 +469,7 @@ describe("ParentDashboardClient", () => {
     expect(html).toContain("Claim volunteer role");
     expect(html).toContain("Ask for help");
     expect(html).toContain("Submit support request");
-    expect(html).toContain("staff-review support record");
+    expect(html).toContain("saves a request for staff to review");
     expect(html).toContain("Report media");
     expect(html).toContain("Google Photos link looks valid");
     expect(html).not.toContain("Drafts to Review");
@@ -598,7 +598,7 @@ describe("ScheduleAlertsClient", () => {
     expect(html).toContain("Proposed");
     expect(html).toContain("Proposed start");
     expect(html).toContain("Go to schedule change form");
-    expect(html).toContain("does not execute provider delivery");
+    expect(html).toContain("it does not send anything to families");
   });
 
   it("renders an agenda-first public schedule with provider calendar actions", () => {
@@ -790,14 +790,14 @@ describe("AdminThemesClient", () => {
     );
 
     expect(html).toContain("Admin customization workbench");
-    expect(html).toContain("Admin theme console");
+    expect(html).toContain("Every change here is recorded against your signed-in account");
     expect(html).toContain("Customization modules");
     expect(html).toContain("First-class team branding control");
     expect(html).toContain("Identity and colors");
     expect(html).toContain("Future team defaults");
     expect(html).toContain("Logo assets");
     expect(html).toContain("Tenant environment studio");
-    expect(html).toContain("One control surface for every branded tenant touchpoint.");
+    expect(html).toContain("One place to control how your league");
     expect(html).toContain("App shell");
     expect(html).toContain("Menus and labels");
     expect(html).toContain("Team portals");
@@ -829,7 +829,7 @@ describe("AdminThemesClient", () => {
     expect(html).toContain("Queue logo review");
     expect(html).toContain("Sponsor logos stay in sponsor records");
     expect(html).toContain("No logo assets queued yet");
-    expect(html).toContain("Binary upload, public rendering, and email/push logo use still require provider configuration");
+    expect(html).toContain("Uploading files and using this logo in email or push still needs setup and approval.");
     expect(html).toContain("Theme QA");
     expect(html).toContain("Dark:");
     expect(html).toContain("Mobile:");
@@ -1099,6 +1099,6 @@ describe("TeamPortalClient", () => {
     expect(html).toContain("Skill trees");
     expect(html).toContain("Season storybook");
     expect(html).toContain("Volunteer center");
-    expect(html).toContain("AI learning plans");
+    expect(html).toContain("Learning plans use built-in guidance");
   });
 });

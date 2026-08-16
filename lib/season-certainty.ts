@@ -489,7 +489,7 @@ export function buildAdminSeasonCertaintyView(input: {
         evidenceAvailable: false,
         satisfied: null,
         critical: true,
-        source: "admin client read model",
+        source: "league office records",
         observedAt: input.now,
         freshness: createDataFreshness({
           source: "fallback",
@@ -986,7 +986,7 @@ function actionRanking(
 function buildFreshness(isLive: boolean, now: string): SeasonFreshness {
   return {
     state: isLive ? "live" : "fallback",
-    label: isLive ? "Live Supabase rows" : "Fallback or local preview",
+    label: isLive ? "Live Supabase rows" : "Showing example data",
     lastLoadedLabel: `Loaded ${formatShortDate(now)}`,
     staleCopy: isLive ? undefined : "This view is not claiming live production freshness."
   };

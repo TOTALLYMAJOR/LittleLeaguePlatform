@@ -7,7 +7,7 @@ export default function OfflinePage() {
       <section className="hero">
         <span className="eyebrow">Offline</span>
         <h1>Connection is required before team data is trusted.</h1>
-        <p className="lead">The app shell is available, but schedules, RSVPs, chat, media, and registration records should refresh from Supabase before anyone acts on them.</p>
+        <p className="lead">The app is loading, but schedules, RSVPs, chat, photos, and registrations should refresh before anyone acts on them.</p>
       </section>
 
       <section className="grid two">
@@ -18,8 +18,8 @@ export default function OfflinePage() {
         </article>
         <article className="card stack">
           <h2>What stays protected</h2>
-          <p>Offline fallback does not replay provider sends, save RSVPs, post chat messages, approve registrations, or expose private rows that were not already loaded.</p>
-          <p className="muted">Live Supabase reads remain the source of truth.</p>
+          <p>While offline the app will not send messages, save RSVPs, post to chat, approve registrations, or show private details it had not already loaded.</p>
+          <p className="muted">Once you reconnect, the live records are what count.</p>
         </article>
       </section>
       <OfflineSyncStatus />

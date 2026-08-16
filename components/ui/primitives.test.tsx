@@ -60,12 +60,12 @@ describe("UI concept scorecard", () => {
     expect(providerStatusCopy).toEqual([
       "Draft",
       "Queued",
-      "Pending review",
-      "Provider disconnected",
-      "Seed fallback",
-      "Live data",
-      "Read-only",
-      "Denied"
+      "Waiting for review",
+      "Sending not set up",
+      "Example data",
+      "Current",
+      "View only",
+      "Not allowed"
     ]);
   });
 

@@ -131,7 +131,7 @@ export function RsvpControl({
   return (
     <div className="family-rsvp-control" aria-label={`RSVP for ${childLabel} at ${eventTitle}`}>
       <div className="family-rsvp-current">
-        <span>Persisted RSVP</span>
+        <span>Answer saved</span>
         <StatusChip tone={currentResponse && currentResponse !== "cancelled" ? "confirmed" : "action"}>
           {responseLabel(currentResponse)}
         </StatusChip>

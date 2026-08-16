@@ -13,15 +13,16 @@ import {
 } from "react";
 import { getUiConceptScoreSummary, uiConceptScorecard } from "./concept-scorecard";
 
+/** Status words a league volunteer would use, not the system's internal state names. */
 export const providerStatusCopy = [
   "Draft",
   "Queued",
-  "Pending review",
-  "Provider disconnected",
-  "Seed fallback",
-  "Live data",
-  "Read-only",
-  "Denied"
+  "Waiting for review",
+  "Sending not set up",
+  "Example data",
+  "Current",
+  "View only",
+  "Not allowed"
 ] as const;
 
 type BadgeVariant = "success" | "warning" | "error" | "info" | "neutral";
@@ -156,7 +157,7 @@ export function ToastQueue() {
         <span className="toast-icon" aria-hidden="true">i</span>
         <div className="toast-body">
           <div className="toast-title">Queued</div>
-          <div className="toast-msg">Provider delivery remains approval-gated.</div>
+          <div className="toast-msg">This will not go out until someone approves it.</div>
         </div>
       </article>
     </div>
@@ -572,8 +573,8 @@ export function PinnedMessagesBar({ count = 2, children }: { count?: number; chi
 export function BroadcastMode({ enabled }: { enabled: boolean }) {
   return (
     <aside className="broadcast-mode" role="status">
-      <StatusBadge label={enabled ? "Read-only" : "Live data"} variant={enabled ? "warning" : "success"} />
-      <span>{enabled ? "Coach Broadcast Mode is on. Families can read updates but cannot post." : "Team Chat is open for assigned families and staff."}</span>
+      <StatusBadge label={enabled ? "Announcements only" : "Open to replies"} variant={enabled ? "warning" : "success"} />
+      <span>{enabled ? "Broadcast mode is on. Families can read your updates but cannot reply here." : "Team Chat is open for your team's families and staff."}</span>
     </aside>
   );
 }
@@ -945,7 +946,7 @@ export function PermissionBoundaryNotice({ status = "Read-only" }: { status?: "R
   return (
     <section className={`notice ${status === "Denied" ? "danger" : "warning"}`}>
       <StatusBadge label={status} variant={status === "Denied" ? "error" : "warning"} />
-      <p>This area is limited by role. Use your assigned dashboard for active records.</p>
+      <p>You do not have access to this area. Use your own dashboard to see what you can change.</p>
     </section>
   );
 }

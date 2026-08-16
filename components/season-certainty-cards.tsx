@@ -61,7 +61,17 @@ export function ActionRow({ action }: { action: SeasonActionItem }) {
   );
 }
 
-export function OperationalTruthBand({ truth }: { truth: ParentSeasonCertaintyView["operationalTruth"] }) {
+export /** Plain words for the record types behind each check, for a volunteer audience. */
+const truthCategoryLabel: Record<string, string> = {
+  record: "Records",
+  approval: "Approvals",
+  publication: "Publishing",
+  delivery: "Messages sent",
+  acknowledgment: "Confirmations",
+  freshness: "How current this is"
+};
+
+function OperationalTruthBand({ truth }: { truth: ParentSeasonCertaintyView["operationalTruth"] }) {
   const state: SeasonCardState = truth.tone === "ready"
     ? "ready"
     : truth.tone === "blocked"
@@ -84,14 +94,14 @@ export function OperationalTruthBand({ truth }: { truth: ParentSeasonCertaintyVi
         <StatusBadge state={state} label={truth.tone === "unknown" ? "Needs verification" : truth.tone} />
       </div>
       <details>
-        <summary>Evidence and exceptions</summary>
+        <summary>What this is based on</summary>
         <ul>
           {truth.evidence.map((lane) => (
             <li key={`${lane.category}-${lane.label}`}>
               <span aria-hidden="true">{lane.satisfied === true && !lane.freshness?.stale ? "✓" : lane.satisfied === false ? "×" : "!"}</span>
               <span>
                 <strong>{lane.label}</strong>
-                <small>{lane.category} | {lane.source}{lane.freshness ? ` | ${lane.freshness.label}` : ""}</small>
+                <small>{truthCategoryLabel[lane.category] ?? lane.category} - from {lane.source}{lane.freshness ? ` - ${lane.freshness.label}` : ""}</small>
                 {(lane.satisfied !== true || lane.freshness?.stale) && lane.recoveryAction ? <em>{lane.recoveryAction}</em> : null}
               </span>
             </li>

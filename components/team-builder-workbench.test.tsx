@@ -35,7 +35,7 @@ describe("team-builder workbench", () => {
     expect(html).toContain("Approve reviewed plan");
     expect(html).toContain("Publish approved assignments");
     expect(html).toContain("sends no email, SMS, push");
-    expect(html).toContain("Hosted browser and Supabase readback proof remain external acceptance gates");
+    expect(html).toContain("Saved on this device only. Final sign-off still happens outside this page.");
     expect(html).toContain("Profile missing");
     expect(html).toContain("Evaluation default 3");
   });

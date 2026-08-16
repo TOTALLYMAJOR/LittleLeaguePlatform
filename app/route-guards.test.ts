@@ -124,7 +124,7 @@ describe("role route guards and compatibility wrappers", () => {
     expect(panel).toContain("Preview");
     expect(panel).toContain("Approval is required before publish");
     expect(panel).toContain("Confirm and publish");
-    expect(panel).toContain("Publishing creates in-app notification drafts only. External delivery still requires separate approval and provider evidence.");
+    expect(panel).toContain("Publishing creates in-app drafts only. Email, text, and push still need separate approval before anything goes out.");
     expect(panel).toContain("/api/coach/ai-workspace");
   });
 

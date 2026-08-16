@@ -123,7 +123,7 @@ function FamilyPreferencesClient({
             <label>Quiet hours start<input type="time" value={quietHoursStart} onChange={(event) => { setQuietHoursStart(event.target.value); markChanged(); }} /></label>
             <label>Quiet hours end<input type="time" value={quietHoursEnd} onChange={(event) => { setQuietHoursEnd(event.target.value); markChanged(); }} /></label>
           </div>
-          <p className="notice">Choosing a channel saves your preference. It does not prove the channel is verified or that provider delivery is connected.</p>
+          <p className="notice">Choosing how you are contacted saves your preference. It does not confirm that the address or number is verified.</p>
           <button disabled={isPending || (!isSettings && completed)} onClick={save}>
             {isPending ? "Saving..." : completed ? "Preferences saved" : isSettings ? "Save changes" : "Save preferences"}
           </button>

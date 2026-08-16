@@ -58,7 +58,7 @@ export function FamilyPhotos({
       <section className="hero family-photos-hero">
         <span className="eyebrow">Family Photos</span>
         <h1>Released team memories, without the portal clutter.</h1>
-        <p className="lead">Only approved items with explicit family-release evidence appear for linked teams.</p>
+        <p className="lead">Only approved photos that were released to families appear for your teams.</p>
       </section>
 
       <section className="family-photo-trust" aria-label="Photo privacy and consent status">
@@ -106,7 +106,7 @@ export function FamilyPhotos({
         <section className="family-photo-empty">
           <Images aria-hidden="true" size={32} strokeWidth={1.8} />
           <h2>No released photos yet</h2>
-          <p>A coach or admin can add media, but it stays hidden here until moderation, safety checks, required consent evidence, and family release are complete.</p>
+          <p>A coach or admin can add photos, but they stay hidden here until review, safety checks, consent, and release to families are complete.</p>
           <a className="button secondary" href="/parent/messages">Ask the team a question</a>
         </section>
       )}

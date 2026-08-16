@@ -93,7 +93,7 @@ export async function ParentScheduleSurface() {
   const scopedScheduleData = scopeScheduleOperationsData(
     scheduleData,
     pageAccess.access.parentTeamIds,
-    "Showing schedule rows scoped to the signed-in parent's linked teams."
+    "Showing events for your children's teams."
   );
   return <ScheduleAlertsClient scheduleData={scopedScheduleData} dashboardData={dashboardData} mode="parent" />;
 }

@@ -64,7 +64,7 @@ describe("season transition review experience", () => {
     }} />);
     expect(html).toContain("Reviewed season and team changes");
     expect(html).toContain("TRANSITION-001");
-    expect(html).toContain("No roster change or provider message occurs");
+    expect(html).toContain("No roster change is made and nothing is sent");
     expect(html).toContain("Apply reviewed move");
     expect(html).toContain("Correct before activity");
   });

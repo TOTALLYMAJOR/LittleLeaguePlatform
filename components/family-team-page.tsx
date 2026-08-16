@@ -21,7 +21,7 @@ export function FamilyTeamPage({ view }: { view: FamilyTeamView }) {
       <section className="hero family-team-hero">
         <span className="eyebrow">Family team page</span>
         <h1>Your team contacts and next steps.</h1>
-        <p className="lead">Family access shows useful team facts. Portal branding and staff capability controls stay on staff surfaces.</p>
+        <p className="lead">Families see useful team details. Branding and staff controls stay on staff pages.</p>
       </section>
 
       {view.teams.length ? (

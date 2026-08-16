@@ -184,7 +184,7 @@ export function TeamBuilderWorkbench({ initialData }: { initialData: TeamBuilder
             </li>
           ))}
         </ol>
-        <p className="muted">Local persisted implementation only. Hosted browser and Supabase readback proof remain external acceptance gates.</p>
+        <p className="muted">Saved on this device only. Final sign-off still happens outside this page.</p>
       </div>
 
       <div

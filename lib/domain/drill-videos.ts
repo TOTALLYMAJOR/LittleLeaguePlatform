@@ -141,7 +141,7 @@ export function validateDrillVideoForApproval(input: {
   source?: Pick<DrillVideoSource, "approvalStatus" | "externalChannelId">;
 }): DrillVideoValidationResult {
   if (input.video.provider !== "youtube") {
-    return { ok: false, message: "Only YouTube drill videos can be approved in v1." };
+    return { ok: false, message: "Only YouTube drill videos can be approved right now." };
   }
   if (input.video.approvalStatus === "retired") {
     return { ok: false, message: "Retired drill videos cannot be re-approved without resubmission." };
@@ -164,7 +164,7 @@ export function validateDrillVideoAssignment(input: {
   visibleToFamilies?: boolean;
 }): DrillVideoValidationResult {
   if (input.video.provider !== "youtube") {
-    return { ok: false, message: "Only YouTube drill videos can be assigned in v1." };
+    return { ok: false, message: "Only YouTube drill videos can be assigned right now." };
   }
   if (input.video.approvalStatus !== "approved") {
     return { ok: false, message: "Only approved drill videos can be assigned to coach practice planning." };

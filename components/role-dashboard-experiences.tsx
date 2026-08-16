@@ -364,7 +364,7 @@ export function SponsorCommunityProofLedger({
         <div>
           <span>Community proof</span>
           <h1 id="sponsor-community-proof-title">Sponsor evidence ledger</h1>
-          <p>Record, placement, public recap inventory, and billing evidence remain separate.</p>
+          <p>The sponsor record, where it appears, and its billing are tracked separately.</p>
         </div>
         <strong>Admin only</strong>
       </header>
@@ -420,7 +420,7 @@ export function SponsorCommunityProofLedger({
       ) : (
         <div className="sponsor-proof-empty">
           <h2>No sponsor records yet</h2>
-          <p>Create a sponsor record below before placement or billing evidence can appear.</p>
+          <p>Add a sponsor below before placement or billing can be tracked.</p>
           <a className="button" href="#sponsor-record-editor">Create sponsor record</a>
         </div>
       )}

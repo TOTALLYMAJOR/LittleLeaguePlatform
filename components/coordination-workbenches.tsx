@@ -306,8 +306,8 @@ export function ParentNotificationReceiptsClient({ initialReceipts, message }: {
     <div className="page coordination-workbench parent-receipts">
       <section className="hero compact-hero">
         <span className="eyebrow">Message receipts</span>
-        <h1>Your team updates, with honest delivery evidence.</h1>
-        <p className="lead">Acknowledge only after you have reviewed an update. This records your action; it does not rewrite provider delivery history.</p>
+        <h1>Your team updates, and an honest record of what was actually sent.</h1>
+        <p className="lead">Acknowledge only after you have read an update. This records that you saw it; it does not change what was sent.</p>
       </section>
       <p className="notice">{statusMessage}</p>
       <section className="grid two">
@@ -499,7 +499,7 @@ export function SeasonLaunchWizardClient({ data }: { data: SeasonLaunchData }) {
               </button>
               {analysis.errorRows > 0 ? <p className="muted">Resolve every error row before approving the roster.</p> : null}
               {analysis.errorRows === 0 && !stagedImportId && !imports.some((item) => item.status === "validated") ? <p className="muted">Validate and stage this roster before approval.</p> : null}
-              {analysis.errorRows === 0 && analysis.warningRows > 0 && !confirmWarnings ? <p className="muted">Confirm that every warning row was reviewed before approval.</p> : null}
+              {analysis.errorRows === 0 && analysis.warningRows > 0 && !confirmWarnings ? <p className="muted">Confirm that every warning was reviewed before you approve.</p> : null}
               <p className="muted">Approval creates players and guardian/invite records with import provenance. It executes zero email, SMS, or push sends.</p>
             </article>
             <article className="card stack">
@@ -637,7 +637,7 @@ export function PracticeRunLoopClient({ state, initialReceipts, onReceiptsChange
           <label>What needs work<textarea value={needsWork} onChange={(event) => setNeedsWork(event.target.value)} /></label>
           <label>Family-safe note<textarea value={familyNote} onChange={(event) => setFamilyNote(event.target.value)} /></label>
           <button disabled={isPending || !activeReceipt?.startedAt || Boolean(activeReceipt.completedAt)} onClick={() => submit("complete")}>Complete and unlock Replay seed</button>
-          <p className="muted">Completion does not publish anything. It creates evidence that a separately reviewed Parent Replay draft may reference.</p>
+          <p className="muted">Finishing this does not publish anything. It saves a record a Parent Replay draft can refer to.</p>
         </article>
       </div>
     </section>
@@ -1057,7 +1057,7 @@ export function GameDayResolutionRoomClient({ state, initialReviews, mode, messa
           {!selectedEvent ? <p className="muted">Choose an assigned-team event before saving a resolution.</p> : null}
           {selectedEvent && reason.trim().length < 10 ? <p className="muted">Add a decision reason of at least 10 characters to enable this action.</p> : null}
           {selectedEvent && decision === "delay" && !startsAt ? <p className="muted">Choose the new start time before saving a delay.</p> : null}
-          <p className="muted">Monitor creates evidence only. Confirm, delay, and cancel create pending notification drafts; they do not execute provider delivery.</p>
+          <p className="muted">Monitoring only records what you saw. Confirm, delay, and cancel create drafts; nothing is sent to families until approved.</p>
         </article>
       </section>
       <section className="card stack">

@@ -134,7 +134,7 @@ describe("ParentWeeklyDashboard", () => {
     expect(html).toContain("Tiny Tigers vs Rookie Rockets");
     expect(html).toContain("Next event");
     expect(html).toContain("Required family action");
-    expect(html).toContain("Persisted RSVP");
+    expect(html).toContain("Answer saved");
     expect(html).toContain("Sock-ball high five");
     expect(html).toContain("Opening weekend notes");
     expect(html).toContain("Family logistics only");

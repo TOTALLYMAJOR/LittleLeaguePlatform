@@ -204,7 +204,7 @@ export function AdminSeasonTransitionReview({ data }: { data: AdminSeasonTransit
             reason,
             expiresAt: new Date(Date.now() + 14 * 24 * 60 * 60 * 1000).toISOString()
           })}>Send for guardian review</button>
-          <p className="muted">Creates an in-app review record only. No roster change or provider message occurs.</p>
+          <p className="muted">This creates a review record only. No roster change is made and nothing is sent.</p>
         </article>
         <article className="card stack">
           <h3>Privacy-minimized readiness rules</h3>

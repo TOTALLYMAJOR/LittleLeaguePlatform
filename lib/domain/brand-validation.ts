@@ -239,7 +239,7 @@ export function buildBrandLaunchValidation(teams: Team[]): BrandLaunchValidation
       { label: "Coach can create and publish a brand", target: "Under 10 minutes", current: "Guided profile model and publish state are defined", status: "covered" },
       { label: "Branding appears on all 20 target features", target: "100%", current: `${coveragePercent}% token coverage in launch validation`, status: coveragePercent === 100 ? "covered" : "needs_qa" },
       { label: "Parent sees correct brand after switching teams", target: "100%", current: "Team-scoped tokens are keyed by teamId", status: "needs_qa" },
-      { label: "Brand update appears on web after publish", target: "Under 5 minutes", current: "Supabase publish record plus cache invalidation policy required", status: "needs_provider" },
+      { label: "Brand update appears on web after publish", target: "Under 5 minutes", current: "A saved publish record is required before the update goes out", status: "needs_provider" },
       { label: "Invalid image uploads are rejected", target: "100%", current: "HTTPS URL and review metadata gates are defined", status: "covered" },
       { label: "Non-coaches blocked from editing branding", target: "100%", current: "Admin/assigned-coach RLS policy required for brand profiles", status: "covered" },
       { label: "Emails render with fallback brand if custom brand is missing", target: "100%", current: "Fallback avatar and default token model defined", status: "covered" },

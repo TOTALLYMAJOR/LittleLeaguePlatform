@@ -130,7 +130,7 @@ export async function AdminFamilyAccessSurface() {
         ) : (
           <EmptyState
             title="Every player has a linked parent"
-            body="No repair is needed right now. New gaps appear here as registrations are approved and rosters change."
+            body="Nothing to fix right now. New gaps appear here as registrations are approved and rosters change."
             action={<Link className="button secondary" href="/admin/registrations">Review registrations</Link>}
           />
         )}
@@ -153,7 +153,7 @@ export async function AdminSecurityAuditSurface() {
       <PageHeader
         eyebrow="Trust & Safety"
         title="Security & Audit"
-        subtitle="Confirm the RLS and audit boundaries that must stay green before live family use: cross-team denial, archived-season read-only behavior, guardian-scoped RSVP writes, and production audit events."
+        subtitle="Confirm the access rules that protect families before the season goes live: one team cannot see another, closed seasons cannot be edited, only linked guardians can answer for a child, and sensitive actions are recorded."
         actions={<StatusBadge
           label={openItems.length ? `${openItems.length} of ${items.length} not covered` : `All ${items.length} checks covered`}
           variant={openItems.length ? "warning" : "success"}
@@ -176,7 +176,7 @@ export async function AdminSecurityAuditSurface() {
         ) : (
           <EmptyState
             title="No open security gaps"
-            body="Every boundary check below has source-backed proof. Re-check after changing policies, roles, or migrations."
+            body="Every check below is currently passing. Check again after you change roles, access rules, or season setup."
           />
         )}
       </section>
@@ -214,7 +214,7 @@ export async function AdminReportsArchiveSurface() {
       <PageHeader
         eyebrow="League Setup"
         title="Reports & Archive"
-        subtitle="Archived seasons stay readable, exportable, and mutation-locked. Review what has been closed out and what proof backs it."
+        subtitle="Closed seasons stay readable and exportable, but can no longer be edited. Review what has been closed out."
         actions={<StatusBadge
           label={`${data.archivedSeasons.length} archived season${data.archivedSeasons.length === 1 ? "" : "s"}`}
           variant="neutral"
@@ -238,7 +238,7 @@ export async function AdminReportsArchiveSurface() {
         ) : (
           <EmptyState
             title="No archived seasons yet"
-            body="Seasons appear here after they are closed out. Current season records stay editable under Season Operations."
+            body="Seasons appear here after you close them out. The current season stays editable under Season Operations."
             action={<Link className="button secondary" href="/admin/teams">Open Teams</Link>}
           />
         )}
@@ -248,7 +248,7 @@ export async function AdminReportsArchiveSurface() {
         <summary>
           <span>
             <strong>Archive guarantees</strong>
-            <small>What stays readable, exportable, and locked after a season closes.</small>
+            <small>What you can still open, export, and rely on after a season closes.</small>
           </span>
           <span className="badge">{data.proof.length} records</span>
         </summary>
@@ -275,13 +275,13 @@ export async function AdminOperationsSurface() {
   const scopedScheduleData = scopeScheduleOperationsData(
     scheduleData,
     pageAccess.access.adminTeamIds,
-    "Showing schedule telemetry scoped to the signed-in admin's organizations."
+    "Showing schedule and delivery activity for your league only."
   );
   return (
     <>
       <AdminOperationsView data={data} />
       <details className="compact-disclosure schedule-telemetry-disclosure">
-        <summary><span><strong>Schedule and delivery telemetry</strong><small>Provider readiness, retry, device, alert, and schedule workflow evidence.</small></span><span className="badge">Operations evidence</span></summary>
+        <summary><span><strong>Schedule and delivery activity</strong><small>What was sent, what was retried, and what is still waiting.</small></span><span className="badge">Activity</span></summary>
         <ScheduleAlertsClient scheduleData={scopedScheduleData} mode="operations" />
       </details>
     </>
@@ -300,7 +300,7 @@ export async function AdminCommunicationsSurface() {
   const scopedScheduleData = scopeScheduleOperationsData(
     scheduleData,
     pageAccess.access.adminTeamIds,
-    "Showing current events for the signed-in administrator's organizations."
+    "Showing current events for your league."
   );
   const currentTeams = scopedScheduleData.teams.filter((team) => (
     (team.status ?? "active") === "active" &&
@@ -325,7 +325,7 @@ export function AdminOperationsView({ data }: { data: AdminOperationsData }) {
       <PageHeader
         eyebrow="League Setup"
         title="Settings & Providers"
-        subtitle="Review organization settings, which delivery providers are connected, what is waiting on approval, and what has been recorded in the audit log."
+        subtitle="Review your league settings, which message services are connected, what is waiting on approval, and a record of recent changes."
         actions={<StatusBadge
           label={`${data.settings.activeSeasonName} - ${data.settings.activeSeasonStatus}`}
           variant={data.settings.activeSeasonStatus === "active" ? "success" : "neutral"}
@@ -349,17 +349,17 @@ export function AdminOperationsView({ data }: { data: AdminOperationsData }) {
         ) : (
           <EmptyState
             title="No approval queues are waiting"
-            body="Registration, media, and delivery approvals appear here the moment something needs a decision."
+            body="Registrations, photos, and messages appear here the moment something needs your decision."
           />
         )}
       </section>
 
       <section aria-labelledby="admin-providers-title" className="stack">
-        <h2 id="admin-providers-title">Delivery providers</h2>
+        <h2 id="admin-providers-title">Email, text, and push messaging</h2>
         <p className="muted">
           {unconfiguredProviders.length
-            ? `${unconfiguredProviders.length} of ${data.providerInventory.length} providers still need configuration. Sends stay blocked until a provider is connected and approved.`
-            : "Every provider is configured. Sends still require consent, approval, and delivery logs."}
+            ? `${unconfiguredProviders.length} of ${data.providerInventory.length} message services still need setup. Nothing is sent to families until a service is connected and a person approves it.`
+            : "Every message service is set up. Messages still need a person to approve them before families receive anything."}
         </p>
         <div className="grid two">
           {data.providerInventory.map((item) => (
@@ -376,8 +376,8 @@ export function AdminOperationsView({ data }: { data: AdminOperationsData }) {
       <details className="compact-disclosure">
         <summary>
           <span>
-            <strong>Audit log</strong>
-            <small>Recorded admin and provider-sensitive actions.</small>
+            <strong>Activity record</strong>
+            <small>A record of league office changes and anything sent to families.</small>
           </span>
           <span className="badge">{data.auditLogs.length} events</span>
         </summary>
@@ -388,7 +388,7 @@ export function AdminOperationsView({ data }: { data: AdminOperationsData }) {
               {item.summary}
             </p>
           ))}
-          {!data.auditLogs.length ? <p className="muted">No audit events available yet.</p> : null}
+          {!data.auditLogs.length ? <p className="muted">Nothing has been recorded yet.</p> : null}
         </div>
       </details>
     </div>
@@ -509,7 +509,7 @@ export async function AdminScheduleVenuesSurface() {
   const scopedScheduleData = scopeScheduleOperationsData(
     scheduleData,
     pageAccess.access.adminTeamIds,
-    "Showing schedule and venue rows scoped to the signed-in admin's organizations."
+    "Showing events and fields for your league."
   );
   const resolutionState = {
     ...seedState,
@@ -534,7 +534,7 @@ export async function AdminScheduleVenuesSurface() {
           : `${resolutionData.message} ${resolutionEvidence.message}`}
       />
       <details className="compact-disclosure schedule-edit-disclosure">
-        <summary><span><strong>Edit a scheduled event</strong><small>Open the event form after reviewing the Resolution Room evidence and affected families.</small></span><span className="badge">Event form</span></summary>
+        <summary><span><strong>Edit a scheduled event</strong><small>Open the event form after reviewing the details and the families this affects.</small></span><span className="badge">Event form</span></summary>
         <ScheduleAlertsClient scheduleData={scopedScheduleData} mode="admin" />
       </details>
     </>

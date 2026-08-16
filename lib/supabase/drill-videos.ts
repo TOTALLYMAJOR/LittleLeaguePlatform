@@ -285,7 +285,7 @@ export async function submitCoachDrillVideoReference(input: {
   }
   const provider = input.provider ?? "youtube";
   if (!isSupportedDrillVideoProvider(provider)) {
-    return { ok: false, message: "Only YouTube drill video references are supported in v1." };
+    return { ok: false, message: "Only YouTube drill video links are supported right now." };
   }
   if (!isDrillVideoDifficulty(input.difficulty)) {
     return { ok: false, message: "Drill video difficulty must be beginner, intermediate, or advanced." };
@@ -607,7 +607,7 @@ export async function assignDrillVideoToTeam(input: {
 
     return {
       ok: true,
-      message: "Drill video assigned to coach practice planning. It is not visible to families in v1.",
+      message: "Drill video added to practice planning. Families cannot see it.",
       assignment: mapDrillVideoAssignment(row)
     };
   } catch {
