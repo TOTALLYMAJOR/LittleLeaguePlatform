@@ -13845,6 +13845,7 @@ button.theme-toggle:hover:not(:disabled) {
 }
 
 .landing-gateway {
+  position: relative;
   width: 100%;
   min-height: calc(100dvh - 72px);
   overflow: hidden;
@@ -14363,15 +14364,18 @@ button.theme-toggle:hover:not(:disabled) {
    pass, no hard scene cuts. Pure CSS timeline; transform/opacity/filter only, so it stays
    compositor-only end to end. */
 .landing-intro {
-  position: fixed;
+  /* Anchored to the landing page, not the viewport. The overlay dissolves into
+     this page, so it has to share its box: signed-in visitors get the landing
+     route inside the app shell, where a viewport-fixed overlay started at x=0
+     behind the sidebar and drew the whole scene offset to the left of the
+     content. Being absolute inside .landing-gateway also removes the need to
+     pad past the public header, since the gateway already starts below it. */
+  position: absolute;
   inset: 0;
   z-index: 1300;
   display: grid;
-  /* One row: the stage. Skip and captions are positioned against this fixed layer.
-     padding-top clears the live public header so the ticker reads as a banner
-     sitting under it rather than covering the site nav. */
+  /* One row: the stage. Skip and captions are positioned against this layer. */
   grid-template-rows: 1fr;
-  padding-top: 72px;
   overflow: hidden;
   /* Clicks pass straight through to the live page, so Sign in is reachable from
      the first frame. Only the overlay's own controls re-enable pointer events. */
