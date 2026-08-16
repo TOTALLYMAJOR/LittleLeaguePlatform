@@ -678,8 +678,10 @@ describe("AdminDashboardClient", () => {
 
     expect(html).toContain("What is blocking launch?");
     expect(html).toContain("Launch blockers need administrator action.");
-    expect(html).toContain("Current admin context");
-    expect(html).toContain("League admin");
+    // The page names itself and states its job; role/org/season context is not
+    // repeated here because the app shell's context strip already carries it.
+    expect(html).toContain("<h1>Overview</h1>");
+    expect(html).not.toContain("Current admin context");
     expect(html).toContain("Teams needing help");
     expect(html).toContain('href="/admin/teams"');
     expect(html).toContain('href="/admin/registrations"');

@@ -3320,8 +3320,7 @@ button.month-calendar-day:hover {
 .season-event-facts a,
 .season-section-header a,
 .season-card .text-link,
-.privacy-indicator a,
-.team-status-row a {
+.privacy-indicator a {
   color: var(--certainty-accent);
   font-weight: 900;
 }
@@ -3615,8 +3614,7 @@ button.month-calendar-day:hover {
   margin-top: auto;
   padding-top: var(--sp-2);
 }
-.season-card-grid,
-.season-admin-topgrid {
+.season-card-grid {
   display: grid;
   gap: var(--sp-3);
   grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -3624,37 +3622,6 @@ button.month-calendar-day:hover {
 .league-health-card { grid-column: span 1; }
 .league-health-grid {
   grid-template-columns: repeat(4, minmax(0, 1fr));
-}
-.team-status-table {
-  display: grid;
-  gap: var(--sp-2);
-  overflow-x: auto;
-}
-.team-status-head,
-.team-status-row {
-  display: grid;
-  gap: var(--sp-2);
-  grid-template-columns: minmax(140px, 1.1fr) minmax(140px, 1fr) minmax(98px, .8fr) minmax(110px, .8fr) minmax(150px, 1fr) minmax(130px, 1fr) minmax(100px, .7fr) minmax(90px, .7fr) minmax(105px, .7fr) minmax(74px, .5fr);
-  min-width: 1040px;
-}
-.team-status-head {
-  color: var(--muted);
-  font-size: var(--text-xs);
-  font-weight: 900;
-}
-.team-status-row {
-  align-items: center;
-  background: color-mix(in srgb, var(--surface) 92%, transparent);
-  border: 1px solid var(--line);
-  border-radius: var(--radius-sm);
-  color: var(--text);
-  font-size: var(--text-sm);
-  padding: 10px;
-}
-.team-status-row small {
-  color: var(--muted);
-  display: block;
-  font-size: var(--text-xs);
 }
 .privacy-indicator {
   align-items: center;
@@ -4063,19 +4030,6 @@ button.month-calendar-day:hover {
 .admin-workbench-grid { display: grid; gap: var(--sp-4); grid-template-columns: repeat(4, minmax(0, 1fr)); }
 .admin-focus-grid { align-items: start; }
 .admin-focus-card { grid-column: 1 / -1; }
-.admin-focus-hero {
-  gap: 6px;
-  max-width: 900px;
-}
-.admin-focus-hero h1 {
-  font-size: 2.35rem;
-  letter-spacing: 0;
-  line-height: 1.08;
-}
-.admin-focus-hero .lead {
-  font-size: var(--text-base);
-  max-width: 760px;
-}
 .media-review-card {
   gap: var(--sp-4);
 }
@@ -6520,8 +6474,7 @@ html[data-theme="dark"] {
   .season-metric,
   .season-rsvp-list p,
   .season-action-row,
-  .season-change-item,
-  .team-status-row {
+  .season-change-item {
     background: color-mix(in srgb, var(--surface) 88%, transparent);
   }
   .next-level-command {
@@ -6647,8 +6600,7 @@ html[data-theme="dark"] {
     gap: 10px;
     padding: 12px;
   }
-  .season-card-grid,
-  .season-admin-topgrid {
+  .season-card-grid {
     grid-template-columns: 1fr;
   }
   .next-level-command {
@@ -6775,22 +6727,6 @@ html[data-theme="dark"] {
   }
   .game-day-copy-row {
     grid-template-columns: 1fr;
-  }
-  .team-status-table {
-    overflow: visible;
-  }
-  .team-status-head {
-    display: none;
-  }
-  .team-status-row {
-    grid-template-columns: 1fr;
-    min-width: 0;
-  }
-  .team-status-row span[role="cell"] {
-    align-items: baseline;
-    display: flex;
-    gap: var(--sp-2);
-    justify-content: space-between;
   }
   .landing-nav { align-items: flex-start; flex-direction: column; }
   .landing-nav-links { justify-content: flex-start; }
@@ -9027,8 +8963,8 @@ caption {
 }
 
 .public-nav a {
-  min-height: 40px;
-  padding: 10px 12px;
+  min-height: 44px;
+  padding: 12px;
   border-radius: var(--radius);
   color: var(--muted);
   font-size: 0.82rem;
@@ -11097,8 +11033,8 @@ button.theme-toggle:hover:not(:disabled) {
 
 .admin-inspector-edit input,
 .admin-inspector-edit select {
-  min-height: 40px;
-  padding: 8px 9px;
+  min-height: 44px;
+  padding: 10px 9px;
 }
 
 .admin-change-lens {
@@ -11207,37 +11143,6 @@ button.theme-toggle:hover:not(:disabled) {
   justify-content: space-between;
   gap: 24px;
   align-items: end;
-}
-
-.season-admin-context {
-  overflow: hidden;
-  border: 1px solid var(--line);
-  border-radius: var(--radius-md);
-  background: var(--surface);
-}
-.season-admin-context > summary { display: none; }
-.season-admin-context-details {
-  display: flex;
-  flex-wrap: wrap;
-}
-
-.season-admin-context-details span {
-  flex: 1 1 180px;
-  min-width: 0;
-  padding: 13px 16px;
-  color: var(--muted);
-  font-size: 0.76rem;
-}
-
-.season-admin-context-details span + span {
-  border-left: 1px solid var(--line);
-}
-
-.season-admin-context strong {
-  display: block;
-  margin-top: 3px;
-  color: var(--text);
-  font-size: 0.86rem;
 }
 
 .parent-replay-page > * {
@@ -11379,7 +11284,6 @@ button.theme-toggle:hover:not(:disabled) {
 
 .data-table,
 .metric-value,
-.season-admin-context,
 .game-day-time,
 .coach-command-event {
   font-variant-numeric: tabular-nums;
@@ -11479,7 +11383,7 @@ button.theme-toggle:hover:not(:disabled) {
   }
 
   .public-nav .button {
-    min-height: 40px;
+    min-height: 44px;
   }
 
   .landing-page {
@@ -11690,7 +11594,7 @@ button.theme-toggle:hover:not(:disabled) {
   }
 
   .parent-rsvp-action {
-    min-height: 40px;
+    min-height: 44px;
     padding-inline: 11px;
   }
 
@@ -11841,38 +11745,8 @@ button.theme-toggle:hover:not(:disabled) {
     border-top: 1px solid var(--line);
     border-left: 0;
   }
-
-  .season-admin-home > .season-admin-context { order: -3; }
   .season-admin-home > .pending-actions-panel { order: -2; }
   .season-admin-home > .league-health-card { order: -1; }
-
-  .season-admin-context > summary {
-    align-items: center;
-    display: flex;
-    gap: 8px;
-    justify-content: space-between;
-    min-height: 40px;
-    padding: 8px 10px;
-  }
-
-  .season-admin-context > summary strong {
-    min-width: 0;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-  }
-
-  .season-admin-context-details { display: none; }
-  .season-admin-context[open] .season-admin-context-details { display: flex; }
-
-  .season-admin-context-details span {
-    flex-basis: 100%;
-  }
-
-  .season-admin-context-details span + span {
-    border-top: 1px solid var(--line);
-    border-left: 0;
-  }
 
   .replay-approval-checkpoint ol {
     grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -13645,9 +13519,6 @@ button.theme-toggle:hover:not(:disabled) {
 }
 
 @media (max-width: 680px) {
-  .admin-focus-hero h1 {
-    font-size: 1.8rem;
-  }
 
   .coach-announcement-ticker {
     grid-template-columns: minmax(0, 1fr) 44px;

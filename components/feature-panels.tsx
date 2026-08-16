@@ -19,10 +19,7 @@ import {
   buildPublicEventCalendarActions,
   buildCoachAssistiveSuggestions,
   canUpdateTeamPortalBranding,
-  communicationTemplates,
   computeAdminHealth,
-  computeSeasonPlanningMetrics,
-  defaultTeamCommunicationCopy,
   detectScheduleConflicts,
   getCoachRsvpReliability,
   getCoachRsvpSummaries,
@@ -68,7 +65,6 @@ import {
   getMediaMessagePolicyScreens,
   getVenueRecords,
   platformFeatureTiers,
-  previewTeamCommunication,
   previewScheduleChangeImpact,
   previewRecurringEvents,
   publicArrivalLabel,
@@ -119,12 +115,7 @@ import {
   buildWeatherSafetyDecisionAssistant,
   buildSponsorSafeMediaGallery,
   buildFamilyAvailabilityIntelligence,
-  previewBalancedTeamBuild,
-  getTouchTargetQa,
-  getOfflineStateSummary,
-  getAccessibilityContrastChecks,
   getPromptEvalHarness,
-  getPrivacyFilters,
   youtubePrivacyEmbedUrl,
   buildAiCoachWorkspaceDrafts,
   generateRookieCoachAssist,
@@ -136,7 +127,6 @@ import {
   buildBrandLaunchValidation,
   type AiCoachWorkspaceDraft,
   type ChatAnnouncementTopic,
-  type CommunicationTemplate,
   type DrillVideo,
   type DrillVideoAssignment,
   type DrillVideoDifficulty,
@@ -145,7 +135,6 @@ import {
   type EventStatus,
   type LeagueEvent,
   type MediaItem,
-  type NotificationChannel,
   type ParentReplayDraft,
   type ParentReplayRecord,
   type PracticeFocusArea,
@@ -200,9 +189,6 @@ import {
   PhotosSummaryCard,
   PracticeRecapCard,
   PrivacyIndicator,
-  RegistrationQueueCard,
-  SecurityStatusCard,
-  TeamStatusTable,
   WeatherFieldCard,
   WhatChangedCard
 } from "@/components/season-certainty-cards";
@@ -236,21 +222,6 @@ interface RegistrationTeamOption {
   name: string;
   division: string;
 }
-
-const lineupPositionDefs = [
-  { id: "pitcher", label: "Pitcher", shortLabel: "P", x: 240, y: 170 },
-  { id: "catcher", label: "Catcher", shortLabel: "C", x: 240, y: 284 },
-  { id: "first_base", label: "First", shortLabel: "1B", x: 354, y: 170 },
-  { id: "second_base", label: "Second", shortLabel: "2B", x: 296, y: 110 },
-  { id: "shortstop", label: "Short", shortLabel: "SS", x: 184, y: 110 },
-  { id: "third_base", label: "Third", shortLabel: "3B", x: 126, y: 170 },
-  { id: "left_field", label: "Left", shortLabel: "LF", x: 104, y: 58 },
-  { id: "center_field", label: "Center", shortLabel: "CF", x: 240, y: 34 },
-  { id: "right_field", label: "Right", shortLabel: "RF", x: 376, y: 58 }
-] as const;
-
-type LineupPositionId = typeof lineupPositionDefs[number]["id"];
-type AdminCommunicationChannel = Extract<NotificationChannel, "email" | "sms">;
 
 function formatDate(value: string) {
   return new Date(value).toLocaleString("en-US", {
@@ -3982,27 +3953,26 @@ interface AdminDashboardClientProps {
 export type AdminDashboardSurfaceMode = "overview" | "media" | "sponsors";
 
 export function AdminDashboardClient({ registrationRequests, sponsorData, mediaData, drillVideoData, surface = "overview" }: AdminDashboardClientProps = {}) {
-  const { state, dispatch } = useAppState();
+  const { state } = useAppState();
   const showOverview = surface === "overview";
   const showMedia = surface === "media";
   const showSponsors = surface === "sponsors";
+  // Page name matches the nav label; the sentence that used to be the h1 is the purpose line.
   const focusedSurfaceCopy = surface === "media"
     ? {
-      eyebrow: "Media review",
-      title: "Review reported media and visibility before families see it.",
-      body: "Moderation keeps reported, hidden, rejected, removed, or unapproved drill video references out of family-facing views until staff review is complete."
+      eyebrow: "Trust & Safety",
+      title: "Media Review",
+      body: "Review reported media and visibility before families see it. Moderation keeps reported, hidden, rejected, removed, or unapproved drill video references out of family-facing views until staff review is complete."
     }
     : surface === "sponsors"
       ? {
-        eyebrow: "Sponsor operations",
-        title: "Manage sponsor records without exposing billing state to families.",
-        body: "Admin sponsor workflows keep placements, logo metadata, and Stripe readiness records separate from child-facing display."
+        eyebrow: "League Setup",
+        title: "Sponsors",
+        body: "Manage sponsor records without exposing billing state to families. Placements, logo metadata, and Stripe readiness records stay separate from child-facing display."
       }
       : null;
-  const healthCards = computeAdminHealth(state, NOW);
   const adminSuggestions = buildAdminAssistiveSuggestions(state, NOW);
   const visibleRegistrations = registrationRequests ?? state.registrationRequests;
-  const pendingRegistrations = visibleRegistrations.filter((request) => request.status === "pending");
   const sponsorTeams = sponsorData ? sponsorData.teams : state.teams;
   const mediaTeams = mediaData?.teams.length ? mediaData.teams : state.teams;
   const drillTeams = drillVideoData?.teams.length ? drillVideoData.teams : state.teams;
@@ -4021,7 +3991,6 @@ export function AdminDashboardClient({ registrationRequests, sponsorData, mediaD
   const uploadStorageProvider = getUploadStorageProviderStatus(false);
   const mediaRetentionPolicy = getMediaRetentionPolicy();
   const parentVisibleMediaCount = mediaItems.filter((item) => canViewMediaByRole(item, "parent")).length;
-  const activeSponsors = sponsors.filter((sponsor) => sponsor.status === "active");
   const sponsorDisplayPolicy = getSponsorPublicDisplayPolicy();
   const scheduleSponsorPlacement = getScheduleSponsorPlacement(sponsors);
   const mediaGallerySponsorPlacement = getMediaGallerySponsorPlacement(sponsors);
@@ -4054,22 +4023,8 @@ export function AdminDashboardClient({ registrationRequests, sponsorData, mediaD
   const leagueRevenueSummary = useMemo(() => buildLeagueRevenueSummary(moneySponsorsState), [moneySponsorsState]);
   const sponsorOpportunities = useMemo(() => buildSponsorOpportunities(moneySponsorsState), [moneySponsorsState]);
   const adminCommunityTeamId = state.teams[0]?.id ?? sponsorTeams[0]?.id ?? "";
-  const adminVolunteerMarketplace = adminCommunityTeamId ? buildVolunteerMarketplace(state, adminCommunityTeamId) : [];
   const adminEquipmentExchange = adminCommunityTeamId ? buildEquipmentExchange(state, adminCommunityTeamId, "admin") : [];
-  const adminWeatherSafety = adminCommunityTeamId ? buildWeatherSafetyDecisionAssistant(state, adminCommunityTeamId, NOW) : undefined;
   const adminSponsorSafeGallery = adminCommunityTeamId ? buildSponsorSafeMediaGallery(moneySponsorsState, adminCommunityTeamId) : undefined;
-  const adminAvailabilityIntelligence = adminCommunityTeamId ? buildFamilyAvailabilityIntelligence(state, adminCommunityTeamId, NOW) : undefined;
-  const touchTargetQa = getTouchTargetQa();
-  const offlineStateSummary = getOfflineStateSummary();
-  const contrastChecks = getAccessibilityContrastChecks();
-  const privacyFilters = getPrivacyFilters();
-  const [communicationTeamId, setCommunicationTeamId] = useState("team-tigers");
-  const [communicationChannel, setCommunicationChannel] = useState<AdminCommunicationChannel>("email");
-  const [communicationTemplate, setCommunicationTemplate] = useState<CommunicationTemplate>("weekly_digest");
-  const initialCommunicationCopy = defaultTeamCommunicationCopy(state, "team-tigers", "weekly_digest");
-  const [communicationSubject, setCommunicationSubject] = useState(initialCommunicationCopy.subject);
-  const [communicationBody, setCommunicationBody] = useState(initialCommunicationCopy.body);
-  const [communicationMessage, setCommunicationMessage] = useState("");
   const [sponsorId, setSponsorId] = useState(initialSponsors[0]?.id ?? "new");
   const [sponsorName, setSponsorName] = useState(initialSponsors[0]?.name ?? "");
   const [sponsorLevel, setSponsorLevel] = useState<Sponsor["level"]>(initialSponsors[0]?.level ?? "league");
@@ -4087,101 +4042,6 @@ export function AdminDashboardClient({ registrationRequests, sponsorData, mediaD
   ));
   const [isMediaPending, startMediaTransition] = useTransition();
   const [isDrillReviewPending, startDrillReviewTransition] = useTransition();
-  const [lineupTeamId, setLineupTeamId] = useState("team-tigers");
-  const [draggedPlayerId, setDraggedPlayerId] = useState("");
-  const [targetRosterSize, setTargetRosterSize] = useState(10);
-  const [planningDivision, setPlanningDivision] = useState("3U");
-  const [lineupPositions, setLineupPositions] = useState<Partial<Record<LineupPositionId, string>>>({
-    pitcher: "player-mason",
-    catcher: "player-avery"
-  });
-  const seasonPlanning = useMemo(() => computeSeasonPlanningMetrics(state, targetRosterSize), [state, targetRosterSize]);
-  const selectedPlanningDivision = seasonPlanning.divisions.find((division) => division.division === planningDivision) ?? seasonPlanning.divisions[0];
-  const selectedBracketRound = seasonPlanning.bracketRounds.find((round) => round.division === selectedPlanningDivision?.division);
-  const teamBuildPreview = useMemo(() => previewBalancedTeamBuild(state, {
-    division: selectedPlanningDivision?.division ?? planningDivision,
-    targetRosterSize,
-    actorUserId: "user-admin",
-    now: NOW,
-    skillRatings: {
-      "player-mason": 4,
-      "player-avery": 3,
-      "player-noah": 3,
-      "player-ella": 4,
-      "player-liam": 2
-    },
-    playerMetadata: {
-      "player-mason": {
-        playerId: "player-mason",
-        ageBand: "3U",
-        birthdateDerivedAgeLabel: "Age 3 on league cutoff",
-        evaluation: {
-          rating: 4,
-          source: "coach_evaluation",
-          label: "Confident throwing and listening"
-        },
-        reviewNotes: ["Admin review input only; family preview keeps safe roster name."]
-      },
-      "player-avery": {
-        playerId: "player-avery",
-        ageBand: "3U",
-        birthdateDerivedAgeLabel: "Age 3 on league cutoff",
-        evaluation: {
-          rating: 3,
-          source: "guardian_questionnaire",
-          label: "New player, comfortable with friends"
-        },
-        reviewNotes: ["Use with sibling/friend constraints before publishing."]
-      },
-      "player-noah": {
-        playerId: "player-noah",
-        ageBand: "3U",
-        birthdateDerivedAgeLabel: "Age 3 on league cutoff",
-        evaluation: {
-          rating: 3,
-          source: "imported_roster",
-          label: "Balanced beginner"
-        }
-      },
-      "player-ella": {
-        playerId: "player-ella",
-        ageBand: "5U",
-        birthdateDerivedAgeLabel: "Age 5 on league cutoff",
-        evaluation: {
-          rating: 4,
-          source: "coach_evaluation",
-          label: "Ready for older division pace"
-        }
-      },
-      "player-liam": {
-        playerId: "player-liam",
-        ageBand: "6U",
-        birthdateDerivedAgeLabel: "Age 6 on league cutoff",
-        evaluation: {
-          rating: 2,
-          source: "guardian_questionnaire",
-          label: "Needs extra practice support"
-        }
-      }
-    },
-    friendRequests: [
-      { playerId: "player-mason", friendPlayerId: "player-avery" }
-    ]
-  }), [planningDivision, selectedPlanningDivision?.division, state, targetRosterSize]);
-  const communicationPreview = useMemo(() => previewTeamCommunication(state, {
-    teamId: communicationTeamId,
-    actorUserId: "user-admin",
-    channel: communicationChannel,
-    template: communicationTemplate,
-    subject: communicationSubject,
-    body: communicationBody,
-    sendAt: new Date(Date.parse(NOW) + 60 * 60 * 1000).toISOString(),
-    now: NOW
-  }), [communicationBody, communicationChannel, communicationSubject, communicationTeamId, communicationTemplate, state]);
-  const lineupTeam = state.teams.find((team) => team.id === lineupTeamId) ?? state.teams[0]!;
-  const lineupPlayers = state.players.filter((player) => player.teamId === lineupTeam.id);
-  const assignedPlayerIds = new Set(Object.values(lineupPositions).filter(Boolean));
-  const unassignedLineupPlayers = lineupPlayers.filter((player) => !assignedPlayerIds.has(player.id));
   const adminSeasonView = buildAdminSeasonCertaintyView({
     state,
     registrationRequests: visibleRegistrations,
@@ -4190,12 +4050,6 @@ export function AdminDashboardClient({ registrationRequests, sponsorData, mediaD
     message: "Admin overview is scoped by the active organization admin guard before this client renders.",
     now: NOW
   });
-
-  function applyCommunicationDefaults(teamId: string, template: CommunicationTemplate) {
-    const copy = defaultTeamCommunicationCopy(state, teamId, template);
-    setCommunicationSubject(copy.subject);
-    setCommunicationBody(copy.body);
-  }
 
   function selectSponsor(nextSponsorId: string) {
     setSponsorId(nextSponsorId);
@@ -4329,52 +4183,25 @@ export function AdminDashboardClient({ registrationRequests, sponsorData, mediaD
     });
   }
 
-  function queueCommunication() {
-    if (!communicationPreview.ok) {
-      setCommunicationMessage(communicationPreview.message);
-      return;
-    }
-
-    dispatch({
-      type: "queueTeamCommunication",
-      input: {
-        teamId: communicationTeamId,
-        actorUserId: "user-admin",
-        channel: communicationChannel,
-        template: communicationTemplate,
-        subject: communicationSubject,
-        body: communicationBody,
-        sendAt: new Date(Date.parse(NOW) + 60 * 60 * 1000).toISOString(),
-        now: new Date().toISOString()
-      }
-    });
-    setCommunicationMessage(`${communicationPreview.notificationCount} ${communicationChannel.toUpperCase()} message draft record(s) queued. Provider delivery is still disconnected.`);
-  }
-
-  function assignLineupPlayer(positionId: LineupPositionId) {
-    if (!draggedPlayerId) return;
-    setLineupPositions((current) => {
-      const next = Object.fromEntries(
-        Object.entries(current).filter(([, playerId]) => playerId !== draggedPlayerId)
-      ) as Partial<Record<LineupPositionId, string>>;
-      next[positionId] = draggedPlayerId;
-      return next;
-    });
-    setDraggedPlayerId("");
-  }
-
   if (showOverview) {
+    const openQueueCount = adminSeasonView.pendingQueues.filter((queue) => queue.permissionState !== "empty").length;
     return (
       <div className="page">
+        <PageHeader
+          eyebrow="Today"
+          title="Overview"
+          subtitle="Start here. What is waiting on a decision, how league readiness stands, and which teams need the office to act."
+          actions={<StatusBadge
+            label={openQueueCount
+              ? `${openQueueCount} queue${openQueueCount === 1 ? "" : "s"} need attention`
+              : "All queues clear"}
+            variant={openQueueCount ? "warning" : "success"}
+          />}
+        />
+        {/* Attention first, then the counts behind it. LP-UX-007 made this a
+            queue-only home, so per-area detail stays on its own route. */}
         <section className="season-home season-admin-home" aria-labelledby="admin-home-title">
-          <details className="season-admin-context" aria-label="Current admin context">
-            <summary><strong>League admin · {state.organization.name} · {state.activeSeason.name}</strong><small>Context details</small></summary>
-            <div className="season-admin-context-details">
-              <span><small>Organization</small><strong>{state.organization.name}</strong></span>
-              <span><small>Season</small><strong>{state.activeSeason.name}</strong></span>
-              <span><small>Role</small><strong>League admin</strong></span>
-            </div>
-          </details>
+          <PendingActionsPanel view={adminSeasonView} />
           <LeagueHealthSummaryCard view={adminSeasonView} />
           <section className="grid two" aria-label="Suggested reviews">
             {adminSuggestions.map((suggestion) => (
@@ -4388,7 +4215,6 @@ export function AdminDashboardClient({ registrationRequests, sponsorData, mediaD
               </article>
             ))}
           </section>
-          <PendingActionsPanel view={adminSeasonView} />
         </section>
       </div>
     );
@@ -4397,285 +4223,25 @@ export function AdminDashboardClient({ registrationRequests, sponsorData, mediaD
   return (
     <div className="page">
       {focusedSurfaceCopy ? (
-        <section className="hero admin-focus-hero">
-          <span className="eyebrow">{focusedSurfaceCopy.eyebrow}</span>
-          <h1>{focusedSurfaceCopy.title}</h1>
-          <p className="lead">{focusedSurfaceCopy.body}</p>
-        </section>
+        <PageHeader
+          eyebrow={focusedSurfaceCopy.eyebrow}
+          title={focusedSurfaceCopy.title}
+          subtitle={focusedSurfaceCopy.body}
+          actions={showMedia ? (
+            <StatusBadge
+              label={mediaReviewQueue.length ? `${mediaReviewQueue.length} item${mediaReviewQueue.length === 1 ? "" : "s"} to review` : "Review queue clear"}
+              variant={mediaReviewQueue.length ? "warning" : "success"}
+            />
+          ) : (
+            <StatusBadge
+              label={`${sponsors.filter((sponsor) => sponsor.status === "active").length} active sponsor${sponsors.filter((sponsor) => sponsor.status === "active").length === 1 ? "" : "s"}`}
+              variant="neutral"
+            />
+          )}
+        />
       ) : null}
 
-      {showOverview ? (
-        <>
-      <section className="season-home season-admin-home" aria-labelledby="admin-home-title">
-        <div className="season-admin-context" aria-label="Current admin context">
-          <span><small>Organization</small><strong>{state.organization.name}</strong></span>
-          <span><small>Season</small><strong>{state.activeSeason.name}</strong></span>
-          <span><small>Role</small><strong>League admin</strong></span>
-        </div>
-        <div className="season-admin-topgrid">
-          <LeagueHealthSummaryCard view={adminSeasonView} />
-          <PendingActionsPanel view={adminSeasonView} />
-        </div>
-        <TeamStatusTable view={adminSeasonView} />
-        <div className="season-card-grid">
-          <RegistrationQueueCard view={adminSeasonView} />
-          <SecurityStatusCard view={adminSeasonView} />
-        </div>
-      </section>
-
-      <CompactDisclosure
-        title="Operations workspace"
-        summary="Open planning, team management, message drafts, and lineup tools."
-        badge="Admin tools"
-      >
-      <section className="grid three">
-        <article className="card metric"><span className="muted">Teams</span><strong>{state.teams.length}</strong></article>
-        <article className="card metric"><span className="muted">Pending registrations</span><strong>{pendingRegistrations.length}</strong></article>
-        <article className="card metric"><span className="muted">Active sponsors</span><strong>{activeSponsors.length}</strong></article>
-      </section>
-
-      <section className="grid two">
-        {adminSuggestions.map((suggestion) => (
-          <article className="card stack" key={suggestion.id}>
-            <span className="eyebrow">Suggested reviews</span>
-            <h2>{suggestion.title}</h2>
-            <p><strong>{suggestion.body}</strong></p>
-            <p>{suggestion.recommendation}</p>
-            <p className="muted">{suggestion.boundary}</p>
-          </article>
-        ))}
-      </section>
-
-      <section className="grid two">
-        <article className="card stack">
-          <h2>Team management</h2>
-          {state.teams.map((team) => (
-            <p key={team.id}><strong>{team.name}</strong><br /><span className="muted">{team.division} - {team.mascot} - {getProgramThemePreset(team.themeKey).label}</span></p>
-          ))}
-          <a href="/admin/themes">Open admin theme console</a>
-        </article>
-        <article className="card stack">
-          <div className="card-header">
-            <div>
-              <span className="eyebrow">Family message drafts</span>
-              <h2>Message draft review</h2>
-            </div>
-            <span className={`badge ${communicationPreview.ok ? "ok" : "warning"}`}>{communicationPreview.notificationCount} recipient(s)</span>
-          </div>
-          <div className="grid two">
-            <label>
-              Team
-              <select value={communicationTeamId} onChange={(event) => {
-                const teamId = event.target.value;
-                setCommunicationTeamId(teamId);
-                applyCommunicationDefaults(teamId, communicationTemplate);
-              }}>
-                {state.teams.map((team) => <option key={team.id} value={team.id}>{team.name}</option>)}
-              </select>
-            </label>
-            <label>
-              Message type
-              <select value={communicationTemplate} onChange={(event) => {
-                const template = event.target.value as CommunicationTemplate;
-                setCommunicationTemplate(template);
-                applyCommunicationDefaults(communicationTeamId, template);
-              }}>
-                {communicationTemplates.map((template) => <option key={template.id} value={template.id}>{template.label}</option>)}
-              </select>
-            </label>
-            <label>
-              Channel
-              <select value={communicationChannel} onChange={(event) => setCommunicationChannel(event.target.value as AdminCommunicationChannel)}>
-                <option value="email">Email draft</option>
-                <option value="sms">SMS draft</option>
-              </select>
-            </label>
-            <label>
-              Subject
-              <input value={communicationSubject} onChange={(event) => setCommunicationSubject(event.target.value)} />
-            </label>
-          </div>
-          <label>
-            Message
-            <textarea value={communicationBody} onChange={(event) => setCommunicationBody(event.target.value)} />
-          </label>
-          <div className="communication-preview">
-            <p><strong>{communicationPreview.message}</strong></p>
-            <p className="muted">SMS length: {communicationBody.length} character(s), {communicationPreview.smsSegments} segment(s). Email/SMS records stay pending until a provider adapter is connected.</p>
-            {communicationPreview.recipients.slice(0, 4).map((recipient) => (
-              <span className="badge" key={recipient.id}>{recipient.name}</span>
-            ))}
-          </div>
-          <button disabled={!communicationPreview.ok} onClick={queueCommunication}>Queue message drafts</button>
-          {communicationMessage ? <p className="notice">{communicationMessage}</p> : null}
-        </article>
-      </section>
-
-      <section className="grid two">
-        <article className="card stack season-planning-panel">
-          <div className="card-header">
-            <div>
-              <span className="eyebrow">Start-of-season metrics</span>
-              <h2>Roster maker readiness</h2>
-            </div>
-            <span className="badge">{seasonPlanning.seasonName}</span>
-          </div>
-          <div className="grid three">
-            <div className="metric"><span className="muted">Teams</span><strong>{seasonPlanning.totalTeams}</strong></div>
-            <div className="metric"><span className="muted">Players</span><strong>{seasonPlanning.totalPlayers}</strong></div>
-            <div className="metric"><span className="muted">Open roster spots</span><strong>{seasonPlanning.rosterOpenings}</strong></div>
-          </div>
-          <div className="grid two">
-            <label>
-              Target roster size
-              <input
-                max={16}
-                min={6}
-                onChange={(event) => setTargetRosterSize(Number(event.target.value))}
-                type="number"
-                value={targetRosterSize}
-              />
-            </label>
-            <label>
-              Division
-              <select value={selectedPlanningDivision?.division ?? ""} onChange={(event) => setPlanningDivision(event.target.value)}>
-                {seasonPlanning.divisions.map((division) => <option key={division.division} value={division.division}>{division.division}</option>)}
-              </select>
-            </label>
-          </div>
-          {selectedPlanningDivision ? (
-            <div className="maker-summary">
-              <span className={`badge ${selectedPlanningDivision.balanceStatus === "balanced" ? "ok" : "warning"}`}>{selectedPlanningDivision.balanceStatus.replace("_", " ")}</span>
-              <p><strong>{selectedPlanningDivision.division}:</strong> {selectedPlanningDivision.teamCount} team(s), {selectedPlanningDivision.playerCount} player(s), average roster {selectedPlanningDivision.averageRosterSize}</p>
-              <p className="muted">{selectedPlanningDivision.rosterMakerNote}</p>
-            </div>
-          ) : null}
-          <div className="maker-list">
-            {seasonPlanning.divisions.map((division) => (
-              <div className="maker-row" key={division.division}>
-                <strong>{division.division}</strong>
-                <span>{division.teamCount} teams</span>
-                <span>{division.playerCount} players</span>
-                <span>{division.largestRoster}/{division.smallestRoster} max/min</span>
-              </div>
-            ))}
-          </div>
-          <div className="stack compact">
-            <h3>Automatic team builder preview</h3>
-            <p className="muted"><strong>Workflow:</strong> {teamBuildPreview.workflow.join(" -> ")}</p>
-            <p className="muted"><strong>Sibling/friend constraints:</strong> sibling groups stay together and friend requests are considered before roster balance.</p>
-            <p className="muted"><strong>Admin review inputs:</strong> age bands, cutoff-age labels, and player evaluations inform fairness review without showing full birthdates or private child detail to families.</p>
-            <p className="muted"><strong>Publish boundary:</strong> {teamBuildPreview.publishBoundary}</p>
-            {teamBuildPreview.teams.map((team) => (
-              <p key={team.teamId}>
-                <strong>{team.teamName}</strong><br />
-                <span className="muted">{team.playerCount} player(s), skill-balance score {team.averageSkill}: {team.players.map((player) => player.name).join(", ") || "No players"}</span>
-                {team.players.length ? (
-                  <span className="muted"><br />Review metadata: {team.players.map((player) => `${player.name} ${player.ageBand}, ${player.birthdateDerivedAgeLabel}, eval ${player.skillRating}`).join("; ")}</span>
-                ) : null}
-              </p>
-            ))}
-            {teamBuildPreview.warnings.slice(0, 3).map((warning) => <p className="notice" key={warning}>{warning}</p>)}
-          </div>
-        </article>
-
-        <article className="card stack season-planning-panel">
-          <div className="card-header">
-            <div>
-              <span className="eyebrow">Bracket maker</span>
-              <h2>{selectedPlanningDivision?.division ?? "Division"} tournament preview</h2>
-            </div>
-            <span className="badge warning">Preview</span>
-          </div>
-          <p>{selectedPlanningDivision?.bracketMakerNote ?? "Select a division to preview bracket generation."}</p>
-          <div className="bracket-preview">
-            <strong>{selectedBracketRound?.round ?? "Round"}</strong>
-            {(selectedBracketRound?.matchups ?? []).map((matchup) => (
-              <div className="bracket-matchup" key={matchup}>{matchup}</div>
-            ))}
-          </div>
-          <p className="notice">Roster maker and bracket maker are metrics-driven previews. They do not publish teams, schedules, seeds, or standings yet.</p>
-        </article>
-      </section>
-
-      <section className="grid two">
-        <article className="card stack lineup-builder">
-          <div className="card-header">
-            <div>
-              <span className="eyebrow">Drag and drop SVG lineup</span>
-              <h2>{lineupTeam.name} position board</h2>
-            </div>
-            <select value={lineupTeam.id} onChange={(event) => setLineupTeamId(event.target.value)} aria-label="Lineup team">
-              {state.teams.map((team) => <option key={team.id} value={team.id}>{team.name}</option>)}
-            </select>
-          </div>
-          <svg className="lineup-field" viewBox="0 0 480 320" role="img" aria-label="Drag players onto baseball positions">
-            <path className="lineup-grass" d="M36 302C52 122 148 24 240 24s188 98 204 278Z" />
-            <path className="lineup-dirt" d="M240 290 120 170 240 50 360 170Z" />
-            <path className="lineup-basepath" d="M240 284 126 170 240 56 354 170Z" />
-            {lineupPositionDefs.map((position) => {
-              const player = lineupPlayers.find((item) => item.id === lineupPositions[position.id]);
-              return (
-                <g
-                  className={`lineup-dropzone ${player ? "assigned" : ""}`}
-                  key={position.id}
-                  onDragOver={(event) => event.preventDefault()}
-                  onDrop={() => assignLineupPlayer(position.id)}
-                >
-                  <circle cx={position.x} cy={position.y} r="25" />
-                  <text x={position.x} y={position.y - 4} textAnchor="middle">{position.shortLabel}</text>
-                  <text x={position.x} y={position.y + 13} textAnchor="middle">{player ? `${player.firstName} ${player.lastInitial}.` : "Drop"}</text>
-                </g>
-              );
-            })}
-          </svg>
-          <p className="muted">Drag a roster chip onto any SVG position. This local board does not publish lineup changes to families.</p>
-        </article>
-        <article className="card stack">
-          <h2>Roster chips</h2>
-          <div className="player-chip-list">
-            {lineupPlayers.map((player) => (
-              <button
-                className={`player-chip ${assignedPlayerIds.has(player.id) ? "assigned" : ""}`}
-                draggable
-                key={player.id}
-                onDragStart={() => setDraggedPlayerId(player.id)}
-                type="button"
-              >
-                #{player.jersey} {player.firstName} {player.lastInitial}.
-              </button>
-            ))}
-          </div>
-          <h3>Unassigned</h3>
-          {unassignedLineupPlayers.length ? unassignedLineupPlayers.map((player) => (
-            <p key={player.id}>{player.firstName} {player.lastInitial}. - Jersey {player.jersey}</p>
-          )) : <p className="muted">Every rostered player has a position.</p>}
-        </article>
-      </section>
-      </CompactDisclosure>
-        </>
-      ) : null}
-
-      <section className={showOverview ? "grid three" : "grid two admin-focus-grid"}>
-        {showOverview ? (
-          <>
-        <article className="card stack">
-          <h2>Queued message records</h2>
-          <p>{state.notifications.length} local notification records queued across push, email, and SMS channels.</p>
-          {state.notifications.slice(0, 4).map((notification) => (
-            <p key={notification.id}><strong>{notification.title}</strong><br /><span className="muted">{notification.channel} - {notification.status}</span></p>
-          ))}
-          <p className="muted">No provider send occurs without a production adapter and approval workflow.</p>
-        </article>
-        <article className="card stack">
-          <h2>Registration queue</h2>
-          {visibleRegistrations.map((request) => (
-            <p key={request.id}><strong>{request.playerFirstName} {request.playerLastInitial}.</strong><br /><span className="muted">{request.parentName} - {request.status}</span></p>
-          ))}
-          {visibleRegistrations.length === 0 ? <p className="muted">No registration requests yet.</p> : null}
-        </article>
-          </>
-        ) : null}
+      <section className="grid two admin-focus-grid">
         {showMedia ? (
         <article className="card stack admin-focus-card media-review-card">
           <div className="card-header">
@@ -4960,38 +4526,6 @@ export function AdminDashboardClient({ registrationRequests, sponsorData, mediaD
           </div>
         </article>
         </>
-        ) : null}
-        {showOverview ? (
-        <article className="card stack">
-          <h2>Readiness</h2>
-          {healthCards.slice(0, 4).map((card) => (
-            <p key={card.id}><strong>{card.title}:</strong> {card.count}<br /><span className="muted">{card.detail}</span></p>
-          ))}
-          <p><strong>Touch target check:</strong> {touchTargetQa.status}, {touchTargetQa.minimumPixels}px minimum.</p>
-          <p><strong>Offline label:</strong> {offlineStateSummary.status}. {offlineStateSummary.detail}</p>
-          <p><strong>Contrast checks:</strong> {contrastChecks.length} reviewed surface(s).</p>
-          <p><strong>Privacy filters:</strong> {privacyFilters.length} active filter(s).</p>
-          {adminWeatherSafety ? (
-            <div className="stack compact">
-              <h3>Weather + Safety Decision Assistant</h3>
-              <p><strong>{adminWeatherSafety.eventTitle}</strong> - {adminWeatherSafety.recommendation.replaceAll("_", " ")}</p>
-              {adminWeatherSafety.conditions.map((condition) => (
-                <p key={condition.label}><span className={`badge ${condition.status === "ok" ? "ok" : "warning"}`}>{condition.status}</span> <strong>{condition.label}</strong> <span className="muted">{condition.value}</span></p>
-              ))}
-              <p className="muted">{adminWeatherSafety.fieldClosureDraft}</p>
-              <p className="notice">{adminWeatherSafety.boundary}</p>
-            </div>
-          ) : null}
-          {adminAvailabilityIntelligence ? (
-            <div className="stack compact">
-              <h3>Family Availability Intelligence</h3>
-              <p>{adminAvailabilityIntelligence.teamName}: {adminAvailabilityIntelligence.summary}</p>
-              <p className="muted">Response rate {adminAvailabilityIntelligence.responseRate}%; volunteer marketplace {adminVolunteerMarketplace.filter((job) => job.actionStatus === "claimable").length} claimable role(s).</p>
-              <p className="notice">{adminAvailabilityIntelligence.boundary}</p>
-            </div>
-          ) : null}
-          <p className="muted">Engagement and delivery-rate metrics stay out of this home card until they are backed by production reporting.</p>
-        </article>
         ) : null}
       </section>
     </div>

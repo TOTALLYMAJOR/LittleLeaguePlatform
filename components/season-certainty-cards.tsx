@@ -398,7 +398,7 @@ export function LeagueHealthSummaryCard({ view }: { view: AdminSeasonCertaintyVi
     <SeasonCard state={view.health.teamsNeedingHelp ? "needs_attention" : "ready"} className="league-health-card">
       <OperationalTruthBand truth={view.operationalTruth} />
       <p className="season-page-kicker">League operations - {view.organizationName}</p>
-      <h1 id="admin-home-title">What is blocking launch?</h1>
+      <h2 id="admin-home-title">What is blocking launch?</h2>
       <div className="season-count-grid league-health-grid">
         <Metric href="/admin/teams" label="Teams needing help" value={view.health.teamsNeedingHelp} />
         <Metric href="/admin/schedule-venues" label="Low RSVP teams" value={view.health.lowRsvpTeams} />
@@ -429,56 +429,6 @@ export function PendingActionsPanel({ view }: { view: AdminSeasonCertaintyView }
       ) : (
         <EmptyState title={`All clear: ${view.pendingQueues.length} queues`} body="Registration, family access, weather, media, delivery, branding, archive, and security queues are clear." />
       )}
-    </SeasonCard>
-  );
-}
-
-export function TeamStatusTable({ view }: { view: AdminSeasonCertaintyView }) {
-  return (
-    <SeasonCard state={view.teamRows.length ? "ready" : "empty"} className="team-status-table-card">
-      <SectionHeader title="Team status" />
-      {view.teamRows.length ? (
-        <div className="team-status-table" role="table" aria-label="Team readiness status">
-          <div className="team-status-head" role="row">
-            {["Team", "Next event", "RSVP", "Family access", "Snacks/volunteers", "Weather/field", "Media", "Setup", "Status", "Action"].map((label) => <span role="columnheader" key={label}>{label}</span>)}
-          </div>
-          {view.teamRows.map((row) => (
-            <div className="team-status-row" role="row" key={row.teamId}>
-              <span role="cell"><strong>{row.teamName}</strong><small>{row.division}</small></span>
-              <span role="cell">{row.nextEvent}</span>
-              <span role="cell">{row.rsvpConfidence}</span>
-              <span role="cell">{row.familyAccess}</span>
-              <span role="cell">{row.snacksVolunteers}</span>
-              <span role="cell">{row.weatherField}</span>
-              <span role="cell">{row.media}</span>
-              <span role="cell">{row.setup}</span>
-              <span role="cell"><StatusBadge state={row.status === "ready" ? "ready" : row.status === "blocked" ? "urgent" : "needs_attention"} label={row.status === "ready" ? "Ready — no action" : row.status === "blocked" ? "Blocked — admin acts next" : "Admin action needed"} /></span>
-              <span role="cell"><a href={row.primaryAction.href}>{row.primaryAction.cta}</a></span>
-            </div>
-          ))}
-        </div>
-      ) : (
-        <EmptyState title="No teams yet." body="Create teams before league readiness can be summarized." />
-      )}
-    </SeasonCard>
-  );
-}
-
-export function RegistrationQueueCard({ view }: { view: AdminSeasonCertaintyView }) {
-  return (
-    <SeasonCard state={view.registrationQueue.count ? "needs_attention" : "empty"} className="registration-queue-card">
-      <SectionHeader title="Registration queue" action={<a href={view.registrationQueue.href}>Review registrations</a>} />
-      <p>{view.registrationQueue.count ? `${view.registrationQueue.count} registration request${view.registrationQueue.count === 1 ? "" : "s"} waiting.` : "No pending registrations."}</p>
-    </SeasonCard>
-  );
-}
-
-export function SecurityStatusCard({ view }: { view: AdminSeasonCertaintyView }) {
-  return (
-    <SeasonCard state={view.security.status} className="security-status-card">
-      <SectionHeader title="Review & Safety" action={<a href={view.security.href}>Open security & audit</a>} />
-      <p>{view.security.detail}</p>
-      <p className="season-muted">Archived-season locks and provider review boundaries stay visible from the proof route.</p>
     </SeasonCard>
   );
 }
