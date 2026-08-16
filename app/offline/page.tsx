@@ -14,7 +14,7 @@ export default function OfflinePage() {
         <article className="card stack">
           <h2>What you can do</h2>
           <p>Reconnect, then reload the page you were using. If the app was installed, open it again after the device is online.</p>
-          <Link href="/">Return home</Link>
+          <Link className="button secondary" href="/">Return home</Link>
         </article>
         <article className="card stack">
           <h2>What stays protected</h2>

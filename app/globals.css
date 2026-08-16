@@ -14529,8 +14529,8 @@ button.theme-toggle:hover:not(:disabled) {
      action cards rather than on top of them and the page's Replay link. */
   bottom: clamp(150px, 20vh, 210px);
   z-index: 5;
-  min-height: 36px;
-  padding: 7px 16px;
+  min-height: 44px;
+  padding: 11px 18px;
   border: 0;
   border-radius: 999px;
   background: rgb(16 21 28 / 88%);
@@ -14761,7 +14761,8 @@ button.theme-toggle:hover:not(:disabled) {
   gap: 10px;
   align-items: center;
   justify-self: start;
-  padding: 8px 14px;
+  min-height: 44px;
+  padding: 10px 16px;
   border: 1px solid var(--gateway-line);
   border-radius: 999px;
   color: var(--gateway-ink);

@@ -565,12 +565,19 @@ function privateAccessGate(
   }[dashboardData.accessStatus];
 
   return (
+    <>
+      {/* The gated view is the whole page here, so it owns the page title and
+          the single primary action instead of opening at heading level two. */}
+      <PageHeader
+        eyebrow="Access required"
+        title={surface === "coach" ? "Coach tools" : "Family tools"}
+        subtitle={copy.title}
+        actions={<a className="button" href={copy.actionHref}>{copy.actionLabel}</a>}
+      />
     <section className="grid two">
       <article className="card stack access-state">
-        <span className="eyebrow">Access required</span>
-        <h2>{copy.title}</h2>
+        <h2>What happens next</h2>
         <p>{copy.body}</p>
-        <a className="button" href={copy.actionHref}>{copy.actionLabel}</a>
       </article>
       <article className="card stack">
         <h2>{surface === "coach" ? "Coach role access checklist" : "What stays protected"}</h2>
@@ -578,6 +585,7 @@ function privateAccessGate(
         <p className="muted">{surface === "coach" ? "A user account is not enough; the coach route requires an active coach team membership." : "Signup proves identity only; team or guardian records grant access."}</p>
       </article>
     </section>
+    </>
   );
 }
 
