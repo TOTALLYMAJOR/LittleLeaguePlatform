@@ -2745,6 +2745,11 @@
   .parent-schedule-rsvp-row .family-rsvp-control {
     grid-column: 1 / -1;
   }
+
+  .family-photo-grid,
+  .family-team-list {
+    grid-template-columns: 1fr;
+  }
 }
 
 @media (max-width: 640px) {
