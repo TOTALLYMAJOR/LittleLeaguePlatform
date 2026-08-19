@@ -77,6 +77,9 @@ describe("Family reference components", () => {
           actorLabel: "Coach Taylor",
           changedAt: "2026-04-03T12:00:00.000Z",
           canonicalHref: "/parent/schedule?eventId=event-1",
+          seenAt: null,
+          acknowledgedAt: null,
+          requiresAcknowledgment: true,
           diffs: [{
             field: "start_time",
             label: "Start time",
@@ -85,12 +88,63 @@ describe("Family reference components", () => {
           }]
         }]}
         querySucceeded
-        storageKey="test-watermark"
         timeZone="America/Chicago"
+        onAcknowledge={async () => ({
+          ok: true,
+          message: "Event change acknowledged.",
+          seenAt: "2026-04-03T12:05:00.000Z",
+          acknowledgedAt: "2026-04-03T12:05:00.000Z"
+        })}
       />
     );
-    expect(changes).toContain("Changes since this page was last successfully loaded on this device.");
-    expect(changes).toContain("Viewing this list never creates acknowledgement, agreement, attendance, or RSVP state.");
+    expect(changes).toContain("Recent event changes for your family");
+    expect(changes).toContain("Acknowledgment needed");
+    expect(changes).toContain("Checking connection");
+    expect(changes).toContain("Acknowledgment requires the button and never changes attendance or RSVP.");
     expect(changes).toContain('aria-label="changed to 5:30 PM"');
+  });
+
+  it("never renders an acknowledgment control for informational or unconfirmed receipt state", () => {
+    const baseChange = {
+      id: "change-1",
+      eventId: "event-1",
+      eventTitle: "Tiny Tigers game",
+      teamName: "Tiny Tigers",
+      childIds: ["player-1"],
+      childLabels: ["Mason T."],
+      actorLabel: "Coach Taylor",
+      changedAt: "2026-04-03T12:00:00.000Z",
+      canonicalHref: "/parent/schedule?eventId=event-1",
+      seenAt: null,
+      acknowledgedAt: null,
+      diffs: []
+    };
+    const onAcknowledge = async () => ({
+      ok: true,
+      message: "Recorded.",
+      seenAt: "2026-04-03T12:05:00.000Z",
+      acknowledgedAt: null
+    });
+    const informational = renderToStaticMarkup(
+      <ChangeBand
+        changes={[{ ...baseChange, changeType: "created", requiresAcknowledgment: false }]}
+        querySucceeded
+        timeZone="America/Chicago"
+        onAcknowledge={onAcknowledge}
+      />
+    );
+    expect(informational).toContain("Recording view");
+    expect(informational).not.toContain("Acknowledge change");
+
+    const unconfirmed = renderToStaticMarkup(
+      <ChangeBand
+        changes={[{ ...baseChange, changeType: "cancelled", requiresAcknowledgment: true }]}
+        querySucceeded={false}
+        timeZone="America/Chicago"
+        onAcknowledge={onAcknowledge}
+      />
+    );
+    expect(unconfirmed).toContain("Receipt unconfirmed");
+    expect(unconfirmed).not.toContain("Acknowledge change");
   });
 });

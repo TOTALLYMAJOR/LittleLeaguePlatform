@@ -1,6 +1,9 @@
 import { existsSync, readFileSync } from "node:fs";
 import { createClient } from "@supabase/supabase-js";
-import { assertIsolatedQaTarget } from "./qa-target-guard.mjs";
+import {
+  assertIsolatedQaTarget,
+  assertServiceRoleCredential
+} from "./qa-target-guard.mjs";
 
 const envFile = ".env.local";
 
@@ -10,6 +13,8 @@ const ids = {
   playerArchivedTeam: "44444444-4444-4444-8444-444444444444",
   game: "55555555-5555-4555-8555-555555555551",
   archivedGame: "55555555-5555-4555-8555-555555555553",
+  eventChangeLinked: "5a555555-5555-4555-8555-555555555551",
+  eventChangeUnlinked: "5a555555-5555-4555-8555-555555555552",
   weather: "cccccccc-cccc-4ccc-8ccc-ccccccccccc1"
 };
 
@@ -61,6 +66,17 @@ function anonClient() {
   });
 }
 
+function serviceClient() {
+  const serviceRoleKey = requireEnv("SUPABASE_SERVICE_ROLE_KEY");
+  assertServiceRoleCredential(serviceRoleKey, "RLS proof");
+  return createClient(requireEnv("NEXT_PUBLIC_SUPABASE_URL"), serviceRoleKey, {
+    auth: {
+      autoRefreshToken: false,
+      persistSession: false
+    }
+  });
+}
+
 async function signIn(emailKey, passwordKey) {
   const supabase = anonClient();
   const { data, error } = await supabase.auth.signInWithPassword({
@@ -93,6 +109,7 @@ async function main() {
   const parent = await signIn("QA_PARENT_EMAIL", "QA_PARENT_PASSWORD");
   const coach = await signIn("QA_COACH_EMAIL", "QA_COACH_PASSWORD");
   const anonymous = anonClient();
+  const service = serviceClient();
 
   const parentPlayerRead = await parent
     .from("players")
@@ -134,6 +151,47 @@ async function main() {
     }, { onConflict: "event_id,player_id" })
     .select("id");
   assertDenied(parentUnlinkedRsvp, "parent cannot RSVP for unlinked player");
+
+  const parentUserId = parentUserResult.data.user.id;
+  const firstAcknowledgment = await parent.rpc("acknowledge_event_change", {
+    p_event_change_log_id: ids.eventChangeLinked,
+    p_parent_user_id: parentUserId,
+    p_operation: "acknowledged"
+  });
+  assertNoError(firstAcknowledgment.error, "parent linked event change acknowledgment");
+  if (!firstAcknowledgment.data?.ok || !firstAcknowledgment.data.acknowledgedAt) {
+    throw new Error("parent linked event change acknowledgment: expected durable acknowledgment evidence.");
+  }
+
+  const repeatedAcknowledgment = await parent.rpc("acknowledge_event_change", {
+    p_event_change_log_id: ids.eventChangeLinked,
+    p_parent_user_id: parentUserId,
+    p_operation: "acknowledged"
+  });
+  assertNoError(repeatedAcknowledgment.error, "parent linked event change idempotent replay");
+  if (
+    !repeatedAcknowledgment.data?.ok
+    || repeatedAcknowledgment.data.acknowledgedAt !== firstAcknowledgment.data.acknowledgedAt
+  ) {
+    throw new Error("parent linked event change idempotent replay: expected the original timestamp.");
+  }
+
+  const outOfScopeAcknowledgment = await parent.rpc("acknowledge_event_change", {
+    p_event_change_log_id: ids.eventChangeUnlinked,
+    p_parent_user_id: parentUserId,
+    p_operation: "acknowledged"
+  });
+  assertNoError(outOfScopeAcknowledgment.error, "parent event change SQL denial response");
+  if (outOfScopeAcknowledgment.data?.ok || outOfScopeAcknowledgment.data?.code !== "forbidden") {
+    throw new Error("parent cannot acknowledge an out-of-scope event change: expected SQL forbidden result.");
+  }
+  const outOfScopeReceiptRead = await service
+    .from("event_change_receipts")
+    .select("id")
+    .eq("event_change_log_id", ids.eventChangeUnlinked)
+    .eq("parent_user_id", parentUserId);
+  assertNoError(outOfScopeReceiptRead.error, "out-of-scope event change receipt readback");
+  assertRows(outOfScopeReceiptRead.data, 0, "out-of-scope event change created no receipt row");
 
   const coachWeatherUpdate = await coach
     .from("weather_alerts")

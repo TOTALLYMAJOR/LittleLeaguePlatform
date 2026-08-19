@@ -48,6 +48,9 @@ describe("Supabase RLS policy coverage", () => {
   const pingramSmsExecutionAuthority = migration(
     "20260727224549_pingram_sms_execution_authority.sql"
   );
+  const eventChangeReceipts = migration(
+    "20260819084447_event_change_receipts.sql"
+  );
   const packageJson = readFileSync(join(process.cwd(), "package.json"), "utf8");
   const rlsProof = readFileSync(join(process.cwd(), "scripts", "verify-rls-boundaries.mjs"), "utf8");
   const migrationPush = readFileSync(join(process.cwd(), "scripts", "supabase-push.mjs"), "utf8");
@@ -68,6 +71,42 @@ describe("Supabase RLS policy coverage", () => {
     expect(hardening).toContain("create policy \"users manage own chat reads\"");
     expect(hardening).toContain("create table public.team_chat_reports");
     expect(hardening).toContain("create policy \"team members create chat reports\"");
+  });
+
+  it("keeps event-change receipts guardian-scoped and SQL-authorized", () => {
+    expect(eventChangeReceipts).toContain(
+      "alter table public.event_change_receipts enable row level security"
+    );
+    expect(eventChangeReceipts).toContain(
+      'create policy "parents read own linked event change receipts"'
+    );
+    expect(eventChangeReceipts).toContain(
+      "parent_user_id = (select auth.uid())"
+    );
+    expect(eventChangeReceipts).toContain("guardian.status = 'active'");
+    expect(eventChangeReceipts).toContain(
+      "unique (event_change_log_id, parent_user_id)"
+    );
+    expect(eventChangeReceipts).toContain(
+      "check (acknowledged_at is null or seen_at is not null)"
+    );
+    expect(eventChangeReceipts).toContain(
+      "create or replace function public.acknowledge_event_change"
+    );
+    expect(eventChangeReceipts).toContain("security definer");
+    expect(eventChangeReceipts).toContain("set search_path = public");
+    expect(eventChangeReceipts).toContain(
+      "(select auth.uid()) is distinct from p_parent_user_id"
+    );
+    expect(eventChangeReceipts).toContain(
+      "on conflict (event_change_log_id, parent_user_id) do nothing"
+    );
+    expect(eventChangeReceipts).toContain(
+      "revoke all on function public.acknowledge_event_change(uuid, uuid, text)"
+    );
+    expect(eventChangeReceipts).toContain("from public, anon, authenticated");
+    expect(eventChangeReceipts).toContain("to authenticated, service_role");
+    expect(eventChangeReceipts).toContain("'event_change_acknowledged'");
   });
 
   it("keeps provider/mobile hardening for media moderation, Realtime, and retention", () => {
@@ -164,6 +203,8 @@ describe("Supabase RLS policy coverage", () => {
     expect(rlsProof).toContain("parent cannot read cross-team players");
     expect(rlsProof).toContain("coach cannot update archived-season events");
     expect(rlsProof).toContain("anonymous cannot read private teams");
+    expect(rlsProof).toContain("parent cannot acknowledge an out-of-scope event change");
+    expect(rlsProof).toContain("out-of-scope event change created no receipt row");
   });
 
   it("keeps migration promotion target-bound, dry-run-first, and seed-opt-in", () => {

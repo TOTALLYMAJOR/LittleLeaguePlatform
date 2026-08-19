@@ -1,0 +1,460 @@
+{
+  "generatedAt": "2026-08-19T10:01:29.067Z",
+  "proofType": "isolated-production-component-browser-proof",
+  "sourceComponents": [
+    "components/family/change-band.tsx",
+    "app/parent/parent-weekly.css"
+  ],
+  "results": [
+    {
+      "scenario": {
+        "name": "family-light-320",
+        "colorScheme": "light",
+        "forcedColors": "none",
+        "theme": "light",
+        "width": 320,
+        "height": 844
+      },
+      "horizontalOverflow": false,
+      "controlCount": 2,
+      "axeViolations": [],
+      "consoleErrors": [],
+      "focus": {
+        "tagName": "A",
+        "outlineStyle": "solid",
+        "outlineWidth": "2px",
+        "boxShadow": "none"
+      },
+      "acknowledgmentCalls": 1,
+      "screenshotPath": "output/playwright/lp-ux-018-event-change-receipts/family-light-320.png"
+    },
+    {
+      "scenario": {
+        "name": "family-light-390",
+        "colorScheme": "light",
+        "forcedColors": "none",
+        "theme": "light",
+        "width": 390,
+        "height": 844
+      },
+      "horizontalOverflow": false,
+      "controlCount": 2,
+      "axeViolations": [],
+      "consoleErrors": [],
+      "focus": {
+        "tagName": "A",
+        "outlineStyle": "solid",
+        "outlineWidth": "2px",
+        "boxShadow": "none"
+      },
+      "acknowledgmentCalls": 1,
+      "screenshotPath": "output/playwright/lp-ux-018-event-change-receipts/family-light-390.png"
+    },
+    {
+      "scenario": {
+        "name": "family-light-768",
+        "colorScheme": "light",
+        "forcedColors": "none",
+        "theme": "light",
+        "width": 768,
+        "height": 1000
+      },
+      "horizontalOverflow": false,
+      "controlCount": 2,
+      "axeViolations": [],
+      "consoleErrors": [],
+      "focus": {
+        "tagName": "A",
+        "outlineStyle": "solid",
+        "outlineWidth": "2px",
+        "boxShadow": "none"
+      },
+      "acknowledgmentCalls": 1,
+      "screenshotPath": "output/playwright/lp-ux-018-event-change-receipts/family-light-768.png"
+    },
+    {
+      "scenario": {
+        "name": "family-light-1024",
+        "colorScheme": "light",
+        "forcedColors": "none",
+        "theme": "light",
+        "width": 1024,
+        "height": 1000
+      },
+      "horizontalOverflow": false,
+      "controlCount": 2,
+      "axeViolations": [],
+      "consoleErrors": [],
+      "focus": {
+        "tagName": "A",
+        "outlineStyle": "solid",
+        "outlineWidth": "2px",
+        "boxShadow": "none"
+      },
+      "acknowledgmentCalls": 1,
+      "screenshotPath": "output/playwright/lp-ux-018-event-change-receipts/family-light-1024.png"
+    },
+    {
+      "scenario": {
+        "name": "family-light-1440",
+        "colorScheme": "light",
+        "forcedColors": "none",
+        "theme": "light",
+        "width": 1440,
+        "height": 1000
+      },
+      "horizontalOverflow": false,
+      "controlCount": 2,
+      "axeViolations": [],
+      "consoleErrors": [],
+      "focus": {
+        "tagName": "A",
+        "outlineStyle": "solid",
+        "outlineWidth": "2px",
+        "boxShadow": "none"
+      },
+      "acknowledgmentCalls": 1,
+      "screenshotPath": "output/playwright/lp-ux-018-event-change-receipts/family-light-1440.png"
+    },
+    {
+      "scenario": {
+        "name": "device-light-320",
+        "colorScheme": "light",
+        "forcedColors": "none",
+        "theme": "light",
+        "width": 320,
+        "height": 844
+      },
+      "horizontalOverflow": false,
+      "controlCount": 2,
+      "axeViolations": [],
+      "consoleErrors": [],
+      "focus": {
+        "tagName": "A",
+        "outlineStyle": "solid",
+        "outlineWidth": "2px",
+        "boxShadow": "none"
+      },
+      "acknowledgmentCalls": 1,
+      "screenshotPath": "output/playwright/lp-ux-018-event-change-receipts/device-light-320.png"
+    },
+    {
+      "scenario": {
+        "name": "device-light-390",
+        "colorScheme": "light",
+        "forcedColors": "none",
+        "theme": "light",
+        "width": 390,
+        "height": 844
+      },
+      "horizontalOverflow": false,
+      "controlCount": 2,
+      "axeViolations": [],
+      "consoleErrors": [],
+      "focus": {
+        "tagName": "A",
+        "outlineStyle": "solid",
+        "outlineWidth": "2px",
+        "boxShadow": "none"
+      },
+      "acknowledgmentCalls": 1,
+      "screenshotPath": "output/playwright/lp-ux-018-event-change-receipts/device-light-390.png"
+    },
+    {
+      "scenario": {
+        "name": "device-light-768",
+        "colorScheme": "light",
+        "forcedColors": "none",
+        "theme": "light",
+        "width": 768,
+        "height": 1000
+      },
+      "horizontalOverflow": false,
+      "controlCount": 2,
+      "axeViolations": [],
+      "consoleErrors": [],
+      "focus": {
+        "tagName": "A",
+        "outlineStyle": "solid",
+        "outlineWidth": "2px",
+        "boxShadow": "none"
+      },
+      "acknowledgmentCalls": 1,
+      "screenshotPath": "output/playwright/lp-ux-018-event-change-receipts/device-light-768.png"
+    },
+    {
+      "scenario": {
+        "name": "device-light-1024",
+        "colorScheme": "light",
+        "forcedColors": "none",
+        "theme": "light",
+        "width": 1024,
+        "height": 1000
+      },
+      "horizontalOverflow": false,
+      "controlCount": 2,
+      "axeViolations": [],
+      "consoleErrors": [],
+      "focus": {
+        "tagName": "A",
+        "outlineStyle": "solid",
+        "outlineWidth": "2px",
+        "boxShadow": "none"
+      },
+      "acknowledgmentCalls": 1,
+      "screenshotPath": "output/playwright/lp-ux-018-event-change-receipts/device-light-1024.png"
+    },
+    {
+      "scenario": {
+        "name": "device-light-1440",
+        "colorScheme": "light",
+        "forcedColors": "none",
+        "theme": "light",
+        "width": 1440,
+        "height": 1000
+      },
+      "horizontalOverflow": false,
+      "controlCount": 2,
+      "axeViolations": [],
+      "consoleErrors": [],
+      "focus": {
+        "tagName": "A",
+        "outlineStyle": "solid",
+        "outlineWidth": "2px",
+        "boxShadow": "none"
+      },
+      "acknowledgmentCalls": 1,
+      "screenshotPath": "output/playwright/lp-ux-018-event-change-receipts/device-light-1440.png"
+    },
+    {
+      "scenario": {
+        "name": "device-dark-320",
+        "colorScheme": "dark",
+        "forcedColors": "none",
+        "theme": "dark",
+        "width": 320,
+        "height": 844
+      },
+      "horizontalOverflow": false,
+      "controlCount": 2,
+      "axeViolations": [],
+      "consoleErrors": [],
+      "focus": {
+        "tagName": "A",
+        "outlineStyle": "solid",
+        "outlineWidth": "2px",
+        "boxShadow": "none"
+      },
+      "acknowledgmentCalls": 1,
+      "screenshotPath": "output/playwright/lp-ux-018-event-change-receipts/device-dark-320.png"
+    },
+    {
+      "scenario": {
+        "name": "device-dark-390",
+        "colorScheme": "dark",
+        "forcedColors": "none",
+        "theme": "dark",
+        "width": 390,
+        "height": 844
+      },
+      "horizontalOverflow": false,
+      "controlCount": 2,
+      "axeViolations": [],
+      "consoleErrors": [],
+      "focus": {
+        "tagName": "A",
+        "outlineStyle": "solid",
+        "outlineWidth": "2px",
+        "boxShadow": "none"
+      },
+      "acknowledgmentCalls": 1,
+      "screenshotPath": "output/playwright/lp-ux-018-event-change-receipts/device-dark-390.png"
+    },
+    {
+      "scenario": {
+        "name": "device-dark-768",
+        "colorScheme": "dark",
+        "forcedColors": "none",
+        "theme": "dark",
+        "width": 768,
+        "height": 1000
+      },
+      "horizontalOverflow": false,
+      "controlCount": 2,
+      "axeViolations": [],
+      "consoleErrors": [],
+      "focus": {
+        "tagName": "A",
+        "outlineStyle": "solid",
+        "outlineWidth": "2px",
+        "boxShadow": "none"
+      },
+      "acknowledgmentCalls": 1,
+      "screenshotPath": "output/playwright/lp-ux-018-event-change-receipts/device-dark-768.png"
+    },
+    {
+      "scenario": {
+        "name": "device-dark-1024",
+        "colorScheme": "dark",
+        "forcedColors": "none",
+        "theme": "dark",
+        "width": 1024,
+        "height": 1000
+      },
+      "horizontalOverflow": false,
+      "controlCount": 2,
+      "axeViolations": [],
+      "consoleErrors": [],
+      "focus": {
+        "tagName": "A",
+        "outlineStyle": "solid",
+        "outlineWidth": "2px",
+        "boxShadow": "none"
+      },
+      "acknowledgmentCalls": 1,
+      "screenshotPath": "output/playwright/lp-ux-018-event-change-receipts/device-dark-1024.png"
+    },
+    {
+      "scenario": {
+        "name": "device-dark-1440",
+        "colorScheme": "dark",
+        "forcedColors": "none",
+        "theme": "dark",
+        "width": 1440,
+        "height": 1000
+      },
+      "horizontalOverflow": false,
+      "controlCount": 2,
+      "axeViolations": [],
+      "consoleErrors": [],
+      "focus": {
+        "tagName": "A",
+        "outlineStyle": "solid",
+        "outlineWidth": "2px",
+        "boxShadow": "none"
+      },
+      "acknowledgmentCalls": 1,
+      "screenshotPath": "output/playwright/lp-ux-018-event-change-receipts/device-dark-1440.png"
+    },
+    {
+      "scenario": {
+        "name": "forced-colors-320",
+        "colorScheme": "light",
+        "forcedColors": "active",
+        "theme": "light",
+        "width": 320,
+        "height": 844
+      },
+      "horizontalOverflow": false,
+      "controlCount": 2,
+      "axeViolations": [],
+      "consoleErrors": [],
+      "focus": {
+        "tagName": "A",
+        "outlineStyle": "solid",
+        "outlineWidth": "3px",
+        "boxShadow": "none"
+      },
+      "acknowledgmentCalls": 1,
+      "screenshotPath": "output/playwright/lp-ux-018-event-change-receipts/forced-colors-320.png"
+    },
+    {
+      "scenario": {
+        "name": "forced-colors-390",
+        "colorScheme": "light",
+        "forcedColors": "active",
+        "theme": "light",
+        "width": 390,
+        "height": 844
+      },
+      "horizontalOverflow": false,
+      "controlCount": 2,
+      "axeViolations": [],
+      "consoleErrors": [],
+      "focus": {
+        "tagName": "A",
+        "outlineStyle": "solid",
+        "outlineWidth": "3px",
+        "boxShadow": "none"
+      },
+      "acknowledgmentCalls": 1,
+      "screenshotPath": "output/playwright/lp-ux-018-event-change-receipts/forced-colors-390.png"
+    },
+    {
+      "scenario": {
+        "name": "forced-colors-768",
+        "colorScheme": "light",
+        "forcedColors": "active",
+        "theme": "light",
+        "width": 768,
+        "height": 1000
+      },
+      "horizontalOverflow": false,
+      "controlCount": 2,
+      "axeViolations": [],
+      "consoleErrors": [],
+      "focus": {
+        "tagName": "A",
+        "outlineStyle": "solid",
+        "outlineWidth": "3px",
+        "boxShadow": "none"
+      },
+      "acknowledgmentCalls": 1,
+      "screenshotPath": "output/playwright/lp-ux-018-event-change-receipts/forced-colors-768.png"
+    },
+    {
+      "scenario": {
+        "name": "forced-colors-1024",
+        "colorScheme": "light",
+        "forcedColors": "active",
+        "theme": "light",
+        "width": 1024,
+        "height": 1000
+      },
+      "horizontalOverflow": false,
+      "controlCount": 2,
+      "axeViolations": [],
+      "consoleErrors": [],
+      "focus": {
+        "tagName": "A",
+        "outlineStyle": "solid",
+        "outlineWidth": "3px",
+        "boxShadow": "none"
+      },
+      "acknowledgmentCalls": 1,
+      "screenshotPath": "output/playwright/lp-ux-018-event-change-receipts/forced-colors-1024.png"
+    },
+    {
+      "scenario": {
+        "name": "forced-colors-1440",
+        "colorScheme": "light",
+        "forcedColors": "active",
+        "theme": "light",
+        "width": 1440,
+        "height": 1000
+      },
+      "horizontalOverflow": false,
+      "controlCount": 2,
+      "axeViolations": [],
+      "consoleErrors": [],
+      "focus": {
+        "tagName": "A",
+        "outlineStyle": "solid",
+        "outlineWidth": "3px",
+        "boxShadow": "none"
+      },
+      "acknowledgmentCalls": 1,
+      "screenshotPath": "output/playwright/lp-ux-018-event-change-receipts/forced-colors-1440.png"
+    }
+  ],
+  "interactionResults": [
+    {
+      "behavior": "failure",
+      "passed": true
+    },
+    {
+      "behavior": "offline",
+      "passed": true
+    }
+  ]
+}

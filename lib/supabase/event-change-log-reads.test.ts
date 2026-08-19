@@ -79,7 +79,12 @@ describe("listParentEventChangeLogs", () => {
         }]
       }],
       profiles: [{ data: [{ id: "coach-1", display_name: "Coach Taylor" }] }],
-      field_locations: [{ data: [] }]
+      field_locations: [{ data: [] }],
+      event_change_receipts: [{ data: [{
+        event_change_log_id: "change-1",
+        seen_at: "2026-04-03T12:05:00.000Z",
+        acknowledged_at: null
+      }] }]
     });
     createSupabaseAdminClientMock.mockReturnValue(db as unknown as ReturnType<typeof createSupabaseAdminClient>);
 
@@ -94,7 +99,10 @@ describe("listParentEventChangeLogs", () => {
       actorLabel: "Coach Taylor",
       canonicalHref: "/parent/schedule?eventId=event-1",
       childIds: ["player-1"],
-      childLabels: ["Mason T."]
+      childLabels: ["Mason T."],
+      seenAt: "2026-04-03T12:05:00.000Z",
+      acknowledgedAt: null,
+      requiresAcknowledgment: true
     });
     expect(result.changes[0].diffs).toEqual([{
       field: "start_time",
@@ -111,6 +119,11 @@ describe("listParentEventChangeLogs", () => {
     expect(db.calls.find((call) => call.table === "event_change_logs" && call.method === "limit")?.args).toEqual([50]);
     expect(db.calls.some((call) => call.table === "events" && call.method === "gte" && call.args[0] === "ends_at")).toBe(true);
     expect(db.calls.some((call) => call.table === "events" && call.method === "lte" && call.args[0] === "starts_at")).toBe(true);
+    expect(db.calls.filter((call) => call.table === "event_change_receipts" && call.method === "select")).toHaveLength(1);
+    expect(db.calls.find((call) => call.table === "event_change_receipts" && call.method === "eq")?.args).toEqual([
+      "parent_user_id",
+      "parent-1"
+    ]);
   });
 
   it("returns a legitimate empty family scope without presenting a read failure", async () => {
@@ -147,7 +160,8 @@ describe("listParentEventChangeLogs", () => {
         }]
       }],
       profiles: [{ data: [] }],
-      field_locations: [{ data: [] }]
+      field_locations: [{ data: [] }],
+      event_change_receipts: [{ data: [] }]
     });
     createSupabaseAdminClientMock.mockReturnValue(db as unknown as ReturnType<typeof createSupabaseAdminClient>);
 
@@ -160,6 +174,9 @@ describe("listParentEventChangeLogs", () => {
     expect(result.changes).toHaveLength(1);
     expect(result.changes[0]).toMatchObject({
       changeType: "location_changed",
+      seenAt: null,
+      acknowledgedAt: null,
+      requiresAcknowledgment: true,
       diffs: [{
         field: "field",
         label: "Location",
@@ -167,5 +184,43 @@ describe("listParentEventChangeLogs", () => {
         currentValue: "Updated published location"
       }]
     });
+  });
+
+  it("retains scoped changes as unconfirmed when the one receipt query fails", async () => {
+    const db = client({
+      player_guardians: [{ data: [{ player_id: "player-1", parent_user_id: "parent-1", status: "active" }] }],
+      players: [{ data: [{ id: "player-1", organization_id: "org-1", season_id: "season-1", team_id: "team-1", first_name: "Mason", last_initial: "T" }] }],
+      teams: [{ data: [{ id: "team-1", organization_id: "org-1", season_id: "season-1", name: "Tiny Tigers" }] }],
+      events: [{ data: [{ id: "event-1", organization_id: "org-1", season_id: "season-1", team_id: "team-1", title: "Tiny Tigers Practice" }] }],
+      event_change_logs: [{ data: [{
+        id: "change-created",
+        event_id: "event-1",
+        organization_id: "org-1",
+        team_id: "team-1",
+        actor_user_id: null,
+        change_type: "created",
+        before_json: null,
+        after_json: { starts_at: "2026-04-04T22:30:00.000Z" },
+        created_at: "2026-04-03T12:00:00.000Z"
+      }] }],
+      profiles: [{ data: [] }],
+      field_locations: [{ data: [] }],
+      event_change_receipts: [{ data: null, error: { message: "unavailable" } }]
+    });
+    createSupabaseAdminClientMock.mockReturnValue(db as unknown as ReturnType<typeof createSupabaseAdminClient>);
+
+    const result = await listParentEventChangeLogs({ parentUserId: "parent-1" });
+
+    expect(result).toMatchObject({
+      ok: false,
+      message: "Event changes loaded, but receipt state could not be confirmed.",
+      changes: [{
+        id: "change-created",
+        seenAt: null,
+        acknowledgedAt: null,
+        requiresAcknowledgment: false
+      }]
+    });
+    expect(db.calls.filter((call) => call.table === "event_change_receipts" && call.method === "select")).toHaveLength(1);
   });
 });

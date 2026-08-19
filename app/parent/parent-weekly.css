@@ -1855,6 +1855,10 @@
   gap: var(--sp-3);
 }
 
+.family-change-band-title {
+  flex-wrap: wrap;
+}
+
 .family-change-band > header svg {
   color: var(--status-changed);
 }
@@ -1865,6 +1869,29 @@
   margin: 0;
   font-size: var(--text-xl);
   line-height: 1.15;
+}
+
+.family-change-band h2 {
+  color: var(--text);
+}
+
+.family-change-band .parent-weekly-kicker {
+  color: var(--status-changed);
+}
+
+:root[data-theme="dark"] .family-change-band {
+  background: #292c4f;
+}
+
+:root[data-theme="dark"] .family-change-band > header svg,
+:root[data-theme="dark"] .family-change-band .parent-weekly-kicker {
+  color: #c2c5ff;
+}
+
+:root[data-theme="dark"] .family-change-band .family-status-chip-changed {
+  border-color: #777cae;
+  background: #292c4f;
+  color: #c2c5ff;
 }
 
 .family-change-band ol,
@@ -1942,6 +1969,47 @@
   color: var(--accent);
   font-weight: 700;
   text-decoration: none;
+}
+
+.family-change-band-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--sp-2);
+}
+
+.family-change-band-actions button {
+  min-height: 44px;
+  border: 1px solid var(--action);
+  border-radius: var(--radius-sm);
+  background: var(--action);
+  color: #fff;
+  padding: var(--sp-2) var(--sp-3);
+  font: inherit;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.family-change-band-actions button:hover:not(:disabled) {
+  background: var(--action);
+  box-shadow: var(--shadow-sm);
+}
+
+.family-change-band-actions button:disabled {
+  border-color: var(--line-strong);
+  background: var(--surface-muted);
+  color: var(--muted);
+  cursor: not-allowed;
+}
+
+.family-change-band-actions button:focus-visible {
+  outline: 3px solid var(--accent);
+  outline-offset: 3px;
+}
+
+.family-change-band-row-note {
+  font-size: var(--text-sm);
+  font-weight: 700;
 }
 
 .family-change-band-note {
@@ -2713,6 +2781,7 @@
   }
 
   .family-change-band a,
+  .family-change-band button,
   .family-event-passport a,
   .family-readiness-strip a,
   .family-child-readiness a {
@@ -2721,12 +2790,18 @@
 
   .family-filter button:focus-visible,
   .family-change-band a:focus-visible,
+  .family-change-band button:focus-visible,
   .family-event-passport a:focus-visible,
   .family-event-passport button:focus-visible,
   .family-readiness-strip a:focus-visible,
   .family-child-readiness a:focus-visible {
     outline: 3px solid Highlight;
     outline-offset: 3px;
+  }
+
+  .family-change-band button:disabled {
+    border-color: GrayText;
+    color: GrayText;
   }
 
   .family-rsvp-options button:disabled {

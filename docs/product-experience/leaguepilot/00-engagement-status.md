@@ -3,7 +3,13 @@
 Engagement: Production-grade parent experience convergence (audit, experience architecture, bounded implementation, and local acceptance).
 Audit completed and LP-UX-001 implemented locally: 2026-07-29. LP-UX-001 corrections and LP-UX-002 correction acceptance completed: 2026-07-30. The complete LP-UX-001 through LP-UX-007 implementation line was merged to remote `main` by PR #4 at `8602469`. LP-UX-003 responsive correction and local acceptance completed on 2026-07-30 at `376bd0c`; LP-UX-004 responsive correction and local acceptance completed at `bc4e761`.
 
-## Current phase
+## Latest Recorded UX Slice
+
+LP-UX-018 is the latest numbered handoff. It replaces the Family Home event-change band's device-local watermark with per-guardian server receipt state and an explicit control for high-impact changes. The route derives the actor from the authenticated session, while the SQL RPC independently re-derives guardian scope and preserves the original timestamp under repeated or concurrent acknowledgment. Local transactional SQL proves linked success, idempotency, actor-spoof denial, cross-family denial with zero receipt rows, and one first-acknowledgment audit event. `output/playwright/lp-ux-018-event-change-receipts/proof.json` records 20 responsive/theme results plus retry and offline behavior. Migration `20260819084447` is local only; hosted migration, real-session RLS, cross-device hosted readback, deployment, and production acceptance remain open. The earlier "write-only `event_change_logs`" / device-local finding is now stale for local source but remains operationally true until hosted promotion. See [`lp-ux-018-server-event-change-receipts-acceptance.md`](lp-ux-018-server-event-change-receipts-acceptance.md).
+
+The phase, Git, and continuation sections below are retained as the earlier LP-UX-004 acceptance snapshot. They are historical evidence, not the current branch or next-work authority.
+
+## Earlier Acceptance Phase - Historical Snapshot
 
 **LP-UX-004 TRUTHFUL FAMILY UTILITIES IS DONE-LOCAL-ACCEPTED.** The responsive correction and proof slice on `ux/lp-ux-004-responsive-acceptance` is stacked linearly after the accepted LP-UX-003 commits. Commit `bc4e761` contains the existing Practice Replay page and nested timeline at 320px, raises its timeline status text to the existing 12px token, and adds settled-state responsive proof for Settings, More, Account, and Practice Replays.
 
@@ -31,6 +37,7 @@ LP-UX-001 through LP-UX-004 are done-local-accepted. LP-UX-005 through LP-UX-007
 16. `lp-ux-002-independent-correction-review.md` — fresh independent local acceptance of the corrected slice and its exact proof boundary.
 17. `lp-ux-003-acceptance-verification.md` — responsive correction, provider-free conflict proof, exact validation, and remaining gates.
 18. `lp-ux-004-acceptance-verification.md` — utility-route responsive correction, provider-free interaction proof, exact validation, and remaining gates.
+19. `lp-ux-017-family-media-team-responsive-acceptance.md` - current Family Photos and parent Team Portal responsive, theme, privacy, and intercepted-interaction evidence.
 
 ## Headline findings (full detail in 01)
 
@@ -48,7 +55,7 @@ LP-UX-001 through LP-UX-004 are done-local-accepted. LP-UX-005 through LP-UX-007
 4. Theme selection (amended 2026-08-03): the deliberate, authenticated, contrast-proven dark theme now exists locally. All routes default to Light and follow a saved explicit Light/Dark selection; device preference does not select the app theme.
 5. Reference slice: Family Home → What Changed → Next Event → RSVP (Stage A shell + Stage B surface); Transportation and Communication follow in later slices.
 
-## Git status at current handoff
+## Git Status at Earlier Handoff - Historical Snapshot
 
 Remote `main` at `8602469` contains the reconciled LP-UX-001 through LP-UX-007 implementation chain through PR #4. The protected original checkout remains untouched on its historical LP-UX-001 branch with unrelated local artifacts.
 
@@ -75,7 +82,7 @@ LP-UX-004 acceptance branch: `ux/lp-ux-004-responsive-acceptance`, stacked linea
 - The event-change adapter remains server-only, parent-authorized, organization- and season-scoped, bounded, deterministically ordered, privacy-safe, field-allowlisted, and does not return raw audit JSON. Empty authorized scopes now fail closed to empty results rather than broadening a query.
 - The proof uses authenticated demo sessions and does not run row mutations or provider sends.
 
-## Remaining work (next engagement)
+## Earlier Remaining Work - Historical Snapshot
 
 1. Continue with LP-UX-005 responsive acceptance on the existing Family Photos and parent-context Team Portal surfaces. Do not add a new route or product surface without renewed product authority.
 2. Then close responsive acceptance for LP-UX-006 and LP-UX-007 as separate local commits, preserving each existing route, data, and provider boundary.
