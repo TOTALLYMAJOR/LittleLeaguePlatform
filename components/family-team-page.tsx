@@ -29,7 +29,7 @@ export function FamilyTeamPage({ view }: { view: FamilyTeamView }) {
           {view.teams.map((team) => (
             <article className="family-team-card" key={team.id}>
               <header>
-                <span aria-hidden="true">{team.mascot.slice(0, 1)}</span>
+                <span aria-hidden="true">{(team.mascot || team.name).slice(0, 1)}</span>
                 <div>
                   <small>Linked team</small>
                   <h2>{team.name}</h2>
@@ -38,15 +38,19 @@ export function FamilyTeamPage({ view }: { view: FamilyTeamView }) {
               <dl>
                 <div>
                   <dt><CalendarDays aria-hidden="true" size={16} /> Next event</dt>
-                  <dd>{team.nextEvent
-                    ? `${team.nextEvent.title} · ${new Date(team.nextEvent.startsAt).toLocaleString("en-US", {
-                      weekday: "short",
-                      month: "short",
-                      day: "numeric",
-                      hour: "numeric",
-                      minute: "2-digit"
-                    })} · ${team.nextEvent.locationName}`
-                    : "No upcoming event is published."}</dd>
+                  <dd>{team.nextEvent ? (
+                    <span className="family-team-event">
+                      <strong>{team.nextEvent.title}</strong>
+                      <time dateTime={team.nextEvent.startsAt}>{new Date(team.nextEvent.startsAt).toLocaleString("en-US", {
+                        weekday: "short",
+                        month: "short",
+                        day: "numeric",
+                        hour: "numeric",
+                        minute: "2-digit"
+                      })}</time>
+                      <span>{team.nextEvent.locationName}</span>
+                    </span>
+                  ) : "No upcoming event is published."}</dd>
                 </div>
                 <div>
                   <dt><UsersRound aria-hidden="true" size={16} /> Coach contacts</dt>
