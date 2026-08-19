@@ -98,9 +98,11 @@ Target boundary: provider adapters execute only after consent, preference, appro
 
 ## Architecture Decisions
 
-Existing ADR:
+Accepted ADRs:
 
 - `docs/adr/0001-human-in-the-loop-agents.md`: agents assist but do not independently perform sensitive actions.
+- `docs/adr/0002-server-side-event-change-receipts.md`: Option C records per-guardian,
+  per-change receipts and derives acknowledgment requirements from the existing change type.
 
 ADR backlog:
 

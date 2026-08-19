@@ -29,7 +29,10 @@ supabase/migrations/20260726143452_fix_additional_guardian_revocation_ambiguity.
 supabase/migrations/20260726143938_restrict_rls_helper_execution.sql
 supabase/migrations/20260726144407_restore_anon_rls_policy_evaluation.sql
 supabase/migrations/20260726182645_optimize_rls_auth_initplans.sql
+supabase/migrations/20260819084447_event_change_receipts.sql
 ```
+
+Migration `20260819084447_event_change_receipts.sql` is a source candidate with local transactional behavior proof only. It has not been applied or read back on preview or production; hosted targets remain aligned through the earlier migration 40 described below.
 
 Demo seed:
 
@@ -83,7 +86,7 @@ Use the direct database endpoint when IPv6 is available or the Supavisor session
 | Identity and access | `profiles`, `organizations`, `organization_memberships`, `team_memberships` |
 | League structure | `seasons`, `teams`, `players`, `player_guardians`, `parent_invites` |
 | Guardian safety | `guardian_authorizations`, `emergency_contacts`, `player_health_notes` |
-| Scheduling | `events`, `event_series`, `event_change_logs`, `field_locations`, `field_reservations`, `rsvps`, `snack_schedule_slots`, `volunteer_signups`, `weather_alerts`, `game_day_resolution_reviews` |
+| Scheduling | `events`, `event_series`, `event_change_logs`, `event_change_receipts`, `field_locations`, `field_reservations`, `rsvps`, `snack_schedule_slots`, `volunteer_signups`, `weather_alerts`, `game_day_resolution_reviews` |
 | Team portal | `announcements`, `media_items`, `sponsors`, `sponsor_packages`, `sponsor_placements`, `sponsor_assets`, `sponsor_billing_records`, `team_brand_profiles`, `team_brand_surface_validation_runs`, `brand_asset_uploads`, `brand_monitoring_events` |
 | Coach planning | `drill_videos`, `drill_video_sources`, `drill_video_assignments` |
 | Parent Replay | `practice_run_receipts`, `parent_replays`, `parent_replay_templates`, `ai_generation_runs`, `learning_plans` |
@@ -115,6 +118,7 @@ Use the direct database endpoint when IPv6 is available or the Supavisor session
 - Temporary caregiver authorizations are separate from guardian membership and from coordination notes. Scope is one child/team, selected events, at most 14 days, Event Passport view, optional pickup, and fixed prohibitions. Exact-email acceptance, future-start state, expiry, revocation, restriction checks, and audit history are explicit.
 - Game-day monitor, confirm, delay, and cancel decisions require assigned coach/admin review. Delay/cancel changes, evidence, audit/change logs, and notification drafts are committed together; no provider send occurs in the RPC.
 - Explicit notification acknowledgment is recipient-scoped and requires an existing delivery attempt. It does not infer provider acceptance, delivery, or read evidence.
+- Event-change receipts are unique per change and guardian. Their SQL-authorized RPC records seen or explicit acknowledgment only after re-deriving active player-guardian scope; high-impact requirement remains derived from the existing change type. Receipt rows follow the source change-log lifetime. This candidate is locally proved but not hosted.
 
 ## Security Shape
 

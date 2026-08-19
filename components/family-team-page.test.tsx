@@ -28,5 +28,31 @@ describe("FamilyTeamPage", () => {
     expect(html).not.toContain("Portal colors and mascot");
     expect(html).not.toContain("Acting user");
     expect(html).not.toContain("Save portal branding");
+    expect(html).toContain('dateTime="2026-04-04T12:00:00.000Z"');
+  });
+
+  it("renders honest missing-event and missing-coach states with long content contained", () => {
+    const html = renderToStaticMarkup(
+      <FamilyTeamPage view={{
+        teams: [{
+          id: "team-long",
+          name: "Northwestern Community Championship Baseball Club",
+          mascot: "",
+          coachNames: []
+        }]
+      }} />
+    );
+
+    expect(html).toContain("Northwestern Community Championship Baseball Club");
+    expect(html).toContain("No upcoming event is published.");
+    expect(html).toContain("No assigned coach name is available.");
+    expect(html).not.toContain("Save portal branding");
+  });
+
+  it("explains when no approved parent-team link is available", () => {
+    const html = renderToStaticMarkup(<FamilyTeamPage view={{ teams: [] }} />);
+
+    expect(html).toContain("No linked team is available");
+    expect(html).toContain("approved guardian link");
   });
 });

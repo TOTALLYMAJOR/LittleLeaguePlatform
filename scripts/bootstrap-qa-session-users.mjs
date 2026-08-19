@@ -21,6 +21,8 @@ const ids = {
   game: "55555555-5555-4555-8555-555555555551",
   practice: "55555555-5555-4555-8555-555555555552",
   archivedGame: "55555555-5555-4555-8555-555555555553",
+  eventChangeLinked: "5a555555-5555-4555-8555-555555555551",
+  eventChangeUnlinked: "5a555555-5555-4555-8555-555555555552",
   coachMembership: "66666666-6666-4666-8666-666666666661",
   parentMembership: "66666666-6666-4666-8666-666666666662",
   archivedCoachMembership: "66666666-6666-4666-8666-666666666663",
@@ -491,6 +493,28 @@ async function main() {
     location_address: "100 League Way",
     opponent: "Past Rockets",
     status: "completed"
+  });
+  await upsertOrThrow(supabase, "event_change_logs", {
+    id: ids.eventChangeLinked,
+    event_id: ids.game,
+    organization_id: ids.organization,
+    team_id: ids.team,
+    actor_user_id: admin.id,
+    change_type: "time_changed",
+    before_json: { starts_at: gameStartsAt },
+    after_json: { starts_at: new Date(new Date(gameStartsAt).valueOf() + 30 * 60 * 1000).toISOString() },
+    reason: "Fictional QA receipt authorization fixture."
+  });
+  await upsertOrThrow(supabase, "event_change_logs", {
+    id: ids.eventChangeUnlinked,
+    event_id: ids.archivedGame,
+    organization_id: ids.organization,
+    team_id: ids.archivedTeam,
+    actor_user_id: admin.id,
+    change_type: "cancelled",
+    before_json: { status: "scheduled" },
+    after_json: { status: "cancelled" },
+    reason: "Fictional QA out-of-scope receipt fixture."
   });
   await upsertOrThrow(supabase, "announcements", {
     id: ids.announcement,

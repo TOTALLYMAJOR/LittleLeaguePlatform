@@ -6,7 +6,7 @@ import { fileURLToPath } from "node:url";
 
 const COMMANDS = ["SELECT", "INSERT", "UPDATE", "DELETE"];
 const EXPECTED = Object.freeze({
-  policies: 156,
+  policies: 157,
   overlapGroups: 35,
   selectGroups: 34,
   updateGroups: 1,

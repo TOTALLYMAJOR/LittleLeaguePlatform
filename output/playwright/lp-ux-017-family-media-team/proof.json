@@ -1,0 +1,991 @@
+{
+  "generatedAt": "2026-08-19T08:12:00.118Z",
+  "baseUrl": "http://localhost:3020",
+  "authority": "authenticated parent session with server-derived Family scope",
+  "mutationBoundary": "media report responses are intercepted locally; no provider or database mutation",
+  "results": [
+    {
+      "kind": "responsive",
+      "route": "/parent/photos",
+      "theme": "light",
+      "viewport": {
+        "name": "mobile-320",
+        "width": 320,
+        "height": 844
+      },
+      "metrics": {
+        "theme": "light",
+        "colorScheme": "light",
+        "shell": "family",
+        "surfaceFamily": "family",
+        "resolvedRole": "parent",
+        "dataScopeRole": "parent",
+        "documentWidth": 320,
+        "viewportWidth": 320,
+        "undersizedControls": [],
+        "containmentFailures": [],
+        "activeTabs": [
+          "More"
+        ],
+        "hasExpectedActiveTab": true,
+        "leakedStaffControls": [],
+        "leakedEmail": false,
+        "leakedUuid": false
+      },
+      "axeViolations": [],
+      "focus": {
+        "active": true,
+        "outlineStyle": "solid",
+        "outlineWidth": "2px",
+        "boxShadow": "none"
+      },
+      "pageErrors": [],
+      "requestFailures": [],
+      "screenshotPath": "output/playwright/lp-ux-017-family-media-team/parent-photos-mobile-320-light.png"
+    },
+    {
+      "kind": "responsive",
+      "route": "/team-portal",
+      "theme": "light",
+      "viewport": {
+        "name": "mobile-320",
+        "width": 320,
+        "height": 844
+      },
+      "metrics": {
+        "theme": "light",
+        "colorScheme": "light",
+        "shell": "family",
+        "surfaceFamily": "family",
+        "resolvedRole": "parent",
+        "dataScopeRole": "parent",
+        "documentWidth": 320,
+        "viewportWidth": 320,
+        "undersizedControls": [],
+        "containmentFailures": [],
+        "activeTabs": [
+          "Family"
+        ],
+        "hasExpectedActiveTab": true,
+        "leakedStaffControls": [],
+        "leakedEmail": false,
+        "leakedUuid": false
+      },
+      "axeViolations": [],
+      "focus": {
+        "active": true,
+        "outlineStyle": "solid",
+        "outlineWidth": "2px",
+        "boxShadow": "none"
+      },
+      "pageErrors": [],
+      "requestFailures": [],
+      "screenshotPath": "output/playwright/lp-ux-017-family-media-team/team-portal-parent-mobile-320-light.png"
+    },
+    {
+      "kind": "responsive",
+      "route": "/parent/photos",
+      "theme": "light",
+      "viewport": {
+        "name": "mobile-390",
+        "width": 390,
+        "height": 844
+      },
+      "metrics": {
+        "theme": "light",
+        "colorScheme": "light",
+        "shell": "family",
+        "surfaceFamily": "family",
+        "resolvedRole": "parent",
+        "dataScopeRole": "parent",
+        "documentWidth": 390,
+        "viewportWidth": 390,
+        "undersizedControls": [],
+        "containmentFailures": [],
+        "activeTabs": [
+          "More"
+        ],
+        "hasExpectedActiveTab": true,
+        "leakedStaffControls": [],
+        "leakedEmail": false,
+        "leakedUuid": false
+      },
+      "axeViolations": [],
+      "focus": {
+        "active": true,
+        "outlineStyle": "solid",
+        "outlineWidth": "2px",
+        "boxShadow": "none"
+      },
+      "pageErrors": [],
+      "requestFailures": [],
+      "screenshotPath": "output/playwright/lp-ux-017-family-media-team/parent-photos-mobile-390-light.png"
+    },
+    {
+      "kind": "responsive",
+      "route": "/team-portal",
+      "theme": "light",
+      "viewport": {
+        "name": "mobile-390",
+        "width": 390,
+        "height": 844
+      },
+      "metrics": {
+        "theme": "light",
+        "colorScheme": "light",
+        "shell": "family",
+        "surfaceFamily": "family",
+        "resolvedRole": "parent",
+        "dataScopeRole": "parent",
+        "documentWidth": 390,
+        "viewportWidth": 390,
+        "undersizedControls": [],
+        "containmentFailures": [],
+        "activeTabs": [
+          "Family"
+        ],
+        "hasExpectedActiveTab": true,
+        "leakedStaffControls": [],
+        "leakedEmail": false,
+        "leakedUuid": false
+      },
+      "axeViolations": [],
+      "focus": {
+        "active": true,
+        "outlineStyle": "solid",
+        "outlineWidth": "2px",
+        "boxShadow": "none"
+      },
+      "pageErrors": [],
+      "requestFailures": [],
+      "screenshotPath": "output/playwright/lp-ux-017-family-media-team/team-portal-parent-mobile-390-light.png"
+    },
+    {
+      "kind": "responsive",
+      "route": "/parent/photos",
+      "theme": "light",
+      "viewport": {
+        "name": "tablet-768",
+        "width": 768,
+        "height": 1024
+      },
+      "metrics": {
+        "theme": "light",
+        "colorScheme": "light",
+        "shell": "family",
+        "surfaceFamily": "family",
+        "resolvedRole": "parent",
+        "dataScopeRole": "parent",
+        "documentWidth": 768,
+        "viewportWidth": 768,
+        "undersizedControls": [],
+        "containmentFailures": [],
+        "activeTabs": [
+          "More"
+        ],
+        "hasExpectedActiveTab": true,
+        "leakedStaffControls": [],
+        "leakedEmail": false,
+        "leakedUuid": false
+      },
+      "axeViolations": [],
+      "focus": {
+        "active": true,
+        "outlineStyle": "solid",
+        "outlineWidth": "2px",
+        "boxShadow": "none"
+      },
+      "pageErrors": [],
+      "requestFailures": [],
+      "screenshotPath": "output/playwright/lp-ux-017-family-media-team/parent-photos-tablet-768-light.png"
+    },
+    {
+      "kind": "responsive",
+      "route": "/team-portal",
+      "theme": "light",
+      "viewport": {
+        "name": "tablet-768",
+        "width": 768,
+        "height": 1024
+      },
+      "metrics": {
+        "theme": "light",
+        "colorScheme": "light",
+        "shell": "family",
+        "surfaceFamily": "family",
+        "resolvedRole": "parent",
+        "dataScopeRole": "parent",
+        "documentWidth": 768,
+        "viewportWidth": 768,
+        "undersizedControls": [],
+        "containmentFailures": [],
+        "activeTabs": [
+          "Family"
+        ],
+        "hasExpectedActiveTab": true,
+        "leakedStaffControls": [],
+        "leakedEmail": false,
+        "leakedUuid": false
+      },
+      "axeViolations": [],
+      "focus": {
+        "active": true,
+        "outlineStyle": "solid",
+        "outlineWidth": "2px",
+        "boxShadow": "none"
+      },
+      "pageErrors": [],
+      "requestFailures": [],
+      "screenshotPath": "output/playwright/lp-ux-017-family-media-team/team-portal-parent-tablet-768-light.png"
+    },
+    {
+      "kind": "responsive",
+      "route": "/parent/photos",
+      "theme": "light",
+      "viewport": {
+        "name": "desktop-1024",
+        "width": 1024,
+        "height": 900
+      },
+      "metrics": {
+        "theme": "light",
+        "colorScheme": "light",
+        "shell": "family",
+        "surfaceFamily": "family",
+        "resolvedRole": "parent",
+        "dataScopeRole": "parent",
+        "documentWidth": 1024,
+        "viewportWidth": 1024,
+        "undersizedControls": [],
+        "containmentFailures": [],
+        "activeTabs": [
+          "More"
+        ],
+        "hasExpectedActiveTab": true,
+        "leakedStaffControls": [],
+        "leakedEmail": false,
+        "leakedUuid": false
+      },
+      "axeViolations": [],
+      "focus": {
+        "active": true,
+        "outlineStyle": "solid",
+        "outlineWidth": "2px",
+        "boxShadow": "none"
+      },
+      "pageErrors": [],
+      "requestFailures": [],
+      "screenshotPath": "output/playwright/lp-ux-017-family-media-team/parent-photos-desktop-1024-light.png"
+    },
+    {
+      "kind": "responsive",
+      "route": "/team-portal",
+      "theme": "light",
+      "viewport": {
+        "name": "desktop-1024",
+        "width": 1024,
+        "height": 900
+      },
+      "metrics": {
+        "theme": "light",
+        "colorScheme": "light",
+        "shell": "family",
+        "surfaceFamily": "family",
+        "resolvedRole": "parent",
+        "dataScopeRole": "parent",
+        "documentWidth": 1024,
+        "viewportWidth": 1024,
+        "undersizedControls": [],
+        "containmentFailures": [],
+        "activeTabs": [
+          "Family"
+        ],
+        "hasExpectedActiveTab": true,
+        "leakedStaffControls": [],
+        "leakedEmail": false,
+        "leakedUuid": false
+      },
+      "axeViolations": [],
+      "focus": {
+        "active": true,
+        "outlineStyle": "solid",
+        "outlineWidth": "2px",
+        "boxShadow": "none"
+      },
+      "pageErrors": [],
+      "requestFailures": [],
+      "screenshotPath": "output/playwright/lp-ux-017-family-media-team/team-portal-parent-desktop-1024-light.png"
+    },
+    {
+      "kind": "responsive",
+      "route": "/parent/photos",
+      "theme": "light",
+      "viewport": {
+        "name": "desktop-1440",
+        "width": 1440,
+        "height": 1000
+      },
+      "metrics": {
+        "theme": "light",
+        "colorScheme": "light",
+        "shell": "family",
+        "surfaceFamily": "family",
+        "resolvedRole": "parent",
+        "dataScopeRole": "parent",
+        "documentWidth": 1440,
+        "viewportWidth": 1440,
+        "undersizedControls": [],
+        "containmentFailures": [],
+        "activeTabs": [
+          "More"
+        ],
+        "hasExpectedActiveTab": true,
+        "leakedStaffControls": [],
+        "leakedEmail": false,
+        "leakedUuid": false
+      },
+      "axeViolations": [],
+      "focus": {
+        "active": true,
+        "outlineStyle": "solid",
+        "outlineWidth": "2px",
+        "boxShadow": "none"
+      },
+      "pageErrors": [],
+      "requestFailures": [],
+      "screenshotPath": "output/playwright/lp-ux-017-family-media-team/parent-photos-desktop-1440-light.png"
+    },
+    {
+      "kind": "responsive",
+      "route": "/team-portal",
+      "theme": "light",
+      "viewport": {
+        "name": "desktop-1440",
+        "width": 1440,
+        "height": 1000
+      },
+      "metrics": {
+        "theme": "light",
+        "colorScheme": "light",
+        "shell": "family",
+        "surfaceFamily": "family",
+        "resolvedRole": "parent",
+        "dataScopeRole": "parent",
+        "documentWidth": 1440,
+        "viewportWidth": 1440,
+        "undersizedControls": [],
+        "containmentFailures": [],
+        "activeTabs": [
+          "Family"
+        ],
+        "hasExpectedActiveTab": true,
+        "leakedStaffControls": [],
+        "leakedEmail": false,
+        "leakedUuid": false
+      },
+      "axeViolations": [],
+      "focus": {
+        "active": true,
+        "outlineStyle": "solid",
+        "outlineWidth": "2px",
+        "boxShadow": "none"
+      },
+      "pageErrors": [],
+      "requestFailures": [],
+      "screenshotPath": "output/playwright/lp-ux-017-family-media-team/team-portal-parent-desktop-1440-light.png"
+    },
+    {
+      "kind": "responsive",
+      "route": "/parent/photos",
+      "theme": "dark",
+      "viewport": {
+        "name": "mobile-320",
+        "width": 320,
+        "height": 844
+      },
+      "metrics": {
+        "theme": "dark",
+        "colorScheme": "dark",
+        "shell": "family",
+        "surfaceFamily": "family",
+        "resolvedRole": "parent",
+        "dataScopeRole": "parent",
+        "documentWidth": 320,
+        "viewportWidth": 320,
+        "undersizedControls": [],
+        "containmentFailures": [],
+        "activeTabs": [
+          "More"
+        ],
+        "hasExpectedActiveTab": true,
+        "leakedStaffControls": [],
+        "leakedEmail": false,
+        "leakedUuid": false
+      },
+      "axeViolations": [],
+      "focus": {
+        "active": true,
+        "outlineStyle": "solid",
+        "outlineWidth": "2px",
+        "boxShadow": "none"
+      },
+      "pageErrors": [],
+      "requestFailures": [],
+      "screenshotPath": "output/playwright/lp-ux-017-family-media-team/parent-photos-mobile-320-dark.png"
+    },
+    {
+      "kind": "responsive",
+      "route": "/team-portal",
+      "theme": "dark",
+      "viewport": {
+        "name": "mobile-320",
+        "width": 320,
+        "height": 844
+      },
+      "metrics": {
+        "theme": "dark",
+        "colorScheme": "dark",
+        "shell": "family",
+        "surfaceFamily": "family",
+        "resolvedRole": "parent",
+        "dataScopeRole": "parent",
+        "documentWidth": 320,
+        "viewportWidth": 320,
+        "undersizedControls": [],
+        "containmentFailures": [],
+        "activeTabs": [
+          "Family"
+        ],
+        "hasExpectedActiveTab": true,
+        "leakedStaffControls": [],
+        "leakedEmail": false,
+        "leakedUuid": false
+      },
+      "axeViolations": [],
+      "focus": {
+        "active": true,
+        "outlineStyle": "solid",
+        "outlineWidth": "2px",
+        "boxShadow": "none"
+      },
+      "pageErrors": [],
+      "requestFailures": [],
+      "screenshotPath": "output/playwright/lp-ux-017-family-media-team/team-portal-parent-mobile-320-dark.png"
+    },
+    {
+      "kind": "responsive",
+      "route": "/parent/photos",
+      "theme": "dark",
+      "viewport": {
+        "name": "mobile-390",
+        "width": 390,
+        "height": 844
+      },
+      "metrics": {
+        "theme": "dark",
+        "colorScheme": "dark",
+        "shell": "family",
+        "surfaceFamily": "family",
+        "resolvedRole": "parent",
+        "dataScopeRole": "parent",
+        "documentWidth": 390,
+        "viewportWidth": 390,
+        "undersizedControls": [],
+        "containmentFailures": [],
+        "activeTabs": [
+          "More"
+        ],
+        "hasExpectedActiveTab": true,
+        "leakedStaffControls": [],
+        "leakedEmail": false,
+        "leakedUuid": false
+      },
+      "axeViolations": [],
+      "focus": {
+        "active": true,
+        "outlineStyle": "solid",
+        "outlineWidth": "2px",
+        "boxShadow": "none"
+      },
+      "pageErrors": [],
+      "requestFailures": [],
+      "screenshotPath": "output/playwright/lp-ux-017-family-media-team/parent-photos-mobile-390-dark.png"
+    },
+    {
+      "kind": "responsive",
+      "route": "/team-portal",
+      "theme": "dark",
+      "viewport": {
+        "name": "mobile-390",
+        "width": 390,
+        "height": 844
+      },
+      "metrics": {
+        "theme": "dark",
+        "colorScheme": "dark",
+        "shell": "family",
+        "surfaceFamily": "family",
+        "resolvedRole": "parent",
+        "dataScopeRole": "parent",
+        "documentWidth": 390,
+        "viewportWidth": 390,
+        "undersizedControls": [],
+        "containmentFailures": [],
+        "activeTabs": [
+          "Family"
+        ],
+        "hasExpectedActiveTab": true,
+        "leakedStaffControls": [],
+        "leakedEmail": false,
+        "leakedUuid": false
+      },
+      "axeViolations": [],
+      "focus": {
+        "active": true,
+        "outlineStyle": "solid",
+        "outlineWidth": "2px",
+        "boxShadow": "none"
+      },
+      "pageErrors": [],
+      "requestFailures": [],
+      "screenshotPath": "output/playwright/lp-ux-017-family-media-team/team-portal-parent-mobile-390-dark.png"
+    },
+    {
+      "kind": "responsive",
+      "route": "/parent/photos",
+      "theme": "dark",
+      "viewport": {
+        "name": "tablet-768",
+        "width": 768,
+        "height": 1024
+      },
+      "metrics": {
+        "theme": "dark",
+        "colorScheme": "dark",
+        "shell": "family",
+        "surfaceFamily": "family",
+        "resolvedRole": "parent",
+        "dataScopeRole": "parent",
+        "documentWidth": 768,
+        "viewportWidth": 768,
+        "undersizedControls": [],
+        "containmentFailures": [],
+        "activeTabs": [
+          "More"
+        ],
+        "hasExpectedActiveTab": true,
+        "leakedStaffControls": [],
+        "leakedEmail": false,
+        "leakedUuid": false
+      },
+      "axeViolations": [],
+      "focus": {
+        "active": true,
+        "outlineStyle": "solid",
+        "outlineWidth": "2px",
+        "boxShadow": "none"
+      },
+      "pageErrors": [],
+      "requestFailures": [],
+      "screenshotPath": "output/playwright/lp-ux-017-family-media-team/parent-photos-tablet-768-dark.png"
+    },
+    {
+      "kind": "responsive",
+      "route": "/team-portal",
+      "theme": "dark",
+      "viewport": {
+        "name": "tablet-768",
+        "width": 768,
+        "height": 1024
+      },
+      "metrics": {
+        "theme": "dark",
+        "colorScheme": "dark",
+        "shell": "family",
+        "surfaceFamily": "family",
+        "resolvedRole": "parent",
+        "dataScopeRole": "parent",
+        "documentWidth": 768,
+        "viewportWidth": 768,
+        "undersizedControls": [],
+        "containmentFailures": [],
+        "activeTabs": [
+          "Family"
+        ],
+        "hasExpectedActiveTab": true,
+        "leakedStaffControls": [],
+        "leakedEmail": false,
+        "leakedUuid": false
+      },
+      "axeViolations": [],
+      "focus": {
+        "active": true,
+        "outlineStyle": "solid",
+        "outlineWidth": "2px",
+        "boxShadow": "none"
+      },
+      "pageErrors": [],
+      "requestFailures": [],
+      "screenshotPath": "output/playwright/lp-ux-017-family-media-team/team-portal-parent-tablet-768-dark.png"
+    },
+    {
+      "kind": "responsive",
+      "route": "/parent/photos",
+      "theme": "dark",
+      "viewport": {
+        "name": "desktop-1024",
+        "width": 1024,
+        "height": 900
+      },
+      "metrics": {
+        "theme": "dark",
+        "colorScheme": "dark",
+        "shell": "family",
+        "surfaceFamily": "family",
+        "resolvedRole": "parent",
+        "dataScopeRole": "parent",
+        "documentWidth": 1024,
+        "viewportWidth": 1024,
+        "undersizedControls": [],
+        "containmentFailures": [],
+        "activeTabs": [
+          "More"
+        ],
+        "hasExpectedActiveTab": true,
+        "leakedStaffControls": [],
+        "leakedEmail": false,
+        "leakedUuid": false
+      },
+      "axeViolations": [],
+      "focus": {
+        "active": true,
+        "outlineStyle": "solid",
+        "outlineWidth": "2px",
+        "boxShadow": "none"
+      },
+      "pageErrors": [],
+      "requestFailures": [],
+      "screenshotPath": "output/playwright/lp-ux-017-family-media-team/parent-photos-desktop-1024-dark.png"
+    },
+    {
+      "kind": "responsive",
+      "route": "/team-portal",
+      "theme": "dark",
+      "viewport": {
+        "name": "desktop-1024",
+        "width": 1024,
+        "height": 900
+      },
+      "metrics": {
+        "theme": "dark",
+        "colorScheme": "dark",
+        "shell": "family",
+        "surfaceFamily": "family",
+        "resolvedRole": "parent",
+        "dataScopeRole": "parent",
+        "documentWidth": 1024,
+        "viewportWidth": 1024,
+        "undersizedControls": [],
+        "containmentFailures": [],
+        "activeTabs": [
+          "Family"
+        ],
+        "hasExpectedActiveTab": true,
+        "leakedStaffControls": [],
+        "leakedEmail": false,
+        "leakedUuid": false
+      },
+      "axeViolations": [],
+      "focus": {
+        "active": true,
+        "outlineStyle": "solid",
+        "outlineWidth": "2px",
+        "boxShadow": "none"
+      },
+      "pageErrors": [],
+      "requestFailures": [],
+      "screenshotPath": "output/playwright/lp-ux-017-family-media-team/team-portal-parent-desktop-1024-dark.png"
+    },
+    {
+      "kind": "responsive",
+      "route": "/parent/photos",
+      "theme": "dark",
+      "viewport": {
+        "name": "desktop-1440",
+        "width": 1440,
+        "height": 1000
+      },
+      "metrics": {
+        "theme": "dark",
+        "colorScheme": "dark",
+        "shell": "family",
+        "surfaceFamily": "family",
+        "resolvedRole": "parent",
+        "dataScopeRole": "parent",
+        "documentWidth": 1440,
+        "viewportWidth": 1440,
+        "undersizedControls": [],
+        "containmentFailures": [],
+        "activeTabs": [
+          "More"
+        ],
+        "hasExpectedActiveTab": true,
+        "leakedStaffControls": [],
+        "leakedEmail": false,
+        "leakedUuid": false
+      },
+      "axeViolations": [],
+      "focus": {
+        "active": true,
+        "outlineStyle": "solid",
+        "outlineWidth": "2px",
+        "boxShadow": "none"
+      },
+      "pageErrors": [],
+      "requestFailures": [],
+      "screenshotPath": "output/playwright/lp-ux-017-family-media-team/parent-photos-desktop-1440-dark.png"
+    },
+    {
+      "kind": "responsive",
+      "route": "/team-portal",
+      "theme": "dark",
+      "viewport": {
+        "name": "desktop-1440",
+        "width": 1440,
+        "height": 1000
+      },
+      "metrics": {
+        "theme": "dark",
+        "colorScheme": "dark",
+        "shell": "family",
+        "surfaceFamily": "family",
+        "resolvedRole": "parent",
+        "dataScopeRole": "parent",
+        "documentWidth": 1440,
+        "viewportWidth": 1440,
+        "undersizedControls": [],
+        "containmentFailures": [],
+        "activeTabs": [
+          "Family"
+        ],
+        "hasExpectedActiveTab": true,
+        "leakedStaffControls": [],
+        "leakedEmail": false,
+        "leakedUuid": false
+      },
+      "axeViolations": [],
+      "focus": {
+        "active": true,
+        "outlineStyle": "solid",
+        "outlineWidth": "2px",
+        "boxShadow": "none"
+      },
+      "pageErrors": [],
+      "requestFailures": [],
+      "screenshotPath": "output/playwright/lp-ux-017-family-media-team/team-portal-parent-desktop-1440-dark.png"
+    },
+    {
+      "kind": "forced-colors",
+      "route": "/parent/photos",
+      "viewport": {
+        "name": "mobile-390",
+        "width": 390,
+        "height": 844
+      },
+      "metrics": {
+        "theme": "light",
+        "colorScheme": "light dark",
+        "shell": "family",
+        "surfaceFamily": "family",
+        "resolvedRole": "parent",
+        "dataScopeRole": "parent",
+        "documentWidth": 390,
+        "viewportWidth": 390,
+        "undersizedControls": [],
+        "containmentFailures": [],
+        "activeTabs": [
+          "More"
+        ],
+        "hasExpectedActiveTab": true,
+        "leakedStaffControls": [],
+        "leakedEmail": false,
+        "leakedUuid": false
+      },
+      "focus": {
+        "active": true,
+        "outlineStyle": "solid",
+        "outlineWidth": "3px",
+        "boxShadow": "none"
+      },
+      "pageErrors": [],
+      "requestFailures": [],
+      "screenshotPath": "output/playwright/lp-ux-017-family-media-team/parent-photos-mobile-390-forced-colors.png"
+    },
+    {
+      "kind": "forced-colors",
+      "route": "/team-portal",
+      "viewport": {
+        "name": "mobile-390",
+        "width": 390,
+        "height": 844
+      },
+      "metrics": {
+        "theme": "light",
+        "colorScheme": "light dark",
+        "shell": "family",
+        "surfaceFamily": "family",
+        "resolvedRole": "parent",
+        "dataScopeRole": "parent",
+        "documentWidth": 390,
+        "viewportWidth": 390,
+        "undersizedControls": [],
+        "containmentFailures": [],
+        "activeTabs": [
+          "Family"
+        ],
+        "hasExpectedActiveTab": true,
+        "leakedStaffControls": [],
+        "leakedEmail": false,
+        "leakedUuid": false
+      },
+      "focus": {
+        "active": true,
+        "outlineStyle": "solid",
+        "outlineWidth": "3px",
+        "boxShadow": "none"
+      },
+      "pageErrors": [],
+      "requestFailures": [],
+      "screenshotPath": "output/playwright/lp-ux-017-family-media-team/team-portal-parent-mobile-390-forced-colors.png"
+    },
+    {
+      "kind": "forced-colors",
+      "route": "/parent/photos",
+      "viewport": {
+        "name": "desktop-1440",
+        "width": 1440,
+        "height": 1000
+      },
+      "metrics": {
+        "theme": "light",
+        "colorScheme": "light dark",
+        "shell": "family",
+        "surfaceFamily": "family",
+        "resolvedRole": "parent",
+        "dataScopeRole": "parent",
+        "documentWidth": 1440,
+        "viewportWidth": 1440,
+        "undersizedControls": [],
+        "containmentFailures": [],
+        "activeTabs": [
+          "More"
+        ],
+        "hasExpectedActiveTab": true,
+        "leakedStaffControls": [],
+        "leakedEmail": false,
+        "leakedUuid": false
+      },
+      "focus": {
+        "active": true,
+        "outlineStyle": "solid",
+        "outlineWidth": "3px",
+        "boxShadow": "none"
+      },
+      "pageErrors": [],
+      "requestFailures": [],
+      "screenshotPath": "output/playwright/lp-ux-017-family-media-team/parent-photos-desktop-1440-forced-colors.png"
+    },
+    {
+      "kind": "forced-colors",
+      "route": "/team-portal",
+      "viewport": {
+        "name": "desktop-1440",
+        "width": 1440,
+        "height": 1000
+      },
+      "metrics": {
+        "theme": "light",
+        "colorScheme": "light dark",
+        "shell": "family",
+        "surfaceFamily": "family",
+        "resolvedRole": "parent",
+        "dataScopeRole": "parent",
+        "documentWidth": 1440,
+        "viewportWidth": 1440,
+        "undersizedControls": [],
+        "containmentFailures": [],
+        "activeTabs": [
+          "Family"
+        ],
+        "hasExpectedActiveTab": true,
+        "leakedStaffControls": [],
+        "leakedEmail": false,
+        "leakedUuid": false
+      },
+      "focus": {
+        "active": true,
+        "outlineStyle": "solid",
+        "outlineWidth": "3px",
+        "boxShadow": "none"
+      },
+      "pageErrors": [],
+      "requestFailures": [],
+      "screenshotPath": "output/playwright/lp-ux-017-family-media-team/team-portal-parent-desktop-1440-forced-colors.png"
+    },
+    {
+      "kind": "interaction",
+      "route": "/parent/photos",
+      "outcome": "success",
+      "theme": "light",
+      "viewport": {
+        "name": "mobile-390",
+        "width": 390,
+        "height": 844
+      },
+      "beforeIds": [
+        "proof-media-opening-day",
+        "proof-media-warmup"
+      ],
+      "afterIds": [
+        "proof-media-warmup"
+      ],
+      "fixtureMode": true,
+      "requestIntercepted": true,
+      "providerOrDatabaseMutation": false,
+      "pageErrors": [],
+      "requestFailures": []
+    },
+    {
+      "kind": "interaction",
+      "route": "/parent/photos",
+      "outcome": "failure",
+      "theme": "dark",
+      "viewport": {
+        "name": "desktop-1440",
+        "width": 1440,
+        "height": 1000
+      },
+      "beforeIds": [
+        "proof-media-opening-day",
+        "proof-media-warmup"
+      ],
+      "afterIds": [
+        "proof-media-opening-day",
+        "proof-media-warmup"
+      ],
+      "fixtureMode": true,
+      "requestIntercepted": true,
+      "providerOrDatabaseMutation": false,
+      "pageErrors": [],
+      "requestFailures": []
+    }
+  ],
+  "completedAt": "2026-08-19T08:12:54.360Z",
+  "summary": {
+    "total": 26,
+    "responsive": 20,
+    "forcedColors": 4,
+    "interactions": 2,
+    "status": "passed"
+  }
+}

@@ -11,12 +11,16 @@ import {
   MessageCircle,
   ShieldCheck
 } from "lucide-react";
-import { useState, type CSSProperties } from "react";
+import { useCallback, useMemo, useState, type CSSProperties } from "react";
 import type { RsvpResponse } from "@/lib/domain";
 import type { FamilyMissionControlView, FamilyMissionEvent } from "@/lib/family-mission-control";
 import { createSupabaseBrowserClient } from "@/lib/supabase/browser";
 import type { ParentCoachDashboardData } from "@/lib/supabase/dashboard-data";
 import type { ParentEventChangeLogReadResult } from "@/lib/supabase/event-change-log-reads";
+import type {
+  EventChangeReceiptMutationResult,
+  EventChangeReceiptOperation
+} from "@/lib/supabase/event-change-receipts";
 import type { FamilyReplayData, FamilyReplayStory } from "@/lib/supabase/family-replays";
 import type { NotificationReceipt } from "@/lib/supabase/notification-receipts";
 import type { ParentTransportationData } from "@/lib/supabase/transportation";
@@ -199,7 +203,15 @@ export function ParentWeeklyDashboard({
   const [pendingReplayId, setPendingReplayId] = useState("");
   const [statusMessage, setStatusMessage] = useState("");
   const [selectedChildId, setSelectedChildId] = useState("");
-  const [visibleChanges, setVisibleChanges] = useState(eventChangeData.changes);
+  const [eventChanges, setEventChanges] = useState(eventChangeData.changes);
+  const [visibleChanges, setVisibleChanges] = useState(() => eventChangeData.changes.filter((change) => (
+    change.requiresAcknowledgment ? !change.acknowledgedAt : !change.seenAt
+  )));
+  const scopedEventChanges = useMemo(() => (
+    selectedChildId
+      ? eventChanges.filter((change) => change.childIds.includes(selectedChildId))
+      : eventChanges
+  ), [eventChanges, selectedChildId]);
 
   const scopedEvents = selectedChildId
     ? view.events.filter((event) => event.childId === selectedChildId)
@@ -267,13 +279,6 @@ export function ParentWeeklyDashboard({
       ? `${firstName}'s family week`
     : `${firstName}'s week`;
   const teamMark = initials(primaryTeam?.mascot || primaryTeam?.name || "LP");
-  const storageKey = [
-    "leaguepilot:event-change-watermark:v1",
-    dashboardData.parentUserId || "signed-out",
-    dashboardData.state.organization.id,
-    dashboardData.state.activeSeason.id,
-    selectedChildId || eventChangeData.scope.familyContextKey || "everyone"
-  ].join(":");
   const snapshotRows = [
     {
       label: "RSVP coverage",
@@ -316,6 +321,63 @@ export function ParentWeeklyDashboard({
       setPendingReplayId("");
     }
   }
+
+  const recordEventChangeReceipt = useCallback(async function recordEventChangeReceipt(
+    eventChangeLogId: string,
+    operation: EventChangeReceiptOperation
+  ): Promise<EventChangeReceiptMutationResult> {
+    if (typeof navigator !== "undefined" && !navigator.onLine) {
+      return {
+        ok: false,
+        code: "unavailable",
+        message: "Reconnect before recording event change awareness.",
+        operation,
+        idempotentReplay: false,
+        seenAt: null,
+        acknowledgedAt: null
+      };
+    }
+    try {
+      const response = await authenticatedPost("/api/parent/event-changes/acknowledge", {
+        eventChangeLogId,
+        operation
+      });
+      const result = await response.json().catch(() => null) as EventChangeReceiptMutationResult | null;
+      if (!result) {
+        return {
+          ok: false,
+          code: "unavailable",
+          message: "Event change receipt returned no readable result.",
+          operation,
+          idempotentReplay: false,
+          seenAt: null,
+          acknowledgedAt: null
+        };
+      }
+      if (result.ok) {
+        setEventChanges((current) => current.map((change) => (
+          change.id === eventChangeLogId
+            ? {
+              ...change,
+              seenAt: result.seenAt ?? change.seenAt,
+              acknowledgedAt: result.acknowledgedAt ?? change.acknowledgedAt
+            }
+            : change
+        )));
+      }
+      return result;
+    } catch {
+      return {
+        ok: false,
+        code: "unavailable",
+        message: "Event change receipt could not reach family records.",
+        operation,
+        idempotentReplay: false,
+        seenAt: null,
+        acknowledgedAt: null
+      };
+    }
+  }, []);
 
   return (
     <div
@@ -369,13 +431,11 @@ export function ParentWeeklyDashboard({
       ) : null}
 
       <ChangeBand
-        changes={selectedChildId
-          ? eventChangeData.changes.filter((change) => change.childIds.includes(selectedChildId))
-          : eventChangeData.changes}
+        changes={scopedEventChanges}
         querySucceeded={eventChangeData.ok}
-        storageKey={storageKey}
         timeZone={eventChangeData.scope.timeZone}
         onVisibleChanges={setVisibleChanges}
+        onAcknowledge={recordEventChangeReceipt}
       />
 
       {showAllChildren ? (

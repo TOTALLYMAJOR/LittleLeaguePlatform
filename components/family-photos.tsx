@@ -9,6 +9,39 @@ export interface FamilyPhotoItem extends MediaItem {
   teamName: string;
 }
 
+export interface FamilyPhotoReportResult {
+  ok?: boolean;
+  message?: string;
+}
+
+export interface FamilyPhotoFeedback {
+  tone: "success" | "error";
+  message: string;
+}
+
+export function applyFamilyPhotoReportResult(
+  photos: FamilyPhotoItem[],
+  mediaItemId: string,
+  result: FamilyPhotoReportResult | null
+): { photos: FamilyPhotoItem[]; feedback: FamilyPhotoFeedback } {
+  if (result?.ok) {
+    return {
+      photos: photos.filter((item) => item.id !== mediaItemId),
+      feedback: {
+        tone: "success",
+        message: result.message ?? "Report saved for staff review."
+      }
+    };
+  }
+  return {
+    photos,
+    feedback: {
+      tone: "error",
+      message: result?.message ?? "The report could not be saved. Try again."
+    }
+  };
+}
+
 async function reportWithSession(mediaItemId: string) {
   const headers: Record<string, string> = { "content-type": "application/json" };
   try {
@@ -37,21 +70,30 @@ export function FamilyPhotos({
   childLabels: string[];
   isCurrent: boolean;
 }) {
-  const [visiblePhotos, setVisiblePhotos] = useState(photos);
-  const [message, setMessage] = useState("");
+  const [state, setState] = useState<{
+    visiblePhotos: FamilyPhotoItem[];
+    feedback: FamilyPhotoFeedback | null;
+  }>({ visiblePhotos: photos, feedback: null });
   const [isPending, startTransition] = useTransition();
 
   function report(photo: FamilyPhotoItem) {
-    setMessage("");
+    setState((current) => ({ ...current, feedback: null }));
     startTransition(async () => {
-      const response = await reportWithSession(photo.id);
-      const result = await response.json().catch(() => null) as { ok?: boolean; message?: string } | null;
-      setMessage(result?.message ?? "The report could not be saved.");
-      if (result?.ok) {
-        setVisiblePhotos((current) => current.filter((item) => item.id !== photo.id));
+      let result: FamilyPhotoReportResult | null = null;
+      try {
+        const response = await reportWithSession(photo.id);
+        result = await response.json().catch(() => null) as FamilyPhotoReportResult | null;
+      } catch {
+        // Keep the item visible and return an explicit retryable error state.
       }
+      setState((current) => {
+        const next = applyFamilyPhotoReportResult(current.visiblePhotos, photo.id, result);
+        return { visiblePhotos: next.photos, feedback: next.feedback };
+      });
     });
   }
+
+  const { visiblePhotos, feedback } = state;
 
   return (
     <div className="page family-photos-page">
@@ -73,12 +115,20 @@ export function FamilyPhotos({
         </div>
       </section>
 
-      {message ? <p className="notice" role="status">{message}</p> : null}
+      {feedback ? (
+        <p
+          className={`notice ${feedback.tone === "success" ? "ok" : "danger"}`}
+          role={feedback.tone === "success" ? "status" : "alert"}
+          aria-live={feedback.tone === "success" ? "polite" : undefined}
+        >
+          {feedback.message}
+        </p>
+      ) : null}
 
       {visiblePhotos.length ? (
         <section className="family-photo-grid" aria-label="Released family photos">
           {visiblePhotos.map((photo) => (
-            <article className="family-photo-card" key={photo.id}>
+            <article className="family-photo-card" data-media-id={photo.id} key={photo.id}>
               <div className="family-photo-card-art" aria-hidden="true">
                 <Images size={30} strokeWidth={1.8} />
               </div>
@@ -92,10 +142,21 @@ export function FamilyPhotos({
                 })}</p>
               </div>
               <div className="family-photo-actions">
-                <a href={photo.url} target="_blank" rel="noreferrer">
+                <a
+                  href={photo.url}
+                  target="_blank"
+                  rel="noreferrer"
+                  aria-label={`Open released photo: ${photo.title}`}
+                >
                   Open released item <ExternalLink aria-hidden="true" size={15} />
                 </a>
-                <button type="button" className="secondary" disabled={isPending} onClick={() => report(photo)}>
+                <button
+                  type="button"
+                  className="secondary"
+                  disabled={isPending}
+                  onClick={() => report(photo)}
+                  aria-label={`Report ${photo.title} for staff review`}
+                >
                   <Flag aria-hidden="true" size={15} /> Report for review
                 </button>
               </div>

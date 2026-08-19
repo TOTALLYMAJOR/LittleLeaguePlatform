@@ -228,6 +228,9 @@ describe("ParentWeeklyDashboard", () => {
         actorLabel: "Coach Taylor",
         changedAt: "2026-04-03T12:00:00.000Z",
         canonicalHref: "/parent/schedule?eventId=event-tigers-game",
+        seenAt: null,
+        acknowledgedAt: null,
+        requiresAcknowledgment: true,
         diffs: [{ field: "start_time", label: "Start time", previousValue: "6:00 PM", currentValue: "5:30 PM" }]
       }]
     };
@@ -244,7 +247,8 @@ describe("ParentWeeklyDashboard", () => {
     );
 
     expect(html).toContain("What changed");
-    expect(html).toContain("Changes since this page was last successfully loaded on this device.");
+    expect(html).toContain("Recent event changes for your family");
+    expect(html).toContain("Acknowledgment needed");
     expect(html).toContain("Start time");
     expect(html).toContain("6:00 PM");
     expect(html).toContain("5:30 PM");
