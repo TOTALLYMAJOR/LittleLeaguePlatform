@@ -25,6 +25,7 @@ export * from "./community";
 export * from "./community-safety";
 export * from "./sponsors";
 export * from "./sponsor-billing";
+export * from "./sponsor-program";
 export * from "./money-sponsors";
 export * from "./ux";
 export * from "./metrics";

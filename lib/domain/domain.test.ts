@@ -111,6 +111,8 @@ import {
   getEmailSponsorPlacement,
   getBannerSponsorPlacement,
   buildSponsorBillingProofs,
+  buildSponsorshipProgramSummary,
+  normalizeSponsorProviderPaymentEvent,
   buildFamilyWalletSummary,
   buildLeagueRevenueSummary,
   buildLocalBusinessTeamPage,
@@ -972,6 +974,117 @@ describe("sponsor placement", () => {
     const localBusinessPage = buildLocalBusinessTeamPage(seedState, "team-tigers");
     expect(localBusinessPage.sponsors.map((sponsor) => sponsor.name)).toContain("Corner Pizza");
     expect(localBusinessPage.privacyBoundary).toContain("do not expose child profiles");
+  });
+
+  it("scaffolds sponsor program agreement, ledger, fulfillment, and proof boundaries", () => {
+    const sponsor = seedState.sponsors[1]!;
+    const sponsorshipPackage = {
+      id: "package-gold",
+      name: "Gold Sponsor",
+      seasonId: seedState.activeSeason.id,
+      amountCents: 150000,
+      currency: "usd" as const,
+      benefits: [
+        { kind: "league_homepage_logo" as const, label: "League homepage logo", quantity: 1 },
+        { kind: "newsletter_placement" as const, label: "Newsletter placement", quantity: 2 },
+        { kind: "season_recap" as const, label: "Season recap", quantity: 1 }
+      ]
+    };
+    const agreement = {
+      id: "sponsorship-2026-spring",
+      sponsorId: sponsor.id,
+      packageId: sponsorshipPackage.id,
+      organizationId: seedState.organization.id,
+      seasonId: seedState.activeSeason.id,
+      status: "active" as const
+    };
+    const invoice = {
+      id: "sponsor-invoice-001",
+      agreementId: agreement.id,
+      invoiceNumber: "SP-2026-001",
+      amountCents: 150000,
+      currency: "usd" as const,
+      status: "issued" as const
+    };
+    const payment = normalizeSponsorProviderPaymentEvent({
+      provider: "stripe",
+      type: "checkout.session.completed",
+      providerEventId: "evt_sponsor_paid",
+      invoiceId: invoice.id,
+      amountCents: 150000,
+      currency: "usd",
+      occurredAt: NOW,
+      paid: true
+    });
+
+    expect(payment.kind).toBe("PaymentSucceeded");
+
+    const summary = buildSponsorshipProgramSummary({
+      sponsor,
+      package: sponsorshipPackage,
+      agreement,
+      invoice,
+      ledgerEntries: [payment],
+      fulfillmentRequirements: [
+        {
+          id: "req-home-logo",
+          agreementId: agreement.id,
+          kind: "league_homepage_logo",
+          label: "League homepage logo",
+          requiredQuantity: 1,
+          deliveredQuantity: 1,
+          status: "delivered"
+        },
+        {
+          id: "req-newsletter",
+          agreementId: agreement.id,
+          kind: "newsletter_placement",
+          label: "Newsletter placement",
+          requiredQuantity: 2,
+          deliveredQuantity: 1,
+          status: "ready"
+        },
+        {
+          id: "req-recap",
+          agreementId: agreement.id,
+          kind: "season_recap",
+          label: "Season recap",
+          requiredQuantity: 1,
+          deliveredQuantity: 0,
+          status: "pending"
+        }
+      ]
+    });
+
+    expect(summary.packageName).toBe("Gold Sponsor");
+    expect(summary.paymentState).toBe("paid");
+    expect(summary.paidCents).toBe(150000);
+    expect(summary.outstandingCents).toBe(0);
+    expect(summary.fulfillmentState).toBe("in_progress");
+    expect(summary.readyForPlacement).toBe(true);
+    expect(summary.recapReady).toBe(false);
+    expect(summary.requirements.map((requirement) => requirement.kind)).toContain("season_recap");
+    expect(summary.proofBoundary).toContain("processor supplies settlement evidence only");
+
+    const dispute = normalizeSponsorProviderPaymentEvent({
+      provider: "stripe",
+      type: "charge.dispute.created",
+      providerEventId: "evt_sponsor_dispute",
+      invoiceId: invoice.id,
+      amountCents: 150000,
+      currency: "usd",
+      occurredAt: NOW
+    });
+    const disputedSummary = buildSponsorshipProgramSummary({
+      sponsor,
+      package: sponsorshipPackage,
+      agreement,
+      invoice,
+      ledgerEntries: [payment, dispute]
+    });
+
+    expect(disputedSummary.paymentState).toBe("disputed");
+    expect(disputedSummary.readyForPlacement).toBe(false);
   });
 
   it("builds follow-on community, safety, media, and availability surfaces without privacy leakage", () => {
