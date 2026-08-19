@@ -5,7 +5,8 @@ import { resolve } from "node:path";
 import { pathToFileURL } from "node:url";
 
 export const DEFAULT_SOURCE_FILES = {
-  sponsorBillingDomain: "lib/domain/sponsor-billing.ts",
+  sponsorProgramDomain: "lib/domain/sponsor-program.ts",
+  sponsorProgramAdapter: "lib/supabase/sponsor-program.ts",
   moneySponsorsDomain: "lib/domain/money-sponsors.ts",
   featurePanels: "components/feature-panels.tsx",
   sponsorHub: "components/sponsor-hub.tsx",
@@ -21,6 +22,7 @@ export const DEFAULT_SOURCE_FILES = {
   revenueSummaryRoute: "app/api/admin/revenue-summary/route.ts",
 
   sponsorBillingMigration: "supabase/migrations/0017_sponsor_billing_and_team_builder.sql",
+  sponsorProgramMigration: "supabase/migrations/20260819161500_sponsor_program_spine.sql",
 
   featuresDocs: "docs/Features.md",
   capabilityMatrix: "docs/capability-matrix.md",
@@ -88,25 +90,36 @@ function verifyProductDecisionBoundary(sources, blockers) {
     blockers,
     sources,
     "product-decision-proof-boundary",
-    "SPONSOR_BILLING_WORKFLOW_STATES_MISSING",
-    ["sponsorBillingDomain", "sponsorBillingMigration"],
+    "SPONSOR_PROGRAM_MONEY_VOCABULARY_MISSING",
+    ["sponsorProgramDomain", "sponsorProgramMigration", "sponsorBillingMigration"],
     [
-      'SponsorBillingStatus = "draft" | "invoice_ready" | "payment_recorded"',
-      'paymentProofStatus: "not_requested" | "awaiting_invoice" | "paid"',
-      "publicDisplaySeparated: boolean",
-      "childFacingDisplayBlocked: boolean",
-      "Record payment proof",
+      'SponsorshipInvoiceStatus = "draft" | "issued" | "partially_paid" | "paid" | "void" | "refunded"',
+      'paymentState: "not_invoiced" | "awaiting_payment" | "partially_paid" | "paid" | "refunded" | "disputed"',
+      "agreementRecorded: boolean",
+      "SPONSOR_BILLING_SECURITY_NOTES",
+      "unique (provider, provider_event_id)",
+      "sponsor_payment_ledger_append_only",
       "public_display_separated boolean not null default true",
-      "organization admins manage sponsor billing records"
+      "organization admins manage sponsor billing records",
+      "organization admins read sponsor payment ledger entries"
     ],
-    "Sponsor billing must keep invoice readiness, payment-proof state, public display separation, child-facing display blocking, and admin-only persistence explicit."
+    "The sponsor money vocabulary must live in one place, fold balances from an append-only replay-guarded ledger, distinguish a recorded agreement from an absent one, and keep persistence admin-only."
+  );
+  requireNoPattern(
+    blockers,
+    sources,
+    "product-decision-proof-boundary",
+    "SPONSOR_STORED_BALANCE_COLUMN_PRESENT",
+    ["sponsorProgramMigration"],
+    /paid_cents|outstanding_cents|refunded_cents|disputed_cents|balance_cents/s,
+    "Sponsor balances must be folded from the payment ledger on read; no stored balance column may exist."
   );
   requirePattern(
     blockers,
     sources,
     "product-decision-proof-boundary",
     "SPONSOR_PROOF_ONLY_COPY_MISSING",
-    ["sponsorBillingDomain", "featurePanels", "moneySponsorsDomain", "capabilityMatrix", "privacyDocs"],
+    ["sponsorProgramDomain", "featurePanels", "moneySponsorsDomain", "capabilityMatrix", "privacyDocs"],
     /do not couple billing status to child-facing sponsor display[\s\S]*Record invoice and payment proof before activating paid sponsor billing claims[\s\S]*Stripe live collection is not connected[\s\S]*Browser return or public placement is not settlement[\s\S]*Payment confirmation requires verified Stripe webhook evidence/s,
     "Source and docs must preserve the proof-only-versus-sandbox boundary and must not present proof-only status, browser return, or public placement as Stripe settlement."
   );
@@ -128,7 +141,7 @@ function verifyCheckoutSessionsReadiness(sources, blockers) {
     "checkout-sessions-readiness",
     "SPONSOR_CHECKOUT_ROUTE_SESSION_ACTOR_MISSING",
     ["sponsorCheckoutRoute"],
-    /requireAuthenticatedRouteUser\(request\)[\s\S]*createSponsorInvoiceCheckout\(\{[\s\S]*sponsorBillingRecordId:\s*String\(body\.sponsorBillingRecordId[\s\S]*actorUserId:\s*auth\.user\.id/s,
+    /requireAuthenticatedRouteUser\(request\)[\s\S]*createSponsorInvoiceCheckout\(\{[\s\S]*invoiceId,[\s\S]*sponsorBillingRecordId,[\s\S]*actorUserId:\s*auth\.user\.id/s,
     "Sponsor Checkout route must derive the actor from the authenticated route session."
   );
   requirePattern(
@@ -137,8 +150,8 @@ function verifyCheckoutSessionsReadiness(sources, blockers) {
     "checkout-sessions-readiness",
     "SPONSOR_CHECKOUT_ADMIN_AND_GATE_CHECKS_MISSING",
     ["payments", "stripeConnect"],
-    /(?=[\s\S]*featureGateDecision\(\{[\s\S]*feature:\s*"payments")(?=[\s\S]*\.select\("payments_enabled"\))(?=[\s\S]*stripeConnectReadiness\(\))(?=[\s\S]*createSponsorInvoiceCheckout[\s\S]*requireActiveOrganizationAdmin\(\{[\s\S]*action:\s*"create a sponsor payment link")(?=[\s\S]*billing\.data\.confirmed_at[\s\S]*already confirmed by provider evidence)(?=[\s\S]*createSponsorInvoiceCheckout[\s\S]*if \(!gate\.enabled\))/s,
-    "Sponsor collection must require organization-admin authority, refuse already-confirmed records, and enforce server plus organization payment gates."
+    /(?=[\s\S]*featureGateDecision\(\{[\s\S]*feature:\s*"payments")(?=[\s\S]*\.select\("payments_enabled"\))(?=[\s\S]*stripeConnectReadiness\(\))(?=[\s\S]*createSponsorInvoiceCheckout[\s\S]*requireActiveOrganizationAdmin\(\{[\s\S]*action:\s*"create a sponsor payment link")(?=[\s\S]*billing\.data\.status === "paid"[\s\S]*already paid according to the payment ledger)(?=[\s\S]*billing\.data\.status === "void")(?=[\s\S]*createSponsorInvoiceCheckout[\s\S]*if \(!gate\.enabled\))/s,
+    "Sponsor collection must require organization-admin authority, refuse invoices the payment ledger already reports as paid or void, and enforce server plus organization payment gates."
   );
   requirePattern(
     blockers,
@@ -155,7 +168,7 @@ function verifyCheckoutSessionsReadiness(sources, blockers) {
     "checkout-sessions-readiness",
     "SPONSOR_CHECKOUT_SESSION_CONTRACT_MISSING",
     ["payments"],
-    /const metadata = \{[\s\S]*leaguepilot_kind:\s*"sponsor_billing"[\s\S]*leaguepilot_sponsor_billing_id:\s*billing\.data\.id[\s\S]*leaguepilot_organization_id:\s*billing\.data\.organization_id[\s\S]*stripe\.checkout\.sessions\.create\(\{[\s\S]*mode:\s*"payment"[\s\S]*line_items:[\s\S]*price_data:[\s\S]*success_url:\s*`\$\{baseUrl\}\/admin\/sponsors\?payment_return=received&session_id=\{CHECKOUT_SESSION_ID\}`[\s\S]*cancel_url:[\s\S]*metadata,[\s\S]*payment_intent_data:\s*\{ metadata \}[\s\S]*stripeAccount:\s*account\.data\.stripe_account_id[\s\S]*idempotencyKey:\s*`sponsor-billing:\$\{billing\.data\.id\}`/s,
+    /const metadata = \{[\s\S]*leaguepilot_kind:\s*"sponsor_billing"[\s\S]*leaguepilot_sponsor_invoice_id:\s*billing\.data\.id[\s\S]*leaguepilot_organization_id:\s*billing\.data\.organization_id[\s\S]*stripe\.checkout\.sessions\.create\(\{[\s\S]*mode:\s*"payment"[\s\S]*line_items:[\s\S]*price_data:[\s\S]*success_url:\s*`\$\{baseUrl\}\/admin\/sponsors\?payment_return=received&session_id=\{CHECKOUT_SESSION_ID\}`[\s\S]*cancel_url:[\s\S]*metadata,[\s\S]*payment_intent_data:\s*\{ metadata \}[\s\S]*stripeAccount:\s*account\.data\.stripe_account_id[\s\S]*idempotencyKey:\s*billing\.data\.legacy_billing_record_id[\s\S]*`sponsor-billing:\$\{billing\.data\.legacy_billing_record_id\}`[\s\S]*`sponsor-invoice:\$\{billing\.data\.id\}`/s,
     "Sponsor collection must use server-side Stripe Checkout Sessions with organization and sponsor-billing metadata, payment-intent metadata, connected account binding, and idempotency."
   );
   requireNoPattern(
@@ -184,7 +197,7 @@ function verifyKeyEnvironmentSecurity(sources, blockers) {
     sources,
     "key-environment-security",
     "RESTRICTED_KEYS_AND_ENV_DOCS_MISSING",
-    ["runbook", "workPlan", "taskBoard", "sponsorBillingDomain", "featurePanels"],
+    ["runbook", "workPlan", "taskBoard", "sponsorProgramDomain", "featurePanels"],
     /restricted (?:API )?keys[\s\S]*separate environments[\s\S]*No Stripe secret or restricted key values are stored in source[\s\S]*Stripe keys must stay server-side and preferably use restricted keys/s,
     "Docs and source copy must prefer restricted API keys, separate environments, and no committed Stripe secret or restricted key values."
   );

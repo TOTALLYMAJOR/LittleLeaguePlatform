@@ -87,7 +87,7 @@ Use the direct database endpoint when IPv6 is available or the Supavisor session
 | League structure | `seasons`, `teams`, `players`, `player_guardians`, `parent_invites` |
 | Guardian safety | `guardian_authorizations`, `emergency_contacts`, `player_health_notes` |
 | Scheduling | `events`, `event_series`, `event_change_logs`, `event_change_receipts`, `field_locations`, `field_reservations`, `rsvps`, `snack_schedule_slots`, `volunteer_signups`, `weather_alerts`, `game_day_resolution_reviews` |
-| Team portal | `announcements`, `media_items`, `sponsors`, `sponsor_packages`, `sponsor_placements`, `sponsor_assets`, `sponsor_billing_records`, `team_brand_profiles`, `team_brand_surface_validation_runs`, `brand_asset_uploads`, `brand_monitoring_events` |
+| Team portal | `announcements`, `media_items`, `sponsors`, `sponsor_packages`, `sponsor_placements`, `sponsor_assets`, `sponsor_billing_records`, `sponsorship_agreements`, `sponsorship_invoices`, `sponsor_payment_ledger_entries`, `team_brand_profiles`, `team_brand_surface_validation_runs`, `brand_asset_uploads`, `brand_monitoring_events` |
 | Coach planning | `drill_videos`, `drill_video_sources`, `drill_video_assignments` |
 | Parent Replay | `practice_run_receipts`, `parent_replays`, `parent_replay_templates`, `ai_generation_runs`, `learning_plans` |
 | Team chat | `team_chat_channels`, `team_chat_messages`, `team_chat_threads`, `team_chat_message_reads`, `team_chat_reactions`, `team_chat_attachments`, `team_chat_reports`, `chat_moderation_audit_events` |

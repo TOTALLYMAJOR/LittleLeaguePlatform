@@ -109,7 +109,8 @@ import {
   getMediaGallerySponsorPlacement,
   getEmailSponsorPlacement,
   getBannerSponsorPlacement,
-  buildSponsorBillingProofs,
+  buildSponsorProgramSummaries,
+  sponsorPaymentStateLabel,
   buildFamilyBalanceSummary,
   buildLeagueRevenueSummary,
   buildLocalBusinessTeamPage,
@@ -4019,17 +4020,15 @@ export function AdminDashboardClient({ registrationRequests, sponsorData, mediaD
   const mediaGallerySponsorPlacement = getMediaGallerySponsorPlacement(sponsors);
   const emailSponsorPlacement = getEmailSponsorPlacement(sponsors);
   const bannerSponsorPlacement = getBannerSponsorPlacement(sponsors);
-  const sponsorBillingProofs = buildSponsorBillingProofs(sponsors);
+  const sponsorProgramSummaries = buildSponsorProgramSummaries(sponsors);
   const sponsorProofRows: SponsorProofLedgerRow[] = sponsors.map((sponsor) => {
-    const billingProof = sponsorBillingProofs.find((proof) => proof.sponsorId === sponsor.id);
+    const programSummary = sponsorProgramSummaries.find((summary) => summary.sponsorId === sponsor.id);
     const placementLabel = sponsor.status === "active" && sponsor.placementKey
       ? sponsor.placementKey.replaceAll("_", " ")
       : "Not public";
-    const billingLabel = billingProof
-      ? billingProof.invoiceReference === "not-issued"
-        ? `${billingProof.billingStatus.replaceAll("_", " ")}; no invoice issued`
-        : `${billingProof.paymentProofStatus.replaceAll("_", " ")}; invoice referenced`
-      : "No billing record";
+    const billingLabel = programSummary && programSummary.agreementRecorded
+      ? `${sponsorPaymentStateLabel(programSummary)}; invoice ${programSummary.invoiceStatus.replaceAll("_", " ")}`
+      : "No agreement on record";
 
     return {
       id: sponsor.id,
@@ -4932,12 +4931,16 @@ export function AdminDashboardClient({ registrationRequests, sponsorData, mediaD
           <button disabled={isSponsorPending || Boolean(sponsorData && !sponsorData.isSupabaseBacked)} onClick={saveSponsorDraft}>Save sponsor</button>
           <p className="muted">Stripe live collection is not connected. Sponsor billing records stay separate from registration, RSVP, schedule, safety, and child-facing sponsor display.</p>
           <div className="stack compact">
-            <h3>Sponsor billing records</h3>
-            <p className="muted">Stripe Product/Price, invoice reference, and payment status are admin-only records. Public sponsor placement does not depend on or reveal payment status.</p>
-            {sponsorBillingProofs.slice(0, 3).map((proof) => (
-              <p key={proof.sponsorId}>
-                <strong>{proof.sponsorName}</strong><br />
-                <span className="muted">Stripe Product/Price: {proof.priceLookupKey}; invoice reference: {proof.invoiceReference}; payment status: {proof.paymentProofStatus}; ${(proof.amountCents / 100).toFixed(2)} {proof.currency.toUpperCase()}.</span>
+            <h3>Sponsor program records</h3>
+            <p className="muted">Agreement, invoice, and folded payment state are admin-only records. Public sponsor placement does not depend on or reveal payment state.</p>
+            {sponsorProgramSummaries.slice(0, 3).map((summary) => (
+              <p key={summary.sponsorId}>
+                <strong>{summary.sponsorName}</strong><br />
+                <span className="muted">
+                  {summary.agreementRecorded
+                    ? `Package: ${summary.packageName}; agreement: ${summary.agreementStatus}; invoice: ${summary.invoiceStatus}; payment: ${sponsorPaymentStateLabel(summary)}; $${(summary.amountCents / 100).toFixed(2)} USD invoiced, $${(summary.outstandingCents / 100).toFixed(2)} outstanding.`
+                    : "No sponsorship agreement or invoice is on record. No amount, payment state, or delivery is claimed."}
+                </span>
               </p>
             ))}
             <p className="notice">Sponsor billing stays separate from child-facing display. Stripe keys must stay server-side and preferably use restricted keys.</p>

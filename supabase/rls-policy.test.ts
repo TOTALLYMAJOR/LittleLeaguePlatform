@@ -22,6 +22,7 @@ describe("Supabase RLS policy coverage", () => {
   const teamLogoAssets = migration("0015_team_logo_assets.sql");
   const rsvpCancellations = migration("0016_rsvp_cancellations.sql");
   const sponsorBillingAndTeamBuilder = migration("0017_sponsor_billing_and_team_builder.sql");
+  const sponsorProgramSpine = migration("20260819161500_sponsor_program_spine.sql");
   const teamBrandProfilesMonitoring = migration("0018_team_brand_profiles_monitoring.sql");
   const guardianVerification = migration("0020_guardian_verification_policy.sql");
   const drillVideoReferences = migration("0022_drill_video_references.sql");
@@ -253,6 +254,54 @@ describe("Supabase RLS policy coverage", () => {
     expect(sponsorBillingAndTeamBuilder).toContain("create table if not exists public.team_build_plans");
     expect(sponsorBillingAndTeamBuilder).toContain("assignments jsonb");
     expect(sponsorBillingAndTeamBuilder).toContain("organization admins manage team build plans");
+  });
+
+  it("keeps the sponsor program spine organization-scoped and admin-read only", () => {
+    expect(sponsorProgramSpine).toContain("create table if not exists public.sponsorship_agreements");
+    expect(sponsorProgramSpine).toContain("create table if not exists public.sponsorship_invoices");
+    expect(sponsorProgramSpine).toContain("create table if not exists public.sponsor_payment_ledger_entries");
+
+    expect(sponsorProgramSpine).toContain("organization admins read sponsorship agreements");
+    expect(sponsorProgramSpine).toContain("organization admins read sponsorship invoices");
+    expect(sponsorProgramSpine).toContain("organization admins read sponsor payment ledger entries");
+
+    expect(sponsorProgramSpine).toContain("alter table public.sponsorship_agreements enable row level security");
+    expect(sponsorProgramSpine).toContain("alter table public.sponsorship_invoices enable row level security");
+    expect(sponsorProgramSpine).toContain("alter table public.sponsor_payment_ledger_entries enable row level security");
+
+    expect(sponsorProgramSpine).toContain("revoke all on table public.sponsorship_agreements from public, anon, authenticated");
+    expect(sponsorProgramSpine).toContain("revoke all on table public.sponsorship_invoices from public, anon, authenticated");
+    expect(sponsorProgramSpine).toContain("revoke all on table public.sponsor_payment_ledger_entries from public, anon, authenticated");
+  });
+
+  it("keeps the sponsor payment ledger append-only for every connection including service_role", () => {
+    // RLS alone cannot enforce this: createSupabaseAdminClient connects as service_role, which
+    // bypasses row level security. The raising trigger is what makes append-only real (ADR 0003).
+    expect(sponsorProgramSpine).toContain("grant select, insert on table public.sponsor_payment_ledger_entries to service_role");
+    expect(sponsorProgramSpine).not.toContain("grant select, insert, update, delete on table public.sponsor_payment_ledger_entries");
+    expect(sponsorProgramSpine).toContain("function public.sponsor_payment_ledger_append_only()");
+    expect(sponsorProgramSpine).toContain("before update or delete on public.sponsor_payment_ledger_entries");
+    expect(sponsorProgramSpine).toContain("is append-only");
+    expect(sponsorProgramSpine).toContain("using errcode = '42501'");
+  });
+
+  it("keeps sponsor payment replay guarded and stores no balance column", () => {
+    expect(sponsorProgramSpine).toContain("unique (provider, provider_event_id)");
+    expect(sponsorProgramSpine).toContain("check (provider in ('stripe', 'manual'))");
+    for (const balanceColumn of ["paid_cents", "outstanding_cents", "refunded_cents", "disputed_cents", "balance_cents"]) {
+      expect(sponsorProgramSpine).not.toContain(balanceColumn);
+    }
+  });
+
+  it("adopts the existing sponsor package table instead of creating a second one", () => {
+    expect(sponsorProgramSpine).toContain("alter table public.sponsor_packages");
+    expect(sponsorProgramSpine).not.toContain("create table if not exists public.sponsorship_packages");
+    expect(sponsorProgramSpine).toContain("sponsor_packages_benefits_is_array");
+  });
+
+  it("preserves the legacy sponsor billing link so in-flight Stripe sessions are not orphaned", () => {
+    expect(sponsorProgramSpine).toContain("legacy_billing_record_id uuid references public.sponsor_billing_records(id)");
+    expect(sponsorProgramSpine).toContain("uq_sponsorship_invoices_legacy_billing_record");
   });
 
   it("keeps registration approval guardian access admin-reviewed with evidence", () => {

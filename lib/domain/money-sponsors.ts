@@ -1,5 +1,5 @@
 import type { AppState, Player, Sponsor, Team } from "./types";
-import { buildSponsorBillingProofs } from "./sponsor-billing";
+import { buildSponsorProgramSummaries, sumSponsorInvoicedCents } from "./sponsor-program";
 
 export type FamilyWalletItemKind = "registration_fee" | "team_due" | "reimbursement" | "sponsor_discount" | "scholarship_credit";
 export type FamilyWalletProofState = "pending" | "invoice_ready" | "paid_proof_recorded" | "offered" | "redeemed_proof_required";
@@ -189,14 +189,14 @@ export function buildLeagueRevenueSummary(state: AppState): LeagueRevenueSummary
     .filter((link) => link.status === "active" && link.parentUserId)
     .map((link) => link.parentUserId!)))
     .map((parentUserId) => buildFamilyWalletSummary(state, parentUserId));
-  const billingProofs = buildSponsorBillingProofs(state.sponsors);
+  const programSummaries = buildSponsorProgramSummaries(state.sponsors);
 
   return {
     organizationId: state.organization.id,
     seasonId: state.activeSeason.id,
     registrationFeeCents: 0,
     teamDueCents: 0,
-    sponsorInvoiceCents: billingProofs.reduce((total, proof) => total + proof.amountCents, 0),
+    sponsorInvoiceCents: sumSponsorInvoicedCents(programSummaries),
     unpaidFamilyBalanceCents: walletSummaries.reduce((total, wallet) => total + wallet.netDueCents, 0),
     scholarshipCreditCents: walletSummaries.reduce((total, wallet) => (
       total + wallet.items
@@ -206,7 +206,7 @@ export function buildLeagueRevenueSummary(state: AppState): LeagueRevenueSummary
     activeSponsorCount: state.sponsors.filter((sponsor) => sponsor.status === "active").length,
     pendingSponsorCount: state.sponsors.filter((sponsor) => sponsor.status === "pending").length,
     renewalRiskCount: state.sponsors.filter((sponsor) => sponsor.status === "expired" || sponsor.status === "pending").length,
-    proofBoundary: `Revenue dashboard separates receivables, sponsor invoice readiness, and payment proof. ${activePlayers.length} player record(s) exist, but no fee amount is inferred. Browser return or public placement is not settlement.`
+    proofBoundary: `Revenue dashboard separates receivables, sponsor invoice readiness, and payment proof. ${activePlayers.length} player record(s) exist, but no fee amount is inferred. Sponsor invoice value is folded from persisted sponsorship agreements and invoices only; ${programSummaries.filter((summary) => !summary.agreementRecorded).length} sponsor(s) have no agreement on record and contribute nothing. Browser return or public placement is not settlement.`
   };
 }
 

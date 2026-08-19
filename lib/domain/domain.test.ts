@@ -110,7 +110,7 @@ import {
   getMediaGallerySponsorPlacement,
   getEmailSponsorPlacement,
   getBannerSponsorPlacement,
-  buildSponsorBillingProofs,
+  buildSponsorProgramSummaries,
   buildSponsorshipProgramSummary,
   normalizeSponsorProviderPaymentEvent,
   buildFamilyWalletSummary,
@@ -941,11 +941,13 @@ describe("sponsor placement", () => {
     expect(getMediaGallerySponsorPlacement(seedState.sponsors)).toHaveLength(0);
     expect(getEmailSponsorPlacement(seedState.sponsors)).toHaveLength(0);
     expect(getBannerSponsorPlacement(seedState.sponsors)).toHaveLength(0);
-    const billingProofs = buildSponsorBillingProofs(seedState.sponsors);
-    expect(billingProofs[0]?.productName).toContain("sponsorship");
-    expect(billingProofs[0]?.publicDisplaySeparated).toBe(true);
-    expect(billingProofs[0]?.childFacingDisplayBlocked).toBe(true);
-    expect(billingProofs[0]?.securityNotes.join(" ")).toContain("restricted keys");
+    const programSummaries = buildSponsorProgramSummaries(seedState.sponsors);
+    expect(programSummaries).toHaveLength(seedState.sponsors.length);
+    expect(programSummaries[0]?.agreementRecorded).toBe(false);
+    expect(programSummaries[0]?.amountCents).toBe(0);
+    expect(programSummaries[0]?.paymentState).toBe("not_invoiced");
+    expect(programSummaries[0]?.readyForPlacement).toBe(false);
+    expect(programSummaries[0]?.proofBoundary).toContain("No sponsorship agreement");
     expect(getTouchTargetQa().minimumPixels).toBe(44);
     expect(getOfflineStateSummary().detail).toContain("read-only");
     expect(getCacheInvalidationPolicy().strategy).toBe("stale_while_revalidate");

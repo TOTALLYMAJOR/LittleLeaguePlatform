@@ -11,7 +11,7 @@ export const DEFAULT_SOURCE_FILES = {
   domainContracts: "lib/domain/contracts.ts",
   sponsorPlacementDomain: "lib/domain/sponsors.ts",
   moneySponsorsDomain: "lib/domain/money-sponsors.ts",
-  sponsorBillingDomain: "lib/domain/sponsor-billing.ts",
+  sponsorProgramDomain: "lib/domain/sponsor-program.ts",
 
   sponsorAdapter: "lib/supabase/sponsors.ts",
   sponsorOperations: "lib/supabase/operations.ts",
@@ -210,7 +210,7 @@ function verifyFulfillmentRecapSeparation(sources, blockers) {
     "fulfillment-recap-separation",
     "COMMUNITY_LEDGER_BOUNDARY_MISSING",
     ["roleDashboardExperiences", "featurePanels"],
-    /Record, placement, public recap inventory, and billing evidence remain separate[\s\S]*Logo asset[\s\S]*Approved public recap inventory[\s\S]*does not prove payment, contract execution, placement delivery, or sponsor-attributed impact[\s\S]*Sponsor billing records[\s\S]*Public sponsor placement does not depend on or reveal payment status/s,
+    /Record, placement, public recap inventory, and billing evidence remain separate[\s\S]*Logo asset[\s\S]*Approved public recap inventory[\s\S]*does not prove payment, contract execution, placement delivery, or sponsor-attributed impact[\s\S]*Sponsor program records[\s\S]*Agreement, invoice, and folded payment state are admin-only records[\s\S]*Public sponsor placement does not depend on or reveal payment state/s,
     "Admin ledger and revenue surfaces must keep configured placement, recap inventory, logo metadata, billing evidence, and unproven impact separate."
   );
   requirePattern(

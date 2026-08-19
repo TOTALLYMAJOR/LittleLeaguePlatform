@@ -197,14 +197,11 @@ export type PlatformFeatureTierName = (typeof PLATFORM_FEATURE_TIERS)[number];
 export const COMMUNICATION_TEMPLATES = ["weekly_digest", "game_day_reminder", "practice_replay", "custom"] as const;
 export type CommunicationTemplate = (typeof COMMUNICATION_TEMPLATES)[number];
 
+// Describes the persisted public.sponsor_billing_records.status enum, which migration
+// 20260819161500_sponsor_program_spine.sql carries forward read-only into sponsorship_invoices.
+// The sponsor money vocabulary itself lives in lib/domain/sponsor-program.ts (ADR 0003).
 export const SPONSOR_BILLING_STATUSES = ["draft", "invoice_ready", "payment_recorded"] as const;
 export type SponsorBillingStatus = (typeof SPONSOR_BILLING_STATUSES)[number];
-
-export const SPONSOR_PAYMENT_PROOF_STATUSES = ["not_requested", "awaiting_invoice", "paid"] as const;
-export type SponsorPaymentProofStatus = (typeof SPONSOR_PAYMENT_PROOF_STATUSES)[number];
-
-export const SPONSOR_BILLING_WORKFLOW_STATES = ["Draft", "Review", "Invoice", "Record payment proof"] as const;
-export type SponsorBillingWorkflowState = (typeof SPONSOR_BILLING_WORKFLOW_STATES)[number];
 
 export const REVIEW_WORKFLOW_STATES = ["Preview", "Edit", "Approve", "Publish"] as const;
 export type ReviewWorkflowState = (typeof REVIEW_WORKFLOW_STATES)[number];
@@ -1132,29 +1129,6 @@ export interface AssistiveSuggestion {
   body: string;
   recommendation: string;
   boundary: string;
-}
-
-export interface SponsorBillingProof {
-  sponsorId: string;
-  sponsorName: string;
-  billingStatus: SponsorBillingStatus;
-  productName: string;
-  priceLookupKey: string;
-  invoiceReference: string;
-  amountCents: number;
-  currency: "usd";
-  paymentProofStatus: SponsorPaymentProofStatus;
-  publicDisplaySeparated: boolean;
-  childFacingDisplayBlocked: boolean;
-  workflow: SponsorBillingWorkflowState[];
-  securityNotes: string[];
-  auditSummary: string;
-}
-
-export interface SponsorBillingInput {
-  amountCents?: number;
-  billingStatus?: SponsorBillingStatus;
-  invoiceReference?: string;
 }
 
 export type AppAction =
