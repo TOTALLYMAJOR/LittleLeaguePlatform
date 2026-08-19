@@ -301,11 +301,17 @@ Required server-only environment variables:
 
 ```bash
 AI_COACH_PROVIDER_ENABLED=true
+AI_OPERATIONS_COPILOT_ENABLED=false
 OPENAI_API_KEY=<server-only key>
 OPENAI_AI_COACH_MODEL=gpt-5.5
+OPENAI_OPERATIONS_COPILOT_MODEL=gpt-5.5
+# Optional when Netlify AI Gateway injects an OpenAI-compatible endpoint.
+OPENAI_BASE_URL=<provider base URL>
 ```
 
 Keep `OPENAI_API_KEY` out of `NEXT_PUBLIC_*` variables. Provider requests use `store: false`, local privacy filters, source evidence, and review-only output. Generated provider drafts do not publish, queue notifications, or send provider messages.
+
+Keep `AI_OPERATIONS_COPILOT_ENABLED=false` until migration `20260818172017` is applied on isolated QA and the aggregate-only proposal evals pass. Enabling it changes ranking and rationale generation only. Approval records still do not execute the underlying league action.
 
 The dated production AI proof recorded in historical trackers is not a current execution instruction. Any new provider proof requires an approved named environment and provider authority. Preview OpenAI remains out of scope under `DEC-PREVIEW-OPENAI`; generated output remains draft/review-only.
 

@@ -59,6 +59,18 @@ describe("AI Coach provider", () => {
     expect(getAiCoachProviderReadiness({ enabled: true }).reason).toContain("OPENAI_API_KEY");
   });
 
+  it("recognizes the Netlify AI Gateway runtime when OPENAI_BASE_URL is configured", () => {
+    const readiness = getAiCoachProviderReadiness({
+      apiKey: "gateway-key",
+      enabled: true,
+      endpoint: "https://gateway.netlify.example/v1/responses"
+    });
+
+    expect(readiness.configured).toBe(true);
+    expect(readiness.delivery).toBe("netlify_gateway");
+    expect(readiness.reason).toContain("Netlify AI Gateway");
+  });
+
   it("blocks contact and private details before a provider call", () => {
     expect(scanAiCoachDraftForProvider({ ...baseDraft, body: `${baseDraft.body}\nCall 555-123-4567.` }).ok).toBe(false);
     expect(scanAiCoachDraftForProvider({ ...baseDraft, body: `${baseDraft.body}\nPrivate RSVP note: running late.` }).ok).toBe(false);

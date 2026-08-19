@@ -59,8 +59,11 @@ docker compose down
 | `SUPABASE_SERVICE_ROLE_KEY` | Server/CI only | Never expose to browser or logs. |
 | `SUPABASE_POOLER_DATABASE_URL` | Admin/migration only | Use for migration push where direct DB connectivity needs pooler. |
 | `AI_COACH_PROVIDER_ENABLED` | Server | Enables AI provider rewrite route only when true. |
+| `AI_OPERATIONS_COPILOT_ENABLED` | Server | Enables aggregate-only Operations Copilot ranking; approval remains non-executing. |
 | `OPENAI_API_KEY` | Server only | Never `NEXT_PUBLIC_*`; review-only output. |
 | `OPENAI_AI_COACH_MODEL` | Server | Model selection for AI Coach provider. |
+| `OPENAI_OPERATIONS_COPILOT_MODEL` | Server | Model selection for Operations Copilot structured ranking. |
+| `OPENAI_BASE_URL` | Server | Optional OpenAI-compatible base URL, including the Netlify AI Gateway path. |
 | `OFFLINE_WRITES_ENABLED` | Server | Offline replay kill switch; organization flag must also be true. |
 | `NEXT_PUBLIC_OFFLINE_WRITES_ENABLED` | Browser | Allows the approved device outbox UI; never replaces server authorization. |
 | `PROVIDER_SENDS_ENABLED` | Server | Provider execution kill switch; organization flag, human approval, consent, and allowlist still apply. |

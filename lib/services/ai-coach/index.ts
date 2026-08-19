@@ -1,7 +1,17 @@
+import { createOpenAI } from "@ai-sdk/openai";
+import {
+  convertToModelMessages,
+  createUIMessageStreamResponse,
+  streamText,
+  toUIMessageStream,
+  type UIMessage
+} from "ai";
 import OpenAI from "openai";
 import { zodTextFormat } from "openai/helpers/zod";
 import { z } from "zod";
 import type { AiCoachWorkspaceDraft } from "../../domain";
+
+export type AiCoachProviderDelivery = "direct_openai" | "netlify_gateway";
 
 export interface AiCoachProviderConfig {
   apiKey?: string;
@@ -13,6 +23,7 @@ export interface AiCoachProviderConfig {
 
 export interface AiCoachProviderReadiness {
   configured: boolean;
+  delivery: AiCoachProviderDelivery;
   provider: "openai";
   model: string;
   reason: string;
@@ -54,15 +65,19 @@ export function getAiCoachProviderConfigFromEnv(env: NodeJS.ProcessEnv = process
   return {
     apiKey: env.OPENAI_API_KEY,
     enabled: env.AI_COACH_PROVIDER_ENABLED === "true",
-    model: env.OPENAI_AI_COACH_MODEL || DEFAULT_MODEL
+    model: env.OPENAI_AI_COACH_MODEL || DEFAULT_MODEL,
+    endpoint: env.OPENAI_BASE_URL || undefined
   };
 }
 
 export function getAiCoachProviderReadiness(config: AiCoachProviderConfig = getAiCoachProviderConfigFromEnv()): AiCoachProviderReadiness {
   const model = config.model || DEFAULT_MODEL;
+  const delivery: AiCoachProviderDelivery = config.endpoint ? "netlify_gateway" : "direct_openai";
+
   if (!config.enabled) {
     return {
       configured: false,
+      delivery,
       provider: "openai",
       model,
       reason: "AI Coach provider is disabled. Set AI_COACH_PROVIDER_ENABLED=true after eval and privacy gates pass."
@@ -72,51 +87,35 @@ export function getAiCoachProviderReadiness(config: AiCoachProviderConfig = getA
   if (!config.apiKey) {
     return {
       configured: false,
+      delivery,
       provider: "openai",
       model,
-      reason: "OPENAI_API_KEY is missing, so AI Coach Workspace remains deterministic."
+      reason: config.endpoint
+        ? "OPENAI_API_KEY is missing in this runtime. Netlify AI Gateway normally injects OPENAI_API_KEY and OPENAI_BASE_URL after AI is enabled and the site has a production deploy."
+        : "OPENAI_API_KEY is missing, so AI Coach Workspace remains deterministic."
     };
   }
 
   return {
     configured: true,
+    delivery,
     provider: "openai",
     model,
-    reason: "OpenAI Responses API is configured for coach-reviewed AI workspace drafts."
+    reason: config.endpoint
+      ? "Netlify AI Gateway is configured for coach-reviewed AI workspace drafting."
+      : "OpenAI Responses API is configured for coach-reviewed AI workspace drafts."
   };
 }
 
 export function scanAiCoachDraftForProvider(draft: AiCoachWorkspaceDraft) {
-  const content = [draft.title, draft.body, ...draft.sourceEvidence].join("\n");
-  if (CONTACT_PATTERN.test(content)) {
-    return {
-      ok: false,
-      message: "Draft contains contact details and cannot be sent to an AI provider."
-    };
-  }
+  return scanAiCoachProviderContent(
+    [draft.title, draft.body, ...draft.sourceEvidence].join("\n"),
+    "Draft"
+  );
+}
 
-  if (PRIVATE_DETAIL_PATTERN.test(content)) {
-    return {
-      ok: false,
-      message: "Draft contains private player or family details and cannot be sent to an AI provider."
-    };
-  }
-
-  if (UNSUPPORTED_AUTOMATION_PATTERN.test(content)) {
-    return {
-      ok: false,
-      message: "Draft claims a provider send, publish, or delivery action that the AI provider cannot perform."
-    };
-  }
-
-  if (UNSOURCED_CLAIM_PATTERN.test(content)) {
-    return {
-      ok: false,
-      message: "Draft appears to rely on unsourced private or external claims and cannot be sent to an AI provider."
-    };
-  }
-
-  return { ok: true, message: "Draft is provider-safe." };
+export function scanAiCoachPromptForProvider(prompt: string) {
+  return scanAiCoachProviderContent(prompt, "Prompt");
 }
 
 export async function enhanceAiCoachWorkspaceDraft(
@@ -153,11 +152,7 @@ export async function enhanceAiCoachWorkspaceDraft(
   }
 
   try {
-    const client = new OpenAI({
-      apiKey: config.apiKey,
-      baseURL: providerBaseUrl(config.endpoint),
-      fetch: config.fetcher
-    });
+    const client = createAiCoachOpenAiClient(config);
     const response = await client.responses.parse({
       model: readiness.model,
       store: false,
@@ -165,11 +160,11 @@ export async function enhanceAiCoachWorkspaceDraft(
       input: [{
         role: "user",
         content: JSON.stringify({
-        title: draft.title,
-        body: draft.body,
-        sourceEvidence: draft.sourceEvidence,
-        workflow: draft.workflow,
-        boundary: draft.boundary
+          title: draft.title,
+          body: draft.body,
+          sourceEvidence: draft.sourceEvidence,
+          workflow: draft.workflow,
+          boundary: draft.boundary
         })
       }],
       text: {
@@ -252,6 +247,38 @@ export async function enhanceAiCoachWorkspaceDraft(
   }
 }
 
+export async function streamAiCoachWorkspaceConversation(input: {
+  actorUserId: string;
+  draft: AiCoachWorkspaceDraft;
+  messages: UIMessage[];
+  config?: AiCoachProviderConfig;
+}) {
+  const config = input.config ?? getAiCoachProviderConfigFromEnv();
+  const readiness = getAiCoachProviderReadiness(config);
+  const provider = createOpenAI({
+    ...(config.apiKey ? { apiKey: config.apiKey } : {}),
+    ...(config.endpoint ? { baseURL: providerBaseUrl(config.endpoint) } : {})
+  });
+
+  const result = streamText({
+    model: provider.responses(readiness.model),
+    instructions: providerConversationInstructions(input.draft),
+    providerOptions: {
+      openai: {
+        store: false,
+        user: input.actorUserId
+      }
+    },
+    messages: await convertToModelMessages(input.messages)
+  });
+
+  return createUIMessageStreamResponse({
+    stream: toUIMessageStream({
+      stream: result.stream
+    })
+  });
+}
+
 function providerInstructions() {
   return [
     "Rewrite the supplied youth sports coach workspace draft for clarity and parent/coach usefulness.",
@@ -260,6 +287,25 @@ function providerInstructions() {
     "Keep the result draft/review-only. Do not say it was sent, published, approved, or delivered.",
     "Return JSON only with keys title, body, and reviewNotes. reviewNotes must be an array of short strings."
   ].join(" ");
+}
+
+function providerConversationInstructions(draft: AiCoachWorkspaceDraft) {
+  return [
+    "You are LeaguePilot AI Coach Workspace, a review-only youth sports draft assistant.",
+    "Use only the supplied draft and source evidence. If the draft does not establish a fact, say that clearly instead of guessing.",
+    "Never invent schedules, attendance promises, contact details, medical details, private notes, hidden messages, or cross-team facts.",
+    "Never say anything was sent, published, approved, delivered, queued, or shared externally.",
+    "Keep responses concise and practical for a coach editing family-facing copy. Use bullets only when it improves clarity.",
+    "Preserve child privacy. Use first name plus last initial or jersey numbers only if already present in the draft.",
+    `Active draft label: ${draft.label}`,
+    `Active draft title: ${draft.title}`,
+    `Active draft workflow: ${draft.workflow.join(" -> ")}`,
+    `Active draft boundary: ${draft.boundary}`,
+    "Draft body:",
+    draft.body,
+    "Source evidence:",
+    draft.sourceEvidence.length ? draft.sourceEvidence.map((item) => `- ${item}`).join("\n") : "- No explicit source evidence was supplied."
+  ].join("\n\n");
 }
 
 function providerBaseUrl(endpoint?: string) {
@@ -294,4 +340,44 @@ function buildTrustEvidence(
     model,
     humanReviewRequired: true
   };
+}
+
+function createAiCoachOpenAiClient(config: AiCoachProviderConfig) {
+  return new OpenAI({
+    ...(config.apiKey ? { apiKey: config.apiKey } : {}),
+    baseURL: providerBaseUrl(config.endpoint),
+    fetch: config.fetcher
+  });
+}
+
+function scanAiCoachProviderContent(content: string, subject: string) {
+  if (CONTACT_PATTERN.test(content)) {
+    return {
+      ok: false,
+      message: `${subject} contains contact details and cannot be sent to an AI provider.`
+    };
+  }
+
+  if (PRIVATE_DETAIL_PATTERN.test(content)) {
+    return {
+      ok: false,
+      message: `${subject} contains private player or family details and cannot be sent to an AI provider.`
+    };
+  }
+
+  if (UNSUPPORTED_AUTOMATION_PATTERN.test(content)) {
+    return {
+      ok: false,
+      message: `${subject} claims a provider send, publish, or delivery action that the AI provider cannot perform.`
+    };
+  }
+
+  if (UNSOURCED_CLAIM_PATTERN.test(content)) {
+    return {
+      ok: false,
+      message: `${subject} appears to rely on unsourced private or external claims and cannot be sent to an AI provider.`
+    };
+  }
+
+  return { ok: true, message: `${subject} is provider-safe.` };
 }

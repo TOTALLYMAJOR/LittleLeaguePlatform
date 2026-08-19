@@ -31,6 +31,7 @@ export * from "./metrics";
 export * from "./ai-coach-workspace";
 export * from "./rookie-coach-assist";
 export * from "./next-level";
+export * from "./operations-copilot";
 export * from "./state-machines";
 export * from "./guards";
 export * from "./policies";

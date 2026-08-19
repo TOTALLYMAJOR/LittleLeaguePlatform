@@ -41,6 +41,7 @@ export interface AdminAuditLogItem {
 }
 
 export interface AdminOperationsData {
+  source: "supabase" | "fallback";
   settings: AdminOperationSettings;
   providerInventory: AdminProviderInventoryItem[];
   approvalQueues: AdminApprovalQueueItem[];
@@ -65,6 +66,7 @@ function fallbackOperationsData(): AdminOperationsData {
   const pendingNotifications = seedState.notifications.filter((notification) => notification.status === "pending").length;
 
   return {
+    source: "fallback",
     settings: {
       organizationId: seedState.organization.id,
       organizationName: seedState.organization.name,
@@ -95,9 +97,23 @@ function fallbackOperationsData(): AdminOperationsData {
   };
 }
 
-export async function listAdminOperationsData(): Promise<AdminOperationsData> {
+export async function listAdminOperationsData(input?: { organizationId?: string }): Promise<AdminOperationsData> {
   try {
     const db = createSupabaseAdminClient() as unknown as UnsafeSupabase;
+    const organizationsQuery = db.from("organizations").select("id,name").limit(1);
+    const seasonsQuery = db.from("seasons").select("id,name,status").order("starts_at", { ascending: false }).limit(1);
+    const registrationsQuery = db.from("registration_requests").select("id,status").eq("status", "pending");
+    const notificationsQuery = db.from("notifications").select("id,status,provider_approval_status").eq("status", "pending");
+    const mediaQuery = db.from("media_items").select("id,moderation_status").eq("moderation_status", "pending");
+    const auditQuery = db.from("audit_events").select("id,action,target_type,summary,created_at").order("created_at", { ascending: false }).limit(20);
+    if (input?.organizationId) {
+      organizationsQuery.eq("id", input.organizationId);
+      seasonsQuery.eq("organization_id", input.organizationId);
+      registrationsQuery.eq("organization_id", input.organizationId);
+      notificationsQuery.eq("organization_id", input.organizationId);
+      mediaQuery.eq("organization_id", input.organizationId);
+      auditQuery.eq("organization_id", input.organizationId);
+    }
     const [
       { data: organizations },
       { data: seasons },
@@ -106,12 +122,12 @@ export async function listAdminOperationsData(): Promise<AdminOperationsData> {
       { data: mediaItems },
       { data: auditEvents }
     ] = await withSupabaseTimeout(Promise.all([
-      db.from("organizations").select("id,name").limit(1),
-      db.from("seasons").select("id,name,status").order("starts_at", { ascending: false }).limit(1),
-      db.from("registration_requests").select("id,status").eq("status", "pending"),
-      db.from("notifications").select("id,status,provider_approval_status").eq("status", "pending"),
-      db.from("media_items").select("id,moderation_status").eq("moderation_status", "pending"),
-      db.from("audit_events").select("id,action,target_type,summary,created_at").order("created_at", { ascending: false }).limit(20)
+      organizationsQuery,
+      seasonsQuery,
+      registrationsQuery,
+      notificationsQuery,
+      mediaQuery,
+      auditQuery
     ]), 7000) as [
       { data: Array<{ id: string; name: string }> | null },
       { data: Array<{ id: string; name: string; status: "active" | "archived" }> | null },
@@ -126,6 +142,7 @@ export async function listAdminOperationsData(): Promise<AdminOperationsData> {
     if (!organization || !season) return fallbackOperationsData();
 
     return {
+      source: "supabase",
       settings: {
         organizationId: organization.id,
         organizationName: organization.name,

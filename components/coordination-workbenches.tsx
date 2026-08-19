@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState, useTransition } from "react";
 import { useAppState } from "@/app/providers";
 import { ParentReplayClient } from "@/components/feature-panels";
+import type { AiCoachProviderReadiness } from "@/lib/services/ai-coach";
 import type { AppState, LeagueEvent, RosterImportAnalysis } from "@/lib/domain";
 import { analyzeRosterCsv, sampleRosterCsv } from "@/lib/domain";
 import { createSupabaseBrowserClient } from "@/lib/supabase/browser";
@@ -804,7 +805,8 @@ export function CoachPracticeReplayWorkbench({
   injuryContacts,
   injuryContactMessage,
   dashboardData,
-  drillVideoData
+  drillVideoData,
+  aiProviderReadiness
 }: {
   state: AppState;
   initialReceipts: PracticeRunReceipt[];
@@ -812,6 +814,7 @@ export function CoachPracticeReplayWorkbench({
   injuryContactMessage: string;
   dashboardData?: ParentCoachDashboardData | null;
   drillVideoData?: DrillVideoLibraryData | null;
+  aiProviderReadiness: AiCoachProviderReadiness;
 }) {
   const [receipts, setReceipts] = useState(initialReceipts);
   return (
@@ -821,7 +824,12 @@ export function CoachPracticeReplayWorkbench({
         <WaterBreakTimer />
         <CoachInjuryCallPanel contacts={injuryContacts} message={injuryContactMessage} />
       </div>
-      <ParentReplayClient dashboardData={dashboardData} drillVideoData={drillVideoData} practiceRunReceipts={receipts} />
+      <ParentReplayClient
+        dashboardData={dashboardData}
+        drillVideoData={drillVideoData}
+        practiceRunReceipts={receipts}
+        aiProviderReadiness={aiProviderReadiness}
+      />
     </>
   );
 }

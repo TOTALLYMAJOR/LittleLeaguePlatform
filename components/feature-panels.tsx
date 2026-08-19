@@ -2,7 +2,7 @@
 
 import Image from "next/image";
 import { useEffect, useMemo, useState, useTransition, type CSSProperties, type ChangeEvent, type ReactNode } from "react";
-import { markLeaguePilotValueExperienced, useAppState } from "@/app/providers";
+import { useAppState } from "@/app/providers";
 import {
   captureOfflineOwnerGeneration,
   clearPrivateGameDayData,
@@ -215,6 +215,7 @@ import {
   type ParentSeasonStoryEntry,
   type SponsorProofLedgerRow
 } from "@/components/role-dashboard-experiences";
+import { AiCoachWorkspacePanel } from "@/components/ai-coach-workspace-panel";
 import {
   AvatarStack,
   BreadcrumbTrail,
@@ -230,6 +231,7 @@ import {
   Toggle,
   TypingIndicator
 } from "@/components/ui/primitives";
+import type { AiCoachProviderReadiness } from "@/lib/services/ai-coach";
 
 interface RegistrationTeamOption {
   id: string;
@@ -7397,11 +7399,19 @@ export function ScheduleAlertsClient({
 export function ParentReplayClient({
   dashboardData,
   drillVideoData,
-  practiceRunReceipts = []
+  practiceRunReceipts = [],
+  aiProviderReadiness = {
+    configured: false,
+    delivery: "direct_openai",
+    provider: "openai",
+    model: "Environment selected",
+    reason: "AI provider readiness is shown on the signed-in coach practice recap surface."
+  }
 }: {
   dashboardData?: ParentCoachDashboardData | null;
   drillVideoData?: DrillVideoLibraryData | null;
   practiceRunReceipts?: PracticeRunReceipt[];
+  aiProviderReadiness?: AiCoachProviderReadiness;
 } = {}) {
   const { state, dispatch } = useAppState();
   const sourceState = dashboardData?.accessStatus === "live" ? dashboardData.state : state;
@@ -8193,51 +8203,15 @@ export function ParentReplayClient({
             <span className="badge warning">Preview - Edit - Approve - Publish</span>
           </div>
           <p className="muted">These drafts start as deterministic workspace previews. Signed-in coaches and admins can request an AI provider rewrite only when the server-side provider gate is configured; nothing publishes or sends without review.</p>
-          {aiProviderMessage ? <p className="notice">{aiProviderMessage}</p> : null}
-          <aside className="ai-trust-panel" aria-label="AI source and review evidence">
-            <div className="card-header">
-              <div>
-                <span className="eyebrow">AI Trust Panel</span>
-                <h3>{aiTrustEvidence ? "Generation evidence recorded" : "Review boundary ready"}</h3>
-              </div>
-              <span className="badge warning">Human review required</span>
-            </div>
-            <div className="grid two">
-              <div>
-                <strong>Included sources</strong>
-                <ul className="list compact">
-                  {(aiTrustEvidence?.includedSources ?? ["Visible team schedule", "Approved roster-safe names", "Coach-selected focus"]).map((source) => <li key={source}>{source}</li>)}
-                </ul>
-              </div>
-              <div>
-                <strong>Always excluded</strong>
-                <ul className="list compact">
-                  {(aiTrustEvidence?.excludedSources ?? ["Private parent notes", "Contact details", "Unapproved media", "Cross-team records"]).map((source) => <li key={source}>{source}</li>)}
-                </ul>
-              </div>
-            </div>
-            <p className="muted">
-              Model: {aiTrustEvidence?.model ?? "Environment selected"}
-              {aiTrustEvidence?.generatedAt ? ` · Generated ${formatDate(aiTrustEvidence.generatedAt)}` : ""}
-              {aiTrustEvidence?.runId ? ` · Evidence run ${aiTrustEvidence.runId}` : ""}
-            </p>
-            <p>AI cannot publish, notify, grant access, or invoke operational tools.</p>
-          </aside>
-          <div className="grid two">
-            {visibleCoachWorkspaceDrafts.map((workspaceDraft) => (
-              <div className="stack compact" key={workspaceDraft.id}>
-                <span className="badge">{workspaceDraft.label}</span>
-                <h3>{workspaceDraft.title}</h3>
-                <pre className="draft-preview">{workspaceDraft.body}</pre>
-                <p className="muted"><strong>Sources:</strong> {workspaceDraft.sourceEvidence.join(", ") || "coach draft"}</p>
-                <p className="muted"><strong>Workflow:</strong> {workspaceDraft.workflow.join(" -> ")}</p>
-                <p className="notice">{workspaceDraft.boundary}</p>
-                <button type="button" disabled={isAiProviderPending} onClick={() => requestAiProviderDraft(workspaceDraft)}>
-                  Request AI rewrite
-                </button>
-              </div>
-            ))}
-          </div>
+          <AiCoachWorkspacePanel
+            teamId={teamId}
+            drafts={visibleCoachWorkspaceDrafts}
+            providerReadiness={aiProviderReadiness}
+            providerMessage={aiProviderMessage}
+            trustEvidence={aiTrustEvidence}
+            onRequestRewrite={requestAiProviderDraft}
+            isRewritePending={isAiProviderPending}
+          />
         </article>
       </section>
 

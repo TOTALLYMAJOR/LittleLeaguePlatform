@@ -964,6 +964,9 @@ describe("ParentReplayClient", () => {
     expect(html).toContain("Safety Monitor");
     expect(html).toContain("Season Storybook");
     expect(html).toContain("Preview - Edit - Approve - Publish");
+    expect(html).toContain("AI Coach Console");
+    expect(html).toContain("Choose the draft to refine");
+    expect(html).toContain("Ask AI coach");
   });
 
   it("renders coach-only drill video submission, assignment, and privacy-enhanced embeds", () => {
@@ -1019,7 +1022,7 @@ describe("ParentReplayClient", () => {
     expect(html).toContain("Team and coach access are current for this replay");
     expect(html).toContain("Supabase Tigers");
     expect(html).toContain(supabaseTeamId);
-    expect(html).toContain("Request AI rewrite");
+    expect(html).toContain("Request full AI rewrite");
   });
 
   it("blocks Parent Replay AI workspace when the signed-in user lacks coach access", () => {

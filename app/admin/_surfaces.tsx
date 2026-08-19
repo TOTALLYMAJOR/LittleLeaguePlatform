@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { AdminAdditionalGuardianClient } from "@/components/additional-guardian-access";
 import { OfficialCommunicationWorkbench } from "@/components/official-communication-workbench";
+import { OperationsCopilot } from "@/components/operations-copilot";
 import { AdminSeasonTransitionReview } from "@/components/season-transition-review";
 import { TeamBuilderWorkbench } from "@/components/team-builder-workbench";
 import {
@@ -20,6 +21,7 @@ import {
 } from "@/components/feature-panels";
 import type { AdminDashboardSurfaceMode } from "@/components/feature-panels";
 import { listAdminOperationsData, type AdminOperationsData } from "@/lib/supabase/admin-operations";
+import { listOperationsCopilotWorkspace, type OperationsCopilotWorkspace } from "@/lib/supabase/operations-copilot";
 import { listArchiveVaultData } from "@/lib/supabase/archive-vault";
 import { listGuardianLinkRepairData } from "@/lib/supabase/guardian-links";
 import { listAdminDrillVideoLibraryData } from "@/lib/supabase/drill-videos";
@@ -201,10 +203,16 @@ export async function AdminReportsArchiveSurface() {
 export async function AdminOperationsSurface() {
   const pageAccess = await requireAdminPageAccess();
   if (!pageAccess.ok) return <AdminAccessDeniedSurface message={pageAccess.message} />;
+  const organizationId = pageAccess.access.contexts?.find((context) => context.role === "admin")?.organizationId
+    ?? pageAccess.access.adminOrganizationIds[0];
+  if (!organizationId) {
+    return <AdminAccessDeniedSurface message="An active organization context is required for admin operations." />;
+  }
   const [data, scheduleData] = await Promise.all([
-    listAdminOperationsData(),
+    listAdminOperationsData({ organizationId }),
     listScheduleOperationsData()
   ]);
+  const copilotWorkspace = await listOperationsCopilotWorkspace({ organizationId, operationsData: data });
   const scopedScheduleData = scopeScheduleOperationsData(
     scheduleData,
     pageAccess.access.adminTeamIds,
@@ -212,7 +220,7 @@ export async function AdminOperationsSurface() {
   );
   return (
     <>
-      <AdminOperationsView data={data} />
+      <AdminOperationsView data={data} organizationId={organizationId} copilotWorkspace={copilotWorkspace} />
       <details className="compact-disclosure schedule-telemetry-disclosure">
         <summary><span><strong>Schedule and delivery telemetry</strong><small>Provider readiness, retry, device, alert, and schedule workflow evidence.</small></span><span className="badge">Operations evidence</span></summary>
         <ScheduleAlertsClient scheduleData={scopedScheduleData} mode="operations" />
@@ -249,7 +257,15 @@ export async function AdminCommunicationsSurface() {
   );
 }
 
-export function AdminOperationsView({ data }: { data: AdminOperationsData }) {
+export function AdminOperationsView({
+  data,
+  organizationId,
+  copilotWorkspace
+}: {
+  data: AdminOperationsData;
+  organizationId: string;
+  copilotWorkspace: OperationsCopilotWorkspace;
+}) {
   return (
     <div className="page">
       <section className="hero">
@@ -263,6 +279,12 @@ export function AdminOperationsView({ data }: { data: AdminOperationsData }) {
         <article className="card metric"><span className="muted">Season</span><strong>{data.settings.activeSeasonName}</strong></article>
         <article className="card metric"><span className="muted">Status</span><strong>{data.settings.activeSeasonStatus}</strong></article>
       </section>
+
+      <OperationsCopilot
+        key={copilotWorkspace.proposals.map((proposal) => `${proposal.id ?? proposal.proposalKey}:${proposal.status}`).join("|") || "operations-copilot-empty"}
+        organizationId={organizationId}
+        initialWorkspace={copilotWorkspace}
+      />
 
       <section className="grid two">
         <article className="card stack">

@@ -23,6 +23,7 @@ import { listScheduleOperationsData } from "@/lib/supabase/schedule-management";
 import { requireCoachPageAccess } from "@/lib/supabase/shell-access";
 import { listTeamChatData } from "@/lib/supabase/team-chat";
 import { listTeamPortalData } from "@/lib/supabase/team-portal";
+import { getAiCoachProviderReadiness } from "@/lib/services/ai-coach";
 
 export async function loadCoachDashboardForPage() {
   const pageAccess = await requireCoachPageAccess();
@@ -43,6 +44,7 @@ export async function CoachAttendanceSurface() {
 export async function CoachPracticeRecapsSurface() {
   const pageAccess = await requireCoachPageAccess();
   if (!pageAccess.ok) return <ParentReplayClient dashboardData={pageAccess.dashboardData} />;
+  const aiProviderReadiness = getAiCoachProviderReadiness();
   const [dashboardData, drillVideoData, practiceRunData, injuryContactData] = await Promise.all([
     listParentCoachDashboardData({ viewerUserId: pageAccess.access.userId, surface: "coach" }),
     listCoachDrillVideoLibraryData({
@@ -63,6 +65,7 @@ export async function CoachPracticeRecapsSurface() {
       injuryContactMessage={injuryContactData.message}
       dashboardData={dashboardData}
       drillVideoData={drillVideoData}
+      aiProviderReadiness={aiProviderReadiness}
     />
   );
 }

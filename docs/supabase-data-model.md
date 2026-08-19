@@ -90,7 +90,7 @@ Use the direct database endpoint when IPv6 is available or the Supavisor session
 | Team chat | `team_chat_channels`, `team_chat_messages`, `team_chat_threads`, `team_chat_message_reads`, `team_chat_reactions`, `team_chat_attachments`, `team_chat_reports`, `chat_moderation_audit_events` |
 | Notifications | `notifications`, `notification_preferences`, `notification_delivery_attempts`, `push_subscriptions` |
 | Family coordination | `family_event_handoffs` |
-| Admin operations | `registration_requests`, `registration_approval_actions`, `roster_imports`, `roster_import_rows`, `team_build_plans`, `audit_events` |
+| Admin operations | `registration_requests`, `registration_approval_actions`, `roster_imports`, `roster_import_rows`, `team_build_plans`, `agent_runs`, `approval_requests`, `audit_events` |
 
 ## Hardening Additions
 
