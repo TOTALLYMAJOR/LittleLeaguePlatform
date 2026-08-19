@@ -39,7 +39,7 @@ const JOY_SPORTS = [
 ];
 
 const TICKER_ITEMS = [
-  "GAME POSTPONED — RAIN",
+  "GAME POSTPONED - RAIN",
   "ROCKETS VS COMETS MOVED TO NEXT SATURDAY",
   "FAMILIES NOTIFIED VIA LEAGUEPILOT",
   "COACH APPROVED THE CALL"
@@ -241,7 +241,7 @@ export function LandingIntroOverlay() {
         itself. A news-style ticker announces the game is postponed for rain. Coaches,
         parents, sponsors, and league admins arrive on their phones, a gear truck pulls up,
         and a schedule board fills in with team colors. Team mascots flash past like trading
-        cards, the sun breaks through — and the season returns in full color, organized.
+        cards, the sun breaks through, and the season returns in full color, organized.
       </p>
 
       {/* li-stage is the positioned ancestor for the ticker and mascot layers, so their

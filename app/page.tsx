@@ -2,6 +2,15 @@ import type { Metadata } from "next";
 import Image from "next/image";
 import Link from "next/link";
 import { redirect } from "next/navigation";
+import {
+  ArrowRight,
+  CalendarDays,
+  HeartHandshake,
+  LogIn,
+  ShieldCheck,
+  UsersRound,
+  WifiOff
+} from "lucide-react";
 import { LandingIntroOverlay } from "@/components/landing-intro-overlay";
 import { LandingSky } from "@/components/landing-sky";
 import { LandingWeatherNotification } from "@/components/landing-weather-notification";
@@ -24,7 +33,7 @@ export const metadata: Metadata = {
     type: "website",
     url: SITE_URL,
     siteName: "LeaguePilot",
-    title: "LeaguePilot — Your season, organized.",
+    title: "LeaguePilot - Your season, organized.",
     description: LANDING_DESCRIPTION,
     images: [
       {
@@ -35,7 +44,7 @@ export const metadata: Metadata = {
   },
   twitter: {
     card: "summary_large_image",
-    title: "LeaguePilot — Your season, organized.",
+    title: "LeaguePilot - Your season, organized.",
     description: LANDING_DESCRIPTION,
     images: [`${SITE_URL}/images/leaguepilot-community-game-day-hero.png`]
   }
@@ -96,34 +105,29 @@ export default async function HomePage() {
           </p>
           <h1 id="landing-title">Your season, organized.</h1>
           <p className="landing-gateway-summary">
-            Schedules, team access, and local support—clear from the first click.
+            Schedules, team access, and local support. Clear from the first click.
           </p>
 
           <Link className="landing-gateway-gameday" href="/schedule">
             <span className="landing-gateway-gameday-dot" aria-hidden="true" />
             {gameDay.isToday ? "Game day is today" : `Next game day: Saturday, ${gameDay.label}`}
-            {" "}
-            <em>See the public schedule →</em>
+            <em>
+              See the public schedule
+              <ArrowRight aria-hidden="true" size={14} strokeWidth={2.25} />
+            </em>
           </Link>
 
           <ul className="landing-gateway-assurances">
             <li>
-              <svg aria-hidden="true" viewBox="0 0 24 24" width="18" height="18">
-                <path d="M12 2 4 5v6c0 5 3.4 9.4 8 11 4.6-1.6 8-6 8-11V5l-8-3z" fill="none" stroke="currentColor" strokeWidth="2" strokeLinejoin="round" />
-                <path d="m8.5 12 2.4 2.4 4.6-4.8" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-              </svg>
+              <ShieldCheck aria-hidden="true" size={18} strokeWidth={2.1} />
               <span>Private by default. Children do not create accounts.</span>
             </li>
             <li>
-              <svg aria-hidden="true" viewBox="0 0 24 24" width="18" height="18">
-                <path d="M12 21s-7-4.6-9.2-9A5.2 5.2 0 0 1 12 6.6 5.2 5.2 0 0 1 21.2 12C19 16.4 12 21 12 21z" fill="none" stroke="currentColor" strokeWidth="2" strokeLinejoin="round" />
-              </svg>
-              <span>Built for volunteers—nobody here gets paid.</span>
+              <UsersRound aria-hidden="true" size={18} strokeWidth={2.1} />
+              <span>Built for volunteers. Nobody here gets paid.</span>
             </li>
             <li>
-              <svg aria-hidden="true" viewBox="0 0 24 24" width="18" height="18">
-                <path d="M13 2 4 14h6l-1 8 9-12h-6l1-8z" fill="none" stroke="currentColor" strokeWidth="2" strokeLinejoin="round" />
-              </svg>
+              <WifiOff aria-hidden="true" size={18} strokeWidth={2.1} />
               <span>Field-ready. Schedules keep working offline on game day.</span>
             </li>
           </ul>
@@ -143,22 +147,31 @@ export default async function HomePage() {
 
         <nav className="landing-gateway-actions" aria-label="Get started">
           <Link className="landing-gateway-action" href="/schedule">
-            <span>Schedule</span>
+            <span className="landing-gateway-action-icon" aria-hidden="true">
+              <CalendarDays size={21} strokeWidth={2.1} />
+            </span>
+            <span className="landing-gateway-action-label">Schedule</span>
             <strong>Games and field updates</strong>
             <small>View public schedule</small>
-            <i className="landing-gateway-action-arrow" aria-hidden="true">→</i>
+            <ArrowRight className="landing-gateway-action-arrow" aria-hidden="true" size={18} strokeWidth={2.2} />
           </Link>
           <Link className="landing-gateway-action" href="/sponsors">
-            <span>Sponsors</span>
+            <span className="landing-gateway-action-icon" aria-hidden="true">
+              <HeartHandshake size={21} strokeWidth={2.1} />
+            </span>
+            <span className="landing-gateway-action-label">Sponsors</span>
             <strong>Support local youth sports</strong>
             <small>View sponsor information</small>
-            <i className="landing-gateway-action-arrow" aria-hidden="true">→</i>
+            <ArrowRight className="landing-gateway-action-arrow" aria-hidden="true" size={18} strokeWidth={2.2} />
           </Link>
           <Link className="landing-gateway-action is-primary" href={accountHref}>
-            <span>Account</span>
+            <span className="landing-gateway-action-icon" aria-hidden="true">
+              <LogIn size={21} strokeWidth={2.1} />
+            </span>
+            <span className="landing-gateway-action-label">Account</span>
             <strong>{accountLabel}</strong>
             <small>For approved families and staff</small>
-            <i className="landing-gateway-action-arrow" aria-hidden="true">→</i>
+            <ArrowRight className="landing-gateway-action-arrow" aria-hidden="true" size={18} strokeWidth={2.2} />
           </Link>
         </nav>
 

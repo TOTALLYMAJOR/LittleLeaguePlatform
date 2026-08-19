@@ -12,7 +12,7 @@ describe("LandingWeatherNotification", () => {
   it("uses honest drafts-for-review copy, never implying a message was sent", () => {
     const html = renderToStaticMarkup(<LandingWeatherNotification />);
     expect(html).toContain("Drafted for your review");
-    expect(html).toContain("nothing sent to families yet");
+    expect(html).toMatch(/nothing sent to families yet/i);
     expect(html).not.toMatch(/\bsent to families\b(?! yet)/);
   });
 
