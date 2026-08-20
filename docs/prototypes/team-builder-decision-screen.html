@@ -1,0 +1,1058 @@
+<title>Team Builder Rebuild</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=Public+Sans:ital,wght@0,400;0,500;0,600;0,700;1,400&display=swap">
+
+<style>
+:root{
+  --navy:#0E2745; --navy-2:#16375E; --navy-3:#1E4576;
+  --paper:#EEF1F5; --surface:#FFFFFF; --surface-2:#F5F7FA; --surface-3:#E8EDF3;
+  --ink:#111C2E; --ink-2:#4A5768; --ink-3:#6C7A8C;
+  --rule:#D6DEE8; --rule-2:#BCC7D5;
+  --accent:#B23C0E; --accent-hover:#8F2F0A; --accent-soft:#FDF0E9;
+  --focus:#1D4ED8;
+  --ok:#15653F; --ok-bg:#E6F2EB; --ok-rule:#A9CFBB;
+  --warn:#8A5300; --warn-bg:#FBF2E3; --warn-rule:#DFC48C;
+  --stop:#A31B1B; --stop-bg:#FBEBEA; --stop-rule:#E2ADAA;
+  --info:#1A4A9C; --info-bg:#E9F0FB; --info-rule:#A9C2E8;
+  --shadow:0 1px 2px rgba(14,39,69,.08), 0 4px 12px rgba(14,39,69,.05);
+}
+@media (prefers-color-scheme: dark){ :root:not([data-theme="light"]){
+  --navy:#08111F; --navy-2:#0F1E33; --navy-3:#193050;
+  --paper:#0A121E; --surface:#121D2E; --surface-2:#182437; --surface-3:#1C2B41;
+  --ink:#E8EDF5; --ink-2:#A2B0C4; --ink-3:#7F8DA1;
+  --rule:#26364E; --rule-2:#354863;
+  --accent:#F08A56; --accent-hover:#F7A377; --accent-soft:#241C14;
+  --focus:#7FA8F0;
+  --ok:#66C795; --ok-bg:#10261D; --ok-rule:#2C5643;
+  --warn:#E0AC4C; --warn-bg:#2A2113; --warn-rule:#5C4A22;
+  --stop:#F1908B; --stop-bg:#2C1616; --stop-rule:#5E2B2A;
+  --info:#8FB4EE; --info-bg:#132340; --info-rule:#2C4570;
+  --shadow:0 1px 2px rgba(0,0,0,.4), 0 4px 14px rgba(0,0,0,.25);
+}}
+:root[data-theme="dark"]{
+  --navy:#08111F; --navy-2:#0F1E33; --navy-3:#193050;
+  --paper:#0A121E; --surface:#121D2E; --surface-2:#182437; --surface-3:#1C2B41;
+  --ink:#E8EDF5; --ink-2:#A2B0C4; --ink-3:#7F8DA1;
+  --rule:#26364E; --rule-2:#354863;
+  --accent:#F08A56; --accent-hover:#F7A377; --accent-soft:#241C14;
+  --focus:#7FA8F0;
+  --ok:#66C795; --ok-bg:#10261D; --ok-rule:#2C5643;
+  --warn:#E0AC4C; --warn-bg:#2A2113; --warn-rule:#5C4A22;
+  --stop:#F1908B; --stop-bg:#2C1616; --stop-rule:#5E2B2A;
+  --info:#8FB4EE; --info-bg:#132340; --info-rule:#2C4570;
+  --shadow:0 1px 2px rgba(0,0,0,.4), 0 4px 14px rgba(0,0,0,.25);
+}
+
+*{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%}
+body{
+  margin:0; background:var(--paper); color:var(--ink);
+  font-family:"Public Sans",system-ui,-apple-system,"Segoe UI",sans-serif;
+  font-size:15px; line-height:1.5; -webkit-font-smoothing:antialiased;
+}
+.mono,.num{font-family:"IBM Plex Mono",ui-monospace,Menlo,monospace; font-variant-numeric:tabular-nums}
+:focus-visible{outline:3px solid var(--focus); outline-offset:2px; border-radius:2px}
+@media (prefers-reduced-motion: reduce){ *,*::before,*::after{animation-duration:.01ms !important; transition-duration:.01ms !important} }
+@media (forced-colors: active){
+  .chip,.pill,.btn,.card,.matrix td,.matrix th{border:1px solid CanvasText !important}
+  .bar-fill{background:Highlight !important; forced-color-adjust:none}
+}
+
+.demo{background:var(--navy-2); color:#DCE6F4; border-bottom:1px solid rgba(255,255,255,.12); padding:10px 20px}
+.demo-in{max-width:1440px; margin:0 auto; display:flex; flex-wrap:wrap; gap:10px 18px; align-items:center}
+.demo-lbl{font-family:"IBM Plex Mono",monospace; font-size:10px; letter-spacing:.13em; text-transform:uppercase; color:#8FA9C9}
+.demo-set{display:flex; flex-wrap:wrap; gap:6px}
+.demo-btn{
+  font:500 12px/1 "Public Sans",sans-serif; padding:7px 11px; border-radius:99px; cursor:pointer;
+  background:transparent; color:#C7D6E9; border:1px solid rgba(255,255,255,.25);
+}
+.demo-btn:hover{background:rgba(255,255,255,.1)}
+.demo-btn[aria-pressed="true"]{background:#DCE6F4; color:var(--navy); border-color:#DCE6F4; font-weight:600}
+
+.shell{display:grid; grid-template-columns:236px 1fr; min-height:100vh; max-width:1440px; margin:0 auto; background:var(--surface)}
+.side{background:var(--navy); color:#C9D8EA; display:flex; flex-direction:column; padding:22px 0}
+.brand{font-weight:700; font-size:21px; letter-spacing:-.02em; color:#fff; padding:0 22px 26px}
+.nav{display:flex; flex-direction:column}
+.nav a{
+  display:flex; gap:12px; align-items:center; padding:11px 22px; color:#B9CBE0;
+  text-decoration:none; font-size:15px; border-left:4px solid transparent;
+}
+.nav a:hover{background:rgba(255,255,255,.06); color:#fff}
+.nav a[aria-current="page"]{background:rgba(255,255,255,.09); color:#fff; font-weight:600; border-left-color:var(--accent)}
+.nav svg{width:19px; height:19px; flex:none; stroke:currentColor; fill:none; stroke-width:1.7}
+.side-foot{margin-top:auto; padding:18px 22px 0; border-top:1px solid rgba(255,255,255,.13); font-size:13px}
+.side-foot .role{color:#fff; font-weight:600}
+.side-foot .scope{color:#8FA9C9; font-size:12px; margin-top:3px}
+
+.main{display:flex; flex-direction:column; min-width:0}
+.pad{padding:0 28px}
+
+.hd{padding:24px 28px 0; display:flex; flex-wrap:wrap; gap:16px; justify-content:space-between; align-items:flex-start}
+h1{margin:0; font-size:28px; font-weight:700; letter-spacing:-.02em}
+.hd .sub{margin:4px 0 0; color:var(--ink-2); font-size:15px; max-width:56ch}
+.ctx{display:flex; flex-wrap:wrap; gap:8px}
+.btn{
+  font:600 14px/1 "Public Sans",sans-serif; padding:10px 14px; border-radius:6px; cursor:pointer;
+  display:inline-flex; align-items:center; gap:8px; border:1px solid var(--rule-2);
+  background:var(--surface); color:var(--ink); min-height:40px;
+}
+.btn:hover{background:var(--surface-2); border-color:var(--ink-3)}
+.btn svg{width:16px; height:16px; stroke:currentColor; fill:none; stroke-width:1.8; flex:none}
+.btn-pri{background:var(--accent); border-color:var(--accent); color:#fff}
+.btn-pri:hover{background:var(--accent-hover); border-color:var(--accent-hover)}
+:root[data-theme="dark"] .btn-pri, :root:not([data-theme="light"]) .btn-pri{color:#22120A}
+.btn-pri[disabled]{background:var(--surface-3); border-color:var(--rule-2); color:var(--ink-3); cursor:not-allowed}
+.btn-danger{background:var(--stop); border-color:var(--stop); color:#fff}
+:root[data-theme="dark"] .btn-danger{color:#2A0E0E}
+.btn-danger[disabled]{background:var(--surface-3); border-color:var(--rule-2); color:var(--ink-3); cursor:not-allowed}
+.btn-sm{font-size:13px; padding:7px 11px; min-height:34px}
+.btn-link{background:none; border:none; color:var(--info); text-decoration:underline; cursor:pointer; font:600 14px/1.4 "Public Sans",sans-serif; padding:2px}
+
+.prov{
+  margin:18px 28px 0; background:var(--surface-2); border:1px solid var(--rule); border-radius:8px;
+  padding:12px 16px; display:flex; flex-wrap:wrap; gap:8px 22px; align-items:center; font-size:13.5px; color:var(--ink-2);
+}
+.prov.is-stale{background:var(--warn-bg); border-color:var(--warn-rule); color:var(--warn)}
+.prov b{color:var(--ink); font-weight:600}
+.prov.is-stale b{color:var(--warn)}
+.prov-item{display:flex; gap:7px; align-items:center}
+.prov-item svg{width:15px; height:15px; stroke:currentColor; fill:none; stroke-width:1.8; flex:none}
+.prov .spacer{flex:1}
+
+.steps{display:flex; flex-wrap:wrap; gap:4px; margin:20px 28px 0; padding:0; list-style:none}
+.steps li{display:flex; align-items:center; gap:4px; flex:1; min-width:150px}
+.step{
+  display:flex; gap:10px; align-items:center; padding:9px 12px; border-radius:6px; width:100%;
+  background:none; border:1px solid transparent; text-align:left; font:inherit; color:var(--ink-3); cursor:pointer;
+}
+.step:hover:not([disabled]){background:var(--surface-2)}
+.step[disabled]{cursor:not-allowed}
+.step .dot{
+  width:26px; height:26px; border-radius:50%; flex:none; display:grid; place-items:center;
+  border:1.5px solid var(--rule-2); font:600 13px/1 "IBM Plex Mono",monospace; color:var(--ink-3); background:var(--surface);
+}
+.step .txt{display:flex; flex-direction:column; gap:1px; min-width:0}
+.step .nm{font-weight:600; font-size:14px}
+.step .st{font-size:11.5px; letter-spacing:.02em}
+.step[data-state="done"] .dot{background:var(--ok); border-color:var(--ok); color:#fff}
+:root[data-theme="dark"] .step[data-state="done"] .dot{color:#0B1F16}
+.step[data-state="done"]{color:var(--ink-2)}
+.step[data-state="current"]{background:var(--info-bg); border-color:var(--info-rule); color:var(--ink)}
+.step[data-state="current"] .dot{background:var(--navy); border-color:var(--navy); color:#fff}
+:root[data-theme="dark"] .step[data-state="current"] .dot{background:var(--info); border-color:var(--info); color:#08111F}
+.steps .sep{flex:none; width:14px; height:1px; background:var(--rule-2)}
+
+main.body{padding:26px 28px 200px; display:flex; flex-direction:column; gap:26px; min-width:0}
+.card{background:var(--surface); border:1px solid var(--rule); border-radius:10px; box-shadow:var(--shadow); overflow:hidden}
+.card-hd{padding:16px 20px; border-bottom:1px solid var(--rule); display:flex; flex-wrap:wrap; gap:10px 16px; align-items:baseline; justify-content:space-between}
+.card-hd h2{margin:0; font-size:17px; font-weight:700; letter-spacing:-.01em}
+.card-hd .hint{font-size:13px; color:var(--ink-3); margin:0}
+.card-bd{padding:20px}
+
+.obj{display:flex; flex-wrap:wrap; gap:14px 20px; align-items:center; padding:16px 20px; background:var(--info-bg); border:1px solid var(--info-rule); border-radius:10px}
+.obj .lead{flex:1; min-width:280px; font-size:14.5px}
+.obj .lead b{font-weight:700}
+.obj .lead .src{display:block; color:var(--ink-2); font-size:13px; margin-top:3px}
+.obj-pick{display:flex; flex-wrap:wrap; gap:6px}
+.obj-pick .demo-btn{border-color:var(--info-rule); color:var(--info); background:var(--surface)}
+.obj-pick .demo-btn[aria-pressed="true"]{background:var(--info); color:var(--surface); border-color:var(--info)}
+:root[data-theme="dark"] .obj-pick .demo-btn[aria-pressed="true"]{color:#08111F}
+
+.scroller{overflow-x:auto; -webkit-overflow-scrolling:touch}
+.matrix{border-collapse:separate; border-spacing:0; width:100%; min-width:760px}
+.matrix th,.matrix td{padding:12px 14px; text-align:left; vertical-align:top; border-bottom:1px solid var(--rule)}
+.matrix thead th{border-bottom:2px solid var(--rule-2); vertical-align:top}
+.matrix .rowlab{
+  position:sticky; left:0; z-index:2; background:var(--surface); width:210px; min-width:190px;
+  border-right:1px solid var(--rule); font-weight:600; font-size:14px;
+}
+.matrix thead .rowlab{z-index:3}
+.matrix .rowlab .rule{display:block; font-weight:400; font-size:12px; color:var(--ink-3); margin-top:3px; font-family:"IBM Plex Mono",monospace}
+.matrix tbody tr:hover td{background:var(--surface-2)}
+.matrix tbody tr:hover .rowlab{background:var(--surface-2)}
+.scol{width:calc((100% - 210px)/3); min-width:185px}
+.scol.is-picked{background:var(--accent-soft)}
+.matrix tbody tr:hover .scol.is-picked{background:var(--accent-soft)}
+
+.shead{display:flex; flex-direction:column; gap:9px}
+.shead .letter{font-family:"IBM Plex Mono",monospace; font-size:11px; font-weight:600; letter-spacing:.12em; color:var(--ink-3)}
+.shead .nm{font-size:16px; font-weight:700; letter-spacing:-.01em; line-height:1.25}
+.shead .pills{display:flex; flex-wrap:wrap; gap:5px; min-height:26px; align-items:flex-start}
+.pick{display:flex; gap:9px; align-items:flex-start; padding:9px 10px; border:1.5px solid var(--rule-2); border-radius:7px; cursor:pointer; background:var(--surface)}
+.pick:hover{border-color:var(--ink-3); background:var(--surface-2)}
+.pick input{margin:1px 0 0; width:20px; height:20px; accent-color:var(--accent); flex:none}
+.pick .pl{font-size:13.5px; font-weight:600}
+.pick.is-on{border-color:var(--accent); background:var(--accent-soft)}
+.pick.is-off{opacity:.6}
+.pick.is-off .pl{font-weight:500}
+
+.pill{
+  display:inline-flex; align-items:center; gap:5px; font-size:11.5px; font-weight:600; letter-spacing:.02em;
+  padding:3px 8px; border-radius:99px; border:1px solid; white-space:nowrap; width:fit-content; line-height:18px;
+}
+.pill.rec{color:var(--info); background:var(--info-bg); border-color:var(--info-rule)}
+.pill.blk{color:var(--stop); background:var(--stop-bg); border-color:var(--stop-rule)}
+.pill.ok{color:var(--ok); background:var(--ok-bg); border-color:var(--ok-rule)}
+
+.val{display:flex; flex-direction:column; gap:3px}
+.val .v{font-family:"IBM Plex Mono",monospace; font-size:21px; font-weight:600; letter-spacing:-.02em; line-height:1.1}
+.val .verdict{font-size:12.5px; font-weight:600; display:flex; align-items:center; gap:5px}
+.val .verdict svg{width:13px; height:13px; stroke:currentColor; fill:none; stroke-width:2.2; flex:none}
+.val.meets .verdict{color:var(--ok)} .val.meets .v{color:var(--ink)}
+.val.misses .verdict{color:var(--warn)} .val.misses .v{color:var(--warn)}
+.val.fails .verdict{color:var(--stop)} .val.fails .v{color:var(--stop)}
+.val .best{font-family:"IBM Plex Mono",monospace; font-size:10.5px; letter-spacing:.09em; text-transform:uppercase; color:var(--ink-3)}
+.bar{height:4px; background:var(--surface-3); border-radius:99px; overflow:hidden; margin-top:2px; max-width:130px}
+.bar-fill{height:100%; border-radius:99px; background:var(--ink-3)}
+.val.meets .bar-fill{background:var(--ok)} .val.misses .bar-fill{background:var(--warn)} .val.fails .bar-fill{background:var(--stop)}
+
+.tally{display:flex; flex-direction:column; gap:6px; font-size:13.5px}
+.tally .tr{display:flex; gap:8px; align-items:center}
+.tally .tr svg{width:15px; height:15px; stroke:currentColor; fill:none; stroke-width:2; flex:none}
+.tally .tr .n{font-family:"IBM Plex Mono",monospace; font-weight:600; margin-left:auto}
+.tally .t-ok{color:var(--ok)} .tally .t-warn{color:var(--warn)} .tally .t-info{color:var(--info)}
+.tally .sum{border-top:1px solid var(--rule); padding-top:6px; margin-top:2px; display:flex; gap:8px; color:var(--ink-2); font-size:12.5px}
+.tally .sum .n{font-family:"IBM Plex Mono",monospace; font-weight:600; margin-left:auto; color:var(--ink)}
+.why{font-size:13.5px; color:var(--ink-2); line-height:1.5}
+
+.notice{display:flex; gap:11px; padding:13px 15px; border-radius:8px; border:1px solid; font-size:14px; align-items:flex-start}
+.notice svg{width:18px; height:18px; stroke:currentColor; fill:none; stroke-width:2; flex:none; margin-top:1px}
+.notice .nb{min-width:0}
+.notice strong{display:block; margin-bottom:2px}
+.notice.n-warn{color:var(--warn); background:var(--warn-bg); border-color:var(--warn-rule)}
+.notice.n-stop{color:var(--stop); background:var(--stop-bg); border-color:var(--stop-rule)}
+.notice.n-info{color:var(--info); background:var(--info-bg); border-color:var(--info-rule)}
+.notice.n-ok{color:var(--ok); background:var(--ok-bg); border-color:var(--ok-rule)}
+.notice .nb p{margin:3px 0 0; color:inherit; opacity:.92}
+
+.two{display:grid; grid-template-columns:1fr 1fr; gap:0}
+.two > div{padding:20px}
+.two > div + div{border-left:1px solid var(--rule)}
+.sub-h{font-family:"IBM Plex Mono",monospace; font-size:10.5px; letter-spacing:.13em; text-transform:uppercase; color:var(--ink-3); margin:0 0 12px}
+.clist{list-style:none; margin:0; padding:0; display:flex; flex-direction:column}
+.clist li{display:flex; gap:10px; align-items:flex-start; padding:9px 0; border-bottom:1px solid var(--rule); font-size:14px}
+.clist li:last-child{border-bottom:none}
+.clist svg{width:16px; height:16px; stroke:currentColor; fill:none; stroke-width:2; flex:none; margin-top:2px}
+.clist .i-ok{color:var(--ok)} .clist .i-warn{color:var(--warn)} .clist .i-stop{color:var(--stop)} .clist .i-info{color:var(--info)}
+kbd{font-family:"IBM Plex Mono",monospace; font-size:12px; border:1px solid var(--rule-2); border-bottom-width:2px; border-radius:4px; padding:1px 5px; background:var(--surface-2)}
+.clist .cnt{margin-left:auto; font-family:"IBM Plex Mono",monospace; font-size:13px; color:var(--ink-2); padding-left:8px}
+details.who{margin-top:8px}
+details.who > summary{cursor:pointer; font-size:13px; color:var(--info); font-weight:600; padding:4px 0; list-style:revert}
+details.who[open] > summary{margin-bottom:6px}
+.people{list-style:none; margin:0; padding:0 0 0 2px; display:flex; flex-direction:column; gap:5px}
+.people li{font-size:13px; color:var(--ink-2); display:flex; gap:8px; flex-wrap:wrap; padding:5px 0; border-bottom:1px dotted var(--rule)}
+.people li b{color:var(--ink); font-weight:600}
+.people .arrow{color:var(--ink-3)}
+
+.dec{border:1px solid var(--warn-rule); border-radius:8px; background:var(--warn-bg); padding:14px 16px; display:flex; flex-direction:column; gap:10px}
+.dec + .dec{margin-top:10px}
+.dec.done{border-color:var(--ok-rule); background:var(--ok-bg)}
+.dec .dq{font-size:14px; font-weight:600; color:var(--ink)}
+.dec .dw{font-size:13px; color:var(--ink-2)}
+.dec .dacts{display:flex; flex-wrap:wrap; gap:7px}
+.dec .dstate{font-size:13px; font-weight:600; color:var(--ok); display:flex; gap:7px; align-items:center}
+.dec .dstate svg{width:15px; height:15px; stroke:currentColor; fill:none; stroke-width:2.2}
+
+.dock{position:sticky; bottom:0; z-index:20; background:var(--surface); border-top:1px solid var(--rule-2); box-shadow:0 -4px 16px rgba(14,39,69,.09)}
+:root[data-theme="dark"] .dock{box-shadow:0 -4px 16px rgba(0,0,0,.4)}
+.dock-in{padding:14px 28px; display:flex; flex-wrap:wrap; gap:14px 20px; align-items:center; max-width:1440px; margin:0 auto}
+.dock .state{display:flex; gap:11px; align-items:flex-start; flex:1; min-width:260px; font-size:13.5px}
+.dock .state svg{width:18px; height:18px; stroke:currentColor; fill:none; stroke-width:2; flex:none; margin-top:1px}
+.dock .state .s-ttl{font-weight:700; display:block}
+.dock .state .s-sub{color:var(--ink-2)}
+.dock .state.ok{color:var(--ok)} .dock .state.info{color:var(--info)} .dock .state.warn{color:var(--warn)}
+.dock .acts{display:flex; flex-wrap:wrap; gap:9px}
+
+@keyframes sh{0%{background-position:-420px 0}100%{background-position:420px 0}}
+.sk{background:linear-gradient(90deg,var(--surface-3) 0%,var(--surface-2) 40%,var(--surface-3) 80%); background-size:420px 100%; animation:sh 1.3s linear infinite; border-radius:5px}
+@media (prefers-reduced-motion: reduce){ .sk{animation:none; background:var(--surface-3)} }
+.sk-row{display:flex; gap:14px; padding:14px 0; border-bottom:1px solid var(--rule)}
+.sk-row .sk:first-child{width:190px; flex:none}
+.sk-row .sk{height:38px; flex:1}
+.prog{height:6px; background:var(--surface-3); border-radius:99px; overflow:hidden; max-width:420px}
+.prog i{display:block; height:100%; background:var(--info); border-radius:99px; transition:width .4s ease}
+
+dialog{
+  border:none; border-radius:12px; padding:0; max-width:560px; width:calc(100% - 32px);
+  background:var(--surface); color:var(--ink); box-shadow:0 18px 60px rgba(0,0,0,.35);
+}
+dialog::backdrop{background:rgba(10,18,30,.62)}
+.m-hd{padding:20px 22px 14px; border-bottom:1px solid var(--rule)}
+.m-hd h3{margin:0; font-size:19px; font-weight:700; letter-spacing:-.01em}
+.m-hd p{margin:5px 0 0; color:var(--ink-2); font-size:14px}
+.m-bd{padding:18px 22px; display:flex; flex-direction:column; gap:14px; max-height:56vh; overflow-y:auto}
+.m-ft{padding:16px 22px; border-top:1px solid var(--rule); display:flex; flex-wrap:wrap; gap:10px; justify-content:flex-end; background:var(--surface-2)}
+.gate{border:1px solid var(--rule-2); border-radius:8px; padding:14px; display:flex; flex-direction:column; gap:9px}
+.gate.armed{border-color:var(--stop); background:var(--stop-bg)}
+.gate label.top{display:flex; gap:10px; align-items:flex-start; cursor:pointer; font-size:14.5px; font-weight:600}
+.gate label.top input{width:18px; height:18px; margin:1px 0 0; accent-color:var(--stop); flex:none}
+.gate .g-detail{font-size:13px; color:var(--ink-2); font-weight:400; display:block; margin-top:3px}
+.gate .g-type{display:flex; flex-direction:column; gap:6px; font-size:13px}
+.gate input[type="text"]{
+  font:500 14px/1 "IBM Plex Mono",monospace; padding:10px 12px; border-radius:6px;
+  border:1.5px solid var(--rule-2); background:var(--surface); color:var(--ink); width:100%; max-width:280px;
+}
+.gate input[type="text"]:focus-visible{border-color:var(--focus)}
+.gate .g-err{color:var(--stop); font-size:12.5px; font-weight:600}
+
+.sr{position:absolute; width:1px; height:1px; padding:0; margin:-1px; overflow:hidden; clip:rect(0 0 0 0); white-space:nowrap; border:0}
+.skip{position:absolute; left:-9999px; top:0; background:var(--surface); color:var(--ink); padding:10px 14px; z-index:99; border:2px solid var(--focus); border-radius:0 0 6px 0}
+.skip:focus{left:0}
+
+.map{max-width:1440px; margin:0 auto; padding:34px 28px 70px; background:var(--paper)}
+.map h2{margin:0 0 4px; font-size:17px; font-weight:700}
+.map > p{margin:0 0 18px; color:var(--ink-2); font-size:14px; max-width:70ch}
+.map-grid{display:grid; grid-template-columns:repeat(auto-fill,minmax(260px,1fr)); gap:1px; background:var(--rule); border:1px solid var(--rule); border-radius:8px; overflow:hidden}
+.mi{background:var(--surface); padding:14px 16px; display:flex; flex-direction:column; gap:5px}
+.mi .mt{font-size:13.5px; font-weight:700; display:flex; gap:8px; align-items:baseline; justify-content:space-between}
+.mi .sc{font-family:"IBM Plex Mono",monospace; font-size:12px; font-weight:600; color:var(--ok); background:var(--ok-bg); border:1px solid var(--ok-rule); padding:1px 7px; border-radius:99px}
+.mi p{margin:0; font-size:13px; color:var(--ink-2); line-height:1.45}
+
+@media (max-width:1080px){
+  .shell{grid-template-columns:76px 1fr}
+  .brand{font-size:0; padding:0 0 22px; text-align:center}
+  .brand::after{content:"LP"; font-size:17px; letter-spacing:0}
+  .nav a{justify-content:center; padding:13px 0; border-left-width:3px}
+  .nav a span{display:none}
+  .side-foot{padding:16px 8px 0; text-align:center}
+  .side-foot .scope,.side-foot .role{font-size:11px}
+}
+@media (max-width:860px){
+  .two{grid-template-columns:1fr}
+  .two > div + div{border-left:none; border-top:1px solid var(--rule)}
+  .steps li{min-width:0; flex:1 1 46%}
+  .steps .sep{display:none}
+  .step{padding:8px 9px}
+  .step .st{display:none}
+}
+@media (max-width:680px){
+  .shell{grid-template-columns:1fr}
+  .side{flex-direction:row; align-items:center; gap:4px; padding:9px 14px; overflow-x:auto}
+  .brand{padding:0 12px 0 0}
+  .nav{flex-direction:row}
+  .nav a{padding:9px 11px; border-left:none; border-bottom:3px solid transparent; white-space:nowrap; font-size:13px}
+  .nav a[aria-current="page"]{border-bottom-color:var(--accent)}
+  .side-foot{margin:0 0 0 auto; padding:0 0 0 12px; border-top:none; border-left:1px solid rgba(255,255,255,.13); white-space:nowrap}
+  .hd,.pad,main.body,.dock-in,.map{padding-left:16px; padding-right:16px}
+  .prov{margin-left:16px; margin-right:16px}
+  .steps{margin-left:16px; margin-right:16px}
+  h1{font-size:23px}
+  .card-bd,.two > div,.m-bd{padding:16px}
+  .dock .acts{width:100%}
+  .dock .acts .btn{flex:1 1 auto; justify-content:center}
+  main.body{padding-bottom:150px}
+}
+@media (max-width:400px){
+  .hd,main.body,.dock-in,.map{padding-left:12px; padding-right:12px}
+  .prov,.steps{margin-left:12px; margin-right:12px}
+  .steps li{flex:1 1 100%}
+  h1{font-size:21px}
+}
+</style>
+
+<a class="skip" href="#main">Skip to scenario comparison</a>
+
+<div class="demo">
+  <div class="demo-in">
+    <span class="demo-lbl">Prototype control · not part of the product</span>
+    <div class="demo-set" role="group" aria-label="Simulate system state">
+      <button class="demo-btn" data-state="ready" aria-pressed="true">Ready</button>
+      <button class="demo-btn" data-state="generating" aria-pressed="false">Generating</button>
+      <button class="demo-btn" data-state="stale" aria-pressed="false">Inputs changed</button>
+      <button class="demo-btn" data-state="partial" aria-pressed="false">Partial result</button>
+      <button class="demo-btn" data-state="infeasible" aria-pressed="false">No solution</button>
+      <button class="demo-btn" data-state="conflict" aria-pressed="false">Edit conflict</button>
+      <button class="demo-btn" data-state="error" aria-pressed="false">Solver failed</button>
+    </div>
+  </div>
+</div>
+
+<div class="shell">
+  <nav class="side" aria-label="Main">
+    <div class="brand">LeaguePilot</div>
+    <div class="nav">
+      <a href="#"><svg viewBox="0 0 24 24"><path d="M3 10.5 12 3l9 7.5V21H3z"/></svg><span>Overview</span></a>
+      <a href="#"><svg viewBox="0 0 24 24"><path d="M16 20v-2a4 4 0 0 0-8 0v2M12 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8"/></svg><span>Registrations</span></a>
+      <a href="#"><svg viewBox="0 0 24 24"><path d="M12 3 4 6v6c0 5 3.4 8.3 8 9 4.6-.7 8-4 8-9V6z"/></svg><span>Teams</span></a>
+      <a href="#" aria-current="page"><svg viewBox="0 0 24 24"><path d="M3 7h6M15 7h6M3 17h10M19 17h2M11 4v6M15 14v6"/></svg><span>Team Builder</span></a>
+      <a href="#"><svg viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4"/></svg><span>Schedule</span></a>
+      <a href="#"><svg viewBox="0 0 24 24"><path d="M3 12h4l3 5 4-10 3 5h4"/></svg><span>Sponsors</span></a>
+      <a href="#"><svg viewBox="0 0 24 24"><path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/></svg><span>Reports</span></a>
+    </div>
+    <div class="side-foot">
+      <div class="role">Dana Whitfield</div>
+      <div class="scope">Division admin · 10U</div>
+      <div class="scope">Can build &amp; publish rosters. Cannot change coach eligibility.</div>
+    </div>
+  </nav>
+
+  <div class="main">
+    <div class="hd">
+      <div>
+        <h1>Team Builder</h1>
+        <p class="sub">Compare roster scenarios, see who each tradeoff affects, then send one for review. Nothing here reaches families until step&nbsp;4.</p>
+      </div>
+      <div class="ctx">
+        <button class="btn"><svg viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4"/></svg>Spring 2027</button>
+        <button class="btn"><svg viewBox="0 0 24 24"><path d="M16 20v-2a4 4 0 0 0-8 0v2M12 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8"/></svg>10U</button>
+        <button class="btn" id="btn-inputs"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.9l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-2.9 1.2V21a2 2 0 1 1-4 0v-.1A1.7 1.7 0 0 0 7 19.4a1.7 1.7 0 0 0-1.9.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0-1.2-2.9H1a2 2 0 1 1 0-4h.1A1.7 1.7 0 0 0 2.6 7"/></svg>Inputs &amp; constraints</button>
+      </div>
+    </div>
+
+    <div class="prov" id="prov"></div>
+
+    <ol class="steps" id="steps"></ol>
+
+    <main class="body" id="main">
+      <div id="live" class="sr" role="status" aria-live="polite"></div>
+      <div id="stage"></div>
+    </main>
+
+    <div class="dock">
+      <div class="dock-in">
+        <div class="state" id="dock-state"></div>
+        <div class="acts" id="dock-acts"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<dialog id="dlg-review" aria-labelledby="rv-t">
+  <div class="m-hd">
+    <h3 id="rv-t">Send scenario for review</h3>
+    <p>This shares the scenario with the two other 10U admins for comment. It does not create teams, notify families, or grant coach access.</p>
+  </div>
+  <div class="m-bd" id="rv-body"></div>
+  <div class="m-ft">
+    <button class="btn" data-close>Cancel</button>
+    <button class="btn btn-pri" id="rv-go">Send for review</button>
+  </div>
+</dialog>
+
+<dialog id="dlg-publish" aria-labelledby="pb-t">
+  <div class="m-hd">
+    <h3 id="pb-t">Approve &amp; publish</h3>
+    <p>Two separate changes. Confirm each one independently — you can do either without the other.</p>
+  </div>
+  <div class="m-bd" id="pb-body"></div>
+  <div class="m-ft">
+    <button class="btn" data-close>Cancel</button>
+    <button class="btn btn-danger" id="pb-go" disabled>Confirm the changes above</button>
+  </div>
+</dialog>
+
+<section class="map">
+  <h2>How this build answers the audit</h2>
+  <p>Every item that scored below 3 in the audit, and where in this prototype it is now satisfied. Use the prototype-control strip at the top of the page to reach the states that a static mock cannot show.</p>
+  <div class="map-grid" id="map"></div>
+</section>
+
+<script>
+"use strict";
+
+const I = {
+  check:'<svg viewBox="0 0 24 24" aria-hidden="true"><path d="m4 12.5 5 5L20 6.5"/></svg>',
+  warn:'<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3.5 22 20H2z"/><path d="M12 10v4M12 17.2v.1"/></svg>',
+  stop:'<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M8.5 8.5 15.5 15.5M15.5 8.5 8.5 15.5"/></svg>',
+  info:'<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 11v5.5M12 7.6v.1"/></svg>',
+  q:'<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M9.6 9.4a2.5 2.5 0 1 1 3.4 2.4c-.7.3-1 .9-1 1.7v.4M12 17.3v.1"/></svg>',
+  clock:'<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 7v5.2l3.3 2"/></svg>',
+  db:'<svg viewBox="0 0 24 24" aria-hidden="true"><ellipse cx="12" cy="6" rx="8" ry="3"/><path d="M4 6v12c0 1.7 3.6 3 8 3s8-1.3 8-3V6"/><path d="M4 12c0 1.7 3.6 3 8 3s8-1.3 8-3"/></svg>',
+  target:'<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="8.5"/><circle cx="12" cy="12" r="4"/><circle cx="12" cy="12" r="1"/></svg>',
+  lock:'<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="4.5" y="10.5" width="15" height="10" rx="2"/><path d="M8 10.5V7a4 4 0 0 1 8 0v3.5"/></svg>',
+  down:'<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 4v12M6.5 11 12 16.5 17.5 11M4 20h16"/></svg>',
+  undo:'<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 9h10a5.5 5.5 0 0 1 0 11h-4M4 9l4-4M4 9l4 4"/></svg>',
+  send:'<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M21 3 10.5 13.5M21 3l-6.8 18-3.7-7.5L3 10z"/></svg>'
+};
+
+const POOL = 54;
+
+const OBJECTIVES = {
+  balance:  {label:'Competitive balance', metric:'variance', src:'Set by Board policy, adopted 14 Mar 2027'},
+  requests: {label:'Family requests',     metric:'requests', src:'Division-level preference, editable by you'},
+  travel:   {label:'Travel time',         metric:'travel',   src:'Division-level preference, editable by you'}
+};
+
+const METRICS = [
+  {key:'variance', label:'Strength variance', dir:'lower', target:0.25, rule:'lower is better · target ≤ 0.25',
+   fmt:v=>v.toFixed(2), scale:0.5, note:'Gap between strongest and weakest team, 0 = identical.'},
+  {key:'coverage', label:'Head-coach coverage', dir:'higher', target:100, rule:'higher is better · target 100%',
+   fmt:v=>v+'%', scale:100, hard:true, note:'Teams with a certified head coach assigned.'},
+  {key:'requests', label:'Family requests met', dir:'higher', target:85, rule:'higher is better · target ≥ 85%',
+   fmt:v=>v+'%', scale:100, note:'Share of the '+POOL+' submitted requests that are satisfied.'},
+  {key:'travel',   label:'Average travel', dir:'lower', target:15, rule:'lower is better · target ≤ 15 min',
+   fmt:v=>v+' min', scale:30, note:'Estimated from home postcode to home field.'}
+];
+
+const SCENARIOS = [
+  {
+    id:'A', name:'Competitive balance',
+    variance:0.18, coverage:100, requests:78, travel:14,
+    tally:{ok:42, relaxed:10, decide:2},
+    why:'Smallest spread between the strongest and weakest team. All 9 sibling pairs kept together.',
+    hard:[['Every player assigned exactly once','128 of 128'],['Roster size 10–12','12 teams'],['Siblings kept together','9 of 9 pairs'],['Coach eligibility current','12 of 12']],
+    soft:[
+      {label:'Friend requests not met', n:6, who:[
+        ['Amara Okonkwo','asked for Priya Raghunathan-Baptiste'],
+        ['Ben Castellanos-Wright','asked for Theo Lindqvist'],
+        ['Nia Abubakar','asked for Rosa Delgado'],
+        ['Felix Nakamura','asked for Ola Sørensen'],
+        ['Ivy Brennan','asked for Marisol Vega'],
+        ['Kofi Mensah','asked for Dmitri Andreyev']]},
+      {label:'Returning-team preferences relaxed', n:4, who:[
+        ['Maya Fitzgerald','Thunder → Comets'],
+        ['Alexandra Vandermeer-Okonkwo','Rapids → Foxes'],
+        ['Jonah Whitlock','Comets → Rapids'],
+        ['Sena Adeyemi','Foxes → Thunder']]}
+    ],
+    decide:[
+      {q:'Jordan Ellis-Whitmore is registered in both 10U and 12U.',
+       w:'Placed in 10U provisionally. A registrar can move them, which changes 3 other placements.',
+       opts:['Keep in 10U','Move to 12U','Leave for registrar']},
+      {q:'Sam Torres has no skill rating on file.',
+       w:'Placed using the 10U division average of 3.1. If the real rating is higher, strength variance rises to about 0.24.',
+       opts:['Accept the estimate','Request a rating first']}
+    ]
+  },
+  {
+    id:'B', name:'Family convenience',
+    variance:0.31, coverage:100, requests:91, travel:9,
+    tally:{ok:49, relaxed:4, decide:1},
+    why:'Best fit for friend requests, returning teams and travel. Two teams sit outside the balance target.',
+    hard:[['Every player assigned exactly once','128 of 128'],['Roster size 10–12','12 teams'],['Siblings kept together','9 of 9 pairs'],['Coach eligibility current','12 of 12']],
+    soft:[
+      {label:'Friend requests not met', n:3, who:[
+        ['Rosa Delgado','asked for Nia Abubakar'],
+        ['Theo Lindqvist','asked for Ben Castellanos-Wright'],
+        ['Dmitri Andreyev','asked for Kofi Mensah']]},
+      {label:'Returning-team preferences relaxed', n:1, who:[
+        ['Alexandra Vandermeer-Okonkwo','Rapids → Foxes']]}
+    ],
+    decide:[
+      {q:'Sam Torres has no skill rating on file.',
+       w:'Placed using the 10U division average of 3.1. This scenario is less sensitive to the estimate.',
+       opts:['Accept the estimate','Request a rating first']}
+    ]
+  },
+  {
+    id:'C', name:'Coach coverage',
+    variance:0.27, coverage:83, requests:87, travel:12,
+    tally:{ok:47, relaxed:6, decide:1},
+    why:'Places every certified coach with a team. Two teams still have no head coach, so this cannot be published as it stands.',
+    hard:[['Every player assigned exactly once','128 of 128'],['Roster size 10–12','12 teams'],['Siblings kept together','9 of 9 pairs'],['Coach eligibility current','12 of 12']],
+    soft:[
+      {label:'Friend requests not met', n:4, who:[
+        ['Ivy Brennan','asked for Marisol Vega'],
+        ['Felix Nakamura','asked for Ola Sørensen'],
+        ['Rosa Delgado','asked for Nia Abubakar'],
+        ['Kofi Mensah','asked for Dmitri Andreyev']]},
+      {label:'Returning-team preferences relaxed', n:2, who:[
+        ['Jonah Whitlock','Comets → Rapids'],
+        ['Sena Adeyemi','Foxes → Thunder']]}
+    ],
+    decide:[
+      {q:'Two teams have no head coach.',
+       w:'Rapids and Foxes are unassigned. Publishing rosters without a head coach is blocked by league policy.',
+       opts:['Recruit before publishing','Assign an interim coach']}
+    ]
+  }
+];
+
+const GAPS = [
+  ['warn','3 of 128 players have no skill rating','Placed at the division average of 3.1. Named in Inputs & constraints.'],
+  ['warn','2 coach background checks expire within 30 days','Ines Marchetti (5 Sep), Paul Okafor (11 Sep). Valid today, so coverage counts them.'],
+  ['info','Travel times are estimated, not measured','Straight-line distance from home postcode. Not a drive time.'],
+  ['info','Field allocation is not modelled','Scheduling conflicts surface in step 4, not here.']
+];
+
+const S = {
+  sys:'ready',
+  objective:'balance',
+  picked:null,
+  decided:{},
+  progress:'choosing',
+  coachGranted:false,
+  genAt:'4:38 PM',
+  genAgo:12,
+  genProgress:0
+};
+
+const $ = s => document.querySelector(s);
+const esc = s => String(s).replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const say = m => { const l = $('#live'); l.textContent=''; setTimeout(()=>{l.textContent=m;},60); };
+
+const recommendedId = () => {
+  const m = METRICS.find(x=>x.key===OBJECTIVES[S.objective].metric);
+  const ok = SCENARIOS.filter(s=>s.coverage===100);
+  const pool = ok.length ? ok : SCENARIOS;
+  return pool.slice().sort((a,b)=> m.dir==='lower' ? a[m.key]-b[m.key] : b[m.key]-a[m.key])[0].id;
+};
+const bestFor = (m, list) => {
+  const vals = (list||SCENARIOS).map(s=>s[m.key]);
+  return m.dir==='lower' ? Math.min(...vals) : Math.max(...vals);
+};
+const verdictOf = (m, v) => {
+  const meets = m.dir==='lower' ? v<=m.target : v>=m.target;
+  if (meets) return {cls:'meets', icon:I.check, txt:'Meets target'};
+  if (m.hard) return {cls:'fails', icon:I.stop, txt:'Blocks publishing'};
+  return {cls:'misses', icon:I.warn, txt:'Below target'};
+};
+const scenario = id => SCENARIOS.find(s=>s.id===id);
+const decKey = (id,i) => id+':'+i;
+const openDecisions = id => {
+  const s = scenario(id); if(!s) return 0;
+  return s.decide.filter((_,i)=>!S.decided[decKey(id,i)]).length;
+};
+const visibleScenarios = () => S.sys==='partial' ? SCENARIOS.filter(s=>s.id!=='C') : SCENARIOS;
+
+function renderProv(){
+  const p = $('#prov');
+  const stale = S.sys==='stale';
+  p.className = 'prov' + (stale ? ' is-stale' : '');
+  if (S.sys==='generating'){
+    p.innerHTML = '<div class="prov-item">'+I.clock+'<span>Generating from <b>128 registrations</b> as of <b>'+esc(S.genAt)+'</b></span></div>';
+    return;
+  }
+  p.innerHTML =
+    '<div class="prov-item">'+I.clock+'<span>Generated <b>'+esc(S.genAt)+'</b>, '+S.genAgo+' min ago</span></div>'+
+    '<div class="prov-item">'+I.db+'<span>From <b>128 registrations</b>, <b>14 coaches</b>, <b>'+POOL+' family requests</b></span></div>'+
+    (stale
+      ? '<div class="prov-item">'+I.warn+'<span><b>2 registrations arrived since.</b> These three scenarios no longer reflect current data.</span></div><div class="spacer"></div><button class="btn btn-sm btn-pri" id="regen">Regenerate</button>'
+      : '<div class="spacer"></div><button class="btn btn-sm" id="regen">'+I.undo+'Regenerate</button>');
+}
+
+function renderSteps(){
+  const picked = !!S.picked;
+  const st = [
+    {n:1, nm:'Generate scenarios', s:'done', sub:'3 generated'},
+    {n:2, nm:'Compare & choose',   s: S.progress==='choosing' ? 'current' : 'done', sub: picked ? 'Scenario '+S.picked+' chosen' : 'Nothing chosen yet'},
+    {n:3, nm:'Confirm coaches',    s: S.progress==='inReview' ? 'current' : (S.progress==='coachesConfirmed'||S.progress==='published') ? 'done' : 'locked', sub: S.progress==='choosing' ? 'Choose a scenario first' : '12 coaches'},
+    {n:4, nm:'Approve & publish',  s: S.progress==='published' ? 'done' : S.progress==='coachesConfirmed' ? 'current' : 'locked', sub: S.progress==='published' ? 'Published' : 'Confirm coaches first'}
+  ];
+  $('#steps').innerHTML = st.map((x,i)=>{
+    const locked = x.s==='locked';
+    const dot = x.s==='done' ? I.check : locked ? I.lock : x.n;
+    return '<li>'+
+      '<button class="step" data-step="'+x.n+'" data-state="'+x.s+'"'+(locked?' disabled aria-disabled="true"':'')+
+        ' aria-current="'+(x.s==='current'?'step':'false')+'">'+
+        '<span class="dot" aria-hidden="true">'+dot+'</span>'+
+        '<span class="txt"><span class="nm">'+x.n+'. '+esc(x.nm)+'</span><span class="st">'+esc(x.sub)+'</span></span>'+
+      '</button>'+(i<3?'<span class="sep" aria-hidden="true"></span>':'')+'</li>';
+  }).join('');
+}
+
+function stageMessage(){
+  if (S.sys==='generating'){
+    return '<div class="card"><div class="card-hd"><h2>Generating scenarios</h2><p class="hint">Usually 20–40 seconds for a division this size.</p></div><div class="card-bd">'+
+      '<div class="prog" role="progressbar" aria-valuenow="'+S.genProgress+'" aria-valuemin="0" aria-valuemax="100" aria-label="Generating scenarios"><i style="width:'+S.genProgress+'%"></i></div>'+
+      '<p style="margin:12px 0 18px;color:var(--ink-2);font-size:14px">Placing 128 players across 12 teams · checking '+POOL+' family requests · '+S.genProgress+'% complete</p>'+
+      '<div class="sk-row"><span class="sk"></span><span class="sk"></span><span class="sk"></span><span class="sk"></span></div>'+
+      '<div class="sk-row"><span class="sk"></span><span class="sk"></span><span class="sk"></span><span class="sk"></span></div>'+
+      '<div class="sk-row"><span class="sk"></span><span class="sk"></span><span class="sk"></span><span class="sk"></span></div>'+
+      '</div></div>';
+  }
+  if (S.sys==='infeasible'){
+    return '<div class="card"><div class="card-bd" style="display:flex;flex-direction:column;gap:16px">'+
+      '<div class="notice n-stop">'+I.stop+'<div class="nb"><strong>No scenario satisfies every hard constraint</strong>'+
+      '<p>With the current inputs there is no way to place all 128 players. Nothing has been generated and nothing has changed.</p></div></div>'+
+      '<div><p class="sub-h">What is blocking it</p><ul class="clist">'+
+      '<li><span class="i-stop">'+I.stop+'</span><span><b>Roster size 10–12 vs 128 players.</b> 12 teams hold at most 144 and at least 120 — but 3 sibling groups of 4 cannot be split, which forces two teams to 13.</span></li>'+
+      '<li><span class="i-stop">'+I.stop+'</span><span><b>Only 10 certified head coaches for 12 teams.</b> Coach coverage is a hard constraint in this division.</span></li>'+
+      '</ul></div>'+
+      '<div><p class="sub-h">Ways forward</p><ul class="clist">'+
+      '<li><span class="i-info">'+I.info+'</span><span>Raise the maximum roster size to 13 — resolves the sibling conflict.</span></li>'+
+      '<li><span class="i-info">'+I.info+'</span><span>Add a 13th team — needs a field allocation.</span></li>'+
+      '<li><span class="i-info">'+I.info+'</span><span>Certify 2 more head coaches, or downgrade coverage to a soft constraint for this season.</span></li>'+
+      '</ul></div>'+
+      '<div style="display:flex;gap:9px;flex-wrap:wrap"><button class="btn btn-pri" id="btn-edit-inputs">Edit inputs &amp; constraints</button><button class="btn">Export the conflict report</button></div>'+
+      '</div></div>';
+  }
+  if (S.sys==='error'){
+    return '<div class="card"><div class="card-bd" style="display:flex;flex-direction:column;gap:16px">'+
+      '<div class="notice n-stop">'+I.stop+'<div class="nb"><strong>The solver stopped after 90 seconds</strong>'+
+      '<p>Reference <span class="mono">TB-4471-9C</span>. Your inputs and constraints are saved exactly as you left them — nothing was lost and no roster changed.</p></div></div>'+
+      '<div style="display:flex;gap:9px;flex-wrap:wrap"><button class="btn btn-pri" id="btn-retry">Try again</button><button class="btn" id="btn-edit-inputs">Review inputs &amp; constraints</button><button class="btn">Contact support with this reference</button></div>'+
+      '</div></div>';
+  }
+  if (S.sys==='conflict'){
+    return '<div class="notice n-warn" style="margin-bottom:20px">'+I.warn+'<div class="nb"><strong>Marcus Bell changed the inputs 40 seconds ago</strong>'+
+      '<p>They raised the maximum roster size from 12 to 13. The scenarios below were generated before that change, so choosing one now would build on inputs nobody is using. Your own selection is kept if you reload.</p>'+
+      '<div style="display:flex;gap:8px;margin-top:10px;flex-wrap:wrap"><button class="btn btn-sm btn-pri" id="regen2">Regenerate with their changes</button><button class="btn btn-sm">See what changed</button></div></div></div>';
+  }
+  return '';
+}
+
+function renderMatrix(){
+  const list = visibleScenarios();
+  const rec = recommendedId();
+  const obj = OBJECTIVES[S.objective];
+  const objMetric = METRICS.find(m=>m.key===obj.metric);
+
+  const head = list.map(s=>{
+    const on = S.picked===s.id;
+    const blocked = s.coverage < 100;
+    return '<th scope="col" class="scol'+(on?' is-picked':'')+'">'+
+      '<div class="shead">'+
+        '<span class="letter">SCENARIO '+s.id+'</span>'+
+        '<span class="nm">'+esc(s.name)+'</span>'+
+        '<span class="pills">'+
+          (s.id===rec ? '<span class="pill rec">'+I.target+'Recommended</span>' : '')+
+          (blocked ? '<span class="pill blk">'+I.stop+'Cannot publish</span>' : '')+
+        '</span>'+
+        '<label class="pick '+(on?'is-on':'is-off')+'">'+
+          '<input type="radio" name="scenario" value="'+s.id+'"'+(on?' checked':'')+'>'+
+          '<span class="pl">'+(on?'Chosen':'Choose '+s.id)+'</span>'+
+        '</label>'+
+      '</div></th>';
+  }).join('');
+
+  const rows = METRICS.map(m=>{
+    const best = bestFor(m, list);
+    const cells = list.map(s=>{
+      const v = s[m.key], vd = verdictOf(m,v);
+      const isBest = v===best;
+      const isObj = m.key===obj.metric;
+      let pct = m.dir==='lower' ? (1 - v/m.scale) : (v/m.scale);
+      pct = Math.max(4, Math.min(100, pct*100));
+      return '<td class="scol'+(S.picked===s.id?' is-picked':'')+'">'+
+        '<div class="val '+vd.cls+'">'+
+          '<span class="v">'+esc(m.fmt(v))+'</span>'+
+          '<span class="verdict">'+vd.icon+esc(vd.txt)+'</span>'+
+          '<span class="bar" aria-hidden="true"><i class="bar-fill" style="width:'+pct.toFixed(0)+'%"></i></span>'+
+          (isBest ? '<span class="best">Best of '+list.length+(isObj?' · objective':'')+'</span>' : '')+
+        '</div></td>';
+    }).join('');
+    return '<tr><th scope="row" class="rowlab">'+esc(m.label)+
+      (m.key===obj.metric ? ' <span class="pill rec" style="margin-left:4px">objective</span>' : '')+
+      '<span class="rule">'+esc(m.rule)+'</span></th>'+cells+'</tr>';
+  }).join('');
+
+  const tallies = list.map(s=>{
+    const t = s.tally, sum = t.ok+t.relaxed+t.decide;
+    return '<td class="scol'+(S.picked===s.id?' is-picked':'')+'">'+
+      '<div class="tally">'+
+        '<span class="tr t-ok">'+I.check+'Satisfied<span class="n">'+t.ok+'</span></span>'+
+        '<span class="tr t-warn">'+I.warn+'Relaxed<span class="n">'+t.relaxed+'</span></span>'+
+        '<span class="tr t-info">'+I.q+'Needs a decision<span class="n">'+t.decide+'</span></span>'+
+        '<span class="sum">Total requests<span class="n">'+sum+'</span></span>'+
+      '</div></td>';
+  }).join('');
+
+  const whys = list.map(s=>'<td class="scol'+(S.picked===s.id?' is-picked':'')+'"><p class="why">'+esc(s.why)+'</p></td>').join('');
+
+  return ''+
+  '<div class="obj">'+
+    '<div class="lead">'+
+      '<b>Ranked by '+esc(obj.label.toLowerCase())+'.</b> Scenario '+rec+' is recommended: it scores best on <b>'+esc(objMetric.label.toLowerCase())+'</b> among the scenarios that can actually be published. Change the objective and the recommendation moves.'+
+      '<span class="src">'+esc(obj.src)+'</span>'+
+    '</div>'+
+    '<div class="obj-pick" role="group" aria-label="Rank scenarios by">'+
+      Object.entries(OBJECTIVES).map(([k,o])=>'<button class="demo-btn" data-obj="'+k+'" aria-pressed="'+(S.objective===k)+'">'+esc(o.label)+'</button>').join('')+
+    '</div>'+
+  '</div>'+
+
+  '<div class="card">'+
+    '<div class="card-hd">'+
+      '<h2>Compare all three</h2>'+
+      '<p class="hint">Every value carries its own target. Press <kbd>1</kbd>, <kbd>2</kbd> or <kbd>3</kbd> to choose.'+
+      (list.length<3 ? ' <b>Scenario C is missing — see the notice below.</b>' : '')+'</p>'+
+    '</div>'+
+    '<div class="scroller">'+
+      '<table class="matrix"><caption class="sr">Roster scenarios compared across four measures and their request tallies</caption>'+
+        '<thead><tr><th scope="col" class="rowlab">Measure<span class="rule">target</span></th>'+head+'</tr></thead>'+
+        '<tbody>'+rows+
+          '<tr><th scope="row" class="rowlab">Request outcomes<span class="rule">must total '+POOL+'</span></th>'+tallies+'</tr>'+
+          '<tr><th scope="row" class="rowlab">In one line<span class="rule">why the solver built it</span></th>'+whys+'</tr>'+
+        '</tbody>'+
+      '</table>'+
+    '</div>'+
+  '</div>';
+}
+
+function renderDetail(){
+  if (!S.picked){
+    return '<div class="card"><div class="card-bd">'+
+      '<div class="notice n-info">'+I.info+'<div class="nb"><strong>Choose a scenario to see who it affects</strong>'+
+      '<p>Every relaxed request is listed by name, along with the decisions you would need to make. Choosing changes nothing — it only opens the detail below.</p></div></div>'+
+      '</div></div>';
+  }
+  const s = scenario(S.picked);
+  const open = openDecisions(s.id);
+  const softTotal = s.soft.reduce((a,x)=>a+x.n,0);
+
+  const decs = s.decide.map((d,i)=>{
+    const done = S.decided[decKey(s.id,i)];
+    return '<div class="dec'+(done?' done':'')+'">'+
+      '<span class="dq">'+esc(d.q)+'</span>'+
+      '<span class="dw">'+esc(d.w)+'</span>'+
+      (done
+        ? '<span class="dstate">'+I.check+'Decided: '+esc(done)+' <button class="btn-link" data-undo="'+i+'">Change</button></span>'
+        : '<span class="dacts">'+d.opts.map(o=>'<button class="btn btn-sm" data-dec="'+i+'" data-opt="'+esc(o)+'">'+esc(o)+'</button>').join('')+'</span>')+
+    '</div>';
+  }).join('');
+
+  return '<div class="card">'+
+    '<div class="card-hd">'+
+      '<h2>Scenario '+s.id+' · '+esc(s.name)+' — who this affects</h2>'+
+      '<p class="hint">'+softTotal+' relaxed requests, every one named. '+(open?open+' decision'+(open>1?'s':'')+' still open.':'All decisions made.')+'</p>'+
+    '</div>'+
+    '<div class="two">'+
+      '<div>'+
+        '<p class="sub-h">Hard constraints · all must hold</p>'+
+        '<ul class="clist">'+s.hard.map(h=>'<li><span class="i-ok">'+I.check+'</span><span>'+esc(h[0])+'</span><span class="cnt">'+esc(h[1])+'</span></li>').join('')+'</ul>'+
+        '<p class="sub-h" style="margin-top:22px">Assumptions &amp; data gaps</p>'+
+        '<ul class="clist">'+GAPS.map(g=>'<li><span class="i-'+(g[0]==='warn'?'warn':'info')+'">'+(g[0]==='warn'?I.warn:I.info)+'</span><span><b>'+esc(g[1])+'</b><br><span style="color:var(--ink-2);font-size:13px">'+esc(g[2])+'</span></span></li>').join('')+'</ul>'+
+      '</div>'+
+      '<div>'+
+        '<p class="sub-h">Relaxed requests · '+softTotal+' of '+POOL+'</p>'+
+        s.soft.map(g=>'<div style="margin-bottom:14px">'+
+          '<div style="display:flex;gap:10px;align-items:center;font-size:14px;font-weight:600"><span style="color:var(--warn);display:flex">'+I.warn+'</span>'+esc(g.label)+'<span class="cnt mono" style="margin-left:auto">'+g.n+'</span></div>'+
+          '<details class="who"><summary>Show all '+g.n+' by name</summary><ul class="people">'+
+            g.who.map(pr=>'<li><b>'+esc(pr[0])+'</b><span class="arrow">→</span><span>'+esc(pr[1])+'</span></li>').join('')+
+          '</ul></details></div>').join('')+
+        '<p class="sub-h" style="margin-top:20px">Decisions required before publishing</p>'+
+        decs+
+      '</div>'+
+    '</div>'+
+  '</div>';
+}
+
+function dockInfo(){
+  const p = S.progress;
+  if (S.sys==='generating') return {cls:'info', icon:I.clock, t:'Generating. Nothing has changed.', s:'No roster, coach access or family notification is affected while this runs.'};
+  if (S.sys==='infeasible') return {cls:'warn', icon:I.warn, t:'No scenarios exist. Nothing has changed.', s:'Rosters and coach access are exactly as they were before you opened Team Builder.'};
+  if (S.sys==='error')      return {cls:'warn', icon:I.warn, t:'Generation failed. Nothing has changed.', s:'Your inputs are saved. No roster or coach access was touched.'};
+  if (p==='published')      return {cls:'ok', icon:I.check, t:'Published 4:52 PM. Rosters are live to 128 families.', s: S.coachGranted ? 'Coach access was granted to 12 coaches at 4:52 PM by Dana Whitfield.' : 'Coach access was NOT granted. No coach can see contact details yet.'};
+  if (S.coachGranted)       return {cls:'ok', icon:I.check, t:'Coach access granted 4:52 PM. Rosters are not published.', s:'12 coaches can see their own team. No family has been notified and no roster is live.'};
+  if (p==='coachesConfirmed') return {cls:'info', icon:I.info, t:'Coaches confirmed. Rosters are not published.', s:'12 coaches confirmed at 4:47 PM. No family can see a roster and no coach has contact access yet.'};
+  if (p==='inReview')       return {cls:'info', icon:I.info, t:'Scenario '+S.picked+' is in review. Nothing is published.', s:'Visible to 2 other 10U admins. No roster created, no coach access granted, no family notified.'};
+  return {cls:'ok', icon:I.check, t:'Nothing has changed.', s:'No roster created, no coach access granted, no family notified. Last change to 10U rosters: 2 Mar 2027.'};
+}
+
+function dockActions(){
+  const busy = ['generating','infeasible','error'].includes(S.sys);
+  if (busy) return '<button class="btn" disabled>Export decision artifact</button>';
+
+  const blockedReason = () => {
+    if (!S.picked) return 'Choose a scenario first';
+    if (S.sys==='stale') return 'Regenerate first — inputs changed';
+    if (S.sys==='conflict') return 'Resolve the edit conflict first';
+    return null;
+  };
+  const s = S.picked ? scenario(S.picked) : null;
+  const open = S.picked ? openDecisions(S.picked) : 0;
+
+  if (S.progress==='choosing'){
+    const r = blockedReason();
+    return (r ? '<span style="font-size:13px;color:var(--ink-3);align-self:center">'+esc(r)+'</span>' : '')+
+      '<button class="btn" id="btn-export">'+I.down+'Export decision artifact</button>'+
+      '<button class="btn btn-pri" id="btn-review"'+(r?' disabled':'')+'>'+I.send+'Send scenario'+(S.picked?' '+S.picked:'')+' for review</button>';
+  }
+  if (S.progress==='inReview'){
+    return '<button class="btn" id="btn-back">'+I.undo+'Withdraw &amp; choose again</button>'+
+      '<button class="btn" id="btn-export">'+I.down+'Export decision artifact</button>'+
+      '<button class="btn btn-pri" id="btn-coaches">Confirm 12 coaches</button>';
+  }
+  if (S.progress==='coachesConfirmed'){
+    const blocked = open>0 || s.coverage<100;
+    const why = s.coverage<100 ? '2 teams have no head coach' : open+' decision'+(open>1?'s':'')+' still open';
+    return (blocked ? '<span style="font-size:13px;color:var(--warn);align-self:center;font-weight:600">Blocked: '+esc(why)+'</span>' : '')+
+      '<button class="btn" id="btn-back">'+I.undo+'Go back</button>'+
+      '<button class="btn" id="btn-export">'+I.down+'Export decision artifact</button>'+
+      '<button class="btn btn-danger" id="btn-publish"'+(blocked?' disabled':'')+'>Approve &amp; publish…</button>';
+  }
+  return '<button class="btn" id="btn-export">'+I.down+'Export decision artifact</button>'+
+    '<button class="btn">View published rosters</button>';
+}
+
+function renderDock(){
+  const d = dockInfo();
+  $('#dock-state').className = 'state '+d.cls;
+  $('#dock-state').innerHTML = d.icon+'<span><span class="s-ttl">'+esc(d.t)+'</span><span class="s-sub">'+esc(d.s)+'</span></span>';
+  $('#dock-acts').innerHTML = dockActions();
+}
+
+function render(){
+  renderProv(); renderSteps();
+  const msg = stageMessage();
+  const hideMain = ['generating','infeasible','error'].includes(S.sys);
+  let html = msg;
+  if (!hideMain){
+    if (S.sys==='partial'){
+      html += '<div class="notice n-warn" style="margin-bottom:20px">'+I.warn+'<div class="nb"><strong>2 of 3 scenarios generated</strong>'+
+        '<p>The coach-coverage scenario timed out after 90 seconds. A and B are complete and safe to compare — you are seeing a partial result, not a shorter list.</p>'+
+        '<div style="display:flex;gap:8px;margin-top:10px;flex-wrap:wrap"><button class="btn btn-sm" id="retry-c">Retry scenario C</button></div></div></div>';
+    }
+    html += renderMatrix() + '<div style="height:26px"></div>' + renderDetail();
+  }
+  $('#stage').innerHTML = html;
+  renderDock();
+}
+
+document.addEventListener('change', e=>{
+  if (e.target.name==='scenario'){
+    S.picked = e.target.value;
+    render();
+    say('Scenario '+S.picked+' chosen. Nothing has been published.');
+    const f = document.querySelector('input[name="scenario"][value="'+S.picked+'"]');
+    if (f) f.focus();
+  }
+});
+
+document.addEventListener('click', e=>{
+  const t = e.target.closest('button'); if(!t) return;
+
+  if (t.dataset.state){
+    document.querySelectorAll('.demo-btn[data-state]').forEach(b=>b.setAttribute('aria-pressed', String(b===t)));
+    S.sys = t.dataset.state;
+    if (S.sys==='generating'){ S.genProgress=0; tick(); }
+    if (['infeasible','error','generating'].includes(S.sys)){ S.picked=null; S.progress='choosing'; S.coachGranted=false; }
+    render(); say('Prototype state: '+S.sys); return;
+  }
+  if (t.dataset.step){
+    const n = +t.dataset.step;
+    if (n<=2){ S.progress='choosing'; render(); say('Back to choosing. Nothing was published.'); }
+    else if (n===3 && S.progress!=='choosing'){ S.progress='inReview'; render(); say('Step 3, confirm coaches.'); }
+    else if (n===4 && (S.progress==='coachesConfirmed'||S.progress==='published')){ S.progress='coachesConfirmed'; render(); }
+    return;
+  }
+  if (t.id==='btn-inputs' || t.id==='btn-edit-inputs'){
+    say('Inputs & constraints would open here. Changing anything discards the three scenarios below and requires regenerating.');
+    return;
+  }
+  if (t.dataset.obj){ S.objective=t.dataset.obj; render(); say('Ranked by '+OBJECTIVES[S.objective].label+'. Scenario '+recommendedId()+' now recommended.'); return; }
+  if (t.dataset.dec!==undefined){ S.decided[decKey(S.picked,t.dataset.dec)] = t.dataset.opt; render(); say('Decision recorded: '+t.dataset.opt); return; }
+  if (t.dataset.undo!==undefined){ delete S.decided[decKey(S.picked,t.dataset.undo)]; render(); return; }
+
+  switch(t.id){
+    case 'regen': case 'regen2': case 'btn-retry': case 'retry-c':
+      S.sys='generating'; S.genProgress=0; tick(); render(); say('Regenerating.'); break;
+    case 'btn-review': openReview(); break;
+    case 'btn-coaches':
+      S.progress='coachesConfirmed'; render();
+      say('12 coaches confirmed. Rosters are still not published.'); break;
+    case 'btn-publish': openPublish(); break;
+    case 'btn-back':
+      S.progress = S.progress==='coachesConfirmed' ? 'inReview' : 'choosing';
+      render(); say('Stepped back. Nothing was published.'); break;
+    case 'btn-export': say('Decision artifact exported: scenario '+(S.picked||'—')+', all inputs, every relaxed request by name, and the objective used.'); break;
+    case 'rv-go':
+      S.progress='inReview'; $('#dlg-review').close(); render();
+      say('Scenario '+S.picked+' sent for review. Nothing published.'); break;
+    case 'pb-go': doPublish(); break;
+  }
+  if (t.hasAttribute('data-close')) t.closest('dialog').close();
+});
+
+document.addEventListener('keydown', e=>{
+  if (e.target.matches('input,textarea')) return;
+  const map = {'1':'A','2':'B','3':'C'};
+  if (map[e.key] && S.sys!=='generating' && S.sys!=='infeasible' && S.sys!=='error'){
+    const el = document.querySelector('input[name="scenario"][value="'+map[e.key]+'"]');
+    if (el){ el.checked=true; el.dispatchEvent(new Event('change',{bubbles:true})); }
+  }
+});
+
+function tick(){
+  if (S.sys!=='generating') return;
+  S.genProgress = Math.min(100, S.genProgress + 7);
+  renderProv();
+  const bar = document.querySelector('.prog i');
+  if (bar){
+    bar.style.width = S.genProgress+'%';
+    bar.parentElement.setAttribute('aria-valuenow', S.genProgress);
+    const p = bar.parentElement.nextElementSibling;
+    if (p) p.textContent = 'Placing 128 players across 12 teams · checking '+POOL+' family requests · '+S.genProgress+'% complete';
+  }
+  if (S.genProgress>=100){
+    S.sys='ready';
+    document.querySelectorAll('.demo-btn[data-state]').forEach(b=>b.setAttribute('aria-pressed', String(b.dataset.state==='ready')));
+    render(); say('3 scenarios generated.');
+    return;
+  }
+  setTimeout(tick, 260);
+}
+
+function openReview(){
+  const s = scenario(S.picked);
+  $('#rv-body').innerHTML =
+    '<div class="notice n-ok">'+I.check+'<div class="nb"><strong>What this does</strong>'+
+    '<p>Shares scenario '+s.id+' with Marcus Bell and Priya Nair for comment, and records your reasoning in the decision log.</p></div></div>'+
+    '<div class="notice n-info">'+I.info+'<div class="nb"><strong>What this does not do</strong>'+
+    '<p>No teams are created. No family sees a roster. No coach gains access to contact details. You can withdraw at any point.</p></div></div>'+
+    '<ul class="clist"><li><span class="i-ok">'+I.check+'</span><span>Scenario</span><span class="cnt">'+s.id+' · '+esc(s.name)+'</span></li>'+
+    '<li><span class="i-ok">'+I.check+'</span><span>Ranked by</span><span class="cnt">'+esc(OBJECTIVES[S.objective].label)+'</span></li>'+
+    '<li><span class="i-ok">'+I.check+'</span><span>Relaxed requests carried forward</span><span class="cnt">'+s.tally.relaxed+'</span></li>'+
+    '<li><span class="i-'+(openDecisions(s.id)?'warn':'ok')+'">'+(openDecisions(s.id)?I.warn:I.check)+'</span><span>Open decisions</span><span class="cnt">'+openDecisions(s.id)+'</span></li></ul>';
+  $('#dlg-review').showModal();
+}
+
+function openPublish(){
+  const s = scenario(S.picked);
+  $('#pb-body').innerHTML =
+    '<div class="gate" data-gate="roster">'+
+      '<label class="top"><input type="checkbox" id="g-roster">'+
+        '<span>Publish rosters to families'+
+        '<span class="g-detail">12 teams become visible to <b>128 families</b>. Every family is emailed. Un-publishing is possible for 24 hours, but the emails cannot be recalled.</span></span></label>'+
+      '<div class="g-type" id="g-roster-type" hidden>'+
+        '<label for="g-confirm">Type <span class="mono"><b>PUBLISH 10U</b></span> to confirm.</label>'+
+        '<input type="text" id="g-confirm" autocomplete="off" spellcheck="false" aria-describedby="g-err">'+
+        '<span class="g-err" id="g-err" hidden>That does not match. Type PUBLISH 10U exactly.</span>'+
+      '</div>'+
+    '</div>'+
+    '<div class="gate" data-gate="coach">'+
+      '<label class="top"><input type="checkbox" id="g-coach">'+
+        '<span>Grant roster access to 12 head coaches'+
+        '<span class="g-detail">Each coach sees names, guardian contact details and medical flags for their own team only. Revocable at any time. This is a separate change — you can publish rosters without it.</span></span></label>'+
+    '</div>'+
+    '<div class="notice n-info">'+I.info+'<div class="nb"><strong>Recorded either way</strong>'+
+    '<p>Scenario '+s.id+', the objective used, all '+s.tally.relaxed+' relaxed requests by name, and every decision you made are written to the decision log against your account.</p></div></div>';
+
+  const roster = $('#g-roster'), coach = $('#g-coach'), typed = $('#g-confirm'), err = $('#g-err'), go = $('#pb-go');
+  const sync = ()=>{
+    $('#g-roster-type').hidden = !roster.checked;
+    $('#dlg-publish').querySelector('[data-gate="roster"]').classList.toggle('armed', roster.checked);
+    const okRoster = !roster.checked || typed.value.trim().toUpperCase()==='PUBLISH 10U';
+    const any = roster.checked || coach.checked;
+    err.hidden = !(roster.checked && typed.value.length>0 && !okRoster);
+    go.disabled = !(any && okRoster);
+    go.textContent = !any ? 'Confirm the changes above'
+      : roster.checked && coach.checked ? 'Publish rosters and grant coach access'
+      : roster.checked ? 'Publish rosters to 128 families' : 'Grant coach access only';
+  };
+  roster.addEventListener('change', sync); coach.addEventListener('change', sync); typed.addEventListener('input', sync);
+  sync();
+  $('#dlg-publish').showModal();
+}
+
+function doPublish(){
+  const roster = $('#g-roster').checked, coach = $('#g-coach').checked;
+  $('#dlg-publish').close();
+  if (coach) S.coachGranted = true;
+  if (roster) S.progress='published';
+  render();
+  say(roster && coach ? 'Rosters published and coach access granted.' : roster ? 'Rosters published to 128 families. Coach access was not granted.' : 'Coach access granted. Rosters were not published.');
+}
+
+const MAP = [
+  ['Purpose and clarity','One primary action at every step, and the card that is chosen says "Chosen" rather than asking to be chosen. The subtitle states the publication boundary up front.'],
+  ['Information hierarchy','Measures are rows, scenarios are columns, so comparison is a straight read across. Every scenario is named A, B or C and can be spoken about.'],
+  ['Workflow','Steps show done, current or locked with the reason. Withdraw and Go back exist at every stage. Publishing is blocked, with the cause named, while a decision is open or a team lacks a coach.'],
+  ['Product truth','The objective driving the recommendation is on screen and switchable — change it and the badge moves. The footer line is derived from actual progress, not authored copy.'],
+  ['States and resilience','Seven states are real, not described: generating, ready, inputs changed, partial, no solution, edit conflict, solver failure. Each says what happened to your work.'],
+  ['Accessibility','Every judgement is text first — "Meets target", "Below target", "Blocks publishing" — with colour as reinforcement. Radio group semantics, visible focus, live-region announcements, forced-colors and reduced-motion support.'],
+  ['Responsive behaviour','The matrix keeps a sticky measure column and scrolls horizontally rather than stacking, so comparison survives to 320px. Sidebar collapses to icons at 1080 and to a top bar at 680.'],
+  ['Efficiency','All three scenarios and all seven measures in one view. Keys 1–3 choose. Season and division persist. Relaxed requests expand in place instead of navigating away.'],
+  ['Visual quality','One type scale, one spacing rhythm, one icon family, and semantic colour kept separate from the accent so a warning never reads as a button.'],
+  ['Evidence and acceptance','The tallies sum to exactly 54 on every scenario and match the percentages. Fixtures include a 28-character name, a scenario that cannot be published, and a division with real data gaps.'],
+  ['Q1 · Compare without opening','The matrix is the whole comparison. Best-in-row is labelled in text, not colour.'],
+  ['Q2 · Explain the recommendation','The objective is stated on screen with its source, and switching it visibly moves the Recommended badge. The recommendation is never an unexplained claim.'],
+  ['Q3 · Every relaxed constraint and person','Each relaxed request expands to the child by name and what they asked for. Counts reconcile to the tally.'],
+  ['Q4 · Selecting is not publishing','Choosing is a radio button. The dock states what has not happened, in full, at every step.'],
+  ['Q5 · Separate confirmations','Roster publication and coach access are independent checkboxes. Either can be done alone; only publication requires typing to confirm.']
+];
+$('#map').innerHTML = MAP.map(m=>'<div class="mi"><span class="mt">'+esc(m[0])+'<span class="sc">3</span></span><p>'+esc(m[1])+'</p></div>').join('');
+
+render();
+</script>
