@@ -551,11 +551,16 @@ export function SponsorHub({ initialData }: { initialData: SponsorAdminData }) {
                   { label: "Sponsor record", complete: true },
                   { label: "Reviewed logo on file", complete: Boolean(sponsor.logoUrl) },
                   { label: "Public placement selected", complete: Boolean(sponsor.placementKey) },
-                  // Delivery proof is complete only when every promised benefit has an observation
-                  // recorded against it. It is folded from evidence rows, never stored.
+                  // Delivery proof is complete only when every promised benefit has been observed
+                  // as many times as it was promised. `delivered` alone is not enough: it reports
+                  // that at least one observation exists, so a benefit promising two placements
+                  // with one observation would otherwise read complete beside its own "1 of 2".
                   {
                     label: "Delivery proof",
-                    complete: deliverables.length > 0 && deliverables.every((deliverable) => deliverable.state === "delivered")
+                    complete: deliverables.length > 0 && deliverables.every((deliverable) => (
+                      deliverable.state === "delivered"
+                      && deliverable.deliveredQuantity >= deliverable.requirement.requiredQuantity
+                    ))
                   }
                 ];
                 return (

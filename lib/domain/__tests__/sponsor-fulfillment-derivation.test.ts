@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import type {
   FulfillmentRequirement,
+  FulfillmentRequirementKind,
   SponsorFulfillmentEvidence,
   SponsorFulfillmentEvidenceKind,
   SponsorPlacementWindow
@@ -56,21 +57,64 @@ describe("sponsor deliverable derivation", () => {
       [{ ...openPlacement, endsAt: "2026-01-01T00:00:00.000Z" }],
       [{ ...openPlacement, placementKey: "weekly_digest" }]
     ];
-    const requirements: FulfillmentRequirement[] = [
-      logoRequirement,
-      newsletterRequirement,
-      { ...logoRequirement, id: "req-banner", kind: "field_banner", label: "Field banner" },
-      { ...logoRequirement, id: "req-recap", kind: "season_recap", label: "Season recap" }
+    // Every kind in the schema's check constraint, not a sample of them: a kind added to the
+    // taxonomy without being added here would leave its own path to `delivered` unexercised.
+    const everyKind: FulfillmentRequirementKind[] = [
+      "league_homepage_logo",
+      "sport_homepage_logo",
+      "team_page_logo",
+      "sponsor_directory",
+      "newsletter_placement",
+      "field_banner",
+      "season_recap"
     ];
+    const requirements: FulfillmentRequirement[] = everyKind.map((kind) => ({
+      ...logoRequirement,
+      id: `req-${kind}`,
+      kind,
+      label: kind
+    }));
+    // Before, inside, and after every placement window above, plus a requirement already blocked.
+    const clocks = ["2026-07-01T00:00:00.000Z", NOW, "2027-06-01T00:00:00.000Z"];
 
     for (const requirement of requirements) {
       for (const placements of placementSets) {
         for (const artworkApproved of [true, false]) {
-          const state = deriveDeliverableState(requirement, placements, [], { artworkApproved, now: NOW });
-          expect(state).not.toBe("delivered");
+          for (const now of clocks) {
+            expect(deriveDeliverableState(requirement, placements, [], { artworkApproved, now })).not.toBe("delivered");
+            expect(deriveDeliverableState(
+              { ...requirement, blockedAt: now, blockedReason: "Artwork withdrawn" },
+              placements,
+              [],
+              { artworkApproved, now }
+            )).not.toBe("delivered");
+          }
         }
       }
     }
+  });
+
+  it("never reports scheduled for a promised surface the placement taxonomy cannot carry", () => {
+    // A league or sport homepage benefit has no placement key in 0002_platform_hardening.sql. One
+    // active team-portal placement must not be read as evidence that those surfaces were arranged.
+    for (const kind of ["league_homepage_logo", "sport_homepage_logo"] as FulfillmentRequirementKind[]) {
+      const state = deriveDeliverableState(
+        { ...logoRequirement, id: `req-${kind}`, kind, label: kind },
+        [openPlacement],
+        [],
+        { artworkApproved: true, now: NOW }
+      );
+      expect(state).not.toBe("scheduled");
+      expect(state).toBe("not_started");
+    }
+
+    // The team page benefit is the one team_portal genuinely carries.
+    expect(deriveDeliverableState(
+      { ...logoRequirement, id: "req-team", kind: "team_page_logo", label: "Team page logo" },
+      [openPlacement],
+      [],
+      { artworkApproved: true, now: NOW }
+    )).toBe("scheduled");
   });
 
   it("reports delivered from a single evidence row even with no placement configured", () => {
@@ -107,10 +151,24 @@ describe("sponsor deliverable derivation", () => {
   });
 
   it("reports awaiting_assets before scheduled when a logo benefit has no approved artwork", () => {
+    // team_page_logo, because it is the logo benefit team_portal actually carries. Artwork gates
+    // the benefit ahead of the placement either way.
+    const teamLogoRequirement: FulfillmentRequirement = {
+      ...logoRequirement,
+      id: "req-team-logo",
+      kind: "team_page_logo",
+      label: "Team page logo"
+    };
+    expect(deriveDeliverableState(teamLogoRequirement, [openPlacement], [], { artworkApproved: false, now: NOW }))
+      .toBe("awaiting_assets");
+    expect(deriveDeliverableState(teamLogoRequirement, [openPlacement], [], { artworkApproved: true, now: NOW }))
+      .toBe("scheduled");
+    // The league homepage benefit stays awaiting_assets on artwork, then falls to not_started
+    // rather than borrowing the team portal placement.
     expect(deriveDeliverableState(logoRequirement, [openPlacement], [], { artworkApproved: false, now: NOW }))
       .toBe("awaiting_assets");
     expect(deriveDeliverableState(logoRequirement, [openPlacement], [], { artworkApproved: true, now: NOW }))
-      .toBe("scheduled");
+      .toBe("not_started");
   });
 
   it("does not gate a written benefit on artwork", () => {

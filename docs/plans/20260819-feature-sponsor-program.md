@@ -641,11 +641,54 @@ the adapter is called with the session user instead, plus future-observation and
 rejections that assert no write is attempted. The finding was checked against the files and dropped
 rather than acted on.
 
-**Still open from the review** (not fixed, deliberately deferred to your call): no idempotency key or
-uniqueness guard on evidence writes and an ignored audit insert result; the Sponsor Hub "Delivery
-proof" check reading complete while `deliveredQuantity < requiredQuantity`; three distinct logo
-surfaces collapsing onto the `team_portal` placement key; the derivation sweep covering four of
-seven kinds at one clock; 400 rather than 403 on authorization failure.
+#### Should-fix pass, 2026-08-19
+
+All five remaining review findings were fixed after the Phase 2 commit at `4062a95`, in migration
+`20260819210000_sponsor_fulfillment_evidence_capture.sql` and the code around it.
+
+1. **Capture is atomic and replay-safe.** Evidence and its audit event were two independent inserts
+   whose audit result was ignored, so an admin-sensitive write could succeed with no audit trail --
+   and because evidence is append-only, it could not be withdrawn afterwards. Both now happen inside
+   `record_sponsor_fulfillment_evidence`, one transaction. Evidence also gained a natural key,
+   `unique nulls not distinct (requirement_id, kind, observed_at, artifact_url, note)`; a
+   resubmission returns the observation already recorded with `replayed: true` and writes nothing.
+   `nulls not distinct` is what makes that hold for written evidence, which has no artifact, and
+   pointer evidence, which has no note. This matters because delivered quantity is a count of
+   evidence rows: without the key, one observation submitted twice could satisfy a benefit that
+   promised two.
+2. **Delivery proof respects promised quantity.** The Sponsor Hub check read complete whenever every
+   deliverable was `delivered`, which is true after a single observation. It now also requires
+   `deliveredQuantity >= requiredQuantity`, so a card can no longer show "1 of 2 observed" beside a
+   completed check.
+3. **Promised surfaces no longer borrow each other's placements.** `league_homepage_logo` and
+   `sport_homepage_logo` mapped to `team_portal`, so one active team-portal placement reported three
+   distinct promised surfaces as scheduled. They now map to null. The placement taxonomy in
+   `0002_platform_hardening.sql` has no league or sport homepage key, so those benefits reach
+   `delivered` through evidence alone -- which is what the code comment already claimed and the code
+   did not do.
+4. **The derivation sweep covers the whole taxonomy.** All seven requirement kinds, three clocks
+   spanning before, inside, and after every placement window, both artwork states, and a blocked
+   variant of each -- still asserting no combination yields `delivered` from an empty evidence list.
+5. **Authorization answers as authorization.** The route returned 400 for every failure including
+   "not an admin", and looked the requirement up before authorizing, so the differing messages told
+   an unauthorized caller whether an id was real. It now returns 403 for a refusal and 503 for a
+   degraded dependency, and a missing requirement is refused in the same words as a forbidden one.
+
+Authority moved from the adapter into SQL as part of item 5, which is stricter rather than looser:
+it binds any caller of the function, not only the adapter that usually calls it. The verifier check
+that asserted the adapter-side call was rewritten to assert the SQL derivation rather than dropped.
+
+**Executed proof, 2026-08-19.** All three migrations applied to the local Supabase database in one
+transaction and rolled back. Four assertions passed against real PostgreSQL: a resubmitted capture
+folded onto one evidence row and one audit event; a different `observed_at` recorded separately; a
+deliberately failed audit write took the observation with it, leaving no evidence row behind; and a
+non-admin was refused with a message identical to the one a missing requirement returns. Two schema
+facts were found this way rather than by reading -- `audit_events.target_id` is `text`, now cast
+explicitly, and the local database already carries an active admin membership.
+
+Gates after the pass: `make validate` (134 files / 815 tests), `npm run build`, `npm run lint` at
+zero errors, both sponsor readiness verifiers PASS, and the verifier's own node tests. Hosted proof,
+Supabase readback, Stripe settlement, finance reconciliation, and production acceptance remain open.
 - The Phase 1 vitest timeout characteristic persists: at the default 5s timeout one unrelated file
   times out under this machine's parallel load (this run it was
   `lib/supabase/official-communications.test.ts`), and at `--testTimeout=30000` all 134 files and

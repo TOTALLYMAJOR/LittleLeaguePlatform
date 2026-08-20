@@ -16,11 +16,90 @@ type Row = Record<string, unknown>;
 const createSupabaseAdminClientMock = vi.mocked(createSupabaseAdminClient);
 
 const inserts: Array<{ table: string; payload: Row }> = [];
+const rpcCalls: Array<{ name: string; args: Row }> = [];
 const queryCalls: Array<{ table: string; filters: Array<{ column: string; value: unknown }> }> = [];
 
 let datasets: Record<string, Row[]> = {};
 /** Composite keys already present in the ledger, used to simulate the unique constraint. */
 let ledgerUniqueKeys = new Set<string>();
+
+/**
+ * Mirrors `record_sponsor_fulfillment_evidence` from
+ * `20260819210000_sponsor_fulfillment_evidence_capture.sql`: authority re-derived against the
+ * requirement's own organization, evidence and audit written together, and a repeat submission
+ * folded onto the observation already recorded. The database is the authority; this exists so the
+ * adapter's contract with it can be exercised without one.
+ */
+function recordEvidenceRpc(args: Row): Row {
+  const forbidden: Row = {
+    ok: false,
+    code: "forbidden",
+    message: "Active organization admin access is required to record fulfillment evidence."
+  };
+
+  const requirement = (datasets.sponsor_fulfillment_requirements ?? [])
+    .find((row) => row.id === args.p_requirement_id);
+  if (!requirement) return forbidden;
+
+  const isAdmin = (datasets.organization_memberships ?? []).some((row) => (
+    row.organization_id === requirement.organization_id
+    && row.user_id === args.p_actor_user_id
+    && row.role === "admin"
+    && row.status === "active"
+  ));
+  if (!isAdmin) return forbidden;
+
+  const existing = (datasets.sponsor_fulfillment_evidence ?? []).find((row) => (
+    row.requirement_id === requirement.id
+    && row.kind === args.p_kind
+    && row.observed_at === args.p_observed_at
+    && (row.artifact_url ?? null) === (args.p_artifact_url ?? null)
+    && (row.note ?? null) === (args.p_note ?? null)
+  ));
+  if (existing) {
+    return {
+      ok: true,
+      replayed: true,
+      evidence_id: existing.id,
+      blocked: requirement.blocked_at !== null,
+      requirement_label: requirement.label
+    };
+  }
+
+  const payload: Row = {
+    organization_id: requirement.organization_id,
+    requirement_id: requirement.id,
+    kind: args.p_kind,
+    observed_at: args.p_observed_at,
+    artifact_url: args.p_artifact_url ?? null,
+    note: args.p_note ?? null,
+    captured_by_user_id: args.p_actor_user_id
+  };
+  const evidenceId = `evidence-rpc-${(datasets.sponsor_fulfillment_evidence ?? []).length + 1}`;
+  datasets.sponsor_fulfillment_evidence = [
+    ...(datasets.sponsor_fulfillment_evidence ?? []),
+    { id: evidenceId, ...payload }
+  ];
+  inserts.push({ table: "sponsor_fulfillment_evidence", payload });
+  inserts.push({
+    table: "audit_events",
+    payload: {
+      organization_id: requirement.organization_id,
+      actor_user_id: args.p_actor_user_id,
+      action: "sponsor_fulfillment_evidence_captured",
+      target_type: "sponsor_fulfillment_requirement",
+      target_id: requirement.id
+    }
+  });
+
+  return {
+    ok: true,
+    replayed: false,
+    evidence_id: evidenceId,
+    blocked: requirement.blocked_at !== null,
+    requirement_label: requirement.label
+  };
+}
 
 function baseDatasets(): Record<string, Row[]> {
   return {
@@ -200,9 +279,17 @@ describe("sponsor program adapter", () => {
     ledgerUniqueKeys = new Set(["stripe:evt_existing"]);
     inserts.length = 0;
     queryCalls.length = 0;
+    rpcCalls.length = 0;
     createSupabaseAdminClientMock.mockClear();
     createSupabaseAdminClientMock.mockReturnValue({
-      from: (table: string) => queryFor(table)
+      from: (table: string) => queryFor(table),
+      rpc: (name: string, args: Row) => {
+        rpcCalls.push({ name, args });
+        return Promise.resolve({
+          data: name === "record_sponsor_fulfillment_evidence" ? recordEvidenceRpc(args) : null,
+          error: null
+        });
+      }
     } as never);
   });
 
@@ -386,6 +473,16 @@ describe("sponsor program adapter", () => {
 
     expect(result.ok).toBe(true);
     expect(result.evidenceId).toBeTruthy();
+    expect(result.replayed).toBe(false);
+
+    // One call, one transaction. The adapter no longer sequences the evidence and audit writes
+    // itself, so neither can succeed without the other.
+    expect(rpcCalls.map((call) => call.name)).toEqual(["record_sponsor_fulfillment_evidence"]);
+    expect(rpcCalls[0]?.args).toMatchObject({
+      p_requirement_id: "requirement-a",
+      p_actor_user_id: "admin-a",
+      p_kind: "screenshot"
+    });
 
     const evidenceInsert = inserts.find((entry) => entry.table === "sponsor_fulfillment_evidence");
     expect(evidenceInsert?.payload).toMatchObject({
@@ -416,9 +513,56 @@ describe("sponsor program adapter", () => {
     });
 
     expect(result.ok).toBe(false);
-    expect(result.message).toContain("Only active organization admins");
+    expect(result.reason).toBe("forbidden");
+    expect(result.message).toContain("Active organization admin access is required");
     expect(inserts.some((entry) => entry.table === "sponsor_fulfillment_evidence")).toBe(false);
     expect(inserts.some((entry) => entry.table === "audit_events")).toBe(false);
+  });
+
+  it("answers a missing requirement exactly as it answers a forbidden one", async () => {
+    // Otherwise a caller without authority could use the difference to test whether an id is real.
+    const missing = await recordSponsorFulfillmentEvidence({
+      requirementId: "requirement-does-not-exist",
+      actorUserId: "parent-a",
+      kind: "screenshot",
+      observedAt: "2026-08-18T00:00:00.000Z",
+      artifactUrl: "https://proof.example/newsletter.png"
+    });
+    const forbidden = await recordSponsorFulfillmentEvidence({
+      requirementId: "requirement-a",
+      actorUserId: "parent-a",
+      kind: "screenshot",
+      observedAt: "2026-08-18T00:00:00.000Z",
+      artifactUrl: "https://proof.example/newsletter.png"
+    });
+
+    expect(missing.ok).toBe(false);
+    expect(missing.reason).toBe("forbidden");
+    expect(missing.message).toBe(forbidden.message);
+  });
+
+  it("folds a resubmitted observation onto the one already recorded", async () => {
+    // Delivered quantity counts evidence rows, so a retried request must not be able to satisfy a
+    // promised quantity the league did not actually meet.
+    const capture = {
+      requirementId: "requirement-a",
+      actorUserId: "admin-a",
+      kind: "screenshot" as const,
+      observedAt: "2026-08-18T00:00:00.000Z",
+      artifactUrl: "https://proof.example/newsletter.png"
+    };
+
+    const first = await recordSponsorFulfillmentEvidence(capture);
+    const retry = await recordSponsorFulfillmentEvidence(capture);
+
+    expect(first.ok).toBe(true);
+    expect(first.replayed).toBe(false);
+    expect(retry.ok).toBe(true);
+    expect(retry.replayed).toBe(true);
+    expect(retry.evidenceId).toBe(first.evidenceId);
+    expect(retry.message).toContain("already on record");
+    expect(inserts.filter((entry) => entry.table === "sponsor_fulfillment_evidence")).toHaveLength(1);
+    expect(inserts.filter((entry) => entry.table === "audit_events")).toHaveLength(1);
   });
 
   it("refuses fulfillment evidence against another organization's requirement", async () => {
@@ -489,7 +633,11 @@ describe("sponsor program adapter", () => {
     });
 
     expect(result.ok).toBe(false);
-    expect(result.message).toContain("could not be found");
+    // Deliberately not "could not be found". Confirming that an id is unknown is itself a
+    // disclosure, so a missing requirement is refused in the same words as a forbidden one.
+    expect(result.reason).toBe("forbidden");
+    expect(result.message).toContain("Active organization admin access is required");
+    expect(result.message).not.toContain("could not be found");
     expect(inserts.some((entry) => entry.table === "sponsor_fulfillment_evidence")).toBe(false);
   });
 });

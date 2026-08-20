@@ -21,6 +21,7 @@ export const DEFAULT_SOURCE_FILES = {
   sponsorDeliverableDerivationTest: "lib/domain/__tests__/sponsor-fulfillment-derivation.test.ts",
   rlsPolicyTest: "supabase/rls-policy.test.ts",
   sponsorFulfillmentInvariants: "supabase/sponsor-fulfillment-invariants.sql",
+  sponsorFulfillmentCaptureMigration: "supabase/migrations/20260819210000_sponsor_fulfillment_evidence_capture.sql",
   demoTenantSeed: "scripts/bootstrap-demo-tenant.mjs",
   sponsorOperations: "lib/supabase/operations.ts",
   sponsorRoute: "app/api/admin/sponsors/route.ts",
@@ -210,7 +211,7 @@ function verifyFulfillmentRecapSeparation(sources, blockers) {
     "fulfillment-recap-separation",
     "SPONSOR_HUB_FULFILLMENT_SEPARATION_MISSING",
     ["sponsorHub", "sponsorHubTest"],
-    /confirmedBillingRecords[\s\S]*paymentProofStatus === "paid" && Boolean\(record\.confirmedAt\)[\s\S]*Reviewed logo on file[\s\S]*Public placement selected[\s\S]*Delivery proof"[\s\S]*deliverables\.every\(\(deliverable\) => deliverable\.state === "delivered"\)[\s\S]*Active public placements[\s\S]*sponsor\.status === "active" && sponsor\.placementKey[\s\S]*Payment proof recorded[\s\S]*Verified impact events[\s\S]*<dd>0<\/dd>[\s\S]*PDF impact reports remain unavailable/s,
+    /confirmedBillingRecords[\s\S]*paymentProofStatus === "paid" && Boolean\(record\.confirmedAt\)[\s\S]*Reviewed logo on file[\s\S]*Public placement selected[\s\S]*Delivery proof"[\s\S]*deliverable\.state === "delivered"[\s\S]*deliverable\.deliveredQuantity >= deliverable\.requirement\.requiredQuantity[\s\S]*Active public placements[\s\S]*sponsor\.status === "active" && sponsor\.placementKey[\s\S]*Payment proof recorded[\s\S]*Verified impact events[\s\S]*<dd>0<\/dd>[\s\S]*PDF impact reports remain unavailable/s,
     "Sponsor Hub must keep configured placement, reviewed logo metadata, delivered-placement proof, payment proof, and zero verified impact separate."
   );
   requirePattern(
@@ -287,14 +288,39 @@ function verifyFulfillmentEvidenceDerivation(sources, blockers) {
     sources,
     "fulfillment-evidence-derivation",
     "EVIDENCE_CAPTURE_AUTHORITY_MISSING",
-    ["sponsorProgramAdapter", "sponsorEvidenceRoute"],
+    ["sponsorProgramAdapter", "sponsorEvidenceRoute", "sponsorFulfillmentCaptureMigration"],
     [
-      /requireActiveOrganizationAdmin\(\{[\s\S]*action: "record sponsor fulfillment evidence"/s,
+      "record_sponsor_fulfillment_evidence",
+      // Authority is re-derived in SQL against the requirement's own organization, which binds any
+      // caller of the function rather than only the adapter that usually calls it.
+      /membership\.role = 'admin'[\s\S]*membership\.status = 'active'/s,
       "cannot be observed in the future",
       "sponsor_fulfillment_evidence_captured",
       /actorUserId: auth\.user\.id/s
     ],
-    "Evidence capture must derive the actor from the session, require active organization-admin authority, reject future observations, and write an audit event."
+    "Evidence capture must derive the actor from the session, re-derive active organization-admin authority in SQL against the requirement's own organization, reject future observations, and write an audit event."
+  );
+  requirePattern(
+    blockers,
+    sources,
+    "fulfillment-evidence-derivation",
+    "EVIDENCE_CAPTURE_NOT_ATOMIC",
+    ["sponsorFulfillmentCaptureMigration"],
+    [
+      "unique nulls not distinct (requirement_id, kind, observed_at, artifact_url, note)",
+      "on conflict on constraint uq_sponsor_fulfillment_evidence_observation do nothing",
+      /insert into public\.sponsor_fulfillment_evidence[\s\S]*insert into public\.audit_events/s
+    ],
+    "Evidence and its audit event must be written in one transaction, and a replayed capture must fold onto the observation already recorded. Delivered quantity counts evidence rows, so an unguarded retry can satisfy a promised quantity it did not meet."
+  );
+  requireNoPattern(
+    blockers,
+    sources,
+    "fulfillment-evidence-derivation",
+    "EVIDENCE_EXISTENCE_ORACLE_PRESENT",
+    ["sponsorFulfillmentCaptureMigration"],
+    /could not be found/s,
+    "A caller without authority must not be able to tell a missing requirement from one it may not touch; both answer with the same forbidden result."
   );
   requirePattern(
     blockers,

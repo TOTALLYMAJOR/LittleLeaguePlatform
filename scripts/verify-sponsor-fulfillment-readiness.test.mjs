@@ -155,16 +155,41 @@ test("fails evidence derivation when delivered no longer requires an evidence ro
 });
 
 test("fails evidence derivation when evidence capture drops organization-admin authority", () => {
+  // Authority is re-derived in SQL rather than in the adapter, so that is where removing it has to
+  // be caught. The membership predicate is the whole check.
   const sources = cloneSources();
-  sources.sponsorProgramAdapter = sources.sponsorProgramAdapter.replace(
-    'action: "record sponsor fulfillment evidence"',
-    'action: "record sponsor evidence without authority"'
+  sources.sponsorFulfillmentCaptureMigration = sources.sponsorFulfillmentCaptureMigration.replace(
+    "and membership.role = 'admin'",
+    "and membership.role is not null"
   );
 
   const result = verifySponsorFulfillmentReadiness(sources);
 
   assert.equal(result.ok, false);
   assert.ok(codesFor(result, "fulfillment-evidence-derivation").includes("EVIDENCE_CAPTURE_AUTHORITY_MISSING"));
+});
+
+test("fails evidence derivation when a missing requirement is distinguishable from a forbidden one", () => {
+  const sources = cloneSources();
+  sources.sponsorFulfillmentCaptureMigration = `${sources.sponsorFulfillmentCaptureMigration}\n-- the requirement could not be found\n`;
+
+  const result = verifySponsorFulfillmentReadiness(sources);
+
+  assert.equal(result.ok, false);
+  assert.ok(codesFor(result, "fulfillment-evidence-derivation").includes("EVIDENCE_EXISTENCE_ORACLE_PRESENT"));
+});
+
+test("fails evidence derivation when the observation uniqueness guard is dropped", () => {
+  const sources = cloneSources();
+  sources.sponsorFulfillmentCaptureMigration = sources.sponsorFulfillmentCaptureMigration.replace(
+    "unique nulls not distinct (requirement_id, kind, observed_at, artifact_url, note)",
+    "unique (requirement_id, kind, observed_at)"
+  );
+
+  const result = verifySponsorFulfillmentReadiness(sources);
+
+  assert.equal(result.ok, false);
+  assert.ok(codesFor(result, "fulfillment-evidence-derivation").includes("EVIDENCE_CAPTURE_NOT_ATOMIC"));
 });
 
 test("fails evidence derivation when a route or adapter writes a delivered state directly", () => {

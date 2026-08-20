@@ -204,10 +204,14 @@ function defaultRequirements(agreement: SponsorshipAgreement, sponsorshipPackage
  * fixed by `0002_platform_hardening.sql` and this feature adds none: a benefit that has no surface
  * in that taxonomy simply never reaches `scheduled` from a placement, and depends entirely on
  * evidence.
+ *
+ * `league_homepage_logo` and `sport_homepage_logo` are exactly that case and map to null. Pointing
+ * them at `team_portal` would have let one active team-portal placement report three distinct
+ * promised surfaces as scheduled, which is a claim about a league homepage nobody made.
  */
-const placementKeyByRequirementKind: Record<FulfillmentRequirementKind, string> = {
-  league_homepage_logo: "team_portal",
-  sport_homepage_logo: "team_portal",
+const placementKeyByRequirementKind: Record<FulfillmentRequirementKind, string | null> = {
+  league_homepage_logo: null,
+  sport_homepage_logo: null,
   team_page_logo: "team_portal",
   sponsor_directory: "registration",
   newsletter_placement: "weekly_digest",
@@ -264,7 +268,7 @@ export function deriveDeliverableState(
 
   const nowMs = context.now ? Date.parse(context.now) : Date.now();
   const surfaceKey = placementKeyByRequirementKind[requirement.kind];
-  const scheduled = placements.some((placement) => (
+  const scheduled = surfaceKey !== null && placements.some((placement) => (
     placement.placementKey === surfaceKey && placementWindowIsOpen(placement, Number.isFinite(nowMs) ? nowMs : Date.now())
   ));
 

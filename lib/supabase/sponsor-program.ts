@@ -22,6 +22,8 @@ type UnsafeSupabase = {
   // Sponsor program tables are staged ahead of a generated-types refresh.
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   from(table: string): any;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  rpc(name: string, parameters: Record<string, unknown>): any;
 };
 
 type Result<T> = { data: T | null; error: { code?: string; message?: string } | null };
@@ -443,90 +445,81 @@ export async function recordSponsorFulfillmentEvidence(input: {
   observedAt: string;
   artifactUrl?: string;
   note?: string;
-}): Promise<{ ok: boolean; evidenceId?: string; message: string }> {
+}): Promise<{ ok: boolean; reason?: "invalid" | "forbidden" | "unavailable"; evidenceId?: string; replayed?: boolean; message: string }> {
   if (!input.requirementId || !input.actorUserId) {
-    return { ok: false, message: "Evidence capture requires a fulfillment requirement and an authenticated actor." };
+    return { ok: false, reason: "invalid", message: "Evidence capture requires a fulfillment requirement and an authenticated actor." };
   }
   if (!evidenceKinds.has(input.kind)) {
-    return { ok: false, message: "Unsupported fulfillment evidence kind." };
+    return { ok: false, reason: "invalid", message: "Unsupported fulfillment evidence kind." };
   }
 
   const observedAtMs = Date.parse(input.observedAt);
   if (!Number.isFinite(observedAtMs)) {
-    return { ok: false, message: "Evidence requires the date and time the benefit was observed." };
+    return { ok: false, reason: "invalid", message: "Evidence requires the date and time the benefit was observed." };
   }
   if (observedAtMs > Date.now()) {
-    return { ok: false, message: "Evidence cannot be observed in the future. Record what has already run." };
+    return { ok: false, reason: "invalid", message: "Evidence cannot be observed in the future. Record what has already run." };
   }
 
   const artifactUrl = input.artifactUrl?.trim();
   if (artifactUrl && !artifactUrl.toLowerCase().startsWith("https://")) {
-    return { ok: false, message: "Evidence artifact links must be HTTPS." };
+    return { ok: false, reason: "invalid", message: "Evidence artifact links must be HTTPS." };
   }
   if (artifactBackedEvidenceKinds.has(input.kind) && !artifactUrl) {
-    return { ok: false, message: "Screenshot and link evidence require an HTTPS artifact link." };
+    return { ok: false, reason: "invalid", message: "Screenshot and link evidence require an HTTPS artifact link." };
   }
 
   const note = input.note?.trim();
   if (!artifactBackedEvidenceKinds.has(input.kind) && !note) {
-    return { ok: false, message: "Recap, attendance, and campaign evidence require a written observation." };
+    return { ok: false, reason: "invalid", message: "Recap, attendance, and campaign evidence require a written observation." };
   }
 
   try {
     const db = adminDb();
-    const requirement = await run<{
-      id: string;
-      organization_id: string;
-      agreement_id: string;
-      label: string;
-      blocked_at: string | null;
-    }>(db.from("sponsor_fulfillment_requirements")
-      .select("id,organization_id,agreement_id,label,blocked_at")
-      .eq("id", input.requirementId)
-      .maybeSingle());
-    if (requirement.error || !requirement.data) {
-      return { ok: false, message: "The sponsor fulfillment requirement could not be found." };
-    }
 
-    const access = await requireActiveOrganizationAdmin({
-      db,
-      organizationId: requirement.data.organization_id,
-      userId: input.actorUserId,
-      action: "record sponsor fulfillment evidence"
-    });
-    if (!access.ok) return { ok: false, message: access.message };
-
-    const insert = await run<{ id: string }>(db.from("sponsor_fulfillment_evidence").insert({
-      organization_id: requirement.data.organization_id,
-      requirement_id: requirement.data.id,
-      kind: input.kind,
-      observed_at: new Date(observedAtMs).toISOString(),
-      artifact_url: artifactUrl ?? null,
-      note: note ?? null,
-      captured_by_user_id: input.actorUserId
-    }).select("id").maybeSingle());
-
-    if (insert.error || !insert.data) {
-      return { ok: false, message: "The fulfillment evidence could not be recorded." };
-    }
-
-    await run(db.from("audit_events").insert({
-      organization_id: requirement.data.organization_id,
-      actor_user_id: input.actorUserId,
-      action: "sponsor_fulfillment_evidence_captured",
-      target_type: "sponsor_fulfillment_requirement",
-      target_id: requirement.data.id,
-      summary: `${input.kind} evidence observed at ${new Date(observedAtMs).toISOString()} recorded for "${requirement.data.label}". Delivery state is folded from evidence and is not stored.`
+    // One round trip, one transaction. record_sponsor_fulfillment_evidence re-derives
+    // organization-admin authority against the requirement's own organization, writes the
+    // observation and its audit event together so neither can outlive the other, and folds a
+    // retried request onto the observation already recorded rather than counting it twice.
+    const capture = await run<{
+      ok: boolean;
+      code?: string;
+      message?: string;
+      replayed?: boolean;
+      evidence_id?: string;
+      blocked?: boolean;
+    }>(db.rpc("record_sponsor_fulfillment_evidence", {
+      p_requirement_id: input.requirementId,
+      p_actor_user_id: input.actorUserId,
+      p_kind: input.kind,
+      p_observed_at: new Date(observedAtMs).toISOString(),
+      p_artifact_url: artifactUrl ?? null,
+      p_note: note ?? null
     }));
+
+    if (capture.error || !capture.data) {
+      return { ok: false, reason: "unavailable", message: "The fulfillment evidence could not be recorded." };
+    }
+
+    if (!capture.data.ok) {
+      return {
+        ok: false,
+        reason: capture.data.code === "forbidden" ? "forbidden" : "unavailable",
+        message: capture.data.message ?? "The fulfillment evidence could not be recorded."
+      };
+    }
 
     return {
       ok: true,
-      evidenceId: insert.data.id,
-      message: requirement.data.blocked_at
-        ? "Evidence recorded. This requirement is still marked blocked, so it is not reported as delivered."
-        : "Evidence recorded. This deliverable now reports as delivered because an observation exists for it."
+      evidenceId: capture.data.evidence_id,
+      replayed: capture.data.replayed === true,
+      message: capture.data.replayed === true
+        ? "This observation was already on record. Nothing was recorded twice."
+        : capture.data.blocked
+          ? "Evidence recorded. This requirement is still marked blocked, so it is not reported as delivered."
+          : "Evidence recorded. This deliverable now reports as delivered because an observation exists for it."
     };
   } catch {
-    return { ok: false, message: "The fulfillment evidence could not be recorded." };
+    return { ok: false, reason: "unavailable", message: "The fulfillment evidence could not be recorded." };
   }
 }

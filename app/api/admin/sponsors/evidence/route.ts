@@ -36,7 +36,8 @@ export async function POST(request: Request) {
   }
 
   // The actor is taken from the verified session, never from the body, and organization-admin
-  // authority is re-derived inside the adapter against the requirement's own organization.
+  // authority is re-derived in SQL against the requirement's own organization by
+  // record_sponsor_fulfillment_evidence, so it holds for any caller of that function.
   const result = await recordSponsorFulfillmentEvidence({
     requirementId: String(body.requirementId ?? ""),
     actorUserId: auth.user.id,
@@ -46,5 +47,15 @@ export async function POST(request: Request) {
     note: body.note ? String(body.note) : undefined
   });
 
-  return NextResponse.json(result, { status: result.ok ? 200 : 400 });
+  // An authorization failure is not a malformed request. A missing requirement and a requirement
+  // this admin may not touch answer alike, so neither reveals whether an id exists.
+  const status = result.ok
+    ? 200
+    : result.reason === "forbidden"
+      ? 403
+      : result.reason === "unavailable"
+        ? 503
+        : 400;
+
+  return NextResponse.json(result, { status });
 }

@@ -24,6 +24,7 @@ describe("Supabase RLS policy coverage", () => {
   const sponsorBillingAndTeamBuilder = migration("0017_sponsor_billing_and_team_builder.sql");
   const sponsorProgramSpine = migration("20260819161500_sponsor_program_spine.sql");
   const sponsorFulfillmentEvidence = migration("20260819190000_sponsor_fulfillment_evidence.sql");
+  const sponsorFulfillmentCapture = migration("20260819210000_sponsor_fulfillment_evidence_capture.sql");
   const teamBrandProfilesMonitoring = migration("0018_team_brand_profiles_monitoring.sql");
   const guardianVerification = migration("0020_guardian_verification_policy.sql");
   const drillVideoReferences = migration("0022_drill_video_references.sql");
@@ -332,6 +333,42 @@ describe("Supabase RLS policy coverage", () => {
       /foreign key \(requirement_id, organization_id\)\s+references public\.sponsor_fulfillment_requirements\(id, organization_id\)/
     );
     expect(sponsorFulfillmentEvidence).toContain("unique (id, organization_id)");
+  });
+
+  it("captures fulfillment evidence and its audit event in one transaction", () => {
+    // Two independent inserts could leave an admin-sensitive write with no audit trail, and
+    // evidence is append-only so it could not be withdrawn afterwards.
+    expect(sponsorFulfillmentCapture).toContain("create or replace function public.record_sponsor_fulfillment_evidence(");
+    expect(sponsorFulfillmentCapture).toMatch(
+      /insert into public\.sponsor_fulfillment_evidence[\s\S]*insert into public\.audit_events/
+    );
+    expect(sponsorFulfillmentCapture).toContain("sponsor_fulfillment_evidence_captured");
+  });
+
+  it("makes a resubmitted observation a no-op rather than a second delivery", () => {
+    // Delivered quantity is a count of evidence rows, so an unguarded retry could satisfy a
+    // promised quantity the league never met. `nulls not distinct` is required because written
+    // evidence has no artifact_url and pointer evidence has no note.
+    expect(sponsorFulfillmentCapture).toContain(
+      "unique nulls not distinct (requirement_id, kind, observed_at, artifact_url, note)"
+    );
+    expect(sponsorFulfillmentCapture).toContain(
+      "on conflict on constraint uq_sponsor_fulfillment_evidence_observation do nothing"
+    );
+  });
+
+  it("re-derives evidence capture authority in SQL and leaks no requirement existence", () => {
+    expect(sponsorFulfillmentCapture).toMatch(
+      /membership\.role = 'admin'[\s\S]*membership\.status = 'active'/
+    );
+    // A missing requirement and a forbidden one answer alike.
+    expect(sponsorFulfillmentCapture).not.toContain("could not be found");
+    expect(sponsorFulfillmentCapture).toContain("security definer");
+    expect(sponsorFulfillmentCapture).toContain("set search_path = public");
+    expect(sponsorFulfillmentCapture).toContain(
+      "revoke all on function public.record_sponsor_fulfillment_evidence(uuid, uuid, text, timestamptz, text, text)"
+    );
+    expect(sponsorFulfillmentCapture).not.toMatch(/grant execute on function public\.record_sponsor_fulfillment_evidence[\s\S]*to (?:public|anon|authenticated)/);
   });
 
   it("keeps fulfillment evidence append-only against service_role and the table owner alike", () => {
