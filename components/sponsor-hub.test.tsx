@@ -1,9 +1,13 @@
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { renderToStaticMarkup } from "react-dom/server";
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import { SponsorHub } from "@/components/sponsor-hub";
 import { seedState } from "@/lib/domain";
+
+vi.mock("next/navigation", () => ({
+  useRouter: () => ({ refresh: vi.fn() })
+}));
 
 describe("Sponsor Hub route and presentation", () => {
   it("keeps the focused route behind admin access and passes an authorized organization scope to the adapter", () => {
@@ -40,6 +44,8 @@ describe("Sponsor Hub route and presentation", () => {
         status: "invoice_ready",
         paymentProofStatus: "awaiting_invoice"
       }],
+      programSummaries: [],
+      programMessage: "Sponsor agreement, invoice, and delivery records are loaded from Supabase.",
       isSupabaseBacked: true,
       message: "Sponsor records and proof records are loaded from Supabase."
     }} />);
@@ -68,6 +74,8 @@ describe("Sponsor Hub route and presentation", () => {
         paymentProofStatus: "paid",
         confirmedAt: "2026-07-26T12:00:00.000Z"
       }],
+      programSummaries: [],
+      programMessage: "Sponsor agreement, invoice, and delivery records are loaded from Supabase.",
       isSupabaseBacked: true,
       message: "Sponsor records and proof records are loaded from Supabase."
     }} />);
@@ -86,6 +94,8 @@ describe("Sponsor Hub route and presentation", () => {
       teams: seedState.teams,
       sponsors: seedState.sponsors,
       billingRecords: [],
+      programSummaries: [],
+      programMessage: "Sponsor agreement, invoice, and delivery records were not loaded. No payment or delivery state is claimed.",
       isSupabaseBacked: false,
       message: "Sponsor records could not be loaded safely."
     }} />);
@@ -99,6 +109,8 @@ describe("Sponsor Hub route and presentation", () => {
       teams: [],
       sponsors: [],
       billingRecords: [],
+      programSummaries: [],
+      programMessage: "Sponsor agreement, invoice, and delivery records were not loaded. No payment or delivery state is claimed.",
       isSupabaseBacked: false,
       message: "Sponsor records could not be loaded safely."
     }} />);

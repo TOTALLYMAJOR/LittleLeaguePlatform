@@ -68,6 +68,7 @@ export const demoTenantIds = {
   sponsorPlacement: "e1000000-0000-4000-8000-000000000003",
   sponsorAsset: "e1000000-0000-4000-8000-000000000004",
   sponsorBilling: "e1000000-0000-4000-8000-000000000005",
+  sponsorAgreement: "e1000000-0000-4000-8000-000000000006",
   registrationPending: "e2000000-0000-4000-8000-000000000001",
   registrationRejected: "e2000000-0000-4000-8000-000000000002",
   teamBuildPlan: "e3000000-0000-4000-8000-000000000001",
@@ -969,12 +970,19 @@ async function seedDemoTenant(supabase, users) {
     approved_at: createdAt
   });
 
+  // Benefits are structured, not prose. The Phase 2 fulfillment backfill reads `kind` to generate
+  // one requirement per promised benefit, so a plain string here yields a package that promises
+  // something no deliverable can ever be derived from. `label` keeps the sponsor-facing wording.
   await upsertOrThrow(supabase, "sponsor_packages", {
     id: ids.sponsorPackage,
     organization_id: ids.organization,
+    season_id: ids.season,
     name: "Demo Team Supporter",
     price_cents: 25000,
-    benefits: ["Team portal placement", "Weekly digest mention"],
+    benefits: [
+      { kind: "team_page_logo", label: "Team portal placement", quantity: 1 },
+      { kind: "newsletter_placement", label: "Weekly digest mention", quantity: 1 }
+    ],
     status: "active"
   });
   await upsertOrThrow(supabase, "sponsors", {
@@ -990,6 +998,22 @@ async function seedDemoTenant(supabase, users) {
     contact_email: "demo.sponsor@example.com",
     starts_at: seasonStartsAt,
     ends_at: seasonEndsAt
+  });
+  // The per-season deal the package was sold against. Without it the sponsor spine has a package and
+  // a sponsor but no agreement, and every downstream fulfillment requirement backfill joins to
+  // nothing.
+  await upsertOrThrow(supabase, "sponsorship_agreements", {
+    id: ids.sponsorAgreement,
+    organization_id: ids.organization,
+    sponsor_id: ids.sponsor,
+    package_id: ids.sponsorPackage,
+    season_id: ids.season,
+    status: "active",
+    amount_cents: 25000,
+    currency: "usd",
+    starts_at: seasonStartsAt,
+    ends_at: seasonEndsAt,
+    signed_at: seasonStartsAt
   });
   await upsertOrThrow(supabase, "sponsor_placements", {
     id: ids.sponsorPlacement,

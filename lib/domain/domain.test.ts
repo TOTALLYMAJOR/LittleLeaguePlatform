@@ -1033,29 +1033,36 @@ describe("sponsor placement", () => {
           agreementId: agreement.id,
           kind: "league_homepage_logo",
           label: "League homepage logo",
-          requiredQuantity: 1,
-          deliveredQuantity: 1,
-          status: "delivered"
+          requiredQuantity: 1
         },
         {
           id: "req-newsletter",
           agreementId: agreement.id,
           kind: "newsletter_placement",
           label: "Newsletter placement",
-          requiredQuantity: 2,
-          deliveredQuantity: 1,
-          status: "ready"
+          requiredQuantity: 2
         },
         {
           id: "req-recap",
           agreementId: agreement.id,
           kind: "season_recap",
           label: "Season recap",
-          requiredQuantity: 1,
-          deliveredQuantity: 0,
-          status: "pending"
+          requiredQuantity: 1
         }
-      ]
+      ],
+      // Only the homepage logo has been observed, so the program is in progress rather than
+      // fulfilled. No requirement carries a stored state to contradict that.
+      fulfillmentEvidence: [
+        {
+          id: "evidence-home-logo",
+          requirementId: "req-home-logo",
+          kind: "screenshot",
+          observedAt: NOW,
+          artifactUrl: "https://proof.example/home-logo.png"
+        }
+      ],
+      artworkApproved: true,
+      now: NOW
     });
 
     expect(summary.packageName).toBe("Gold Sponsor");

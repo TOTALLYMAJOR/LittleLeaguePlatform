@@ -3,6 +3,7 @@ import { createSupabaseAdminClient } from "./admin";
 import {
   listSponsorProgramData,
   recordManualSponsorPayment,
+  recordSponsorFulfillmentEvidence,
   recordSponsorPaymentEvent
 } from "./sponsor-program";
 
@@ -91,6 +92,50 @@ function baseDatasets(): Record<string, Row[]> {
         provider: "stripe",
         provider_event_id: "evt_existing",
         occurred_at: "2026-08-02T00:00:00.000Z"
+      }
+    ],
+    sponsor_fulfillment_requirements: [
+      {
+        id: "requirement-a",
+        organization_id: "org-a",
+        agreement_id: "agreement-a",
+        kind: "league_homepage_logo",
+        label: "League homepage logo",
+        required_quantity: 1,
+        blocked_at: null,
+        blocked_reason: null
+      },
+      {
+        id: "requirement-b",
+        organization_id: "org-b",
+        agreement_id: "agreement-b",
+        kind: "newsletter_placement",
+        label: "Newsletter placement",
+        required_quantity: 1,
+        blocked_at: null,
+        blocked_reason: null
+      }
+    ],
+    sponsor_fulfillment_evidence: [
+      {
+        id: "evidence-a",
+        organization_id: "org-a",
+        requirement_id: "requirement-a",
+        kind: "screenshot",
+        observed_at: "2026-08-10T00:00:00.000Z",
+        artifact_url: "https://proof.example/home-logo.png",
+        note: null,
+        captured_by_user_id: "admin-a"
+      }
+    ],
+    sponsor_placements: [
+      {
+        sponsor_id: "sponsor-a",
+        organization_id: "org-a",
+        placement_key: "team_portal",
+        status: "active",
+        starts_at: null,
+        ends_at: null
       }
     ],
     audit_events: []
@@ -316,5 +361,135 @@ describe("sponsor program adapter", () => {
     expect(result.ok).toBe(false);
     expect(result.message).toContain("could not be found");
     expect(inserts.some((entry) => entry.table === "sponsor_payment_ledger_entries")).toBe(false);
+  });
+  it("loads fulfillment requirements, evidence, and placement windows for the requested organization only", async () => {
+    const data = await listSponsorProgramData({ organizationId: "org-a" });
+
+    expect(data.fulfillmentRequirements?.map((requirement) => requirement.id)).toEqual(["requirement-a"]);
+    expect(data.fulfillmentEvidence?.map((entry) => entry.id)).toEqual(["evidence-a"]);
+    expect(data.placements?.map((placement) => placement.placementKey)).toEqual(["team_portal"]);
+
+    expect(queryCalls.find((call) => call.table === "sponsor_fulfillment_requirements")?.filters)
+      .toContainEqual({ column: "organization_id", value: "org-a" });
+    expect(queryCalls.find((call) => call.table === "sponsor_fulfillment_evidence")?.filters)
+      .toContainEqual({ column: "organization_id", value: "org-a" });
+  });
+
+  it("records fulfillment evidence for an active organization admin and audits the capture", async () => {
+    const result = await recordSponsorFulfillmentEvidence({
+      requirementId: "requirement-a",
+      actorUserId: "admin-a",
+      kind: "screenshot",
+      observedAt: "2026-08-18T00:00:00.000Z",
+      artifactUrl: "https://proof.example/newsletter.png"
+    });
+
+    expect(result.ok).toBe(true);
+    expect(result.evidenceId).toBeTruthy();
+
+    const evidenceInsert = inserts.find((entry) => entry.table === "sponsor_fulfillment_evidence");
+    expect(evidenceInsert?.payload).toMatchObject({
+      organization_id: "org-a",
+      requirement_id: "requirement-a",
+      kind: "screenshot",
+      captured_by_user_id: "admin-a"
+    });
+    // Nothing in the write names a deliverable state; delivery is folded from the row's existence.
+    expect(Object.keys(evidenceInsert?.payload ?? {})).not.toContain("status");
+    expect(Object.keys(evidenceInsert?.payload ?? {})).not.toContain("state");
+
+    expect(inserts.find((entry) => entry.table === "audit_events")?.payload).toMatchObject({
+      organization_id: "org-a",
+      actor_user_id: "admin-a",
+      action: "sponsor_fulfillment_evidence_captured",
+      target_type: "sponsor_fulfillment_requirement"
+    });
+  });
+
+  it("refuses fulfillment evidence from a user who is not an active organization admin", async () => {
+    const result = await recordSponsorFulfillmentEvidence({
+      requirementId: "requirement-a",
+      actorUserId: "parent-a",
+      kind: "screenshot",
+      observedAt: "2026-08-18T00:00:00.000Z",
+      artifactUrl: "https://proof.example/newsletter.png"
+    });
+
+    expect(result.ok).toBe(false);
+    expect(result.message).toContain("Only active organization admins");
+    expect(inserts.some((entry) => entry.table === "sponsor_fulfillment_evidence")).toBe(false);
+    expect(inserts.some((entry) => entry.table === "audit_events")).toBe(false);
+  });
+
+  it("refuses fulfillment evidence against another organization's requirement", async () => {
+    const result = await recordSponsorFulfillmentEvidence({
+      requirementId: "requirement-b",
+      actorUserId: "admin-a",
+      kind: "screenshot",
+      observedAt: "2026-08-18T00:00:00.000Z",
+      artifactUrl: "https://proof.example/newsletter.png"
+    });
+
+    expect(result.ok).toBe(false);
+    expect(inserts.some((entry) => entry.table === "sponsor_fulfillment_evidence")).toBe(false);
+  });
+
+  it("refuses evidence observed in the future, because a plan is not an observation", async () => {
+    const result = await recordSponsorFulfillmentEvidence({
+      requirementId: "requirement-a",
+      actorUserId: "admin-a",
+      kind: "screenshot",
+      observedAt: new Date(Date.now() + 86_400_000).toISOString(),
+      artifactUrl: "https://proof.example/newsletter.png"
+    });
+
+    expect(result.ok).toBe(false);
+    expect(result.message).toContain("cannot be observed in the future");
+    expect(inserts.some((entry) => entry.table === "sponsor_fulfillment_evidence")).toBe(false);
+  });
+
+  it("requires an HTTPS artifact for pointer evidence and a written observation for the rest", async () => {
+    const insecure = await recordSponsorFulfillmentEvidence({
+      requirementId: "requirement-a",
+      actorUserId: "admin-a",
+      kind: "link",
+      observedAt: "2026-08-18T00:00:00.000Z",
+      artifactUrl: "http://proof.example/newsletter"
+    });
+    expect(insecure.ok).toBe(false);
+    expect(insecure.message).toContain("HTTPS");
+
+    const missingArtifact = await recordSponsorFulfillmentEvidence({
+      requirementId: "requirement-a",
+      actorUserId: "admin-a",
+      kind: "screenshot",
+      observedAt: "2026-08-18T00:00:00.000Z"
+    });
+    expect(missingArtifact.ok).toBe(false);
+
+    const missingNote = await recordSponsorFulfillmentEvidence({
+      requirementId: "requirement-a",
+      actorUserId: "admin-a",
+      kind: "event_recap",
+      observedAt: "2026-08-18T00:00:00.000Z"
+    });
+    expect(missingNote.ok).toBe(false);
+    expect(missingNote.message).toContain("written observation");
+
+    expect(inserts.some((entry) => entry.table === "sponsor_fulfillment_evidence")).toBe(false);
+  });
+
+  it("refuses evidence against a requirement that does not exist", async () => {
+    const result = await recordSponsorFulfillmentEvidence({
+      requirementId: "requirement-missing",
+      actorUserId: "admin-a",
+      kind: "campaign_note",
+      observedAt: "2026-08-18T00:00:00.000Z",
+      note: "Mentioned in the weekly note"
+    });
+
+    expect(result.ok).toBe(false);
+    expect(result.message).toContain("could not be found");
+    expect(inserts.some((entry) => entry.table === "sponsor_fulfillment_evidence")).toBe(false);
   });
 });

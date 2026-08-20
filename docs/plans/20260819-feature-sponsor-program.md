@@ -321,30 +321,52 @@ billing screen.
 
 **Verification**: Invariant query — zero rows where state is `delivered` and evidence count is 0.
 
+**Entry criteria**: Phase 1 merged to `origin/main`. Implemented 2026-08-19 in
+`supabase/migrations/20260819190000_sponsor_fulfillment_evidence.sql`.
+
 #### Tasks
 
-- [ ] **Task 1**: Migration — `sponsor_fulfillment_requirements`, `sponsor_fulfillment_evidence`
+- [x] **Task 1**: Migration — `sponsor_fulfillment_requirements`, `sponsor_fulfillment_evidence`
       with `kind` in (`screenshot`, `link`, `event_recap`, `attendance_summary`, `campaign_note`),
       `observed_at`, `captured_by_user_id`, artifact reference; requirements generated from package
-      benefits; RLS org-scoped.
-- [ ] **Task 2**: `deriveDeliverableState(requirement, placements, evidence)` in
+      benefits; RLS org-scoped. A `before insert or update` trigger rejects a future `observed_at`
+      for every connection, and evidence carries no update or delete grant.
+- [x] **Task 2**: `deriveDeliverableState(requirement, placements, evidence)` in
       `lib/domain/sponsor-program.ts`. **Proof obligation**: `delivered` unreachable without an
-      evidence row, proven by test, not by inspection.
-- [ ] **Task 3**: Admin evidence capture — `app/api/admin/sponsors/evidence/route.ts` plus Sponsor
+      evidence row, proven by test, not by inspection — `lib/domain/__tests__/sponsor-fulfillment-derivation.test.ts`
+      sweeps four of the seven requirement kinds against placement and artwork combinations at one
+      fixed clock with an empty evidence list and asserts none of them yields `delivered`. Widening
+      the sweep to all seven kinds and a varying clock is outstanding (Codex review 2026-08-19).
+- [x] **Task 3**: Admin evidence capture — `app/api/admin/sponsors/evidence/route.ts` plus Sponsor
       Hub UI; `observed_at` in the future is rejected; evidence list ordered by `observed_at` with an
       `id` tiebreak.
-- [ ] **Task 4**: Extend `listSponsorAdminData` with requirements and derived delivery state; Sponsor
+- [x] **Task 4**: Extend `listSponsorAdminData` with requirements and derived delivery state; Sponsor
       Hub shows scheduled versus delivered per deliverable.
-- [ ] **Task 5**: Invariant query added to the fulfillment readiness verifier; extend
-      `npm run qa:sponsor-fulfillment-readiness` with evidence contracts.
-- [ ] Quality check (staged).
+- [x] **Task 5**: Invariant query added to the fulfillment readiness verifier
+      (`supabase/sponsor-fulfillment-invariants.sql`); extended
+      `npm run qa:sponsor-fulfillment-readiness` with a `fulfillment-evidence-derivation` family,
+      backed by four new negative cases in the verifier's own test.
+- [x] Quality check (staged): `make validate`, `npm run build`, `npm run lint`,
+      `npm run qa:sponsor-fulfillment-readiness`, `node --test scripts/verify-sponsor-fulfillment-readiness.test.mjs`.
 
 #### Phase Completion Criteria
 
-- [ ] An admin can attach evidence and watch a deliverable move from `scheduled` to `delivered`.
-- [ ] Invariant query returns zero rows and is wired into the verifier.
-- [ ] No deliverable state is stored in any column.
-- [ ] Cross-organization denial tests pass for both new tables.
+- [x] An admin can attach evidence and watch a deliverable move from `scheduled` to `delivered`.
+      Covered by adapter and derivation tests. There is no evidence-route test, and the adapter
+      tests mock the service-role client, so they do not exercise RLS. The signed-in browser journey
+      is not proven and remains under the `hosted fulfillment evidence proof` gate.
+- [x] Invariant query returns zero rows and is wired into the verifier. Run transactionally against
+      the local Supabase database on 2026-08-19 and rolled back: backfill collapsed a duplicate
+      benefit line, a future observation was rejected, pointer evidence without an artifact and
+      written evidence without a note were rejected, `service_role` insert succeeded while update
+      and delete were denied, `anon` had no privilege and a non-admin `authenticated` reader saw
+      zero rows, and evidence cascaded out with its requirement.
+- [x] No deliverable state is stored in any column. Enforced by the migration, asserted by
+      `supabase/rls-policy.test.ts`, by the verifier, and by invariant 1 of the invariant file.
+- [x] Cross-organization denial tests pass for both new tables. Note the limit found on
+      2026-08-19: `supabase/rls-policy.test.ts` asserts policy names, not their `using` clauses, so
+      it would pass against `using (true)`. No same-organization composite foreign key backs the
+      policies.
 
 ---
 
@@ -512,9 +534,122 @@ at a stable URL**; no PDF dependency, so no additional ADR is required).
   pre-existing environment characteristic, not a regression from this phase.
 
 ### Phase 2
-- Start: —
-- Complete: —
-- Notes:
+- Start: 2026-08-19
+- Complete: 2026-08-19
+- Notes: Delivery state is derived, never stored. `deriveDeliverableState(requirement, placements,
+  evidence, context)` and its `deriveSponsorDeliverables` fold live in `lib/domain/sponsor-program.ts`;
+  the migration `20260819190000_sponsor_fulfillment_evidence.sql` adds
+  `sponsor_fulfillment_requirements` and `sponsor_fulfillment_evidence` with no state, delivered
+  count, or delivered timestamp column on either table.
+- Enforcement, stated accurately after the 2026-08-19 Codex review corrected an earlier overclaim
+  in these notes:
+  1. Evidence is append-only, enforced the way Phase 1 enforces the payment ledger. The review found
+     this missing and it was fixed on 2026-08-19: `revoke update, delete ... from service_role`
+     withdraws the default privileges a grant cannot take away, and
+     `sponsor_fulfillment_evidence_append_only` on a `before update or delete` trigger binds the
+     table owner as well. The delete branch still permits referential cascade cleanup, on the same
+     parent-exists test Phase 1 uses.
+  2. A `before insert or update` trigger rejects `observed_at` more than one minute in the future
+     for every connection. The one-minute window is a deliberate clock-skew allowance; the rule is
+     "no meaningfully future observation", not "no future observation".
+  3. Pointer evidence (`screenshot`, `link`) must carry its artifact reference and written evidence
+     (`event_recap`, `attendance_summary`, `campaign_note`) must carry its note, enforced in the
+     schema rather than only at the route. The URL check is `~* '^https://'`, which accepts the bare
+     string `https://`.
+- The `delivered`-requires-evidence obligation is tested, but the sweep is narrower than first
+  recorded here: `lib/domain/__tests__/sponsor-fulfillment-derivation.test.ts` covers four of the
+  seven requirement kinds (`league_homepage_logo`, `newsletter_placement`, `field_banner`,
+  `season_recap`) against placement and artwork combinations at one fixed clock. It does not sweep
+  every kind or every clock.
+- `supabase/sponsor-fulfillment-invariants.sql` holds five executable zero-row invariants plus one
+  commented-out report (invariant 2, requirements without evidence, which is expected to be
+  non-empty mid-season). It is wired into `npm run qa:sponsor-fulfillment-readiness` as the
+  `fulfillment-evidence-derivation` family, with four new negative cases in the verifier's own test.
+  The verifier is source-pattern-based: it passed while the append-only trigger was missing, so it
+  is not proof that the guarantee holds.
+- Local evidence only, all re-run on 2026-08-19 against the final working tree: `make validate`
+  (docker compose config + typecheck + 134 files / 809 tests), `npm run build`, `npm run lint`
+  (0 errors; the 3 remaining warnings are pre-existing and in files this phase did not touch),
+  `npm run qa:sponsor-fulfillment-readiness` PASS, `npm run qa:sponsor-stripe-readiness` PASS, and
+  `node --test scripts/verify-sponsor-fulfillment-readiness.test.mjs` 12/12.
+- The invariant file was executed transactionally against the local Supabase database on 2026-08-19
+  and rolled back. That is local proof. The signed-in browser journey for evidence capture is not
+  proven and stays under the `hosted fulfillment evidence proof` gate, alongside hosted browser
+  proof, observed placement rendering, and finance reconciliation.
+
+#### Codex review, 2026-08-19 — Phase 2 not committable as written
+
+Independent review by the Codex agent, findings verified against the files before being recorded.
+
+Blockers, all three fixed on 2026-08-19:
+1. Evidence was not append-only. `service_role` retained default update and delete, and the Phase 1
+   trigger pattern had not been carried forward. **Fixed**: explicit
+   `revoke update, delete ... from service_role` plus a `before update or delete` trigger.
+2. Tenant identity was denormalized with no same-organization composite foreign key. A requirement's
+   `organization_id` was not constrained to its agreement's organization, and evidence's was not
+   constrained to its requirement's, so RLS trusted a child row's stored `organization_id` and a
+   bypassing writer could make one organization's rows readable across a tenant boundary.
+   **Fixed**: `uq_sponsorship_agreements_id_organization` on the Phase 1 table, `unique
+   (id, organization_id)` on requirements, and composite foreign keys on both children. The
+   cross-tenant row is now unrepresentable rather than merely detectable after the fact.
+3. The backfill yielded zero requirements for the repository's canonical package data. Two causes,
+   not one: `scripts/bootstrap-demo-tenant.mjs` wrote `benefits` as plain strings while the backfill
+   reads `entry->>'kind'`, **and** the seeder wrote no `sponsorship_agreements` row at all, so the
+   backfill's join had nothing to join to regardless of benefit shape. The second cause is Phase 1
+   debt the review did not name. **Fixed**: the seeder now writes structured benefits carrying a
+   requirement `kind`, sets the package's `season_id`, and seeds the per-season agreement.
+
+Should-fix: no idempotency key or uniqueness guard on evidence, and the audit insert result is
+ignored, so a retried write inflates `deliveredQuantity` and a failed audit still returns success;
+the Sponsor Hub "Delivery proof" check reads deliverable state only and can read complete while
+`deliveredQuantity < requiredQuantity`; `league_homepage_logo`, `sport_homepage_logo`, and
+`team_page_logo` all map to the `team_portal` placement key, so one active placement reports three
+distinct benefits as scheduled; the RLS test asserted policy names but not their `using` clauses, so
+`using (true)` would have passed it (fixed 2026-08-19 as part of blocker 2, since the composite keys
+are only half of what makes the tenant boundary real).
+
+Nit: the evidence route returns 400 for authorization failures where the contract specifies 403,
+and the pre-authorization requirement lookup makes the differing messages a weak existence oracle.
+
+What the review confirmed held: no path presents `delivered` with an empty evidence list; neither
+table persists state, delivered count, or delivered timestamp; the route takes its actor from the
+verified session; only the authorized module under `lib/domain/` was touched; no enum or workflow
+state was added; no Supabase client or provider call entered UI code.
+
+**Executed proof of the blocker fixes, 2026-08-19.** Phase 1 and Phase 2 were applied to the local
+Supabase database inside one transaction and rolled back. Nine assertions passed against real
+PostgreSQL rather than against source patterns: the backfill generated two requirements from
+structured benefits and honored a quantity of two; a cross-organization requirement and a
+cross-organization evidence row were both rejected with a foreign key violation; `service_role`
+insert was permitted while its update and delete were denied; the table owner's update was denied by
+the trigger; evidence was still removed by cascade when its requirement was deleted; and a future
+observation was still rejected. This is local proof against a local target. It is not hosted proof,
+not a Supabase readback of an applied migration, and not production acceptance — those gates stay
+open.
+
+**Verifier gap closed.** The review's sharpest point was that
+`npm run qa:sponsor-fulfillment-readiness` passed while the append-only guarantee it reports on was
+absent. Three checks were added — `EVIDENCE_APPEND_ONLY_MISSING`, `TENANT_COMPOSITE_KEY_MISSING`,
+and `UNSTRUCTURED_PACKAGE_BENEFITS_PRESENT` — and each was negative-tested by removing the
+corresponding guarantee and confirming the verifier fails, with four matching cases added to the
+verifier's own test. A source-pattern verifier still only catches what it is told to look for; that
+limit is unchanged.
+
+**One review finding was incorrect.** Codex reported "No evidence-route test exists". Three exist in
+`app/api-live-actions.test.ts`, including one that posts `actorUserId: "client-spoof"` and asserts
+the adapter is called with the session user instead, plus future-observation and unsupported-kind
+rejections that assert no write is attempted. The finding was checked against the files and dropped
+rather than acted on.
+
+**Still open from the review** (not fixed, deliberately deferred to your call): no idempotency key or
+uniqueness guard on evidence writes and an ignored audit insert result; the Sponsor Hub "Delivery
+proof" check reading complete while `deliveredQuantity < requiredQuantity`; three distinct logo
+surfaces collapsing onto the `team_portal` placement key; the derivation sweep covering four of
+seven kinds at one clock; 400 rather than 403 on authorization failure.
+- The Phase 1 vitest timeout characteristic persists: at the default 5s timeout one unrelated file
+  times out under this machine's parallel load (this run it was
+  `lib/supabase/official-communications.test.ts`), and at `--testTimeout=30000` all 134 files and
+  809 tests pass. Pre-existing environment behavior, not a regression from this phase.
 
 ### Phase 3
 - Start: —

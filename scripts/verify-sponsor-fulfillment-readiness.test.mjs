@@ -27,6 +27,7 @@ test("passes against repository source fixtures without credentials, network, Su
   assert.deepEqual(result.blockers, []);
   assert.match(report, /local repository-source readiness proof only/);
   assert.match(report, /hosted public\/admin browser proof/);
+  assert.match(report, /hosted fulfillment evidence proof/);
   assert.match(report, /observed placement-rendering proof/);
   assert.match(report, /approved logo asset proof/);
   assert.match(report, /sponsor recap\/report artifact proof/);
@@ -125,4 +126,102 @@ test("fails open gates documentation when production sponsor acceptance is omitt
 
   assert.equal(result.ok, false);
   assert.ok(codesFor(result, "open-gates-documentation").includes("OPEN_GATE_PRODUCTION_SPONSOR_ACCEPTANCE_MISSING"));
+});
+
+test("fails evidence derivation when a deliverable state is stored in the schema", () => {
+  const sources = cloneSources();
+  sources.sponsorFulfillmentMigration = sources.sponsorFulfillmentMigration.replace(
+    "  required_quantity integer not null default 1 check (required_quantity > 0),",
+    "  required_quantity integer not null default 1 check (required_quantity > 0),\n  delivery_state text not null default 'not_started',"
+  );
+
+  const result = verifySponsorFulfillmentReadiness(sources);
+
+  assert.equal(result.ok, false);
+  assert.ok(codesFor(result, "fulfillment-evidence-derivation").includes("STORED_DELIVERABLE_STATE_PRESENT"));
+});
+
+test("fails evidence derivation when delivered no longer requires an evidence row", () => {
+  const sources = cloneSources();
+  sources.sponsorProgramDomain = sources.sponsorProgramDomain.replace(
+    'if (requirementEvidence.length > 0) return "delivered";',
+    'if (requirementEvidence.length >= 0) return "delivered";'
+  );
+
+  const result = verifySponsorFulfillmentReadiness(sources);
+
+  assert.equal(result.ok, false);
+  assert.ok(codesFor(result, "fulfillment-evidence-derivation").includes("DERIVATION_INVARIANT_MISSING"));
+});
+
+test("fails evidence derivation when evidence capture drops organization-admin authority", () => {
+  const sources = cloneSources();
+  sources.sponsorProgramAdapter = sources.sponsorProgramAdapter.replace(
+    'action: "record sponsor fulfillment evidence"',
+    'action: "record sponsor evidence without authority"'
+  );
+
+  const result = verifySponsorFulfillmentReadiness(sources);
+
+  assert.equal(result.ok, false);
+  assert.ok(codesFor(result, "fulfillment-evidence-derivation").includes("EVIDENCE_CAPTURE_AUTHORITY_MISSING"));
+});
+
+test("fails evidence derivation when a route or adapter writes a delivered state directly", () => {
+  const sources = cloneSources();
+  sources.sponsorProgramAdapter = `${sources.sponsorProgramAdapter}\nconst optimistic = { status: "delivered" };\n`;
+
+  const result = verifySponsorFulfillmentReadiness(sources);
+
+  assert.equal(result.ok, false);
+  assert.ok(codesFor(result, "fulfillment-evidence-derivation").includes("UNPROVEN_DELIVERED_WRITE_PRESENT"));
+});
+
+test("fails evidence derivation when the append-only revoke on evidence is dropped", () => {
+  const sources = cloneSources();
+  sources.sponsorFulfillmentMigration = sources.sponsorFulfillmentMigration.replace(
+    "revoke update, delete on table public.sponsor_fulfillment_evidence from service_role;",
+    ""
+  );
+
+  const result = verifySponsorFulfillmentReadiness(sources);
+
+  assert.equal(result.ok, false);
+  assert.ok(codesFor(result, "fulfillment-evidence-derivation").includes("EVIDENCE_APPEND_ONLY_MISSING"));
+});
+
+test("fails evidence derivation when the append-only trigger on evidence is dropped", () => {
+  const sources = cloneSources();
+  sources.sponsorFulfillmentMigration = sources.sponsorFulfillmentMigration.replace(
+    /create trigger sponsor_fulfillment_evidence_append_only\s+before update or delete on public\.sponsor_fulfillment_evidence/,
+    "create trigger sponsor_fulfillment_evidence_append_only\n  before insert on public.sponsor_fulfillment_evidence"
+  );
+
+  const result = verifySponsorFulfillmentReadiness(sources);
+
+  assert.equal(result.ok, false);
+  assert.ok(codesFor(result, "fulfillment-evidence-derivation").includes("EVIDENCE_APPEND_ONLY_MISSING"));
+});
+
+test("fails evidence derivation when evidence loses its composite tie to the requirement's organization", () => {
+  const sources = cloneSources();
+  sources.sponsorFulfillmentMigration = sources.sponsorFulfillmentMigration.replace(
+    /foreign key \(requirement_id, organization_id\)\s+references public\.sponsor_fulfillment_requirements\(id, organization_id\)/,
+    "foreign key (requirement_id)\n    references public.sponsor_fulfillment_requirements(id)"
+  );
+
+  const result = verifySponsorFulfillmentReadiness(sources);
+
+  assert.equal(result.ok, false);
+  assert.ok(codesFor(result, "fulfillment-evidence-derivation").includes("TENANT_COMPOSITE_KEY_MISSING"));
+});
+
+test("fails evidence derivation when seeded package benefits carry no requirement kind", () => {
+  const sources = cloneSources();
+  sources.demoTenantSeed = `${sources.demoTenantSeed}\n  benefits: ["Team portal placement"],\n`;
+
+  const result = verifySponsorFulfillmentReadiness(sources);
+
+  assert.equal(result.ok, false);
+  assert.ok(codesFor(result, "fulfillment-evidence-derivation").includes("UNSTRUCTURED_PACKAGE_BENEFITS_PRESENT"));
 });

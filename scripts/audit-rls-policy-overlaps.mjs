@@ -6,10 +6,12 @@ import { fileURLToPath } from "node:url";
 
 const COMMANDS = ["SELECT", "INSERT", "UPDATE", "DELETE"];
 const EXPECTED = Object.freeze({
-  // 160 after 20260819161500_sponsor_program_spine.sql added one organization-admin SELECT policy
-  // each to sponsorship_agreements, sponsorship_invoices, and sponsor_payment_ledger_entries.
-  // No new overlap group: each of those tables carries exactly one policy.
-  policies: 160,
+  // 162 after 20260819190000_sponsor_fulfillment_evidence.sql added one organization-admin SELECT
+  // policy each to sponsor_fulfillment_requirements and sponsor_fulfillment_evidence, on top of the
+  // three the sponsor program spine added to sponsorship_agreements, sponsorship_invoices, and
+  // sponsor_payment_ledger_entries. No new overlap group: each of those tables carries exactly one
+  // policy.
+  policies: 162,
   overlapGroups: 35,
   selectGroups: 34,
   updateGroups: 1,

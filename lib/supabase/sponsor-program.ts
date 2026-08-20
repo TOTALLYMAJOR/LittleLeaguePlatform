@@ -1,7 +1,11 @@
 import { randomUUID } from "node:crypto";
 import type {
   FulfillmentRequirement,
+  FulfillmentRequirementKind,
+  SponsorFulfillmentEvidence,
+  SponsorFulfillmentEvidenceKind,
   SponsorPaymentLedgerEntry,
+  SponsorPlacementWindow,
   SponsorProgramRecords,
   SponsorshipAgreement,
   SponsorshipAgreementStatus,
@@ -50,6 +54,8 @@ function unavailableProgramData(
     invoices: [],
     ledgerEntries: [],
     fulfillmentRequirements: [],
+    fulfillmentEvidence: [],
+    placements: [],
     isSupabaseBacked: false,
     message
   };
@@ -100,7 +106,7 @@ export async function listSponsorProgramData(input: {
 
     const agreementIds = (agreementsResult.data ?? []).map((row: { id: string }) => row.id);
     const emptyResult = Promise.resolve({ data: [], error: null });
-    const [invoicesResult, requirementsResult] = await withSupabaseTimeout(Promise.all([
+    const [invoicesResult, requirementsResult, placementsResult] = await withSupabaseTimeout(Promise.all([
       agreementIds.length
         ? db.from("sponsorship_invoices")
           .select("id,agreement_id,invoice_number,amount_cents,status,issued_at")
@@ -108,13 +114,24 @@ export async function listSponsorProgramData(input: {
           .in("agreement_id", agreementIds)
           .order("created_at", { ascending: false })
         : emptyResult,
-      // Fulfillment requirements arrive in Phase 2. Reading them now keeps the adapter contract
-      // stable, and a missing table degrades to an empty list rather than failing the whole read.
-      emptyResult
+      agreementIds.length
+        ? db.from("sponsor_fulfillment_requirements")
+          .select("id,agreement_id,kind,label,required_quantity,blocked_at,blocked_reason")
+          .eq("organization_id", organizationId)
+          .in("agreement_id", agreementIds)
+          .order("kind", { ascending: true })
+        : emptyResult,
+      db.from("sponsor_placements")
+        .select("sponsor_id,placement_key,status,starts_at,ends_at")
+        .eq("organization_id", organizationId)
     ]), 7000);
 
     if (invoicesResult.error) {
       return unavailableProgramData(organizationId, "Sponsor invoice records could not be loaded safely.");
+    }
+
+    if (requirementsResult.error || placementsResult.error) {
+      return unavailableProgramData(organizationId, "Sponsor fulfillment requirements or placement windows could not be loaded safely.");
     }
 
     const invoiceIds = (invoicesResult.data ?? []).map((row: { id: string }) => row.id);
@@ -136,6 +153,30 @@ export async function listSponsorProgramData(input: {
 
     if (ledgerResult.error) {
       return unavailableProgramData(organizationId, "Sponsor payment ledger entries could not be loaded safely.");
+    }
+
+    const requirementIds = (requirementsResult.data ?? []).map((row: { id: string }) => row.id);
+    const evidenceResult = requirementIds.length
+      ? await run<Array<{
+        id: string;
+        requirement_id: string;
+        kind: SponsorFulfillmentEvidenceKind;
+        observed_at: string;
+        artifact_url: string | null;
+        note: string | null;
+        captured_by_user_id: string | null;
+      }>>(db.from("sponsor_fulfillment_evidence")
+        .select("id,requirement_id,kind,observed_at,artifact_url,note,captured_by_user_id")
+        .eq("organization_id", organizationId)
+        .in("requirement_id", requirementIds)
+        // Observation order, with an id tiebreak so evidence recorded for the same moment still
+        // lists deterministically.
+        .order("observed_at", { ascending: true })
+        .order("id", { ascending: true }))
+      : { data: [], error: null };
+
+    if (evidenceResult.error) {
+      return unavailableProgramData(organizationId, "Sponsor fulfillment evidence could not be loaded safely.");
     }
 
     const packages: SponsorshipPackage[] = (packagesResult.data ?? []).map((row: {
@@ -201,7 +242,47 @@ export async function listSponsorProgramData(input: {
       occurredAt: row.occurred_at
     }));
 
-    const fulfillmentRequirements: FulfillmentRequirement[] = (requirementsResult.data ?? []) as FulfillmentRequirement[];
+    const fulfillmentRequirements: FulfillmentRequirement[] = (requirementsResult.data ?? []).map((row: {
+      id: string;
+      agreement_id: string;
+      kind: FulfillmentRequirementKind;
+      label: string;
+      required_quantity: number;
+      blocked_at: string | null;
+      blocked_reason: string | null;
+    }) => ({
+      id: row.id,
+      agreementId: row.agreement_id,
+      kind: row.kind,
+      label: row.label,
+      requiredQuantity: row.required_quantity,
+      blockedAt: row.blocked_at ?? undefined,
+      blockedReason: row.blocked_reason ?? undefined
+    }));
+
+    const fulfillmentEvidence: SponsorFulfillmentEvidence[] = (evidenceResult.data ?? []).map((row) => ({
+      id: row.id,
+      requirementId: row.requirement_id,
+      kind: row.kind,
+      observedAt: row.observed_at,
+      artifactUrl: row.artifact_url ?? undefined,
+      note: row.note ?? undefined,
+      capturedByUserId: row.captured_by_user_id ?? undefined
+    }));
+
+    const placements: SponsorPlacementWindow[] = (placementsResult.data ?? []).map((row: {
+      sponsor_id: string;
+      placement_key: string;
+      status: SponsorPlacementWindow["status"];
+      starts_at: string | null;
+      ends_at: string | null;
+    }) => ({
+      sponsorId: row.sponsor_id,
+      placementKey: row.placement_key,
+      status: row.status,
+      startsAt: row.starts_at ?? undefined,
+      endsAt: row.ends_at ?? undefined
+    }));
 
     return {
       organizationId,
@@ -210,8 +291,10 @@ export async function listSponsorProgramData(input: {
       invoices,
       ledgerEntries,
       fulfillmentRequirements,
+      fulfillmentEvidence,
+      placements,
       isSupabaseBacked: true,
-      message: "Sponsor agreements, invoices, and payment ledger entries are loaded from Supabase. Paid and outstanding totals are folded from the ledger, never stored."
+      message: "Sponsor agreements, invoices, payment ledger entries, fulfillment requirements, and delivery evidence are loaded from Supabase. Paid totals are folded from the ledger and delivery is folded from evidence; neither is stored."
     };
   } catch {
     return unavailableProgramData(organizationId, "Supabase sponsor program records could not be loaded safely.");
@@ -331,5 +414,119 @@ export async function recordManualSponsorPayment(input: {
     };
   } catch {
     return { ok: false, message: "The manual sponsor payment could not be recorded." };
+  }
+}
+
+const evidenceKinds = new Set<SponsorFulfillmentEvidenceKind>([
+  "screenshot",
+  "link",
+  "event_recap",
+  "attendance_summary",
+  "campaign_note"
+]);
+
+/** Evidence kinds that are a pointer to an artifact rather than a written observation. */
+const artifactBackedEvidenceKinds = new Set<SponsorFulfillmentEvidenceKind>(["screenshot", "link"]);
+
+/**
+ * Record one observation that a promised sponsor benefit actually ran.
+ *
+ * This is the only write that can move a deliverable to `delivered`, and it does so indirectly:
+ * nothing here sets a state. `observed_at` in the future is rejected because a plan is not an
+ * observation, and the same rule is enforced again by a database trigger so a future adapter
+ * cannot route around it.
+ */
+export async function recordSponsorFulfillmentEvidence(input: {
+  requirementId: string;
+  actorUserId: string;
+  kind: SponsorFulfillmentEvidenceKind;
+  observedAt: string;
+  artifactUrl?: string;
+  note?: string;
+}): Promise<{ ok: boolean; evidenceId?: string; message: string }> {
+  if (!input.requirementId || !input.actorUserId) {
+    return { ok: false, message: "Evidence capture requires a fulfillment requirement and an authenticated actor." };
+  }
+  if (!evidenceKinds.has(input.kind)) {
+    return { ok: false, message: "Unsupported fulfillment evidence kind." };
+  }
+
+  const observedAtMs = Date.parse(input.observedAt);
+  if (!Number.isFinite(observedAtMs)) {
+    return { ok: false, message: "Evidence requires the date and time the benefit was observed." };
+  }
+  if (observedAtMs > Date.now()) {
+    return { ok: false, message: "Evidence cannot be observed in the future. Record what has already run." };
+  }
+
+  const artifactUrl = input.artifactUrl?.trim();
+  if (artifactUrl && !artifactUrl.toLowerCase().startsWith("https://")) {
+    return { ok: false, message: "Evidence artifact links must be HTTPS." };
+  }
+  if (artifactBackedEvidenceKinds.has(input.kind) && !artifactUrl) {
+    return { ok: false, message: "Screenshot and link evidence require an HTTPS artifact link." };
+  }
+
+  const note = input.note?.trim();
+  if (!artifactBackedEvidenceKinds.has(input.kind) && !note) {
+    return { ok: false, message: "Recap, attendance, and campaign evidence require a written observation." };
+  }
+
+  try {
+    const db = adminDb();
+    const requirement = await run<{
+      id: string;
+      organization_id: string;
+      agreement_id: string;
+      label: string;
+      blocked_at: string | null;
+    }>(db.from("sponsor_fulfillment_requirements")
+      .select("id,organization_id,agreement_id,label,blocked_at")
+      .eq("id", input.requirementId)
+      .maybeSingle());
+    if (requirement.error || !requirement.data) {
+      return { ok: false, message: "The sponsor fulfillment requirement could not be found." };
+    }
+
+    const access = await requireActiveOrganizationAdmin({
+      db,
+      organizationId: requirement.data.organization_id,
+      userId: input.actorUserId,
+      action: "record sponsor fulfillment evidence"
+    });
+    if (!access.ok) return { ok: false, message: access.message };
+
+    const insert = await run<{ id: string }>(db.from("sponsor_fulfillment_evidence").insert({
+      organization_id: requirement.data.organization_id,
+      requirement_id: requirement.data.id,
+      kind: input.kind,
+      observed_at: new Date(observedAtMs).toISOString(),
+      artifact_url: artifactUrl ?? null,
+      note: note ?? null,
+      captured_by_user_id: input.actorUserId
+    }).select("id").maybeSingle());
+
+    if (insert.error || !insert.data) {
+      return { ok: false, message: "The fulfillment evidence could not be recorded." };
+    }
+
+    await run(db.from("audit_events").insert({
+      organization_id: requirement.data.organization_id,
+      actor_user_id: input.actorUserId,
+      action: "sponsor_fulfillment_evidence_captured",
+      target_type: "sponsor_fulfillment_requirement",
+      target_id: requirement.data.id,
+      summary: `${input.kind} evidence observed at ${new Date(observedAtMs).toISOString()} recorded for "${requirement.data.label}". Delivery state is folded from evidence and is not stored.`
+    }));
+
+    return {
+      ok: true,
+      evidenceId: insert.data.id,
+      message: requirement.data.blocked_at
+        ? "Evidence recorded. This requirement is still marked blocked, so it is not reported as delivered."
+        : "Evidence recorded. This deliverable now reports as delivered because an observation exists for it."
+    };
+  } catch {
+    return { ok: false, message: "The fulfillment evidence could not be recorded." };
   }
 }

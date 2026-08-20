@@ -14,6 +14,14 @@ export const DEFAULT_SOURCE_FILES = {
   sponsorProgramDomain: "lib/domain/sponsor-program.ts",
 
   sponsorAdapter: "lib/supabase/sponsors.ts",
+  sponsorProgramAdapter: "lib/supabase/sponsor-program.ts",
+  sponsorProgramAdapterTest: "lib/supabase/sponsor-program.test.ts",
+  sponsorEvidenceRoute: "app/api/admin/sponsors/evidence/route.ts",
+  sponsorFulfillmentMigration: "supabase/migrations/20260819190000_sponsor_fulfillment_evidence.sql",
+  sponsorDeliverableDerivationTest: "lib/domain/__tests__/sponsor-fulfillment-derivation.test.ts",
+  rlsPolicyTest: "supabase/rls-policy.test.ts",
+  sponsorFulfillmentInvariants: "supabase/sponsor-fulfillment-invariants.sql",
+  demoTenantSeed: "scripts/bootstrap-demo-tenant.mjs",
   sponsorOperations: "lib/supabase/operations.ts",
   sponsorRoute: "app/api/admin/sponsors/route.ts",
   revenueSummaryRoute: "app/api/admin/revenue-summary/route.ts",
@@ -40,6 +48,7 @@ const DOC_KEYS = ["runbook", "workPlan", "taskBoard"];
 
 export const OPEN_GATES = [
   "hosted public/admin browser proof",
+  "hosted fulfillment evidence proof",
   "observed placement-rendering proof",
   "approved logo asset proof",
   "sponsor recap/report artifact proof",
@@ -201,7 +210,7 @@ function verifyFulfillmentRecapSeparation(sources, blockers) {
     "fulfillment-recap-separation",
     "SPONSOR_HUB_FULFILLMENT_SEPARATION_MISSING",
     ["sponsorHub", "sponsorHubTest"],
-    /confirmedBillingRecords[\s\S]*paymentProofStatus === "paid" && Boolean\(record\.confirmedAt\)[\s\S]*Reviewed logo on file[\s\S]*Public placement selected[\s\S]*Delivery proof", complete: false[\s\S]*Active public placements[\s\S]*sponsor\.status === "active" && sponsor\.placementKey[\s\S]*Payment proof recorded[\s\S]*Verified impact events[\s\S]*<dd>0<\/dd>[\s\S]*PDF impact reports remain unavailable/s,
+    /confirmedBillingRecords[\s\S]*paymentProofStatus === "paid" && Boolean\(record\.confirmedAt\)[\s\S]*Reviewed logo on file[\s\S]*Public placement selected[\s\S]*Delivery proof"[\s\S]*deliverables\.every\(\(deliverable\) => deliverable\.state === "delivered"\)[\s\S]*Active public placements[\s\S]*sponsor\.status === "active" && sponsor\.placementKey[\s\S]*Payment proof recorded[\s\S]*Verified impact events[\s\S]*<dd>0<\/dd>[\s\S]*PDF impact reports remain unavailable/s,
     "Sponsor Hub must keep configured placement, reviewed logo metadata, delivered-placement proof, payment proof, and zero verified impact separate."
   );
   requirePattern(
@@ -221,6 +230,150 @@ function verifyFulfillmentRecapSeparation(sources, blockers) {
     ["moneySponsorsDomain", "revenueSummaryRoute", "apiLiveActionsTest"],
     /Revenue dashboard separates receivables, sponsor invoice readiness, and payment proof[\s\S]*Browser return or public placement is not settlement[\s\S]*confirmedSponsorPaymentCents[\s\S]*confirmed payment totals also require paid proof and a provider-confirmed timestamp[\s\S]*sponsorOpportunities: \[\][\s\S]*No opportunity suggestions are returned without organization-scoped schedule, registration, snack, and media evidence/s,
     "Revenue summaries must separate billing proof from placement and avoid converting missing impact evidence into report or opportunity claims."
+  );
+}
+
+function verifyFulfillmentEvidenceDerivation(sources, blockers) {
+  requirePattern(
+    blockers,
+    sources,
+    "fulfillment-evidence-derivation",
+    "EVIDENCE_TABLES_OR_SCOPE_MISSING",
+    ["sponsorFulfillmentMigration", "rlsPolicyTest"],
+    [
+      "create table if not exists public.sponsor_fulfillment_requirements",
+      "create table if not exists public.sponsor_fulfillment_evidence",
+      "organization admins read sponsor fulfillment requirements",
+      "organization admins read sponsor fulfillment evidence",
+      "revoke all on table public.sponsor_fulfillment_requirements from public, anon, authenticated",
+      "revoke all on table public.sponsor_fulfillment_evidence from public, anon, authenticated",
+      "grant select, insert on table public.sponsor_fulfillment_evidence to service_role"
+    ],
+    "Fulfillment requirement and evidence tables must exist with organization-scoped RLS, revoked public/anon/authenticated write access, and append-only evidence grants."
+  );
+  requireNoPattern(
+    blockers,
+    sources,
+    "fulfillment-evidence-derivation",
+    "STORED_DELIVERABLE_STATE_PRESENT",
+    ["sponsorFulfillmentMigration"],
+    /\b(?:delivery_state|deliverable_state|fulfillment_status|delivered_quantity|delivered_at|is_delivered)\b/s,
+    "No fulfillment table may store a deliverable state, delivered count, or delivered timestamp; delivery is folded from evidence rows on read."
+  );
+  requirePattern(
+    blockers,
+    sources,
+    "fulfillment-evidence-derivation",
+    "DERIVATION_INVARIANT_MISSING",
+    ["sponsorProgramDomain"],
+    [
+      "export function deriveDeliverableState(",
+      'if (requirement.blockedAt) return "blocked";',
+      'if (requirementEvidence.length > 0) return "delivered";'
+    ],
+    "deriveDeliverableState must return delivered from the evidence branch alone, with a block overriding it."
+  );
+  requireNoPattern(
+    blockers,
+    sources,
+    "fulfillment-evidence-derivation",
+    "UNPROVEN_DELIVERED_WRITE_PRESENT",
+    ["sponsorProgramAdapter", "sponsorEvidenceRoute"],
+    /(?:status|state):\s*"delivered"/s,
+    "No adapter or route may write a delivered state; recording evidence is the only path to a delivered deliverable."
+  );
+  requirePattern(
+    blockers,
+    sources,
+    "fulfillment-evidence-derivation",
+    "EVIDENCE_CAPTURE_AUTHORITY_MISSING",
+    ["sponsorProgramAdapter", "sponsorEvidenceRoute"],
+    [
+      /requireActiveOrganizationAdmin\(\{[\s\S]*action: "record sponsor fulfillment evidence"/s,
+      "cannot be observed in the future",
+      "sponsor_fulfillment_evidence_captured",
+      /actorUserId: auth\.user\.id/s
+    ],
+    "Evidence capture must derive the actor from the session, require active organization-admin authority, reject future observations, and write an audit event."
+  );
+  requirePattern(
+    blockers,
+    sources,
+    "fulfillment-evidence-derivation",
+    "EVIDENCE_ORDERING_MISSING",
+    ["sponsorProgramAdapter", "sponsorProgramDomain"],
+    [
+      /\.order\("observed_at", \{ ascending: true \}\)[\s\S]*\.order\("id", \{ ascending: true \}\)/s,
+      /left\.observedAt === right\.observedAt[\s\S]*left\.id\.localeCompare\(right\.id\)/s
+    ],
+    "Evidence must be read and folded in observation order with a deterministic id tiebreak."
+  );
+  // These three checks exist because the 2026-08-19 Codex review found this verifier passing while
+  // the append-only guarantee it reports on was absent from the migration. A source-pattern verifier
+  // can only catch what it is told to look for.
+  requirePattern(
+    blockers,
+    sources,
+    "fulfillment-evidence-derivation",
+    "EVIDENCE_APPEND_ONLY_MISSING",
+    ["sponsorFulfillmentMigration"],
+    [
+      "create or replace function public.sponsor_fulfillment_evidence_append_only()",
+      /create trigger sponsor_fulfillment_evidence_append_only\s+before update or delete on public\.sponsor_fulfillment_evidence/s,
+      "revoke update, delete on table public.sponsor_fulfillment_evidence from service_role"
+    ],
+    "Evidence must be append-only against every writer: a grant is additive, so service_role's default update and delete must be revoked explicitly and a before-update-or-delete trigger must bind the table owner as well."
+  );
+  requirePattern(
+    blockers,
+    sources,
+    "fulfillment-evidence-derivation",
+    "TENANT_COMPOSITE_KEY_MISSING",
+    ["sponsorFulfillmentMigration"],
+    [
+      "add constraint uq_sponsorship_agreements_id_organization unique (id, organization_id)",
+      /foreign key \(agreement_id, organization_id\)\s+references public\.sponsorship_agreements\(id, organization_id\)/s,
+      /foreign key \(requirement_id, organization_id\)\s+references public\.sponsor_fulfillment_requirements\(id, organization_id\)/s
+    ],
+    "Requirement and evidence rows must be tied to their parent's organization by composite foreign key; an RLS policy that trusts a child row's own organization_id is unbacked against a writer that bypasses RLS."
+  );
+  requireNoPattern(
+    blockers,
+    sources,
+    "fulfillment-evidence-derivation",
+    "UNSTRUCTURED_PACKAGE_BENEFITS_PRESENT",
+    ["demoTenantSeed"],
+    /benefits:\s*\[\s*"/s,
+    "Package benefits must be written as structured objects carrying a requirement kind. A benefit stored as a plain string generates no fulfillment requirement, so the package promises something no deliverable can be derived from."
+  );
+  requirePattern(
+    blockers,
+    sources,
+    "fulfillment-evidence-derivation",
+    "INVARIANT_QUERY_MISSING",
+    ["sponsorFulfillmentInvariants"],
+    [
+      "table_name in ('sponsor_fulfillment_requirements', 'sponsor_fulfillment_evidence')",
+      "stored deliverable state",
+      "future observation",
+      "cross-organization evidence"
+    ],
+    "A read-only invariant query file must assert that no deliverable state is stored, that no evidence is dated in the future, and that evidence never crosses a tenant boundary."
+  );
+  requirePattern(
+    blockers,
+    sources,
+    "fulfillment-evidence-derivation",
+    "EVIDENCE_DERIVATION_TESTS_MISSING",
+    ["sponsorDeliverableDerivationTest", "sponsorProgramAdapterTest"],
+    [
+      "never reports delivered without an evidence row",
+      "lets a block override evidence",
+      "refuses evidence observed in the future",
+      "refuses fulfillment evidence from a user who is not an active organization admin",
+      "refuses fulfillment evidence against another organization's requirement"
+    ],
+    "Executed tests must prove delivered is unreachable without evidence, that a block overrides it, and that unauthorized, cross-organization, or future evidence is refused."
   );
 }
 
@@ -298,6 +451,7 @@ export function verifySponsorFulfillmentReadiness(sources) {
   verifyPlacementAuthority(sources, blockers);
   verifyLogoAssetSafety(sources, blockers);
   verifyFulfillmentRecapSeparation(sources, blockers);
+  verifyFulfillmentEvidenceDerivation(sources, blockers);
   verifyRenewalDeliveryGates(sources, blockers);
   verifyPublicParentPrivacy(sources, blockers);
   verifyOpenGatesDocumentation(sources, blockers);
@@ -310,6 +464,7 @@ export function verifySponsorFulfillmentReadiness(sources) {
       "placement-authority",
       "logo-asset-safety",
       "fulfillment-recap-separation",
+      "fulfillment-evidence-derivation",
       "renewal-delivery-gates",
       "public-parent-privacy",
       "open-gates-documentation"

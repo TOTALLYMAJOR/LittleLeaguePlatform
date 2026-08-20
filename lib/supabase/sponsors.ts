@@ -1,5 +1,7 @@
-import type { Sponsor, Team } from "@/lib/domain";
+import type { Sponsor, SponsorshipProgramSummary, Team } from "@/lib/domain";
+import { buildSponsorProgramSummaries } from "@/lib/domain";
 import { createSupabaseAdminClient } from "./admin";
+import { listSponsorProgramData } from "./sponsor-program";
 import { withSupabaseTimeout } from "./timeout";
 
 type UnsafeSupabase = {
@@ -13,6 +15,13 @@ export interface SponsorAdminData {
   teams: Team[];
   sponsors: Sponsor[];
   billingRecords: SponsorBillingRecord[];
+  /**
+   * One program summary per sponsor, with deliverable state folded from evidence rather than read
+   * from a column. Empty when program records are unavailable, so the hub reports absence instead
+   * of inventing a delivery claim.
+   */
+  programSummaries: SponsorshipProgramSummary[];
+  programMessage: string;
   isSupabaseBacked: boolean;
   message: string;
 }
@@ -37,6 +46,8 @@ function unavailableSponsorData(
     teams: [],
     sponsors: [],
     billingRecords: [],
+    programSummaries: [],
+    programMessage: "Sponsor agreement, invoice, and delivery records were not loaded. No payment or delivery state is claimed.",
     isSupabaseBacked: false,
     message
   };
@@ -198,11 +209,21 @@ export async function listSponsorAdminData(input: {
       confirmedAt: record.confirmed_at ?? undefined
     }));
 
+    // Program records are loaded separately and folded here so the hub receives one derived view.
+    // A degraded program read leaves the sponsor list intact with empty summaries rather than
+    // failing the whole page.
+    const programData = await listSponsorProgramData({ organizationId });
+    const programSummaries = programData.isSupabaseBacked
+      ? buildSponsorProgramSummaries(sponsors, programData)
+      : [];
+
     return {
       organizationId: organization.id,
       teams,
       sponsors,
       billingRecords,
+      programSummaries,
+      programMessage: programData.message,
       isSupabaseBacked: true,
       message: "Sponsor records, active placements, approved logos, and payment-proof records are loaded from Supabase."
     };

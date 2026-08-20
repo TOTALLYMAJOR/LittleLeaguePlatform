@@ -23,6 +23,7 @@ describe("Supabase RLS policy coverage", () => {
   const rsvpCancellations = migration("0016_rsvp_cancellations.sql");
   const sponsorBillingAndTeamBuilder = migration("0017_sponsor_billing_and_team_builder.sql");
   const sponsorProgramSpine = migration("20260819161500_sponsor_program_spine.sql");
+  const sponsorFulfillmentEvidence = migration("20260819190000_sponsor_fulfillment_evidence.sql");
   const teamBrandProfilesMonitoring = migration("0018_team_brand_profiles_monitoring.sql");
   const guardianVerification = migration("0020_guardian_verification_policy.sql");
   const drillVideoReferences = migration("0022_drill_video_references.sql");
@@ -291,6 +292,91 @@ describe("Supabase RLS policy coverage", () => {
     for (const balanceColumn of ["paid_cents", "outstanding_cents", "refunded_cents", "disputed_cents", "balance_cents"]) {
       expect(sponsorProgramSpine).not.toContain(balanceColumn);
     }
+  });
+
+  it("keeps sponsor fulfillment requirements and evidence organization-scoped and admin-read only", () => {
+    expect(sponsorFulfillmentEvidence).toContain("create table if not exists public.sponsor_fulfillment_requirements");
+    expect(sponsorFulfillmentEvidence).toContain("create table if not exists public.sponsor_fulfillment_evidence");
+
+    expect(sponsorFulfillmentEvidence).toContain("organization admins read sponsor fulfillment requirements");
+    expect(sponsorFulfillmentEvidence).toContain("organization admins read sponsor fulfillment evidence");
+
+    expect(sponsorFulfillmentEvidence).toContain("alter table public.sponsor_fulfillment_requirements enable row level security");
+    expect(sponsorFulfillmentEvidence).toContain("alter table public.sponsor_fulfillment_evidence enable row level security");
+
+    expect(sponsorFulfillmentEvidence).toContain("revoke all on table public.sponsor_fulfillment_requirements from public, anon, authenticated");
+    expect(sponsorFulfillmentEvidence).toContain("revoke all on table public.sponsor_fulfillment_evidence from public, anon, authenticated");
+
+    // The policy body, not only its name. Asserting the name alone would pass against
+    // `using (true)`, which is exactly the mistake this test exists to prevent.
+    expect(sponsorFulfillmentEvidence).toMatch(
+      /organization admins read sponsor fulfillment requirements"[\s\S]*?using \(public\.current_user_is_org_admin\(organization_id\)\)/
+    );
+    expect(sponsorFulfillmentEvidence).toMatch(
+      /organization admins read sponsor fulfillment evidence"[\s\S]*?using \(public\.current_user_is_org_admin\(organization_id\)\)/
+    );
+    expect(sponsorFulfillmentEvidence).not.toMatch(/using \(true\)/);
+  });
+
+  it("binds every fulfillment row to its parent's organization by composite key", () => {
+    // An RLS policy that reads the row's own organization_id is only as trustworthy as the writer
+    // that set it, and service_role bypasses RLS entirely. The composite foreign keys make a
+    // cross-organization parent unrepresentable rather than merely detectable after the fact.
+    expect(sponsorFulfillmentEvidence).toContain(
+      "add constraint uq_sponsorship_agreements_id_organization unique (id, organization_id)"
+    );
+    expect(sponsorFulfillmentEvidence).toMatch(
+      /foreign key \(agreement_id, organization_id\)\s+references public\.sponsorship_agreements\(id, organization_id\)/
+    );
+    expect(sponsorFulfillmentEvidence).toMatch(
+      /foreign key \(requirement_id, organization_id\)\s+references public\.sponsor_fulfillment_requirements\(id, organization_id\)/
+    );
+    expect(sponsorFulfillmentEvidence).toContain("unique (id, organization_id)");
+  });
+
+  it("keeps fulfillment evidence append-only against service_role and the table owner alike", () => {
+    // Mirrors sponsor_payment_ledger_entries in the Phase 1 spine. A grant is additive, so
+    // withholding update and delete does not withdraw the default privileges service_role already
+    // holds; the revoke does that, and the trigger covers the table owner, which no grant restrains.
+    expect(sponsorFulfillmentEvidence).toContain(
+      "create or replace function public.sponsor_fulfillment_evidence_append_only()"
+    );
+    expect(sponsorFulfillmentEvidence).toMatch(
+      /create trigger sponsor_fulfillment_evidence_append_only\s+before update or delete on public\.sponsor_fulfillment_evidence/
+    );
+    expect(sponsorFulfillmentEvidence).toContain(
+      "revoke update, delete on table public.sponsor_fulfillment_evidence from service_role"
+    );
+    // Cascade cleanup stays possible: the delete branch permits removal once the parent is gone.
+    expect(sponsorFulfillmentEvidence).toContain(
+      "select 1 from public.sponsor_fulfillment_requirements where id = old.requirement_id"
+    );
+  });
+
+  it("stores no deliverable state column, so delivered stays derivable only from evidence", () => {
+    // The invariant this migration exists to make structurally true: with no state column, an
+    // optimistic write has nowhere to record a delivery it cannot prove (ADR 0003).
+    for (const stateColumn of [
+      "delivery_state",
+      "deliverable_state",
+      "fulfillment_status",
+      "delivered_at",
+      "delivered_quantity",
+      "is_delivered"
+    ]) {
+      expect(sponsorFulfillmentEvidence).not.toContain(stateColumn);
+    }
+    expect(sponsorFulfillmentEvidence).not.toMatch(/create table if not exists public\.sponsor_fulfillment_requirements[\s\S]*?\n\s+status text/);
+    expect(sponsorFulfillmentEvidence).not.toMatch(/create table if not exists public\.sponsor_fulfillment_evidence[\s\S]*?\n\s+status text/);
+  });
+
+  it("rejects fulfillment evidence observed in the future for every connection", () => {
+    expect(sponsorFulfillmentEvidence).toContain("function public.sponsor_fulfillment_evidence_not_future()");
+    expect(sponsorFulfillmentEvidence).toContain("before insert or update on public.sponsor_fulfillment_evidence");
+    expect(sponsorFulfillmentEvidence).toContain("cannot be observed in the future");
+    // Evidence carries the delivery claim, so correcting one is a separately authorized action.
+    expect(sponsorFulfillmentEvidence).toContain("grant select, insert on table public.sponsor_fulfillment_evidence to service_role");
+    expect(sponsorFulfillmentEvidence).not.toContain("grant select, insert, update, delete on table public.sponsor_fulfillment_evidence");
   });
 
   it("adopts the existing sponsor package table instead of creating a second one", () => {
