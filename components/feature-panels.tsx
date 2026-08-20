@@ -2,7 +2,7 @@
 
 import Image from "next/image";
 import { useEffect, useMemo, useState, useTransition, type CSSProperties, type ChangeEvent, type ReactNode } from "react";
-import { markLeaguePilotValueExperienced, useAppState } from "@/app/providers";
+import { useAppState } from "@/app/providers";
 import {
   captureOfflineOwnerGeneration,
   clearPrivateGameDayData,
