@@ -1,4 +1,3 @@
-import { randomUUID } from "node:crypto";
 import type {
   FulfillmentRequirement,
   FulfillmentRequirementKind,
@@ -14,7 +13,6 @@ import type {
   SponsorshipPackage,
   SponsorshipPackageBenefit
 } from "@/lib/domain";
-import { requireActiveOrganizationAdmin } from "./access-control";
 import { createSupabaseAdminClient } from "./admin";
 import { withSupabaseTimeout } from "./timeout";
 
@@ -145,9 +143,10 @@ export async function listSponsorProgramData(input: {
         amount_cents: number;
         provider: SponsorPaymentLedgerEntry["provider"];
         provider_event_id: string;
+        provider_resource_id: string | null;
         occurred_at: string;
       }>>(db.from("sponsor_payment_ledger_entries")
-        .select("id,invoice_id,kind,amount_cents,provider,provider_event_id,occurred_at")
+        .select("id,invoice_id,kind,amount_cents,provider,provider_event_id,provider_resource_id,occurred_at")
         .eq("organization_id", organizationId)
         .in("invoice_id", invoiceIds)
         .order("occurred_at", { ascending: true }))
@@ -241,6 +240,7 @@ export async function listSponsorProgramData(input: {
       currency: "usd" as const,
       provider: row.provider,
       providerEventId: row.provider_event_id,
+      providerResourceId: row.provider_resource_id ?? undefined,
       occurredAt: row.occurred_at
     }));
 
@@ -315,6 +315,7 @@ export async function recordSponsorPaymentEvent(input: {
   amountCents: number;
   provider: SponsorPaymentLedgerEntry["provider"];
   providerEventId: string;
+  providerResourceId?: string;
   occurredAt: string;
   recordedByUserId?: string;
   note?: string;
@@ -333,6 +334,7 @@ export async function recordSponsorPaymentEvent(input: {
       currency: "usd",
       provider: input.provider,
       provider_event_id: input.providerEventId,
+      provider_resource_id: input.providerResourceId?.trim() || null,
       occurred_at: input.occurredAt,
       recorded_by_user_id: input.recordedByUserId ?? null,
       note: input.note ?? null
@@ -352,6 +354,70 @@ export async function recordSponsorPaymentEvent(input: {
 }
 
 /**
+ * Commit one verified sponsor Stripe event as a single database transaction. The RPC owns the
+ * evidence row, append-only ledger row, invoice state, and migration-window legacy status so a
+ * failed ledger write cannot strand evidence that would make Stripe retries look complete.
+ */
+export async function recordSponsorStripeEvent(input: {
+  organizationId: string;
+  invoiceId: string;
+  legacyBillingRecordId?: string;
+  stripeAccountId: string;
+  stripeEventId: string;
+  providerEventType: string;
+  checkoutSessionId?: string;
+  paymentIntentId?: string;
+  kind: SponsorPaymentLedgerEntry["kind"];
+  amountCents: number;
+  currency: "usd";
+  occurredAt: string;
+  providerResourceId: string;
+  evidence: Record<string, unknown>;
+}): Promise<{ ok: boolean; deduplicated: boolean; message: string }> {
+  if (
+    !input.organizationId
+    || !input.invoiceId
+    || !input.stripeAccountId
+    || !input.stripeEventId.trim()
+    || !input.providerResourceId.trim()
+  ) {
+    return { ok: false, deduplicated: false, message: "Verified sponsor payment evidence is incomplete." };
+  }
+
+  try {
+    const db = adminDb();
+    const result = await run<{ ok: boolean; replayed?: boolean; message?: string }>(db.rpc("record_sponsor_stripe_event", {
+      p_organization_id: input.organizationId,
+      p_invoice_id: input.invoiceId,
+      p_legacy_billing_record_id: input.legacyBillingRecordId ?? null,
+      p_stripe_account_id: input.stripeAccountId,
+      p_stripe_event_id: input.stripeEventId,
+      p_provider_event_type: input.providerEventType,
+      p_checkout_session_id: input.checkoutSessionId ?? null,
+      p_payment_intent_id: input.paymentIntentId ?? null,
+      p_kind: input.kind,
+      p_amount_cents: Math.max(0, input.amountCents),
+      p_currency: input.currency,
+      p_occurred_at: input.occurredAt,
+      p_provider_resource_id: input.providerResourceId,
+      p_evidence_json: input.evidence
+    }));
+
+    if (result.error || !result.data?.ok) {
+      return { ok: false, deduplicated: false, message: result.data?.message ?? "Stripe sponsor evidence could not be committed." };
+    }
+
+    return {
+      ok: true,
+      deduplicated: result.data.replayed === true,
+      message: result.data.message ?? "Verified sponsor payment evidence committed."
+    };
+  } catch {
+    return { ok: false, deduplicated: false, message: "Stripe sponsor evidence could not be committed." };
+  }
+}
+
+/**
  * Record a payment a league collected outside a processor - a cheque, cash, or a bank transfer.
  * `provider: "manual"` is a first-class ledger provider, not a placeholder: it is how a league that
  * has not enabled live collection keeps a truthful paid total.
@@ -359,12 +425,13 @@ export async function recordSponsorPaymentEvent(input: {
 export async function recordManualSponsorPayment(input: {
   invoiceId: string;
   actorUserId: string;
+  idempotencyKey: string;
   amountCents: number;
   occurredAt?: string;
   note?: string;
 }) {
-  if (!input.invoiceId || !input.actorUserId) {
-    return { ok: false, message: "Manual payment recording requires an invoice and an authenticated actor." };
+  if (!input.invoiceId || !input.actorUserId || !input.idempotencyKey.trim()) {
+    return { ok: false, message: "Manual payment recording requires an invoice, authenticated actor, and idempotency key." };
   }
   if (!Number.isInteger(input.amountCents) || input.amountCents <= 0) {
     return { ok: false, message: "Manual payment amount must be a positive whole number of cents." };
@@ -372,47 +439,25 @@ export async function recordManualSponsorPayment(input: {
 
   try {
     const db = adminDb();
-    const invoice = await run<{ id: string; organization_id: string; amount_cents: number }>(db.from("sponsorship_invoices")
-      .select("id,organization_id,amount_cents")
-      .eq("id", input.invoiceId)
-      .maybeSingle());
-    if (invoice.error || !invoice.data) return { ok: false, message: "The sponsor invoice could not be found." };
-
-    const access = await requireActiveOrganizationAdmin({
-      db,
-      organizationId: invoice.data.organization_id,
-      userId: input.actorUserId,
-      action: "record a sponsor payment"
-    });
-    if (!access.ok) return { ok: false, message: access.message };
-
-    const occurredAt = input.occurredAt ?? new Date().toISOString();
-    const providerEventId = `manual:${randomUUID()}`;
-    const ledger = await recordSponsorPaymentEvent({
-      organizationId: invoice.data.organization_id,
-      invoiceId: invoice.data.id,
-      kind: "PaymentSucceeded",
-      amountCents: input.amountCents,
-      provider: "manual",
-      providerEventId,
-      occurredAt,
-      recordedByUserId: input.actorUserId,
-      note: input.note
-    });
-    if (!ledger.ok) return { ok: false, message: ledger.message };
-
-    await run(db.from("audit_events").insert({
-      organization_id: invoice.data.organization_id,
-      actor_user_id: input.actorUserId,
-      action: "sponsor_manual_payment_recorded",
-      target_type: "sponsorship_invoice",
-      target_id: invoice.data.id,
-      summary: `Manual sponsor payment of ${input.amountCents} cents recorded against invoice ${invoice.data.id}. No processor settlement evidence is claimed for this entry.`
+    const result = await run<{ ok: boolean; replayed?: boolean; message?: string }>(db.rpc("record_manual_sponsor_payment", {
+      p_invoice_id: input.invoiceId,
+      p_actor_user_id: input.actorUserId,
+      p_idempotency_key: input.idempotencyKey.trim(),
+      p_amount_cents: input.amountCents,
+      p_occurred_at: input.occurredAt ?? new Date().toISOString(),
+      p_note: input.note?.trim() || null
     }));
+
+    if (result.error || !result.data?.ok) {
+      return { ok: false, message: result.data?.message ?? "The manual sponsor payment could not be recorded." };
+    }
 
     return {
       ok: true,
-      message: "Manual sponsor payment recorded. This is a league-recorded payment, not processor settlement evidence."
+      replayed: result.data.replayed === true,
+      message: result.data.replayed
+        ? "This manual sponsor payment was already recorded. Nothing was counted twice."
+        : "Manual sponsor payment recorded. This is a league-recorded payment, not processor settlement evidence."
     };
   } catch {
     return { ok: false, message: "The manual sponsor payment could not be recorded." };

@@ -144,10 +144,11 @@ export function SponsorHub({ initialData }: { initialData: SponsorAdminData }) {
   const artworkNeeded = sponsors.filter((sponsor) => !sponsor.logoUrl);
   const placementNeeded = sponsors.filter((sponsor) => !sponsor.placementKey);
   const pastSeasonSponsors = sponsors.filter((sponsor) => sponsor.status === "expired");
-  const confirmedBillingRecords = initialData.billingRecords.filter((record) => (
-    record.paymentProofStatus === "paid" && Boolean(record.confirmedAt)
+  const paidProgramSummaries = initialData.programSummaries.filter((summary) => (
+    summary.agreementRecorded && summary.paymentState === "paid" && summary.outstandingCents === 0
   ));
-  const paidSponsorIds = new Set(confirmedBillingRecords.map((record) => record.sponsorId));
+  const paidSponsorIds = new Set(paidProgramSummaries.map((summary) => summary.sponsorId));
+  const paymentTruthKnown = initialData.programSummaries.length > 0;
   const deliverablesBySponsorId = new Map<string, SponsorDeliverable[]>(
     initialData.programSummaries.map((summary) => [summary.sponsorId, summary.deliverables])
   );
@@ -155,7 +156,10 @@ export function SponsorHub({ initialData }: { initialData: SponsorAdminData }) {
     (total, summary) => total + summary.deliverables.filter((deliverable) => deliverable.state === "delivered").length,
     0
   );
-  const verifiedRevenueCents = confirmedBillingRecords.reduce((total, record) => total + record.amountCents, 0);
+  const verifiedRevenueCents = paidProgramSummaries.reduce(
+    (total, summary) => total + Math.max(0, summary.paidCents - summary.refundedCents),
+    0
+  );
   const filteredSponsors = useMemo(() => sponsors.filter((sponsor) => {
     const matchesQuery = `${sponsor.name} ${sponsor.url}`.toLowerCase().includes(query.trim().toLowerCase());
     return matchesQuery && (statusFilter === "all" || sponsor.status === statusFilter);
@@ -422,12 +426,12 @@ export function SponsorHub({ initialData }: { initialData: SponsorAdminData }) {
             </article>
             <article>
               <span><CircleDollarSign aria-hidden="true" size={18} /> Verified revenue</span>
-              <strong>{initialData.isSupabaseBacked ? formatUsd(verifiedRevenueCents) : "—"}</strong>
+              <strong>{paymentTruthKnown ? formatUsd(verifiedRevenueCents) : "—"}</strong>
               <small>
-                {!initialData.isSupabaseBacked
+                {!paymentTruthKnown
                   ? "Payment proof is unavailable"
-                  : confirmedBillingRecords.length
-                    ? `${confirmedBillingRecords.length} provider-confirmed payment record${confirmedBillingRecords.length === 1 ? "" : "s"}`
+                  : paidProgramSummaries.length
+                    ? `${paidProgramSummaries.length} fully paid sponsor program${paidProgramSummaries.length === 1 ? "" : "s"}`
                     : "No settled payment proof recorded"}
               </small>
             </article>
@@ -497,7 +501,7 @@ export function SponsorHub({ initialData }: { initialData: SponsorAdminData }) {
               teams={initialData.teams}
               onEdit={openSponsorEditor}
               paidSponsorIds={paidSponsorIds}
-              billingKnown={initialData.isSupabaseBacked}
+              billingKnown={paymentTruthKnown}
             />
           </section>
         </>
@@ -535,7 +539,7 @@ export function SponsorHub({ initialData }: { initialData: SponsorAdminData }) {
             teams={initialData.teams}
             onEdit={openSponsorEditor}
             paidSponsorIds={paidSponsorIds}
-            billingKnown={initialData.isSupabaseBacked}
+            billingKnown={paymentTruthKnown}
           />
         </section>
       ) : null}
@@ -704,7 +708,7 @@ export function SponsorHub({ initialData }: { initialData: SponsorAdminData }) {
               <div><dt>Sponsors</dt><dd>{sponsors.length}</dd></div>
               <div><dt>Active public placements</dt><dd>{sponsors.filter((sponsor) => sponsor.status === "active" && sponsor.placementKey).length}</dd></div>
               <div><dt>Logos on file</dt><dd>{sponsors.filter((sponsor) => sponsor.logoUrl).length}</dd></div>
-              <div><dt>Payment proof recorded</dt><dd>{initialData.isSupabaseBacked ? confirmedBillingRecords.length : "Unavailable"}</dd></div>
+              <div><dt>Fully paid sponsor programs</dt><dd>{paymentTruthKnown ? paidProgramSummaries.length : "Unavailable"}</dd></div>
               <div><dt>Deliverables proven by evidence</dt><dd>{initialData.isSupabaseBacked ? provenDeliverableCount : "Unavailable"}</dd></div>
               <div><dt>Verified impact events</dt><dd>0</dd></div>
             </dl>

@@ -4027,7 +4027,7 @@ export function AdminDashboardClient({ registrationRequests, sponsorData, mediaD
       ? sponsor.placementKey.replaceAll("_", " ")
       : "Not public";
     const billingLabel = programSummary && programSummary.agreementRecorded
-      ? `${sponsorPaymentStateLabel(programSummary)}; invoice ${programSummary.invoiceStatus.replaceAll("_", " ")}`
+      ? `${sponsorPaymentStateLabel(programSummary)}; latest invoice ${programSummary.latestInvoiceStatus.replaceAll("_", " ")}`
       : "No agreement on record";
 
     return {
@@ -4938,7 +4938,7 @@ export function AdminDashboardClient({ registrationRequests, sponsorData, mediaD
                 <strong>{summary.sponsorName}</strong><br />
                 <span className="muted">
                   {summary.agreementRecorded
-                    ? `Package: ${summary.packageName}; agreement: ${summary.agreementStatus}; invoice: ${summary.invoiceStatus}; payment: ${sponsorPaymentStateLabel(summary)}; $${(summary.amountCents / 100).toFixed(2)} USD invoiced, $${(summary.outstandingCents / 100).toFixed(2)} outstanding.`
+                    ? `Package: ${summary.packageName}; agreement: ${summary.agreementStatus}; invoices: ${summary.invoiceCount}; latest invoice: ${summary.latestInvoiceStatus}; payment: ${sponsorPaymentStateLabel(summary)}; $${(summary.amountCents / 100).toFixed(2)} USD invoiced, $${(summary.outstandingCents / 100).toFixed(2)} outstanding.`
                     : "No sponsorship agreement or invoice is on record. No amount, payment state, or delivery is claimed."}
                 </span>
               </p>

@@ -4,7 +4,8 @@ import {
   listSponsorProgramData,
   recordManualSponsorPayment,
   recordSponsorFulfillmentEvidence,
-  recordSponsorPaymentEvent
+  recordSponsorPaymentEvent,
+  recordSponsorStripeEvent
 } from "./sponsor-program";
 
 vi.mock("./admin", () => ({
@@ -22,6 +23,49 @@ const queryCalls: Array<{ table: string; filters: Array<{ column: string; value:
 let datasets: Record<string, Row[]> = {};
 /** Composite keys already present in the ledger, used to simulate the unique constraint. */
 let ledgerUniqueKeys = new Set<string>();
+let manualIdempotencyKeys = new Set<string>();
+let failManualAudit = false;
+
+function recordManualPaymentRpc(args: Row): Row {
+  const invoice = (datasets.sponsorship_invoices ?? []).find((row) => row.id === args.p_invoice_id);
+  if (!invoice) return { ok: false, message: "The sponsor invoice could not be found." };
+  const isAdmin = (datasets.organization_memberships ?? []).some((row) => (
+    row.organization_id === invoice.organization_id
+    && row.user_id === args.p_actor_user_id
+    && row.role === "admin"
+    && row.status === "active"
+  ));
+  if (!isAdmin) return { ok: false, message: "Only active organization admins can record a sponsor payment." };
+
+  const resourceId = `manual:${String(args.p_idempotency_key)}`;
+  if (manualIdempotencyKeys.has(resourceId)) return { ok: true, replayed: true };
+  if (failManualAudit) return { ok: false, message: "audit insert failed" };
+
+  manualIdempotencyKeys.add(resourceId);
+  inserts.push({
+    table: "sponsor_payment_ledger_entries",
+    payload: {
+      organization_id: invoice.organization_id,
+      invoice_id: invoice.id,
+      kind: "PaymentSucceeded",
+      amount_cents: args.p_amount_cents,
+      provider: "manual",
+      provider_event_id: resourceId,
+      provider_resource_id: resourceId,
+      recorded_by_user_id: args.p_actor_user_id
+    }
+  });
+  inserts.push({
+    table: "audit_events",
+    payload: {
+      organization_id: invoice.organization_id,
+      actor_user_id: args.p_actor_user_id,
+      action: "sponsor_manual_payment_recorded",
+      target_type: "sponsorship_invoice"
+    }
+  });
+  return { ok: true, replayed: false };
+}
 
 /**
  * Mirrors `record_sponsor_fulfillment_evidence` from
@@ -277,6 +321,8 @@ describe("sponsor program adapter", () => {
   beforeEach(() => {
     datasets = baseDatasets();
     ledgerUniqueKeys = new Set(["stripe:evt_existing"]);
+    manualIdempotencyKeys = new Set();
+    failManualAudit = false;
     inserts.length = 0;
     queryCalls.length = 0;
     rpcCalls.length = 0;
@@ -286,7 +332,13 @@ describe("sponsor program adapter", () => {
       rpc: (name: string, args: Row) => {
         rpcCalls.push({ name, args });
         return Promise.resolve({
-          data: name === "record_sponsor_fulfillment_evidence" ? recordEvidenceRpc(args) : null,
+          data: name === "record_sponsor_fulfillment_evidence"
+            ? recordEvidenceRpc(args)
+            : name === "record_manual_sponsor_payment"
+              ? recordManualPaymentRpc(args)
+              : name === "record_sponsor_stripe_event"
+                ? { ok: true, replayed: false }
+                : null,
           error: null
         });
       }
@@ -386,6 +438,7 @@ describe("sponsor program adapter", () => {
     const result = await recordManualSponsorPayment({
       invoiceId: "invoice-a",
       actorUserId: "admin-a",
+      idempotencyKey: "cheque-1041",
       amountCents: 150_000,
       note: "Cheque 1041"
     });
@@ -401,7 +454,7 @@ describe("sponsor program adapter", () => {
       provider: "manual",
       recorded_by_user_id: "admin-a"
     });
-    expect(String(ledgerInsert?.payload.provider_event_id)).toMatch(/^manual:/);
+    expect(ledgerInsert?.payload.provider_resource_id).toBe("manual:cheque-1041");
 
     expect(inserts.find((entry) => entry.table === "audit_events")?.payload).toMatchObject({
       organization_id: "org-a",
@@ -415,6 +468,7 @@ describe("sponsor program adapter", () => {
     const result = await recordManualSponsorPayment({
       invoiceId: "invoice-a",
       actorUserId: "parent-a",
+      idempotencyKey: "parent-attempt",
       amountCents: 150_000
     });
 
@@ -429,6 +483,7 @@ describe("sponsor program adapter", () => {
       const result = await recordManualSponsorPayment({
         invoiceId: "invoice-a",
         actorUserId: "admin-a",
+        idempotencyKey: `invalid-${amountCents}`,
         amountCents
       });
 
@@ -442,12 +497,70 @@ describe("sponsor program adapter", () => {
     const result = await recordManualSponsorPayment({
       invoiceId: "invoice-missing",
       actorUserId: "admin-a",
+      idempotencyKey: "missing-invoice",
       amountCents: 1000
     });
 
     expect(result.ok).toBe(false);
     expect(result.message).toContain("could not be found");
     expect(inserts.some((entry) => entry.table === "sponsor_payment_ledger_entries")).toBe(false);
+  });
+
+  it("folds a replayed manual-payment idempotency key without a second ledger or audit row", async () => {
+    const input = {
+      invoiceId: "invoice-a",
+      actorUserId: "admin-a",
+      idempotencyKey: "bank-transfer-77",
+      amountCents: 25_000
+    };
+
+    const first = await recordManualSponsorPayment(input);
+    const second = await recordManualSponsorPayment(input);
+
+    expect(first).toMatchObject({ ok: true, replayed: false });
+    expect(second).toMatchObject({ ok: true, replayed: true });
+    expect(inserts.filter((entry) => entry.table === "sponsor_payment_ledger_entries")).toHaveLength(1);
+    expect(inserts.filter((entry) => entry.table === "audit_events")).toHaveLength(1);
+  });
+
+  it("reports an atomic manual-payment failure without a ledger row when audit persistence fails", async () => {
+    failManualAudit = true;
+
+    const result = await recordManualSponsorPayment({
+      invoiceId: "invoice-a",
+      actorUserId: "admin-a",
+      idempotencyKey: "audit-failure",
+      amountCents: 25_000
+    });
+
+    expect(result.ok).toBe(false);
+    expect(inserts.some((entry) => entry.table === "sponsor_payment_ledger_entries")).toBe(false);
+    expect(inserts.some((entry) => entry.table === "audit_events")).toBe(false);
+  });
+
+  it("sends verified Stripe evidence and ledger data through one transaction RPC", async () => {
+    const result = await recordSponsorStripeEvent({
+      organizationId: "org-a",
+      invoiceId: "invoice-a",
+      stripeAccountId: "acct_a",
+      stripeEventId: "evt_refund_1",
+      providerEventType: "refund.created",
+      paymentIntentId: "pi_a",
+      kind: "RefundSucceeded",
+      amountCents: 10_000,
+      currency: "usd",
+      occurredAt: "2026-08-19T00:00:00.000Z",
+      providerResourceId: "refund:re_1",
+      evidence: { livemode: false }
+    });
+
+    expect(result.ok).toBe(true);
+    expect(rpcCalls.find((call) => call.name === "record_sponsor_stripe_event")?.args).toMatchObject({
+      p_invoice_id: "invoice-a",
+      p_stripe_event_id: "evt_refund_1",
+      p_provider_resource_id: "refund:re_1",
+      p_amount_cents: 10_000
+    });
   });
   it("loads fulfillment requirements, evidence, and placement windows for the requested organization only", async () => {
     const data = await listSponsorProgramData({ organizationId: "org-a" });

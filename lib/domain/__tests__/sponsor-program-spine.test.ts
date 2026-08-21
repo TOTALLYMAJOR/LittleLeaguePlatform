@@ -124,6 +124,17 @@ describe("sponsor payment ledger folding", () => {
     expect(summary.outstandingCents).toBe(150_000);
   });
 
+  it("returns a partial refund to partially paid and disables placement readiness", () => {
+    const summary = summaryFor([
+      ledgerEntry("PaymentSucceeded", 150_000, "evt_paid"),
+      ledgerEntry("RefundSucceeded", 10_000, "evt_partial_refund")
+    ]);
+
+    expect(summary.paymentState).toBe("partially_paid");
+    expect(summary.outstandingCents).toBe(10_000);
+    expect(summary.readyForPlacement).toBe(false);
+  });
+
   it("ignores failed payments when folding the paid total", () => {
     const summary = summaryFor([
       ledgerEntry("PaymentFailed", 150_000, "evt_1"),
@@ -188,8 +199,10 @@ describe("sponsor payment ledger folding", () => {
       .toBe("PaymentFailed");
     expect(normalizeSponsorProviderPaymentEvent({ ...base, type: "payment_intent.payment_failed" }).kind)
       .toBe("PaymentFailed");
-    expect(normalizeSponsorProviderPaymentEvent({ ...base, type: "charge.refunded" }).kind)
+    expect(normalizeSponsorProviderPaymentEvent({ ...base, type: "refund.created", providerResourceId: "refund:re_1" }).kind)
       .toBe("RefundSucceeded");
+    expect(normalizeSponsorProviderPaymentEvent({ ...base, type: "refund.updated", providerResourceId: "refund:re_1" }).providerResourceId)
+      .toBe("refund:re_1");
     expect(normalizeSponsorProviderPaymentEvent({ ...base, type: "charge.dispute.created" }).kind)
       .toBe("DisputeOpened");
   });
@@ -221,6 +234,36 @@ describe("sponsor program summaries without persisted records", () => {
     expect(summary?.packageName).toBe("Gold Sponsor");
     expect(summary?.paymentState).toBe("paid");
     expect(sumSponsorInvoicedCents([summary!])).toBe(150_000);
+  });
+
+  it("aggregates every invoice on the selected agreement and exposes latest invoice status", () => {
+    const latestInvoice: SponsorshipInvoice = {
+      ...invoice,
+      id: "invoice-2",
+      invoiceNumber: "SP-2026-002",
+      amountCents: 50_000,
+      status: "issued"
+    };
+    const [summary] = buildSponsorProgramSummaries([sponsor], {
+      packages: [sponsorshipPackage],
+      agreements: [agreement],
+      // Adapter order is newest-first.
+      invoices: [latestInvoice, invoice],
+      ledgerEntries: [
+        ledgerEntry("PaymentSucceeded", 150_000, "evt_invoice_1"),
+        { ...ledgerEntry("PaymentSucceeded", 25_000, "evt_invoice_2"), invoiceId: latestInvoice.id }
+      ]
+    });
+
+    expect(summary).toMatchObject({
+      invoiceCount: 2,
+      latestInvoiceStatus: "issued",
+      amountCents: 200_000,
+      paidCents: 175_000,
+      outstandingCents: 25_000,
+      paymentState: "partially_paid",
+      readyForPlacement: false
+    });
   });
 
   it("treats an agreement with no invoice as unrecorded rather than as a zero-value deal", () => {

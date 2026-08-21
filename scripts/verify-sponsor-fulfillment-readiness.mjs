@@ -211,7 +211,7 @@ function verifyFulfillmentRecapSeparation(sources, blockers) {
     "fulfillment-recap-separation",
     "SPONSOR_HUB_FULFILLMENT_SEPARATION_MISSING",
     ["sponsorHub", "sponsorHubTest"],
-    /confirmedBillingRecords[\s\S]*paymentProofStatus === "paid" && Boolean\(record\.confirmedAt\)[\s\S]*Reviewed logo on file[\s\S]*Public placement selected[\s\S]*Delivery proof"[\s\S]*deliverable\.state === "delivered"[\s\S]*deliverable\.deliveredQuantity >= deliverable\.requirement\.requiredQuantity[\s\S]*Active public placements[\s\S]*sponsor\.status === "active" && sponsor\.placementKey[\s\S]*Payment proof recorded[\s\S]*Verified impact events[\s\S]*<dd>0<\/dd>[\s\S]*PDF impact reports remain unavailable/s,
+    /paidProgramSummaries[\s\S]*summary\.paymentState === "paid" && summary\.outstandingCents === 0[\s\S]*Reviewed logo on file[\s\S]*Public placement selected[\s\S]*Delivery proof"[\s\S]*deliverable\.state === "delivered"[\s\S]*deliverable\.deliveredQuantity >= deliverable\.requirement\.requiredQuantity[\s\S]*Active public placements[\s\S]*sponsor\.status === "active" && sponsor\.placementKey[\s\S]*Fully paid sponsor programs[\s\S]*Verified impact events[\s\S]*<dd>0<\/dd>[\s\S]*PDF impact reports remain unavailable/s,
     "Sponsor Hub must keep configured placement, reviewed logo metadata, delivered-placement proof, payment proof, and zero verified impact separate."
   );
   requirePattern(

@@ -25,6 +25,7 @@ describe("Supabase RLS policy coverage", () => {
   const sponsorProgramSpine = migration("20260819161500_sponsor_program_spine.sql");
   const sponsorFulfillmentEvidence = migration("20260819190000_sponsor_fulfillment_evidence.sql");
   const sponsorFulfillmentCapture = migration("20260819210000_sponsor_fulfillment_evidence_capture.sql");
+  const sponsorPaymentIntegrity = migration("20260820200000_sponsor_payment_integrity.sql");
   const teamBrandProfilesMonitoring = migration("0018_team_brand_profiles_monitoring.sql");
   const guardianVerification = migration("0020_guardian_verification_policy.sql");
   const drillVideoReferences = migration("0022_drill_video_references.sql");
@@ -293,6 +294,47 @@ describe("Supabase RLS policy coverage", () => {
     for (const balanceColumn of ["paid_cents", "outstanding_cents", "refunded_cents", "disputed_cents", "balance_cents"]) {
       expect(sponsorProgramSpine).not.toContain(balanceColumn);
     }
+  });
+
+  it("binds sponsor money relationships to the same organization", () => {
+    for (const constraint of [
+      "sponsorship_agreements_sponsor_organization_fk",
+      "sponsorship_agreements_package_organization_fk",
+      "sponsorship_agreements_season_organization_fk",
+      "sponsorship_invoices_agreement_organization_fk",
+      "sponsorship_invoices_legacy_billing_organization_fk",
+      "sponsor_payment_ledger_invoice_organization_fk",
+      "payment_evidence_sponsor_invoice_organization_fk"
+    ]) {
+      expect(sponsorPaymentIntegrity).toContain(constraint);
+    }
+    expect(sponsorPaymentIntegrity).toContain("foreign key (invoice_id, organization_id)");
+    expect(sponsorPaymentIntegrity).toContain("references public.sponsorship_invoices(id, organization_id)");
+  });
+
+  it("recovers legacy invoice-reference collisions deterministically instead of skipping rows", () => {
+    expect(sponsorPaymentIntegrity).toContain("where existing.legacy_billing_record_id = billing.id");
+    expect(sponsorPaymentIntegrity).toContain("record_row.invoice_reference || '-legacy-'");
+    expect(sponsorPaymentIntegrity).toContain("replace(record_row.id::text, '-', '')");
+    expect(sponsorPaymentIntegrity).not.toContain("on conflict (organization_id, invoice_number) do nothing");
+  });
+
+  it("commits sponsor webhook and manual payment records through service-role-only transaction RPCs", () => {
+    expect(sponsorPaymentIntegrity).toContain("function public.record_sponsor_stripe_event(");
+    expect(sponsorPaymentIntegrity).toMatch(
+      /record_sponsor_stripe_event[\s\S]*insert into public\.payment_evidence[\s\S]*insert into public\.sponsor_payment_ledger_entries[\s\S]*update public\.sponsorship_invoices[\s\S]*update public\.sponsor_billing_records/
+    );
+    expect(sponsorPaymentIntegrity).toContain("provider_resource_id");
+    expect(sponsorPaymentIntegrity).toContain("function public.record_manual_sponsor_payment(");
+    expect(sponsorPaymentIntegrity).toMatch(
+      /record_manual_sponsor_payment[\s\S]*insert into public\.sponsor_payment_ledger_entries[\s\S]*insert into public\.audit_events/
+    );
+    expect(sponsorPaymentIntegrity).toMatch(
+      /revoke all on function public\.record_sponsor_stripe_event[\s\S]*from public, anon, authenticated/
+    );
+    expect(sponsorPaymentIntegrity).toMatch(
+      /grant execute on function public\.record_manual_sponsor_payment[\s\S]*to service_role/
+    );
   });
 
   it("keeps sponsor fulfillment requirements and evidence organization-scoped and admin-read only", () => {

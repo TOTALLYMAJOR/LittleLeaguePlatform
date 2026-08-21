@@ -32,9 +32,11 @@ supabase/migrations/20260726182645_optimize_rls_auth_initplans.sql
 supabase/migrations/20260819084447_event_change_receipts.sql
 supabase/migrations/20260819161500_sponsor_program_spine.sql
 supabase/migrations/20260819190000_sponsor_fulfillment_evidence.sql
+supabase/migrations/20260819210000_sponsor_fulfillment_evidence_capture.sql
+supabase/migrations/20260820200000_sponsor_payment_integrity.sql
 ```
 
-Migrations `20260819161500_sponsor_program_spine.sql` and `20260819190000_sponsor_fulfillment_evidence.sql` are source candidates with local transactional behavior proof only. Neither has been applied or read back on preview or production; hosted targets remain aligned through `20260819084447_event_change_receipts.sql`.
+The sponsor spine and fulfillment migrations have prior Preview migration history, so `20260820200000_sponsor_payment_integrity.sql` is forward-only and does not rewrite an applied file. It adds composite organization foreign keys, deterministic legacy-invoice recovery, provider-resource replay protection, and transaction RPCs for verified Stripe and manual sponsor payments. Current correction evidence is local source/test proof only; fresh Preview application/readback, executed denial checks, Stripe sandbox evidence, and production application remain separate gates.
 
 Migration `20260819084447_event_change_receipts.sql` is installed locally and on the protected production project. Local transactional behavior proof passed before promotion, the reviewed production apply used no seed data, and the guarded follow-up plan/readback returned current. Preview remains on the earlier promoted chain until separately advanced.
 
@@ -111,6 +113,7 @@ Use the direct database endpoint when IPv6 is available or the Supavisor session
 - Team chat supports threads, replies, attachments, reactions, reports, read receipts, moderation, and retention timestamps.
 - Parent Replay has reusable templates, deterministic/AI/coach-written source tracking, review timestamps, generated-run evidence, and approved learning plans.
 - Sponsor management supports packages, placements, assets, contacts, dates, review status, and billing proof records separated from child-facing display.
+- Sponsor commercial links prove organization identity across agreement, invoice, legacy billing, payment evidence, and ledger relationships. Stripe sponsor evidence and ledger/status changes share one database transaction; manual payment and audit changes do the same. `provider_resource_id` prevents two Stripe event ids for one refund, dispute, or manual payment from moving money twice. Aggregated sponsorship program summaries are Sponsor Hub money authority; `sponsor_billing_records` remain migration compatibility rows.
 - Automatic team-builder plans store preview/edit/approve/publish status, constraints, assignments, warnings, and admin approval evidence.
 - Team brand profiles store published logo/banner URLs, display and short names, fallback avatar labels, primary/secondary/accent/button colors, hero copy, 20-surface validation runs, reviewed asset uploads, and monitoring events.
 - Registration approval actions record the exact steps taken after a request: match existing player, create player, create guardian, create membership, or queue invite.

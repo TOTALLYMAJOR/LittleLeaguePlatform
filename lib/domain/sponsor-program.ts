@@ -76,6 +76,8 @@ export interface SponsorPaymentLedgerEntry {
   currency: "usd";
   provider: "stripe" | "manual";
   providerEventId?: string;
+  /** Stable provider object id, such as a Stripe refund or dispute id. */
+  providerResourceId?: string;
   occurredAt: string;
 }
 
@@ -146,7 +148,8 @@ export interface SponsorshipProgramSummary {
   sponsorName: string;
   packageName: string;
   agreementStatus: SponsorshipAgreementStatus;
-  invoiceStatus: SponsorshipInvoiceStatus;
+  invoiceCount: number;
+  latestInvoiceStatus: SponsorshipInvoiceStatus;
   amountCents: number;
   paidCents: number;
   refundedCents: number;
@@ -180,12 +183,13 @@ function invoicePaymentState(invoice: SponsorshipInvoice, ledgerEntries: Sponsor
     .reduce((total, entry) => total + Math.max(0, entry.amountCents), 0);
   const refundedCents = sumLedger(ledgerEntries, "RefundSucceeded");
   const disputedCents = sumLedger(ledgerEntries, "DisputeOpened");
+  const netPaidCents = Math.max(0, paidCents - refundedCents);
 
   if (disputedCents > 0) return "disputed";
-  if (refundedCents >= invoice.amountCents && invoice.amountCents > 0) return "refunded";
+  if (paidCents > 0 && refundedCents >= paidCents) return "refunded";
   if (invoice.status === "draft" || invoice.status === "void") return "not_invoiced";
-  if (paidCents <= 0) return "awaiting_payment";
-  if (paidCents < invoice.amountCents) return "partially_paid";
+  if (netPaidCents <= 0) return "awaiting_payment";
+  if (netPaidCents < invoice.amountCents) return "partially_paid";
   return "paid";
 }
 
@@ -334,14 +338,15 @@ export function buildSponsorshipProgramSummary(input: SponsorshipProgramInput): 
   const disputedCents = sumLedger(ledgerEntries, "DisputeOpened");
   const paymentState = invoicePaymentState(input.invoice, ledgerEntries);
   const currentFulfillmentState = fulfillmentState(deliverables);
-  const outstandingCents = Math.max(0, input.invoice.amountCents - paidCents + refundedCents);
+  const outstandingCents = Math.max(0, input.invoice.amountCents - Math.max(0, paidCents - refundedCents));
 
   return {
     sponsorId: input.sponsor.id,
     sponsorName: input.sponsor.name,
     packageName: input.package.name,
     agreementStatus: input.agreement.status,
-    invoiceStatus: input.invoice.status,
+    invoiceCount: 1,
+    latestInvoiceStatus: input.invoice.status,
     amountCents: input.invoice.amountCents,
     paidCents,
     refundedCents,
@@ -360,8 +365,9 @@ export function buildSponsorshipProgramSummary(input: SponsorshipProgramInput): 
 
 export interface SponsorProviderPaymentEvent {
   provider: "stripe";
-  type: "checkout.session.completed" | "payment_intent.payment_failed" | "charge.refunded" | "charge.dispute.created";
+  type: "checkout.session.completed" | "payment_intent.payment_failed" | "refund.created" | "refund.updated" | "charge.dispute.created";
   providerEventId: string;
+  providerResourceId?: string;
   invoiceId: string;
   amountCents: number;
   currency: "usd";
@@ -373,7 +379,8 @@ export function normalizeSponsorProviderPaymentEvent(event: SponsorProviderPayme
   const kindByType: Record<SponsorProviderPaymentEvent["type"], SponsorPaymentEventKind> = {
     "checkout.session.completed": event.paid === false ? "PaymentFailed" : "PaymentSucceeded",
     "payment_intent.payment_failed": "PaymentFailed",
-    "charge.refunded": "RefundSucceeded",
+    "refund.created": "RefundSucceeded",
+    "refund.updated": "RefundSucceeded",
     "charge.dispute.created": "DisputeOpened"
   };
 
@@ -385,6 +392,7 @@ export function normalizeSponsorProviderPaymentEvent(event: SponsorProviderPayme
     currency: event.currency,
     provider: event.provider,
     providerEventId: event.providerEventId,
+    providerResourceId: event.providerResourceId,
     occurredAt: event.occurredAt
   };
 }
@@ -419,10 +427,6 @@ function selectAgreementForSponsor(sponsorId: string, agreements: SponsorshipAgr
     .sort((left, right) => agreementRank[left.status] - agreementRank[right.status])[0];
 }
 
-function selectInvoiceForAgreement(agreementId: string, invoices: SponsorshipInvoice[]) {
-  return invoices.find((invoice) => invoice.agreementId === agreementId);
-}
-
 /**
  * The summary shown for a sponsor that has no persisted agreement. It reports absence rather than
  * a default: no amount is inferred, no payment state is assumed, and no placement or recap
@@ -434,7 +438,8 @@ function unrecordedProgramSummary(sponsor: Sponsor): SponsorshipProgramSummary {
     sponsorName: sponsor.name,
     packageName: "No package on record",
     agreementStatus: "draft",
-    invoiceStatus: "draft",
+    invoiceCount: 0,
+    latestInvoiceStatus: "draft",
     amountCents: 0,
     paidCents: 0,
     refundedCents: 0,
@@ -474,14 +479,19 @@ export function buildSponsorProgramSummaries(
     const agreement = selectAgreementForSponsor(sponsor.id, agreements);
     if (!agreement) return unrecordedProgramSummary(sponsor);
 
-    const invoice = selectInvoiceForAgreement(agreement.id, invoices);
-    if (!invoice) return unrecordedProgramSummary(sponsor);
+    // The adapter orders invoices newest-first. Preserve that order so the first row remains the
+    // latest status while money truth is folded across every invoice on the selected agreement.
+    const agreementInvoices = invoices.filter((invoice) => invoice.agreementId === agreement.id);
+    const latestInvoice = agreementInvoices[0];
+    if (!latestInvoice) return unrecordedProgramSummary(sponsor);
 
     const sponsorshipPackage = packages.find((candidate) => candidate.id === agreement.packageId) ?? {
       id: agreement.packageId,
       name: "No package on record",
       seasonId: agreement.seasonId,
-      amountCents: invoice.amountCents,
+      amountCents: agreementInvoices.reduce((total, invoice) => (
+        invoice.status === "void" ? total : total + invoice.amountCents
+      ), 0),
       currency: "usd" as const,
       benefits: []
     };
@@ -489,12 +499,21 @@ export function buildSponsorProgramSummaries(
     const requirements = fulfillmentRequirements.filter((requirement) => requirement.agreementId === agreement.id);
     const requirementIds = new Set(requirements.map((requirement) => requirement.id));
 
-    return buildSponsorshipProgramSummary({
+    const invoiceIds = new Set(agreementInvoices.map((invoice) => invoice.id));
+    const summary = buildSponsorshipProgramSummary({
       sponsor,
       package: sponsorshipPackage,
       agreement,
-      invoice,
-      ledgerEntries: ledgerEntries.filter((entry) => entry.invoiceId === invoice.id),
+      invoice: {
+        ...latestInvoice,
+        amountCents: agreementInvoices.reduce((total, invoice) => (
+          invoice.status === "void" ? total : total + invoice.amountCents
+        ), 0),
+        status: agreementInvoices.some((invoice) => invoice.status !== "draft" && invoice.status !== "void")
+          ? latestInvoice.status === "draft" || latestInvoice.status === "void" ? "issued" : latestInvoice.status
+          : latestInvoice.status
+      },
+      ledgerEntries: ledgerEntries.filter((entry) => invoiceIds.has(entry.invoiceId)),
       fulfillmentRequirements: requirements,
       fulfillmentEvidence: fulfillmentEvidence.filter((entry) => requirementIds.has(entry.requirementId)),
       placements: placements.filter((placement) => placement.sponsorId === sponsor.id),
@@ -503,6 +522,12 @@ export function buildSponsorProgramSummaries(
       artworkApproved: Boolean(sponsor.logoUrl),
       now: options.now
     });
+
+    return {
+      ...summary,
+      invoiceCount: agreementInvoices.length,
+      latestInvoiceStatus: latestInvoice.status
+    };
   });
 }
 

@@ -23,6 +23,7 @@ export const DEFAULT_SOURCE_FILES = {
 
   sponsorBillingMigration: "supabase/migrations/0017_sponsor_billing_and_team_builder.sql",
   sponsorProgramMigration: "supabase/migrations/20260819161500_sponsor_program_spine.sql",
+  sponsorPaymentIntegrityMigration: "supabase/migrations/20260820200000_sponsor_payment_integrity.sql",
 
   featuresDocs: "docs/Features.md",
   capabilityMatrix: "docs/capability-matrix.md",
@@ -245,8 +246,8 @@ function verifyWebhookSettlementTruth(sources, blockers) {
     sources,
     "webhook-settlement-truth",
     "SIGNED_PAYMENT_EVIDENCE_MISSING",
-    ["payments"],
-    /processVerifiedStripeEvent\(event: Stripe\.Event\)[\s\S]*event\.account[\s\S]*organization_stripe_accounts[\s\S]*\.eq\("stripe_account_id", connectedAccountId\)[\s\S]*payment_evidence[\s\S]*stripe_event_id:\s*event\.id[\s\S]*signature_verified_at:\s*new Date\(\)\.toISOString\(\)[\s\S]*evidence_json/s,
+    ["payments", "sponsorProgramAdapter", "sponsorPaymentIntegrityMigration"],
+    /commitVerifiedStripeEvent\(event: Stripe\.Event\)[\s\S]*event\.account[\s\S]*organization_stripe_accounts[\s\S]*recordSponsorStripeEvent[\s\S]*record_sponsor_stripe_event[\s\S]*insert into public\.payment_evidence[\s\S]*insert into public\.sponsor_payment_ledger_entries/s,
     "Webhook processing must bind events to a known connected account and record signed payment evidence with event identity."
   );
   requirePattern(
@@ -254,26 +255,26 @@ function verifyWebhookSettlementTruth(sources, blockers) {
     sources,
     "webhook-settlement-truth",
     "WEBHOOK_DUPLICATE_IDEMPOTENCY_MISSING",
-    ["payments"],
-    /payment_evidence[\s\S]*\.eq\("stripe_event_id", event\.id\)[\s\S]*if \(duplicate\.data\) return \{ ok: true, duplicate: true, message: "Duplicate Stripe event ignored\." \}/s,
-    "Webhook processing must treat duplicate Stripe event ids idempotently."
+    ["payments", "sponsorProgramAdapter", "sponsorPaymentIntegrityMigration"],
+    /providerResourceId[\s\S]*recordSponsorStripeEvent[\s\S]*provider_resource_id[\s\S]*on conflict do nothing[\s\S]*ledger_id is null/s,
+    "Webhook processing must treat event and provider-resource replays idempotently only after the atomic ledger transaction is complete."
   );
   requirePattern(
     blockers,
     sources,
     "webhook-settlement-truth",
     "WEBHOOK_EVENT_FAMILY_HANDLING_MISSING",
-    ["payments"],
-    /checkout\.session\.completed[\s\S]*object\.payment_status === "paid"[\s\S]*sponsor_billing_records[\s\S]*payment_proof_status:\s*paymentConfirmed \? "paid" : "awaiting_invoice"[\s\S]*payment_intent\.payment_failed[\s\S]*failed_at[\s\S]*account\.updated[\s\S]*charges_enabled_at/s,
-    "Webhook processing must distinguish paid checkout completion, failed payment intents, and Connect account readiness events."
+    ["payments", "sponsorPaymentIntegrityMigration"],
+    /(?=[\s\S]*checkout\.session\.completed)(?=[\s\S]*object\.payment_status === "paid")(?=[\s\S]*payment_intent\.payment_failed)(?=[\s\S]*refund\.created)(?=[\s\S]*refund\.updated)(?=[\s\S]*charge\.dispute\.created)(?=[\s\S]*sponsor_billing_records)(?=[\s\S]*account\.updated)(?=[\s\S]*charges_enabled_at)/s,
+    "Webhook processing must distinguish checkout, failure, successful refund, dispute, legacy compatibility, and Connect account readiness events."
   );
   requirePattern(
     blockers,
     sources,
     "webhook-settlement-truth",
     "WEBHOOK_SETTLEMENT_BINDING_FIELDS_MISSING",
-    ["payments"],
-    /(?=[\s\S]*metadata\.leaguepilot_obligation_id)(?=[\s\S]*metadata\.leaguepilot_sponsor_billing_id)(?=[\s\S]*leaguepilot_organization_id)(?=[\s\S]*stripe_checkout_session_id:\s*object\.object === "checkout\.session" \? object\.id : null)(?=[\s\S]*stripe_payment_intent_id:\s*object\.object === "payment_intent" \? object\.id : null)(?=[\s\S]*amount_cents:)(?=[\s\S]*currency:)(?=[\s\S]*provider_event_type:\s*event\.type)/s,
+    ["payments", "sponsorProgramAdapter", "sponsorPaymentIntegrityMigration"],
+    /(?=[\s\S]*metadata\.leaguepilot_obligation_id)(?=[\s\S]*metadata\.leaguepilot_sponsor_billing_id)(?=[\s\S]*paymentIntentIdFor)(?=[\s\S]*p_checkout_session_id)(?=[\s\S]*p_payment_intent_id)(?=[\s\S]*p_amount_cents)(?=[\s\S]*p_provider_event_type)(?=[\s\S]*p_provider_resource_id)/s,
     "Webhook evidence must retain organization metadata, sponsor billing record metadata, checkout session/payment intent, amount, currency, and event identity before any paid claim."
   );
   requirePattern(
@@ -294,7 +295,7 @@ function verifyAdminPublicPrivacySeparation(sources, blockers) {
     "admin-public-privacy-separation",
     "ADMIN_SPONSOR_HUB_SEPARATION_MISSING",
     ["sponsorHub", "sponsorHubTest"],
-    /confirmedBillingRecords[\s\S]*paymentProofStatus === "paid" && Boolean\(record\.confirmedAt\)[\s\S]*No settled payment proof recorded[\s\S]*Public placement stays separate from payment and fulfillment evidence[\s\S]*Delivery proof[\s\S]*Payment proof recorded[\s\S]*Verified impact events[\s\S]*Renewal email delivery is not connected[\s\S]*Player and family data are never included/s,
+    /paidProgramSummaries[\s\S]*summary\.paymentState === "paid" && summary\.outstandingCents === 0[\s\S]*verifiedRevenueCents[\s\S]*summary\.paidCents - summary\.refundedCents[\s\S]*No settled payment proof recorded[\s\S]*Public placement stays separate from payment and fulfillment evidence[\s\S]*Delivery proof[\s\S]*Fully paid sponsor programs[\s\S]*Verified impact events[\s\S]*Renewal email delivery is not connected[\s\S]*Player and family data are never included/s,
     "Sponsor Hub must separate sponsor records, placement, invoice/payment proof, refund/failure follow-up by proof-safe copy, fulfillment, report export, public display, impact, renewal, and family privacy."
   );
   requirePattern(
