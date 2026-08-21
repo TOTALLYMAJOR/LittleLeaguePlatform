@@ -218,7 +218,10 @@ describe("live action API routes", () => {
     createSupabaseAdminClientMock.mockReturnValue({
       from: vi.fn((table: string) => adminQuery(table === "seasons"
         ? [{ id: seedState.activeSeason.id }]
-        : [{ organization_id: seedState.organization.id }]))
+        : [{ organization_id: seedState.organization.id }])),
+      rpc: vi.fn(() => ({
+        single: async () => ({ data: { hit_count: 1, allowed: true }, error: null })
+      }))
     } as unknown as ReturnType<typeof createSupabaseAdminClient>);
     requireActiveOrganizationAdminMock.mockResolvedValue({ ok: true, message: "Access allowed.", organizationId: seedState.organization.id });
     listParentCoachDashboardDataMock.mockResolvedValue({

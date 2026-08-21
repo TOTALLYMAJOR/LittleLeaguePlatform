@@ -105,3 +105,26 @@ test("fails public intake abuse controls when the durable claim RPC is bypassed"
   assert.equal(result.ok, false);
   assert.ok(codesFor(result, "public-intake-abuse-controls").includes("PUBLIC_INTAKE_SHARED_LIMITER_MISSING"));
 });
+
+test("fails public intake abuse controls when process-local fallback is restored", () => {
+  const sources = cloneSources();
+  sources.publicIntakeLimiter += '\nconst memoryBuckets = new Map();\nfunction memoryStore() { return memoryBuckets; }\n';
+
+  const result = verifyAdminProofClosureReadiness(sources);
+
+  assert.equal(result.ok, false);
+  assert.ok(codesFor(result, "public-intake-abuse-controls").includes("PUBLIC_INTAKE_PROCESS_FALLBACK_PRESENT"));
+});
+
+test("fails public intake abuse controls when unavailable shared storage is allowed through", () => {
+  const sources = cloneSources();
+  sources.registrationRoute = sources.registrationRoute.replace(
+    "if (!rateLimit.available)",
+    "if (false && !rateLimit.available)"
+  );
+
+  const result = verifyAdminProofClosureReadiness(sources);
+
+  assert.equal(result.ok, false);
+  assert.ok(codesFor(result, "public-intake-abuse-controls").includes("PUBLIC_INTAKE_FAIL_CLOSED_ROUTE_MISSING"));
+});

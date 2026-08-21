@@ -45,7 +45,7 @@ describe("public intake rate limiting", () => {
     expect(third.headers.get("Retry-After")).toBe("59");
   });
 
-  it("falls back to memory when the shared store is unavailable", async () => {
+  it("fails closed when the shared store is unavailable", async () => {
     const failingStore: PublicRateLimitStore = {
       async claim() {
         throw new Error("store unavailable");
@@ -55,13 +55,15 @@ describe("public intake rate limiting", () => {
       request: request(),
       policy: { routeKey: "mobile-usage-events", limit: 1, windowMs: 60_000 },
       nowMs: 1000,
-      store: failingStore,
-      fallbackStore: memoryStore()
+      store: failingStore
     });
 
-    expect(result.allowed).toBe(true);
-    expect(result.store).toBe("memory_fallback");
+    expect(result.available).toBe(false);
+    expect(result.allowed).toBe(false);
+    expect(result.store).toBe("unavailable");
     expect(result.headers.get("X-RateLimit-Limit")).toBe("1");
+    expect(result.headers.get("X-RateLimit-Remaining")).toBe("0");
+    expect(result.headers.get("Retry-After")).toBe("5");
   });
 
   it("prefers the platform forwarding header and restricts the durable RPC", async () => {

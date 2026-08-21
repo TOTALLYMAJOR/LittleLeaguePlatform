@@ -4,6 +4,15 @@ import { createPendingRegistration } from "@/lib/supabase/registrations";
 
 export async function POST(request: Request) {
   const rateLimit = await applyPublicRateLimit(request, PUBLIC_RATE_LIMITS.registrationRequests);
+  if (!rateLimit.available) {
+    return NextResponse.json(
+      {
+        ok: false,
+        message: "Registration is temporarily unavailable while abuse protection reconnects. Please retry shortly.",
+      },
+      { status: 503, headers: rateLimit.headers },
+    );
+  }
   if (!rateLimit.allowed) {
     return NextResponse.json(
       {

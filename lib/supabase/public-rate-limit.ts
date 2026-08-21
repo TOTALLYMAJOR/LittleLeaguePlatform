@@ -37,12 +37,6 @@ export const PUBLIC_RATE_LIMITS = {
   }
 } satisfies Record<string, PublicRateLimitPolicy>;
 
-const memoryBuckets = new Map<string, { hitCount: number; expiresAtMs: number }>();
-
-export function resetPublicRateLimitFallbackForTests() {
-  memoryBuckets.clear();
-}
-
 function adminDb() {
   return createSupabaseAdminClient() as unknown as UnsafeSupabase;
 }
@@ -88,23 +82,6 @@ export function publicRateLimitHeaders(input: {
   return headers;
 }
 
-function memoryStore(): PublicRateLimitStore {
-  return {
-    async claim(input) {
-      const expiresAtMs = new Date(input.expiresAt).getTime();
-      const existing = memoryBuckets.get(input.bucketKey);
-      const hitCount = existing && existing.expiresAtMs > Date.now()
-        ? existing.hitCount + 1
-        : 1;
-      memoryBuckets.set(input.bucketKey, { hitCount, expiresAtMs });
-      return {
-        hitCount,
-        allowed: hitCount <= input.limit
-      };
-    }
-  };
-}
-
 function supabaseRateLimitStore(): PublicRateLimitStore {
   return {
     async claim(input) {
@@ -135,7 +112,6 @@ export async function evaluatePublicRateLimit(input: {
   policy: PublicRateLimitPolicy;
   nowMs?: number;
   store?: PublicRateLimitStore;
-  fallbackStore?: PublicRateLimitStore;
 }) {
   const nowMs = input.nowMs ?? Date.now();
   const windowStartMs = Math.floor(nowMs / input.policy.windowMs) * input.policy.windowMs;
@@ -153,24 +129,38 @@ export async function evaluatePublicRateLimit(input: {
     limit: input.policy.limit
   };
 
-  let storeName: "shared" | "memory_fallback" = "shared";
   let claim: { hitCount: number; allowed: boolean };
   try {
     claim = await (input.store ?? supabaseRateLimitStore()).claim(claimInput);
   } catch {
-    storeName = "memory_fallback";
-    claim = await (input.fallbackStore ?? memoryStore()).claim(claimInput);
+    const retryAfterSeconds = 5;
+    return {
+      available: false,
+      allowed: false,
+      hitCount: 0,
+      remaining: 0,
+      resetAtMs: nowMs + retryAfterSeconds * 1000,
+      retryAfterSeconds,
+      store: "unavailable" as const,
+      headers: publicRateLimitHeaders({
+        limit: input.policy.limit,
+        remaining: 0,
+        resetAtMs: nowMs + retryAfterSeconds * 1000,
+        retryAfterSeconds
+      })
+    };
   }
 
   const remaining = Math.max(0, input.policy.limit - claim.hitCount);
   const retryAfterSeconds = claim.allowed ? undefined : Math.max(1, Math.ceil((resetAtMs - nowMs) / 1000));
   return {
+    available: true,
     allowed: claim.allowed,
     hitCount: claim.hitCount,
     remaining,
     resetAtMs,
     retryAfterSeconds,
-    store: storeName,
+    store: "shared" as const,
     headers: publicRateLimitHeaders({
       limit: input.policy.limit,
       remaining,

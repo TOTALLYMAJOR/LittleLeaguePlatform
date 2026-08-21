@@ -27,6 +27,7 @@ const applyPublicRateLimitMock = vi.mocked(applyPublicRateLimit);
 
 function allowedRateLimit(limit = "5") {
   return {
+    available: true,
     allowed: true,
     hitCount: 1,
     remaining: Number(limit) - 1,
@@ -43,6 +44,7 @@ function allowedRateLimit(limit = "5") {
 
 function blockedRateLimit(limit = "5") {
   return {
+    available: true,
     allowed: false,
     hitCount: Number(limit) + 1,
     remaining: 0,
@@ -54,6 +56,24 @@ function blockedRateLimit(limit = "5") {
       "X-RateLimit-Remaining": "0",
       "X-RateLimit-Reset": "1790000000",
       "Retry-After": "60"
+    })
+  };
+}
+
+function unavailableRateLimit(limit = "5") {
+  return {
+    available: false,
+    allowed: false,
+    hitCount: 0,
+    remaining: 0,
+    resetAtMs: 1790000005000,
+    retryAfterSeconds: 5,
+    store: "unavailable" as const,
+    headers: new Headers({
+      "X-RateLimit-Limit": limit,
+      "X-RateLimit-Remaining": "0",
+      "X-RateLimit-Reset": "1790000005",
+      "Retry-After": "5"
     })
   };
 }
@@ -94,6 +114,23 @@ describe("public intake API rate limits", () => {
     expect(createPendingRegistrationMock).not.toHaveBeenCalled();
   });
 
+  it("returns 503 and fails closed when registration abuse protection is unavailable", async () => {
+    applyPublicRateLimitMock.mockResolvedValue(unavailableRateLimit());
+
+    const response = await postRegistrationRequest(jsonRequest("http://localhost/api/registration-requests", {
+      teamId: "team-1",
+      parentName: "Taylor Parent",
+      parentEmail: "parent@example.com",
+      playerFirstName: "Mason",
+      playerLastInitial: "M"
+    }));
+
+    expect(response.status).toBe(503);
+    expect(response.headers.get("Retry-After")).toBe("5");
+    expect(response.headers.get("X-RateLimit-Remaining")).toBe("0");
+    expect(createPendingRegistrationMock).not.toHaveBeenCalled();
+  });
+
   it("passes rate-limit headers through successful registration intake", async () => {
     createPendingRegistrationMock.mockResolvedValue({
       ok: true,
@@ -131,6 +168,19 @@ describe("public intake API rate limits", () => {
     expect(response.status).toBe(429);
     expect(response.headers.get("X-RateLimit-Limit")).toBe("120");
     expect(response.headers.get("Retry-After")).toBe("60");
+    expect(recordMobileUsageEventMock).not.toHaveBeenCalled();
+  });
+
+  it("returns 503 and drops telemetry when shared abuse protection is unavailable", async () => {
+    applyPublicRateLimitMock.mockResolvedValue(unavailableRateLimit("120"));
+
+    const response = await postMobileUsageEvent(jsonRequest("http://localhost/api/mobile-usage-events", {
+      eventType: "install_prompt_shown",
+      routePath: "/parent"
+    }));
+
+    expect(response.status).toBe(503);
+    expect(response.headers.get("Retry-After")).toBe("5");
     expect(recordMobileUsageEventMock).not.toHaveBeenCalled();
   });
 });

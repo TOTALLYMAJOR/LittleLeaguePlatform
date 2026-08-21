@@ -25,7 +25,8 @@ export const DEFAULT_SOURCE_FILES = {
   publicIntakeMigration: "supabase/migrations/20260729144500_public_rate_limits.sql",
   registrationRoute: "app/api/registration-requests/route.ts",
   mobileUsageRoute: "app/api/mobile-usage-events/route.ts",
-  publicIntakeRateLimitTest: "app/public-intake-rate-limit.test.ts"
+  publicIntakeRateLimitTest: "app/public-intake-rate-limit.test.ts",
+  publicIntakeApiTest: "app/api-public-intake.test.ts"
 };
 
 function combined(sources, keys) {
@@ -302,6 +303,42 @@ function verifyPublicIntakeAbuseControls(sources, blockers) {
     ["registrationRoute", "mobileUsageRoute"],
     /status:\s*429,\s*headers:\s*rateLimit\.headers[\s\S]*status:\s*429,\s*headers:\s*rateLimit\.headers/s,
     "Public intake routes must return 429 with shared rate-limit headers when blocked."
+  );
+  requirePattern(
+    blockers,
+    sources,
+    "public-intake-abuse-controls",
+    "PUBLIC_INTAKE_FAIL_CLOSED_STORE_MISSING",
+    ["publicIntakeLimiter"],
+    /catch\s*\{[\s\S]*available:\s*false[\s\S]*allowed:\s*false[\s\S]*store:\s*"unavailable"/s,
+    "The shared limiter must return an explicit unavailable, denied result when persistence fails."
+  );
+  requirePattern(
+    blockers,
+    sources,
+    "public-intake-abuse-controls",
+    "PUBLIC_INTAKE_FAIL_CLOSED_ROUTE_MISSING",
+    ["registrationRoute", "mobileUsageRoute"],
+    /if\s*\(!rateLimit\.available\)[\s\S]*status:\s*503[\s\S]*if\s*\(!rateLimit\.available\)[\s\S]*status:\s*503/s,
+    "Registration and mobile telemetry routes must return retryable 503 responses when shared abuse protection is unavailable."
+  );
+  requirePattern(
+    blockers,
+    sources,
+    "public-intake-abuse-controls",
+    "PUBLIC_INTAKE_FAIL_CLOSED_TEST_MISSING",
+    ["publicIntakeApiTest"],
+    /fails closed when registration abuse protection is unavailable[\s\S]*drops telemetry when shared abuse protection is unavailable/s,
+    "Focused route tests must prove fail-closed registration and telemetry behavior."
+  );
+  requireNoPattern(
+    blockers,
+    sources,
+    "public-intake-abuse-controls",
+    "PUBLIC_INTAKE_PROCESS_FALLBACK_PRESENT",
+    ["publicIntakeLimiter"],
+    /memory_fallback|function\s+memoryStore|memoryBuckets/,
+    "Public intake cannot fall back to an in-process limiter because multiple instances would enforce different counters."
   );
 }
 

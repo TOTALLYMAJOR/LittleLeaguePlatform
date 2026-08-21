@@ -31,6 +31,11 @@ const localHostnames = new Set([
   "::1"
 ]);
 
+const protectedProductionHostnames = new Set([
+  "leaguepilot.us",
+  "www.leaguepilot.us"
+]);
+
 function trimmed(env, name) {
   return typeof env[name] === "string" ? env[name].trim() : "";
 }
@@ -92,6 +97,9 @@ export function validateHostedReadinessPreflight(env = process.env) {
     if (isLocalProofUrl(baseUrl)) {
       blockers.push("QA_PROOF_BASE_URL points at a local proof target; LPM-002 requires an explicit hosted deployment URL.");
     }
+    if (protectedProductionHostnames.has(baseUrl.hostname.toLowerCase())) {
+      blockers.push("QA_PROOF_BASE_URL must identify an isolated QA or Preview deployment, not the protected production host.");
+    }
   }
 
   const supabaseUrlValue = trimmed(env, "NEXT_PUBLIC_SUPABASE_URL");
@@ -105,8 +113,8 @@ export function validateHostedReadinessPreflight(env = process.env) {
     blockers.push("SUPABASE_MIGRATION_TARGET_REF must be a Supabase project reference.");
   }
   const migrationTargetEnv = trimmed(env, "SUPABASE_MIGRATION_TARGET_ENV").toLowerCase();
-  if (migrationTargetEnv && !["qa", "preview", "production"].includes(migrationTargetEnv)) {
-    blockers.push("SUPABASE_MIGRATION_TARGET_ENV must be qa, preview, or production.");
+  if (migrationTargetEnv && !["qa", "preview"].includes(migrationTargetEnv)) {
+    blockers.push("SUPABASE_MIGRATION_TARGET_ENV must be qa or preview for hosted session acceptance.");
   }
   const appProjectRef = supabaseUrl?.hostname.endsWith(".supabase.co")
     ? supabaseUrl.hostname.split(".")[0]

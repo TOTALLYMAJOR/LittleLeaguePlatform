@@ -58,6 +58,18 @@ test("rejects local-only proof mode for the hosted gate", () => {
   assert.match(result.blockers.join("\n"), /local proof target/);
 });
 
+test("rejects the protected production host and production migration classification", () => {
+  const result = validateHostedReadinessPreflight({
+    ...validEnv,
+    QA_PROOF_BASE_URL: "https://www.leaguepilot.us",
+    SUPABASE_MIGRATION_TARGET_ENV: "production"
+  });
+
+  assert.equal(result.ok, false);
+  assert.match(result.blockers.join("\n"), /isolated QA or Preview deployment/);
+  assert.match(result.blockers.join("\n"), /must be qa or preview/);
+});
+
 test("rejects invalid public organization configuration", () => {
   const result = validateHostedReadinessPreflight({
     ...validEnv,

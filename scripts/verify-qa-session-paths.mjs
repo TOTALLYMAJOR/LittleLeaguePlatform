@@ -278,6 +278,67 @@ async function resetQaMediaProofItem(supabase) {
   return data;
 }
 
+async function provePublicRateLimitSharedStore(supabase) {
+  const millisecondsIntoWindow = Date.now() % 60_000;
+  if (millisecondsIntoWindow > 55_000) {
+    await new Promise((resolve) => setTimeout(resolve, 60_100 - millisecondsIntoWindow));
+  }
+  const proofStartedAt = new Date(Date.now() - 2000).toISOString();
+  const userAgent = `LeaguePilot-QA-Shared-Limiter/${randomUUID()}`;
+  const { data: beforeRows, error: beforeError } = await supabase
+    .from("public_rate_limit_buckets")
+    .select("bucket_key,route_key,hit_count,updated_at")
+    .eq("route_key", "registration-requests")
+    .gte("updated_at", proofStartedAt);
+  if (beforeError) throw new Error("Hosted public-intake proof could not read the shared counter before the burst.");
+  const beforeCounts = new Map((beforeRows ?? []).map((row) => [row.bucket_key, row.hit_count]));
+
+  const responses = [];
+  for (let attempt = 0; attempt < 6; attempt += 1) {
+    responses.push(await fetch(`${baseUrl}/api/registration-requests`, {
+      method: "POST",
+      headers: {
+        "content-type": "application/json",
+        "user-agent": userAgent,
+        "cache-control": "no-store"
+      },
+      body: "null"
+    }));
+  }
+  for (let attempt = 0; attempt < 5; attempt += 1) {
+    const response = responses[attempt];
+    if (
+      response.status !== 400
+      || response.headers.get("X-RateLimit-Limit") !== "5"
+      || response.headers.get("X-RateLimit-Remaining") !== String(4 - attempt)
+    ) {
+      throw new Error(`Hosted public-intake shared counter failed on allowed attempt ${attempt + 1}.`);
+    }
+  }
+  const blocked = responses[5];
+  if (
+    blocked.status !== 429
+    || blocked.headers.get("X-RateLimit-Limit") !== "5"
+    || blocked.headers.get("X-RateLimit-Remaining") !== "0"
+    || !blocked.headers.get("Retry-After")
+  ) {
+    throw new Error("Hosted public-intake shared counter did not return the required sixth-request 429 evidence.");
+  }
+
+  const { data: afterRows, error: afterError } = await supabase
+    .from("public_rate_limit_buckets")
+    .select("bucket_key,route_key,hit_count,updated_at")
+    .eq("route_key", "registration-requests")
+    .gte("updated_at", proofStartedAt);
+  if (
+    afterError
+    || !(afterRows ?? []).some((row) => row.hit_count - (beforeCounts.get(row.bucket_key) ?? 0) >= 6)
+  ) {
+    throw new Error("Hosted public-intake proof returned rate-limit headers without a six-hit shared Supabase counter delta.");
+  }
+  console.log("QA public registration intake verified a five-request allowance, sixth-request 429, and six-hit shared Supabase counter delta.");
+}
+
 async function createQaRegistrationRequest(supabase, input) {
   const requestId = randomUUID();
   const nonce = `${input.action}-${Date.now()}-${Math.random().toString(16).slice(2)}`;
@@ -289,7 +350,7 @@ async function createQaRegistrationRequest(supabase, input) {
       season_id: qaIds.season,
       team_id: qaIds.team,
       parent_name: `QA ${input.action} Parent`,
-      parent_email: `qa.${nonce}@example.test`,
+      parent_email: input.parentEmail ?? `qa.${nonce}@example.test`,
       player_first_name: input.action === "approve" ? "ProofApprove" : "ProofReject",
       player_last_initial: input.action === "approve" ? "A" : "R",
       status: "pending"
@@ -341,33 +402,33 @@ async function assertMediaModerationRows(supabase, input) {
   if (
     mediaError ||
     !mediaItem ||
-    mediaItem.moderation_status !== "hidden" ||
-    mediaItem.visibility !== "organization" ||
+    mediaItem.moderation_status !== input.status ||
+    mediaItem.visibility !== input.visibility ||
     mediaItem.reviewed_by_user_id !== input.adminUserId ||
-    !mediaItem.hidden_at ||
+    (input.status === "hidden" ? !mediaItem.hidden_at : Boolean(mediaItem.hidden_at)) ||
     mediaItem.removed_at
   ) {
-    throw new Error("Media moderation browser proof did not persist the expected hidden media row.");
+    throw new Error(`Media moderation browser proof did not persist the expected ${input.status} media row.`);
   }
 
   const { data: auditEvents, error: auditError } = await supabase
     .from("audit_events")
     .select("id,actor_user_id,action,target_type,target_id,created_at")
     .eq("actor_user_id", input.adminUserId)
-    .eq("action", "media_hidden")
+    .eq("action", `media_${input.status}`)
     .eq("target_type", "media_item")
     .eq("target_id", qaIds.mediaProof)
     .gte("created_at", input.proofStartedAt);
 
   if (auditError || !auditEvents?.length) {
-    throw new Error("Media moderation browser proof did not write the expected admin audit event.");
+    throw new Error(`Media moderation browser proof did not write the expected media_${input.status} admin audit event.`);
   }
 }
 
 async function assertRegistrationReviewRows(supabase, input) {
   const { data: request, error: requestError } = await supabase
     .from("registration_requests")
-    .select("id,status,reviewed_by_user_id,reviewed_at")
+    .select("id,organization_id,season_id,team_id,parent_email,status,reviewed_by_user_id,reviewed_at")
     .eq("id", input.requestId)
     .single();
 
@@ -383,7 +444,7 @@ async function assertRegistrationReviewRows(supabase, input) {
 
   const { data: actions, error: actionError } = await supabase
     .from("registration_approval_actions")
-    .select("id,action,reviewed_by_user_id,registration_request_id,created_at")
+    .select("id,action,evidence_json,reviewed_by_user_id,registration_request_id,created_at")
     .eq("registration_request_id", input.requestId)
     .eq("reviewed_by_user_id", input.adminUserId)
     .gte("created_at", input.proofStartedAt);
@@ -392,8 +453,45 @@ async function assertRegistrationReviewRows(supabase, input) {
     throw new Error(`Registration ${input.status} browser proof did not write the expected approval-action row.`);
   }
 
-  if (input.status === "approved" && !actions.some((action) => action.action === "created_player")) {
-    throw new Error("Registration approval browser proof did not create the expected player action row.");
+  if (input.status === "approved") {
+    const playerAction = actions.find((action) => action.action === "created_player");
+    const playerId = String(playerAction?.evidence_json?.player_id ?? "");
+    if (!playerId) {
+      throw new Error("Registration approval browser proof did not create the expected player action row.");
+    }
+    const { data: player, error: playerError } = await supabase
+      .from("players")
+      .select("id,organization_id,season_id,team_id,first_name,last_initial,roster_status")
+      .eq("id", playerId)
+      .single();
+    if (
+      playerError
+      || !player
+      || player.organization_id !== request.organization_id
+      || player.season_id !== request.season_id
+      || player.team_id !== request.team_id
+      || player.roster_status !== "active"
+    ) {
+      throw new Error("Registration approval browser proof did not activate the player on the persisted league-assigned team.");
+    }
+    if (input.parentUserId) {
+      const { data: guardians, error: guardianError } = await supabase
+        .from("player_guardians")
+        .select("id,player_id,parent_user_id,status")
+        .eq("player_id", playerId)
+        .eq("parent_user_id", input.parentUserId)
+        .eq("status", "active");
+      const { data: memberships, error: membershipError } = await supabase
+        .from("team_memberships")
+        .select("id,team_id,user_id,role,status")
+        .eq("team_id", request.team_id)
+        .eq("user_id", input.parentUserId)
+        .eq("role", "parent")
+        .eq("status", "active");
+      if (guardianError || membershipError || !guardians?.length || !memberships?.length) {
+        throw new Error("Registration approval browser proof did not activate guardian access on the persisted league-assigned team.");
+      }
+    }
   }
 
   const { data: auditEvents, error: auditError } = await supabase
@@ -1039,21 +1137,45 @@ async function proveMediaReportAndModerationWrites(browser, supabase) {
 
     await assertMediaModerationRows(supabase, {
       adminUserId: admin.id,
+      status: "hidden",
+      visibility: "organization",
+      proofStartedAt
+    });
+
+    const restoreResult = await authenticatedBrowserPost(adminPage, "/api/media/moderation", {
+      mediaItemId: qaIds.mediaProof,
+      status: "approved",
+      visibility: "team",
+      reason: "QA browser proof admin restore."
+    });
+    if (restoreResult.status !== 200 || !restoreResult.body?.ok) {
+      throw new Error(`Media restore browser API proof failed: ${restoreResult.body?.message ?? restoreResult.status}`);
+    }
+    await assertMediaModerationRows(supabase, {
+      adminUserId: admin.id,
+      status: "approved",
+      visibility: "team",
       proofStartedAt
     });
 
     const screenshotPath = join(screenshotDir, "media-moderation-qa-session-live.png");
     await adminPage.screenshot({ path: screenshotPath, fullPage: true });
-    console.log(`QA admin media moderation verified against Supabase rows (${screenshotPath})`);
+    console.log(`QA admin media hide and restore verified against Supabase rows (${screenshotPath})`);
   } finally {
     await adminContext.close();
   }
 }
 
 async function proveRegistrationReviewWrites(browser, supabase) {
-  const admin = await findUserByEmail(supabase, requireEnv("QA_ADMIN_EMAIL"));
+  const [admin, parent] = await Promise.all([
+    findUserByEmail(supabase, requireEnv("QA_ADMIN_EMAIL")),
+    findUserByEmail(supabase, requireEnv("QA_PARENT_EMAIL"))
+  ]);
   const [approvalRequest, rejectionRequest] = await Promise.all([
-    createQaRegistrationRequest(supabase, { action: "approve" }),
+    createQaRegistrationRequest(supabase, {
+      action: "approve",
+      parentEmail: requireEnv("QA_PARENT_EMAIL")
+    }),
     createQaRegistrationRequest(supabase, { action: "reject" })
   ]);
   const proofStartedAt = new Date(Date.now() - 2000).toISOString();
@@ -1085,6 +1207,7 @@ async function proveRegistrationReviewWrites(browser, supabase) {
       requestId: approvalRequest.id,
       status: "approved",
       adminUserId: admin.id,
+      parentUserId: parent.id,
       proofStartedAt
     });
     const approvalScreenshotPath = join(screenshotDir, "registration-approval-qa-session-live.png");
@@ -1284,6 +1407,8 @@ export async function main({ guard = runGuardedQaMutation } = {}) {
   }, async () => {
   const supabase = createQaAdminClient(supabaseUrl, serviceRoleKey);
   mkdirSync(screenshotDir, { recursive: true });
+
+  await provePublicRateLimitSharedStore(supabase);
 
   const executablePath = chromiumExecutablePath();
   const browser = await chromium.launch({

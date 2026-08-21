@@ -7,7 +7,23 @@ import { createPendingRegistration } from "@/lib/supabase/registrations";
 import { recordMobileUsageEvent } from "@/lib/supabase/operations";
 import { findFamilyAccessStatus, requestInvitationRecovery } from "@/lib/supabase/access-activation";
 import { resetPublicIntakeRateLimits } from "@/lib/public-intake/rate-limit";
-import { resetPublicRateLimitFallbackForTests } from "@/lib/supabase/public-rate-limit";
+
+const sharedRateLimitBuckets = vi.hoisted(() => new Map<string, number>());
+
+vi.mock("@/lib/supabase/admin", () => ({
+  createSupabaseAdminClient: () => ({
+    rpc: (_name: string, args: { p_bucket_key: string; p_limit: number }) => ({
+      single: async () => {
+        const hitCount = (sharedRateLimitBuckets.get(args.p_bucket_key) ?? 0) + 1;
+        sharedRateLimitBuckets.set(args.p_bucket_key, hitCount);
+        return {
+          data: { hit_count: hitCount, allowed: hitCount <= args.p_limit },
+          error: null
+        };
+      }
+    })
+  })
+}));
 
 vi.mock("@/lib/supabase/registrations", () => ({
   createPendingRegistration: vi.fn(),
@@ -41,8 +57,8 @@ function jsonRequest(path: string, body: unknown, ip = "203.0.113.10") {
 describe("public intake abuse controls", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    sharedRateLimitBuckets.clear();
     resetPublicIntakeRateLimits();
-    resetPublicRateLimitFallbackForTests();
     createPendingRegistrationMock.mockResolvedValue({
       ok: true,
       message: "Registration request saved.",

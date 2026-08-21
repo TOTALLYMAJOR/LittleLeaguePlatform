@@ -13,6 +13,12 @@ const eventTypes = new Set([
 
 export async function POST(request: Request) {
   const rateLimit = await applyPublicRateLimit(request, PUBLIC_RATE_LIMITS.mobileUsageEvents);
+  if (!rateLimit.available) {
+    return NextResponse.json(
+      { ok: false, message: "Usage intake is temporarily unavailable while abuse protection reconnects." },
+      { status: 503, headers: rateLimit.headers },
+    );
+  }
   if (!rateLimit.allowed) {
     return NextResponse.json(
       { ok: false, message: "Too many usage events. Please try again later." },
