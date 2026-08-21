@@ -17,6 +17,7 @@ const qaIds = {
   organization: "11111111-1111-4111-8111-111111111111",
   season: "22222222-2222-4222-8222-222222222222",
   team: "33333333-3333-4333-8333-333333333331",
+  archivedTeam: "33333333-3333-4333-8333-333333333333",
   playerMason: "44444444-4444-4444-8444-444444444441",
   game: "55555555-5555-4555-8555-555555555551",
   mediaProof: "99999999-9999-4999-8999-999999999993",
@@ -193,8 +194,8 @@ function parentReplayProofDraft() {
   };
 }
 
-async function authenticatedBrowserPost(page, url, payload) {
-  return page.evaluate(async ({ url: requestUrl, payload: requestPayload }) => {
+async function authenticatedBrowserRequest(page, method, url, payload) {
+  return page.evaluate(async ({ method: requestMethod, url: requestUrl, payload: requestPayload }) => {
     const decodeBase64Url = (value) => {
       const normalized = value.replaceAll("-", "+").replaceAll("_", "/");
       const padded = normalized.padEnd(Math.ceil(normalized.length / 4) * 4, "=");
@@ -229,16 +230,27 @@ async function authenticatedBrowserPost(page, url, payload) {
     }
 
     const response = await fetch(requestUrl, {
-      method: "POST",
+      method: requestMethod,
       headers: {
         "Content-Type": "application/json",
         Authorization: `Bearer ${accessToken}`
       },
-      body: JSON.stringify(requestPayload)
+      ...(requestMethod === "GET" ? {} : { body: JSON.stringify(requestPayload) })
     });
-    const body = await response.json().catch(() => null);
+    const contentType = response.headers.get("content-type") ?? "";
+    const body = contentType.includes("application/json")
+      ? await response.json().catch(() => null)
+      : await response.text().catch(() => "");
     return { status: response.status, body };
-  }, { url, payload });
+  }, { method, url, payload });
+}
+
+function authenticatedBrowserPost(page, url, payload) {
+  return authenticatedBrowserRequest(page, "POST", url, payload);
+}
+
+function authenticatedBrowserGet(page, url) {
+  return authenticatedBrowserRequest(page, "GET", url);
 }
 
 async function resetQaMediaProofItem(supabase) {
@@ -395,6 +407,101 @@ async function assertRegistrationReviewRows(supabase, input) {
 
   if (auditError || !auditEvents?.length) {
     throw new Error(`Registration ${input.status} browser proof did not write the expected admin audit event.`);
+  }
+}
+
+async function assertMediaConsentRows(supabase, input) {
+  const { data: consent, error: consentError } = await supabase
+    .from("player_media_consents")
+    .select("id,player_id,guardian_user_id,scope,granted_at,revoked_at")
+    .eq("player_id", qaIds.playerMason)
+    .eq("guardian_user_id", input.parentUserId)
+    .eq("scope", "team_family")
+    .single();
+  if (
+    consentError
+    || !consent
+    || consent.player_id !== qaIds.playerMason
+    || consent.guardian_user_id !== input.parentUserId
+    || (input.granted ? (!consent.granted_at || consent.revoked_at) : !consent.revoked_at)
+  ) {
+    throw new Error(`Parent media-consent browser proof did not persist the expected ${input.granted ? "granted" : "revoked"} row.`);
+  }
+
+  const action = input.granted ? "player_media_consent_granted" : "player_media_consent_revoked";
+  const { data: auditEvents, error: auditError } = await supabase
+    .from("audit_events")
+    .select("id,actor_user_id,action,target_type,target_id,created_at")
+    .eq("actor_user_id", input.parentUserId)
+    .eq("action", action)
+    .eq("target_type", "player")
+    .eq("target_id", qaIds.playerMason)
+    .gte("created_at", input.proofStartedAt);
+  if (auditError || !auditEvents?.length) {
+    throw new Error(`Parent media-consent browser proof did not write the expected ${action} audit event.`);
+  }
+}
+
+async function assertTeamBuilderPublicationRows(supabase, input) {
+  const { data: plan, error: planError } = await supabase
+    .from("team_build_plans")
+    .select("id,organization_id,season_id,status,assignments,lock_version,published_by_user_id,published_at,provider_execution")
+    .eq("id", input.planId)
+    .single();
+  if (
+    planError
+    || !plan
+    || plan.organization_id !== qaIds.organization
+    || plan.season_id !== qaIds.season
+    || plan.status !== "published"
+    || plan.published_by_user_id !== input.adminUserId
+    || !plan.published_at
+    || plan.provider_execution !== "not_started"
+    || !Array.isArray(plan.assignments)
+    || !plan.assignments.length
+  ) {
+    throw new Error("Team-builder browser proof did not persist a complete published plan.");
+  }
+
+  const { data: actions, error: actionError } = await supabase
+    .from("team_build_plan_actions")
+    .select("action_type,actor_user_id,plan_id,resulting_version")
+    .eq("plan_id", input.planId)
+    .eq("actor_user_id", input.adminUserId);
+  if (actionError || !["preview", "approve", "publish"].every((type) => actions?.some((action) => action.action_type === type))) {
+    throw new Error("Team-builder browser proof did not persist the preview, approval, and publish action ledger.");
+  }
+
+  const assignments = plan.assignments.map((assignment) => ({
+    playerId: String(assignment.playerId ?? ""),
+    teamId: String(assignment.teamId ?? "")
+  }));
+  const { data: players, error: playerError } = await supabase
+    .from("players")
+    .select("id,team_id,organization_id,season_id")
+    .in("id", assignments.map((assignment) => assignment.playerId));
+  if (
+    playerError
+    || players?.length !== assignments.length
+    || assignments.some((assignment) => !players.some((player) => (
+      player.id === assignment.playerId
+      && player.team_id === assignment.teamId
+      && player.organization_id === qaIds.organization
+      && player.season_id === qaIds.season
+    )))
+  ) {
+    throw new Error("Team-builder browser proof did not atomically publish every approved player assignment.");
+  }
+
+  const { data: auditEvents, error: auditError } = await supabase
+    .from("audit_events")
+    .select("id,actor_user_id,action,target_type,target_id")
+    .eq("actor_user_id", input.adminUserId)
+    .eq("action", "team_build_plan_published")
+    .eq("target_type", "team_build_plan")
+    .eq("target_id", input.planId);
+  if (auditError || !auditEvents?.length) {
+    throw new Error("Team-builder browser proof did not persist the publish audit event.");
   }
 }
 
@@ -1004,6 +1111,164 @@ async function proveRegistrationReviewWrites(browser, supabase) {
   }
 }
 
+async function proveParentConsentAndAuthorization(browser, supabase) {
+  const parent = await findUserByEmail(supabase, requireEnv("QA_PARENT_EMAIL"));
+  const proofStartedAt = new Date(Date.now() - 2000).toISOString();
+  const context = await browser.newContext({
+    viewport: { width: 390, height: 844 },
+    isMobile: true,
+    deviceScaleFactor: 2,
+    extraHTTPHeaders: { "Cache-Control": "no-cache" }
+  });
+  const page = await context.newPage();
+
+  try {
+    await signIn(page, requireEnv("QA_PARENT_EMAIL"), requireEnv("QA_PARENT_PASSWORD"));
+    await page.goto(`${baseUrl}/parent/photos?qa_media_consent=${Date.now()}`, { waitUntil: "networkidle" });
+    await assertText(page, "Media consent");
+
+    const grantResult = await authenticatedBrowserPost(page, "/api/parent/media-consents", {
+      playerId: qaIds.playerMason,
+      granted: true
+    });
+    if (grantResult.status !== 200 || !grantResult.body?.ok || grantResult.body?.granted !== true) {
+      throw new Error(`Parent media-consent grant browser API proof failed: ${grantResult.body?.message ?? grantResult.status}`);
+    }
+    await assertMediaConsentRows(supabase, {
+      parentUserId: parent.id,
+      granted: true,
+      proofStartedAt
+    });
+
+    const calendarDenial = await authenticatedBrowserGet(
+      page,
+      `/api/schedule/export?teamId=${qaIds.archivedTeam}`
+    );
+    if (calendarDenial.status !== 403 || calendarDenial.body?.ok !== false) {
+      throw new Error("Signed-in parent calendar export was not denied for an unauthorized team.");
+    }
+
+    const weatherDenial = await authenticatedBrowserPost(page, "/api/weather-alerts/draft", {
+      eventId: qaIds.game
+    });
+    if (
+      weatherDenial.status !== 400
+      || weatherDenial.body?.ok !== false
+      || !/coach|admin|authoriz|permission/i.test(String(weatherDenial.body?.message ?? ""))
+    ) {
+      throw new Error("Signed-in parent weather drafting was not denied before provider lookup.");
+    }
+
+    const revokeResult = await authenticatedBrowserPost(page, "/api/parent/media-consents", {
+      playerId: qaIds.playerMason,
+      granted: false
+    });
+    if (revokeResult.status !== 200 || !revokeResult.body?.ok || revokeResult.body?.granted !== false) {
+      throw new Error(`Parent media-consent revoke browser API proof failed: ${revokeResult.body?.message ?? revokeResult.status}`);
+    }
+    await assertMediaConsentRows(supabase, {
+      parentUserId: parent.id,
+      granted: false,
+      proofStartedAt
+    });
+
+    const screenshotPath = join(screenshotDir, "parent-media-consent-authorization-qa-session-live.png");
+    await page.screenshot({ path: screenshotPath, fullPage: true });
+    console.log(`QA parent media consent and unauthorized calendar/weather denials verified against hosted rows (${screenshotPath})`);
+  } finally {
+    await context.close();
+  }
+}
+
+async function proveTeamBuilderPublication(browser, supabase) {
+  const admin = await findUserByEmail(supabase, requireEnv("QA_ADMIN_EMAIL"));
+  const context = await browser.newContext({
+    viewport: { width: 1280, height: 900 },
+    extraHTTPHeaders: { "Cache-Control": "no-cache" }
+  });
+  const page = await context.newPage();
+
+  try {
+    await signIn(page, requireEnv("QA_ADMIN_EMAIL"), requireEnv("QA_ADMIN_PASSWORD"));
+    await page.goto(`${baseUrl}/admin/teams?qa_team_builder=${Date.now()}`, { waitUntil: "networkidle" });
+    await assertText(page, "Private team builder");
+
+    const workbenchResult = await authenticatedBrowserGet(
+      page,
+      `/api/admin/team-builder-plans?organizationId=${qaIds.organization}`
+    );
+    const workbench = workbenchResult.body;
+    if (workbenchResult.status !== 200 || !workbench?.ok) {
+      throw new Error(`Team-builder hosted workbench proof failed: ${workbench?.message ?? workbenchResult.status}`);
+    }
+    const activeSeason = workbench.seasons?.find((season) => season.status === "active");
+    const inputTeamIds = new Set((workbench.inputs ?? []).map((input) => input.teamId));
+    const eligibleTeam = workbench.teams?.find((team) => (
+      team.status === "active"
+      && team.seasonId === activeSeason?.id
+      && inputTeamIds.has(team.id)
+    ));
+    if (!activeSeason || !eligibleTeam) {
+      throw new Error("Team-builder hosted proof requires an active season, active division team, and rostered player inputs.");
+    }
+
+    const previewActionId = randomUUID();
+    const previewResult = await authenticatedBrowserPost(page, "/api/admin/team-builder-plans", {
+      action: "preview",
+      actionId: previewActionId,
+      organizationId: qaIds.organization,
+      seasonId: activeSeason.id,
+      division: eligibleTeam.division,
+      targetRosterSize: 10,
+      expectedLockVersion: 0,
+      friendRequests: []
+    });
+    if (previewResult.status !== 200 || !previewResult.body?.ok || !previewResult.body?.plan?.id) {
+      throw new Error(`Team-builder preview browser API proof failed: ${previewResult.body?.message ?? previewResult.status}`);
+    }
+
+    const planId = previewResult.body.plan.id;
+    const approveResult = await authenticatedBrowserPost(page, "/api/admin/team-builder-plans", {
+      action: "approve",
+      actionId: randomUUID(),
+      planId,
+      expectedLockVersion: previewResult.body.plan.lockVersion
+    });
+    if (approveResult.status !== 200 || !approveResult.body?.ok || approveResult.body?.plan?.status !== "approved") {
+      throw new Error(`Team-builder approval browser API proof failed: ${approveResult.body?.message ?? approveResult.status}`);
+    }
+
+    const publishActionId = randomUUID();
+    const publishLockVersion = approveResult.body.plan.lockVersion;
+    const publishResult = await authenticatedBrowserPost(page, "/api/admin/team-builder-plans", {
+      action: "publish",
+      actionId: publishActionId,
+      planId,
+      expectedLockVersion: publishLockVersion
+    });
+    if (publishResult.status !== 200 || !publishResult.body?.ok || publishResult.body?.plan?.status !== "published") {
+      throw new Error(`Team-builder publish browser API proof failed: ${publishResult.body?.message ?? publishResult.status}`);
+    }
+
+    const replayResult = await authenticatedBrowserPost(page, "/api/admin/team-builder-plans", {
+      action: "publish",
+      actionId: publishActionId,
+      planId,
+      expectedLockVersion: publishLockVersion
+    });
+    if (replayResult.status !== 200 || !replayResult.body?.ok || replayResult.body?.idempotent !== true) {
+      throw new Error("Team-builder publish replay did not return the completed idempotent transaction.");
+    }
+
+    await assertTeamBuilderPublicationRows(supabase, { planId, adminUserId: admin.id });
+    const screenshotPath = join(screenshotDir, "admin-team-builder-publication-qa-session-live.png");
+    await page.screenshot({ path: screenshotPath, fullPage: true });
+    console.log(`QA admin team-builder preview, approval, atomic publish, and replay verified against hosted rows (${screenshotPath}, plan ${planId})`);
+  } finally {
+    await context.close();
+  }
+}
+
 export async function main({ guard = runGuardedQaMutation } = {}) {
   loadLocalEnv();
   requireAnonKey();
@@ -1060,6 +1325,8 @@ export async function main({ guard = runGuardedQaMutation } = {}) {
 
     await proveParentLiveActions(browser, supabase);
 
+    await proveParentConsentAndAuthorization(browser, supabase);
+
     await proveRole(browser, {
       label: "QA coach",
       email: requireEnv("QA_COACH_EMAIL"),
@@ -1085,6 +1352,8 @@ export async function main({ guard = runGuardedQaMutation } = {}) {
     await proveMediaReportAndModerationWrites(browser, supabase);
 
     await proveRegistrationReviewWrites(browser, supabase);
+
+    await proveTeamBuilderPublication(browser, supabase);
 
     await proveRole(browser, {
       label: "QA admin",

@@ -9,8 +9,19 @@ const requiredNonSecretInputs = [
 const requiredQaCommandInputs = [
   "NEXT_PUBLIC_SUPABASE_URL",
   "NEXT_PUBLIC_SUPABASE_ANON_KEY",
+  "SUPABASE_SERVICE_ROLE_KEY",
+  "QA_PARENT_EMAIL",
+  "QA_PARENT_PASSWORD",
+  "QA_COACH_EMAIL",
+  "QA_COACH_PASSWORD",
   "QA_ADMIN_EMAIL",
   "QA_ADMIN_PASSWORD"
+];
+
+const requiredMigrationPlanInputs = [
+  "SUPABASE_POOLER_DATABASE_URL",
+  "SUPABASE_MIGRATION_TARGET_REF",
+  "SUPABASE_MIGRATION_TARGET_ENV"
 ];
 
 const localHostnames = new Set([
@@ -66,7 +77,7 @@ function shellValue(value) {
 export function validateHostedReadinessPreflight(env = process.env) {
   const blockers = [];
 
-  for (const name of [...requiredNonSecretInputs, ...requiredQaCommandInputs]) {
+  for (const name of [...requiredNonSecretInputs, ...requiredQaCommandInputs, ...requiredMigrationPlanInputs]) {
     if (isPlaceholder(trimmed(env, name))) {
       blockers.push(`${name} is required for hosted readiness preflight.`);
     }
@@ -89,6 +100,30 @@ export function validateHostedReadinessPreflight(env = process.env) {
     blockers.push("NEXT_PUBLIC_SUPABASE_URL must use https for hosted QA authentication.");
   }
 
+  const migrationTargetRef = trimmed(env, "SUPABASE_MIGRATION_TARGET_REF");
+  if (migrationTargetRef && !/^[a-z0-9]{8,32}$/i.test(migrationTargetRef)) {
+    blockers.push("SUPABASE_MIGRATION_TARGET_REF must be a Supabase project reference.");
+  }
+  const migrationTargetEnv = trimmed(env, "SUPABASE_MIGRATION_TARGET_ENV").toLowerCase();
+  if (migrationTargetEnv && !["qa", "preview", "production"].includes(migrationTargetEnv)) {
+    blockers.push("SUPABASE_MIGRATION_TARGET_ENV must be qa, preview, or production.");
+  }
+  const appProjectRef = supabaseUrl?.hostname.endsWith(".supabase.co")
+    ? supabaseUrl.hostname.split(".")[0]
+    : "";
+  if (appProjectRef && migrationTargetRef && appProjectRef !== migrationTargetRef) {
+    blockers.push("SUPABASE_MIGRATION_TARGET_REF must match the hosted app Supabase project reference.");
+  }
+  const allowAppTarget = trimmed(env, "SUPABASE_MIGRATION_ALLOW_APP_TARGET");
+  if (
+    migrationTargetRef
+    && appProjectRef === migrationTargetRef
+    && ["qa", "preview"].includes(migrationTargetEnv)
+    && allowAppTarget !== "confirmed-nonproduction-target"
+  ) {
+    blockers.push("SUPABASE_MIGRATION_ALLOW_APP_TARGET=confirmed-nonproduction-target is required to plan against the hosted non-production app database.");
+  }
+
   const organizationId = trimmed(env, "PUBLIC_ORGANIZATION_ID");
   if (organizationId && !isUuid(organizationId)) {
     blockers.push("PUBLIC_ORGANIZATION_ID must be the target organization UUID configured in the hosted environment.");
@@ -100,8 +135,14 @@ export function validateHostedReadinessPreflight(env = process.env) {
   }
 
   const normalizedBaseUrl = baseUrl ? baseUrl.origin + baseUrl.pathname.replace(/\/$/, "") : "";
+  const migrationConfirmation = allowAppTarget
+    ? ` SUPABASE_MIGRATION_ALLOW_APP_TARGET=${shellValue(allowAppTarget)}`
+    : "";
   const commands = normalizedBaseUrl ? [
+    `SUPABASE_MIGRATION_TARGET_REF=${shellValue(migrationTargetRef)} SUPABASE_MIGRATION_TARGET_ENV=${shellValue(migrationTargetEnv)}${migrationConfirmation} npm run supabase:plan`,
     `PUBLIC_FAMILY_BASE_URL=${shellValue(normalizedBaseUrl)} QA_PROOF_BASE_URL=${shellValue(normalizedBaseUrl)} PUBLIC_ORGANIZATION_ID=${shellValue(organizationId)} PUBLIC_ACCESS_REVIEW_WINDOW=${shellValue(reviewWindow)} npm run qa:public-family-proof`,
+    `QA_PROOF_BASE_URL=${shellValue(normalizedBaseUrl)} npm run qa:session-proof`,
+    `QA_PROOF_BASE_URL=${shellValue(normalizedBaseUrl)} npm run qa:rls-proof`,
     `QA_PROOF_BASE_URL=${shellValue(normalizedBaseUrl)} npm run qa:tenant-readiness-proof`
   ] : [];
 
@@ -113,7 +154,8 @@ export function validateHostedReadinessPreflight(env = process.env) {
     commands,
     checkedInputs: {
       requiredNonSecretInputs,
-      requiredQaCommandInputs
+      requiredQaCommandInputs,
+      requiredMigrationPlanInputs
     }
   };
 }
@@ -137,7 +179,8 @@ export function formatHostedReadinessPreflightReport(result) {
   lines.push("");
   lines.push("Boundaries preserved by this preflight:");
   lines.push("- No deployment or Vercel Authentication bypass is performed.");
-  lines.push("- No Supabase seeding, database write, migration, provider send, payment write, or media upload is performed.");
+  lines.push("- No Supabase seeding, database write, migration apply, provider send, payment write, or media upload is performed by this preflight.");
+  lines.push("- The printed session and RLS proof commands perform guarded QA writes and readback only when the operator runs them against the confirmed isolated target.");
   lines.push("- Passing this gate is not hosted proof, provider readiness, payment readiness, migration acceptance, or production acceptance.");
   return lines.join("\n");
 }
