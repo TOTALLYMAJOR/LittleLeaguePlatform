@@ -135,18 +135,27 @@ export async function listRegistrationTeamOptions(): Promise<RegistrationTeamOpt
   }
 }
 
-export async function listRegistrationRequests(): Promise<RegistrationRequest[]> {
+export async function listRegistrationRequests(input: {
+  organizationIds: string[];
+}): Promise<RegistrationRequest[]> {
+  const organizationIds = [...new Set(input.organizationIds.map((id) => id.trim()).filter(Boolean))];
+  if (!organizationIds.length) return [];
+  const fallbackRequests = seedState.registrationRequests.filter((request) => (
+    organizationIds.includes(request.organizationId)
+  ));
+
   try {
     const supabase = createSupabaseAdminClient();
     const { data, error } = await withSupabaseTimeout(supabase
       .from("registration_requests")
       .select("id,organization_id,season_id,team_id,parent_name,parent_email,player_first_name,player_last_initial,status,created_at,reviewed_at,reviewed_by_user_id")
+      .in("organization_id", organizationIds)
       .order("created_at", { ascending: false }));
 
-    if (error || !data) return seedState.registrationRequests;
+    if (error || !data) return fallbackRequests;
     return data.map(mapRegistrationRow);
   } catch {
-    return seedState.registrationRequests;
+    return fallbackRequests;
   }
 }
 

@@ -70,8 +70,11 @@ export async function CoachPracticeRecapsSurface() {
 export async function CoachScheduleSurface() {
   const pageAccess = await requireCoachPageAccess();
   if (!pageAccess.ok) return <CoachDashboardClient dashboardData={pageAccess.dashboardData} />;
+  const organizationIds = [...new Set((pageAccess.access.contexts ?? [])
+    .filter((context) => context.role === "coach")
+    .map((context) => context.organizationId))];
   const [scheduleData, dashboardData, resolutionData] = await Promise.all([
-    listScheduleOperationsData(),
+    listScheduleOperationsData({ organizationIds }),
     listParentCoachDashboardData({ viewerUserId: pageAccess.access.userId, surface: "coach" }),
     listGameDayResolutionReviews({ teamIds: pageAccess.access.coachTeamIds })
   ]);

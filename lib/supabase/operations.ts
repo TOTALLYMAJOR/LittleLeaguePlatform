@@ -1399,7 +1399,7 @@ export async function createVolunteerReminderDrafts(input: {
 export async function moderateMediaItem(input: {
   mediaItemId: string;
   reviewerUserId: string;
-  status: "approved" | "hidden" | "rejected" | "removed";
+  status: "approved" | "hidden";
   visibility?: "team" | "organization";
   reason?: string;
 }) {
@@ -1459,9 +1459,8 @@ export async function moderateMediaItem(input: {
       reviewed_by_user_id: input.reviewerUserId,
       reviewed_at: now,
       ...(input.visibility ? { visibility: input.visibility } : {}),
-      ...(input.status === "hidden" ? { hidden_at: now, removed_at: null } : {}),
-      ...(input.status === "removed" ? { removed_at: now } : {}),
-      ...(input.status === "approved" ? { hidden_at: null, removed_at: null } : {})
+      ...(input.status === "hidden" ? { hidden_at: now } : {}),
+      ...(input.status === "approved" ? { hidden_at: null } : {})
     };
 
     const { data, error } = await runDynamicQuery(db
@@ -1768,7 +1767,9 @@ export async function createWeatherAlertDraft(input: {
   eventId: string;
   reviewerUserId?: string;
 }) {
-  if (!input.eventId) return { ok: false, message: "Weather lookup requires an event." };
+  if (!input.eventId || !input.reviewerUserId) {
+    return { ok: false, message: "Weather lookup requires an event and a verified reviewer." };
+  }
 
   try {
     const db = adminDb();
@@ -1778,6 +1779,13 @@ export async function createWeatherAlertDraft(input: {
       .eq("id", input.eventId)
       .single();
     if (!event) return { ok: false, message: "Weather lookup requires a known event." };
+    const access = await requireActiveTeamCoachOrOrgAdmin({
+      db,
+      teamId: event.team_id,
+      userId: input.reviewerUserId,
+      action: "create a weather alert draft"
+    });
+    if (!access.ok) return { ok: false, message: access.message };
 
     const forecast = await getWeatherEventDraft({
       teamId: event.team_id,

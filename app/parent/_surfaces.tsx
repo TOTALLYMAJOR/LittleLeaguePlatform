@@ -27,6 +27,7 @@ import { listParentTransportationData } from "@/lib/supabase/transportation";
 import { listParentTemporaryCaregiverData } from "@/lib/supabase/temporary-caregivers";
 import { listFamilyReplays } from "@/lib/supabase/family-replays";
 import { listParentSeasonTransitions } from "@/lib/supabase/season-transitions";
+import { listParentMediaConsents } from "@/lib/supabase/media-consents";
 
 export async function loadParentDashboardForPage() {
   const pageAccess = await requireParentPageAccess();
@@ -86,8 +87,11 @@ export async function ParentRsvpSurface() {
 export async function ParentScheduleSurface() {
   const pageAccess = await requireParentPageAccess();
   if (!pageAccess.ok) return <ParentDashboardClient dashboardData={pageAccess.dashboardData} />;
+  const organizationIds = [...new Set((pageAccess.access.contexts ?? [])
+    .filter((context) => context.role === "parent")
+    .map((context) => context.organizationId))];
   const [scheduleData, dashboardData] = await Promise.all([
-    listScheduleOperationsData(),
+    listScheduleOperationsData({ organizationIds }),
     listParentCoachDashboardData({ viewerUserId: pageAccess.access.userId, surface: "parent" })
   ]);
   const scopedScheduleData = scopeScheduleOperationsData(
@@ -122,7 +126,7 @@ export async function ParentMessagesSurface() {
 
 export async function ParentPhotosSurface() {
   const pageAccess = await requireParentPageAccess();
-  if (!pageAccess.ok) return <ParentDashboardClient dashboardData={pageAccess.dashboardData} />;
+  if (!pageAccess.ok || !pageAccess.access.userId) return <ParentDashboardClient dashboardData={pageAccess.dashboardData} />;
   const teamPortalData = await listTeamPortalData();
   const scopedTeamPortalData = teamPortalData
     ? scopeTeamPortalData(teamPortalData, pageAccess.access.parentTeamIds, {
@@ -138,13 +142,22 @@ export async function ParentPhotosSurface() {
       ...item,
       teamName: teamNames.get(item.teamId) ?? "Linked team"
     }));
-  const childLabels = (scopedTeamPortalData?.players ?? []).map((player) => (
-    `${player.firstName} ${player.lastInitial}.`
-  ));
+  const players = scopedTeamPortalData?.players ?? [];
+  const consentData = await listParentMediaConsents({
+    parentUserId: pageAccess.access.userId,
+    playerIds: players.map((player) => player.id)
+  });
+  const grantedByPlayerId = new Map(consentData.consents.map((consent) => [consent.playerId, consent.granted]));
+  const linkedChildren = players.map((player) => ({
+    playerId: player.id,
+    label: `${player.firstName} ${player.lastInitial}.`,
+    granted: grantedByPlayerId.get(player.id) ?? false
+  }));
   return (
     <FamilyPhotos
       photos={photos}
-      childLabels={childLabels}
+      linkedChildren={linkedChildren}
+      consentLoadOk={consentData.ok}
       isCurrent={Boolean(scopedTeamPortalData)}
     />
   );

@@ -113,13 +113,17 @@ function adminDb() {
   return createSupabaseAdminClient() as unknown as UnsafeSupabase;
 }
 
-function fallbackScheduleOperationsData(): ScheduleOperationsData {
+function fallbackScheduleOperationsData(organizationIds?: string[]): ScheduleOperationsData {
+  const teams = organizationIds
+    ? seedState.teams.filter((team) => organizationIds.includes(team.organizationId))
+    : seedState.teams;
+  const teamIds = new Set(teams.map((team) => team.id));
   return {
-    organizationId: seedState.organization.id,
+    organizationId: organizationIds?.[0] ?? seedState.organization.id,
     isSupabaseBacked: false,
     message: "Showing local schedule fallback until Supabase schedule rows are available.",
-    teams: seedState.teams,
-    events: seedState.events,
+    teams,
+    events: seedState.events.filter((event) => teamIds.has(event.teamId)),
     fieldLocations: []
   };
 }
@@ -266,7 +270,12 @@ export function exportScheduleIcs(events: LeagueEvent[], teamId: string) {
   return lines.join("\n");
 }
 
-export async function listScheduleOperationsData(): Promise<ScheduleOperationsData> {
+export async function listScheduleOperationsData(input: {
+  organizationIds: string[];
+}): Promise<ScheduleOperationsData> {
+  const organizationIds = [...new Set(input.organizationIds.map((id) => id.trim()).filter(Boolean))];
+  if (!organizationIds.length) return fallbackScheduleOperationsData([]);
+
   try {
     const db = adminDb();
     const [
@@ -275,10 +284,10 @@ export async function listScheduleOperationsData(): Promise<ScheduleOperationsDa
       { data: events },
       { data: fieldLocations }
     ] = await withSupabaseTimeout(Promise.all([
-      db.from("organizations").select("id,name").limit(1),
-      db.from("teams").select("id,organization_id,season_id,division,name,coach_user_id,mascot,primary_color,secondary_color,theme_key,status,seasons(status)").order("division", { ascending: true }).order("name", { ascending: true }),
-      db.from("events").select("*").order("starts_at", { ascending: true }),
-      db.from("field_locations").select("id,organization_id,name,address,latitude,longitude,google_place_id,map_url,map_embed_url,field_label,notes,status").order("name", { ascending: true })
+      db.from("organizations").select("id,name").in("id", organizationIds).limit(1),
+      db.from("teams").select("id,organization_id,season_id,division,name,coach_user_id,mascot,primary_color,secondary_color,theme_key,status,seasons(status)").in("organization_id", organizationIds).order("division", { ascending: true }).order("name", { ascending: true }),
+      db.from("events").select("*").in("organization_id", organizationIds).order("starts_at", { ascending: true }),
+      db.from("field_locations").select("id,organization_id,name,address,latitude,longitude,google_place_id,map_url,map_embed_url,field_label,notes,status").in("organization_id", organizationIds).order("name", { ascending: true })
     ]), 7000) as [
       { data: Array<{ id: string; name: string }> | null },
       { data: Array<{ id: string; organization_id: string; season_id: string; division: string; name: string; coach_user_id: string | null; mascot: string; primary_color: string; secondary_color: string; theme_key: Team["themeKey"]; status: "active" | "archived"; seasons: TeamLifecycleRow["seasons"] }> | null },
@@ -287,7 +296,7 @@ export async function listScheduleOperationsData(): Promise<ScheduleOperationsDa
     ];
 
     const organization = organizations?.[0];
-    if (!organization || !teams?.length) return fallbackScheduleOperationsData();
+    if (!organization || !teams?.length) return fallbackScheduleOperationsData(organizationIds);
 
     return {
       organizationId: organization.id,
@@ -324,7 +333,7 @@ export async function listScheduleOperationsData(): Promise<ScheduleOperationsDa
       }))
     };
   } catch {
-    return fallbackScheduleOperationsData();
+    return fallbackScheduleOperationsData(organizationIds);
   }
 }
 

@@ -1,6 +1,7 @@
 {
-  "generatedAt": "2026-07-27T04:05:50.642Z",
+  "generatedAt": "2026-08-21T04:02:14.903Z",
   "baseUrl": "http://127.0.0.1:3022",
+  "targetMode": "local",
   "proof": [
     {
       "routeName": "home",

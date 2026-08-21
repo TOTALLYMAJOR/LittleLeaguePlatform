@@ -4073,9 +4073,6 @@ export function AdminDashboardClient({ registrationRequests, sponsorData, mediaD
   const [isSponsorPending, startSponsorTransition] = useTransition();
   const [mediaMessage, setMediaMessage] = useState(mediaData ? "Media review records are current for this organization." : "Media review preview records are shown.");
   const [drillVideoMessage, setDrillVideoMessage] = useState(drillVideoData ? "Drill video review records are current." : "Drill video review preview records are shown.");
-  const [mediaVisibilityDrafts, setMediaVisibilityDrafts] = useState<Record<string, "team" | "organization">>(() => Object.fromEntries(
-    initialMediaItems.map((item) => [item.id, item.visibility ?? "team"])
-  ));
   const [isMediaPending, startMediaTransition] = useTransition();
   const [isDrillReviewPending, startDrillReviewTransition] = useTransition();
   const [lineupTeamId, setLineupTeamId] = useState("team-tigers");
@@ -4248,10 +4245,10 @@ export function AdminDashboardClient({ registrationRequests, sponsorData, mediaD
     });
   }
 
-  function runMediaModeration(mediaItem: MediaItem, status: "approved" | "hidden" | "rejected" | "removed", reason: string) {
+  function runMediaModeration(mediaItem: MediaItem, status: "approved" | "hidden", reason: string) {
     setMediaMessage("");
     startMediaTransition(async () => {
-      const visibility = mediaVisibilityDrafts[mediaItem.id] ?? mediaItem.visibility ?? "team";
+      const visibility = mediaItem.visibility ?? "team";
       const response = await authenticatedJsonFetch("/api/media/moderation", {
         mediaItemId: mediaItem.id,
         status,
@@ -4691,7 +4688,7 @@ export function AdminDashboardClient({ registrationRequests, sponsorData, mediaD
           {mediaReviewQueue.map((item) => {
             const team = mediaTeams.find((candidate) => candidate.id === item.teamId);
             const status = item.moderationStatus ?? "approved";
-            const visibility = mediaVisibilityDrafts[item.id] ?? item.visibility ?? "team";
+            const visibility = item.visibility ?? "team";
             const needsReview = item.moderationStatus === "pending" || (item.reportCount ?? 0) > 0;
             return (
               <div className="media-review-item" data-review={needsReview ? "pending" : status} key={item.id}>
@@ -4712,29 +4709,12 @@ export function AdminDashboardClient({ registrationRequests, sponsorData, mediaD
                   <p className="muted">{getMediaReviewCopy(item)}</p>
                 </div>
                 <div className="media-review-controls">
-                  <label>
-                    Team/org visibility
-                    <select
-                      value={visibility}
-                      onChange={(event) => setMediaVisibilityDrafts((current) => ({
-                        ...current,
-                        [item.id]: event.target.value as "team" | "organization"
-                      }))}
-                    >
-                      <option value="team">Team only</option>
-                      <option value="organization">Organization</option>
-                    </select>
-                  </label>
                   <div className="button-row media-review-actions">
-                    <button className="secondary" disabled={isMediaPending} onClick={() => runMediaModeration(item, "approved", `Approved for ${visibility} visibility.`)}>Approve media</button>
-                    <button className="secondary" disabled={isMediaPending} onClick={() => runMediaModeration(item, "rejected", "Rejected by coach/admin review.")}>Reject media</button>
-                    <button className="secondary" disabled={isMediaPending} onClick={() => runMediaModeration(item, "hidden", "Hidden pending coach/admin review.")}>Hide media</button>
-                    <button className="secondary" disabled={isMediaPending} onClick={() => runMediaModeration(item, "approved", "Restored after review.")}>Restore media</button>
-                    <button className="secondary" disabled={isMediaPending} onClick={() => {
-                      if (window.confirm(`Remove ${item.title} from media access?`)) {
-                        runMediaModeration(item, "removed", "Removed by coach/admin moderation.");
-                      }
-                    }}>Remove media</button>
+                    {status === "hidden" ? (
+                      <button className="secondary" disabled={isMediaPending} onClick={() => runMediaModeration(item, "approved", "Restored after review.")}>Restore media</button>
+                    ) : (
+                      <button className="secondary" disabled={isMediaPending} onClick={() => runMediaModeration(item, "hidden", "Hidden pending coach/admin review.")}>Hide media</button>
+                    )}
                     <a className="secondary" href={item.url} target="_blank" rel="noreferrer">Open source link</a>
                   </div>
                 </div>

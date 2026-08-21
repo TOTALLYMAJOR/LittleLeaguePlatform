@@ -2,9 +2,17 @@
 
 Feature slices live in the root Next.js application with typed fallback states and Supabase-backed paths for auth-scoped reads, writes, audits, provider-safe drafts, and admin operations. The [2026-07-27 closeout ledger](backlog-closeout-2026-07-27.md) governs `done-local`, `external`, `decision-required`, and `historical` state. Real SendGrid, explicitly selected Pingram SMS, rollback-only Twilio, Web Push, private-media, Stripe Connect, and OpenAI adapters remain behind server and organization gates; code presence is not hosted, operational, or production proof.
 
-## Current Business Priority Backlog - 2026-08-19
+## Current Business Priority Backlog - 2026-08-20
 
-The next production-business backlog is ranked in [docs/production-task-board.md](production-task-board.md#current-business-priority-queue---2026-08-16). The order is: sponsor billing domain and live collection; sponsor fulfillment and proof; production provider sends and schedule-change alerts; advisory weather alerts through the schedule/notification spine; family lifecycle flows; team-builder publish; and registration fee gated access with assigned-team activation. These are not deployed or operational claims. Stripe must remain payment-processor evidence, not the entire sponsor product source of truth. Payment-required team access must be based on verified Stripe webhook evidence, and team access must follow the approved assignment workflow rather than parent-selected or coach-selected team choice.
+The approved MVP order is ranked in [docs/production-task-board.md](production-task-board.md#current-business-priority-queue---2026-08-20). Local implementation and focused proof are complete for LPM-020 public configuration, registration approval/assigned-team activation, team-builder publication, admin tenant scope, the three retained security defects, durable public-intake limiting, and link-media Hide/Restore. `EXT-HOSTED-SESSION` is the only remaining definition-of-shipped gate. Provider delivery remains draft-only, media remains link-only, sponsor billing remains proof-only, mobile remains PWA-first, and Preview OpenAI remains disabled. These are source/local claims, not hosted Supabase readback or production acceptance.
+
+## MVP Completion Corrections - 2026-08-20
+
+- Admin aggregate reads now receive explicit signed-in organization scope across registration review, branding, media, memberships, guardian repair, archives, operations, and schedule data. ICS export separately requires active membership in the requested team or organization-admin authority before calendar rows load.
+- Registration invitation acceptance supports both the emitted `#token` fragment and the retained `#code` form. Approval and acceptance continue to derive the child/team scope only from persisted league records.
+- Family Photos now exposes per-player grant/revoke for the verified guardian. Migration `20260821041738_player_media_consent_writer.sql` atomically rechecks the active guardian relationship, changes `team_family` consent, and records audit evidence through a service-only function. Consent alone never publishes media.
+- Weather draft creation now rejects non-assigned users before any provider lookup. Link-media moderation is contracted to one state-dependent Hide/Restore control and the route accepts only those two states; rejection, destructive removal, and separate approval controls are postponed.
+- Focused LPM-020, registration, team-builder, tenant-scope, ICS, consent, weather, public-intake, media, route, UI, and verifier tests pass with typecheck. Hosted deployment, ordered migration readback, signed-in role journeys, and populated cross-tenant denial remain `EXT-HOSTED-SESSION`.
 
 ## Integrated Work - 2026-08-19
 

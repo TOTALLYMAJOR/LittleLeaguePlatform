@@ -15,10 +15,42 @@ export interface MediaGovernanceData {
   message: string;
 }
 
-function fallbackMediaGovernanceData(message = "Showing local media records until Supabase media rows are available."): MediaGovernanceData {
+type MediaTeamRow = {
+  id: string;
+  organization_id: string;
+  season_id: string;
+  division: string;
+  name: string;
+  coach_user_id: string | null;
+  mascot: string;
+  primary_color: string;
+  secondary_color: string;
+  theme_key: Team["themeKey"];
+};
+
+type MediaItemRow = {
+  id: string;
+  team_id: string;
+  title: string;
+  media_type: MediaItem["type"];
+  url: string;
+  moderation_status: MediaItem["moderationStatus"];
+  visibility: MediaItem["visibility"] | null;
+  report_count: number;
+  created_at: string;
+};
+
+function fallbackMediaGovernanceData(
+  message = "Showing local media records until Supabase media rows are available.",
+  organizationIds?: string[]
+): MediaGovernanceData {
+  const teams = organizationIds
+    ? seedState.teams.filter((team) => organizationIds.includes(team.organizationId))
+    : seedState.teams;
+  const teamIds = new Set(teams.map((team) => team.id));
   return {
-    teams: seedState.teams,
-    mediaItems: seedState.mediaItems,
+    teams,
+    mediaItems: seedState.mediaItems.filter((item) => teamIds.has(item.teamId)),
     isSupabaseBacked: false,
     message
   };
@@ -28,30 +60,42 @@ function adminDb() {
   return createSupabaseAdminClient() as unknown as UnsafeSupabase;
 }
 
-export async function listMediaGovernanceData(): Promise<MediaGovernanceData> {
+export async function listMediaGovernanceData(input: {
+  organizationIds: string[];
+}): Promise<MediaGovernanceData> {
+  const organizationIds = [...new Set(input.organizationIds.map((id) => id.trim()).filter(Boolean))];
+  if (!organizationIds.length) return fallbackMediaGovernanceData("No admin organization scope is available.", []);
+
   try {
     const db = adminDb();
-    const [teamsResult, mediaResult] = await withSupabaseTimeout(Promise.all([
-      db.from("teams").select("id,organization_id,season_id,division,name,coach_user_id,mascot,primary_color,secondary_color,theme_key").order("division", { ascending: true }),
-      db.from("media_items").select("id,team_id,title,media_type,url,moderation_status,visibility,report_count,created_at").order("created_at", { ascending: false })
-    ]), 7000);
+    const teamsResult = await withSupabaseTimeout(db
+      .from("teams")
+      .select("id,organization_id,season_id,division,name,coach_user_id,mascot,primary_color,secondary_color,theme_key")
+      .in("organization_id", organizationIds)
+      .order("division", { ascending: true }), 7000) as {
+        data: MediaTeamRow[] | null;
+        error: unknown;
+      };
+    const teamIds = (teamsResult.data ?? []).map((team: { id: string }) => team.id);
+    const mediaResult = teamIds.length
+      ? await withSupabaseTimeout(db
+        .from("media_items")
+        .select("id,team_id,title,media_type,url,moderation_status,visibility,report_count,created_at")
+        .in("team_id", teamIds)
+        .order("created_at", { ascending: false }), 7000) as {
+          data: MediaItemRow[] | null;
+          error: unknown;
+        }
+      : { data: [], error: null } as {
+        data: MediaItemRow[];
+        error: unknown;
+      };
 
     if (teamsResult.error || mediaResult.error) {
-      return fallbackMediaGovernanceData("Supabase media governance rows are not available yet.");
+      return fallbackMediaGovernanceData("Supabase media governance rows are not available yet.", organizationIds);
     }
 
-    const teams: Team[] = (teamsResult.data ?? []).map((team: {
-      id: string;
-      organization_id: string;
-      season_id: string;
-      division: string;
-      name: string;
-      coach_user_id: string | null;
-      mascot: string;
-      primary_color: string;
-      secondary_color: string;
-      theme_key: Team["themeKey"];
-    }) => ({
+    const teams: Team[] = (teamsResult.data ?? []).map((team: MediaTeamRow) => ({
       id: team.id,
       organizationId: team.organization_id,
       seasonId: team.season_id,
@@ -64,17 +108,7 @@ export async function listMediaGovernanceData(): Promise<MediaGovernanceData> {
       themeKey: team.theme_key
     }));
 
-    const mediaItems: MediaItem[] = (mediaResult.data ?? []).map((item: {
-      id: string;
-      team_id: string;
-      title: string;
-      media_type: MediaItem["type"];
-      url: string;
-      moderation_status: MediaItem["moderationStatus"];
-      visibility: MediaItem["visibility"] | null;
-      report_count: number;
-      created_at: string;
-    }) => ({
+    const mediaItems: MediaItem[] = (mediaResult.data ?? []).map((item: MediaItemRow) => ({
       id: item.id,
       teamId: item.team_id,
       title: item.title,
@@ -93,6 +127,6 @@ export async function listMediaGovernanceData(): Promise<MediaGovernanceData> {
       message: "Media governance rows, report counts, status, and visibility are loaded from Supabase."
     };
   } catch {
-    return fallbackMediaGovernanceData("Supabase media governance rows could not be loaded.");
+    return fallbackMediaGovernanceData("Supabase media governance rows could not be loaded.", organizationIds);
   }
 }

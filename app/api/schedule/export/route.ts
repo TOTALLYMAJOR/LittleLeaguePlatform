@@ -1,6 +1,8 @@
 import { NextResponse } from "next/server";
 import { exportScheduleIcs, listScheduleOperationsData } from "@/lib/supabase/schedule-management";
 import { requireAuthenticatedRouteUser } from "@/lib/supabase/route-auth";
+import { requireActiveTeamMemberOrOrgAdmin } from "@/lib/supabase/access-control";
+import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 
 export async function GET(request: Request) {
   const auth = await requireAuthenticatedRouteUser(request);
@@ -14,7 +16,19 @@ export async function GET(request: Request) {
     return NextResponse.json({ ok: false, message: "Calendar export requires a team." }, { status: 400 });
   }
 
-  const data = await listScheduleOperationsData();
+  const access = await requireActiveTeamMemberOrOrgAdmin({
+    db: createSupabaseAdminClient(),
+    teamId,
+    userId: auth.user.id,
+    action: "export this team calendar"
+  });
+  if (!access.ok || !access.team) {
+    return NextResponse.json({ ok: false, message: access.message }, { status: 403 });
+  }
+
+  const data = await listScheduleOperationsData({
+    organizationIds: [access.team.organization_id]
+  });
   const ics = exportScheduleIcs(data.events, teamId);
 
   return new Response(ics, {

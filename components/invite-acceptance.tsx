@@ -11,6 +11,11 @@ interface InvitePreview {
   expiresAt: string;
 }
 
+export function resolvePendingInviteToken(hash: string, storedToken: string) {
+  const fragment = new URLSearchParams(hash.replace(/^#/, ""));
+  return fragment.get("code") ?? fragment.get("token") ?? storedToken;
+}
+
 export function InviteAcceptanceClient() {
   const [token, setToken] = useState("");
   const [preview, setPreview] = useState<InvitePreview | null>(null);
@@ -20,9 +25,8 @@ export function InviteAcceptanceClient() {
   const [isPending, startTransition] = useTransition();
 
   useEffect(() => {
-    const fragment = new URLSearchParams(window.location.hash.replace(/^#/, ""));
     const stored = window.sessionStorage.getItem("leaguepilot-pending-invite") ?? "";
-    const nextToken = fragment.get("code") ?? stored;
+    const nextToken = resolvePendingInviteToken(window.location.hash, stored);
     if (nextToken) {
       window.setTimeout(() => setToken(nextToken), 0);
       window.sessionStorage.setItem("leaguepilot-pending-invite", nextToken);

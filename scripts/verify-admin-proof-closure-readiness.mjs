@@ -9,6 +9,7 @@ export const DEFAULT_SOURCE_FILES = {
   mediaModerationRoute: "app/api/media/moderation/route.ts",
   operations: "lib/supabase/operations.ts",
   mediaGovernance: "lib/supabase/media-governance.ts",
+  featurePanels: "components/feature-panels.tsx",
   liveActionsTest: "app/api-live-actions.test.ts",
 
   seasonPlanning: "lib/domain/season-planning.ts",
@@ -137,8 +138,26 @@ function verifyMediaModeration(sources, blockers) {
     "media-moderation",
     "MEDIA_MODERATION_ALLOWED_DECISIONS_MISSING",
     ["mediaModerationRoute", "operations"],
-    /new\s+Set\(\["approved",\s*"hidden",\s*"rejected",\s*"removed"\]\)[\s\S]*status:\s*"approved"\s*\|\s*"hidden"\s*\|\s*"rejected"\s*\|\s*"removed"/s,
-    "Media moderation must retain bounded approve/restore, hide, reject, and remove decisions."
+    /new\s+Set\(\["approved",\s*"hidden"\]\)[\s\S]*status:\s*"approved"\s*\|\s*"hidden"/s,
+    "MVP media moderation must retain only bounded restore and hide decisions."
+  );
+  requirePattern(
+    blockers,
+    sources,
+    "media-moderation",
+    "MEDIA_MODERATION_HIDE_RESTORE_UI_MISSING",
+    ["featurePanels"],
+    /status === "hidden"[\s\S]*Restore media[\s\S]*Hide media/s,
+    "The link-media workbench must expose one state-dependent hide or restore control."
+  );
+  requireNoPattern(
+    blockers,
+    sources,
+    "media-moderation",
+    "MEDIA_MODERATION_POSTPONED_CONTROLS_PRESENT",
+    ["featurePanels"],
+    />Approve media<|>Reject media<|>Remove media</,
+    "Reject, destructive remove, and separate approval controls are postponed from the MVP link-media workbench."
   );
   requirePattern(
     blockers,

@@ -19,6 +19,18 @@ export interface FamilyPhotoFeedback {
   message: string;
 }
 
+interface FamilyPhotoConsentResult {
+  ok?: boolean;
+  granted?: boolean;
+  message?: string;
+}
+
+export interface FamilyPhotoChild {
+  playerId: string;
+  label: string;
+  granted: boolean;
+}
+
 export function applyFamilyPhotoReportResult(
   photos: FamilyPhotoItem[],
   mediaItemId: string,
@@ -61,19 +73,38 @@ async function reportWithSession(mediaItemId: string) {
   });
 }
 
+async function saveConsentWithSession(playerId: string, granted: boolean) {
+  const headers: Record<string, string> = { "content-type": "application/json" };
+  try {
+    const supabase = createSupabaseBrowserClient();
+    const { data } = await supabase.auth.getSession();
+    if (data.session?.access_token) headers.authorization = `Bearer ${data.session.access_token}`;
+  } catch {
+    // The authenticated route fails closed when a session cannot be confirmed.
+  }
+  return fetch("/api/parent/media-consents", {
+    method: "POST",
+    headers,
+    body: JSON.stringify({ playerId, granted })
+  });
+}
+
 export function FamilyPhotos({
   photos,
-  childLabels,
+  linkedChildren,
+  consentLoadOk,
   isCurrent
 }: {
   photos: FamilyPhotoItem[];
-  childLabels: string[];
+  linkedChildren: FamilyPhotoChild[];
+  consentLoadOk: boolean;
   isCurrent: boolean;
 }) {
   const [state, setState] = useState<{
     visiblePhotos: FamilyPhotoItem[];
+    children: FamilyPhotoChild[];
     feedback: FamilyPhotoFeedback | null;
-  }>({ visiblePhotos: photos, feedback: null });
+  }>({ visiblePhotos: photos, children: linkedChildren, feedback: null });
   const [isPending, startTransition] = useTransition();
 
   function report(photo: FamilyPhotoItem) {
@@ -88,12 +119,37 @@ export function FamilyPhotos({
       }
       setState((current) => {
         const next = applyFamilyPhotoReportResult(current.visiblePhotos, photo.id, result);
-        return { visiblePhotos: next.photos, feedback: next.feedback };
+        return { ...current, visiblePhotos: next.photos, feedback: next.feedback };
       });
     });
   }
 
-  const { visiblePhotos, feedback } = state;
+  function changeConsent(child: FamilyPhotoChild) {
+    const granted = !child.granted;
+    setState((current) => ({ ...current, feedback: null }));
+    startTransition(async () => {
+      let result: FamilyPhotoConsentResult | null = null;
+      try {
+        const response = await saveConsentWithSession(child.playerId, granted);
+        result = await response.json().catch(() => null) as FamilyPhotoConsentResult | null;
+      } catch {
+        // Keep the prior decision visible and return a retryable error.
+      }
+      setState((current) => ({
+        ...current,
+        children: result?.ok
+          ? current.children.map((item) => item.playerId === child.playerId
+            ? { ...item, granted: result?.granted ?? granted }
+            : item)
+          : current.children,
+        feedback: result?.ok
+          ? { tone: "success", message: result.message ?? "Media consent updated." }
+          : { tone: "error", message: result?.message ?? "Media consent could not be updated. Try again." }
+      }));
+    });
+  }
+
+  const { visiblePhotos, children: currentChildren, feedback } = state;
 
   return (
     <div className="page family-photos-page">
@@ -107,12 +163,30 @@ export function FamilyPhotos({
         <ShieldCheck aria-hidden="true" size={22} strokeWidth={2.2} />
         <div>
           <strong>{isCurrent ? "Current family-media read" : "Media records need verification"}</strong>
-          <p>Visible items passed moderation and family-release checks. Settings do not grant consent, and this page has no consent writer.</p>
+          <p>Visible items passed moderation and family-release checks. Each verified guardian controls their own consent for each linked child.</p>
           <small>
-            Linked children: {childLabels.length ? childLabels.join(", ") : "No linked child names available"}.
-            Consent changes require league staff review.
+            Consent does not publish media by itself. Every current guardian, safety review, and explicit family release are still required.
           </small>
         </div>
+      </section>
+
+      <section className="card stack" aria-label="Per-player media consent controls">
+        <h2>Media consent</h2>
+        {!consentLoadOk ? <p className="notice danger">Consent status is unavailable. No decision can be changed right now.</p> : null}
+        {currentChildren.map((child) => (
+          <div className="family-photo-consent-row" key={child.playerId}>
+            <span><strong>{child.label}</strong><br /><small>Your team-family consent is {child.granted ? "granted" : "not granted"}.</small></span>
+            <button
+              type="button"
+              className={child.granted ? "secondary" : undefined}
+              disabled={isPending || !consentLoadOk}
+              onClick={() => changeConsent(child)}
+            >
+              {child.granted ? "Revoke consent" : "Grant consent"}
+            </button>
+          </div>
+        ))}
+        {!currentChildren.length ? <p className="muted">No actively linked children are available for consent.</p> : null}
       </section>
 
       {feedback ? (

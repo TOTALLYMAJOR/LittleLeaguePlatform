@@ -127,21 +127,27 @@ function mapLogoAsset(row: {
   };
 }
 
-function fallbackThemeData(): AdminThemeData {
+function fallbackThemeData(organizationIds?: string[]): AdminThemeData {
+  const teams = organizationIds
+    ? seedState.teams.filter((team) => organizationIds.includes(team.organizationId))
+    : seedState.teams;
+  const teamIds = new Set(teams.map((team) => team.id));
+  const teamMemberships = seedState.teamMemberships.filter((membership) => teamIds.has(membership.teamId));
+  const userIds = new Set(teamMemberships.map((membership) => membership.userId));
   return {
     tenantDefaults: {
-      organizationId: seedState.organization.id,
+      organizationId: organizationIds?.[0] ?? seedState.organization.id,
       themeKey: "baseball",
       mascot: "Team",
       primaryColor: "#174ea6",
       secondaryColor: "#fbbc04",
       logoStatus: "not_configured"
     },
-    teams: seedState.teams,
-    users: seedState.users,
-    teamMemberships: seedState.teamMemberships,
+    teams,
+    users: seedState.users.filter((user) => userIds.has(user.id)),
+    teamMemberships,
     audits: seedState.auditEvents
-      .filter((event) => event.action === "team_portal_branding_updated")
+      .filter((event) => event.action === "team_portal_branding_updated" && teamIds.has(event.targetId))
       .map((event) => ({
         id: event.id,
         actorUserId: event.actorUserId,
@@ -164,32 +170,32 @@ function validateInput(input: UpdateTeamBrandingInput) {
   return null;
 }
 
-export async function listAdminThemeData(): Promise<AdminThemeData> {
+export async function listAdminThemeData(input: {
+  organizationIds: string[];
+}): Promise<AdminThemeData> {
+  const organizationIds = [...new Set(input.organizationIds.map((id) => id.trim()).filter(Boolean))];
+  if (!organizationIds.length) return fallbackThemeData([]);
+
   try {
     const supabase = createSupabaseAdminClient();
     const unsafeSupabase = supabase as unknown as UnsafeSupabase;
-    const [organizationsResult, teamsResult, profilesResult, membershipsResult, auditsResult, logoAssetsResult] = await withSupabaseTimeout(Promise.all([
+    const [organizationsResult, teamsResult, auditsResult, logoAssetsResult] = await withSupabaseTimeout(Promise.all([
       unsafeSupabase
         .from("organizations")
         .select("id,default_theme_key,default_mascot,default_primary_color,default_secondary_color,logo_status")
+        .in("id", organizationIds)
         .order("created_at", { ascending: true })
         .limit(1),
       supabase
         .from("teams")
         .select("id,organization_id,season_id,division,name,coach_user_id,mascot,primary_color,secondary_color,theme_key")
+        .in("organization_id", organizationIds)
         .order("division", { ascending: true })
         .order("name", { ascending: true }),
       supabase
-        .from("profiles")
-        .select("id,display_name,email,phone,default_role")
-        .order("display_name", { ascending: true }),
-      supabase
-        .from("team_memberships")
-        .select("id,team_id,user_id,role,status")
-        .order("created_at", { ascending: false }),
-      supabase
         .from("audit_events")
         .select("id,actor_user_id,target_id,summary,created_at")
+        .in("organization_id", organizationIds)
         .eq("action", "team_portal_branding_updated")
         .eq("target_type", "team")
         .order("created_at", { ascending: false })
@@ -197,13 +203,29 @@ export async function listAdminThemeData(): Promise<AdminThemeData> {
       unsafeSupabase
         .from("team_logo_assets")
         .select("id,organization_id,team_id,uploaded_by_user_id,url,status,policy_notes,created_at,reviewed_at,reviewed_by_user_id")
+        .in("organization_id", organizationIds)
         .order("created_at", { ascending: false })
         .limit(25)
     ]), 7000);
 
-    if (teamsResult.error || profilesResult.error || membershipsResult.error || auditsResult.error || !teamsResult.data?.length) {
-      return fallbackThemeData();
+    if (teamsResult.error || auditsResult.error || !teamsResult.data?.length) {
+      return fallbackThemeData(organizationIds);
     }
+    const teamIds = teamsResult.data.map((team) => team.id);
+    const membershipsResult = await withSupabaseTimeout(supabase
+      .from("team_memberships")
+      .select("id,team_id,user_id,role,status")
+      .in("team_id", teamIds)
+      .order("created_at", { ascending: false }), 7000);
+    const profileIds = [...new Set((membershipsResult.data ?? []).map((membership) => membership.user_id))];
+    const profilesResult = profileIds.length
+      ? await withSupabaseTimeout(supabase
+        .from("profiles")
+        .select("id,display_name,email,phone,default_role")
+        .in("id", profileIds)
+        .order("display_name", { ascending: true }), 7000)
+      : { data: [], error: null };
+    if (profilesResult.error || membershipsResult.error) return fallbackThemeData(organizationIds);
     const organization = organizationsResult.data?.[0];
 
     return {
@@ -214,7 +236,7 @@ export async function listAdminThemeData(): Promise<AdminThemeData> {
         primaryColor: organization.default_primary_color,
         secondaryColor: organization.default_secondary_color,
         logoStatus: organization.logo_status
-      } : fallbackThemeData().tenantDefaults,
+      } : fallbackThemeData(organizationIds).tenantDefaults,
       teams: teamsResult.data.map(mapTeam),
       users: (profilesResult.data ?? []).map((profile) => ({
         id: profile.id,
@@ -240,7 +262,7 @@ export async function listAdminThemeData(): Promise<AdminThemeData> {
       logoAssets: logoAssetsResult.error ? [] : (logoAssetsResult.data ?? []).map(mapLogoAsset)
     };
   } catch {
-    return fallbackThemeData();
+    return fallbackThemeData(organizationIds);
   }
 }
 

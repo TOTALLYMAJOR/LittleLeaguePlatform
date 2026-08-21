@@ -33,16 +33,16 @@ Task-specific checks are required only when the surface is touched:
 
 This queue is the approved MVP completion order. It overrides older per-row priorities below without deleting their evidence. Provider delivery stays draft-only, media stays link-only, sponsor billing stays proof-only, mobile stays PWA-first, and Preview OpenAI stays disabled. Every other retained lane is postponed unless it is explicitly named here.
 
-| Rank | Feature | Why it matters | Existing tracker tie-in |
-| --- | --- | --- | --- |
-| 1 | LPM-020 public-configuration proof | Add only the irreversible organization fingerprint, configured review-window evidence, and fail-closed mismatch behavior. Keep the raw UUID and all credentials out of rendered evidence. | `LPM-020`, `EXT-HOSTED-SESSION` |
-| 2 | Registration approval and assigned-team activation | Prove hosted admin approval/rejection, correct player/guardian/invitation/action/audit rows, and private access only for the league/system-assigned team. Parent- or coach-selected assignment and browser-return access are forbidden. | `LP-005`, Registration System, family access activation |
-| 3 | Team-builder publication | Prove signed-in isolated-QA publication of the approved current plan, roster and audit readback, stale-plan refusal, and cross-organization denial. | `LP-007`, `LP-008`, Automatic Team Builder |
-| 4 | Admin tenant scope | Prove every in-scope admin surface excludes another organization's roster, guardians, schedule, exports, and operations data. | `LP-009`, `EXT-RLS-ACTOR-ACTION` |
-| 5 | Three security defect fixes | Fix the ICS export cross-tenant read, implement the missing authorized/audited media-consent writer, and correct weather-draft authorization. Chat read-receipt authorization and the chat-retention no-op are postponed. | Security defect triage; not acceptance gates |
-| 6 | Minimum public-intake abuse protection | Put one shared-store counter or one edge rule in front of internet-facing registration so throttling survives multiple instances. | `LP-010` |
-| 7 | Link-media hide/restore | Contract LP-003/LP-004 to one authorized hide/restore toggle and prove family/team reads honor hidden state. No upload, storage, scanner, parent-report, or destructive-remove expansion. | `LP-003`, `LP-004`, `DEC-MEDIA` |
-| 8 | Hosted session acceptance | Definition of shipped: exact deployed commit/environment, ordered migrations applied/read back, target identity proven, and signed-in parent/coach/admin core journeys passing against the intended isolated tenant. | `EXT-HOSTED-SESSION` |
+| Rank | Feature | State | Why it matters | Existing tracker tie-in |
+| --- | --- | --- | --- | --- |
+| 1 | LPM-020 public-configuration proof | `done-local` | Irreversible fingerprint, configured review-window evidence, fail-closed mismatch behavior, 14 contract tests, and a 16-result local browser matrix pass. Hosted replay is consolidated into rank 8. | `LPM-020`, `EXT-HOSTED-SESSION` |
+| 2 | Registration approval and assigned-team activation | `done-local` | Organization-scoped review data, persisted assigned-team authority, compatible one-time invitation fragments, and focused access tests pass. Hosted lifecycle readback is consolidated into rank 8. | `LP-005`, Registration System, family access activation |
+| 3 | Team-builder publication | `done-local` | Admin-only Preview -> Edit -> Approve -> Publish, persistence, audit, stale-plan, and tenant contracts pass locally. Hosted publish/readback is consolidated into rank 8. | `LP-007`, `LP-008`, Automatic Team Builder |
+| 4 | Admin tenant scope | `done-local` | Admin aggregate adapters require explicit organization scope, and calendar export independently authorizes the requested team. Hosted populated denial proof is consolidated into rank 8. | `LP-009`, `EXT-RLS-ACTOR-ACTION` |
+| 5 | Three security defect fixes | `done-local` | ICS team access, atomic guardian media consent/audit, and weather draft coach/admin authorization are implemented and focused tests pass. Chat read-receipt authorization and the chat-retention no-op remain postponed. | Security defect triage; not acceptance gates |
+| 6 | Minimum public-intake abuse protection | `done-local` | Registration uses the durable Supabase shared counter; 429, reset, remaining, and retry headers pass focused tests. Deployed shared-store proof is consolidated into rank 8. | `LP-010` |
+| 7 | Link-media hide/restore | `done-local` | The workbench and route now expose only authorized Hide/Restore, with audit history and hidden-row exclusion retained. Upload, storage, scanner, parent-report, reject, and destructive remove remain postponed. | `LP-003`, `LP-004`, `DEC-MEDIA` |
+| 8 | Hosted session acceptance | `external` | Definition of shipped: exact deployed commit/environment, ordered migrations applied/read back, target identity proven, and signed-in parent/coach/admin core journeys passing against the intended isolated tenant. Publication is intentionally paused to avoid CI credits. | `EXT-HOSTED-SESSION` |
 
 ### Sponsor Revenue Spine - Postponed Reference
 
@@ -204,7 +204,7 @@ Example state: Game Saturday 2:00 PM; thunderstorm probability 80%; risk HIGH; s
 ### LP-009 - Prove Admin Operations Hosted Scope
 
 - Priority: P1 proof.
-- Current state: `/admin/operations` and `/admin/security` have hosted proof; export service reads now narrow related rows and profiles to the selected organization scope, with local cross-tenant regression coverage. Broader admin surfaces still need signed-in hosted proof.
+- Current state: local implementation is complete. Registration review, branding, media, memberships, guardian repair, archive, operations, and schedule adapters require explicit signed-in organization scope; ICS export separately authorizes the requested team. Focused cross-tenant and source-contract tests pass. Populated signed-in hosted denial remains consolidated into `EXT-HOSTED-SESSION`.
 - Seams: `/admin/teams`, `/admin/guardian-links`, `/admin/archive`, `/admin/operations`, `/admin/security`.
 - Done when: signed-in QA admin sees only the intended organization data across all admin surfaces and screenshots are preserved.
 - SaaS constants focus: tenant isolation, support/admin operations, audit logs, observability by tenant.
@@ -213,7 +213,7 @@ Example state: Game Saturday 2:00 PM; thunderstorm probability 80%; risk HIGH; s
 ### LP-010 - Add Public Intake Abuse Controls
 
 - Priority: P1 safety.
-- Current state: public endpoints remain intentionally unauthenticated. A bounded in-process fixed-window limiter now rejects registration bursts at 5 requests/minute/client and mobile telemetry bursts at 60 requests/minute/client, returning `429`, `Retry-After`, and `X-RateLimit-*` headers. This is route-level protection; a shared store or provider edge firewall is still required for full multi-instance enforcement.
+- Current state: public endpoints remain intentionally unauthenticated. Registration uses the durable Supabase `claim_public_rate_limit` shared counter at 5 requests/minute/client, and mobile telemetry uses the same counter at 120 requests/minute/client. Both return `429`, `Retry-After`, and `X-RateLimit-*` headers; six focused tests and the source readiness verifier pass. Deployed shared-store execution remains consolidated into `EXT-HOSTED-SESSION`.
 - Seams: `/api/registration-requests`, `/api/mobile-usage-events`, Vercel/firewall config if used.
 - Done when: one shared-store counter or one edge rule throttles the internet-facing registration boundary across multiple application instances, behavior is documented, and legitimate family signup still works. No broader abuse-control platform is required for MVP.
 - SaaS constants focus: noisy-neighbor control, rate limits, tenant spoofing, public attack path, observability.
@@ -272,9 +272,9 @@ Example state: Game Saturday 2:00 PM; thunderstorm probability 80%; risk HIGH; s
 ### LP-016 - Prove Weather Provider Credentials And Actions
 
 - Priority: Active authorization defect only; provider proof postponed.
-- Current state: MVP keeps provider delivery draft-only. Fix and test weather-draft authorization, event/team scope, reviewer attribution, idempotency, and audit behavior without parent delivery. Hosted weather credentials, fallback execution, webhooks, and provider acceptance are postponed.
+- Current state: the active authorization defect is fixed locally. The route derives the reviewer from the verified session; the service derives the event team from persistence and requires an assigned coach or organization admin before any provider lookup. Focused denial and provider-separation tests plus `qa:weather-provider-readiness` pass. Idempotency expansion, broader audit/readback proof, hosted credentials, fallback execution, webhooks, and provider acceptance are postponed.
 - Seams: `/coach`, `/api/weather-alerts/draft`, `lib/services/weather/`, provider delivery review, `scripts/verify-weather-provider-readiness.mjs`.
-- Done when: unauthorized or cross-organization actors cannot create a weather draft; an authorized coach/admin draft records the correct event, team, reviewer, idempotency, and audit evidence without parent delivery. Provider credentials and delivery are not MVP requirements.
+- Done when: the local unauthorized/cross-organization actor defect is covered and provider lookup occurs only after assigned-coach/org-admin authorization. Hosted provider credentials and delivery are not MVP requirements.
 - SaaS constants focus: provider boundary, team/event scope, draft state, coach/admin authority, failure fallback, observability, idempotent/auditable draft creation, provider-send separation.
 - Validation: `npm run qa:weather-provider-readiness`; `node --test scripts/verify-weather-provider-readiness.test.mjs`; weather provider tests; hosted browser proof; Supabase readback.
 

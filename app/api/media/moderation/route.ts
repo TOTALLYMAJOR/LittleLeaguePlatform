@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { moderateMediaItem } from "@/lib/supabase/operations";
 import { requireAuthenticatedRouteUser } from "@/lib/supabase/route-auth";
 
-const statuses = new Set(["approved", "hidden", "rejected", "removed"]);
+const statuses = new Set(["approved", "hidden"]);
 const visibilities = new Set(["team", "organization"]);
 
 export async function POST(request: Request) {
@@ -24,7 +24,7 @@ export async function POST(request: Request) {
   const result = await moderateMediaItem({
     mediaItemId: String(body.mediaItemId ?? ""),
     reviewerUserId: auth.user.id,
-    status: status as "approved" | "hidden" | "rejected" | "removed",
+    status: status as "approved" | "hidden",
     visibility: visibility as "team" | "organization" | undefined,
     reason: body.reason ? String(body.reason) : undefined
   });

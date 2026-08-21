@@ -43,38 +43,59 @@ type UnsafeApprovalRpc = {
   ): PromiseLike<{ data: unknown; error: { message: string } | null }>;
 };
 
-function fallbackReviewData(): RegistrationReviewData {
+function fallbackReviewData(organizationIds: string[]): RegistrationReviewData {
   return {
-    registrationRequests: seedState.registrationRequests,
+    registrationRequests: seedState.registrationRequests.filter((request) => (
+      organizationIds.includes(request.organizationId)
+    )),
     reviewers: [],
     actions: []
   };
 }
 
-export async function listRegistrationReviewData(): Promise<RegistrationReviewData> {
+export async function listRegistrationReviewData(input: {
+  organizationIds: string[];
+}): Promise<RegistrationReviewData> {
+  const organizationIds = [...new Set(input.organizationIds.map((id) => id.trim()).filter(Boolean))];
+  if (!organizationIds.length) return fallbackReviewData([]);
+
   try {
     const supabase = createSupabaseAdminClient();
-    const [registrationRequests, profilesResult, organizationMembershipsResult, actionsResult] = await withSupabaseTimeout(Promise.all([
-      listRegistrationRequests(),
-      supabase
-        .from("profiles")
-        .select("id,display_name,email,default_role")
-        .order("display_name", { ascending: true }),
+    const [registrationRequests, organizationMembershipsResult, actionsResult] = await withSupabaseTimeout(Promise.all([
+      listRegistrationRequests({ organizationIds }),
       supabase
         .from("organization_memberships")
         .select("user_id,organization_id,role,status")
+        .in("organization_id", organizationIds)
+        .eq("role", "admin")
         .eq("status", "active"),
       supabase
         .from("registration_approval_actions")
-        .select("id,registration_request_id,action,note,created_at")
+        .select("id,registration_request_id,organization_id,action,note,created_at")
+        .in("organization_id", organizationIds)
         .order("created_at", { ascending: false })
         .limit(50)
     ]), 7000);
 
+    if (organizationMembershipsResult.error || actionsResult.error) {
+      return fallbackReviewData(organizationIds);
+    }
+
+    const adminUserIds = [...new Set((organizationMembershipsResult.data ?? [])
+      .map((membership) => membership.user_id))];
+    const profilesResult = adminUserIds.length
+      ? await withSupabaseTimeout(supabase
+        .from("profiles")
+        .select("id,display_name,email,default_role")
+        .in("id", adminUserIds)
+        .order("display_name", { ascending: true }), 7000)
+      : { data: [], error: null };
+
+    if (profilesResult.error) return fallbackReviewData(organizationIds);
+
     const scopeByUserId = new Map<string, string[]>();
 
     for (const membership of organizationMembershipsResult.data ?? []) {
-      if (membership.role !== "admin") continue;
       const scopes = scopeByUserId.get(membership.user_id) ?? [];
       scopes.push(`admin:${membership.organization_id}`);
       scopeByUserId.set(membership.user_id, scopes);
@@ -101,7 +122,7 @@ export async function listRegistrationReviewData(): Promise<RegistrationReviewDa
       }))
     };
   } catch {
-    return fallbackReviewData();
+    return fallbackReviewData(organizationIds);
   }
 }
 

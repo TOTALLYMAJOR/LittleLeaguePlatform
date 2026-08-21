@@ -34,7 +34,8 @@ describe("FamilyPhotos", () => {
     const html = renderToStaticMarkup(
       <FamilyPhotos
         photos={[releasedPhotos[0]]}
-        childLabels={["Mason T."]}
+        linkedChildren={[{ playerId: "player-1", label: "Mason T.", granted: false }]}
+        consentLoadOk
         isCurrent
       />
     );
@@ -45,18 +46,26 @@ describe("FamilyPhotos", () => {
     expect(html).toContain('aria-label="Open released photo: Opening day"');
     expect(html).toContain('aria-label="Report Opening day for staff review"');
     expect(html).toContain('data-media-id="media-released"');
-    expect(html).toContain("this page has no consent writer");
+    expect(html).toContain("Each verified guardian controls their own consent");
+    expect(html).toContain("Grant consent");
+    expect(html).toContain("Mason T.");
     expect(html).not.toContain("Portal colors and mascot");
     expect(html).not.toContain("Acting user");
   });
 
   it("explains the release pipeline when no items qualify", () => {
     const html = renderToStaticMarkup(
-      <FamilyPhotos photos={[]} childLabels={["Mason T."]} isCurrent />
+      <FamilyPhotos
+        photos={[]}
+        linkedChildren={[{ playerId: "player-1", label: "Mason T.", granted: true }]}
+        consentLoadOk
+        isCurrent
+      />
     );
 
     expect(html).toContain("No released photos yet");
     expect(html).toContain("required consent evidence");
+    expect(html).toContain("Revoke consent");
   });
 
   it("removes only the reported photo after a successful staff-review request", () => {

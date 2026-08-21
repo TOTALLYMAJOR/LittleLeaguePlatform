@@ -26,11 +26,12 @@ export interface GuardianLinkRepairData {
   message: string;
 }
 
-function fallbackGuardianLinkRepairData(): GuardianLinkRepairData {
+function fallbackGuardianLinkRepairData(organizationId: string): GuardianLinkRepairData {
+  const includeSeed = organizationId === seedState.organization.id;
   const activeGuardianPlayerIds = new Set(seedState.guardianLinks.filter((link) => link.status === "active" && link.parentUserId).map((link) => link.playerId));
   return {
-    organizationId: seedState.organization.id,
-    missingLinks: seedState.players
+    organizationId,
+    missingLinks: (includeSeed ? seedState.players : [])
       .filter((player) => !activeGuardianPlayerIds.has(player.id))
       .map((player) => {
         const team = seedState.teams.find((item) => item.id === player.teamId);
@@ -41,38 +42,55 @@ function fallbackGuardianLinkRepairData(): GuardianLinkRepairData {
           teamName: team?.name ?? "Unknown team"
         };
       }),
-    parentOptions: seedState.users
+    parentOptions: (includeSeed ? seedState.users : [])
       .filter((user) => user.role === "parent")
       .map((user) => ({ userId: user.id, name: user.name, email: user.email })),
     message: "Showing local missing-link records until Supabase guardian rows are available."
   };
 }
 
-export async function listGuardianLinkRepairData(): Promise<GuardianLinkRepairData> {
+export async function listGuardianLinkRepairData(input: {
+  organizationId: string;
+}): Promise<GuardianLinkRepairData> {
+  const organizationId = input.organizationId.trim();
+  if (!organizationId) return fallbackGuardianLinkRepairData("");
+
   try {
     const db = createSupabaseAdminClient() as unknown as UnsafeSupabase;
-    const [
-      { data: organizations },
-      { data: players },
-      { data: guardianLinks },
-      { data: teams },
-      { data: profiles }
-    ] = await withSupabaseTimeout(Promise.all([
-      db.from("organizations").select("id,name").limit(1),
-      db.from("players").select("id,organization_id,team_id,first_name,last_initial").order("first_name", { ascending: true }),
-      db.from("player_guardians").select("player_id,parent_user_id,status").eq("status", "active"),
-      db.from("teams").select("id,name"),
-      db.from("profiles").select("id,display_name,email,default_role").eq("default_role", "parent")
+    const [{ data: organizations }, { data: players }, { data: teams }] = await withSupabaseTimeout(Promise.all([
+      db.from("organizations").select("id,name").eq("id", organizationId).limit(1),
+      db.from("players").select("id,organization_id,team_id,first_name,last_initial").eq("organization_id", organizationId).order("first_name", { ascending: true }),
+      db.from("teams").select("id,organization_id,name").eq("organization_id", organizationId)
     ]), 7000) as [
       { data: Array<{ id: string; name: string }> | null },
       { data: Array<{ id: string; organization_id: string; team_id: string; first_name: string; last_initial: string }> | null },
-      { data: Array<{ player_id: string; parent_user_id: string | null; status: string }> | null },
-      { data: Array<{ id: string; name: string }> | null },
-      { data: Array<{ id: string; display_name: string; email: string; default_role: string }> | null }
+      { data: Array<{ id: string; organization_id: string; name: string }> | null }
     ];
 
     const organization = organizations?.[0];
-    if (!organization || !players || !teams) return fallbackGuardianLinkRepairData();
+    if (!organization || !players || !teams) return fallbackGuardianLinkRepairData(organizationId);
+    const playerIds = players.map((player) => player.id);
+    const teamIds = teams.map((team) => team.id);
+    const [{ data: guardianLinks }, { data: parentMemberships }] = await withSupabaseTimeout(Promise.all([
+      playerIds.length
+        ? db.from("player_guardians").select("player_id,parent_user_id,status").in("player_id", playerIds).eq("status", "active")
+        : Promise.resolve({ data: [] }),
+      teamIds.length
+        ? db.from("team_memberships").select("team_id,user_id,role,status").in("team_id", teamIds).eq("role", "parent").eq("status", "active")
+        : Promise.resolve({ data: [] })
+    ]), 7000) as [
+      { data: Array<{ player_id: string; parent_user_id: string | null; status: string }> | null },
+      { data: Array<{ team_id: string; user_id: string; role: string; status: string }> | null }
+    ];
+    const parentUserIds = [...new Set([
+      ...(guardianLinks ?? []).flatMap((link) => link.parent_user_id ? [link.parent_user_id] : []),
+      ...(parentMemberships ?? []).map((membership) => membership.user_id)
+    ])];
+    const { data: profiles } = parentUserIds.length
+      ? await withSupabaseTimeout(db.from("profiles").select("id,display_name,email,default_role").in("id", parentUserIds).eq("default_role", "parent"), 7000) as {
+        data: Array<{ id: string; display_name: string; email: string; default_role: string }> | null;
+      }
+      : { data: [] };
     const teamById = new Map(teams.map((team) => [team.id, team]));
     const activeGuardianPlayerIds = new Set((guardianLinks ?? []).filter((link) => link.parent_user_id).map((link) => link.player_id));
 
@@ -94,7 +112,7 @@ export async function listGuardianLinkRepairData(): Promise<GuardianLinkRepairDa
       message: "Showing Supabase missing guardian-link records."
     };
   } catch {
-    return fallbackGuardianLinkRepairData();
+    return fallbackGuardianLinkRepairData(organizationId);
   }
 }
 

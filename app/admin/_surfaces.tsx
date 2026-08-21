@@ -69,9 +69,9 @@ export async function AdminDashboardSurface({ surface = "overview" }: { surface?
     return <AdminAccessDeniedSurface message="An active organization context is required for admin operations." />;
   }
   const [registrationRequests, sponsorData, mediaData, drillVideoData] = await Promise.all([
-    listRegistrationRequests(),
+    listRegistrationRequests({ organizationIds: pageAccess.access.adminOrganizationIds }),
     listSponsorAdminData({ organizationId }),
-    listMediaGovernanceData(),
+    listMediaGovernanceData({ organizationIds: pageAccess.access.adminOrganizationIds }),
     listAdminDrillVideoLibraryData({ organizationIds: pageAccess.access.adminOrganizationIds })
   ]);
   return <AdminDashboardClient registrationRequests={registrationRequests} sponsorData={sponsorData} mediaData={mediaData} drillVideoData={drillVideoData} surface={surface} />;
@@ -80,15 +80,19 @@ export async function AdminDashboardSurface({ surface = "overview" }: { surface?
 export async function AdminBrandingSurface() {
   const pageAccess = await requireAdminPageAccess();
   if (!pageAccess.ok) return <AdminAccessDeniedSurface message={pageAccess.message} />;
-  const initialData = await listAdminThemeData();
+  const initialData = await listAdminThemeData({
+    organizationIds: pageAccess.access.adminOrganizationIds
+  });
   return <AdminThemesClient initialData={initialData} />;
 }
 
 export async function AdminFamilyAccessSurface() {
   const pageAccess = await requireAdminPageAccess();
   if (!pageAccess.ok) return <AdminAccessDeniedSurface message={pageAccess.message} />;
+  const organizationId = pageAccess.access.adminOrganizationIds[0];
+  if (!organizationId) return <AdminAccessDeniedSurface message="An active organization context is required for family access." />;
   const [data, additionalGuardianData] = await Promise.all([
-    listGuardianLinkRepairData(),
+    listGuardianLinkRepairData({ organizationId }),
     listAdminAdditionalGuardianData({
       actorUserId: pageAccess.access.userId ?? "",
       organizationIds: pageAccess.access.adminOrganizationIds
@@ -164,7 +168,9 @@ export async function AdminSecurityAuditSurface() {
 export async function AdminReportsArchiveSurface() {
   const pageAccess = await requireAdminPageAccess();
   if (!pageAccess.ok) return <AdminAccessDeniedSurface message={pageAccess.message} />;
-  const data = await listArchiveVaultData();
+  const data = await listArchiveVaultData({
+    organizationIds: pageAccess.access.adminOrganizationIds
+  });
 
   return (
     <div className="page">
@@ -201,9 +207,11 @@ export async function AdminReportsArchiveSurface() {
 export async function AdminOperationsSurface() {
   const pageAccess = await requireAdminPageAccess();
   if (!pageAccess.ok) return <AdminAccessDeniedSurface message={pageAccess.message} />;
+  const organizationId = pageAccess.access.adminOrganizationIds[0];
+  if (!organizationId) return <AdminAccessDeniedSurface message="An active organization context is required for operations." />;
   const [data, scheduleData] = await Promise.all([
-    listAdminOperationsData(),
-    listScheduleOperationsData()
+    listAdminOperationsData({ organizationId }),
+    listScheduleOperationsData({ organizationIds: pageAccess.access.adminOrganizationIds })
   ]);
   const scopedScheduleData = scopeScheduleOperationsData(
     scheduleData,
@@ -225,7 +233,7 @@ export async function AdminCommunicationsSurface() {
   const pageAccess = await requireAdminPageAccess();
   if (!pageAccess.ok) return <AdminAccessDeniedSurface message={pageAccess.message} />;
   const [scheduleData, communicationData] = await Promise.all([
-    listScheduleOperationsData(),
+    listScheduleOperationsData({ organizationIds: pageAccess.access.adminOrganizationIds }),
     listOfficialCommunicationReviewData({
       organizationIds: pageAccess.access.adminOrganizationIds
     })
@@ -351,14 +359,18 @@ export async function AdminTeamsSurface() {
 export async function AdminRegistrationsSurface() {
   const pageAccess = await requireAdminPageAccess();
   if (!pageAccess.ok) return <AdminAccessDeniedSurface message={pageAccess.message} />;
-  const data = await listRegistrationReviewData();
+  const data = await listRegistrationReviewData({
+    organizationIds: pageAccess.access.adminOrganizationIds
+  });
   return <RegistrationReviewClient initialData={data} />;
 }
 
 export async function AdminMembershipsSurface() {
   const pageAccess = await requireAdminPageAccess();
   if (!pageAccess.ok) return <AdminAccessDeniedSurface message={pageAccess.message} />;
-  const data = await listAdminMembershipData();
+  const data = await listAdminMembershipData({
+    organizationIds: pageAccess.access.adminOrganizationIds
+  });
   return <MembershipAdminClient initialData={data} />;
 }
 
@@ -398,7 +410,7 @@ export async function AdminScheduleVenuesSurface() {
   const pageAccess = await requireAdminPageAccess();
   if (!pageAccess.ok) return <AdminAccessDeniedSurface message={pageAccess.message} />;
   const [scheduleData, resolutionData, resolutionEvidence] = await Promise.all([
-    listScheduleOperationsData(),
+    listScheduleOperationsData({ organizationIds: pageAccess.access.adminOrganizationIds }),
     listGameDayResolutionReviews({ teamIds: pageAccess.access.adminTeamIds }),
     listGameDayResolutionEvidence({ teamIds: pageAccess.access.adminTeamIds })
   ]);

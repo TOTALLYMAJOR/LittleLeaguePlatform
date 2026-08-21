@@ -14,12 +14,20 @@ export interface ArchiveVaultData {
   message: string;
 }
 
-export async function listArchiveVaultData(): Promise<ArchiveVaultData> {
+export async function listArchiveVaultData(input: {
+  organizationIds: string[];
+}): Promise<ArchiveVaultData> {
+  const organizationIds = [...new Set(input.organizationIds.map((id) => id.trim()).filter(Boolean))];
+  const includeSeed = organizationIds.includes(seedState.organization.id);
+  if (!organizationIds.length) {
+    return { archivedSeasons: [], proof: [], message: "No admin organization scope is available." };
+  }
+
   try {
     const db = createSupabaseAdminClient() as unknown as UnsafeSupabase;
     const [{ data: seasons }, { data: teams }] = await withSupabaseTimeout(Promise.all([
-      db.from("seasons").select("id,name,status,archived_at").eq("status", "archived").order("archived_at", { ascending: false }),
-      db.from("teams").select("id,season_id,status")
+      db.from("seasons").select("id,organization_id,name,status,archived_at").in("organization_id", organizationIds).eq("status", "archived").order("archived_at", { ascending: false }),
+      db.from("teams").select("id,organization_id,season_id,status").in("organization_id", organizationIds)
     ]), 7000) as [
       { data: Array<{ id: string; name: string; status: string; archived_at: string | null }> | null },
       { data: Array<{ id: string; season_id: string; status?: string | null }> | null }
@@ -41,7 +49,7 @@ export async function listArchiveVaultData(): Promise<ArchiveVaultData> {
     };
   } catch {
     return {
-      archivedSeasons: seedState.activeSeason.status === "archived"
+      archivedSeasons: includeSeed && seedState.activeSeason.status === "archived"
         ? [{ id: seedState.activeSeason.id, name: seedState.activeSeason.name, archivedAt: seedState.activeSeason.archivedAt, teamCount: seedState.teams.length }]
         : [],
       proof: [

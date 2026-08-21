@@ -43,32 +43,56 @@ export interface CreateTeamMembershipResult {
   membership?: AdminTeamMembership;
 }
 
-function fallbackTeams(): AdminTeamOption[] {
-  return seedState.teams.map((team) => ({
+function fallbackTeams(organizationIds?: string[]): AdminTeamOption[] {
+  return seedState.teams
+    .filter((team) => !organizationIds || organizationIds.includes(team.organizationId))
+    .map((team) => ({
     id: team.id,
     name: team.name,
     division: team.division
   }));
 }
 
-export async function listAdminMembershipData(): Promise<AdminMembershipData> {
+export async function listAdminMembershipData(input: {
+  organizationIds: string[];
+}): Promise<AdminMembershipData> {
+  const organizationIds = [...new Set(input.organizationIds.map((id) => id.trim()).filter(Boolean))];
+  if (!organizationIds.length) return { profiles: [], teams: [], memberships: [] };
+
   try {
     const supabase = createSupabaseAdminClient();
-    const [profilesResult, teamsResult, membershipsResult] = await withSupabaseTimeout(Promise.all([
-      supabase
-        .from("profiles")
-        .select("id,display_name,email,default_role")
-        .order("display_name", { ascending: true }),
+    const [teamsResult, organizationMembershipsResult] = await withSupabaseTimeout(Promise.all([
       supabase
         .from("teams")
-        .select("id,name,division")
+        .select("id,organization_id,name,division")
+        .in("organization_id", organizationIds)
         .order("division", { ascending: true })
         .order("name", { ascending: true }),
       supabase
+        .from("organization_memberships")
+        .select("user_id,organization_id,status")
+        .in("organization_id", organizationIds)
+        .eq("status", "active")
+    ]));
+    const teamIds = (teamsResult.data ?? []).map((team) => team.id);
+    const membershipsResult = teamIds.length
+      ? await withSupabaseTimeout(supabase
         .from("team_memberships")
         .select("id,team_id,user_id,role,status")
-        .order("created_at", { ascending: false })
-    ]));
+        .in("team_id", teamIds)
+        .order("created_at", { ascending: false }))
+      : { data: [], error: null };
+    const profileIds = [...new Set([
+      ...(organizationMembershipsResult.data ?? []).map((membership) => membership.user_id),
+      ...(membershipsResult.data ?? []).map((membership) => membership.user_id),
+    ])];
+    const profilesResult = profileIds.length
+      ? await withSupabaseTimeout(supabase
+        .from("profiles")
+        .select("id,display_name,email,default_role")
+        .in("id", profileIds)
+        .order("display_name", { ascending: true }))
+      : { data: [], error: null };
 
     return {
       profiles: profilesResult.data?.map((profile) => ({
@@ -81,7 +105,7 @@ export async function listAdminMembershipData(): Promise<AdminMembershipData> {
         id: team.id,
         name: team.name,
         division: team.division
-      })) ?? fallbackTeams(),
+      })) ?? fallbackTeams(organizationIds),
       memberships: membershipsResult.data?.map((membership) => ({
         id: membership.id,
         teamId: membership.team_id,
@@ -91,7 +115,7 @@ export async function listAdminMembershipData(): Promise<AdminMembershipData> {
       })) ?? []
     };
   } catch {
-    return { profiles: [], teams: fallbackTeams(), memberships: [] };
+    return { profiles: [], teams: fallbackTeams(organizationIds), memberships: [] };
   }
 }
 
