@@ -36,9 +36,9 @@ supabase/migrations/20260819210000_sponsor_fulfillment_evidence_capture.sql
 supabase/migrations/20260820200000_sponsor_payment_integrity.sql
 ```
 
-The sponsor spine and fulfillment migrations have prior Preview migration history, so `20260820200000_sponsor_payment_integrity.sql` is forward-only and does not rewrite an applied file. It adds composite organization foreign keys, deterministic legacy-invoice recovery, provider-resource replay protection, and transaction RPCs for verified Stripe and manual sponsor payments. Current correction evidence is local source/test proof only; fresh Preview application/readback, executed denial checks, Stripe sandbox evidence, and production application remain separate gates.
+The sponsor spine and fulfillment migrations have prior Preview migration history, so `20260820200000_sponsor_payment_integrity.sql` is forward-only and does not rewrite an applied file. It adds composite organization foreign keys, deterministic legacy-invoice recovery, provider-resource replay protection, and transaction RPCs for verified Stripe and manual sponsor payments. At PR #10 source head `b0b992e7371ef08c48d872f4850bf43deb95db43`, the Supabase Preview check passed and reported the forward migration applied; the PR was squash-merged as `51c26de7def965cbca132794f0169bec50baa61a`. That CI result is provider evidence, not direct database readback, an executed denial check, Stripe sandbox evidence, production application, or production acceptance.
 
-Migration `20260819084447_event_change_receipts.sql` is installed locally and on the protected production project. Local transactional behavior proof passed before promotion, the reviewed production apply used no seed data, and the guarded follow-up plan/readback returned current. Preview remains on the earlier promoted chain until separately advanced.
+Migration `20260819084447_event_change_receipts.sql` is installed locally and on the protected production project. Local transactional behavior proof passed before promotion, the reviewed production apply used no seed data, and the guarded follow-up plan/readback returned current. Preview later advanced through the sponsor payment-integrity correction in the PR #10 CI migration job; direct Preview readback remains a separate acceptance gate.
 
 Demo seed:
 

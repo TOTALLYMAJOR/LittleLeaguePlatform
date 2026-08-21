@@ -319,6 +319,8 @@ Governing rows: LP-020; Family Balance and Stripe; Sponsor management; Money + s
 Objective:
 Either keep sponsor billing proof-only or scope Stripe sandbox collection with webhook-confirmed payment truth.
 
+Merged local reconciliation (2026-08-20): PR #10 persists the agreement/package/invoice/ledger spine, fulfillment evidence, and forward-only payment-integrity correction. Atomic Stripe/manual RPCs, provider-resource replay protection, actual-amount refunds, PaymentIntent fallback, multi-invoice aggregation, and Sponsor Hub program-summary authority are locally tested and merged to remote `main` as `51c26de7def965cbca132794f0169bec50baa61a`. The source head passed Production Smoke, Supabase Preview, Vercel, and Vercel Preview Comments. Provider/payment gates remain disabled; green checks are not direct hosted readback, sandbox settlement, finance reconciliation, or production acceptance.
+
 Acceptance criteria:
 
 - AC-001: Product decision records whether sponsor billing remains proof-only or moves to sandbox collection.
@@ -331,13 +333,13 @@ Acceptance criteria:
 Validation:
 `qa:sponsor-stripe-readiness` is the LPM-009 local repository readiness completion gate for the existing proof-only versus sandbox boundary, server-side Checkout Session contract, server-only key handling, webhook settlement truth, admin/public privacy separation, and open payment gates. It is local repository readiness proof only and reads repository files only. It does not call Stripe, Supabase, sign in, run Playwright, seed data, mutate hosted records, create Checkout Sessions, configure API keys or webhook secrets, register webhook endpoints, charge or refund payments, call provider dashboards, deploy, or claim sandbox, hosted, provider, finance, production payment, or production acceptance.
 
-Covered local evidence is limited to `qa:sponsor-stripe-readiness`, `node --test scripts/verify-sponsor-stripe-readiness.test.mjs`, and focused sponsor API/service/UI tests. Stripe sandbox tests, webhook tests, hosted admin proof, finance reconciliation, and production payment approval remain external follow-up gates.
+Covered local evidence includes `qa:sponsor-stripe-readiness`, `node --test scripts/verify-sponsor-stripe-readiness.test.mjs`, focused sponsor API/service/UI/migration tests, and the PR #10 check suite. `DEC-BILLING` and `EXT-BILLING` retain Stripe sandbox execution, direct Supabase readback and denial proof, finance reconciliation, hosted behavior, and production payment approval.
 
 Out of scope:
 Production payment collection without sandbox/webhook proof and explicit go-live approval.
 
 Open gates:
-Stripe sandbox account setup, restricted key creation, webhook endpoint registration, signing-secret configuration, sandbox Checkout Session proof, signed webhook replay/duplicate proof, refund/failure proof, hosted admin proof, finance reconciliation, and production payment approval. Restricted API keys are preferred over broad secret keys, key access must use separate environments, and no Stripe secret or restricted key values are stored in source.
+`DEC-BILLING` and `EXT-BILLING`: Stripe sandbox account setup, least-privilege credential provisioning, webhook endpoint and signing-secret configuration, Checkout proof, atomic retry after failed persistence, duplicate delivery, full/partial refunds, disputes without event metadata, out-of-order events, manual replay/rollback, direct payment-state readback, cross-organization rejection, hosted admin proof, finance reconciliation, and production payment approval. Restricted API keys are preferred over broad secret keys, key access must use separate environments, and no Stripe secret or restricted key values are stored in source.
 
 ## LPM-010 - Sponsor Fulfillment Proof
 
@@ -348,6 +350,8 @@ Governing rows: Sponsor management; Money + sponsors community commerce.
 
 Objective:
 Prove sponsor placement and fulfillment without overstating delivered impact.
+
+Merged local reconciliation (2026-08-20): PR #10 persists organization-scoped fulfillment requirements and immutable evidence, derives delivery state on read, enforces session-derived organization-admin authority and audit, and rejects future observations at route, adapter, and database boundaries. LPM-010 local implementation is complete; hosted fulfillment and human acceptance remain external.
 
 Acceptance criteria:
 
@@ -363,7 +367,7 @@ Validation:
 Covered local evidence is limited to `qa:sponsor-fulfillment-readiness`, `node --test scripts/verify-sponsor-fulfillment-readiness.test.mjs`, and focused sponsor API/service/UI tests. Hosted public/admin browser proof, hosted fulfillment evidence proof, observed placement-rendering proof, approved logo asset proof, sponsor recap/report artifact proof, renewal email sandbox proof, public placement leak QA, accessibility proof, finance reconciliation, and production sponsor acceptance remain external follow-up gates.
 
 Open gates:
-Hosted public/admin browser proof, hosted fulfillment evidence proof, observed placement-rendering proof, approved logo asset proof, sponsor recap/report artifact proof, renewal email sandbox proof, public placement leak QA, accessibility proof, finance reconciliation, and production sponsor acceptance.
+`EXT-SPONSOR-FULFILLMENT`: hosted public/admin browser proof, hosted fulfillment-evidence readback, observed placement rendering, approved logo asset proof, sponsor recap/report artifact proof, renewal email sandbox proof, public placement leak QA, accessibility proof, finance reconciliation, and production sponsor acceptance.
 
 ## LPM-011 - Reporting and Archive Closure
 
