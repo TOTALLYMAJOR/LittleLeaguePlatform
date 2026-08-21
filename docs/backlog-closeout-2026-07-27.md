@@ -11,6 +11,8 @@ Authority: this ledger is the canonical current-state index for the trackers lin
 - `done-local`: committed implementation and repository tests/artifacts exist. This does not claim deployment, hosted execution, provider operation, or production acceptance.
 - `external`: completion requires a hosted environment, provider control plane, production operator, or evidence that this repository cannot create by itself.
 - `decision-required`: the safe default remains in force until an authorized product or commercial owner approves expansion.
+- `decided`: an authorized MVP default is selected and closes the associated optional expansion from the active completion queue.
+- `postponed`: retained future work that is explicitly not required for the current MVP definition of shipped.
 - `paused`: intentionally preserved planning or isolated branch state; it is not executable until a fresh explicit resume instruction.
 - `historical`: retained evidence or superseded planning context; it is not a current run instruction.
 
@@ -29,6 +31,21 @@ Authority: this ledger is the canonical current-state index for the trackers lin
 | LPM-009 / LPM-010 Sponsor Program persistence, fulfillment evidence, and payment-integrity correction | `done-local` | Sponsor Program migrations `20260819161500_sponsor_program_spine.sql`, `20260819190000_sponsor_fulfillment_evidence.sql`, and forward-only `20260820200000_sponsor_payment_integrity.sql`; focused domain, adapter, route, UI, migration, and verifier tests. PR #10 merged to remote `main` as squash commit `51c26de7def965cbca132794f0169bec50baa61a` after Production Smoke, Supabase Preview, Vercel, and Vercel Preview Comments passed at source head `b0b992e7371ef08c48d872f4850bf43deb95db43`. | The successful Supabase Preview check proves its CI migration job accepted the forward migration; it is not direct database readback, an executed cross-organization denial, Stripe sandbox settlement, finance reconciliation, hosted fulfillment acceptance, or production application/acceptance. Provider and payment gates remain disabled. |
 | Production dependency audit | `done-local` | The final closeout branch reports `npm audit --omit=dev` clean. The full live registry audit reports 9 high-severity development-only findings through the upstream ESLint/minimatch/brace-expansion graph. | The only complete audit remediation offered is a breaking forced ESLint 10 change; it was not applied without compatibility work. Release automation must rerun both audit commands against the exact release commit. |
 
+## MVP Completion Order - 2026-08-20
+
+This is the active execution order. All other retained LP/LPM rows and external gates are postponed unless they are explicitly named here.
+
+| Order | Work item | MVP completion condition |
+| --- | --- | --- |
+| 1 | LPM-020 hosted public-configuration contract | Expose only the irreversible organization fingerprint and configured review-window evidence; fail closed when either is missing or mismatched. No raw organization UUID, credential, secret, cookie, token, or client-side authority. |
+| 2 | LP-005 registration approval and assigned-team activation | A signed-in organization admin approves or rejects a temporary registration; player, guardian, invitation, action, and audit rows read back correctly; private access activates only for the league/system-assigned team. No parent- or coach-selected team and no browser-return access grant. |
+| 3 | LP-007 team-builder publication | A signed-in organization admin publishes the approved current plan in isolated QA; the plan, roster, and audit read back; stale or cross-organization writes fail. |
+| 4 | LP-009 admin tenant scope | Every in-scope admin surface reads only the intended organization. Cross-organization roster, guardian, schedule, and export data are denied. |
+| 5 | Security defect fixes | Fix the ICS export cross-tenant read, add the missing media-consent writer with explicit authority/audit, and correct weather-draft authorization. These are code defects, not acceptance gates. Chat read-receipt authorization and the chat-retention no-op are postponed. |
+| 6 | LP-010 minimum public-intake abuse control | Use one shared-store counter or one edge rule for the internet-facing registration boundary so throttling survives multiple application instances. No broader abuse platform is required. |
+| 7 | LP-003 / LP-004 link-media moderation contraction | With `DEC-MEDIA` fixed to link-only, retain one authorized hide/restore toggle and prove family/team reads honor it. Upload, storage, scanner, parent-report, and destructive-remove expansion are not MVP requirements. |
+| 8 | EXT-HOSTED-SESSION | Definition of shipped: exact deployed commit/environment, ordered migrations applied and read back, target identity proven, and signed-in parent/coach/admin core journeys passing against the intended isolated hosted tenant. |
+
 ## Paused Planning Inventory
 
 These items are retained so they cannot disappear from the LeaguePilot backlog. They are not part of the executable priority queue.
@@ -44,23 +61,23 @@ Each open gate is listed once here. Other trackers link to its gate ID rather th
 
 | Gate | State | Owner / authority | Concrete acceptance requirement |
 | --- | --- | --- | --- |
-| EXT-HOSTED-SESSION | `external` | Release owner with an isolated QA deployment and QA Supabase authority | Install and read back the complete ordered migration chain on an explicitly identified isolated QA project, deploy the intended commit to a separately identified QA/Preview app, pass target-identity preflight, then run signed-in parent/coach/admin browser journeys and readback without targeting a production alias. |
+| EXT-HOSTED-SESSION | `external` | Release owner with an isolated QA deployment and QA Supabase authority | This is the current definition of shipped. Install and read back the complete ordered migration chain on an explicitly identified isolated QA project, deploy the intended commit to a separately identified QA/Preview app, pass target-identity preflight, then run signed-in parent/coach/admin core journeys and readback without targeting a production alias. |
 | EXT-PRODUCTION-READONLY | `external` | Production release owner | Create and run a separately named read-only production acceptance harness. It may inspect role/session reachability and scoped reads but must not seed, write, acknowledge, publish, or clean up production data. |
 | EXT-REALTIME | `external` | Supabase project owner | On an isolated QA target, execute the guarded Realtime harness and preserve authorized delivery, wrong-team/cross-org absence, disconnect/reconnect, version-deduplication, and exact cleanup evidence. |
 | EXT-RLS-ACTOR-ACTION | `external` | Supabase security owner | On an isolated QA target, execute the guarded actor/action matrix, review the remaining overlapping permissive policies semantically, and preserve allow/deny/readback/cleanup evidence. |
 | EXT-BACKUP-RESTORE | `external` | Supabase production owner | Enable or explicitly accept the backup/PITR posture, document RPO/RTO, capture a current backup after the promoted schema, and complete a non-production restore drill with integrity/readback evidence. |
 | EXT-PREVIEW-AUTH | `external` | Vercel project owner | Provide a scoped automation bypass for the named Preview deployment, or another approved non-production access path, and prove the exact deployment/alias before browser automation. Production promotion is not a substitute for mutating QA proof. |
-| EXT-PROVIDER-SENDS | `external` | Product safety owner plus email/SMS/Web Push provider owners | If sends are approved, prove consent/preferences, recipient allowlist, human approval, sandbox execution, suppression, idempotent retry, verified webhooks, delivery logs, cost controls, and hosted monitoring. Until then, records remain draft/internal only. |
-| EXT-WEATHER | `external` | Weather-provider and release owners | Prove hosted credential/fallback behavior and an authorized draft action without parent delivery. |
-| EXT-STORAGE | `external` | Storage/security owner | If private uploads are approved, prove tenant-scoped private object paths/RLS, file limits, scan adapter, consent, moderation/release, retention/deletion, takedown, and hosted family visibility. |
-| EXT-BILLING | `external` | Commercial owner plus Stripe/account owner | If collection is approved, prove connected-account ownership, restricted keys, test-mode Checkout, signed webhooks, atomic retry after persistence failure, duplicate delivery, full and partial refunds using stable refund ids, disputes without event metadata, out-of-order events, manual-payment replay/rollback, aggregated multi-invoice readback, finance reconciliation, and hosted behavior. Browser return and a green CI check are not payment or settlement proof. |
-| EXT-SPONSOR-FULFILLMENT | `external` | Commercial owner plus hosted QA, storage, and communications owners | Prove hosted public/admin sponsor journeys, fulfillment-evidence readback, observed placement rendering, approved logo asset loading and fallback, recap/report artifact acceptance, renewal email sandbox delivery, public placement leak QA, accessibility, finance reconciliation, and production sponsor acceptance. |
+| EXT-PROVIDER-SENDS | `postponed` | Product safety owner plus email/SMS/Web Push provider owners | Not required for MVP under `DEC-PROVIDER`: records remain draft/internal only. Reopening requires a new explicit channel decision plus consent, allowlist, sandbox, suppression, retry, webhook, delivery-log, cost, and monitoring proof. |
+| EXT-WEATHER | `postponed` | Weather-provider and release owners | Hosted provider credentials, fallback, and parent delivery are not required for MVP under `DEC-PROVIDER`. The weather-draft authorization defect remains active and provider-free. |
+| EXT-STORAGE | `postponed` | Storage/security owner | Not required for MVP under `DEC-MEDIA`: media remains link-only. Reopening requires a new explicit storage decision plus private paths/RLS, limits, scanning, consent, moderation/release, retention/deletion, and takedown proof. |
+| EXT-BILLING | `postponed` | Commercial owner plus Stripe/account owner | Not required for MVP under `DEC-BILLING`: sponsor billing remains proof-only. Reopening collection requires a new explicit decision and the retained Stripe sandbox, webhook, replay, refund/dispute, readback, finance, and hosted proof. |
+| EXT-SPONSOR-FULFILLMENT | `postponed` | Commercial owner plus hosted QA, storage, and communications owners | Not required for MVP under `DEC-BILLING`. Hosted sponsor placement, asset, recap/report, renewal, finance, and production acceptance remain retained future work. |
 | EXT-PRODUCTION-RELEASE | `external` | Production release owner | Rerun typecheck, tests, build, production and full dependency audits, read-only production acceptance, environment/secret-shape checks, monitoring, rollback, and the applicable external gates against the exact release commit. |
-| DEC-PROVIDER | `decision-required` | Product safety/commercial owner | Current default is draft/internal provider records only. Approve a named channel and operating policy before EXT-PROVIDER-SENDS may start. |
-| DEC-MEDIA | `decision-required` | Product/privacy owner | Current default is link-only media. Approve private upload/storage scope before EXT-STORAGE may start. |
-| DEC-BILLING | `decision-required` | Commercial/finance owner | Current default is sponsor proof-only billing. Approve real collection and accounting ownership before EXT-BILLING may start. |
-| DEC-MOBILE | `decision-required` | Product owner | Current default is PWA-first. Approve native Expo only from measured need for app-store distribution, native push, camera/media, or OS integration. |
-| DEC-PREVIEW-OPENAI | `decision-required` | AI/product and Vercel environment owners | Preview OpenAI remains out of scope. Name a non-production Preview branch/tenant and secret policy before adding provider variables there. |
+| DEC-PROVIDER | `decided` | Product safety/commercial owner | MVP is draft/internal records only. Live email, SMS, and Web Push are not required; `EXT-PROVIDER-SENDS` and hosted weather-provider delivery are postponed. |
+| DEC-MEDIA | `decided` | Product/privacy owner | MVP is link-only media. `EXT-STORAGE` is postponed; LP-003/LP-004 contract to one authorized hide/restore toggle. |
+| DEC-BILLING | `decided` | Commercial/finance owner | MVP sponsor billing is proof-only. `EXT-BILLING` and `EXT-SPONSOR-FULFILLMENT` are postponed and sponsor work is removed from the active MVP queue. |
+| DEC-MOBILE | `decided` | Product owner | MVP is PWA-first. Native/Expo and app-store acceptance are not required for MVP. |
+| DEC-PREVIEW-OPENAI | `decided` | AI/product and Vercel environment owners | Preview OpenAI is disabled for MVP. No Preview provider environment or proof is required. |
 
 ## Retired Production-Mutation Instructions
 

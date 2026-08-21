@@ -31,21 +31,22 @@ Task-specific checks are required only when the surface is touched:
 
 ## Current Business Priority Queue - 2026-08-20
 
-This queue ranks the next production-business items by revenue impact, operational necessity, user trust and retention, and production risk reduction. Sponsor revenue is now the first execution focus because it creates the clearest business monetization path. This is planning scope only; it does not authorize provider sends, Stripe charges, hosted mutations, or production promotion without the proof gates named in the relevant LP/LPM rows.
+This queue is the approved MVP completion order. It overrides older per-row priorities below without deleting their evidence. Provider delivery stays draft-only, media stays link-only, sponsor billing stays proof-only, mobile stays PWA-first, and Preview OpenAI stays disabled. Every other retained lane is postponed unless it is explicitly named here.
 
 | Rank | Feature | Why it matters | Existing tracker tie-in |
 | --- | --- | --- | --- |
-| 1 | Sponsor billing external proof and collection decision | The persisted sponsor revenue spine and payment-integrity correction are merged. The next work is the explicit commercial decision plus `EXT-BILLING`: Stripe sandbox, signed replay/retry/refund/dispute proof, hosted readback, finance reconciliation, and production payment approval. | Money + Sponsors Community Commerce, `LPM-009`, `DEC-BILLING`, `EXT-BILLING` |
-| 2 | Sponsor fulfillment hosted proof | Fulfillment requirements and immutable evidence capture are merged. The next work is `EXT-SPONSOR-FULFILLMENT`: hosted evidence readback, observed placements, approved logo rendering, recap/report artifacts, renewal sandbox delivery, leak QA, accessibility, finance reconciliation, and production acceptance. | Snacks, Volunteers, Sponsors, `LPM-010`, `EXT-SPONSOR-FULFILLMENT` |
-| 3 | Production provider sends and schedule-change alerts | A league-management product has to reliably communicate schedule changes. If schedules change but parents and coaches are not actually notified, the core operational loop breaks. Email should come first; SMS and push can follow after consent, cost, suppression, and webhook proof. | `LP-014`, `LP-015`, game-day communication readiness, provider delivery review |
-| 4 | Weather alerts | Outdoor sports need weather-aware operations. Weather should evaluate scheduled event -> venue -> latitude/longitude -> risk -> suggested action, then feed normal director/coach decisions such as continue, delay, cancel, or relocate. It is advisory by default and must reuse schedule events plus notification delivery rather than a parallel alert system. | `LP-016`, Weather provider action readiness |
-| 5 | Family lifecycle flows | Transportation, guardians and caregivers, continuity between seasons, and populated QA proof determine whether families can actually use the system week after week. | Family phases 2, 3, and 5; family season continuity readiness |
-| 6 | Team-builder publish | Admins can construct teams locally, but production season-start remains fragile until publish behavior has hosted RLS/readback proof and clear downstream access behavior. | `LP-007`, `LP-008`, Automatic Team Builder |
-| 7 | Registration fee gate and assigned-team activation | Initial signup must create or select the required registration fee, require webhook-confirmed payment before private team access, and only then activate the assigned team. The family should not receive private team access from a browser return, unpaid obligation, parent-selected team, or coach-selected team. Team assignment must be owned by the approved league/system assignment workflow with audit evidence. | Registration System, Money + Sponsors Community Commerce, Automatic Team Builder, family access activation |
+| 1 | LPM-020 public-configuration proof | Add only the irreversible organization fingerprint, configured review-window evidence, and fail-closed mismatch behavior. Keep the raw UUID and all credentials out of rendered evidence. | `LPM-020`, `EXT-HOSTED-SESSION` |
+| 2 | Registration approval and assigned-team activation | Prove hosted admin approval/rejection, correct player/guardian/invitation/action/audit rows, and private access only for the league/system-assigned team. Parent- or coach-selected assignment and browser-return access are forbidden. | `LP-005`, Registration System, family access activation |
+| 3 | Team-builder publication | Prove signed-in isolated-QA publication of the approved current plan, roster and audit readback, stale-plan refusal, and cross-organization denial. | `LP-007`, `LP-008`, Automatic Team Builder |
+| 4 | Admin tenant scope | Prove every in-scope admin surface excludes another organization's roster, guardians, schedule, exports, and operations data. | `LP-009`, `EXT-RLS-ACTOR-ACTION` |
+| 5 | Three security defect fixes | Fix the ICS export cross-tenant read, implement the missing authorized/audited media-consent writer, and correct weather-draft authorization. Chat read-receipt authorization and the chat-retention no-op are postponed. | Security defect triage; not acceptance gates |
+| 6 | Minimum public-intake abuse protection | Put one shared-store counter or one edge rule in front of internet-facing registration so throttling survives multiple instances. | `LP-010` |
+| 7 | Link-media hide/restore | Contract LP-003/LP-004 to one authorized hide/restore toggle and prove family/team reads honor hidden state. No upload, storage, scanner, parent-report, or destructive-remove expansion. | `LP-003`, `LP-004`, `DEC-MEDIA` |
+| 8 | Hosted session acceptance | Definition of shipped: exact deployed commit/environment, ordered migrations applied/read back, target identity proven, and signed-in parent/coach/admin core journeys passing against the intended isolated tenant. | `EXT-HOSTED-SESSION` |
 
-### Sponsor Revenue Spine - Start Here
+### Sponsor Revenue Spine - Postponed Reference
 
-The first build lane should treat sponsorship as its own business domain, not as Stripe buttons around sponsor records. The durable model is Sponsor -> Sponsorship Agreement -> Sponsorship Package -> Sponsorship Invoice -> Payment -> Refund/Dispute -> Fulfillment Requirement -> Fulfillment Evidence -> Renewal.
+Sponsor billing and fulfillment are not MVP completion work under the approved proof-only decision. The retained durable model is Sponsor -> Sponsorship Agreement -> Sponsorship Package -> Sponsorship Invoice -> Payment -> Refund/Dispute -> Fulfillment Requirement -> Fulfillment Evidence -> Renewal.
 
 A sponsor package should support concrete promised benefits, such as league homepage logo, sport homepage logo, team page placement, sponsor directory, newsletter placements, field banner, and season recap. LeaguePilot owns agreement status, amount, paid total, outstanding balance, active/expired state, fulfillment requirements, and recap evidence. Stripe provides processor evidence and settlement events only.
 
@@ -145,19 +146,19 @@ Example state: Game Saturday 2:00 PM; thunderstorm probability 80%; risk HIGH; s
 
 ### LP-003 - Prove Media Report Browser Write
 
-- Priority: P1 proof.
-- Current state: API/domain coverage exists; hosted browser proof for family media report remains open.
+- Priority: Postponed as a separate flow; contracted into LP-004 for MVP.
+- Current state: `DEC-MEDIA` fixes MVP media to links only. A separate parent-report browser write is not required for MVP; the remaining media control is one authorized hide/restore toggle whose state is honored by family/team reads.
 - Seams: `/parent`, `/team-portal`, `/api/media/report`, `lib/supabase/media-governance.ts`.
-- Done when: signed-in QA parent reports approved team media from a parent-visible surface, Supabase reflects report count/status change, and unrelated team media remains invisible.
+- Done when: the contracted LP-004 hide/restore proof passes. Parent reporting, uploads, storage, scanning, and destructive removal remain postponed.
 - SaaS constants focus: tenant isolation, child/media privacy, state transition, audit event, abuse prevention.
 - Validation: `npm run qa:admin-proof-readiness`; focused route/browser proof plus `npm test` if route code changes.
 
 ### LP-004 - Prove Media Moderation Browser Write
 
-- Priority: P1 proof.
-- Current state: admin/coach hide/restore/remove APIs exist; hosted browser proof is not complete.
+- Priority: MVP control.
+- Current state: admin/coach hide/restore/remove APIs exist; MVP uses only an authorized hide/restore toggle for link-based media.
 - Seams: `/admin`, `/api/media/moderation`, `lib/supabase/media-governance.ts`.
-- Done when: signed-in admin or assigned coach hides/restores/removes a QA media item through browser UI and parent/team reads honor the moderation state.
+- Done when: a signed-in organization admin or assigned coach hides and restores a QA link-media item through the UI, parent/team reads honor the hidden state, and cross-organization actors are denied. Destructive removal is postponed.
 - SaaS constants focus: tenant isolation, reviewer role, moderation state, auditability, support/admin action risk.
 - Validation: `npm run qa:admin-proof-readiness`; browser proof with Supabase readback; `npm test` if code changes.
 
@@ -166,7 +167,7 @@ Example state: Game Saturday 2:00 PM; thunderstorm probability 80%; risk HIGH; s
 - Priority: P1 proof.
 - Current state: RPC/API flow exists and live approval/rejection was verified earlier; `npm run qa:access-lifecycle-authority` now provides local repository-source proof for session-derived, review-gated, provider-free registration authority; browser-level hosted proof and Supabase readback remain open.
 - Seams: `/admin/registrations`, `/api/admin/registrations/*`, `lib/supabase/registration-approvals.ts`, `scripts/verify-access-lifecycle-authority.mjs`, `supabase/migrations/0003_registration_approval_workflow.sql`, `0004_fix_registration_approval_digest.sql`, `0033_registration_invitation_issuance.sql`.
-- Done when: signed-in QA admin approves and rejects temporary registration requests from the hosted UI, with player/guardian/invite/action rows created or updated correctly.
+- Done when: a signed-in QA organization admin approves and rejects temporary registration requests from the hosted UI; player, guardian, invitation, action, and audit rows read back correctly; private access activates only for the approved league/system-assigned team. Parent- or coach-selected team assignment and browser-return access are forbidden.
 - SaaS constants focus: guardian access grant, tenant isolation, actor authorization, lifecycle reversal, audit log, idempotent approval.
 - Validation: `npm run qa:access-lifecycle-authority`; hosted Playwright proof with cleanup and Supabase readback.
 
@@ -214,7 +215,7 @@ Example state: Game Saturday 2:00 PM; thunderstorm probability 80%; risk HIGH; s
 - Priority: P1 safety.
 - Current state: public endpoints remain intentionally unauthenticated. A bounded in-process fixed-window limiter now rejects registration bursts at 5 requests/minute/client and mobile telemetry bursts at 60 requests/minute/client, returning `429`, `Retry-After`, and `X-RateLimit-*` headers. This is route-level protection; a shared store or provider edge firewall is still required for full multi-instance enforcement.
 - Seams: `/api/registration-requests`, `/api/mobile-usage-events`, Vercel/firewall config if used.
-- Done when: burst requests are throttled or rejected at the route boundary, behavior is documented, legitimate family signup/usage telemetry still works, and hosted edge/shared-store enforcement is proven for the deployed topology.
+- Done when: one shared-store counter or one edge rule throttles the internet-facing registration boundary across multiple application instances, behavior is documented, and legitimate family signup still works. No broader abuse-control platform is required for MVP.
 - SaaS constants focus: noisy-neighbor control, rate limits, tenant spoofing, public attack path, observability.
 - Validation: `app/public-intake-rate-limit.test.ts`; `npm test`; `npm run typecheck`; hosted burst proof or provider-firewall evidence for full production closure.
 
@@ -241,10 +242,10 @@ Example state: Game Saturday 2:00 PM; thunderstorm probability 80%; risk HIGH; s
 ### LP-013 - Decide Vercel Preview OpenAI Env Target
 
 - Priority: P2 release governance.
-- Status: Deferred from launch 2026-07-02.
+- Status: Decided for MVP 2026-08-20.
 - Current state: Preview OpenAI env values remain unset. Preview is explicitly out of launch scope until a named non-production preview branch is chosen; production secrets are not copied to an all-branch Preview target.
 - Seams: Vercel env config, `docs/runbook.md`, AI Coach provider docs.
-- Current decision: Preview remains explicitly out of scope, with no production secret leakage. This is a deferred safe default, not an approved expansion; see `DEC-PREVIEW-OPENAI`.
+- Current decision: Preview OpenAI is disabled for MVP. No Preview provider environment or proof is required; reopening requires a new explicit decision and must not copy production secrets to an all-branch target.
 - SaaS constants focus: environment governance, provider secret ownership, rollout/rollback, tenant preview safety.
 - Validation: docs/runbook and production tracker reconciliation.
 
@@ -254,13 +255,13 @@ Example state: Game Saturday 2:00 PM; thunderstorm probability 80%; risk HIGH; s
 - Status: Decided for launch 2026-07-02.
 - Current state: records, review, attempts, preferences, retry plans exist; live email/SMS/Web Push sends are disconnected. Launch scope is draft/internal records only.
 - Seams: `/api/provider-delivery/review`, `lib/supabase/provider-delivery.ts`, `lib/domain/notifications.ts`, launch copy/runbook.
-- Current decision: launch explicitly says "draft/internal records only"; live provider sends require `DEC-PROVIDER` approval followed by `EXT-PROVIDER-SENDS`.
+- Current decision: MVP is draft/internal records only. `DEC-PROVIDER` is resolved and `EXT-PROVIDER-SENDS` is postponed; reopening live delivery requires a new explicit channel decision.
 - SaaS constants focus: provider contracts, opt-in, billing/cost, failure semantics, idempotency, audit logs.
 - Validation: docs reconciliation if deferred; provider tests if implemented.
 
 ### LP-015 - Implement Real Provider Sends If Approved
 
-- Priority: P2 conditional.
+- Priority: Postponed; not required for MVP.
 - Current state: intentionally disconnected. The configured Supabase project now has `notification_delivery_attempts` execution metadata from `0021_notification_delivery_execution.sql`, including `idempotency_key`, retry locks, retry counts, provider response JSON, webhook IDs, and `dead_lettered_at`. The fictional demo tenant seed and `npm run qa:demo-tenant-proof` verify provider sends at zero and demo delivery-attempt rows carrying idempotency and dead-letter metadata. `npm run qa:provider-sandbox-readiness` is the local repository readiness proof only for the provider sandbox contract. Live sends still require the approved worker/adapters/webhooks proof slice.
 - Seams: provider delivery service, Web Push VAPID, email/SMS provider adapters, provider webhooks, delivery attempts.
 - Done when: approved attempts create real sandbox sends, rejected/suppressed attempts do not send, webhooks update delivery state, and retries are idempotent.
@@ -270,10 +271,10 @@ Example state: Game Saturday 2:00 PM; thunderstorm probability 80%; risk HIGH; s
 
 ### LP-016 - Prove Weather Provider Credentials And Actions
 
-- Priority: P1 proof.
-- Current state: Local readiness complete. NWS remains first, Open-Meteo remains the fallback, Tomorrow.io remains optional/premium, and every provider result is forced to draft before weather-alert persistence. The draft route derives the reviewer from the authenticated session; hosted proof must still verify coach/admin authority, event/team scope, provider fallback, idempotent/auditable draft creation, and no parent delivery with Supabase readback.
+- Priority: Active authorization defect only; provider proof postponed.
+- Current state: MVP keeps provider delivery draft-only. Fix and test weather-draft authorization, event/team scope, reviewer attribution, idempotency, and audit behavior without parent delivery. Hosted weather credentials, fallback execution, webhooks, and provider acceptance are postponed.
 - Seams: `/coach`, `/api/weather-alerts/draft`, `lib/services/weather/`, provider delivery review, `scripts/verify-weather-provider-readiness.mjs`.
-- Done when: hosted weather credential proof shows credential readiness and fallback behavior, signed-in coach/admin draft proof creates a weather draft without parent delivery, Supabase readback proves the row and reviewer attribution, provider sandbox/webhook proof confirms delivery boundaries, realtime/offline behavior and accessibility are accepted, and production acceptance is separately approved.
+- Done when: unauthorized or cross-organization actors cannot create a weather draft; an authorized coach/admin draft records the correct event, team, reviewer, idempotency, and audit evidence without parent delivery. Provider credentials and delivery are not MVP requirements.
 - SaaS constants focus: provider boundary, team/event scope, draft state, coach/admin authority, failure fallback, observability, idempotent/auditable draft creation, provider-send separation.
 - Validation: `npm run qa:weather-provider-readiness`; `node --test scripts/verify-weather-provider-readiness.test.mjs`; weather provider tests; hosted browser proof; Supabase readback.
 
@@ -297,36 +298,38 @@ Example state: Game Saturday 2:00 PM; thunderstorm probability 80%; risk HIGH; s
 
 ### LP-019 - Decide Media Upload Storage Scope
 
-- Priority: P2 product decision.
+- Priority: Decided for MVP; storage expansion postponed.
 - Current state: link-based Google Photos/YouTube media with validation, reporting, and moderation; upload storage provider is not configured.
-- Decision state: deferred safe default is link-only media; see `DEC-MEDIA`.
+- Decision state: MVP is link-only media. `DEC-MEDIA` is resolved and `EXT-STORAGE` is postponed.
 - Seams: media governance service, storage provider, `/api/media/*`, brand/media docs.
 - Local verifier: `npm run qa:private-media-storage-readiness` proves repository-source readiness only for the existing private upload gates, tenant/team quarantine paths, scanner evidence, family release/read privacy, retention/deletion evidence, reports, and moderation/takedown seams. It is not hosted, storage-provider, scanner-provider, or production acceptance.
-- Done when: launch either stays link-based or scopes Supabase Storage/private asset provider with upload review, file limits, scanning, deletion, and takedown policy. The remaining open gates are storage-provider setup, scanner-provider setup, hosted signed-upload proof, hosted scan proof, populated consent/revocation proof, deletion/retention proof, abuse/takedown proof, accessibility proof, and production acceptance.
+- Done when: the authorized link-media hide/restore toggle is proven and family/team reads honor hidden state. Upload, storage, scanner, provider, and destructive-remove proof are not required for MVP.
 - SaaS constants focus: file isolation, child privacy, storage paths, retention, support export/delete, abuse control.
 - Validation: docs-only if deferred; storage/provider tests if implemented.
 
 ### LP-020 - Decide Sponsor Billing And Stripe Scope
 
-- Priority: P2 commercial decision.
+- Priority: Decided for MVP; sponsor expansion postponed.
 - Current state: the Sponsor Program commercial spine, normalized ledger, fulfillment evidence, and forward-only payment-integrity correction are persisted in repository migrations and merged through PR #10 at `51c26de7def965cbca132794f0169bec50baa61a`. Atomic Stripe/manual RPCs, provider-resource replay protection, actual-amount refunds, PaymentIntent fallback, multi-invoice summaries, and Sponsor Hub program-summary authority are locally tested. Live Stripe collection remains disconnected and provider/payment gates remain disabled.
-- Decision state: deferred safe default is sponsor proof-only billing; see `DEC-BILLING`.
+- Decision state: MVP sponsor billing is proof-only. `DEC-BILLING` is resolved; `EXT-BILLING` and `EXT-SPONSOR-FULFILLMENT` are postponed.
 - Seams: `lib/domain/sponsor-program.ts`, `lib/domain/domain.test.ts`, `/admin`, `/api/admin/sponsors`, sponsor billing tables, and a Stripe provider adapter if approved.
-- Done when: the commercial owner either keeps sponsor billing proof-only or authorizes collection and closes `EXT-BILLING`. Sandbox, direct hosted readback/RLS proof, finance reconciliation, and production payment approval remain separate from the merged local implementation.
+- Done when: met for MVP by the proof-only decision. Stripe collection, hosted sponsor fulfillment, finance reconciliation, and production payment acceptance remain retained future expansion.
 - Local verifier: `npm run qa:sponsor-stripe-readiness` is local repository readiness proof only for the sponsor billing/payment boundary, server-side Checkout Session contract, server-only key handling, webhook settlement truth, admin/public privacy separation, and open payment gates. It does not call Stripe, Supabase, sign in, run Playwright, seed data, mutate hosted records, create Checkout Sessions, configure API keys or webhook secrets, register webhook endpoints, charge or refund payments, call provider dashboards, deploy, or claim sandbox, hosted, provider, finance, production payment, or production acceptance.
 - Open gates: `DEC-BILLING` and `EXT-BILLING` cover Stripe sandbox account setup, least-privilege credential provisioning, webhook registration/secrets, Checkout proof, retry/duplicate/refund/dispute/out-of-order execution, direct payment-state readback, cross-organization denial, hosted admin proof, finance reconciliation, and production payment approval. No Stripe secret or restricted key values are stored in source.
 - SaaS constants focus: commercial objects, billing/metering, revenue impact, entitlement, payment failure, webhook replay, finance reporting.
+- MVP disposition: the Stripe items listed above are retained future gates, not active completion requirements.
 - Validation: `npm test -- lib/domain/domain.test.ts`; `npm run qa:sponsor-stripe-readiness`; `node --test scripts/verify-sponsor-stripe-readiness.test.mjs`; focused sponsor API/service/UI tests. Stripe sandbox account setup, restricted key creation, webhook endpoint registration, signing-secret configuration, sandbox Checkout Session proof, signed webhook replay/duplicate proof, refund/failure proof, hosted admin proof, finance reconciliation, and production payment approval remain open gates.
 
 ### LPM-010 - Sponsor Fulfillment Proof
 
-- Priority: P2 commercial fulfillment.
+- Priority: Postponed; not required for MVP.
 - Current state: persisted fulfillment requirements and immutable evidence capture are merged with session-derived organization-admin authority, audit events, future-observation rejection, approved placement/logo rules, Sponsor Hub fulfillment state, and focused tests. LPM-010 is locally complete; hosted rendering and acceptance remain external.
 - Seams: `/sponsors`, `/team-portal`, `/admin/sponsors`, `/api/admin/sponsors`, `/api/admin/revenue-summary`, sponsor placement helpers, Supabase sponsor reads, Sponsor Hub reports, renewal-review copy.
 - Done when: approved active sponsor placement, approved logo rendering, recap/report artifacts, renewal delivery, leak QA, accessibility, finance reconciliation, and production sponsor acceptance are proven with the required hosted/provider evidence.
 - Local verifier: `npm run qa:sponsor-fulfillment-readiness` is local repository readiness proof only for approved active placement filters, Team Portal team scope, admin placement authority, approved logo asset reads, submitted-logo review queues, fail-closed sponsor data, fulfillment/report separation, renewal delivery gates, public and parent privacy, and open fulfillment gates. It does not call Supabase, sign in, run Playwright, seed data, mutate hosted records, send renewal email, call email/SMS/push providers, call Stripe, create or refund payments, upload files, fetch external logo assets, call provider dashboards, deploy, or claim hosted, observed-rendering, provider, finance, accessibility, production, or production sponsor acceptance.
 - Open gates: `EXT-SPONSOR-FULFILLMENT` owns hosted public/admin browser proof, hosted fulfillment-evidence readback, observed placement rendering, approved logo asset proof, sponsor recap/report artifact proof, renewal email sandbox proof, public placement leak QA, accessibility, finance reconciliation, and production sponsor acceptance.
 - SaaS constants focus: sponsor entitlement display, fulfillment evidence, asset governance, privacy leak prevention, report truth, renewal provider gates, production acceptance.
+- MVP disposition: the fulfillment items listed above are retained future gates, not active completion requirements.
 - Validation: `npm run qa:sponsor-fulfillment-readiness`; `node --test scripts/verify-sponsor-fulfillment-readiness.test.mjs`; focused sponsor API/service/UI tests. Hosted public/admin browser proof, hosted fulfillment evidence proof, observed placement-rendering proof, approved logo asset proof, sponsor recap/report artifact proof, renewal email sandbox proof, public placement leak QA, accessibility proof, finance reconciliation, and production sponsor acceptance remain open gates.
 
 ## Concrete Task Template
