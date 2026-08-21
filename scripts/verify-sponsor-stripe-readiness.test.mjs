@@ -40,15 +40,15 @@ test("passes against repository source fixtures without credentials, network, Su
 
 test("fails product decision boundary when billing proof states are weakened", () => {
   const sources = cloneSources();
-  sources.sponsorBillingDomain = sources.sponsorBillingDomain.replace(
-    "publicDisplaySeparated: boolean;",
-    "publicDisplayMerged: boolean;"
+  sources.sponsorProgramDomain = sources.sponsorProgramDomain.replace(
+    "agreementRecorded: boolean;",
+    "agreementAssumed: boolean;"
   );
 
   const result = verifySponsorStripeReadiness(sources);
 
   assert.equal(result.ok, false);
-  assert.ok(codesFor(result, "product-decision-proof-boundary").includes("SPONSOR_BILLING_WORKFLOW_STATES_MISSING"));
+  assert.ok(codesFor(result, "product-decision-proof-boundary").includes("SPONSOR_PROGRAM_MONEY_VOCABULARY_MISSING"));
 });
 
 test("fails Checkout readiness when dynamic payment methods are disabled", () => {

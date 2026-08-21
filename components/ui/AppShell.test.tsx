@@ -136,6 +136,27 @@ describe("AppShell private sign-out boundary", () => {
     expect(toggle).not.toContain("prefers-color-scheme");
   });
 
+  it("keeps the spectrum workspace theme app-wide without weakening shell authority", () => {
+    const shell = readFileSync(join(process.cwd(), "components", "ui", "AppShell.tsx"), "utf8");
+    const css = readFileSync(join(process.cwd(), "app", "globals.css"), "utf8");
+    const layout = readFileSync(join(process.cwd(), "app", "layout.tsx"), "utf8");
+
+    expect(css).toContain("LP-UX-020 SPECTRUM APP THEME");
+    expect(css).toContain('[data-product-shell="staff"] .app-sidebar');
+    expect(css).toContain('[data-product-shell="staff"] .context-bar');
+    expect(css).toContain('[data-product-shell="staff"] .verified-context-bar');
+    expect(css).toContain(':root[data-theme="dark"] [data-product-shell="staff"]');
+    expect(css).toContain(".public-app-shell-gateway");
+    expect(css).toContain(".mobile-tabbar a[data-active=\"true\"]");
+    expect(css).not.toContain('[data-product-shell="family"] .app-sidebar');
+    expect(layout).toContain("grid-template-columns:minmax(228px,242px)");
+    expect(layout).toContain("background:#e9f3ff");
+    expect(layout).toContain("box-shadow:inset 0 -3px 0 #c43a00");
+    expect(shell).toContain("getProductShellFamily");
+    expect(shell).toContain("data-route-authority");
+    expect(shell).toContain("data-data-scope-role");
+  });
+
   it("keeps parent RSVP online-only while coach replay remains actor and generation fenced", () => {
     const source = readFileSync(join(process.cwd(), "components", "feature-panels.tsx"), "utf8");
     const rsvpControl = readFileSync(join(process.cwd(), "components", "family", "rsvp-control.tsx"), "utf8");

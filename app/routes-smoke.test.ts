@@ -215,10 +215,11 @@ describe("route smoke coverage", () => {
   it("keeps the parent weekly visual language in the shared app design system", () => {
     const layout = readFileSync(join(process.cwd(), "app", "layout.tsx"), "utf8");
     const css = readFileSync(join(process.cwd(), "app", "globals.css"), "utf8");
+    const familyCss = readFileSync(join(process.cwd(), "app", "parent", "parent-weekly.css"), "utf8");
 
-    expect(css).toContain("--bg:             #fdf8f1");
-    expect(css).toContain("--accent:        #1f3a63");
-    expect(css).toContain("--action:        #c94f17");
+    expect(css).toContain("--bg:             #f7fbff");
+    expect(css).toContain("--accent:        #1248b3");
+    expect(css).toContain("--action:        #c43a00");
     expect(css).toContain("--font-sans: var(--font-parent-sans)");
     expect(css).toContain("font-family: var(--font-parent-display), var(--font-sans)");
     expect(css).toContain("border-radius: var(--radius-lg)");
@@ -227,12 +228,20 @@ describe("route smoke coverage", () => {
     expect(css).toContain(".temporary-caregiver-builder input");
     expect(css).toContain(".admin-calendar-split");
     expect(css).toContain(".admin-inspector-edit input");
-    expect(layout).toContain("background:var(--bg,#fdf8f1)");
-    expect(layout).toContain("border-right:1px solid var(--line,#e7ded1)");
-    expect(layout).toContain("color:var(--muted,#68665f)");
+    expect(layout).toContain("background:var(--bg,#f7fbff)");
+    expect(layout).toContain("border-right:1px solid #bed4ed");
+    expect(layout).toContain("color:#17375f");
     expect(css).toContain("color-mix(in srgb, var(--bg) 82%, transparent)");
     expect(css).toContain("color-mix(in srgb, var(--accent) 6%, transparent)");
-    expect(layout).toContain("background:#1f3a63");
+    expect(layout).toContain("background:#1248b3");
+    expect(layout).toContain("border:1px solid #0a347f");
+    expect(css).toContain("LP-UX-020 SPECTRUM APP THEME");
+    expect(css).toContain('[data-product-shell="staff"].app-shell');
+    expect(css).toContain('[data-product-shell="staff"] .app-sidebar');
+    expect(css).toContain('[data-product-shell="staff"] .page-header h1');
+    expect(css).toContain(".public-header-gateway");
+    expect(familyCss).toContain("--surface-soft: #eff6ff");
+    expect(familyCss).toContain("box-shadow: inset 0 -3px 0 var(--action)");
   });
 
   it("keeps the 100 concept scorecard documented and route-integrated", () => {

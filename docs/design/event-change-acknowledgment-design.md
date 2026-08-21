@@ -21,6 +21,7 @@ created because no new screen, transition, or component decomposition is introdu
 | Prerequisite ADR | `docs/adr/0002-server-side-event-change-receipts.md` (Accepted) |
 | Approach | Vertical slice |
 | Files touched | 6 source + 5 test (estimate) |
+| Status snapshot | Implemented locally, merged to `origin/main` at `37cbfea`, and production migration `20260819084447_event_change_receipts.sql` applied/read back on 2026-08-19; explicit human production acceptance remains separate |
 | Provider dependency | None. Independent of `DEC-PROVIDER` / `EXT-PROVIDER-SENDS`. |
 | Domain dependency | None. No change to `lib/domain/`. |
 
@@ -200,7 +201,7 @@ change that affects where a child must be and when.
 ```yaml
 Change Target: Family event-change awareness state
 Direct Impact:
-  - supabase/migrations/<new timestamp>_event_change_receipts.sql
+  - supabase/migrations/20260819084447_event_change_receipts.sql
   - lib/supabase/event-change-receipts.ts (new)
   - lib/supabase/event-change-log-reads.ts
   - app/api/parent/event-changes/acknowledge/route.ts (new)

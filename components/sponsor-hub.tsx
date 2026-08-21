@@ -18,12 +18,40 @@ import {
   Target,
   Users
 } from "lucide-react";
+import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useRef, useState, useTransition } from "react";
-import type { Sponsor, Team } from "@/lib/domain";
+import type { Sponsor, SponsorDeliverable, SponsorFulfillmentEvidenceKind, Team } from "@/lib/domain";
+import { sponsorDeliverableStateLabel } from "@/lib/domain";
 import { authenticatedJsonPost } from "@/lib/supabase/authenticated-fetch";
 import type { SponsorAdminData } from "@/lib/supabase/sponsors";
 
 type SponsorHubView = "overview" | "sponsors" | "fulfillment" | "reports";
+
+const evidenceKindLabels: Record<SponsorFulfillmentEvidenceKind, string> = {
+  screenshot: "Screenshot",
+  link: "Public link",
+  event_recap: "Event recap",
+  attendance_summary: "Attendance summary",
+  campaign_note: "Campaign note"
+};
+
+/** Screenshot and link evidence point at an artifact; the rest are written observations. */
+const artifactBackedEvidenceKinds = new Set<SponsorFulfillmentEvidenceKind>(["screenshot", "link"]);
+
+interface EvidenceDraft {
+  requirementId: string;
+  requirementLabel: string;
+  kind: SponsorFulfillmentEvidenceKind;
+  observedAt: string;
+  artifactUrl: string;
+  note: string;
+}
+
+/** `datetime-local` needs a local, second-free value; toISOString would silently shift the zone. */
+function localDateTimeValue(date: Date) {
+  const offsetMinutes = date.getTimezoneOffset();
+  return new Date(date.getTime() - offsetMinutes * 60_000).toISOString().slice(0, 16);
+}
 
 interface SponsorDraft {
   id: string;
@@ -98,7 +126,10 @@ function downloadSponsorCsv(sponsors: Sponsor[]) {
 }
 
 export function SponsorHub({ initialData }: { initialData: SponsorAdminData }) {
+  const router = useRouter();
   const [view, setView] = useState<SponsorHubView>("overview");
+  const [evidenceDraft, setEvidenceDraft] = useState<EvidenceDraft | null>(null);
+  const [evidenceMessage, setEvidenceMessage] = useState("");
   const [sponsors, setSponsors] = useState(initialData.sponsors);
   const [query, setQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState<"all" | Sponsor["status"]>("all");
@@ -113,11 +144,22 @@ export function SponsorHub({ initialData }: { initialData: SponsorAdminData }) {
   const artworkNeeded = sponsors.filter((sponsor) => !sponsor.logoUrl);
   const placementNeeded = sponsors.filter((sponsor) => !sponsor.placementKey);
   const pastSeasonSponsors = sponsors.filter((sponsor) => sponsor.status === "expired");
-  const confirmedBillingRecords = initialData.billingRecords.filter((record) => (
-    record.paymentProofStatus === "paid" && Boolean(record.confirmedAt)
+  const paidProgramSummaries = initialData.programSummaries.filter((summary) => (
+    summary.agreementRecorded && summary.paymentState === "paid" && summary.outstandingCents === 0
   ));
-  const paidSponsorIds = new Set(confirmedBillingRecords.map((record) => record.sponsorId));
-  const verifiedRevenueCents = confirmedBillingRecords.reduce((total, record) => total + record.amountCents, 0);
+  const paidSponsorIds = new Set(paidProgramSummaries.map((summary) => summary.sponsorId));
+  const paymentTruthKnown = initialData.programSummaries.length > 0;
+  const deliverablesBySponsorId = new Map<string, SponsorDeliverable[]>(
+    initialData.programSummaries.map((summary) => [summary.sponsorId, summary.deliverables])
+  );
+  const provenDeliverableCount = initialData.programSummaries.reduce(
+    (total, summary) => total + summary.deliverables.filter((deliverable) => deliverable.state === "delivered").length,
+    0
+  );
+  const verifiedRevenueCents = paidProgramSummaries.reduce(
+    (total, summary) => total + Math.max(0, summary.paidCents - summary.refundedCents),
+    0
+  );
   const filteredSponsors = useMemo(() => sponsors.filter((sponsor) => {
     const matchesQuery = `${sponsor.name} ${sponsor.url}`.toLowerCase().includes(query.trim().toLowerCase());
     return matchesQuery && (statusFilter === "all" || sponsor.status === statusFilter);
@@ -258,6 +300,75 @@ export function SponsorHub({ initialData }: { initialData: SponsorAdminData }) {
     });
   }
 
+  function openEvidenceCapture(deliverable: SponsorDeliverable) {
+    setEvidenceMessage("");
+    setEvidenceDraft({
+      requirementId: deliverable.requirement.id,
+      requirementLabel: deliverable.requirement.label,
+      kind: "screenshot",
+      observedAt: localDateTimeValue(new Date()),
+      artifactUrl: "",
+      note: ""
+    });
+  }
+
+  function submitEvidence() {
+    if (!evidenceDraft) return;
+    setEvidenceMessage("");
+
+    if (!initialData.isSupabaseBacked) {
+      setEvidenceMessage("Live organization records are required before fulfillment evidence can be recorded.");
+      return;
+    }
+
+    const observedAtMs = Date.parse(evidenceDraft.observedAt);
+    if (!Number.isFinite(observedAtMs)) {
+      setEvidenceMessage("Enter the date and time the benefit was observed.");
+      return;
+    }
+    if (observedAtMs > Date.now()) {
+      setEvidenceMessage("Evidence cannot be observed in the future. Record what has already run.");
+      return;
+    }
+
+    const artifactUrl = evidenceDraft.artifactUrl.trim();
+    const note = evidenceDraft.note.trim();
+    if (artifactBackedEvidenceKinds.has(evidenceDraft.kind) && !artifactUrl.startsWith("https://")) {
+      setEvidenceMessage("Screenshot and link evidence require an HTTPS artifact link.");
+      return;
+    }
+    if (!artifactBackedEvidenceKinds.has(evidenceDraft.kind) && !note) {
+      setEvidenceMessage("Recap, attendance, and campaign evidence require a written observation.");
+      return;
+    }
+
+    startTransition(async () => {
+      try {
+        const response = await authenticatedJsonPost("/api/admin/sponsors/evidence", {
+          requirementId: evidenceDraft.requirementId,
+          kind: evidenceDraft.kind,
+          observedAt: new Date(observedAtMs).toISOString(),
+          artifactUrl: artifactUrl || undefined,
+          note: note || undefined
+        });
+        const result = await response.json().catch(() => null) as { ok?: boolean; message?: string } | null;
+
+        if (!result?.ok) {
+          setEvidenceMessage(result?.message ?? "Fulfillment evidence could not be recorded.");
+          return;
+        }
+
+        setEvidenceDraft(null);
+        setEvidenceMessage(result.message ?? "Evidence recorded.");
+        // Delivery state is derived on the server from the persisted evidence rows, so the page is
+        // re-read rather than patched locally.
+        router.refresh();
+      } catch {
+        setEvidenceMessage("Fulfillment evidence could not be recorded. Check your connection and try again.");
+      }
+    });
+  }
+
   return (
     <div className="sponsor-hub">
       <header className="sponsor-hub-header">
@@ -315,12 +426,12 @@ export function SponsorHub({ initialData }: { initialData: SponsorAdminData }) {
             </article>
             <article>
               <span><CircleDollarSign aria-hidden="true" size={18} /> Verified revenue</span>
-              <strong>{initialData.isSupabaseBacked ? formatUsd(verifiedRevenueCents) : "—"}</strong>
+              <strong>{paymentTruthKnown ? formatUsd(verifiedRevenueCents) : "—"}</strong>
               <small>
-                {!initialData.isSupabaseBacked
+                {!paymentTruthKnown
                   ? "Payment proof is unavailable"
-                  : confirmedBillingRecords.length
-                    ? `${confirmedBillingRecords.length} provider-confirmed payment record${confirmedBillingRecords.length === 1 ? "" : "s"}`
+                  : paidProgramSummaries.length
+                    ? `${paidProgramSummaries.length} fully paid sponsor program${paidProgramSummaries.length === 1 ? "" : "s"}`
                     : "No settled payment proof recorded"}
               </small>
             </article>
@@ -390,7 +501,7 @@ export function SponsorHub({ initialData }: { initialData: SponsorAdminData }) {
               teams={initialData.teams}
               onEdit={openSponsorEditor}
               paidSponsorIds={paidSponsorIds}
-              billingKnown={initialData.isSupabaseBacked}
+              billingKnown={paymentTruthKnown}
             />
           </section>
         </>
@@ -428,7 +539,7 @@ export function SponsorHub({ initialData }: { initialData: SponsorAdminData }) {
             teams={initialData.teams}
             onEdit={openSponsorEditor}
             paidSponsorIds={paidSponsorIds}
-            billingKnown={initialData.isSupabaseBacked}
+            billingKnown={paymentTruthKnown}
           />
         </section>
       ) : null}
@@ -439,11 +550,22 @@ export function SponsorHub({ initialData }: { initialData: SponsorAdminData }) {
             <header><div><h2>Fulfillment setup</h2><p>These checks come from current sponsor, logo, and placement records.</p></div></header>
             <div className="sponsor-hub-checklist">
               {sponsors.map((sponsor) => {
+                const deliverables = deliverablesBySponsorId.get(sponsor.id) ?? [];
                 const checks = [
                   { label: "Sponsor record", complete: true },
                   { label: "Reviewed logo on file", complete: Boolean(sponsor.logoUrl) },
                   { label: "Public placement selected", complete: Boolean(sponsor.placementKey) },
-                  { label: "Delivery proof", complete: false }
+                  // Delivery proof is complete only when every promised benefit has been observed
+                  // as many times as it was promised. `delivered` alone is not enough: it reports
+                  // that at least one observation exists, so a benefit promising two placements
+                  // with one observation would otherwise read complete beside its own "1 of 2".
+                  {
+                    label: "Delivery proof",
+                    complete: deliverables.length > 0 && deliverables.every((deliverable) => (
+                      deliverable.state === "delivered"
+                      && deliverable.deliveredQuantity >= deliverable.requirement.requiredQuantity
+                    ))
+                  }
                 ];
                 return (
                   <article key={sponsor.id}>
@@ -458,16 +580,118 @@ export function SponsorHub({ initialData }: { initialData: SponsorAdminData }) {
                         </span>
                       ))}
                     </div>
+                    {deliverables.length ? (
+                      <ul className="sponsor-hub-deliverables">
+                        {deliverables.map((deliverable) => (
+                          <li key={deliverable.requirement.id}>
+                            <div>
+                              <strong>{deliverable.requirement.label}</strong>
+                              <small>
+                                {sponsorDeliverableStateLabel(deliverable.state)}
+                                {deliverable.state === "delivered" && deliverable.deliveredAt
+                                  ? ` · first observed ${new Date(deliverable.deliveredAt).toLocaleDateString()}`
+                                  : ""}
+                                {deliverable.state === "blocked" && deliverable.requirement.blockedReason
+                                  ? ` · ${deliverable.requirement.blockedReason}`
+                                  : ""}
+                              </small>
+                            </div>
+                            <span
+                              className={deliverable.state === "delivered" ? "is-complete" : ""}
+                              data-deliverable-state={deliverable.state}
+                            >
+                              {deliverable.evidence.length} of {deliverable.requirement.requiredQuantity} observed
+                            </span>
+                            <button
+                              type="button"
+                              className="secondary"
+                              disabled={!initialData.isSupabaseBacked}
+                              onClick={() => openEvidenceCapture(deliverable)}
+                            >
+                              Record evidence
+                            </button>
+                          </li>
+                        ))}
+                      </ul>
+                    ) : (
+                      <p className="sponsor-hub-note">
+                        No promised benefits are on record for this sponsor, so nothing is reported as scheduled or delivered.
+                      </p>
+                    )}
                   </article>
                 );
               })}
             </div>
+            {!initialData.programSummaries.length && sponsors.length ? (
+              <p className="sponsor-hub-note">{initialData.programMessage}</p>
+            ) : null}
+            {evidenceDraft ? (
+              <form
+                className="sponsor-hub-evidence-form"
+                onSubmit={(event) => {
+                  event.preventDefault();
+                  submitEvidence();
+                }}
+              >
+                <h3>Record evidence for {evidenceDraft.requirementLabel}</h3>
+                <p>Record what already ran. A scheduled placement is not delivery until someone observes it.</p>
+                <label>
+                  Evidence type
+                  <select
+                    value={evidenceDraft.kind}
+                    onChange={(event) => setEvidenceDraft({
+                      ...evidenceDraft,
+                      kind: event.target.value as SponsorFulfillmentEvidenceKind
+                    })}
+                  >
+                    {Object.entries(evidenceKindLabels).map(([value, label]) => (
+                      <option key={value} value={value}>{label}</option>
+                    ))}
+                  </select>
+                </label>
+                <label>
+                  Observed on
+                  <input
+                    type="datetime-local"
+                    max={localDateTimeValue(new Date())}
+                    value={evidenceDraft.observedAt}
+                    onChange={(event) => setEvidenceDraft({ ...evidenceDraft, observedAt: event.target.value })}
+                  />
+                </label>
+                {artifactBackedEvidenceKinds.has(evidenceDraft.kind) ? (
+                  <label>
+                    HTTPS artifact link
+                    <input
+                      type="url"
+                      placeholder="https://"
+                      value={evidenceDraft.artifactUrl}
+                      onChange={(event) => setEvidenceDraft({ ...evidenceDraft, artifactUrl: event.target.value })}
+                    />
+                  </label>
+                ) : (
+                  <label>
+                    What was observed
+                    <textarea
+                      rows={3}
+                      value={evidenceDraft.note}
+                      onChange={(event) => setEvidenceDraft({ ...evidenceDraft, note: event.target.value })}
+                    />
+                  </label>
+                )}
+                <div className="sponsor-hub-evidence-actions">
+                  <button type="submit" disabled={isPending}>Save evidence</button>
+                  <button type="button" className="secondary" onClick={() => setEvidenceDraft(null)}>Cancel</button>
+                </div>
+                {evidenceMessage ? <p role="status">{evidenceMessage}</p> : null}
+              </form>
+            ) : null}
             {!sponsors.length ? <SponsorEmpty onAdd={() => openSponsorEditor()} /> : null}
           </article>
           <aside className="sponsor-hub-panel sponsor-hub-boundary-card">
             <ShieldCheck aria-hidden="true" size={24} />
             <h2>Proof before promises</h2>
             <p>Placement settings do not prove a banner, email mention, or event sign was delivered.</p>
+            <p>A deliverable reports as delivered only where someone recorded an observation of it running.</p>
             <strong>Player and family data are never included.</strong>
           </aside>
         </section>
@@ -484,7 +708,8 @@ export function SponsorHub({ initialData }: { initialData: SponsorAdminData }) {
               <div><dt>Sponsors</dt><dd>{sponsors.length}</dd></div>
               <div><dt>Active public placements</dt><dd>{sponsors.filter((sponsor) => sponsor.status === "active" && sponsor.placementKey).length}</dd></div>
               <div><dt>Logos on file</dt><dd>{sponsors.filter((sponsor) => sponsor.logoUrl).length}</dd></div>
-              <div><dt>Payment proof recorded</dt><dd>{initialData.isSupabaseBacked ? confirmedBillingRecords.length : "Unavailable"}</dd></div>
+              <div><dt>Fully paid sponsor programs</dt><dd>{paymentTruthKnown ? paidProgramSummaries.length : "Unavailable"}</dd></div>
+              <div><dt>Deliverables proven by evidence</dt><dd>{initialData.isSupabaseBacked ? provenDeliverableCount : "Unavailable"}</dd></div>
               <div><dt>Verified impact events</dt><dd>0</dd></div>
             </dl>
             <p className="sponsor-hub-note">PDF impact reports remain unavailable until benefits, proof files, and privacy-safe engagement events have durable records.</p>

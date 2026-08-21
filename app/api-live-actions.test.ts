@@ -10,6 +10,7 @@ import { POST as postParentReplay } from "./api/coach/parent-replay/route";
 import { POST as postWeeklyUpdate } from "./api/coach/weekly-update/route";
 import { POST as postCoachRsvpReminderDraft } from "./api/coach/rsvp-reminders/draft/route";
 import { POST as postSponsorSave } from "./api/admin/sponsors/route";
+import { POST as postSponsorEvidence } from "./api/admin/sponsors/evidence/route";
 import { GET as getAdminRevenueSummary } from "./api/admin/revenue-summary/route";
 import { GET as getFamilyWallet } from "./api/parent/family-wallet/route";
 import { POST as postAdminTeam } from "./api/admin/teams/route";
@@ -39,6 +40,7 @@ import { repairGuardianLink } from "@/lib/supabase/guardian-links";
 import { createAdminExport } from "@/lib/supabase/reporting";
 import { listProviderDeliveryRetryQueue, reviewNotificationDelivery } from "@/lib/supabase/provider-delivery";
 import { listSponsorAdminData } from "@/lib/supabase/sponsors";
+import { recordSponsorFulfillmentEvidence } from "@/lib/supabase/sponsor-program";
 import {
   claimSnackSlot,
   createCoachRsvpReminderDraft,
@@ -75,6 +77,10 @@ vi.mock("@/lib/supabase/dashboard-data", () => ({
 
 vi.mock("@/lib/supabase/sponsors", () => ({
   listSponsorAdminData: vi.fn()
+}));
+
+vi.mock("@/lib/supabase/sponsor-program", () => ({
+  recordSponsorFulfillmentEvidence: vi.fn()
 }));
 
 vi.mock("@/lib/supabase/operations", () => ({
@@ -148,6 +154,7 @@ const listFamilyBalanceSummaryMock = vi.mocked(listFamilyBalanceSummary);
 const createWeatherAlertDraftMock = vi.mocked(createWeatherAlertDraft);
 const saveCoachWeeklyUpdateMock = vi.mocked(saveCoachWeeklyUpdate);
 const saveSponsorMock = vi.mocked(saveSponsor);
+const recordSponsorFulfillmentEvidenceMock = vi.mocked(recordSponsorFulfillmentEvidence);
 const moderateMediaItemMock = vi.mocked(moderateMediaItem);
 const reportMediaItemMock = vi.mocked(reportMediaItem);
 const recordMobileUsageEventMock = vi.mocked(recordMobileUsageEvent);
@@ -230,6 +237,8 @@ describe("live action API routes", () => {
       teams: seedState.teams,
       sponsors: seedState.sponsors,
       billingRecords: [],
+      programSummaries: [],
+      programMessage: "Sponsor agreement, invoice, and delivery records are loaded from Supabase.",
       isSupabaseBacked: true,
       message: "Sponsor records, active placements, approved logos, and payment-proof records are loaded from Supabase."
     });
@@ -798,6 +807,61 @@ describe("live action API routes", () => {
     });
   });
 
+  it("uses the authenticated admin session for sponsor fulfillment evidence", async () => {
+    recordSponsorFulfillmentEvidenceMock.mockResolvedValue({
+      ok: true,
+      evidenceId: "evidence-1",
+      message: "Evidence recorded."
+    });
+
+    const response = await postSponsorEvidence(jsonRequest({
+      requirementId: "requirement-1",
+      actorUserId: "client-spoof",
+      kind: "screenshot",
+      observedAt: "2026-08-18T00:00:00.000Z",
+      artifactUrl: "https://proof.example/logo.png"
+    }));
+
+    expect(response.status).toBe(200);
+    expect(recordSponsorFulfillmentEvidenceMock).toHaveBeenCalledWith({
+      requirementId: "requirement-1",
+      actorUserId: "user-live-session",
+      kind: "screenshot",
+      observedAt: "2026-08-18T00:00:00.000Z",
+      artifactUrl: "https://proof.example/logo.png",
+      note: undefined
+    });
+  });
+
+  it("rejects fulfillment evidence observed in the future before any write is attempted", async () => {
+    recordSponsorFulfillmentEvidenceMock.mockClear();
+
+    const response = await postSponsorEvidence(jsonRequest({
+      requirementId: "requirement-1",
+      kind: "screenshot",
+      observedAt: new Date(Date.now() + 86_400_000).toISOString(),
+      artifactUrl: "https://proof.example/logo.png"
+    }));
+    const payload = await response.json();
+
+    expect(response.status).toBe(400);
+    expect(payload.message).toContain("cannot be observed in the future");
+    expect(recordSponsorFulfillmentEvidenceMock).not.toHaveBeenCalled();
+  });
+
+  it("rejects an unsupported fulfillment evidence kind before any write is attempted", async () => {
+    recordSponsorFulfillmentEvidenceMock.mockClear();
+
+    const response = await postSponsorEvidence(jsonRequest({
+      requirementId: "requirement-1",
+      kind: "verbal_assurance",
+      observedAt: "2026-08-18T00:00:00.000Z"
+    }));
+
+    expect(response.status).toBe(400);
+    expect(recordSponsorFulfillmentEvidenceMock).not.toHaveBeenCalled();
+  });
+
   it("returns Family Balance Summary reads scoped to the authenticated guardian session", async () => {
     const response = await getFamilyWallet(getRequest());
     const payload = await response.json();
@@ -843,6 +907,8 @@ describe("live action API routes", () => {
           paymentProofStatus: "not_requested"
         }
       ],
+      programSummaries: [],
+      programMessage: "Sponsor agreement, invoice, and delivery records are loaded from Supabase.",
       isSupabaseBacked: true,
       message: "Sponsor records are loaded."
     });
@@ -873,6 +939,8 @@ describe("live action API routes", () => {
       teams: [],
       sponsors: [],
       billingRecords: [],
+      programSummaries: [],
+      programMessage: "Sponsor agreement, invoice, and delivery records were not loaded. No payment or delivery state is claimed.",
       isSupabaseBacked: false,
       message: "Sponsor records could not be loaded safely."
     });

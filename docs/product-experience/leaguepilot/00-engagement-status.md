@@ -5,7 +5,9 @@ Audit completed and LP-UX-001 implemented locally: 2026-07-29. LP-UX-001 correct
 
 ## Latest Recorded UX Slice
 
-LP-UX-018 is the latest numbered handoff. It replaces the Family Home event-change band's device-local watermark with per-guardian server receipt state and an explicit control for high-impact changes. The route derives the actor from the authenticated session, while the SQL RPC independently re-derives guardian scope and preserves the original timestamp under repeated or concurrent acknowledgment. Local transactional SQL proves linked success, idempotency, actor-spoof denial, cross-family denial with zero receipt rows, and one first-acknowledgment audit event. `output/playwright/lp-ux-018-event-change-receipts/proof.json` records 20 responsive/theme results plus retry and offline behavior. Migration `20260819084447` is local only; hosted migration, real-session RLS, cross-device hosted readback, deployment, and production acceptance remain open. The earlier "write-only `event_change_logs`" / device-local finding is now stale for local source but remains operationally true until hosted promotion. See [`lp-ux-018-server-event-change-receipts-acceptance.md`](lp-ux-018-server-event-change-receipts-acceptance.md).
+LP-UX-021 is the latest numbered handoff. It is a read-only Coach Messages audit and plan; no message workflow, route, provider, or source implementation is claimed. LP-UX-020 is the latest implemented UX slice and is the current visual authority: the blue, navy, orange, yellow, and green spectrum supersedes LP-UX-019's historical charcoal/gold palette while preserving route, role, tenant, privacy, mutation, and provider boundaries. Its local read-only browser matrix covers Admin, Coach, Parent, and public surfaces at 390 and 1440 pixels in Light and Dark modes. This is local presentation evidence only, not hosted or production acceptance. See [`lp-ux-020-spectrum-app-theme.md`](lp-ux-020-spectrum-app-theme.md) and [`lp-ux-021-coach-messages-audit-and-plan.md`](lp-ux-021-coach-messages-audit-and-plan.md).
+
+LP-UX-018 remains the latest server-backed UX slice. Its event-change receipt migration was applied and read back on the protected production project, and its implementation line merged to `origin/main` at `37cbfea`. Real signed-in production acknowledgment and human acceptance remain separate because that journey writes production data. See [`lp-ux-018-server-event-change-receipts-acceptance.md`](lp-ux-018-server-event-change-receipts-acceptance.md).
 
 The phase, Git, and continuation sections below are retained as the earlier LP-UX-004 acceptance snapshot. They are historical evidence, not the current branch or next-work authority.
 
@@ -38,10 +40,14 @@ LP-UX-001 through LP-UX-004 are done-local-accepted. LP-UX-005 through LP-UX-007
 17. `lp-ux-003-acceptance-verification.md` — responsive correction, provider-free conflict proof, exact validation, and remaining gates.
 18. `lp-ux-004-acceptance-verification.md` — utility-route responsive correction, provider-free interaction proof, exact validation, and remaining gates.
 19. `lp-ux-017-family-media-team-responsive-acceptance.md` - current Family Photos and parent Team Portal responsive, theme, privacy, and intercepted-interaction evidence.
+20. `lp-ux-018-server-event-change-receipts-acceptance.md` - server receipt implementation, promotion evidence, and remaining human acceptance boundary.
+21. `lp-ux-019-staff-workspace-visual-convergence.md` - historical staff-shell experiment superseded by LP-UX-020.
+22. `lp-ux-020-spectrum-app-theme.md` - current app-wide visual palette and local read-only browser evidence.
+23. `lp-ux-021-coach-messages-audit-and-plan.md` - read-only Coach Messages findings and bounded follow-up plan.
 
 ## Headline findings (full detail in 01)
 
-- The warm light Family Home system remains the visual foundation (token palette shipped 2026-07-27, commit `ffb1c9b`). The accidental `prefers-color-scheme` inversion identified by this audit was retired on 2026-08-03: Light is now the first-visit default, and a deliberate, locally contrast-proven Dark theme is available only by explicit user selection (`lp-ux-005-manual-global-theme.md`).
+- LP-UX-020's cool spectrum is the current visual foundation. It supersedes the earlier warm Family palette and LP-UX-019's charcoal/gold staff experiment while retaining explicit user-selected Light/Dark behavior and the established Family structure.
 - Six shells, three simultaneous parent nav models, 9,716-line `feature-panels.tsx`, `/parent/settings` = duplicated dashboard, `/parent/photos` = team-portal capability inventory (14,224px mobile).
 - Domain truth is strong: RSVP, transportation (mutual acceptance), official comms + acknowledgement, guardians/caregivers, season transitions are LIVE AND AUTHORITATIVE with version binding and in-SQL authorization. The UX debt is composition, not capability.
 - "What Changed" is version-derived; `event_change_logs` (full field diffs) is write-only — the highest-leverage single upgrade.
@@ -49,9 +55,9 @@ LP-UX-001 through LP-UX-004 are done-local-accepted. LP-UX-005 through LP-UX-007
 
 ## Decisions of record made by this engagement
 
-1. Light family system = foundation (evidence-based; resolves brief hypothesis).
+1. Spectrum Light is the current app-wide foundation; explicit Dark remains user-selected. This supersedes the earlier warm Family and charcoal/gold staff palette decisions without changing route or role authority.
 2. Parent IA: Home / Schedule / Messages / Family / More; RSVP is an action + task view, not a nav destination (records an explicit amendment to blueprint §5's "Replay" slot).
-3. Warm palette adopted as palette of record; blueprint's semantic token names and component API adopted over raw names (recorded amendment of blueprint §8 cobalt).
+3. Blueprint semantic token names and component APIs remain authoritative; LP-UX-020's cool blue/navy structure, orange action, yellow review, and green success roles are the palette of record.
 4. Theme selection (amended 2026-08-03): the deliberate, authenticated, contrast-proven dark theme now exists locally. All routes default to Light and follow a saved explicit Light/Dark selection; device preference does not select the app theme.
 5. Reference slice: Family Home → What Changed → Next Event → RSVP (Stage A shell + Stage B surface); Transportation and Communication follow in later slices.
 
@@ -89,7 +95,7 @@ LP-UX-004 acceptance branch: `ux/lp-ux-004-responsive-acceptance`, stacked linea
 3. Triage the report-only security findings independently of UX work.
 4. Keep publication and hosted route proof as later, explicit actions.
 
-## Continuation prompt (self-contained)
+## Historical continuation prompt (do not use as current authority)
 
 You are continuing the LeaguePilot UX convergence engagement at
 `/home/administrator/projects/youth-sports-platform-mvp-v3`. The read-only audit and

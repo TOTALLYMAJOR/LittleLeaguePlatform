@@ -1,9 +1,42 @@
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { renderToStaticMarkup } from "react-dom/server";
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import { SponsorHub } from "@/components/sponsor-hub";
 import { seedState } from "@/lib/domain";
+import type { SponsorshipProgramSummary } from "@/lib/domain";
+
+vi.mock("next/navigation", () => ({
+  useRouter: () => ({ refresh: vi.fn() })
+}));
+
+function programSummary(
+  sponsorId: string,
+  overrides: Partial<SponsorshipProgramSummary> = {}
+): SponsorshipProgramSummary {
+  return {
+    sponsorId,
+    sponsorName: "Sponsor",
+    packageName: "Gold",
+    agreementStatus: "active",
+    invoiceCount: 1,
+    latestInvoiceStatus: "issued",
+    amountCents: 180_000,
+    paidCents: 180_000,
+    refundedCents: 0,
+    disputedCents: 0,
+    outstandingCents: 0,
+    paymentState: "paid",
+    fulfillmentState: "pending",
+    requirements: [],
+    deliverables: [],
+    readyForPlacement: true,
+    recapReady: false,
+    agreementRecorded: true,
+    proofBoundary: "Test program summary.",
+    ...overrides
+  };
+}
 
 describe("Sponsor Hub route and presentation", () => {
   it("keeps the focused route behind admin access and passes an authorized organization scope to the adapter", () => {
@@ -17,7 +50,7 @@ describe("Sponsor Hub route and presentation", () => {
     expect(page).not.toContain("createSupabase");
   });
 
-  it("renders verified revenue only from provider-confirmed billing records", () => {
+  it("renders verified revenue only from program summaries and ignores legacy billing rows", () => {
     const html = renderToStaticMarkup(<SponsorHub initialData={{
       organizationId: seedState.organization.id,
       teams: seedState.teams,
@@ -40,12 +73,15 @@ describe("Sponsor Hub route and presentation", () => {
         status: "invoice_ready",
         paymentProofStatus: "awaiting_invoice"
       }],
+      programSummaries: [programSummary(seedState.sponsors[0]!.id)],
+      programMessage: "Sponsor agreement, invoice, and delivery records are loaded from Supabase.",
       isSupabaseBacked: true,
       message: "Sponsor records and proof records are loaded from Supabase."
     }} />);
 
-    expect(html).toContain("$2,500.00");
-    expect(html).toContain("1 provider-confirmed payment record");
+    expect(html).toContain("$1,800.00");
+    expect(html).toContain("1 fully paid sponsor program");
+    expect(html).not.toContain("$2,500.00");
     expect(html).not.toContain("$3,500.00");
   });
 
@@ -68,6 +104,17 @@ describe("Sponsor Hub route and presentation", () => {
         paymentProofStatus: "paid",
         confirmedAt: "2026-07-26T12:00:00.000Z"
       }],
+      programSummaries: [
+        programSummary(confirmedSponsor!.id),
+        programSummary(awaitingSponsor!.id, {
+          latestInvoiceStatus: "issued",
+          paidCents: 0,
+          outstandingCents: 180_000,
+          paymentState: "awaiting_payment",
+          readyForPlacement: false
+        })
+      ],
+      programMessage: "Sponsor agreement, invoice, and delivery records are loaded from Supabase.",
       isSupabaseBacked: true,
       message: "Sponsor records and proof records are loaded from Supabase."
     }} />);
@@ -86,6 +133,8 @@ describe("Sponsor Hub route and presentation", () => {
       teams: seedState.teams,
       sponsors: seedState.sponsors,
       billingRecords: [],
+      programSummaries: [],
+      programMessage: "Sponsor agreement, invoice, and delivery records were not loaded. No payment or delivery state is claimed.",
       isSupabaseBacked: false,
       message: "Sponsor records could not be loaded safely."
     }} />);
@@ -99,6 +148,8 @@ describe("Sponsor Hub route and presentation", () => {
       teams: [],
       sponsors: [],
       billingRecords: [],
+      programSummaries: [],
+      programMessage: "Sponsor agreement, invoice, and delivery records were not loaded. No payment or delivery state is claimed.",
       isSupabaseBacked: false,
       message: "Sponsor records could not be loaded safely."
     }} />);
