@@ -1,10 +1,10 @@
 # Production Audit Action Items
 
-Audit date: 2026-06-25; reconciled: 2026-07-27.
+Audit date: 2026-06-25; reconciled: 2026-08-22.
 
 ## Verdict
 
-The app is not accepted for real-family production launch. The committed application, authenticated mutation boundaries, Supabase-backed slices, deterministic AI Coach Workspace, guarded local proof harnesses, and provider-safe draft flows are in place. Exact current gates and owners live in [`docs/backlog-closeout-2026-07-27.md`](backlog-closeout-2026-07-27.md); this file preserves dated audit evidence and risk context.
+The app is not accepted for real-family production launch. The approved MVP queue is complete locally for public configuration, registration activation, team-builder publication, admin tenant scope, the three retained security fixes, durable public-intake limiting, and link-media Hide/Restore. `EXT-HOSTED-SESSION` is the only remaining definition-of-shipped gate. The current queue and owners live in [`docs/production-task-board.md`](production-task-board.md#current-business-priority-queue---2026-08-20); [`docs/backlog-closeout-2026-07-27.md`](backlog-closeout-2026-07-27.md) remains historical evidence. This file preserves dated audit evidence and risk context rather than creating a second priority list.
 
 ## Validation Run
 
@@ -56,19 +56,19 @@ The commands and production URLs in the dated bullets below are historical obser
 ## P1 Production Hardening
 
 5. Provider sends are deferred from launch as draft/internal records only unless real email/SMS/Web Push delivery becomes explicit production scope.
-   - Current truth: notification records, approval review, and delivery-attempt logs exist; external email/SMS/Web Push sends are intentionally disconnected.
-   - Action if launching without sends: update launch copy/runbook to say notification drafts are internal only.
-   - Action if launching with sends: implement send worker/adapters, recipient preference enforcement, unsubscribe UI, retry backoff, provider webhooks, and provider-send tests.
+   - Current truth: `DEC-PROVIDER` is draft-only for MVP. Notification records, approval review, and delivery-attempt logs exist; external email/SMS/Web Push sends remain intentionally disconnected.
+   - MVP disposition: closed by decision. Product copy and readiness evidence must continue to describe drafts as internal records, not sent messages.
+   - Reopen only by explicit decision: provider execution would require adapters, recipient preference enforcement, unsubscribe UI, retry backoff, signed webhooks, sandbox proof, cost controls, and separate production-send approval.
 
 6. Finish notification provider execution if real alerts are required.
    - Current seams: `/api/provider-delivery/review`, `lib/supabase/provider-delivery.ts`, `lib/domain/notifications.ts`.
-   - Action: connect Web Push VAPID execution and chosen email/SMS providers after approval, with suppression and retry evidence.
-   - Done when: approved provider attempts create real sandbox sends and rejected attempts suppress sends with audit logs.
+   - MVP disposition: postponed. Draft review and suppression remain in scope; provider execution does not.
+   - Future done condition: approved attempts create real sandbox sends, rejected attempts suppress sends with audit logs, and provider receipts remain distinct from internal notification state.
 
 7. Add browser-level live action tests for key private writes.
-   - Current truth: partially covered on 2026-07-02. Hosted QA browser proof now covers signed-out parent gates, signed-in parent/coach/admin read surfaces, parent RSVP save, snack claim, volunteer claim, notification preference save, coach weekly update draft, Parent Replay publish, and provider-delivery review against Supabase rows. New evidence screenshots include `output/playwright/parent-live-actions-qa-session-live.png`, `output/playwright/coach-weekly-update-qa-session-live.png`, `output/playwright/coach-parent-replay-private-write-live.png`, and `output/playwright/provider-delivery-review-qa-session-live.png`.
-   - Remaining action: add isolated-QA Playwright proofs for media report/moderation, registration/admin approval, and team-builder/admin publish. Do not target the production alias.
-   - Done when: CI screenshots or traces prove every release-critical signed-in browser write uses real Supabase sessions.
+   - Current truth: the guarded isolated-QA harness now covers registration assigned-team activation, team-builder publish/replay/readback, link-media Hide/Restore, guardian media-consent grant/revoke, calendar/weather authorization denials, shared-counter burst/readback, provider-draft boundaries, and the core parent/coach/admin routes. Earlier hosted evidence also covers RSVP, snack, volunteer, preference, weekly-update, Parent Replay, and provider-review records.
+   - Remaining action: execute the complete harness against the exact isolated deployment and matching Supabase project under `EXT-HOSTED-SESSION`. Do not target the production alias with mutating QA.
+   - Done when: the exact deployed commit, ordered migration readback, target identity, signed-in role journeys, persistence readback, and cross-organization denials pass together.
 
 8. Reconcile stale capability-matrix gaps.
    - Evidence: `docs/capability-matrix.md` still lists some gaps that later implementation covered, including team CRUD, division/season setup, coach assignment, roster lifecycle, tenant isolation, RSVP history UX, snack/volunteer reminders, caps, cancellation, and approval policies.
@@ -76,42 +76,42 @@ The commands and production URLs in the dated bullets below are historical obser
 
 9. Confirm admin operations are production-scoped on hosted data.
    - Current seams: `/admin/operations`, `/admin/security`, `/admin/teams`, `/admin/guardian-links`, `/admin/archive`.
-   - Action: run admin-path proof with a real org admin user and verify no cross-org rows appear.
-   - Done when: admin proof screenshots and RLS checks cover every admin route.
+   - Current truth: local adapters require explicit signed-in organization scope, and focused cross-tenant/source-contract tests pass. ICS export independently authorizes the requested team.
+   - Remaining action: run the populated admin-path and denial proof on isolated QA under `EXT-HOSTED-SESSION`; production acceptance remains read-only.
 
 10. Prove brand profiles across the 20 launch surfaces.
     - Current truth: `/admin/themes` now renders a 20-surface brand launch checklist, test-brand previews, metrics, monitoring events, alerts, coach feedback questions, and acceptance criteria. `team_brand_profiles`, validation runs, asset uploads, and brand monitoring events are modeled in Supabase with coach/admin RLS. `npm run qa:brand-proof` captures hosted browser proof for the checklist and monitoring contract.
-    - Action: run `QA_PROOF_BASE_URL=<hosted-url> npm run qa:brand-proof`, then create several hosted test brands with distinct logo URLs, banner URLs, primary/secondary/accent/button colors, display names, short names, fallback avatars, and hero copy before browser-testing parent team switching, invite pages, email templates, and push identity.
-    - Done when: all 20 surfaces pass hosted QA, non-coaches cannot edit branding, fallback email branding works, and brand monitoring alerts are wired to production telemetry.
+    - MVP disposition: postponed outside the approved completion queue. Existing local and dated hosted evidence remains useful but does not block `EXT-HOSTED-SESSION`.
+    - Future done condition: all 20 surfaces pass hosted QA, non-coaches cannot edit branding, fallback email branding works, and brand monitoring alerts are wired to production telemetry.
 
 11. Add rate limits and abuse controls to public intake endpoints.
     - Current public endpoints: `/api/registration-requests` and `/api/mobile-usage-events`.
-    - Current truth: route-level bounded in-process throttles reject registration bursts at 5 requests/minute/client and mobile telemetry bursts at 60 requests/minute/client with documented `429`, `Retry-After`, and `X-RateLimit-*` behavior; focused accepted/throttled tests pass.
-    - Remaining action: add shared-store or provider-edge enforcement for the deployed multi-instance topology.
-    - Done when: local and hosted burst requests are rejected or throttled with stable behavior and legitimate signup/telemetry behavior remains intact.
+    - Current truth: both endpoints use the service-only Supabase `claim_public_rate_limit` shared counter across application instances. Registration is limited to 5 requests/minute/client and mobile telemetry to 120 requests/minute/client. Both return stable `429`, `Retry-After`, and `X-RateLimit-*` headers; shared-store failure returns retryable `503` without persistence and never falls back to process memory.
+    - Local status: done with fourteen focused limiter/route tests and source readiness proof.
+    - Remaining action: execute the guarded hosted burst plus six-hit counter readback against isolated QA under `EXT-HOSTED-SESSION`.
 
 ## P2 Product Decisions Before Wider Launch
 
 12. Decide whether media uploads are in scope.
-    - Current truth: media intake is link-based with Google Photos/YouTube validation, reporting, and moderation; upload storage provider is not configured.
-    - Action if needed: add Supabase Storage or another private asset provider, upload review policy, file limits, scanning, and deletion/takedown workflow.
+    - Decision: `DEC-MEDIA` is link-only for MVP. Authorized Hide/Restore is implemented locally; uploads, private storage, scanning, parent reporting, reject, and destructive removal are postponed.
+    - Reopen only by explicit decision: add private storage, upload review policy, file limits, scanning, retention, and deletion/takedown workflow.
 
-13. Sponsor billing proof foundation is now in scope.
-    - Current truth: sponsor records, placements, logo metadata, audits, Stripe Product/Price lookup keys, invoice references, and payment-proof statuses are represented as admin-only readiness records.
-    - Remaining action if live collection is required: connect server-side Stripe Product/Price/Invoice or Checkout flows with environment-managed restricted keys, webhook signature verification, and sandbox payment proof.
-    - Boundary: sponsor billing proof remains separate from child-facing sponsor display and does not expose payment status to families.
+13. Keep sponsor billing proof-only.
+    - Current truth: the organization-scoped sponsor commercial spine, append-only payment ledger, atomic Stripe evidence recording, refund/dispute/manual-payment idempotency, multi-invoice summaries, fulfillment evidence, and admin Sponsor Hub are implemented locally. Provider/payment gates remain disabled.
+    - MVP disposition: `DEC-BILLING` is proof-only. Stripe sandbox settlement, hosted webhook/readback, finance reconciliation, renewal delivery, and production payment approval are postponed.
+    - Boundary: sponsor commercial proof remains separate from child-facing sponsor display and does not expose payment state or private family data.
 
 14. Keep native Expo deferred unless PWA metrics prove need.
-    - Current truth: PWA install and usage metrics exist; Expo readiness remains deferred.
-    - Action: launch PWA first and use `mobile_usage_events` to decide whether app-store distribution, stronger native push, camera/media, or OS integration is justified.
+    - Decision: `DEC-MOBILE` is PWA-first for MVP. PWA install and usage metrics exist; Expo and app-store work remain postponed.
+    - Reopen only if `mobile_usage_events` shows a concrete need for app-store distribution, stronger native push, camera/media, or OS integration.
 
 15. Keep AI provider output review-only unless evaluated.
     - Current truth: AI Coach Workspace starts with deterministic drafts and has an authenticated `/api/coach/ai-workspace` OpenAI Responses API rewrite path for assigned coaches/admins only. Requests use signed-in Supabase coach scope, `store: false`, local privacy filters, approved media only, source evidence, and review-only output. Hosted proof passed with `QA_PROOF_BASE_URL=https://www.leaguepilot.us npm run qa:ai-coach-proof`, capturing `output/playwright/ai-coach-provider-rewrite-qa-session-live.png`. Parent Replay publishing remains deterministic and coach-reviewed.
-    - Remaining action: keep generated content draft/review-only until approval and audit gates are proven. Preview OpenAI env remains out of launch scope until a real non-production preview branch is chosen.
+    - Decision: deterministic drafts and production's existing review-only provider path remain unchanged; `DEC-PREVIEW-OPENAI` is disabled for MVP. Do not configure Preview OpenAI or copy production secrets to an all-branch Preview target.
 
 16. Automatic team building foundation is now in scope.
-    - Current truth: private birthdate-derived age/age-band, admin evaluation, sibling/guardian grouping, friend-request consideration, skill balance, locks, warnings, and Preview -> Edit -> Approve -> Publish persistence have committed domain/service/API/UI/migration/RLS tests.
-    - Remaining action before external closure: run signed-in isolated-QA admin publish/RLS/readback proof under `EXT-HOSTED-SESSION`; no production mutation is authorized.
+    - Current truth: private birthdate-derived age/age-band, admin evaluation, sibling/guardian grouping, friend-request consideration, skill balance, locks, warnings, and Preview -> Edit -> Approve -> Publish persistence have committed domain/service/API/UI/migration/RLS tests. The local portion is done.
+    - Remaining action before external closure: run signed-in isolated-QA admin publish/replay/RLS/readback proof under `EXT-HOSTED-SESSION`; no production mutation is authorized.
 
 ## Hosting And Network Boundary
 
