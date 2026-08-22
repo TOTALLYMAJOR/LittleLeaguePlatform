@@ -1,0 +1,24 @@
+{
+  "artboards": [
+    { "file": "Main.dc.html", "title": "Parent — This Week", "x": 0, "y": 250, "w": 390, "h": 1280 },
+    { "file": "Coach.dc.html", "title": "Coach — Saturday", "x": 470, "y": 250, "w": 390, "h": 1260 },
+    { "file": "Admin.dc.html", "title": "Admin — Needs a look", "x": 940, "y": 250, "w": 390, "h": 1120 }
+  ],
+  "annotations": [
+    {
+      "id": "structural-pass",
+      "x": 0,
+      "y": 20,
+      "w": 520,
+      "text": "Structural pass — built on the repo's own tokens (app/globals.css), not a new aesthetic.\nRe-skin against your style screenshots when they land.\n\nSame row, three readers: one open item renders as the parent's task, the coach's gap, and the league's risk."
+    },
+    {
+      "id": "coach-framing",
+      "x": 560,
+      "y": 20,
+      "w": 420,
+      "text": "Framing rule for this screen: it names what is unsettled for THIS EVENT.\n\nNo response rates, no per-family history, no ordering families worst-first. Roster order only. Access problems are labelled league-owned so silence is never read as a parent ignoring the coach."
+    }
+  ],
+  "launch": { "view": "canvas" }
+}
