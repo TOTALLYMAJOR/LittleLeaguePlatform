@@ -8,6 +8,25 @@ export interface PublicCalendarActions {
   outlookUrl: string;
 }
 
+export const LEAGUE_TIME_ZONE = "America/Chicago";
+
+export function formatPublicEventDateParts(value: string) {
+  const date = new Date(value);
+  return {
+    date: date.toLocaleDateString("en-US", {
+      timeZone: LEAGUE_TIME_ZONE,
+      weekday: "short",
+      month: "short",
+      day: "numeric"
+    }),
+    time: date.toLocaleTimeString("en-US", {
+      timeZone: LEAGUE_TIME_ZONE,
+      hour: "numeric",
+      minute: "2-digit"
+    })
+  };
+}
+
 function calendarTimestamp(value: string) {
   return new Date(value).toISOString().replace(/[-:]/g, "").replace(/\.\d{3}Z$/, "Z");
 }

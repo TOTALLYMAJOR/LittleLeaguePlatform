@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { seedState } from "./seed";
-import { buildPublicEventCalendarActions, publicArrivalLabel } from "./public-calendar";
+import { buildPublicEventCalendarActions, formatPublicEventDateParts, publicArrivalLabel } from "./public-calendar";
 
 describe("public calendar actions", () => {
   const event = seedState.events[0];
@@ -19,5 +19,20 @@ describe("public calendar actions", () => {
   it("does not invent an official arrival time", () => {
     expect(publicArrivalLabel(event)).toBe("Not published");
     expect(publicArrivalLabel({ ...event, status: "cancelled" })).toBe("Do not travel");
+  });
+
+  it("formats public event text in the league timezone instead of the server timezone", () => {
+    const originalTimeZone = process.env.TZ;
+    process.env.TZ = "UTC";
+
+    try {
+      expect(formatPublicEventDateParts("2026-08-22T00:30:00.000Z")).toEqual({
+        date: "Fri, Aug 21",
+        time: "7:30 PM"
+      });
+    } finally {
+      if (originalTimeZone === undefined) delete process.env.TZ;
+      else process.env.TZ = originalTimeZone;
+    }
   });
 });

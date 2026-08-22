@@ -30,6 +30,7 @@ import {
   getTeamChatView,
   generateParentReplayDraft,
   exportTeamCalendarIcs,
+  formatPublicEventDateParts,
   getProgramThemePreset,
   getScheduleRsvpSyncRows,
   getEventStatusTracking,
@@ -324,14 +325,6 @@ function getDefaultScheduleEventId(events: LeagueEvent[]) {
     ?? "";
 }
 
-function publicEventDateParts(value: string) {
-  const date = new Date(value);
-  return {
-    date: date.toLocaleDateString("en-US", { weekday: "short", month: "short", day: "numeric" }),
-    time: date.toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" })
-  };
-}
-
 function PublicScheduleAgenda({
   event,
   events,
@@ -369,7 +362,7 @@ function PublicScheduleAgenda({
           <span className="badge">{sortedEvents.length} event(s)</span>
         </header>
         {sortedEvents.length ? sortedEvents.map((item) => {
-          const dateParts = publicEventDateParts(item.startsAt);
+          const dateParts = formatPublicEventDateParts(item.startsAt);
           const teamName = teamNameById.get(item.teamId) ?? "Team";
           return (
             <article className={`public-agenda-row${item.id === event?.id ? " selected" : ""}`} key={item.id}>
@@ -417,7 +410,7 @@ function PublicScheduleAgenda({
             <dl className="public-event-facts">
               <div><dt>Team</dt><dd>{selectedTeamName}</dd></div>
               <div><dt>Activity</dt><dd>{event.eventType.replace(/_/g, " ")}</dd></div>
-              <div><dt>Date and time</dt><dd>{publicEventDateParts(event.startsAt).date}, {publicEventDateParts(event.startsAt).time}</dd></div>
+              <div><dt>Date and time</dt><dd>{formatPublicEventDateParts(event.startsAt).date}, {formatPublicEventDateParts(event.startsAt).time}</dd></div>
               <div><dt>Arrival time</dt><dd>{publicArrivalLabel(event)}</dd></div>
               <div><dt>Opponent</dt><dd>{event.opponent ?? "Not applicable"}</dd></div>
               <div><dt>Venue</dt><dd>{event.locationAddress || "Not published"}</dd></div>
