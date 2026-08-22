@@ -18,6 +18,7 @@ const appRoutes = [
   "/admin/schedule-venues",
   "/admin/security",
   "/admin/security-audit",
+  "/admin/sponsor-operations",
   "/admin/settings",
   "/admin/sponsors",
   "/admin/teams",

@@ -96,6 +96,7 @@ const routeHelpByHref: Record<string, string> = {
   "/admin": "Start here to see review queues, registration status, setup gaps, and safety/provider boundaries.",
   "/admin/registrations": "Approve or reject pending registration requests before families receive private access.",
   "/admin/media-review": "Review reported media and approve or reject coach drill video sources and videos.",
+  "/admin/sponsor-operations": "Use the focused sponsor workbench to review sponsor evidence, revenue proof boundaries, and current community sponsor records.",
   "/admin/teams": "Set up active teams, seasons, divisions, and roster readiness before inviting families.",
   "/admin/security-audit": "Use this page to confirm role boundaries, access-policy proof, and audit evidence."
 };

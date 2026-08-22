@@ -77,6 +77,7 @@ const iconByHref: Record<string, LucideIcon> = {
   "/admin/safety-weather": CloudSun,
   "/admin/media-review": ImageIcon,
   "/admin/sponsors": Handshake,
+  "/admin/sponsor-operations": Handshake,
   "/admin/branding": Palette,
   "/admin/reports-archive": Archive,
   "/admin/security-audit": ShieldCheck,

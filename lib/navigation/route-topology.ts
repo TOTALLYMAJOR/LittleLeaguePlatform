@@ -218,6 +218,7 @@ export const routeTopology = [
   compatibility("/admin/safety-weather", "Schedule & Venues", "SV", "admin", "Operations", "/admin/schedule-venues", ["admin"], true),
   route("/admin/media-review", "Media Review", "MR", "admin", "Trust & Safety", ["admin"], true, true, true, true, undefined, true),
   route("/admin/sponsors", "Sponsors", "SP", "admin", "Business", ["admin"], true, true, true, true, undefined, true),
+  route("/admin/sponsor-operations", "Sponsor Operations", "SO", "admin", "Business", ["admin"], true, true, true, true, undefined, true),
   route("/admin/branding", "Branding", "BR", "admin", "Configuration", ["admin"], true, true, true, true, undefined, true),
   route("/admin/reports-archive", "Reports & Archive", "AR", "admin", "Configuration", ["admin"], true, true, true, true, undefined, true),
   route("/admin/security-audit", "Security & Audit", "SA", "admin", "Trust & Safety", ["admin"], true, true, true, true, undefined, true),
