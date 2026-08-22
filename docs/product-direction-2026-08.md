@@ -11,6 +11,11 @@ Five directions scored 1–10 on impact toward a product that is both fun and ef
 score. Evidence is drawn from repository contracts, the LP-UX engagement record, and August 2026
 market sources listed at the end.
 
+Interview preparation artifacts now exist in
+[`docs/research/leaguepilot-community-discovery-interview-guide.md`](research/leaguepilot-community-discovery-interview-guide.md)
+and [`docs/research/leaguepilot-role-journey-map.md`](research/leaguepilot-role-journey-map.md).
+They are hypothesis and planning inputs only until real interviews are completed and synthesized.
+
 ## Situation
 
 The repository holds near-complete local capability and approximately zero production proof.
@@ -150,6 +155,14 @@ it is a means rather than a new capability.
 One exception to promote out of "not building": `player_media_consents` having no application
 writer is a broken seam, not a media strategy. Worth fixing as a defect while media stays
 link-only under `DEC-MEDIA`.
+
+## Next Evidence To Collect
+
+Before reordering post-MVP investment, run the prepared community-discovery interviews across at
+least organization admins, volunteer coaches, and parents/guardians, then update this document
+from synthesized findings rather than intuition. The goal is to verify whether delivery, Parent
+Replay, and family-first coordination are the strongest adoption and retention drivers for actual
+league operators and families.
 
 ## Sources
 

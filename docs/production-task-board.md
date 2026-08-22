@@ -44,6 +44,15 @@ This queue is the approved MVP completion order. It overrides older per-row prio
 | 7 | Link-media hide/restore | `done-local` | The workbench and route now expose only authorized Hide/Restore, with audit history and hidden-row exclusion retained. Upload, storage, scanner, parent-report, reject, and destructive remove remain postponed. | `LP-003`, `LP-004`, `DEC-MEDIA` |
 | 8 | Hosted session acceptance | `external` | Definition of shipped: exact deployed commit/environment, ordered migrations applied/read back, target identity proven, and signed-in parent/coach/admin core journeys passing against the intended isolated tenant. The guarded harness now includes shared-counter burst/readback, registration player/guardian assigned-team activation, team-builder publish/replay/readback, link-media Hide/Restore, guardian media-consent grant/revoke, calendar/weather authorization denials, provider-draft boundaries, and core role routes. Publication is intentionally paused to avoid CI credits. | `EXT-HOSTED-SESSION` |
 
+### Post-MVP Research Inputs
+
+These are decision inputs, not executable MVP queue items. They exist so post-`EXT-HOSTED-SESSION` work does not drift back to feature-count arguments or disappear from backlog review.
+
+- [`docs/research/leaguepilot-community-discovery-interview-guide.md`](research/leaguepilot-community-discovery-interview-guide.md) is the current interview script for organization admins, volunteer coaches, and parents/guardians. Its findings are pending; no product claim may cite it as completed evidence until interviews are run and synthesized.
+- [`docs/research/leaguepilot-role-journey-map.md`](research/leaguepilot-role-journey-map.md) is the current hypothesis-only cross-role journey model. Use it to compare pains and moments of truth across admin, coach, and family roles when ranking work after hosted acceptance.
+- The journey map also carries a role-based backlog view so the approved queue can be reviewed by admin, coach, parent, and public/buyer concerns without creating a second canonical priority list.
+- If interviews change priority, update this board, `docs/Features.md`, and `docs/product-direction-2026-08.md` together so discovery, queue order, and capability truth stay aligned.
+
 ### Sponsor Revenue Spine - Postponed Reference
 
 Sponsor billing and fulfillment are not MVP completion work under the approved proof-only decision. The retained durable model is Sponsor -> Sponsorship Agreement -> Sponsorship Package -> Sponsorship Invoice -> Payment -> Refund/Dispute -> Fulfillment Requirement -> Fulfillment Evidence -> Renewal.

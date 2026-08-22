@@ -19,6 +19,7 @@ This directory turns the existing LeaguePilot docs into an enterprise-ready arti
 | API specifications | `docs/api/openapi.yaml`; `docs/enterprise/api-specification.md` | Initial OpenAPI draft for current route handlers. |
 | Solution overview and module design | `docs/enterprise/architecture.md`; `docs/enterprise/business-capability-model.md` | Drafted. |
 | Navigation and wayfinding UX artifacts | `docs/enterprise/navigation-wayfinding-artifacts.md` | Added for kid-friendly route guidance, screenshot evidence, user journeys, information architecture, and shell design. |
+| Community discovery research artifacts | `docs/research/leaguepilot-community-discovery-interview-guide.md`; `docs/research/leaguepilot-role-journey-map.md` | Prepared as hypothesis-only field-research inputs; interviews and synthesis remain open. |
 | Roadmap | `docs/production-task-board.md`; `docs/backlog-now.md`; `docs/backlog-next.md` | Existing execution board and backlog remain canonical. |
 | Governance framework | `docs/enterprise/governance-risk.md`; `docs/codex-rules.md`; `docs/privacy-security.md` | Drafted from current privacy, child safety, and provider rules. |
 | Software development plan | `docs/enterprise/deployment-operations.md`; `docs/runbook.md`; `docs/codex-rules.md` | Initial lifecycle and validation plan drafted. |
@@ -47,6 +48,7 @@ This directory turns the existing LeaguePilot docs into an enterprise-ready arti
 ## Maintenance Rules
 
 - Update `docs/Features.md`, `docs/capability-matrix.md`, and this packet when a capability changes state.
+- Update the research artifact links here and the production task board when discovery work creates or retires a canonical field-evidence input.
 - Do not mark provider sends, Stripe collection, media uploads, OpenAI output, or native mobile distribution production-ready unless implementation and hosted/provider proof both exist.
 - Keep RLS, route tests, browser proof, and release notes tied to exact commands and artifacts.
 - Add a new ADR for major changes to auth, deployment, provider sends, data retention, billing, AI provider posture, or mobile architecture.
