@@ -1,3 +1,10 @@
+---
+authority: evidence
+answers: null
+supersedes: []
+superseded_by: null
+reviewed: 2026-08-22
+---
 # LP-UX-005 Manual Global Theme
 
 Date: 2026-08-03

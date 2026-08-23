@@ -1,3 +1,10 @@
+---
+authority: reference
+answers: null
+supersedes: []
+superseded_by: null
+reviewed: 2026-08-22
+---
 # Enterprise Artifact Packet
 
 Status: initial repo-grounded packet prepared 2026-07-16.

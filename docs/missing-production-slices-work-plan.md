@@ -1,3 +1,10 @@
+---
+authority: contested
+answers: execution-queue
+supersedes: []
+superseded_by: null
+reviewed: 2026-08-22
+---
 # Missing Production Slices Work Plan
 
 Status: active

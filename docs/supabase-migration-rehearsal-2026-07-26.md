@@ -1,3 +1,10 @@
+---
+authority: evidence
+answers: null
+supersedes: []
+superseded_by: null
+reviewed: 2026-08-22
+---
 # Supabase Migration Gap Report
 
 Date: 2026-07-26

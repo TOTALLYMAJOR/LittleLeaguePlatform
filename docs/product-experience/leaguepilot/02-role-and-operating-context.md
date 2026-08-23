@@ -1,3 +1,10 @@
+---
+authority: evidence
+answers: null
+supersedes: []
+superseded_by: null
+reviewed: 2026-08-22
+---
 # 02 — Role and Operating Context
 
 Engagement: LeaguePilot UX convergence. Read-only audit phase, 2026-07-29.

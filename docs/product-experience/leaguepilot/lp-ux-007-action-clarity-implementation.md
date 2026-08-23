@@ -1,3 +1,10 @@
+---
+authority: evidence
+answers: null
+supersedes: []
+superseded_by: null
+reviewed: 2026-08-22
+---
 # LP-UX-007 Action Clarity Implementation
 
 Date: 2026-08-03

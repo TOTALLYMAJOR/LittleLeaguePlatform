@@ -1,3 +1,10 @@
+---
+authority: reference
+answers: null
+supersedes: []
+superseded_by: null
+reviewed: 2026-08-22
+---
 # Data Model And ERD
 
 Status: draft overview. Canonical schema truth remains `supabase/migrations/`, `docs/supabase-data-model.md`, and `lib/supabase/database.types.ts`.

@@ -1,3 +1,10 @@
+---
+authority: active
+answers: code-rules
+supersedes: []
+superseded_by: null
+reviewed: 2026-08-22
+---
 # Codex Rules
 
 These rules are strict boundaries for code changes in Little League HQ.

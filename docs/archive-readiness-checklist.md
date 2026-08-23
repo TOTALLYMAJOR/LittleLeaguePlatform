@@ -1,3 +1,10 @@
+---
+authority: reference
+answers: null
+supersedes: []
+superseded_by: null
+reviewed: 2026-08-22
+---
 # Season Archive Readiness Checklist
 
 Use this before marking a season archived.

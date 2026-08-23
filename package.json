@@ -52,6 +52,7 @@
     "qa:pwa-cache-proof": "node scripts/verify-pwa-cache-proof.mjs",
     "qa:contrast-proof": "node scripts/verify-theme-contrast-proof.mjs",
     "check:skills": "node scripts/check-agent-skills.mjs",
+    "check:governance": "node scripts/verify-governance-authority.mjs",
     "supabase:oauth": "node scripts/configure-supabase-oauth.mjs",
     "codex:spec": "node tools/prompt-api/cli.mjs spec",
     "codex:debug": "node tools/prompt-api/cli.mjs debug",

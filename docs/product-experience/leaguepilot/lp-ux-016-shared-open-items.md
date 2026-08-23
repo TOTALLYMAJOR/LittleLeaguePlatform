@@ -1,3 +1,10 @@
+---
+authority: active
+answers: product-direction
+supersedes: []
+superseded_by: null
+reviewed: 2026-08-22
+---
 # LP-UX-016 Shared Open Items — Product Direction and Role-Home Designs
 
 Date: 2026-08-22

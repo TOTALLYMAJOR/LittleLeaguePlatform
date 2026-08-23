@@ -1,3 +1,10 @@
+---
+authority: reference
+answers: null
+supersedes: []
+superseded_by: null
+reviewed: 2026-08-22
+---
 # LeaguePilot
 
 LeaguePilot is the public app and product identity for this youth sports operations platform. The production public domain is `https://www.leaguepilot.us`, with `https://leaguepilot.us` kept as the apex alias.

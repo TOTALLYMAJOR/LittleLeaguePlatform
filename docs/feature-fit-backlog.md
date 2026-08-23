@@ -1,3 +1,10 @@
+---
+authority: historical
+answers: null
+supersedes: []
+superseded_by: docs/backlog-closeout-2026-07-27.md
+reviewed: 2026-08-22
+---
 # Feature Fit Backlog
 
 State notice (2026-07-27): this is a historical product-fit backlog, not the active execution queue. “Repo fit” or an implemented seam means local capability only. The canonical `done-local`, `external`, `decision-required`, and `historical` states are in [`docs/backlog-closeout-2026-07-27.md`](backlog-closeout-2026-07-27.md). Any legacy instruction below to run mutating session proof applies only to a guarded isolated QA target, never the production alias.

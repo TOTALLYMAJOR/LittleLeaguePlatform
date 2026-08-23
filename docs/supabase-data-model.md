@@ -1,3 +1,10 @@
+---
+authority: reference
+answers: null
+supersedes: []
+superseded_by: null
+reviewed: 2026-08-22
+---
 # Supabase Data Model
 
 This document tracks the first production Supabase data model for Little League HQ. Routes are moving one slice at a time from typed seed data to Supabase service adapters, with local seed fallback kept for unavailable live reads.

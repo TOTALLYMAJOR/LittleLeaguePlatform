@@ -15,3 +15,4 @@
 - [ ] Role boundaries are unchanged or documented
 - [ ] Sensitive actions still require human approval
 - [ ] Backlog/docs updated if architecture changed
+- [ ] `docs/AUTHORITY.md` updated if this changes who owns a question

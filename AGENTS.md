@@ -1,4 +1,21 @@
+---
+authority: active
+answers: agent-workflow
+supersedes: []
+superseded_by: null
+reviewed: 2026-08-22
+---
 # Agent Guide
+
+## Who Owns What
+
+Read [`docs/AUTHORITY.md`](docs/AUTHORITY.md) first. It names the single owning
+document or source file for every question this repository answers. If two
+documents appear to answer the same question, the register decides, and
+`npm run check:governance` reports the conflict.
+
+Two standing rules: one question has one owner, and where code can be the
+authority, code is the authority and the document is commentary.
 
 ## Current Repo Truth
 

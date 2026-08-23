@@ -1,3 +1,10 @@
+---
+authority: reference
+answers: null
+supersedes: []
+superseded_by: null
+reviewed: 2026-08-22
+---
 # Production Task Board
 
 This board preserves the launch and hardening plate. The approved local queue closed on 2026-07-27; [`docs/backlog-closeout-2026-07-27.md`](backlog-closeout-2026-07-27.md) is now authoritative for exact local evidence, remaining external gates, decisions, and retired production-mutation instructions. Rows below do not authorize hosted, provider, or production actions.

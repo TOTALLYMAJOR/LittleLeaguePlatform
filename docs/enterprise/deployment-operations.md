@@ -1,3 +1,10 @@
+---
+authority: reference
+answers: null
+supersedes: []
+superseded_by: null
+reviewed: 2026-08-22
+---
 # Deployment, Operations, And Software Development Plan
 
 Status: reconciled planning artifact. This supplements `docs/runbook.md`; the canonical current gate ledger is `docs/backlog-closeout-2026-07-27.md`.

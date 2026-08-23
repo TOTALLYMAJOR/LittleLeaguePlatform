@@ -1,3 +1,10 @@
+---
+authority: contested
+answers: implementation-truth
+supersedes: []
+superseded_by: null
+reviewed: 2026-08-22
+---
 # Capability Matrix
 
 This matrix separates committed implementation, local proof, and remaining acceptance. The root Next.js application has authenticated Supabase-backed slices for registration, approval, memberships, Team Portal, Team Chat, family/coach/admin workflows, private team-building inputs, and guarded offline/proof foundations. Typed fallback states still exist, and no local status implies hosted execution or production acceptance. The canonical open-gate owner and requirement is the [2026-07-27 closeout ledger](backlog-closeout-2026-07-27.md).

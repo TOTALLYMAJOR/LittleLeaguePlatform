@@ -1,3 +1,10 @@
+---
+authority: reference
+answers: null
+supersedes: []
+superseded_by: null
+reviewed: 2026-08-22
+---
 # Software Requirements Specification
 
 Status: draft. Source truth is the current Next.js app, `docs/Features.md`, `docs/capability-matrix.md`, `docs/privacy-security.md`, `docs/production-task-board.md`, and Supabase migrations.

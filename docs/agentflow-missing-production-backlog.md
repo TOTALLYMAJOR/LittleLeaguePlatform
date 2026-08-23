@@ -1,3 +1,10 @@
+---
+authority: contested
+answers: execution-queue
+supersedes: []
+superseded_by: null
+reviewed: 2026-08-22
+---
 # LeaguePilot Missing Production Slice Execution Queue
 
 This reviewed AgentFlow queue executes the LeaguePilot missing-production work

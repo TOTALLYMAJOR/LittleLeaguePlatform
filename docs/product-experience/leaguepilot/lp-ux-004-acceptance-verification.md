@@ -1,3 +1,10 @@
+---
+authority: evidence
+answers: null
+supersedes: []
+superseded_by: null
+reviewed: 2026-08-22
+---
 # LP-UX-004 Truthful Family Utilities Local Acceptance
 
 Date: 2026-07-30 (US/Central)

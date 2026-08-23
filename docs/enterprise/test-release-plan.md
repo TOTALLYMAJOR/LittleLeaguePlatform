@@ -1,3 +1,10 @@
+---
+authority: reference
+answers: null
+supersedes: []
+superseded_by: null
+reviewed: 2026-08-22
+---
 # Test Plan, QA Reports, And Release Artifacts
 
 Status: reconciled planning artifact. Current state and gate ownership are in `docs/backlog-closeout-2026-07-27.md`; dated evidence remains in `docs/production-audit-action-items.md` and `docs/build-progress.md`.

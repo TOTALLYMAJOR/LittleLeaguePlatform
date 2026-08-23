@@ -20,12 +20,14 @@ validation:
   task_default:
     - npm ci --ignore-scripts --prefer-offline
     - npm run check:skills
+    - npm run check:governance
     - npm run lint
     - npm run typecheck
     - git diff --check
   integration:
     - npm ci --ignore-scripts --prefer-offline
     - npm run check:skills
+    - npm run check:governance
     - npm run lint
     - npm run typecheck
     - npm test

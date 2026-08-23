@@ -1,3 +1,10 @@
+---
+authority: evidence
+answers: null
+supersedes: []
+superseded_by: null
+reviewed: 2026-08-22
+---
 # Pingram Preview Activation Record — 2026-07-27
 
 ## Scope

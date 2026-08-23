@@ -1,3 +1,10 @@
+---
+authority: reference
+answers: null
+supersedes: []
+superseded_by: null
+reviewed: 2026-08-22
+---
 # Architecture And Integration Artifacts
 
 Status: draft. This document summarizes current and target architecture while preserving provider and proof boundaries.

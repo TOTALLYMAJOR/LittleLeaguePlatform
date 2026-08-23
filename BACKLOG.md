@@ -1,3 +1,10 @@
+---
+authority: contested
+answers: execution-queue
+supersedes: []
+superseded_by: null
+reviewed: 2026-08-22
+---
 # LeaguePilot backlog closeout
 
 This is the reviewed, executable local closeout queue for the current

@@ -1,3 +1,10 @@
+---
+authority: evidence
+answers: null
+supersedes: []
+superseded_by: null
+reviewed: 2026-08-22
+---
 # 08 — Accessibility and Responsive Contract
 
 Binding contract for all family-surface work, 2026-07-29. Baseline: WCAG 2.2 AA (blueprint §19.17). This document turns the blueprint's acceptance items plus audit findings into testable clauses. Claims of compliance require proof artifacts (repo rule); today's contrast proof is unauthenticated and covers 9 of 61 routes, so **no current surface may claim this contract is met**.

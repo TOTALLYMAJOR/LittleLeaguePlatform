@@ -1,3 +1,10 @@
+---
+authority: historical
+answers: null
+supersedes: []
+superseded_by: docs/backlog-closeout-2026-07-27.md
+reviewed: 2026-08-22
+---
 # Backlog Now - Historical
 
 State: `historical` as of 2026-07-27.

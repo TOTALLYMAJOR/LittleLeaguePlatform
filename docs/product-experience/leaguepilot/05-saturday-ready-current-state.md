@@ -1,3 +1,10 @@
+---
+authority: evidence
+answers: null
+supersedes: []
+superseded_by: null
+reviewed: 2026-08-22
+---
 # 05 — Saturday Ready: Current-State Trace
 
 Read-only audit, 2026-07-29. The north-star candidate workflow:

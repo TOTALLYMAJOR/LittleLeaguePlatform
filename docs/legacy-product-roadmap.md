@@ -1,3 +1,10 @@
+---
+authority: historical
+answers: null
+supersedes: []
+superseded_by: BACKLOG.md
+reviewed: 2026-08-22
+---
 # Legacy product roadmap
 
 This backlog turns the static Little League HQ prototype into a production youth sports platform with human-in-the-loop agents. Priorities are ordered by dependency and risk, not by visual appeal.

@@ -1,3 +1,10 @@
+---
+authority: reference
+answers: null
+supersedes: []
+superseded_by: null
+reviewed: 2026-08-22
+---
 # ADR 0001 - Human-In-The-Loop Agents
 
 ## Status
