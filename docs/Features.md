@@ -1,8 +1,8 @@
 ---
-authority: contested
-answers: implementation-truth
+authority: historical
+answers: null
 supersedes: []
-superseded_by: null
+superseded_by: docs/capability-matrix.md
 reviewed: 2026-08-22
 ---
 # Feature Implementation Tracker

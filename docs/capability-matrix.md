@@ -1,7 +1,7 @@
 ---
-authority: contested
+authority: active
 answers: implementation-truth
-supersedes: []
+supersedes: [docs/Features.md]
 superseded_by: null
 reviewed: 2026-08-22
 ---

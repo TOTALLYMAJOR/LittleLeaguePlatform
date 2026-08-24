@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
   evaluateGovernance,
+  parseRegisteredOwners,
   findDocumentAuthorityClaims,
   lpUxNumber,
   parseFrontMatter,
@@ -51,6 +52,30 @@ describe("authority prose detection", () => {
       "The approved guardian-link record is authoritative for access, and admin is the responsible authority."
     );
     expect(claims).toHaveLength(0);
+  });
+});
+
+describe("deferring to a registered owner is compliant", () => {
+  const owners = parseRegisteredOwners("| schema | `supabase/migrations/` | code |\n| nav | `lib/navigation/route-topology.ts` | code |");
+
+  it("parses owner paths and their basenames", () => {
+    expect(owners.has("supabase/migrations/")).toBe(true);
+    expect(owners.has("lib/navigation/route-topology.ts")).toBe(true);
+    expect(owners.has("route-topology.ts")).toBe(true);
+  });
+
+  it("does not flag a document deferring to a registered code owner", () => {
+    const claims = findDocumentAuthorityClaims(
+      "| Data model | docs/enterprise/data-model-erd.md | Drafted overview; supabase/migrations/ remain source of truth. |",
+      undefined,
+      owners
+    );
+    expect(claims).toHaveLength(0);
+  });
+
+  it("flags a document claiming authority without naming an owner", () => {
+    const claims = findDocumentAuthorityClaims("This file is now authoritative for the queue.", undefined, owners);
+    expect(claims).toHaveLength(1);
   });
 });
 

@@ -1,8 +1,8 @@
 ---
-authority: contested
-answers: execution-queue
+authority: historical
+answers: null
 supersedes: []
-superseded_by: null
+superseded_by: BACKLOG.md
 reviewed: 2026-08-22
 ---
 # LeaguePilot Missing Production Slice Execution Queue

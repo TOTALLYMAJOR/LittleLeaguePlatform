@@ -1,7 +1,7 @@
 ---
-authority: contested
+authority: active
 answers: execution-queue
-supersedes: []
+supersedes: [docs/missing-production-slices-work-plan.md, docs/agentflow-missing-production-backlog.md, docs/legacy-product-roadmap.md]
 superseded_by: null
 reviewed: 2026-08-22
 ---

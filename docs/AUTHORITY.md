@@ -28,8 +28,8 @@ file permitted to assign ownership.
 | Question | Owner | Kind |
 | --- | --- | --- |
 | Who owns what? | `docs/AUTHORITY.md` | doc |
-| What do we build next? | **CONTESTED — see below** | doc |
-| What is implemented, and how is it proven? | **CONTESTED — see below** | doc |
+| What do we build next? | `BACKLOG.md` | doc |
+| What is implemented, and how is it proven? | `docs/capability-matrix.md` | doc |
 | What external gates remain open? | `docs/backlog-closeout-2026-07-27.md` | doc |
 | What rules constrain code changes? | `docs/codex-rules.md` | doc |
 | How do agents work in this repository? | `AGENTS.md` | doc |
@@ -40,45 +40,30 @@ file permitted to assign ownership.
 | What are the domain contracts and state machines? | `lib/domain/` | **code** |
 | What is the family readiness truth? | *(unbuilt — `lib/open-items.ts` per `lp-ux-016`)* | **code** |
 
-## Contested questions
+## Decided
 
-These are unresolved. Until each is decided, the documents below all carry
-`authority: contested` and the checker reports them. Resolving one means
-promoting a single file to `authority: active` and demoting the rest to
-`authority: historical` with a `superseded_by` pointer.
+Both questions that were contested at the register's creation are now resolved.
 
-### C-A — What do we build next?
+### What do we build next? — `BACKLOG.md`
 
-| Candidate | Last touched | Basis of claim |
-| --- | --- | --- |
-| `BACKLOG.md` | 2026-07-27 | **Machine-read**: `.agentflow.yaml` `backlog.path` |
-| `docs/missing-production-slices-work-plan.md` | 2026-07-29 | Declares `Status: active` |
-| `docs/agentflow-missing-production-backlog.md` | 2026-07-29 | Declares itself an execution queue |
+Decided 2026-08-22. `.agentflow.yaml` `backlog.path` already obeyed it, and when
+automation and prose disagree the safer edit is to the prose. `R7` now enforces
+that these two can never drift apart again.
 
-The sharp problem: automation obeys `BACKLOG.md`, while the two documents that
-describe themselves as active are newer than it and no machine reads them.
+Retired in its favour: `docs/missing-production-slices-work-plan.md`,
+`docs/agentflow-missing-production-backlog.md`, `docs/legacy-product-roadmap.md`.
 
-`docs/backlog-closeout-2026-07-27.md` is deliberately **not** a candidate here.
-The claims made for it by `production-task-board.md` and `backlog-next.md` are
-about gates and evidence ("the sole current gate ledger"), which is the
-`external-gates` question it already owns cleanly.
+`docs/backlog-closeout-2026-07-27.md` was never a candidate. The claims made for
+it are about gates and evidence — the `external-gates` question it owns cleanly.
 
-Recommendation: **`BACKLOG.md`**. When a machine and prose disagree, move the
-prose — changing what automation reads is the riskier edit.
+### What is implemented, and how is it proven? — `docs/capability-matrix.md`
 
-### C-B — What is implemented, and how is it proven?
+Decided 2026-08-22. Implementation truth here is inseparable from proof state,
+and the matrix already models it per capability. `docs/Features.md` is retired
+and reads as a changelog.
 
-| Candidate | Last touched | Basis of claim |
-| --- | --- | --- |
-| `docs/capability-matrix.md` | 2026-08-03 | Carries the per-capability proof-gate columns |
-| `docs/Features.md` | 2026-08-15 | Named alongside the matrix by `feature-fit-backlog.md` |
-
-`docs/feature-fit-backlog.md` instructs readers to use **both**, which is the
-defect stated as policy.
-
-Recommendation: **`docs/capability-matrix.md`**, because implementation truth in
-this repository is inseparable from proof state and the matrix already models
-it. `Features.md` becomes `historical` and reads as a changelog.
+This removes the instruction in `docs/feature-fit-backlog.md` to consult both,
+which was the defect stated as policy.
 
 ## Retired
 
@@ -91,6 +76,9 @@ elsewhere. Each declares `superseded_by` in its front matter.
 | `docs/backlog-next.md` | `docs/backlog-closeout-2026-07-27.md` |
 | `docs/feature-fit-backlog.md` | `docs/backlog-closeout-2026-07-27.md` |
 | `docs/legacy-product-roadmap.md` | `BACKLOG.md` |
+| `docs/missing-production-slices-work-plan.md` | `BACKLOG.md` |
+| `docs/agentflow-missing-production-backlog.md` | `BACKLOG.md` |
+| `docs/Features.md` | `docs/capability-matrix.md` |
 
 ## Status vocabulary
 
@@ -126,11 +114,13 @@ reviewed: 2026-08-22         # ISO date of last authority review
 this file and every governance document and reports violations of the rules in
 §"Two standing rules" and the front-matter contract.
 
-It currently runs in **reporting mode**: it prints findings and exits 0. It
-becomes enforcing once C-A and C-B are decided. The rule that matters most is
-that `.agentflow.yaml` `backlog.path` must equal the active owner of
-`execution-queue` — that is what keeps automation and prose from diverging
-again.
+It runs in **enforcing mode**: errors fail the build. The rule that matters most
+is that `.agentflow.yaml` `backlog.path` must equal the active owner of
+`execution-queue` — that is what keeps automation and prose from diverging again.
+
+A document that *defers* to a registered owner ("migrations remain source of
+truth") is compliant and is not reported. Only a claim naming no registered
+owner is a finding.
 
 This checker reads repository files only. It performs no hosted, provider,
 network, or production action, and it makes no claim about hosted or production

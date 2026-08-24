@@ -79,17 +79,36 @@ export function parseFrontMatter(source) {
   return result;
 }
 
-/** True when an authority phrase in `source` is making a claim about a document. */
-export function findDocumentAuthorityClaims(source, phrases = AUTHORITY_PHRASES) {
+/** Registered owner paths named in the authority register's tables. */
+export function parseRegisteredOwners(registerSource) {
+  const owners = new Set();
+  for (const match of registerSource.matchAll(/`([A-Za-z0-9._/-]+\.(?:md|ts|tsx|css|yaml|sql))`|`([A-Za-z0-9._/-]+\/)`/g)) {
+    const value = match[1] ?? match[2];
+    if (!value) continue;
+    owners.add(value);
+    const base = value.replace(/\/$/, "").split("/").pop();
+    if (base) owners.add(base);
+  }
+  return owners;
+}
+
+/**
+ * Finds authority claims that are NOT compliant.
+ *
+ * A claim is compliant when it defers to a path the register already names as
+ * an owner — "migrations remain source of truth" is the behavior we want, not a
+ * competing claim. Only claims naming no registered owner are returned.
+ */
+export function findDocumentAuthorityClaims(source, phrases = AUTHORITY_PHRASES, registeredOwners = new Set()) {
   const claims = [];
+  const haystack = source.toLowerCase();
   for (const phrase of phrases) {
     let index = 0;
-    const haystack = source.toLowerCase();
     while ((index = haystack.indexOf(phrase, index)) !== -1) {
-      const window = source.slice(Math.max(0, index - 90), Math.min(source.length, index + 90));
-      if (DOCUMENT_NOUNS.test(window)) {
-        const line = source.slice(0, index).split("\n").length;
-        claims.push({ phrase, line });
+      const window = source.slice(Math.max(0, index - 160), Math.min(source.length, index + 160));
+      const defersToOwner = [...registeredOwners].some((owner) => owner.length > 3 && window.includes(owner));
+      if (DOCUMENT_NOUNS.test(window) && !defersToOwner) {
+        claims.push({ phrase, line: source.slice(0, index).split("\n").length });
       }
       index += phrase.length;
     }
@@ -145,6 +164,7 @@ export function collectGovernanceDocuments(root = REPO_ROOT) {
 /** Applies every rule. Returns findings; the caller decides exit behavior. */
 export function evaluateGovernance(input) {
   const { documents, agentflowBacklogPath, registerSource } = input;
+  const registeredOwners = parseRegisteredOwners(registerSource ?? "");
   const findings = [];
   const add = (level, rule, path, message) => findings.push({ level, rule, path, message });
 
@@ -220,9 +240,9 @@ export function evaluateGovernance(input) {
   for (const document of classified) {
     const { authority } = document.frontMatter;
     if (authority === "active" || document.path === AUTHORITY_REGISTER) continue;
-    const claims = findDocumentAuthorityClaims(document.source);
+    const claims = findDocumentAuthorityClaims(document.source, AUTHORITY_PHRASES, registeredOwners);
     for (const claim of claims) {
-      add("warn", "R5", `${document.path}:${claim.line}`, `Non-active document asserts authority ("${claim.phrase}").`);
+      add("warn", "R5", `${document.path}:${claim.line}`, `Asserts authority ("${claim.phrase}") without naming a registered owner.`);
     }
   }
 
