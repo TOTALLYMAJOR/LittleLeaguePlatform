@@ -1,3 +1,10 @@
+---
+authority: evidence
+answers: null
+supersedes: []
+superseded_by: null
+reviewed: 2026-08-22
+---
 # Little League HQ 100 UI UX Implementation Scorecard
 
 Status: implemented as reusable global UI patterns

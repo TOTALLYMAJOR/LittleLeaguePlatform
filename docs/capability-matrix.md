@@ -1,4 +1,20 @@
+---
+authority: active
+answers: implementation-truth
+supersedes: [docs/Features.md]
+superseded_by: null
+reviewed: 2026-08-22
+---
 # Capability Matrix
+
+## 2026-08-25 Showcase slice
+
+| Capability | Local implementation | Required proof before production claim |
+| --- | --- | --- |
+| Calendar export authorization | `/api/schedule/export` now requires an active membership on the requested team or an active organization admin (`requireActiveTeamMemberOrOrgAdmin`) before returning ICS; unconfigured environments return an honest 503. Previously any signed-in account could export any team's calendar. | Hosted signed-in proof for member, non-member, admin, and cross-org cases. Subscribable per-family feed URLs remain future work. |
+| Coach "Copy for group text" | `components/copy-for-group-text.tsx` drafts a neutral no-response nudge (`buildGroupTextMessage`) and copies it to the coach's clipboard from the RSVP reminder queue. No provider is called and nothing sends; the coach pastes into their own channel. Message wording carries no rates, history, or comparisons. | Hosted coach browser proof; clipboard behavior across mobile browsers. |
+| Demo showcase sponsors and registrations | `seed:demo-showcase` now also seeds three fictional sponsors (two active league, one pending team-level), two active placements, and two pending registration requests, with count gates, so admin sponsor review and live registration approval can be demonstrated. No billing rows are written; payments stay gated. | Isolated-QA seed run and admin browser walkthrough. |
+| Showcase runbook | `docs/showcase-runbook.md` records the verified zero-config demo, the free-tier full showcase path, the walkthrough script, the demo's honesty boundaries, and the zero-cost communication channel ranking. | None — documentation of executed local verification. |
 
 This matrix separates committed implementation, local proof, and remaining acceptance. The root Next.js application has authenticated Supabase-backed slices for registration, approval, memberships, Team Portal, Team Chat, family/coach/admin workflows, private team-building inputs, and guarded offline/proof foundations. Typed fallback states still exist, and no local status implies hosted execution or production acceptance. The canonical open-gate owner and requirement is the [2026-07-27 closeout ledger](backlog-closeout-2026-07-27.md).
 

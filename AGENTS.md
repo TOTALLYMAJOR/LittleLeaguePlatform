@@ -1,4 +1,21 @@
+---
+authority: active
+answers: agent-workflow
+supersedes: []
+superseded_by: null
+reviewed: 2026-08-22
+---
 # Agent Guide
+
+## Who Owns What
+
+Read [`docs/AUTHORITY.md`](docs/AUTHORITY.md) first. It names the single owning
+document or source file for every question this repository answers. If two
+documents appear to answer the same question, the register decides, and
+`npm run check:governance` reports the conflict.
+
+Two standing rules: one question has one owner, and where code can be the
+authority, code is the authority and the document is commentary.
 
 ## Current Repo Truth
 
@@ -9,7 +26,7 @@ This repo is now a root-level Next.js + TypeScript production scaffold for Leagu
 - `lib/domain/` owns typed domain models, seed data, pure business rules, reducer logic, and Vitest coverage.
 - `lib/supabase/` owns Supabase adapters, authenticated session checks, access-control helpers, and provider-boundary services.
 - `supabase/migrations/` defines the staged Supabase schema and RLS policy contract.
-- `docs/Features.md` and `docs/capability-matrix.md` track shipped capability, provider-boundary state, and remaining production gaps.
+- `docs/capability-matrix.md` tracks shipped capability, provider-boundary state, and remaining production gaps. `docs/Features.md` is retired and reads as a changelog.
 - `docs/product-experience/leaguepilot/` tracks the numbered UX remediation series (`lp-ux-NNN-*.md`). Before starting UX work, read the highest-numbered entry: it records applied fixes, verification status, and explicitly deferred items awaiting user approval.
 - `public/prototype/index.html` keeps the old static prototype available at `/prototype/index.html`.
 
@@ -82,7 +99,7 @@ Skills do not override this file, `docs/codex-rules.md`, child privacy defaults,
 3. Do not add autonomous provider sends without approval gates. Email, SMS, push, and chat actions need delivery logs, opt-in checks, and human approval in production.
 4. Keep role boundaries explicit. Admin, coach, and parent permissions must remain visible in UI, service policy, and tests.
 5. Keep business rules in `lib/domain/` and route UI in `app/` or `components/`.
-6. Update `docs/Features.md` when implementing or changing a feature slice.
+6. Update `docs/capability-matrix.md` when implementing or changing a feature slice.
 
 ## Agentic Architecture Direction
 

@@ -1,3 +1,10 @@
+---
+authority: reference
+answers: null
+supersedes: []
+superseded_by: null
+reviewed: 2026-08-25
+---
 # ADR 0004 - Sponsor Portal Access Without A Fourth Role
 
 ## Status

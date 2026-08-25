@@ -1,3 +1,10 @@
+---
+authority: evidence
+answers: null
+supersedes: []
+superseded_by: null
+reviewed: 2026-08-22
+---
 # 06 — Saturday Ready: Target State
 
 Experience-architecture specification, 2026-07-29. Companion to `05-saturday-ready-current-state.md`. Constraints honored: no new workflow states, no enum changes, no domain edits without instruction (`docs/codex-rules.md`); acknowledgement = receipt only; readiness is derived evidence, never a stored boolean; no implied provider delivery.

@@ -1,3 +1,10 @@
+---
+authority: reference
+answers: null
+supersedes: []
+superseded_by: null
+reviewed: 2026-08-22
+---
 # Kid-Friendly Navigation And Wayfinding Artifacts
 
 Status: implementation-aligned snapshot prepared 2026-07-17.

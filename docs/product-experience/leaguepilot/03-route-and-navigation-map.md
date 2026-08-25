@@ -1,3 +1,10 @@
+---
+authority: evidence
+answers: null
+supersedes: []
+superseded_by: null
+reviewed: 2026-08-22
+---
 # 03 — Route and Navigation Map
 
 Read-only audit plus LP-UX-001 implementation update, 2026-07-29. Evidence: `lib/navigation/route-topology.ts`, `components/ui/AppShell.tsx`, `app/parent/_surfaces.tsx`, authenticated runtime browsing at 320, 390, 768, 1024, and 1440 pixels.

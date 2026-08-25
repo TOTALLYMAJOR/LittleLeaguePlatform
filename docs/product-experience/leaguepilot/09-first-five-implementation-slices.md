@@ -1,3 +1,10 @@
+---
+authority: evidence
+answers: null
+supersedes: []
+superseded_by: null
+reviewed: 2026-08-22
+---
 # 09 — First Five Implementation Slices
 
 Bounded, sequential slices for the implementation phase. Slice 1 is complete locally at `049c4b1`; later slices remain separate. Each slice honors: codex strict rules (no domain edits, no enum/state changes, UI never calls Supabase directly), no second CSS framework, compatibility routes preserved, AGENTS.md Definition of Done (states + tests + tracker update), and the repo's proof discipline (claims stay `done-local` until hosted proof).

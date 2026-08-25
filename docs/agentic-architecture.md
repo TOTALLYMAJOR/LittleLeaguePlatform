@@ -1,3 +1,10 @@
+---
+authority: active
+answers: agent-boundaries
+supersedes: []
+superseded_by: null
+reviewed: 2026-08-22
+---
 # Agentic Architecture
 
 ## Objective

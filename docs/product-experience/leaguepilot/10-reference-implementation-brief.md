@@ -1,3 +1,10 @@
+---
+authority: evidence
+answers: null
+supersedes: []
+superseded_by: null
+reviewed: 2026-08-22
+---
 # 10 — Reference Implementation Brief
 
 2026-07-29. Stage A is complete locally as LP-UX-001 at exact commit `049c4b1e3f85549f4316e075b84d05bd3a56694e`. This brief now governs Stage B, LP-UX-002, from the documentation-baseline commit that follows it. Neither local commit is hosted, deployed, or production acceptance.

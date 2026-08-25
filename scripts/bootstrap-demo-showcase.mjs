@@ -53,6 +53,19 @@ const ids = {
     starsTeam: "fe000000-0000-4000-8000-000000000005",
     foxesGame: "fe000000-0000-4000-8000-000000000006",
   },
+  sponsors: {
+    hardware: "f5000000-0000-4000-8000-000000000001",
+    diner: "f5000000-0000-4000-8000-000000000002",
+    starsDental: "f5000000-0000-4000-8000-000000000003",
+  },
+  sponsorPlacements: {
+    hardwarePortal: "f6000000-0000-4000-8000-000000000001",
+    dinerRegistration: "f6000000-0000-4000-8000-000000000002",
+  },
+  registrations: {
+    casey: "f7000000-0000-4000-8000-000000000001",
+    jordan: "f7000000-0000-4000-8000-000000000002",
+  },
 };
 
 function loadEnvFile(path) {
@@ -547,6 +560,84 @@ async function main() {
   });
   await upsertRows(supabase, "media_items", mediaRows);
 
+  // Sponsors: two approved league sponsors plus one pending team-level request,
+  // so the admin sponsor panel demos review, and placements show the approved
+  // surfaces. No billing rows are written — payments stay gated and unclaimed.
+  await upsertRows(supabase, "sponsors", [
+    {
+      id: ids.sponsors.hardware,
+      organization_id: organization.id,
+      name: "Riverside Hardware",
+      level: "league",
+      team_id: null,
+      url: "https://example.com/riverside-hardware",
+      status: "active",
+    },
+    {
+      id: ids.sponsors.diner,
+      organization_id: organization.id,
+      name: "Corner Diner",
+      level: "league",
+      team_id: null,
+      url: "https://example.com/corner-diner",
+      status: "active",
+    },
+    {
+      id: ids.sponsors.starsDental,
+      organization_id: organization.id,
+      name: "Bright Smiles Dental",
+      level: "team",
+      team_id: ids.teams.stars,
+      url: "https://example.com/bright-smiles",
+      status: "pending",
+    },
+  ]);
+  await upsertRows(supabase, "sponsor_placements", [
+    {
+      id: ids.sponsorPlacements.hardwarePortal,
+      sponsor_id: ids.sponsors.hardware,
+      organization_id: organization.id,
+      team_id: null,
+      placement_key: "team_portal",
+      status: "active",
+    },
+    {
+      id: ids.sponsorPlacements.dinerRegistration,
+      sponsor_id: ids.sponsors.diner,
+      organization_id: organization.id,
+      team_id: null,
+      placement_key: "registration",
+      status: "active",
+    },
+  ]);
+
+  // Registration requests: two pending families so the admin review queue has
+  // something real to approve live during a walkthrough.
+  await upsertRows(supabase, "registration_requests", [
+    {
+      id: ids.registrations.casey,
+      organization_id: organization.id,
+      season_id: seasons[0].id,
+      team_id: ids.teams.stars,
+      parent_name: "Casey Morgan",
+      parent_email: "casey.morgan@example.com",
+      player_first_name: "Riley",
+      player_last_initial: "M",
+      status: "pending",
+    },
+    {
+      id: ids.registrations.jordan,
+      organization_id: organization.id,
+      season_id: seasons[0].id,
+      team_id: ids.teams.foxes,
+      parent_name: "Jordan Lee",
+      parent_email: "jordan.lee@example.com",
+      player_first_name: "Sam",
+      player_last_initial: "L",
+      status: "pending",
+    },
+  ]);
+
   const allTeams = await selectRows(supabase, "teams", (query) =>
     query.eq("organization_id", organization.id),
   );
@@ -576,6 +667,13 @@ async function main() {
       allChannels.map((channel) => channel.id),
     ),
     media: await countWhere(supabase, "media_items", "team_id", allTeamIds),
+    sponsors: await countWhere(supabase, "sponsors", "organization_id", [organization.id]),
+    pendingRegistrations: await countWhere(
+      supabase,
+      "registration_requests",
+      "organization_id",
+      [organization.id],
+    ),
   };
 
   const requiredMinimums = {
@@ -585,6 +683,8 @@ async function main() {
     gamesAndPractices: 7,
     messages: 8,
     media: 6,
+    sponsors: 3,
+    pendingRegistrations: 2,
   };
   for (const [key, minimum] of Object.entries(requiredMinimums)) {
     if (counts[key] < minimum) {

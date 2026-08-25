@@ -1,3 +1,10 @@
+---
+authority: contested
+answers: product-direction
+supersedes: []
+superseded_by: null
+reviewed: 2026-08-25
+---
 # Product Direction — August 2026
 
 Date: 2026-08-18

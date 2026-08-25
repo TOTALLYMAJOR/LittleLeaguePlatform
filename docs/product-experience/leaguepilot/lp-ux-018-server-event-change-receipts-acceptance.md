@@ -1,3 +1,10 @@
+---
+authority: evidence
+answers: null
+supersedes: []
+superseded_by: null
+reviewed: 2026-08-25
+---
 # LP-UX-018 Server Event-Change Receipts Acceptance
 
 Date: 2026-08-19 (US/Central)

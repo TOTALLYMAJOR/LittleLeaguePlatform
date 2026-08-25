@@ -1,3 +1,10 @@
+---
+authority: evidence
+answers: null
+supersedes: []
+superseded_by: null
+reviewed: 2026-08-22
+---
 # 01 — Current Experience Audit
 
 Read-only audit, 2026-07-29. Evidence: full repository inspection (routes, shells, domain, migrations, CSS, docs, git history) + authenticated runtime browsing as the seeded demo parent at 390×844 and 1440×900, light and dark preference. No screenshots were attached to the engagement brief in this session; the brief's descriptions were verified against locally captured runtime screenshots.

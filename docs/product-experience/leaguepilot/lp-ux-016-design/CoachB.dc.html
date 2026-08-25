@@ -1,0 +1,147 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&display=swap">
+  <style>
+    body { margin: 0; font-family: Geist, ui-sans-serif, system-ui, -apple-system, "Segoe UI", Helvetica, Arial, sans-serif; -webkit-font-smoothing: antialiased; }
+    a { color: #1f3a63; text-decoration: none; } a:hover { color: #142a4a; }
+    * { box-sizing: border-box; }
+    .lp-num { font-variant-numeric: tabular-nums; }
+  </style>
+</helmet>
+
+<div style="width: 390px; min-height: 1150px; background: #fdf8f1; color: #1c2438; padding: 20px 16px 32px; display: flex; flex-direction: column; gap: 16px;">
+
+  <!-- Header -->
+  <div style="display: flex; flex-direction: column; gap: 6px;">
+    <div style="display: flex; align-items: baseline; justify-content: space-between; gap: 12px;">
+      <h1 style="margin: 0; font-size: 26.4px; font-weight: 700; letter-spacing: -0.01em;">Saturday</h1>
+      <span style="font-size: 12px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: #68665f;">Coach view</span>
+    </div>
+    <span style="font-size: 16px; color: #68665f;">Riverside Rockets &middot; practice 5:30 PM</span>
+  </div>
+
+  <!-- Head count -->
+  <div style="display: flex; align-items: center; gap: 16px; padding: 18px; border-radius: 12px; background: #ffffff; border: 1px solid #e7ded1; box-shadow: 0 2px 5px rgba(64, 48, 30, 0.05);">
+    <div style="display: flex; flex-direction: column; gap: 1px;">
+      <strong class="lp-num" style="font-size: 32px; font-weight: 700; line-height: 1.05; color: #1f3a63;">11</strong>
+      <span style="font-size: 12px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: #68665f;">Coming</span>
+    </div>
+    <div style="width: 1px; align-self: stretch; background: #e7ded1;"></div>
+    <div style="display: flex; flex-direction: column; gap: 4px;">
+      <strong style="font-size: 16px; font-weight: 600;">3 families unsettled</strong>
+      <span style="font-size: 14px; color: #68665f;">14 on the roster &middot; 2 can't see this event</span>
+    </div>
+  </div>
+
+  <!-- Unsettled: aggregated by lane, names behind a tap -->
+  <div style="display: flex; flex-direction: column; gap: 10px;">
+    <span style="font-size: 12px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: #68665f;">Still open for Saturday</span>
+
+    <div style="display: flex; flex-direction: column; gap: 12px; padding: 16px; border-radius: 12px; background: #ffffff; border: 1px solid #e7ded1;">
+      <div style="display: flex; align-items: center; gap: 12px;">
+        <span style="display: inline-flex; align-items: center; justify-content: center; width: 34px; height: 34px; border-radius: 999px; background: #fff0e7; color: #c94f17; flex-shrink: 0;">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><path d="M12 8v4"/><path d="M12 16h.01"/></svg>
+        </span>
+        <div style="display: flex; flex-direction: column; gap: 2px; flex-grow: 1;">
+          <strong style="font-size: 16px; font-weight: 600;">2 families need to answer</strong>
+          <span style="font-size: 14px; color: #68665f;">1 answered before the time moved</span>
+        </div>
+      </div>
+
+      <div style="display: flex; align-items: center; gap: 12px;">
+        <span style="display: inline-flex; align-items: center; justify-content: center; width: 34px; height: 34px; border-radius: 999px; background: #fff3c4; color: #92400e; flex-shrink: 0;">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>
+        </span>
+        <div style="display: flex; flex-direction: column; gap: 2px; flex-grow: 1;">
+          <strong style="font-size: 16px; font-weight: 600;">1 ride still being arranged</strong>
+          <span style="font-size: 14px; color: #68665f;">Waiting on the other family &mdash; nothing for you to do</span>
+        </div>
+      </div>
+
+      <div style="display: flex; align-items: center; justify-content: space-between; gap: 10px; padding-top: 12px; border-top: 1px solid #e7ded1;">
+        <span style="font-size: 14px; color: #68665f;">Names show only to you</span>
+        <span style="display: inline-flex; align-items: center; gap: 6px; height: 44px; padding: 0 14px; border-radius: 9px; background: #ffffff; border: 1px solid #d9cdb9; color: #1f3a63; font-size: 16px; font-weight: 600;">
+          Show who
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m9 18 6-6-6-6"/></svg>
+        </span>
+      </div>
+    </div>
+  </div>
+
+  <!-- One targeted action -->
+  <div style="display: flex; flex-direction: column; gap: 10px; padding: 16px; border-radius: 12px; background: #ffffff; border: 1px solid #e7ded1; box-shadow: 0 2px 5px rgba(64, 48, 30, 0.05);">
+    <div style="display: flex; align-items: center; gap: 8px;">
+      <span style="display: inline-flex; color: #1f3a63;">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m3 11 18-5v12L3 14v-3z"/><path d="M11.6 16.8a3 3 0 1 1-5.8-1.6"/></svg>
+      </span>
+      <strong style="font-size: 16px; font-weight: 600;">One update, aimed at what's open</strong>
+    </div>
+    <span style="font-size: 14px; color: #68665f; line-height: 1.45;">Drafts a note to the unsettled families. You review and publish &mdash; nothing sends on its own.</span>
+    <span style="display: inline-flex; align-items: center; justify-content: center; height: 48px; border-radius: 9px; background: #c94f17; color: #ffffff; font-size: 16px; font-weight: 700;">Draft the update</span>
+  </div>
+
+  <!-- League-owned blocker: aggregated -->
+  <div style="display: flex; flex-direction: column; gap: 10px; padding: 16px; border-radius: 12px; background: #edf2f7; border: 1px solid #cfdceb;">
+    <div style="display: flex; align-items: center; gap: 8px;">
+      <span style="display: inline-flex; color: #1f3a63;">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 13c0 5-3.5 7.5-8 9-4.5-1.5-8-4-8-9V6l8-3 8 3v7z"/><path d="m9 12 2 2 4-4"/></svg>
+      </span>
+      <strong style="font-size: 16px; font-weight: 600;">2 families can't see this event</strong>
+    </div>
+    <span style="font-size: 14px; color: #4a5568; line-height: 1.45;">No linked guardian yet. Their silence isn't a reply &mdash; the league is fixing access.</span>
+    <span style="display: inline-flex; align-items: center; align-self: flex-start; height: 32px; padding: 0 12px; border-radius: 999px; background: #ffffff; border: 1px solid #cfdceb; color: #1f3a63; font-size: 14px; font-weight: 600;">League is on it</span>
+  </div>
+
+  <!-- Settled, collapsed -->
+  <div style="display: flex; align-items: center; gap: 12px; padding: 14px 16px; border-radius: 12px; background: #ffffff; border: 1px solid #e7ded1;">
+    <span style="display: inline-flex; align-items: center; justify-content: center; width: 34px; height: 34px; border-radius: 999px; background: #d8f8e7; color: #057a55; flex-shrink: 0;">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21.8 10A10 10 0 1 1 17 3.3"/><path d="m9 11 3 3L22 4"/></svg>
+    </span>
+    <strong style="font-size: 16px; font-weight: 600; flex-grow: 1;">9 families settled</strong>
+    <span style="font-size: 14px; font-weight: 600; color: #1f3a63;">Show</span>
+  </div>
+
+  <!-- Is it on? -->
+  <div style="display: flex; align-items: center; gap: 12px; padding: 16px; border-radius: 12px; background: #ffffff; border: 1px solid #e7ded1;">
+    <span style="display: inline-flex; align-items: center; justify-content: center; width: 34px; height: 34px; border-radius: 999px; background: #d8f8e7; color: #057a55; flex-shrink: 0;">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21.8 10A10 10 0 1 1 17 3.3"/><path d="m9 11 3 3L22 4"/></svg>
+    </span>
+    <div style="display: flex; flex-direction: column; gap: 2px;">
+      <strong style="font-size: 16px; font-weight: 600;">It's on</strong>
+      <span style="font-size: 14px; color: #68665f;">Field open &middot; 61&deg;F, clear at 5:30</span>
+    </div>
+  </div>
+
+  <!-- Coverage -->
+  <div style="display: flex; flex-direction: column; gap: 10px; padding: 16px; border-radius: 12px; background: #ffffff; border: 1px solid #e7ded1;">
+    <span style="font-size: 12px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: #68665f;">Who's bringing what</span>
+    <div style="display: flex; align-items: center; gap: 10px;">
+      <span style="display: inline-flex; color: #057a55;">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21.8 10A10 10 0 1 1 17 3.3"/><path d="m9 11 3 3L22 4"/></svg>
+      </span>
+      <span style="font-size: 16px; flex-grow: 1;">Snack</span>
+      <span style="font-size: 14px; color: #68665f;">The Okonkwos</span>
+    </div>
+    <div style="display: flex; align-items: center; gap: 10px;">
+      <span style="display: inline-flex; color: #c94f17;">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><path d="M12 8v4"/><path d="M12 16h.01"/></svg>
+      </span>
+      <span style="font-size: 16px; flex-grow: 1;">Field setup</span>
+      <span style="font-size: 14px; font-weight: 600; color: #9f3b0d;">1 spot open</span>
+    </div>
+  </div>
+
+</div>
+</x-dc>
+<script data-dc-script>
+class Component extends DCLogic {}
+</script>
+</body>
+</html>

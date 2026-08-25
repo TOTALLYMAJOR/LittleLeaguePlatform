@@ -1,3 +1,10 @@
+---
+authority: evidence
+answers: null
+supersedes: []
+superseded_by: null
+reviewed: 2026-08-22
+---
 # Exceptional UX Acceptance Audit
 
 This audit translates the desired LeaguePilot experience into acceptance criteria and checks whether the current repo has matching functionality. Status labels:

@@ -1,3 +1,10 @@
+---
+authority: evidence
+answers: null
+supersedes: []
+superseded_by: null
+reviewed: 2026-08-22
+---
 # 07 — Surface Consolidation Plan
 
 Read-only audit deliverable, 2026-07-29. Decisions here are recommendations to the maintainers; no runtime code was changed.

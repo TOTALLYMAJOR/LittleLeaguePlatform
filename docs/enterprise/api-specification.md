@@ -1,3 +1,10 @@
+---
+authority: reference
+answers: null
+supersedes: []
+superseded_by: null
+reviewed: 2026-08-22
+---
 # API Specification
 
 Status: initial catalog and OpenAPI draft. The machine-readable draft is `docs/api/openapi.yaml`.

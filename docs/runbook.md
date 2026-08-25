@@ -1,3 +1,10 @@
+---
+authority: reference
+answers: null
+supersedes: []
+superseded_by: null
+reviewed: 2026-08-22
+---
 # Runbook
 
 Current proof boundary (2026-07-27): use [`docs/backlog-closeout-2026-07-27.md`](backlog-closeout-2026-07-27.md) for the canonical local/external/decision/historical split. Mutating QA scripts are isolated-QA-only after LP-QA-GUARD-001. No command here authorizes writes, seeding, acknowledgment, provider calls, or cleanup against the production alias.

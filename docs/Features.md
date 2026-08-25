@@ -1,3 +1,10 @@
+---
+authority: historical
+answers: null
+supersedes: []
+superseded_by: docs/capability-matrix.md
+reviewed: 2026-08-22
+---
 # Feature Implementation Tracker
 
 Feature slices live in the root Next.js application with typed fallback states and Supabase-backed paths for auth-scoped reads, writes, audits, provider-safe drafts, and admin operations. The [2026-07-27 closeout ledger](backlog-closeout-2026-07-27.md) governs `done-local`, `external`, `decision-required`, and `historical` state. Real SendGrid, explicitly selected Pingram SMS, rollback-only Twilio, Web Push, private-media, Stripe Connect, and OpenAI adapters remain behind server and organization gates; code presence is not hosted, operational, or production proof.

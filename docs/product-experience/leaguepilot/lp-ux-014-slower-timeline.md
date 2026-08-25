@@ -1,3 +1,10 @@
+---
+authority: evidence
+answers: null
+supersedes: []
+superseded_by: null
+reviewed: 2026-08-22
+---
 # LP-UX-014 Slower Timeline + Deferred Weather Card
 
 Date: 2026-08-15

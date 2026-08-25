@@ -1,3 +1,10 @@
+---
+authority: evidence
+answers: null
+supersedes: []
+superseded_by: null
+reviewed: 2026-08-22
+---
 # LP-UX-010 Ambient Weather + Coach Notification Card
 
 Date: 2026-08-15

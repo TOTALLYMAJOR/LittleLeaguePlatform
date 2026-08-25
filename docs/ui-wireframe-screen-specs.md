@@ -1,3 +1,10 @@
+---
+authority: reference
+answers: null
+supersedes: []
+superseded_by: null
+reviewed: 2026-08-22
+---
 # UI Wireframe Screen Specs
 
 This companion spec expands `prompts/aura-gemini-global-ui-design.md` into wireframe-by-wireframe handoff notes for the core Little League HQ operational surfaces. It is a design and frontend planning artifact only. It does not define new runtime APIs, schema changes, provider behavior, or production claims.

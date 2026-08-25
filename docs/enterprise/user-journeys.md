@@ -1,3 +1,10 @@
+---
+authority: reference
+answers: null
+supersedes: []
+superseded_by: null
+reviewed: 2026-08-22
+---
 # Use Cases, User Journeys, And Process Maps
 
 Status: draft. These journeys describe the expected enterprise workflows and the current proof boundaries.

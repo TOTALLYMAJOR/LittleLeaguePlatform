@@ -1,3 +1,10 @@
+---
+authority: evidence
+answers: null
+supersedes: []
+superseded_by: null
+reviewed: 2026-08-22
+---
 # LeaguePilot UX Convergence Engagement — Status
 
 Engagement: Production-grade parent experience convergence (audit, experience architecture, bounded implementation, and local acceptance).

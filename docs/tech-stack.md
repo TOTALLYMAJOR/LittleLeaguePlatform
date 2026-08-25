@@ -1,3 +1,10 @@
+---
+authority: reference
+answers: null
+supersedes: []
+superseded_by: null
+reviewed: 2026-08-22
+---
 # Tech Stack
 
 This file tracks the intended production stack for LeaguePilot, the public app at `https://www.leaguepilot.us`. The current app is a root Next.js application with authenticated Supabase-backed parent, coach, and admin workflows, plus typed fallback states where live rows or auth context are unavailable. The [2026-07-27 closeout ledger](backlog-closeout-2026-07-27.md) is authoritative for local completion, external gates, decisions, and historical evidence; fallback state and committed code are not production acceptance.

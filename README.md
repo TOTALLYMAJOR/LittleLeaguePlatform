@@ -1,3 +1,10 @@
+---
+authority: reference
+answers: null
+supersedes: []
+superseded_by: null
+reviewed: 2026-08-22
+---
 # LeaguePilot
 
 LeaguePilot is the public app and product identity for this youth sports operations platform. The production public domain is `https://www.leaguepilot.us`, with `https://leaguepilot.us` kept as the apex alias.
@@ -83,7 +90,7 @@ Keep `SUPABASE_SERVICE_ROLE_KEY` server-side or CI-only. Keep provider keys out 
 
 | Area | Source |
 | --- | --- |
-| Feature truth | `docs/Features.md` |
+| Feature truth | `docs/capability-matrix.md` |
 | Capability and production gaps | `docs/capability-matrix.md` |
 | Enterprise artifact packet | `docs/enterprise/README.md` |
 | Supabase schema and RLS shape | `docs/supabase-data-model.md`, `supabase/migrations/` |

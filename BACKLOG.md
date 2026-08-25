@@ -1,3 +1,10 @@
+---
+authority: active
+answers: execution-queue
+supersedes: [docs/missing-production-slices-work-plan.md, docs/agentflow-missing-production-backlog.md, docs/legacy-product-roadmap.md]
+superseded_by: null
+reviewed: 2026-08-22
+---
 # LeaguePilot backlog closeout
 
 This is the reviewed, executable local closeout queue for the current

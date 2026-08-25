@@ -1,3 +1,10 @@
+---
+authority: evidence
+answers: null
+supersedes: []
+superseded_by: null
+reviewed: 2026-08-22
+---
 # Production Audit Action Items
 
 Audit date: 2026-06-25; reconciled: 2026-07-27.

@@ -1,3 +1,10 @@
+---
+authority: reference
+answers: null
+supersedes: []
+superseded_by: null
+reviewed: 2026-08-22
+---
 # Communication Room implementation contract
 
 Status: Local implementation, responsive browser proof, and isolated Supabase QA record proof complete; production-hosted proof tracked separately

@@ -1,3 +1,10 @@
+---
+authority: reference
+answers: null
+supersedes: []
+superseded_by: null
+reviewed: 2026-08-22
+---
 # Enterprise Artifact Packet
 
 Status: initial repo-grounded packet prepared 2026-07-16.
@@ -39,7 +46,7 @@ This directory turns the existing LeaguePilot docs into an enterprise-ready arti
 | SRS | `docs/enterprise/srs.md` | Drafted. |
 | Target architecture diagram and ADRs | `docs/enterprise/architecture.md`; `docs/adr/` | Drafted; ADR backlog identified. |
 | API specs | `docs/api/openapi.yaml` | Initial draft; field-level schemas should tighten as contracts stabilize. |
-| Data model/ERD | `docs/enterprise/data-model-erd.md`; `docs/supabase-data-model.md` | Drafted overview; migrations remain source of truth. |
+| Data model/ERD | `docs/enterprise/data-model-erd.md`; `docs/supabase-data-model.md` | Drafted overview; `supabase/migrations/` remain source of truth. |
 | Test plan and QA report | `docs/enterprise/test-release-plan.md` | Drafted and linked to current validation evidence. |
 | Deployment and operations manuals | `docs/enterprise/deployment-operations.md`; `docs/runbook.md` | Drafted. |
 | Release notes and README | `docs/enterprise/test-release-plan.md`; `README.md` | README updated; release template drafted. |

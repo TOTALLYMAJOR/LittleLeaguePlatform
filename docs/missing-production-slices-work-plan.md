@@ -1,3 +1,10 @@
+---
+authority: historical
+answers: null
+supersedes: []
+superseded_by: BACKLOG.md
+reviewed: 2026-08-22
+---
 # Missing Production Slices Work Plan
 
 Status: active

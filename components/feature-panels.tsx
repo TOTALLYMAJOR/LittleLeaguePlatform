@@ -3,6 +3,7 @@
 import Image from "next/image";
 import { useEffect, useMemo, useState, useTransition, type CSSProperties, type ChangeEvent, type ReactNode } from "react";
 import { useAppState } from "@/app/providers";
+import { CopyForGroupText, buildGroupTextMessage } from "@/components/copy-for-group-text";
 import {
   captureOfflineOwnerGeneration,
   clearPrivateGameDayData,
@@ -3446,17 +3447,22 @@ export function CoachDashboardClient({ dashboardData }: { dashboardData?: Parent
           {rsvpReminderQueue.map((row) => (
             <div className="stack compact" key={row.id}>
               <p><strong>{row.familyLabel}</strong><br /><span className="muted">{row.eventTitle} | {row.noResponse} no response | {row.playerDisplayNames.join(", ")}</span></p>
-              <button
-                className="secondary"
-                disabled={isActionPending || !row.parentUserId || !row.teamId || !row.eventId}
-                onClick={() => draftRsvpReminder(row)}
-              >
-                Queue RSVP reminder draft
-              </button>
+              <div className="row wrap">
+                <button
+                  className="secondary"
+                  disabled={isActionPending || !row.parentUserId || !row.teamId || !row.eventId}
+                  onClick={() => draftRsvpReminder(row)}
+                >
+                  Queue RSVP reminder draft
+                </button>
+                <CopyForGroupText
+                  text={buildGroupTextMessage({ eventTitle: row.eventTitle, playerDisplayNames: row.playerDisplayNames })}
+                />
+              </div>
             </div>
           ))}
           {!rsvpReminderQueue.length ? <p className="muted">No RSVP reminder drafts are needed.</p> : null}
-          <p className="muted">This saves a coach draft only. Email, SMS, and push remain unsent until a reviewer approves the message and delivery is connected.</p>
+          <p className="muted">This saves a coach draft only. Email, SMS, and push remain unsent until a reviewer approves the message and delivery is connected. Copy for group text puts the message on your clipboard so you can send it yourself from your own channel.</p>
         </article>
       </section>
       </CompactDisclosure>

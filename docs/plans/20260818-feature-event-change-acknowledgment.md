@@ -1,3 +1,10 @@
+---
+authority: reference
+answers: null
+supersedes: []
+superseded_by: null
+reviewed: 2026-08-25
+---
 # Work Plan: Event Change Acknowledgment Implementation
 
 Date: 2026-08-18

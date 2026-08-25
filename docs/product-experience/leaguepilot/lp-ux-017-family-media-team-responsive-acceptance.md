@@ -1,3 +1,10 @@
+---
+authority: evidence
+answers: null
+supersedes: []
+superseded_by: null
+reviewed: 2026-08-25
+---
 # LP-UX-017 Family Media and Team Responsive Acceptance
 
 Date: 2026-08-19 (US/Central)

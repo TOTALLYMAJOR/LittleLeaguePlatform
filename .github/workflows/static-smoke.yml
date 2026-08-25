@@ -17,6 +17,8 @@ jobs:
           cache: npm
       - name: Install
         run: npm ci
+      - name: Governance authority
+        run: npm run check:governance
       - name: Typecheck
         run: npm run typecheck
       - name: Test

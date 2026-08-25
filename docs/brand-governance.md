@@ -1,3 +1,10 @@
+---
+authority: reference
+answers: null
+supersedes: []
+superseded_by: null
+reviewed: 2026-08-22
+---
 # Brand Governance
 
 Team logo assets are metadata records until a storage provider is explicitly configured. Admins can register HTTPS logo URLs for review, but approved branding must still satisfy child-safety, sponsor-separation, and contrast rules.

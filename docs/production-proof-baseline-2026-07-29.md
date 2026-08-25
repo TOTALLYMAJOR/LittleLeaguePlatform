@@ -1,3 +1,10 @@
+---
+authority: evidence
+answers: null
+supersedes: []
+superseded_by: null
+reviewed: 2026-08-22
+---
 # Production Proof Baseline - 2026-07-29
 
 Status: LPM-001 local baseline finalized for AgentFlow attempt 3

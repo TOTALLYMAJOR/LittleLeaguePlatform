@@ -1,3 +1,10 @@
+---
+authority: evidence
+answers: null
+supersedes: []
+superseded_by: null
+reviewed: 2026-08-25
+---
 # LP-UX-016 Clubhouse Landing Blend
 
 Date: 2026-08-15

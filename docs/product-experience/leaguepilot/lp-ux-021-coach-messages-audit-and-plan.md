@@ -1,3 +1,10 @@
+---
+authority: evidence
+answers: null
+supersedes: []
+superseded_by: null
+reviewed: 2026-08-25
+---
 # LP-UX-021 Coach Messages Audit and Plan
 
 Date: 2026-08-19 (US/Central)

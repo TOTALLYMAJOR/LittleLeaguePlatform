@@ -1,3 +1,10 @@
+---
+authority: reference
+answers: null
+supersedes: []
+superseded_by: null
+reviewed: 2026-08-25
+---
 # ADR 0002 - Server-Side Event Change Receipts
 
 ## Status

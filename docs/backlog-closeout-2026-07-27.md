@@ -1,3 +1,10 @@
+---
+authority: active
+answers: external-gates
+supersedes: [docs/backlog-now.md, docs/backlog-next.md, docs/feature-fit-backlog.md]
+superseded_by: null
+reviewed: 2026-08-22
+---
 # Local Backlog Closeout Ledger
 
 Date: 2026-07-27

@@ -1,3 +1,10 @@
+---
+authority: evidence
+answers: null
+supersedes: []
+superseded_by: null
+reviewed: 2026-08-22
+---
 # Build Progress
 
 State: `historical` evidence journal. Entries record what was observed at their date and commit; they are not current run instructions or proof of the 2026-07-27 closeout commit. Earlier production-alias session runs predate LP-QA-GUARD-001 and must not be repeated. Current truth and remaining gates are in [`docs/backlog-closeout-2026-07-27.md`](backlog-closeout-2026-07-27.md).

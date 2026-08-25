@@ -1,3 +1,10 @@
+---
+authority: reference
+answers: null
+supersedes: []
+superseded_by: null
+reviewed: 2026-08-22
+---
 # PWA Cache And Branding Invalidation
 
 LeaguePilot uses explicit PWA revision strings so service-worker shell routes, manifest metadata, and brand assets do not depend on browser cache luck.

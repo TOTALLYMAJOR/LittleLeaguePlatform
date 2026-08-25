@@ -1,3 +1,10 @@
+---
+authority: reference
+answers: null
+supersedes: []
+superseded_by: null
+reviewed: 2026-08-22
+---
 # Governance Framework, Risk Register, And Threat Model
 
 Status: draft. This document extends `docs/codex-rules.md`, `docs/privacy-security.md`, and `docs/agentic-architecture.md`.

@@ -1,3 +1,10 @@
+---
+authority: evidence
+answers: null
+supersedes: []
+superseded_by: null
+reviewed: 2026-08-22
+---
 # RLS permissive-policy actor/action review
 
 Date: 2026-07-29 (updated from the 2026-07-27 review)

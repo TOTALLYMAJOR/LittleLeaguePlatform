@@ -1,3 +1,10 @@
+---
+authority: reference
+answers: null
+supersedes: []
+superseded_by: null
+reviewed: 2026-08-22
+---
 # Business Capability Model
 
 Status: draft. This model aligns business capabilities to current app surfaces and known production gaps.

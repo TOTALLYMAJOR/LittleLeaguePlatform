@@ -1,3 +1,10 @@
+---
+authority: evidence
+answers: null
+supersedes: []
+superseded_by: null
+reviewed: 2026-08-22
+---
 # 04 — Production Design System (Family Surfaces)
 
 Specification, 2026-07-29. Substrate rule honored: extend the existing global-CSS token system; no new framework. This system is a consolidation of what shipped in `ffb1c9b` (warm cream/navy/orange) reconciled with the blueprint's semantic-token contract — not a third invention. Where this document amends the blueprint (§8 cobalt) it records the amendment explicitly: the shipped warm palette is adopted as the palette of record because it is live, browser-proven, brief-aligned, and superior for outdoor legibility; the blueprint's *semantic naming* and *component API* are adopted over the shipped raw names.
