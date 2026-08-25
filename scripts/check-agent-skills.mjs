@@ -10,6 +10,10 @@ const requiredSkills = [
     why: "LeaguePilot API, Supabase, RLS, provider-boundary, and runtime resilience reviews"
   },
   {
+    name: "leaguepilot-interaction-motion-mobile",
+    why: "LeaguePilot interaction, motion, touch-target, and mobile-first UI contract"
+  },
+  {
     name: "nextjs",
     why: "Next.js App Router routing, server/client boundary, and deployment guidance"
   },
