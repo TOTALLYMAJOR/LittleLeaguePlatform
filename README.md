@@ -90,7 +90,7 @@ Keep `SUPABASE_SERVICE_ROLE_KEY` server-side or CI-only. Keep provider keys out 
 
 | Area | Source |
 | --- | --- |
-| Feature truth | `docs/Features.md` |
+| Feature truth | `docs/capability-matrix.md` |
 | Capability and production gaps | `docs/capability-matrix.md` |
 | Enterprise artifact packet | `docs/enterprise/README.md` |
 | Supabase schema and RLS shape | `docs/supabase-data-model.md`, `supabase/migrations/` |

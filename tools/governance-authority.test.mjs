@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
   evaluateGovernance,
+  parseDeclaredSlugs,
   parseRegisteredOwners,
   findDocumentAuthorityClaims,
   lpUxNumber,
@@ -58,10 +59,10 @@ describe("authority prose detection", () => {
 describe("deferring to a registered owner is compliant", () => {
   const owners = parseRegisteredOwners("| schema | `supabase/migrations/` | code |\n| nav | `lib/navigation/route-topology.ts` | code |");
 
-  it("parses owner paths and their basenames", () => {
+  it("parses full owner paths only, never basenames", () => {
     expect(owners.has("supabase/migrations/")).toBe(true);
     expect(owners.has("lib/navigation/route-topology.ts")).toBe(true);
-    expect(owners.has("route-topology.ts")).toBe(true);
+    expect(owners.has("route-topology.ts")).toBe(false);
   });
 
   it("does not flag a document deferring to a registered code owner", () => {
@@ -196,5 +197,127 @@ describe("register presence", () => {
     const findings = run([doc(register, { authority: "active", answers: "authority-register" }, "docs/x.md is now authoritative")]);
     expect(findings.filter((finding) => finding.rule === "R5")).toHaveLength(0);
     expect(findings.filter((finding) => finding.rule === "R8")).toHaveLength(0);
+  });
+});
+
+const REGISTER = [
+  "## Register",
+  "",
+  "| Question | Owner | Kind |",
+  "| --- | --- | --- |",
+  "| queue | `BACKLOG.md` | doc |",
+  "| gates | `docs/backlog-closeout-2026-07-27.md` | doc |",
+  "| schema | `supabase/migrations/` | code |",
+  "| contracts | `lib/domain/` | code |",
+  "",
+  "## Retired",
+  "",
+  "| `docs/Features.md` | `docs/capability-matrix.md` |",
+  "",
+  "## Front-matter contract",
+  "",
+  "`answers` uses a stable slug, not a sentence: `execution-queue`, `implementation-truth`."
+].join("\n");
+
+describe("readAgentflowBacklogPath — regressions", () => {
+  it("reads backlog when it is the final block (no trailing key)", () => {
+    expect(readAgentflowBacklogPath("version: 1\n\nbacklog:\n  path: BACKLOG.md\n")).toBe("BACKLOG.md");
+  });
+
+  it("does not truncate a path containing a capital Z", () => {
+    expect(readAgentflowBacklogPath("backlog:\n  path: docs/ZONES.md\n\nworkers:\n  maximum: 3\n")).toBe("docs/ZONES.md");
+  });
+});
+
+describe("parseRegisteredOwners — scope", () => {
+  const owners = parseRegisteredOwners(REGISTER);
+
+  it("reads only the Register section, not Retired", () => {
+    expect(owners.has("BACKLOG.md")).toBe(true);
+    expect(owners.has("docs/Features.md")).toBe(false);
+    expect(owners.has("docs/capability-matrix.md")).toBe(false);
+  });
+
+  it("does not register bare basenames", () => {
+    expect(owners.has("domain")).toBe(false);
+    expect(owners.has("migrations")).toBe(false);
+  });
+});
+
+describe("parseDeclaredSlugs", () => {
+  it("reads the declared vocabulary", () => {
+    const slugs = parseDeclaredSlugs(REGISTER);
+    expect(slugs.has("execution-queue")).toBe(true);
+    expect(slugs.has("implementation-truth")).toBe(true);
+  });
+});
+
+describe("R5 — sentence scoping", () => {
+  const owners = parseRegisteredOwners(REGISTER);
+
+  it("a bare word does not stand in for a directory owner", () => {
+    expect(findDocumentAuthorityClaims("This document is now authoritative for the domain model.", undefined, owners)).toHaveLength(1);
+  });
+
+  it("an owner in a neighbouring sentence does not suppress the claim", () => {
+    const text = "Update `BACKLOG.md` when scope changes.\nUse `docs/agentic-architecture.md` as the source of truth for boundaries.";
+    expect(findDocumentAuthorityClaims(text, undefined, owners)).toHaveLength(1);
+  });
+
+  it("accepts a relative link that omits the docs/ prefix", () => {
+    const text = "The [closeout ledger](backlog-closeout-2026-07-27.md) is authoritative for gates.";
+    expect(findDocumentAuthorityClaims(text, undefined, owners)).toHaveLength(0);
+  });
+});
+
+describe("severities that must fail --enforce", () => {
+  it("R1 errors on missing front matter", () => {
+    const findings = run([{ path: "docs/stray.md", source: "# No front matter", frontMatter: null }]);
+    const r1 = findings.filter((f) => f.rule === "R1");
+    expect(r1[0].level).toBe("error");
+  });
+
+  it("R1 errors on an undeclared slug", () => {
+    const findings = run([doc("docs/x.md", { authority: "active", answers: "implementation-truthh" })], { registerSource: REGISTER });
+    expect(findings.some((f) => f.rule === "R1" && f.level === "error" && f.message.includes("Unknown question slug"))).toBe(true);
+  });
+
+  it("R2 errors when a contested document disputes an active owner", () => {
+    const findings = run([
+      doc("a.md", { authority: "active", answers: "execution-queue" }),
+      doc("b.md", { authority: "contested", answers: "execution-queue" })
+    ]);
+    expect(findings.some((f) => f.rule === "R2" && f.level === "error")).toBe(true);
+  });
+
+  it("R7 errors when the execution-queue owner disappears", () => {
+    const findings = run([doc("BACKLOG.md", { authority: "historical", answers: null, superseded_by: "BACKLOG.md" })]);
+    expect(findings.some((f) => f.rule === "R7" && f.level === "error")).toBe(true);
+  });
+
+  it("R9 errors when supersession is not reciprocal", () => {
+    const findings = run([
+      doc("old.md", { authority: "historical", answers: null, superseded_by: "new.md" }),
+      doc("new.md", { authority: "active", answers: "execution-queue", supersedes: [] })
+    ]);
+    expect(findings.some((f) => f.rule === "R9" && f.level === "error")).toBe(true);
+  });
+
+  it("R9 passes when both sides agree", () => {
+    const findings = run([
+      doc("old.md", { authority: "historical", answers: null, superseded_by: "new.md" }),
+      doc("new.md", { authority: "active", answers: "execution-queue", supersedes: ["old.md"] })
+    ]);
+    expect(findings.filter((f) => f.rule === "R9")).toHaveLength(0);
+  });
+});
+
+describe("R8 — path matching", () => {
+  it("a shared basename is not reachability", () => {
+    const findings = run([doc("docs/archive/BACKLOG.md", { authority: "active", answers: "execution-queue" })], {
+      backlogPath: "docs/archive/BACKLOG.md",
+      registerSource: "| queue | `BACKLOG.md` | doc |"
+    });
+    expect(findings.some((f) => f.rule === "R8")).toBe(true);
   });
 });

@@ -89,7 +89,7 @@ Consequence: **the admin can see who acknowledged a critical message; the coach 
 
 ### Nothing sends (OBSERVED)
 
-`.env.example`: `PROVIDER_SENDS_ENABLED=false`, `PINGRAM_SMS_SENDER_READY=false`, `PROVIDER_PRODUCTION_APPROVED=false`, `AI_COACH_PROVIDER_ENABLED=false`, `PAYMENTS_ENABLED=false`, `MEDIA_UPLOADS_ENABLED=false`. `featureGateDecision` requires both the environment switch and the organization flag.
+`.env.example` sets `PROVIDER_SENDS_ENABLED=false`, `PINGRAM_SMS_SENDER_READY=false`, `PROVIDER_PRODUCTION_APPROVED=false`, and `AI_COACH_PROVIDER_ENABLED=false`. Two further gates, `PAYMENTS_ENABLED` and `MEDIA_UPLOADS_ENABLED`, are defined in `lib/services/feature-gates.ts:10-11` and are absent from `.env.example`, so they are undefined rather than explicitly disabled. `featureGateDecision` requires both the environment switch and the organization flag, so an undefined switch is off.
 
 The product is pull-only today. Any direction that assumes a push channel is not currently shippable.
 

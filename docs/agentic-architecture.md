@@ -1,6 +1,6 @@
 ---
-authority: reference
-answers: null
+authority: active
+answers: agent-boundaries
 supersedes: []
 superseded_by: null
 reviewed: 2026-08-22

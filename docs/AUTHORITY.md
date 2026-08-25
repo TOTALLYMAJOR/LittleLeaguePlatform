@@ -33,6 +33,7 @@ file permitted to assign ownership.
 | What external gates remain open? | `docs/backlog-closeout-2026-07-27.md` | doc |
 | What rules constrain code changes? | `docs/codex-rules.md` | doc |
 | How do agents work in this repository? | `AGENTS.md` | doc |
+| What are the production agent boundaries? | `docs/agentic-architecture.md` | doc |
 | What is the current product direction? | `docs/product-experience/leaguepilot/lp-ux-016-shared-open-items.md` | doc |
 | What are the design tokens? | `app/globals.css` `:root` | **code** |
 | What are the routes, labels, and role navigation? | `lib/navigation/route-topology.ts` | **code** |
@@ -106,7 +107,7 @@ reviewed: 2026-08-22         # ISO date of last authority review
 
 `answers` uses a stable slug, not a sentence: `execution-queue`,
 `implementation-truth`, `external-gates`, `code-rules`, `agent-workflow`,
-`product-direction`, `authority-register`.
+`product-direction`, `agent-boundaries`, `authority-register`.
 
 ## Enforcement
 
@@ -118,9 +119,11 @@ It runs in **enforcing mode**: errors fail the build. The rule that matters most
 is that `.agentflow.yaml` `backlog.path` must equal the active owner of
 `execution-queue` — that is what keeps automation and prose from diverging again.
 
-A document that *defers* to a registered owner ("migrations remain source of
-truth") is compliant and is not reported. Only a claim naming no registered
-owner is a finding.
+A document that *defers* to a registered owner is compliant and is not reported
+("`supabase/migrations/` remain source of truth"). The owner must be named as a
+path in the **same sentence** as the claim — a bare word like "migrations", or an
+owner mentioned in a neighbouring sentence, does not count. Only the register may
+assign ownership; every other document may only defer.
 
 This checker reads repository files only. It performs no hosted, provider,
 network, or production action, and it makes no claim about hosted or production

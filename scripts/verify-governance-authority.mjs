@@ -13,7 +13,7 @@
  * Reporting mode by default (exit 0). Pass --enforce to fail on errors.
  */
 
-import { existsSync, readFileSync, readdirSync, statSync } from "node:fs";
+import { existsSync, readFileSync, readdirSync } from "node:fs";
 import { join, relative, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
@@ -82,14 +82,36 @@ export function parseFrontMatter(source) {
 /** Registered owner paths named in the authority register's tables. */
 export function parseRegisteredOwners(registerSource) {
   const owners = new Set();
-  for (const match of registerSource.matchAll(/`([A-Za-z0-9._/-]+\.(?:md|ts|tsx|css|yaml|sql))`|`([A-Za-z0-9._/-]+\/)`/g)) {
-    const value = match[1] ?? match[2];
-    if (!value) continue;
-    owners.add(value);
-    const base = value.replace(/\/$/, "").split("/").pop();
-    if (base) owners.add(base);
+  const section = /^## Register\s*$([\s\S]*?)^## /m.exec(registerSource);
+  const scope = section ? section[1] : registerSource;
+  for (const row of scope.split(/\r?\n/)) {
+    if (!row.trim().startsWith("|")) continue;
+    const columns = row.split("|").map((cell) => cell.trim());
+    if (columns.length < 4) continue;
+    for (const match of columns[2].matchAll(/`([A-Za-z0-9._/-]+)`/g)) {
+      owners.add(match[1]);
+    }
   }
   return owners;
+}
+
+/** Legal `answers` slugs, read from the register's front-matter contract. */
+export function parseDeclaredSlugs(registerSource) {
+  const line = /`answers` uses a stable slug[^.]*?:([\s\S]*?)\./.exec(registerSource);
+  if (!line) return new Set();
+  return new Set([...line[1].matchAll(/`([a-z-]+)`/g)].map((match) => match[1]));
+}
+
+/**
+ * The textual forms that count as naming an owner: the full repo-relative path,
+ * and the path minus its leading segment so intra-`docs/` relative links match.
+ * Never a bare basename — "domain" must not stand in for `lib/domain/`.
+ */
+function ownerForms(owner) {
+  const forms = [owner];
+  const trimmed = owner.replace(/^[^/]+\//, "");
+  if (trimmed !== owner && (trimmed.includes("/") || trimmed.includes("."))) forms.push(trimmed);
+  return forms;
 }
 
 /**
@@ -105,10 +127,22 @@ export function findDocumentAuthorityClaims(source, phrases = AUTHORITY_PHRASES,
   for (const phrase of phrases) {
     let index = 0;
     while ((index = haystack.indexOf(phrase, index)) !== -1) {
-      const window = source.slice(Math.max(0, index - 160), Math.min(source.length, index + 160));
-      const defersToOwner = [...registeredOwners].some((owner) => owner.length > 3 && window.includes(owner));
-      if (DOCUMENT_NOUNS.test(window) && !defersToOwner) {
-        claims.push({ phrase, line: source.slice(0, index).split("\n").length });
+      // Scope to the sentence, not a character window: an owner named in a
+      // neighbouring sentence is not what this claim is about.
+      const before = source.slice(0, index);
+      const start = Math.max(before.lastIndexOf("\n"), before.lastIndexOf(". ")) + 1;
+      const after = source.slice(index);
+      const rawEnd = after.search(/\n|\. /);
+      const sentence = source.slice(start, index + (rawEnd === -1 ? after.length : rawEnd + 1));
+
+      const namedPaths = [...sentence.matchAll(/[A-Za-z0-9._-]+(?:\/[A-Za-z0-9._-]*)+|[A-Za-z0-9._-]+\.(?:md|ts|tsx|css|yaml|sql)/g)]
+        .map((match) => match[0]);
+      const defersToOwner = namedPaths.some((named) =>
+        [...registeredOwners].some((owner) => ownerForms(owner).some((form) => named === form || named === form.replace(/\/$/, "")))
+      );
+
+      if (DOCUMENT_NOUNS.test(sentence) && !defersToOwner) {
+        claims.push({ phrase, line: before.split("\n").length });
       }
       index += phrase.length;
     }
@@ -124,18 +158,24 @@ export function lpUxNumber(name) {
 
 /** Reads `backlog.path` out of .agentflow.yaml without a YAML dependency. */
 export function readAgentflowBacklogPath(source) {
-  const match = /^backlog:\s*$([\s\S]*?)(?=^\S|\Z)/m.exec(source);
-  if (!match) return null;
-  const pathMatch = /^\s+path:\s*(.+)$/m.exec(match[1]);
-  return pathMatch ? pathMatch[1].trim().replace(/^["']|["']$/g, "") : null;
+  const lines = source.split(/\r?\n/);
+  let inBacklog = false;
+  for (const line of lines) {
+    if (/^backlog:\s*$/.test(line)) { inBacklog = true; continue; }
+    if (!inBacklog) continue;
+    if (/^\S/.test(line)) break;
+    const pathMatch = /^\s+path:\s*(.+?)\s*$/.exec(line);
+    if (pathMatch) return pathMatch[1].replace(/^["']|["']$/g, "");
+  }
+  return null;
 }
 
 function walkMarkdown(directory, collected = []) {
-  for (const entry of readdirSync(directory)) {
-    const full = join(directory, entry);
-    if (statSync(full).isDirectory()) {
+  for (const entry of readdirSync(directory, { withFileTypes: true })) {
+    const full = join(directory, entry.name);
+    if (entry.isDirectory()) {
       walkMarkdown(full, collected);
-    } else if (entry.endsWith(".md")) {
+    } else if (entry.isFile() && entry.name.endsWith(".md")) {
       collected.push(full);
     }
   }
@@ -164,7 +204,9 @@ export function collectGovernanceDocuments(root = REPO_ROOT) {
 /** Applies every rule. Returns findings; the caller decides exit behavior. */
 export function evaluateGovernance(input) {
   const { documents, agentflowBacklogPath, registerSource } = input;
+  const resolveExists = input.resolveExists ?? ((target) => existsSync(join(REPO_ROOT, target)));
   const registeredOwners = parseRegisteredOwners(registerSource ?? "");
+  const declaredSlugs = parseDeclaredSlugs(registerSource ?? "");
   const findings = [];
   const add = (level, rule, path, message) => findings.push({ level, rule, path, message });
 
@@ -174,7 +216,7 @@ export function evaluateGovernance(input) {
   // R1 — front matter present.
   for (const document of documents) {
     if (!document.frontMatter) {
-      add("warn", "R1", document.path, "No front matter; authority is unclassified.");
+      add("error", "R1", document.path, "No front matter. An unclassified document is exempt from every ownership rule.");
       continue;
     }
     const { authority, answers } = document.frontMatter;
@@ -183,6 +225,8 @@ export function evaluateGovernance(input) {
     }
     if (answers === undefined) {
       add("error", "R1", document.path, "Missing `answers`. Use a slug, or null when the document owns no question.");
+    } else if (answers && declaredSlugs.size && !declaredSlugs.has(answers)) {
+      add("error", "R1", document.path, `Unknown question slug "${answers}". A typo invents a question and orphans the real one. Declared: ${[...declaredSlugs].join(", ")}.`);
     }
   }
 
@@ -200,15 +244,27 @@ export function evaluateGovernance(input) {
     }
   }
 
+  // R2c — contested against an established owner is a conflict, not a note.
+  for (const document of classified) {
+    const { authority, answers } = document.frontMatter;
+    if (authority !== "contested" || !answers) continue;
+    const owners = activeByQuestion.get(answers);
+    if (owners && owners.length) {
+      add("error", "R2", document.path, `Disputes "${answers}", which ${owners[0]} already owns as active. Resolve or demote.`);
+    }
+  }
+
   // R2b — contested clusters are defects awaiting a decision.
   const contestedByQuestion = new Map();
   for (const document of classified) {
     const { authority, answers } = document.frontMatter;
     if (authority !== "contested" || !answers) continue;
+    if (activeByQuestion.has(answers)) continue;
     if (!contestedByQuestion.has(answers)) contestedByQuestion.set(answers, []);
     contestedByQuestion.get(answers).push(document.path);
   }
   for (const [question, candidates] of contestedByQuestion) {
+    if (candidates.length < 2) continue;
     add("warn", "R2b", candidates.join(", "), `"${question}" is contested between ${candidates.length} documents. Promote one to active and demote the rest.`);
   }
 
@@ -218,7 +274,7 @@ export function evaluateGovernance(input) {
     const target = document.frontMatter.superseded_by;
     if (!target) {
       add("error", "R3", document.path, "Historical documents must declare `superseded_by`.");
-    } else if (!known.has(target) && !existsSync(join(REPO_ROOT, target))) {
+    } else if (!known.has(target) && !resolveExists(target)) {
       add("error", "R3", document.path, `\`superseded_by: ${target}\` does not resolve.`);
     }
   }
@@ -230,7 +286,7 @@ export function evaluateGovernance(input) {
       ...(document.frontMatter.superseded_by ? [document.frontMatter.superseded_by] : [])
     ];
     for (const target of targets) {
-      if (!known.has(target) && !existsSync(join(REPO_ROOT, target))) {
+      if (!known.has(target) && !resolveExists(target)) {
         add("error", "R4", document.path, `Declared path "${target}" does not exist.`);
       }
     }
@@ -238,8 +294,7 @@ export function evaluateGovernance(input) {
 
   // R5 — documentary authority prose only in the active owner.
   for (const document of classified) {
-    const { authority } = document.frontMatter;
-    if (authority === "active" || document.path === AUTHORITY_REGISTER) continue;
+    if (document.path === AUTHORITY_REGISTER) continue;
     const claims = findDocumentAuthorityClaims(document.source, AUTHORITY_PHRASES, registeredOwners);
     for (const claim of claims) {
       add("warn", "R5", `${document.path}:${claim.line}`, `Asserts authority ("${claim.phrase}") without naming a registered owner.`);
@@ -270,16 +325,28 @@ export function evaluateGovernance(input) {
   } else if (queueOwners.length === 1 && queueOwners[0] !== agentflowBacklogPath) {
     add("error", "R7", ".agentflow.yaml", `Machine reads "${agentflowBacklogPath}" but the active execution-queue owner is "${queueOwners[0]}".`);
   } else if (queueOwners.length === 0) {
-    add("warn", "R7", ".agentflow.yaml", `Machine reads "${agentflowBacklogPath}" but no document is the active execution-queue owner.`);
+    add("error", "R7", ".agentflow.yaml", `Machine reads "${agentflowBacklogPath}" but no document is the active execution-queue owner.`);
   }
 
   // R8 — reachable from the register, unless evidence or reference.
   for (const document of classified) {
     const { authority } = document.frontMatter;
     if (authority === "evidence" || authority === "reference" || document.path === AUTHORITY_REGISTER) continue;
-    const name = document.path.split("/").pop();
-    if (!registerSource.includes(document.path) && !registerSource.includes(name)) {
+    if (!registerSource.includes(document.path)) {
       add("warn", "R8", document.path, "Not reachable from the authority register.");
+    }
+  }
+
+  // R9 — supersession is reciprocal, or the retired set silently loses members.
+  const byPath = new Map(classified.map((document) => [document.path, document.frontMatter]));
+  for (const document of classified) {
+    const target = document.frontMatter.superseded_by;
+    if (!target) continue;
+    const owner = byPath.get(target);
+    if (!owner) continue;
+    const declared = Array.isArray(owner.supersedes) ? owner.supersedes : [];
+    if (!declared.includes(document.path)) {
+      add("error", "R9", target, `Declares no \`supersedes\` entry for ${document.path}, which points back at it. Forward and reverse links must agree.`);
     }
   }
 
