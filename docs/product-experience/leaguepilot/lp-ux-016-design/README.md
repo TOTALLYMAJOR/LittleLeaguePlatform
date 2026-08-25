@@ -13,7 +13,8 @@ Design-source artboards for the three role homes described in
 | File | Artboard |
 | --- | --- |
 | `Main.dc.html` | Parent — This Week |
-| `Coach.dc.html` | Coach — Saturday |
+| `Coach.dc.html` | Coach — Saturday (A: names visible) |
+| `CoachB.dc.html` | Coach B — counts first, names behind a tap |
 | `Admin.dc.html` | Admin — Needs a look |
 | `canvas.json` | Layout, frame sizes, annotations |
 
@@ -38,7 +39,7 @@ re-skinned later.
 
 ## Measured heights
 
-Content needs 1222 / 1202 / 1064px against frames of 1280 / 1260 / 1120px.
+Content needs 1222 / 1202 / 1130 / 1064px against frames of 1280 / 1260 / 1190 / 1120px (Parent, Coach A, Coach B, Admin).
 Verified by rendering the canvas in Chromium and reading the artboard roots. If
 you edit content, re-measure — the frame clips, it does not scroll to fit.
 

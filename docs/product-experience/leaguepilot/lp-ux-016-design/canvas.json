@@ -1,23 +1,31 @@
 {
   "artboards": [
-    { "file": "Main.dc.html", "title": "Parent — This Week", "x": 0, "y": 250, "w": 390, "h": 1280 },
-    { "file": "Coach.dc.html", "title": "Coach — Saturday", "x": 470, "y": 250, "w": 390, "h": 1260 },
-    { "file": "Admin.dc.html", "title": "Admin — Needs a look", "x": 940, "y": 250, "w": 390, "h": 1120 }
+    { "file": "Main.dc.html", "title": "Parent — This Week", "x": 0, "y": 0, "w": 390, "h": 1280 },
+    { "file": "Coach.dc.html", "title": "Coach — Saturday", "x": 470, "y": 0, "w": 390, "h": 1260 },
+    { "file": "CoachB.dc.html", "title": "Coach B — counts first", "x": 940, "y": 0, "w": 390, "h": 1190 },
+    { "file": "Admin.dc.html", "title": "Admin — Needs a look", "x": 1410, "y": 0, "w": 390, "h": 1120 }
   ],
   "annotations": [
     {
       "id": "structural-pass",
-      "x": 0,
-      "y": 20,
+      "x": 31,
+      "y": -407,
       "w": 520,
       "text": "Structural pass — built on the repo's own tokens (app/globals.css), not a new aesthetic.\nRe-skin against your style screenshots when they land.\n\nSame row, three readers: one open item renders as the parent's task, the coach's gap, and the league's risk."
     },
     {
       "id": "coach-framing",
       "x": 560,
-      "y": 20,
+      "y": -190,
       "w": 420,
-      "text": "Framing rule for this screen: it names what is unsettled for THIS EVENT.\n\nNo response rates, no per-family history, no ordering families worst-first. Roster order only. Access problems are labelled league-owned so silence is never read as a parent ignoring the coach."
+      "text": "THE QUESTION TO PUT TO A REAL COACH — show both, ask which they'd open Friday night:\n\nA (left): names visible by default. Faster to act on; risks reading as a list of failing families.\n\nB (right): counts by lane, names behind one tap (\"Show who · names show only to you\"). Calmer; one tap slower to act.\n\nWatch which one they reach for. That reaction, not our reasoning, decides the default."
+    },
+    {
+      "id": "coach-shared-rules",
+      "x": 1020,
+      "y": -190,
+      "w": 380,
+      "text": "Both variants keep the same rules: no response rates, no per-family history, no worst-first ordering, roster order only, access problems labelled league-owned so silence is never read as a parent ignoring the coach."
     }
   ],
   "launch": { "view": "canvas" }
