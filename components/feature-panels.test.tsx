@@ -750,6 +750,8 @@ describe("AdminDashboardClient", () => {
             teams: [],
             sponsors: [],
             billingRecords: [],
+            programSummaries: [],
+            programMessage: "Sponsor agreement, invoice, and delivery records were not loaded. No payment or delivery state is claimed.",
             isSupabaseBacked: false,
             message: "Sponsor records are unavailable for this organization."
           }}

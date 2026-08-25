@@ -2,53 +2,73 @@
 
 import Link from "next/link";
 import { ArrowRight, RefreshCw } from "lucide-react";
-import { useEffect, useMemo, useSyncExternalStore } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import type { ParentEventChange } from "@/lib/supabase/event-change-log-reads";
 import { StatusChip } from "./status-chip";
 
-const STORAGE_UNAVAILABLE = "__leaguepilot_storage_unavailable__";
+type ReceiptOperation = "seen" | "acknowledged";
+
+interface ReceiptResult {
+  ok: boolean;
+  message: string;
+  seenAt: string | null;
+  acknowledgedAt: string | null;
+}
 
 export function ChangeBand({
   changes,
   querySucceeded,
-  storageKey,
   timeZone,
-  onVisibleChanges
+  onVisibleChanges,
+  onAcknowledge
 }: {
   changes: ParentEventChange[];
   querySucceeded: boolean;
-  storageKey: string;
   timeZone: string;
   onVisibleChanges?: (changes: ParentEventChange[]) => void;
+  onAcknowledge: (eventChangeLogId: string, operation: ReceiptOperation) => Promise<ReceiptResult>;
 }) {
-  const watermark = useSyncExternalStore(
-    () => () => undefined,
-    () => readWatermark(storageKey),
-    () => ""
-  );
-  const storageAvailable = watermark !== STORAGE_UNAVAILABLE;
+  const [networkState, setNetworkState] = useState<"checking" | "online" | "offline">("checking");
+  const [pendingIds, setPendingIds] = useState(() => new Set<string>());
+  const [failedIds, setFailedIds] = useState(() => new Set<string>());
+  const [rowMessages, setRowMessages] = useState<Record<string, string>>({});
+  const seenAttempts = useRef(new Set<string>());
 
-  const visibleChanges = useMemo(() => {
-    if (!watermark || watermark === STORAGE_UNAVAILABLE) return changes;
-    const watermarkTime = Date.parse(watermark);
-    if (Number.isNaN(watermarkTime)) return changes;
-    return changes.filter((change) => Date.parse(change.changedAt) > watermarkTime);
-  }, [changes, watermark]);
+  const unresolvedChanges = useMemo(() => changes.filter((change) => (
+    change.requiresAcknowledgment ? !change.acknowledgedAt : !change.seenAt
+  )), [changes]);
 
   useEffect(() => {
-    onVisibleChanges?.(querySucceeded ? visibleChanges : changes);
-    if (!querySucceeded || !visibleChanges.length) return;
-    const latest = visibleChanges
-      .map((change) => change.changedAt)
-      .sort((left, right) => Date.parse(right) - Date.parse(left))[0];
-    try {
-      window.localStorage.setItem(storageKey, latest);
-    } catch {
-      // Device-local storage is presentation-only. Failure leaves state unchanged.
-    }
-  }, [changes, onVisibleChanges, querySucceeded, storageKey, visibleChanges]);
+    onVisibleChanges?.(querySucceeded ? unresolvedChanges : changes);
+  }, [changes, onVisibleChanges, querySucceeded, unresolvedChanges]);
 
-  if (!querySucceeded) {
+  useEffect(() => {
+    const sync = () => setNetworkState(navigator.onLine ? "online" : "offline");
+    sync();
+    window.addEventListener("online", sync);
+    window.addEventListener("offline", sync);
+    return () => {
+      window.removeEventListener("online", sync);
+      window.removeEventListener("offline", sync);
+    };
+  }, []);
+
+  useEffect(() => {
+    if (!querySucceeded || networkState !== "online") return;
+    for (const change of changes) {
+      if (change.seenAt || seenAttempts.current.has(change.id)) continue;
+      seenAttempts.current.add(change.id);
+      void onAcknowledge(change.id, "seen").then((result) => {
+        if (result.ok) return;
+        setRowMessages((current) => ({
+          ...current,
+          [change.id]: "Receipt could not be confirmed. The change remains visible."
+        }));
+      });
+    }
+  }, [changes, networkState, onAcknowledge, querySucceeded]);
+
+  if (!querySucceeded && !changes.length) {
     return (
       <section className="family-change-band family-change-band-warning" aria-labelledby="parent-changes-title">
         <header>
@@ -63,22 +83,39 @@ export function ChangeBand({
     );
   }
 
-  if (!visibleChanges.length) return null;
+  if (!changes.length) return null;
+
+  async function acknowledge(change: ParentEventChange) {
+    if (networkState !== "online" || pendingIds.has(change.id)) return;
+    setPendingIds((current) => new Set([...current, change.id]));
+    setFailedIds((current) => without(current, change.id));
+    setRowMessages((current) => ({ ...current, [change.id]: "" }));
+    const result = await onAcknowledge(change.id, "acknowledged");
+    setPendingIds((current) => without(current, change.id));
+    setRowMessages((current) => ({ ...current, [change.id]: result.message }));
+    if (!result.ok) setFailedIds((current) => new Set([...current, change.id]));
+  }
 
   return (
-    <section className="family-change-band" aria-labelledby="parent-changes-title">
+    <section className={`family-change-band${querySucceeded ? "" : " family-change-band-warning"}`} aria-labelledby="parent-changes-title">
       <header>
         <RefreshCw aria-hidden="true" size={18} strokeWidth={2.2} />
         <div>
           <span className="parent-weekly-kicker">What changed</span>
-          <h2 id="parent-changes-title">Changes since this page was last successfully loaded on this device.</h2>
+          <h2 id="parent-changes-title">
+            {querySucceeded ? "Recent event changes for your family" : "Receipt state could not be confirmed"}
+          </h2>
         </div>
       </header>
+      {!querySucceeded ? (
+        <p>No review, acknowledgment, attendance, or RSVP state changed. Changes remain visible as unconfirmed.</p>
+      ) : null}
       <ol>
-        {visibleChanges.map((change) => (
+        {changes.map((change) => (
           <li key={change.id}>
             <div className="family-change-band-title">
               <StatusChip tone="changed">{changeLabel(change.changeType)}</StatusChip>
+              {receiptChip(change, querySucceeded)}
               <strong>{change.eventTitle}</strong>
             </div>
             <p>{change.teamName}{change.childLabels.length ? ` · ${change.childLabels.join(", ")}` : ""} · by {change.actorLabel} · {formatTimestamp(change.changedAt, timeZone)}</p>
@@ -90,27 +127,59 @@ export function ChangeBand({
                 </div>
               ))}
             </dl>
-            <Link href={change.canonicalHref}>
-              Open event
-              <ArrowRight aria-hidden="true" size={15} />
-            </Link>
+            <div className="family-change-band-actions">
+              <Link href={change.canonicalHref}>
+                Open event
+                <ArrowRight aria-hidden="true" size={15} />
+              </Link>
+              {change.requiresAcknowledgment && !change.acknowledgedAt && querySucceeded ? (
+                <button
+                  type="button"
+                  disabled={networkState !== "online" || pendingIds.has(change.id)}
+                  onClick={() => acknowledge(change)}
+                >
+                  {pendingIds.has(change.id)
+                    ? "Saving acknowledgment"
+                    : networkState === "offline"
+                      ? "Connect to acknowledge"
+                      : networkState === "checking"
+                        ? "Checking connection"
+                        : failedIds.has(change.id)
+                          ? "Retry acknowledgment"
+                          : "Acknowledge change"}
+                </button>
+              ) : null}
+            </div>
+            {change.requiresAcknowledgment && !change.acknowledgedAt && networkState === "offline" && querySucceeded ? (
+              <p className="family-change-band-row-note">Reconnect before acknowledging. Nothing is saved optimistically.</p>
+            ) : null}
+            {rowMessages[change.id] ? (
+              <p className="family-change-band-row-note" role="status" aria-live="polite">
+                {rowMessages[change.id]}
+              </p>
+            ) : null}
           </li>
         ))}
       </ol>
       <p className="family-change-band-note">
-        Viewing this list never creates acknowledgement, agreement, attendance, or RSVP state.
-        {!storageAvailable ? " Device storage is unavailable, so changes may reappear here." : ""}
+        Viewing records awareness only. Acknowledgment requires the button and never changes attendance or RSVP.
       </p>
     </section>
   );
 }
 
-function readWatermark(storageKey: string) {
-  try {
-    return window.localStorage.getItem(storageKey) ?? "";
-  } catch {
-    return STORAGE_UNAVAILABLE;
-  }
+function receiptChip(change: ParentEventChange, querySucceeded: boolean) {
+  if (!querySucceeded) return <StatusChip tone="waiting">Receipt unconfirmed</StatusChip>;
+  if (change.acknowledgedAt) return <StatusChip tone="confirmed">Acknowledged</StatusChip>;
+  if (change.requiresAcknowledgment) return <StatusChip tone="action">Acknowledgment needed</StatusChip>;
+  if (change.seenAt) return <StatusChip tone="confirmed">Seen</StatusChip>;
+  return <StatusChip tone="waiting">Recording view</StatusChip>;
+}
+
+function without(values: Set<string>, value: string) {
+  const next = new Set(values);
+  next.delete(value);
+  return next;
 }
 
 function changeLabel(value: ParentEventChange["changeType"]) {

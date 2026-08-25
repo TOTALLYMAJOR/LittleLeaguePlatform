@@ -91,7 +91,7 @@ describe("RLS policy overlap source audit", () => {
     const second = reconstructCatalog(loadMigrationFiles(rootDir));
 
     expect(verifyCatalog(first)).toEqual({
-      policies: 156,
+      policies: 162,
       overlapGroups: 35,
       selectGroups: 34,
       updateGroups: 1,

@@ -1,0 +1,454 @@
+{
+  "generatedAt": "2026-08-20T01:26:29.565Z",
+  "baseUrl": "http://127.0.0.1:3122",
+  "proofBoundary": "Authenticated local browser rendering with Supabase session and scoped reads; no application-data mutations, delivery/payment provider actions, or deployment. Axe is a blocking gate for the redesigned staff and Family shells.",
+  "routes": [
+    {
+      "role": "admin",
+      "path": "/admin",
+      "shell": "staff",
+      "surfaceFamily": null,
+      "enforceAxe": true
+    },
+    {
+      "role": "coach",
+      "path": "/coach",
+      "shell": "staff",
+      "surfaceFamily": null,
+      "enforceAxe": true
+    },
+    {
+      "role": "parent",
+      "path": "/parent",
+      "shell": "family",
+      "surfaceFamily": "family",
+      "enforceAxe": true
+    }
+  ],
+  "themes": [
+    "light",
+    "dark"
+  ],
+  "viewports": [
+    {
+      "name": "mobile-390",
+      "width": 390,
+      "height": 844
+    },
+    {
+      "name": "desktop-1440",
+      "width": 1440,
+      "height": 1000
+    }
+  ],
+  "results": [
+    {
+      "route": "/admin",
+      "role": "admin",
+      "theme": "light",
+      "viewport": {
+        "name": "mobile-390",
+        "width": 390,
+        "height": 844
+      },
+      "metrics": {
+        "theme": "light",
+        "colorScheme": "light",
+        "shell": "staff",
+        "surfaceFamily": null,
+        "routeAuthority": "route-required",
+        "resolvedRole": "admin",
+        "dataScopeRole": "admin",
+        "documentWidth": 390,
+        "viewportWidth": 390,
+        "horizontalOverflow": false
+      },
+      "keyboardFocus": {
+        "tagName": "A",
+        "label": "Dashboard",
+        "visible": true,
+        "focusVisible": true,
+        "outlineStyle": "solid",
+        "outlineWidth": "2px"
+      },
+      "axeSeriousOrCritical": [],
+      "pageErrors": [],
+      "requestFailures": [],
+      "screenshotPath": "output/playwright/lp-ux-020-spectrum-theme/admin-light-mobile-390.png"
+    },
+    {
+      "route": "/admin",
+      "role": "admin",
+      "theme": "light",
+      "viewport": {
+        "name": "desktop-1440",
+        "width": 1440,
+        "height": 1000
+      },
+      "metrics": {
+        "theme": "light",
+        "colorScheme": "light",
+        "shell": "staff",
+        "surfaceFamily": null,
+        "routeAuthority": "route-required",
+        "resolvedRole": "admin",
+        "dataScopeRole": "admin",
+        "documentWidth": 1440,
+        "viewportWidth": 1440,
+        "horizontalOverflow": false
+      },
+      "keyboardFocus": {
+        "tagName": "A",
+        "label": "Communications",
+        "visible": true,
+        "focusVisible": true,
+        "outlineStyle": "solid",
+        "outlineWidth": "2px"
+      },
+      "axeSeriousOrCritical": [],
+      "pageErrors": [],
+      "requestFailures": [],
+      "screenshotPath": "output/playwright/lp-ux-020-spectrum-theme/admin-light-desktop-1440.png"
+    },
+    {
+      "route": "/admin",
+      "role": "admin",
+      "theme": "dark",
+      "viewport": {
+        "name": "mobile-390",
+        "width": 390,
+        "height": 844
+      },
+      "metrics": {
+        "theme": "dark",
+        "colorScheme": "dark",
+        "shell": "staff",
+        "surfaceFamily": null,
+        "routeAuthority": "route-required",
+        "resolvedRole": "admin",
+        "dataScopeRole": "admin",
+        "documentWidth": 390,
+        "viewportWidth": 390,
+        "horizontalOverflow": false
+      },
+      "keyboardFocus": {
+        "tagName": "A",
+        "label": "Dashboard",
+        "visible": true,
+        "focusVisible": true,
+        "outlineStyle": "solid",
+        "outlineWidth": "2px"
+      },
+      "axeSeriousOrCritical": [],
+      "pageErrors": [],
+      "requestFailures": [],
+      "screenshotPath": "output/playwright/lp-ux-020-spectrum-theme/admin-dark-mobile-390.png"
+    },
+    {
+      "route": "/admin",
+      "role": "admin",
+      "theme": "dark",
+      "viewport": {
+        "name": "desktop-1440",
+        "width": 1440,
+        "height": 1000
+      },
+      "metrics": {
+        "theme": "dark",
+        "colorScheme": "dark",
+        "shell": "staff",
+        "surfaceFamily": null,
+        "routeAuthority": "route-required",
+        "resolvedRole": "admin",
+        "dataScopeRole": "admin",
+        "documentWidth": 1440,
+        "viewportWidth": 1440,
+        "horizontalOverflow": false
+      },
+      "keyboardFocus": {
+        "tagName": "A",
+        "label": "Communications",
+        "visible": true,
+        "focusVisible": true,
+        "outlineStyle": "solid",
+        "outlineWidth": "2px"
+      },
+      "axeSeriousOrCritical": [],
+      "pageErrors": [],
+      "requestFailures": [],
+      "screenshotPath": "output/playwright/lp-ux-020-spectrum-theme/admin-dark-desktop-1440.png"
+    },
+    {
+      "route": "/coach",
+      "role": "coach",
+      "theme": "light",
+      "viewport": {
+        "name": "mobile-390",
+        "width": 390,
+        "height": 844
+      },
+      "metrics": {
+        "theme": "light",
+        "colorScheme": "light",
+        "shell": "staff",
+        "surfaceFamily": null,
+        "routeAuthority": "route-required",
+        "resolvedRole": "coach",
+        "dataScopeRole": "coach",
+        "documentWidth": 390,
+        "viewportWidth": 390,
+        "horizontalOverflow": false
+      },
+      "keyboardFocus": {
+        "tagName": "A",
+        "label": "Today",
+        "visible": true,
+        "focusVisible": true,
+        "outlineStyle": "solid",
+        "outlineWidth": "2px"
+      },
+      "axeSeriousOrCritical": [],
+      "pageErrors": [],
+      "requestFailures": [],
+      "screenshotPath": "output/playwright/lp-ux-020-spectrum-theme/coach-light-mobile-390.png"
+    },
+    {
+      "route": "/coach",
+      "role": "coach",
+      "theme": "light",
+      "viewport": {
+        "name": "desktop-1440",
+        "width": 1440,
+        "height": 1000
+      },
+      "metrics": {
+        "theme": "light",
+        "colorScheme": "light",
+        "shell": "staff",
+        "surfaceFamily": null,
+        "routeAuthority": "route-required",
+        "resolvedRole": "coach",
+        "dataScopeRole": "coach",
+        "documentWidth": 1440,
+        "viewportWidth": 1440,
+        "horizontalOverflow": false
+      },
+      "keyboardFocus": {
+        "tagName": "A",
+        "label": "Home",
+        "visible": true,
+        "focusVisible": true,
+        "outlineStyle": "solid",
+        "outlineWidth": "2px"
+      },
+      "axeSeriousOrCritical": [],
+      "pageErrors": [],
+      "requestFailures": [],
+      "screenshotPath": "output/playwright/lp-ux-020-spectrum-theme/coach-light-desktop-1440.png"
+    },
+    {
+      "route": "/coach",
+      "role": "coach",
+      "theme": "dark",
+      "viewport": {
+        "name": "mobile-390",
+        "width": 390,
+        "height": 844
+      },
+      "metrics": {
+        "theme": "dark",
+        "colorScheme": "dark",
+        "shell": "staff",
+        "surfaceFamily": null,
+        "routeAuthority": "route-required",
+        "resolvedRole": "coach",
+        "dataScopeRole": "coach",
+        "documentWidth": 390,
+        "viewportWidth": 390,
+        "horizontalOverflow": false
+      },
+      "keyboardFocus": {
+        "tagName": "A",
+        "label": "Today",
+        "visible": true,
+        "focusVisible": true,
+        "outlineStyle": "solid",
+        "outlineWidth": "2px"
+      },
+      "axeSeriousOrCritical": [],
+      "pageErrors": [],
+      "requestFailures": [],
+      "screenshotPath": "output/playwright/lp-ux-020-spectrum-theme/coach-dark-mobile-390.png"
+    },
+    {
+      "route": "/coach",
+      "role": "coach",
+      "theme": "dark",
+      "viewport": {
+        "name": "desktop-1440",
+        "width": 1440,
+        "height": 1000
+      },
+      "metrics": {
+        "theme": "dark",
+        "colorScheme": "dark",
+        "shell": "staff",
+        "surfaceFamily": null,
+        "routeAuthority": "route-required",
+        "resolvedRole": "coach",
+        "dataScopeRole": "coach",
+        "documentWidth": 1440,
+        "viewportWidth": 1440,
+        "horizontalOverflow": false
+      },
+      "keyboardFocus": {
+        "tagName": "A",
+        "label": "Home",
+        "visible": true,
+        "focusVisible": true,
+        "outlineStyle": "solid",
+        "outlineWidth": "2px"
+      },
+      "axeSeriousOrCritical": [],
+      "pageErrors": [],
+      "requestFailures": [],
+      "screenshotPath": "output/playwright/lp-ux-020-spectrum-theme/coach-dark-desktop-1440.png"
+    },
+    {
+      "route": "/parent",
+      "role": "parent",
+      "theme": "light",
+      "viewport": {
+        "name": "mobile-390",
+        "width": 390,
+        "height": 844
+      },
+      "metrics": {
+        "theme": "light",
+        "colorScheme": "light",
+        "shell": "family",
+        "surfaceFamily": "family",
+        "routeAuthority": "route-required",
+        "resolvedRole": "parent",
+        "dataScopeRole": "parent",
+        "documentWidth": 390,
+        "viewportWidth": 390,
+        "horizontalOverflow": false
+      },
+      "keyboardFocus": {
+        "tagName": "A",
+        "label": "Home",
+        "visible": true,
+        "focusVisible": true,
+        "outlineStyle": "solid",
+        "outlineWidth": "2px"
+      },
+      "axeSeriousOrCritical": [],
+      "pageErrors": [],
+      "requestFailures": [],
+      "screenshotPath": "output/playwright/lp-ux-020-spectrum-theme/parent-light-mobile-390.png"
+    },
+    {
+      "route": "/parent",
+      "role": "parent",
+      "theme": "light",
+      "viewport": {
+        "name": "desktop-1440",
+        "width": 1440,
+        "height": 1000
+      },
+      "metrics": {
+        "theme": "light",
+        "colorScheme": "light",
+        "shell": "family",
+        "surfaceFamily": "family",
+        "routeAuthority": "route-required",
+        "resolvedRole": "parent",
+        "dataScopeRole": "parent",
+        "documentWidth": 1440,
+        "viewportWidth": 1440,
+        "horizontalOverflow": false
+      },
+      "keyboardFocus": {
+        "tagName": "A",
+        "label": "Home",
+        "visible": true,
+        "focusVisible": true,
+        "outlineStyle": "solid",
+        "outlineWidth": "2px"
+      },
+      "axeSeriousOrCritical": [],
+      "pageErrors": [],
+      "requestFailures": [],
+      "screenshotPath": "output/playwright/lp-ux-020-spectrum-theme/parent-light-desktop-1440.png"
+    },
+    {
+      "route": "/parent",
+      "role": "parent",
+      "theme": "dark",
+      "viewport": {
+        "name": "mobile-390",
+        "width": 390,
+        "height": 844
+      },
+      "metrics": {
+        "theme": "dark",
+        "colorScheme": "dark",
+        "shell": "family",
+        "surfaceFamily": "family",
+        "routeAuthority": "route-required",
+        "resolvedRole": "parent",
+        "dataScopeRole": "parent",
+        "documentWidth": 390,
+        "viewportWidth": 390,
+        "horizontalOverflow": false
+      },
+      "keyboardFocus": {
+        "tagName": "A",
+        "label": "Home",
+        "visible": true,
+        "focusVisible": true,
+        "outlineStyle": "solid",
+        "outlineWidth": "2px"
+      },
+      "axeSeriousOrCritical": [],
+      "pageErrors": [],
+      "requestFailures": [],
+      "screenshotPath": "output/playwright/lp-ux-020-spectrum-theme/parent-dark-mobile-390.png"
+    },
+    {
+      "route": "/parent",
+      "role": "parent",
+      "theme": "dark",
+      "viewport": {
+        "name": "desktop-1440",
+        "width": 1440,
+        "height": 1000
+      },
+      "metrics": {
+        "theme": "dark",
+        "colorScheme": "dark",
+        "shell": "family",
+        "surfaceFamily": "family",
+        "routeAuthority": "route-required",
+        "resolvedRole": "parent",
+        "dataScopeRole": "parent",
+        "documentWidth": 1440,
+        "viewportWidth": 1440,
+        "horizontalOverflow": false
+      },
+      "keyboardFocus": {
+        "tagName": "A",
+        "label": "Home",
+        "visible": true,
+        "focusVisible": true,
+        "outlineStyle": "solid",
+        "outlineWidth": "2px"
+      },
+      "axeSeriousOrCritical": [],
+      "pageErrors": [],
+      "requestFailures": [],
+      "screenshotPath": "output/playwright/lp-ux-020-spectrum-theme/parent-dark-desktop-1440.png"
+    }
+  ]
+}

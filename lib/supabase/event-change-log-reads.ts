@@ -1,6 +1,10 @@
 import "server-only";
 
 import { createSupabaseAdminClient } from "./admin";
+import {
+  eventChangeRequiresAcknowledgment,
+  listEventChangeReceipts
+} from "./event-change-receipts";
 import { withSupabaseTimeout } from "./timeout";
 
 type UnsafeSupabase = {
@@ -89,6 +93,9 @@ export interface ParentEventChange {
   changedAt: string;
   canonicalHref: string;
   diffs: ParentEventChangeDiff[];
+  seenAt: string | null;
+  acknowledgedAt: string | null;
+  requiresAcknowledgment: boolean;
 }
 
 export interface ParentEventChangeLogReadResult {
@@ -259,12 +266,8 @@ export async function listParentEventChangeLogs({
       playersByTeamId.set(player.team_id, [...(playersByTeamId.get(player.team_id) ?? []), player]);
     }
 
-    return {
-      ok: true,
-      message: (logs ?? []).length ? "Showing family-safe event changes." : "No family-safe event changes are visible.",
-      scope,
-      changes: (logs ?? [])
-        .map((log) => {
+    const changes = (logs ?? [])
+      .map((log): ParentEventChange | undefined => {
           const event = eventsById.get(log.event_id);
           const team = teamsById.get(log.team_id);
           if (!event || !team || event.organization_id !== log.organization_id || event.team_id !== log.team_id) return undefined;
@@ -290,10 +293,36 @@ export async function listParentEventChangeLogs({
             actorLabel: log.actor_user_id ? profilesById.get(log.actor_user_id) ?? "League staff" : "League staff",
             changedAt: log.created_at,
             canonicalHref: `/parent/schedule?eventId=${encodeURIComponent(log.event_id)}`,
-            diffs
+            diffs,
+            seenAt: null,
+            acknowledgedAt: null,
+            requiresAcknowledgment: eventChangeRequiresAcknowledgment(log.change_type)
           };
         })
-        .filter((change): change is ParentEventChange => Boolean(change))
+      .filter((change): change is ParentEventChange => Boolean(change));
+
+    const receiptResult = await listEventChangeReceipts({
+      parentUserId,
+      eventChangeLogIds: changes.map((change) => change.id)
+    });
+    const receiptsByChangeId = new Map(receiptResult.receipts.map((receipt) => [
+      receipt.eventChangeLogId,
+      receipt
+    ]));
+
+    return {
+      ok: receiptResult.ok,
+      message: receiptResult.ok
+        ? changes.length
+          ? "Showing family-safe event changes with server receipt state."
+          : "No family-safe event changes are visible."
+        : "Event changes loaded, but receipt state could not be confirmed.",
+      scope,
+      changes: changes.map((change) => ({
+        ...change,
+        seenAt: receiptsByChangeId.get(change.id)?.seenAt ?? null,
+        acknowledgedAt: receiptsByChangeId.get(change.id)?.acknowledgedAt ?? null
+      }))
     };
   } catch {
     return { ok: false, message: "Event changes could not be loaded. No device marker changed.", scope: emptyScope, changes: [] };

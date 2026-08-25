@@ -34,12 +34,29 @@ file permitted to assign ownership.
 | What rules constrain code changes? | `docs/codex-rules.md` | doc |
 | How do agents work in this repository? | `AGENTS.md` | doc |
 | What are the production agent boundaries? | `docs/agentic-architecture.md` | doc |
-| What is the current product direction? | `docs/product-experience/leaguepilot/lp-ux-016-shared-open-items.md` | doc |
+| What is the current product direction? | **CONTESTED — see below** | doc |
 | What are the design tokens? | `app/globals.css` `:root` | **code** |
 | What are the routes, labels, and role navigation? | `lib/navigation/route-topology.ts` | **code** |
 | What is the database schema and its policies? | `supabase/migrations/` | **code** |
 | What are the domain contracts and state machines? | `lib/domain/` | **code** |
 | What is the family readiness truth? | *(unbuilt — `lib/open-items.ts` per `lp-ux-016`)* | **code** |
+
+## Contested
+
+### What is the current product direction?
+
+Two direction documents were authored in parallel on separate branches and met
+at the 2026-08-25 merge of `main`:
+
+| Candidate | Date | Claim |
+| --- | --- | --- |
+| `docs/product-direction-2026-08.md` | 2026-08-18 | Five directions ranked by impact ("fun and effective") |
+| `docs/product-experience/leaguepilot/lp-ux-016-shared-open-items.md` | 2026-08-22 | Shared Open Items as the single organizing direction |
+
+Neither wins by default — the later date is not a decision. Resolve by promoting
+one to `active` and marking the other `historical` with a `superseded_by`
+pointer, or by merging their content into one document. Until then both carry
+`authority: contested` and the checker reports the open contest.
 
 ## Decided
 

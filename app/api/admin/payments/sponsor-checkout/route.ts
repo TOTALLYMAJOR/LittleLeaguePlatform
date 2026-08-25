@@ -6,9 +6,15 @@ export async function POST(request: Request) {
   const auth = await requireAuthenticatedRouteUser(request);
   if (!auth.ok || !auth.user) return NextResponse.json({ ok: false, message: auth.message }, { status: 401 });
   const body = await request.json().catch(() => null);
-  if (!body) return NextResponse.json({ ok: false, message: "Sponsor billing record is required." }, { status: 400 });
+  if (!body) return NextResponse.json({ ok: false, message: "A sponsor invoice is required." }, { status: 400 });
+  const invoiceId = body.invoiceId ? String(body.invoiceId) : undefined;
+  const sponsorBillingRecordId = body.sponsorBillingRecordId ? String(body.sponsorBillingRecordId) : undefined;
+  if (!invoiceId && !sponsorBillingRecordId) {
+    return NextResponse.json({ ok: false, message: "A sponsor invoice is required." }, { status: 400 });
+  }
   const result = await createSponsorInvoiceCheckout({
-    sponsorBillingRecordId: String(body.sponsorBillingRecordId ?? ""),
+    invoiceId,
+    sponsorBillingRecordId,
     actorUserId: auth.user.id
   });
   return NextResponse.json(result, { status: result.ok ? 201 : result.code === "feature_disabled" ? 503 : 400 });

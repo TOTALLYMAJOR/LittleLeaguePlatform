@@ -36,6 +36,38 @@ Task-specific checks are required only when the surface is touched:
 | Admin/support | Internal support access, repair/replay/override/export authority, break-glass approval, audit log, and tenant notification requirement. |
 | Migration/rollout | Backfill plan, feature flag/cohort/env/tenant rollout, rollback behavior, and existing tenant compatibility. |
 
+## Current Business Priority Queue - 2026-08-16
+
+This queue ranks the next production-business items by revenue impact, operational necessity, user trust and retention, and production risk reduction. Sponsor revenue is now the first execution focus because it creates the clearest business monetization path. This is planning scope only; it does not authorize provider sends, Stripe charges, hosted mutations, or production promotion without the proof gates named in the relevant LP/LPM rows.
+
+| Rank | Feature | Why it matters | Existing tracker tie-in |
+| --- | --- | --- | --- |
+| 1 | Sponsor billing domain and live collection | Model sponsor revenue as Sponsor -> Sponsorship Agreement -> Package -> Invoice -> Payment -> Refund/Dispute -> Ledger, with Stripe as settlement evidence instead of source-of-truth product state. Normalize provider events into internal payment events such as PaymentSucceeded, PaymentFailed, RefundSucceeded, and DisputeOpened before updating balances. | Money + Sponsors Community Commerce, `LPM-009`, Sponsor Stripe readiness |
+| 2 | Sponsor fulfillment and proof | Charging sponsors without proving approved logo or placement delivery creates refund, trust, and renewal risk. Billing and fulfillment should ship as a paired commercial slice with requirements, evidence, placement rendering, impressions, recap download, and renewal offer support. | Snacks, Volunteers, Sponsors, `LPM-010`, Sponsor fulfillment readiness |
+| 3 | Production provider sends and schedule-change alerts | A league-management product has to reliably communicate schedule changes. If schedules change but parents and coaches are not actually notified, the core operational loop breaks. Email should come first; SMS and push can follow after consent, cost, suppression, and webhook proof. | `LP-014`, `LP-015`, game-day communication readiness, provider delivery review |
+| 4 | Weather alerts | Outdoor sports need weather-aware operations. Weather should evaluate scheduled event -> venue -> latitude/longitude -> risk -> suggested action, then feed normal director/coach decisions such as continue, delay, cancel, or relocate. It is advisory by default and must reuse schedule events plus notification delivery rather than a parallel alert system. | `LP-016`, Weather provider action readiness |
+| 5 | Family lifecycle flows | Transportation, guardians and caregivers, continuity between seasons, and populated QA proof determine whether families can actually use the system week after week. | Family phases 2, 3, and 5; family season continuity readiness |
+| 6 | Team-builder publish | Admins can construct teams locally, but production season-start remains fragile until publish behavior has hosted RLS/readback proof and clear downstream access behavior. | `LP-007`, `LP-008`, Automatic Team Builder |
+| 7 | Registration fee gate and assigned-team activation | Initial signup must create or select the required registration fee, require webhook-confirmed payment before private team access, and only then activate the assigned team. The family should not receive private team access from a browser return, unpaid obligation, parent-selected team, or coach-selected team. Team assignment must be owned by the approved league/system assignment workflow with audit evidence. | Registration System, Money + Sponsors Community Commerce, Automatic Team Builder, family access activation |
+
+### Sponsor Revenue Spine - Start Here
+
+The first build lane should treat sponsorship as its own business domain, not as Stripe buttons around sponsor records. The durable model is Sponsor -> Sponsorship Agreement -> Sponsorship Package -> Sponsorship Invoice -> Payment -> Refund/Dispute -> Fulfillment Requirement -> Fulfillment Evidence -> Renewal.
+
+A sponsor package should support concrete promised benefits, such as league homepage logo, sport homepage logo, team page placement, sponsor directory, newsletter placements, field banner, and season recap. LeaguePilot owns agreement status, amount, paid total, outstanding balance, active/expired state, fulfillment requirements, and recap evidence. Stripe provides processor evidence and settlement events only.
+
+Accounting state must come from LeaguePilot's normalized payment service, not a raw browser return or a single Stripe event name. `checkout.session.completed` is provider evidence to ingest; the service should normalize it into internal events such as PaymentSucceeded, PaymentFailed, RefundSucceeded, and DisputeOpened, then update the ledger idempotently with replay protection, audit evidence, and finance reconciliation.
+
+Sponsor fulfillment should produce a measurable sponsor view: paid amount, placements delivered, newsletter deliveries, impressions, unique visitors where analytics are configured, season completion date, downloadable recap, and renewal offer. Placement rendering should record exposure without leaking child or parent data.
+
+Local scaffold status: `lib/domain/sponsor-program.ts` now defines the bare sponsorship program contracts and pure summary logic for agreements, packages, invoices, normalized payment ledger events, fulfillment requirements, placement readiness, recap readiness, and proof boundaries. `lib/domain/domain.test.ts` covers the first paid sponsor flow plus dispute rollback. This is not a schema migration, provider integration, hosted proof, sponsor portal, analytics/impression pipeline, recap artifact generator, or production billing acceptance.
+
+### Weather Alert Spine
+
+Weather remains advisory by default. The model is Scheduled event -> Venue -> Latitude/longitude -> Weather evaluator -> Weather risk -> Suggested action. The product answer should be whether the event requires attention, not just a forecast display.
+
+Example state: Game Saturday 2:00 PM; thunderstorm probability 80%; risk HIGH; suggested action Review game status. A director or coach can then choose Continue, Delay, Cancel, or Relocate, and those choices generate the normal schedule events such as GameCancelled or GameRelocated. The notification service then sends the approved schedule-change alert through the same provider-delivery path used by other operational messages.
+
 ## Current 20-Item Plate
 
 ### Active Goal - Operational-Truth Hardening and Gated Enhancements
@@ -278,14 +310,14 @@ Task-specific checks are required only when the surface is touched:
 ### LP-020 - Decide Sponsor Billing And Stripe Scope
 
 - Priority: P2 commercial decision.
-- Current state: sponsor billing proof records exist; live Stripe collection is disconnected. LPM-009 sponsor Stripe readiness is local repository readiness complete for the existing proof-only versus sandbox boundary, server-side Checkout Session contract, server-only key handling, webhook settlement truth, admin/public privacy separation, and open payment gates.
+- Current state: sponsor billing proof records exist, and `lib/domain/sponsor-program.ts` adds a local pure-domain spine for agreements, packages, invoices, normalized payment ledger events, fulfillment requirements, placement readiness, and recap readiness. The scaffold is not persisted and performs no Stripe or other provider call. Live Stripe collection remains disconnected. LPM-009 sponsor Stripe readiness is local repository readiness complete for the existing proof-only versus sandbox boundary, server-side Checkout Session contract, server-only key handling, webhook settlement truth, admin/public privacy separation, and open payment gates.
 - Decision state: deferred safe default is sponsor proof-only billing; see `DEC-BILLING`.
-- Seams: `/admin`, `/api/admin/sponsors`, sponsor billing tables, Stripe provider adapter if added.
+- Seams: `lib/domain/sponsor-program.ts`, `lib/domain/domain.test.ts`, `/admin`, `/api/admin/sponsors`, sponsor billing tables, and a Stripe provider adapter if approved.
 - Done when: sponsor billing stays proof-only or Stripe Product/Price/Invoice/Checkout plus webhook signature proof is scoped. Sandbox, hosted, finance, and production payment approval remain separate from local readiness.
 - Local verifier: `npm run qa:sponsor-stripe-readiness` is local repository readiness proof only for the sponsor billing/payment boundary, server-side Checkout Session contract, server-only key handling, webhook settlement truth, admin/public privacy separation, and open payment gates. It does not call Stripe, Supabase, sign in, run Playwright, seed data, mutate hosted records, create Checkout Sessions, configure API keys or webhook secrets, register webhook endpoints, charge or refund payments, call provider dashboards, deploy, or claim sandbox, hosted, provider, finance, production payment, or production acceptance.
 - Open gates: Stripe sandbox account setup, restricted key creation, webhook endpoint registration, signing-secret configuration, sandbox Checkout Session proof, signed webhook replay/duplicate proof, refund/failure proof, hosted admin proof, finance reconciliation, and production payment approval. Restricted API keys are preferred, separate environments are required, and no Stripe secret or restricted key values are stored in source.
 - SaaS constants focus: commercial objects, billing/metering, revenue impact, entitlement, payment failure, webhook replay, finance reporting.
-- Validation: `npm run qa:sponsor-stripe-readiness`; `node --test scripts/verify-sponsor-stripe-readiness.test.mjs`; focused sponsor API/service/UI tests. Stripe sandbox account setup, restricted key creation, webhook endpoint registration, signing-secret configuration, sandbox Checkout Session proof, signed webhook replay/duplicate proof, refund/failure proof, hosted admin proof, finance reconciliation, and production payment approval remain open gates.
+- Validation: `npm test -- lib/domain/domain.test.ts`; `npm run qa:sponsor-stripe-readiness`; `node --test scripts/verify-sponsor-stripe-readiness.test.mjs`; focused sponsor API/service/UI tests. Stripe sandbox account setup, restricted key creation, webhook endpoint registration, signing-secret configuration, sandbox Checkout Session proof, signed webhook replay/duplicate proof, refund/failure proof, hosted admin proof, finance reconciliation, and production payment approval remain open gates.
 
 ### LPM-010 - Sponsor Fulfillment Proof
 
@@ -294,9 +326,9 @@ Task-specific checks are required only when the surface is touched:
 - Seams: `/sponsors`, `/team-portal`, `/admin/sponsors`, `/api/admin/sponsors`, `/api/admin/revenue-summary`, sponsor placement helpers, Supabase sponsor reads, Sponsor Hub reports, renewal-review copy.
 - Done when: approved active sponsor placement, approved logo rendering, recap/report artifacts, renewal delivery, leak QA, accessibility, finance reconciliation, and production sponsor acceptance are proven with the required hosted/provider evidence.
 - Local verifier: `npm run qa:sponsor-fulfillment-readiness` is local repository readiness proof only for approved active placement filters, Team Portal team scope, admin placement authority, approved logo asset reads, submitted-logo review queues, fail-closed sponsor data, fulfillment/report separation, renewal delivery gates, public and parent privacy, and open fulfillment gates. It does not call Supabase, sign in, run Playwright, seed data, mutate hosted records, send renewal email, call email/SMS/push providers, call Stripe, create or refund payments, upload files, fetch external logo assets, call provider dashboards, deploy, or claim hosted, observed-rendering, provider, finance, accessibility, production, or production sponsor acceptance.
-- Open gates: hosted public/admin browser proof, observed placement-rendering proof, approved logo asset proof, sponsor recap/report artifact proof, renewal email sandbox proof, public placement leak QA, accessibility proof, finance reconciliation, and production sponsor acceptance.
+- Open gates: hosted public/admin browser proof, hosted fulfillment evidence proof, observed placement-rendering proof, approved logo asset proof, sponsor recap/report artifact proof, renewal email sandbox proof, public placement leak QA, accessibility proof, finance reconciliation, and production sponsor acceptance.
 - SaaS constants focus: sponsor entitlement display, fulfillment evidence, asset governance, privacy leak prevention, report truth, renewal provider gates, production acceptance.
-- Validation: `npm run qa:sponsor-fulfillment-readiness`; `node --test scripts/verify-sponsor-fulfillment-readiness.test.mjs`; focused sponsor API/service/UI tests. Hosted public/admin browser proof, observed placement-rendering proof, approved logo asset proof, sponsor recap/report artifact proof, renewal email sandbox proof, public placement leak QA, accessibility proof, finance reconciliation, and production sponsor acceptance remain open gates.
+- Validation: `npm run qa:sponsor-fulfillment-readiness`; `node --test scripts/verify-sponsor-fulfillment-readiness.test.mjs`; focused sponsor API/service/UI tests. Hosted public/admin browser proof, hosted fulfillment evidence proof, observed placement-rendering proof, approved logo asset proof, sponsor recap/report artifact proof, renewal email sandbox proof, public placement leak QA, accessibility proof, finance reconciliation, and production sponsor acceptance remain open gates.
 
 ## Concrete Task Template
 

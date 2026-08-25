@@ -10,7 +10,7 @@ const axePath = require.resolve("axe-core/axe.min.js");
 const baseUrl = process.env.QA_PROOF_BASE_URL || "http://127.0.0.1:3122";
 const outputDir = process.env.MANUAL_THEME_PROOF_DIR || "output/playwright/lp-ux-005-manual-theme";
 const storageKey = "leaguepilot-color-theme:v1";
-const familyRoutes = [
+const configuredFamilyRoutes = [
   "/parent",
   "/parent/family-access",
   "/parent/messages",
@@ -25,6 +25,16 @@ const familyRoutes = [
   "/team-chat",
   "/team-portal"
 ];
+const requestedFamilyRoutes = new Set(
+  (process.env.MANUAL_THEME_PROOF_ROUTES || "")
+    .split(",")
+    .map((value) => value.trim())
+    .filter(Boolean)
+);
+const familyRoutes = requestedFamilyRoutes.size
+  ? configuredFamilyRoutes.filter((route) => requestedFamilyRoutes.has(route))
+  : configuredFamilyRoutes;
+const familyOnly = process.env.MANUAL_THEME_FAMILY_ONLY === "true";
 const viewports = [
   { name: "mobile-390", width: 390, height: 844 },
   { name: "desktop-1440", width: 1440, height: 1000 }
@@ -185,7 +195,11 @@ async function runAxe(page) {
 
 async function openSettled(page, path) {
   await page.goto(`${baseUrl}${path}`, { waitUntil: "domcontentloaded", timeout: 90_000 });
-  await page.locator(".theme-toggle").first().waitFor({ state: "visible", timeout: 30_000 });
+  await page.locator(".theme-toggle").filter({ visible: true }).first().waitFor({ state: "visible", timeout: 30_000 });
+  const selectedTheme = await page.evaluate(() => document.documentElement.dataset.theme ?? "light");
+  const expectedToggleLabel = selectedTheme === "dark" ? "Use light mode" : "Use dark mode";
+  await page.locator(`.theme-toggle[aria-label="${expectedToggleLabel}"]`).filter({ visible: true }).first()
+    .waitFor({ state: "visible", timeout: 30_000 });
   await page.waitForTimeout(250);
 }
 
@@ -205,36 +219,39 @@ async function main() {
   };
 
   try {
-    const publicContext = await browser.newContext({ colorScheme: "dark", viewport: { width: 1440, height: 1000 } });
-    const publicPage = await publicContext.newPage();
-    const publicErrors = [];
-    publicPage.on("pageerror", (error) => publicErrors.push(error.message));
-    await openSettled(publicPage, "/");
-    const defaultMetrics = await inspectTheme(publicPage);
-    assert.equal(defaultMetrics.theme, "light", "A first visit must be light even on a dark-mode device.");
-    assert.equal(defaultMetrics.rootColorScheme, "light");
-    assert.equal(defaultMetrics.documentWidth, defaultMetrics.viewportWidth);
-    await publicPage.screenshot({ path: join(outputDir, "public-default-light-dark-device.png"), fullPage: false });
+    if (!familyOnly) {
+      const publicContext = await browser.newContext({ colorScheme: "dark", viewport: { width: 1440, height: 1000 } });
+      const publicPage = await publicContext.newPage();
+      const publicErrors = [];
+      publicPage.on("pageerror", (error) => publicErrors.push(error.message));
+      await openSettled(publicPage, "/");
+      const defaultMetrics = await inspectTheme(publicPage);
+      assert.equal(defaultMetrics.theme, "light", "A first visit must be light even on a dark-mode device.");
+      assert.equal(defaultMetrics.rootColorScheme, "light");
+      assert.equal(defaultMetrics.documentWidth, defaultMetrics.viewportWidth);
+      await publicPage.screenshot({ path: join(outputDir, "public-default-light-dark-device.png"), fullPage: false });
 
-    await publicPage.locator(".theme-toggle").first().click();
-    const selectedDarkMetrics = await inspectTheme(publicPage);
-    assert.equal(selectedDarkMetrics.theme, "dark");
-    assert.equal(selectedDarkMetrics.rootColorScheme, "dark");
-    await publicPage.reload({ waitUntil: "domcontentloaded" });
-    await publicPage.locator(".theme-toggle").first().waitFor({ state: "visible" });
-    await publicPage.locator('.theme-toggle[aria-label="Use light mode"]').first().waitFor({ state: "visible" });
-    await publicPage.locator(".landing-gateway").waitFor({ state: "visible" });
-    const persistedDarkMetrics = await inspectTheme(publicPage);
-    assert.equal(persistedDarkMetrics.theme, "dark", "Dark selection must persist after reload.");
-    assert.equal(persistedDarkMetrics.gatewayBackground, "rgb(17, 24, 33)", "The gateway must use the selected dark canvas.");
-    assert.equal(persistedDarkMetrics.gatewayHeadingColor, "rgb(246, 241, 233)", "The gateway headline must use the selected dark foreground.");
-    assert.equal(persistedDarkMetrics.toggleLabel, "Use light mode");
-    assert.deepEqual(publicErrors, []);
-    await publicPage.screenshot({ path: join(outputDir, "public-selected-dark-persisted.png"), fullPage: false });
-    proof.results.push({ route: "/", state: "default-light", metrics: defaultMetrics });
-    proof.results.push({ route: "/", state: "selected-dark", metrics: selectedDarkMetrics });
-    proof.results.push({ route: "/", state: "persisted-dark", metrics: persistedDarkMetrics, pageErrors: publicErrors });
-    await publicContext.close();
+      await publicPage.locator(".theme-toggle").filter({ visible: true }).first().click();
+      await publicPage.waitForFunction(() => document.documentElement.dataset.theme === "dark");
+      const selectedDarkMetrics = await inspectTheme(publicPage);
+      assert.equal(selectedDarkMetrics.theme, "dark");
+      assert.equal(selectedDarkMetrics.rootColorScheme, "dark");
+      await publicPage.reload({ waitUntil: "domcontentloaded" });
+      await publicPage.locator(".theme-toggle").filter({ visible: true }).first().waitFor({ state: "visible" });
+      await publicPage.locator('.theme-toggle[aria-label="Use light mode"]').first().waitFor({ state: "visible" });
+      await publicPage.locator(".landing-gateway").waitFor({ state: "visible" });
+      const persistedDarkMetrics = await inspectTheme(publicPage);
+      assert.equal(persistedDarkMetrics.theme, "dark", "Dark selection must persist after reload.");
+      assert.equal(persistedDarkMetrics.gatewayBackground, "rgb(17, 24, 33)", "The gateway must use the selected dark canvas.");
+      assert.equal(persistedDarkMetrics.gatewayHeadingColor, "rgb(246, 241, 233)", "The gateway headline must use the selected dark foreground.");
+      assert.equal(persistedDarkMetrics.toggleLabel, "Use light mode");
+      assert.deepEqual(publicErrors, []);
+      await publicPage.screenshot({ path: join(outputDir, "public-selected-dark-persisted.png"), fullPage: false });
+      proof.results.push({ route: "/", state: "default-light", metrics: defaultMetrics });
+      proof.results.push({ route: "/", state: "selected-dark", metrics: selectedDarkMetrics });
+      proof.results.push({ route: "/", state: "persisted-dark", metrics: persistedDarkMetrics, pageErrors: publicErrors });
+      await publicContext.close();
+    }
 
     const parentContext = await browser.newContext({ colorScheme: "light" });
     await addRoleSession(parentContext, "parent");
@@ -257,7 +274,7 @@ async function main() {
         assert.deepEqual(axeViolations, [], `${route} has serious or critical axe violations at ${viewport.width}px.`);
         assert.deepEqual(pageErrors, [], `${route} emitted browser errors at ${viewport.width}px.`);
         parentPage.off("pageerror", onPageError);
-        const shouldCapture = ["/parent", "/parent/schedule", "/team-chat"].includes(route);
+        const shouldCapture = familyRoutes.length <= 2 || ["/parent", "/parent/schedule", "/team-chat"].includes(route);
         const screenshotPath = shouldCapture
           ? join(outputDir, `${route.slice(1).replaceAll("/", "-")}-${viewport.name}-dark.png`)
           : null;
@@ -265,16 +282,19 @@ async function main() {
         proof.results.push({ route, role: "parent", state: "selected-dark", viewport, metrics, lightPanels, axeViolations, pageErrors, screenshotPath });
       }
     }
-    await parentPage.locator(".theme-toggle").first().click();
-    await openSettled(parentPage, "/parent");
+    const parentThemeToggle = parentPage.locator('.theme-toggle[aria-label="Use light mode"]').filter({ visible: true }).first();
+    await parentThemeToggle.click();
+    await parentPage.waitForFunction(() => document.documentElement.dataset.theme === "light");
+    const selectedLightRoute = familyRoutes[0] ?? "/parent";
+    await openSettled(parentPage, selectedLightRoute);
     const selectedLightMetrics = await inspectTheme(parentPage);
     assert.equal(selectedLightMetrics.theme, "light", "Light selection must replace dark across navigation.");
     assert.equal(selectedLightMetrics.toggleLabel, "Use dark mode");
     await parentPage.screenshot({ path: join(outputDir, "parent-selected-light.png"), fullPage: false });
-    proof.results.push({ route: "/parent", role: "parent", state: "selected-light", metrics: selectedLightMetrics });
+    proof.results.push({ route: selectedLightRoute, role: "parent", state: "selected-light", metrics: selectedLightMetrics });
     await parentContext.close();
 
-    for (const role of ["coach", "admin"]) {
+    for (const role of familyOnly ? [] : ["coach", "admin"]) {
       const context = await browser.newContext({ colorScheme: "light", viewport: { width: 1440, height: 1000 } });
       await addRoleSession(context, role);
       await setSavedTheme(context, "dark");

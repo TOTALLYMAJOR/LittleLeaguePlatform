@@ -10,5 +10,6 @@ yarn-error.log*
 pnpm-debug.log*
 *.tsbuildinfo
 .playwright-cli/
+.history/
 supabase/.temp/
 .vercel
