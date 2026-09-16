@@ -11,10 +11,8 @@ import {
   UsersRound,
   WifiOff
 } from "lucide-react";
-import { LandingIntroOverlay } from "@/components/landing-intro-overlay";
 import { LandingSky } from "@/components/landing-sky";
 import { LandingWeatherNotification } from "@/components/landing-weather-notification";
-import { ReplayIntroButton } from "@/components/replay-intro-button";
 import { getServerShellAccess, toClientShellAccess } from "@/lib/supabase/shell-access";
 import type { ClientShellAccess } from "@/lib/navigation/route-topology";
 import heroImage from "@/public/images/leaguepilot-community-game-day-hero.png";
@@ -94,7 +92,6 @@ export default async function HomePage() {
   return (
     <div className="landing-gateway">
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(STRUCTURED_DATA) }} />
-      <LandingIntroOverlay />
       <section className="landing-gateway-hero" aria-labelledby="landing-title">
         <LandingSky />
 
@@ -124,26 +121,28 @@ export default async function HomePage() {
             </li>
             <li>
               <UsersRound aria-hidden="true" size={18} strokeWidth={2.1} />
-              <span>Built for volunteers. Nobody here gets paid.</span>
+              <span>Built for volunteer-run leagues.</span>
             </li>
             <li>
               <WifiOff aria-hidden="true" size={18} strokeWidth={2.1} />
-              <span>Field-ready. Schedules keep working offline on game day.</span>
+              <span>Schedules work offline on game day.</span>
             </li>
           </ul>
         </div>
 
-        <div className="landing-gateway-media" aria-hidden="true">
-          <Image
-            alt=""
-            fill
-            priority
-            placeholder="blur"
-            sizes="(max-width: 760px) 100vw, 58vw"
-            src={heroImage}
-          />
+        <div className="landing-gateway-visual">
+          <div className="landing-gateway-media" aria-hidden="true">
+            <Image
+              alt=""
+              fill
+              priority
+              placeholder="blur"
+              sizes="(max-width: 760px) calc(100vw - 28px), 44vw"
+              src={heroImage}
+            />
+          </div>
+          <LandingWeatherNotification />
         </div>
-        <LandingWeatherNotification />
 
         <nav className="landing-gateway-actions" aria-label="Get started">
           <Link className="landing-gateway-action" href="/schedule">
@@ -174,10 +173,6 @@ export default async function HomePage() {
             <ArrowRight className="landing-gateway-action-arrow" aria-hidden="true" size={18} strokeWidth={2.2} />
           </Link>
         </nav>
-
-        <div className="landing-gateway-footer">
-          <ReplayIntroButton />
-        </div>
       </section>
     </div>
   );

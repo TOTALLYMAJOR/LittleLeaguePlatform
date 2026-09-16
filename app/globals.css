@@ -16633,3 +16633,341 @@ html[data-intro="playing"] .landing-weather-card {
   background: #132b4b;
   color: #cfe2ff;
 }
+
+/* =============================================================================
+   LP-UX-022 HOMEPAGE COMPOSITION
+   Keeps the existing public routes and truth boundaries while replacing the
+   overlapping image, weather, and intro layers with one calm game-day panel.
+   ============================================================================= */
+
+.landing-gateway {
+  padding-top: clamp(28px, 4vw, 56px);
+}
+
+.landing-gateway-hero {
+  grid-template-columns: minmax(0, 1.02fr) minmax(410px, 0.98fr);
+  grid-template-rows: auto auto;
+  column-gap: clamp(36px, 5vw, 72px);
+  row-gap: clamp(22px, 3vw, 34px);
+  align-items: start;
+  width: min(100%, 1320px);
+  min-height: auto;
+}
+
+.landing-gateway-copy {
+  align-content: start;
+  padding-top: clamp(18px, 4vh, 44px);
+}
+
+.landing-gateway-copy h1 {
+  max-width: 10ch;
+  font-size: clamp(3.7rem, 6vw, 6.15rem);
+}
+
+.landing-gateway-summary {
+  max-width: 46ch;
+}
+
+.landing-gateway-visual {
+  position: relative;
+  z-index: 2;
+  display: grid;
+  grid-column: 2;
+  grid-row: 1;
+  align-self: stretch;
+  overflow: hidden;
+  border: 1px solid var(--gateway-line);
+  border-radius: 26px;
+  background: rgb(255 255 255 / 94%);
+  box-shadow: 0 24px 60px rgb(27 81 145 / 16%);
+}
+
+.landing-gateway-visual .landing-gateway-media {
+  position: relative;
+  inset: auto;
+  grid-column: auto;
+  grid-row: auto;
+  min-height: clamp(300px, 30vw, 390px);
+  border: 0;
+  border-radius: 0;
+  box-shadow: none;
+}
+
+.landing-gateway-visual .landing-gateway-media::before,
+.landing-gateway-visual .landing-gateway-media::after,
+.landing-gateway-visual .landing-gateway-media img {
+  border-radius: 0;
+}
+
+.landing-gateway-visual .landing-gateway-media img {
+  object-position: 56% center;
+}
+
+.landing-gateway-visual .landing-weather-card {
+  position: static;
+  inset: auto;
+  z-index: auto;
+  gap: 12px;
+  width: auto;
+  margin: 0;
+  padding: 16px 18px 18px;
+  border: 0;
+  border-top: 1px solid var(--gateway-line);
+  border-radius: 0;
+  background: rgb(255 255 255 / 96%);
+  box-shadow: none;
+  backdrop-filter: none;
+  opacity: 1;
+  animation: none;
+}
+
+.landing-weather-card header {
+  gap: 9px;
+}
+
+.landing-weather-card-icon {
+  background: var(--gateway-ink);
+  color: var(--gateway-paper);
+}
+
+.landing-weather-card-app,
+.landing-weather-card-time {
+  color: var(--gateway-muted);
+}
+
+.landing-weather-conditions {
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  gap: 12px;
+  margin-top: 0;
+}
+
+.landing-weather-glyph {
+  width: 44px;
+  height: 44px;
+}
+
+.landing-weather-readout {
+  gap: 3px;
+}
+
+.landing-weather-readout span {
+  color: var(--gateway-muted);
+  font-size: 0.68rem;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+.landing-weather-readout strong {
+  color: var(--gateway-ink);
+  font-size: 1rem;
+  line-height: 1.25;
+  letter-spacing: -0.015em;
+}
+
+.landing-weather-flow {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr) auto minmax(0, 1fr);
+  gap: 7px;
+  align-items: center;
+  margin: 0;
+  padding: 11px 0;
+  border-top: 1px solid color-mix(in srgb, var(--gateway-line) 75%, transparent);
+  border-bottom: 1px solid color-mix(in srgb, var(--gateway-line) 75%, transparent);
+  color: var(--gateway-muted);
+  list-style: none;
+}
+
+.landing-weather-flow li {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+  min-width: 0;
+  font-size: 0.68rem;
+  font-weight: 750;
+  line-height: 1.2;
+}
+
+.landing-weather-flow li > span {
+  display: grid;
+  flex: 0 0 auto;
+  place-items: center;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: color-mix(in srgb, var(--gateway-action) 12%, white);
+  color: var(--gateway-action);
+  font-size: 0.62rem;
+}
+
+.landing-weather-flow > svg {
+  color: color-mix(in srgb, var(--gateway-muted) 62%, transparent);
+}
+
+.landing-weather-card-detail {
+  color: var(--gateway-muted);
+}
+
+.landing-weather-card-detail strong {
+  color: var(--gateway-ink);
+}
+
+.landing-gateway-actions {
+  align-self: stretch;
+}
+
+:root[data-theme="dark"] .landing-gateway-visual {
+  border-color: var(--gateway-line);
+  background: rgb(12 29 53 / 96%);
+  box-shadow: 0 24px 60px rgb(0 0 0 / 26%);
+}
+
+:root[data-theme="dark"] .landing-gateway-visual .landing-weather-card {
+  border-top-color: var(--gateway-line);
+  background: rgb(12 29 53 / 98%);
+  box-shadow: none;
+}
+
+:root[data-theme="dark"] .landing-weather-readout strong,
+:root[data-theme="dark"] .landing-weather-card-detail strong {
+  color: var(--text);
+}
+
+:root[data-theme="dark"] .landing-weather-flow li > span {
+  background: rgb(255 212 90 / 14%);
+  color: #f3d98e;
+}
+
+@media (max-width: 1040px) {
+  .landing-gateway-hero {
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-rows: auto auto auto;
+    width: min(100%, 880px);
+  }
+
+  .landing-gateway-copy {
+    grid-column: 1;
+    grid-row: 1;
+    max-width: 760px;
+    padding-top: 10px;
+  }
+
+  .landing-gateway-copy h1 {
+    font-size: clamp(3.7rem, 9vw, 5.8rem);
+  }
+
+  .landing-gateway-visual {
+    grid-template-columns: minmax(0, 1fr);
+    grid-column: 1;
+    grid-row: 2;
+  }
+
+  .landing-gateway-visual .landing-gateway-media {
+    min-height: 390px;
+  }
+
+  .landing-gateway-visual .landing-weather-card {
+    border-top: 1px solid var(--gateway-line);
+    border-left: 0;
+  }
+
+  .landing-weather-flow {
+    grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr) auto minmax(0, 1fr);
+  }
+
+  .landing-gateway-actions {
+    grid-column: 1;
+    grid-row: 3;
+  }
+}
+
+@media (max-width: 760px) {
+  .public-header-gateway {
+    align-items: center !important;
+    flex-direction: row !important;
+    flex-wrap: nowrap;
+  }
+
+  .landing-gateway {
+    padding: 22px 14px 58px;
+  }
+
+  .landing-gateway-hero {
+    grid-template-rows: auto auto auto;
+    gap: 18px;
+  }
+
+  .landing-gateway-copy {
+    padding: 8px 4px 2px;
+  }
+
+  .landing-gateway-copy h1 {
+    max-width: 10ch;
+    font-size: clamp(3.05rem, 14vw, 4.5rem);
+  }
+
+  .landing-gateway-assurances {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .landing-gateway-assurances li {
+    min-width: 0;
+  }
+
+  .landing-gateway-assurances li:last-child {
+    grid-column: 1 / -1;
+  }
+
+  .landing-gateway-visual {
+    grid-template-columns: 1fr;
+    border-radius: 22px;
+  }
+
+  .landing-gateway-visual .landing-gateway-media {
+    min-height: clamp(260px, 72vw, 360px);
+    border-width: 0;
+  }
+
+  .landing-gateway-visual .landing-weather-card {
+    grid-column: auto;
+    grid-row: auto;
+    padding: 15px 16px 17px;
+    border-top: 1px solid var(--gateway-line);
+    border-left: 0;
+  }
+
+  .landing-weather-flow {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 7px;
+  }
+
+  .landing-weather-flow li {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .landing-gateway-actions {
+    grid-row: 3;
+    margin-top: 0;
+  }
+
+  .landing-gateway-action {
+    min-height: 96px;
+  }
+}
+
+@media (max-width: 430px) {
+  .landing-weather-conditions {
+    grid-template-columns: auto minmax(0, 1fr);
+  }
+
+  .landing-weather-card-severity {
+    grid-column: 2;
+  }
+}
+
+@media (forced-colors: active) {
+  .landing-gateway-visual {
+    border: 1px solid ButtonText;
+    forced-color-adjust: auto;
+  }
+}
