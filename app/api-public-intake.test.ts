@@ -102,6 +102,8 @@ describe("public intake API rate limits", () => {
       teamId: "team-1",
       parentName: "Taylor Parent",
       parentEmail: "parent@example.com",
+      parentPhone: "",
+      smsOptIn: false,
       playerFirstName: "Mason",
       playerLastInitial: "M"
     }));
@@ -152,6 +154,8 @@ describe("public intake API rate limits", () => {
       teamId: "team-1",
       parentName: "Taylor Parent",
       parentEmail: "parent@example.com",
+      parentPhone: "",
+      smsOptIn: false,
       playerFirstName: "Mason",
       playerLastInitial: "M"
     });

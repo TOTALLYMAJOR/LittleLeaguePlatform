@@ -1,3 +1,5 @@
+import { readFileSync } from "node:fs";
+import { join } from "node:path";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { createSupabaseAdminClient } from "./admin";
 import { listRegistrationRequests } from "./registrations";
@@ -74,5 +76,24 @@ describe("registration request tenant scope", () => {
   it("fails closed when the caller has no organization scope", async () => {
     await expect(listRegistrationRequests({ organizationIds: [] })).resolves.toEqual([]);
     expect(createSupabaseAdminClientMock).not.toHaveBeenCalled();
+  });
+});
+
+describe("registration SMS consent boundary", () => {
+  const adapter = readFileSync(join(process.cwd(), "lib/supabase/registrations.ts"), "utf8");
+  const migration = readFileSync(
+    join(process.cwd(), "supabase/migrations/20260912100000_registration_sms_consent.sql"),
+    "utf8"
+  );
+
+  it("stores only affirmative, complete SMS consent and grants no access", () => {
+    expect(adapter).toContain("normalized.smsOptIn ? normalized.parentPhone : null");
+    expect(adapter).toContain('normalized.smsOptIn ? "registration-v1" : null');
+    expect(adapter).toContain("/^\\+[1-9]\\d{7,14}$/");
+    expect(migration).toContain("sms_opted_in_at is null and parent_phone is null");
+    expect(migration).toContain("sms_consent_version = 'registration-v1'");
+    expect(migration).toContain("not an access grant or delivery result");
+    expect(migration).not.toContain("team_memberships");
+    expect(migration).not.toContain("provider_delivery");
   });
 });

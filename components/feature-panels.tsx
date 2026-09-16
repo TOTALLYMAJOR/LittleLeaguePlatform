@@ -5632,13 +5632,15 @@ export function RegistrationClient({
   const [teamId, setTeamId] = useState("");
   const [parentName, setParentName] = useState("");
   const [parentEmail, setParentEmail] = useState("");
+  const [parentPhone, setParentPhone] = useState("");
+  const [smsOptIn, setSmsOptIn] = useState(false);
   const [playerFirstName, setPlayerFirstName] = useState("");
   const [playerLastInitial, setPlayerLastInitial] = useState("");
   const [message, setMessage] = useState("");
   const [isPending, startTransition] = useTransition();
 
   function submitRegistration() {
-    const input = { teamId, parentName, parentEmail, playerFirstName, playerLastInitial, now: new Date().toISOString() };
+    const input = { teamId, parentName, parentEmail, parentPhone, smsOptIn, playerFirstName, playerLastInitial, now: new Date().toISOString() };
     const preview = validateRegistrationRequestInput(input, teams.map((team) => team.id));
     setMessage(preview.message);
     if (!preview.ok) return;
@@ -5680,17 +5682,26 @@ export function RegistrationClient({
           <label>Team<select value={teamId} onChange={(event) => setTeamId(event.target.value)}><option value="">Choose a team</option>{teams.map((team) => <option key={team.id} value={team.id}>{team.name} ({team.division})</option>)}</select></label>
           <label>Your name<input autoComplete="name" value={parentName} onChange={(event) => setParentName(event.target.value)} /></label>
           <label>Your email<input autoComplete="email" type="email" value={parentEmail} onChange={(event) => setParentEmail(event.target.value)} /></label>
+          <label>Mobile number (optional)<input autoComplete="tel" inputMode="tel" type="tel" placeholder="+13125551234" value={parentPhone} onChange={(event) => setParentPhone(event.target.value)} /></label>
+          <label className="check-row">
+            <input type="checkbox" checked={smsOptIn} onChange={(event) => setSmsOptIn(event.target.checked)} />
+            <span>
+              By checking this box and providing my mobile number, I agree to receive SMS messages from LeaguePilot about my team-access request and essential team updates. Message frequency may vary. Standard message and data rates may apply. Reply STOP to opt out. Reply HELP for help. Consent is not a condition of requesting access or using LeaguePilot. See our <a href="/terms">Terms of Service</a> and <a href="/privacy">Privacy Policy</a>.
+            </span>
+          </label>
+          <p className="muted">SMS is optional. The checkbox is unchecked by default, and no text is sent when you submit this form.</p>
           <label>Child&apos;s first name<input autoComplete="off" value={playerFirstName} onChange={(event) => setPlayerFirstName(event.target.value)} /></label>
           <label>Child&apos;s last initial<input autoComplete="off" value={playerLastInitial} onChange={(event) => setPlayerLastInitial(event.target.value)} maxLength={1} /></label>
           <button onClick={submitRegistration} disabled={isPending}>{isPending ? "Sending request..." : "Request Team Access"}</button>
           <p className="muted">This request does not open private team information. It gives the league enough detail to review the match.</p>
+          {submittedRegistrationRequests.length > 0 ? <a className="button secondary" href="/auth">Continue to sign in</a> : null}
         </article>
         <article className="card stack access-review-timeline">
           <h2>What happens next</h2>
           <ol>
             <li><strong>We receive your request</strong><span>You will see a confirmation here. Keep the reference if you contact league support.</span></li>
             <li><strong>The league checks the match</strong><span>An administrator compares your details with current registration or roster records. The usual review target is {reviewWindow}.</span></li>
-            <li><strong>You receive the next step</strong><span>The league sends an invitation, asks for more information, or explains how to resolve the request safely.</span></li>
+            <li><strong>You receive the next step</strong><span>The league provides an invitation, asks for more information, or explains how to resolve the request safely. You can sign in after your account is ready.</span></li>
           </ol>
           <p className="notice">Privacy promise: children do not create LeaguePilot accounts. Other families cannot see your request or its status.</p>
           <h3>Your request receipt</h3>

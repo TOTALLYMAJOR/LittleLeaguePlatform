@@ -83,6 +83,8 @@ describe("public intake abuse controls", () => {
         teamId: "team-1",
         parentName: "Parent Example",
         parentEmail: "parent@example.com",
+        parentPhone: "+13125551234",
+        smsOptIn: true,
         playerFirstName: "Player",
         playerLastInitial: "E",
       }),
@@ -93,6 +95,10 @@ describe("public intake abuse controls", () => {
     expect(response.headers.get("X-RateLimit-Remaining")).toBe("4");
     expect(response.headers.get("Retry-After")).toBeNull();
     expect(createPendingRegistrationMock).toHaveBeenCalledOnce();
+    expect(createPendingRegistrationMock).toHaveBeenCalledWith(expect.objectContaining({
+      parentPhone: "+13125551234",
+      smsOptIn: true,
+    }));
   });
 
   it("throttles registration bursts per client IP", async () => {

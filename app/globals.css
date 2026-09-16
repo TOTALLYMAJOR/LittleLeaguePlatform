@@ -9394,6 +9394,124 @@ button.theme-toggle:hover:not(:disabled) {
   font-size: 0.75rem;
 }
 
+.public-app-shell {
+  display: flex;
+  flex-direction: column;
+}
+
+.public-main {
+  flex: 1 0 auto;
+}
+
+.public-legal-footer {
+  border-top: 1px solid var(--line);
+  background: color-mix(in srgb, var(--surface) 94%, var(--accent-soft));
+  color: var(--muted);
+  flex: 0 0 auto;
+}
+
+.public-legal-footer-inner {
+  display: flex;
+  justify-content: space-between;
+  gap: var(--sp-6);
+  width: min(100% - 40px, 1240px);
+  margin-inline: auto;
+  padding: var(--sp-5) 0;
+  font-size: var(--text-sm);
+}
+
+.public-legal-footer-brand,
+.public-legal-footer nav {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--sp-2) var(--sp-4);
+  align-items: center;
+}
+
+.public-legal-footer-brand strong {
+  color: var(--text);
+}
+
+.public-legal-footer a {
+  color: var(--accent-strong);
+  font-weight: 700;
+}
+
+.legal-page {
+  gap: var(--sp-5);
+  max-width: 880px;
+  padding-block: clamp(32px, 6vw, 72px);
+}
+
+.legal-hero {
+  display: grid;
+  gap: var(--sp-3);
+  padding-bottom: var(--sp-5);
+  border-bottom: 1px solid var(--line);
+}
+
+.legal-page section {
+  display: grid;
+  gap: var(--sp-3);
+}
+
+.legal-page h1,
+.legal-page h2,
+.legal-page p,
+.legal-page ul {
+  margin: 0;
+}
+
+.legal-page h1 {
+  font-size: clamp(2.25rem, 7vw, 4rem);
+  letter-spacing: -0.045em;
+  line-height: 1;
+}
+
+.legal-page h2 {
+  font-size: clamp(1.2rem, 3vw, 1.55rem);
+}
+
+.legal-page p,
+.legal-page li {
+  line-height: 1.7;
+}
+
+.legal-page ul {
+  display: grid;
+  gap: var(--sp-2);
+  padding-left: 1.25rem;
+}
+
+.legal-effective-date {
+  color: var(--muted);
+  font-size: var(--text-sm);
+}
+
+.legal-summary {
+  padding: var(--sp-5);
+  border: 1px solid color-mix(in srgb, var(--accent) 26%, var(--line));
+  border-radius: var(--radius-md);
+  background: var(--accent-soft);
+}
+
+@media (max-width: 640px) {
+  .public-legal-footer-inner,
+  .public-legal-footer-brand,
+  .public-legal-footer nav {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .public-legal-footer-inner {
+    width: min(100% - 32px, 1240px);
+  }
+
+  .legal-page {
+    padding: var(--sp-5) var(--sp-4);
+  }
+}
+
 .access-review-timeline ol {
   display: grid;
   gap: 18px;

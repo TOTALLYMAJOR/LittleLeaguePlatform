@@ -35,6 +35,8 @@ export async function POST(request: Request) {
     teamId: String(body.teamId ?? ""),
     parentName: String(body.parentName ?? ""),
     parentEmail: String(body.parentEmail ?? ""),
+    parentPhone: String(body.parentPhone ?? ""),
+    smsOptIn: body.smsOptIn === true,
     playerFirstName: String(body.playerFirstName ?? ""),
     playerLastInitial: String(body.playerLastInitial ?? ""),
   });

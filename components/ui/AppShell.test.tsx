@@ -136,6 +136,16 @@ describe("AppShell private sign-out boundary", () => {
     expect(toggle).not.toContain("prefers-color-scheme");
   });
 
+  it("publishes legal and privacy contact links in the public footer", () => {
+    const shell = readFileSync(join(process.cwd(), "components", "ui", "AppShell.tsx"), "utf8");
+
+    expect(shell).toContain('className="public-legal-footer"');
+    expect(shell).toContain('href="/terms"');
+    expect(shell).toContain('href="/privacy"');
+    expect(shell).toContain('href="mailto:privacy@leaguepilot.us"');
+    expect(shell).toContain("<PublicLegalFooter />");
+  });
+
   it("keeps the spectrum workspace theme app-wide without weakening shell authority", () => {
     const shell = readFileSync(join(process.cwd(), "components", "ui", "AppShell.tsx"), "utf8");
     const css = readFileSync(join(process.cwd(), "app", "globals.css"), "utf8");

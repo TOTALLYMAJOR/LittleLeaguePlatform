@@ -868,12 +868,44 @@ describe("RegistrationClient", () => {
     expect(html).toContain("Privacy promise");
     expect(html).toContain("Your request receipt");
     expect(html).toContain("Choose a team");
+    expect(html).toContain("agree to receive SMS messages from LeaguePilot about my team-access request and essential team updates");
+    expect(html).toContain("Message frequency may vary");
+    expect(html).toContain("Reply STOP to opt out");
+    expect(html).toContain("Reply HELP for help");
+    expect(html).toContain("Consent is not a condition of requesting access or using LeaguePilot");
+    expect(html).toContain('href="/terms"');
+    expect(html).toContain('href="/privacy"');
+    expect(html).toContain("checkbox is unchecked by default");
+    expect(html).not.toContain("Continue to sign in");
     expect(html).not.toContain("Pending requests");
     expect(html).not.toContain("Demo Pending Parent");
     expect(html).not.toContain("Casey Morgan");
     expect(html).not.toContain("casey@example.com");
     expect(html).not.toContain("invite token");
     expect(html).not.toContain("access grant");
+  });
+
+  it("shows the sign-in path after a registration receipt without treating consent as access", () => {
+    const html = renderToStaticMarkup(
+      <AppStateProvider>
+        <RegistrationClient registrationRequests={[{
+          id: "request-1",
+          organizationId: "org-1",
+          seasonId: "season-1",
+          teamId: "team-1",
+          parentName: "Parent Example",
+          parentEmail: "parent@example.com",
+          playerFirstName: "Avery",
+          playerLastInitial: "E",
+          status: "pending",
+          createdAt: "2026-09-12T12:00:00.000Z"
+        }]} />
+      </AppStateProvider>
+    );
+
+    expect(html).toContain('href="/auth"');
+    expect(html).toContain("Continue to sign in");
+    expect(html).toContain("This request does not open private team information");
   });
 
   it("renders server-backed team options without falling back to seed ids", () => {

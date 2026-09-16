@@ -101,6 +101,25 @@ const routeHelpByHref: Record<string, string> = {
   "/admin/security-audit": "Use this page to confirm role boundaries, access-policy proof, and audit evidence."
 };
 
+function PublicLegalFooter() {
+  return (
+    <footer className="public-legal-footer" aria-label="LeaguePilot legal and contact information">
+      <div className="public-legal-footer-inner">
+        <div className="public-legal-footer-brand">
+          <strong>LeaguePilot</strong>
+          <span>Private youth sports operations for families, coaches, and league administrators.</span>
+          <span>© {new Date().getFullYear()} LeaguePilot. All rights reserved.</span>
+        </div>
+        <nav aria-label="Legal links">
+          <Link href="/terms">Terms of Service</Link>
+          <Link href="/privacy">Privacy Policy</Link>
+          <a href="mailto:privacy@leaguepilot.us">privacy@leaguepilot.us</a>
+        </nav>
+      </div>
+    </footer>
+  );
+}
+
 function getShellContext(pathname: string, access: ClientShellAccess) {
   const entry = getRouteEntry(pathname);
   if (entry && !canAccessRouteEntry(entry, access)) {
@@ -312,6 +331,7 @@ export function AppShell({ access = signedOutShellAccess, children }: { access?:
             </nav>
           </header>
           <main id="main-content" className="public-main">{children}</main>
+          <PublicLegalFooter />
         </div>
         <div id="live-region" aria-live="polite" aria-atomic="true">
           {isOffline ? "Offline mode active" : "Route ready"}

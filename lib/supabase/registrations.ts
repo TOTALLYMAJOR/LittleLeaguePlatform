@@ -7,6 +7,8 @@ export interface PublicRegistrationInput {
   teamId: string;
   parentName: string;
   parentEmail: string;
+  parentPhone: string;
+  smsOptIn: boolean;
   playerFirstName: string;
   playerLastInitial: string;
 }
@@ -62,6 +64,8 @@ function normalizeRegistrationInput(input: PublicRegistrationInput) {
     teamId: input.teamId.trim(),
     parentName: input.parentName.trim(),
     parentEmail: input.parentEmail.trim().toLowerCase(),
+    parentPhone: input.parentPhone.replace(/[\s().-]/g, ""),
+    smsOptIn: input.smsOptIn,
     playerFirstName: input.playerFirstName.trim(),
     playerLastInitial: input.playerLastInitial.trim().slice(0, 1).toUpperCase()
   };
@@ -73,6 +77,9 @@ function validateRegistrationInput(input: ReturnType<typeof normalizeRegistratio
     return "Enter your name, your child’s first name, and your child’s last initial.";
   }
   if (!input.parentEmail.includes("@")) return "Enter a valid email address.";
+  if (input.smsOptIn && !/^\+[1-9]\d{7,14}$/.test(input.parentPhone)) {
+    return "Enter a mobile number with country code, such as +13125551234, to opt in to SMS.";
+  }
   return null;
 }
 
@@ -187,6 +194,9 @@ export async function createPendingRegistration(input: PublicRegistrationInput):
         team_id: team.id,
         parent_name: normalized.parentName,
         parent_email: normalized.parentEmail,
+        parent_phone: normalized.smsOptIn ? normalized.parentPhone : null,
+        sms_opted_in_at: normalized.smsOptIn ? new Date().toISOString() : null,
+        sms_consent_version: normalized.smsOptIn ? "registration-v1" : null,
         player_first_name: normalized.playerFirstName,
         player_last_initial: normalized.playerLastInitial,
         status: "pending"
