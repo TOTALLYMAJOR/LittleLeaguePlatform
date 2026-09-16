@@ -1200,6 +1200,63 @@ dialog::backdrop { background: rgba(15, 23, 42, 0.5); backdrop-filter: blur(3px)
   border-color: color-mix(in srgb, var(--guardian-accent) 35%, var(--line));
 }
 
+.invite-account-section {
+  display: grid;
+  justify-items: center;
+}
+
+.invite-account-card {
+  width: min(100%, 680px);
+  border-color: color-mix(in srgb, var(--guardian-accent) 26%, var(--line));
+  box-shadow: var(--shadow-card);
+}
+
+.invite-account-heading {
+  align-items: start;
+  display: flex;
+  gap: var(--sp-4);
+  justify-content: space-between;
+}
+
+.invite-account-heading h2,
+.invite-existing-account {
+  margin: 0;
+}
+
+.invite-sms-consent {
+  align-items: start;
+  background: color-mix(in srgb, var(--surface-strong) 78%, var(--accent-soft));
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  gap: var(--sp-3);
+  padding: var(--sp-4);
+}
+
+.invite-sms-consent input[type="checkbox"] {
+  margin-top: 0.2rem;
+}
+
+.invite-sms-consent span {
+  color: var(--muted);
+  font-size: var(--text-sm);
+  font-weight: 550;
+  line-height: 1.65;
+}
+
+.invite-sms-consent a,
+.invite-existing-account a {
+  color: var(--accent-strong);
+  font-weight: 800;
+}
+
+@media (max-width: 640px) {
+  .invite-account-heading {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: var(--sp-2);
+  }
+}
+
 .break-anywhere {
   overflow-wrap: anywhere;
 }

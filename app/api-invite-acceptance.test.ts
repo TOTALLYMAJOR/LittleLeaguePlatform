@@ -16,9 +16,21 @@ describe("invite acceptance API", () => {
     const response = await POST(new Request("http://localhost/api/invites/accept", {
       method: "POST",
       headers: { authorization: "Bearer token", "content-type": "application/json" },
-      body: JSON.stringify({ token: "a".repeat(32), userId: "attacker" })
+      body: JSON.stringify({
+        token: "a".repeat(32),
+        userId: "attacker",
+        fullName: "  Jordan Parent  ",
+        phone: "+1 (312) 555-1234",
+        smsOptIn: true
+      })
     }));
     expect(response.status).toBe(200);
-    expect(acceptMock).toHaveBeenCalledWith({ token: "a".repeat(32), userId: "parent-1" });
+    expect(acceptMock).toHaveBeenCalledWith({
+      token: "a".repeat(32),
+      userId: "parent-1",
+      fullName: "  Jordan Parent  ",
+      phone: "+1 (312) 555-1234",
+      smsOptIn: true
+    });
   });
 });

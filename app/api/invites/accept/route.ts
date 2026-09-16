@@ -6,6 +6,12 @@ export async function POST(request: Request) {
   const auth = await requireAuthenticatedRouteUser(request);
   if (!auth.ok || !auth.user) return NextResponse.json({ ok: false, message: auth.message }, { status: 401 });
   const body = await request.json().catch(() => null);
-  const result = await acceptParentInvite({ token: String(body?.token ?? ""), userId: auth.user.id });
+  const result = await acceptParentInvite({
+    token: String(body?.token ?? ""),
+    userId: auth.user.id,
+    fullName: String(body?.fullName ?? ""),
+    phone: String(body?.phone ?? ""),
+    smsOptIn: body?.smsOptIn === true
+  });
   return NextResponse.json(result, { status: result.ok ? 200 : 400 });
 }

@@ -222,6 +222,38 @@ export interface Database {
         Update: Partial<Database["public"]["Tables"]["parent_invites"]["Insert"]>;
         Relationships: [];
       };
+      parent_sms_consents: {
+        Row: {
+          id: RowId;
+          organization_id: RowId;
+          team_id: RowId;
+          user_id: RowId;
+          phone: string;
+          consent_version: string;
+          disclosure_text: string;
+          source: "parent_invite";
+          consented_at: Timestamp;
+          revoked_at: Timestamp | null;
+          created_at: Timestamp;
+          updated_at: Timestamp;
+        };
+        Insert: {
+          id?: RowId;
+          organization_id: RowId;
+          team_id: RowId;
+          user_id: RowId;
+          phone: string;
+          consent_version: string;
+          disclosure_text: string;
+          source: "parent_invite";
+          consented_at: Timestamp;
+          revoked_at?: Timestamp | null;
+          created_at?: Timestamp;
+          updated_at?: Timestamp;
+        };
+        Update: Partial<Database["public"]["Tables"]["parent_sms_consents"]["Insert"]>;
+        Relationships: [];
+      };
       player_guardians: {
         Row: {
           id: RowId;
@@ -717,6 +749,17 @@ export interface Database {
       };
       accept_parent_invite_by_hash: {
         Args: { target_invite_token_hash: string; accepting_user_id: RowId };
+        Returns: Json;
+      };
+      accept_parent_invite_with_contact: {
+        Args: {
+          target_invite_token_hash: string;
+          accepting_user_id: RowId;
+          parent_display_name: string;
+          parent_mobile_phone: string;
+          record_sms_consent: boolean;
+          consent_version: string;
+        };
         Returns: Json;
       };
       request_additional_guardian: {
