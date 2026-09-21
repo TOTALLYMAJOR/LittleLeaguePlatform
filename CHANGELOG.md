@@ -2,6 +2,9 @@
 
 ## Unreleased
 
+- Bound this changelog and the existing ADR history into the Proofloom
+  control-plane manifest so validation fails closed if either record authority
+  disappears; no parallel change or decision log was introduced.
 - Converted the repo root to a Next.js + TypeScript App Router scaffold.
 - Preserved the original static MVP prototype under `public/prototype/`.
 - Implemented all six `docs/Features.md` feature slices with typed local state: CSV duplicate detection, invite recovery, admin health, parent dashboard, RSVP, and schedule alert records.
