@@ -82,6 +82,7 @@ describe("route smoke coverage", () => {
     expect(page).toContain("/schedule");
     expect(page).toContain("/sponsors");
     expect(page).toContain("landing-gateway");
+    expect(page).toContain("LandingCelebration");
     expect(page).toContain("/images/leaguepilot-community-game-day-hero.png");
     expect(existsSync(join(process.cwd(), "public", "images", "leaguepilot-community-game-day-hero.png"))).toBe(true);
     expect(page).toContain("Children do not create accounts");

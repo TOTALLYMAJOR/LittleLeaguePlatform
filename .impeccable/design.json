@@ -1,0 +1,191 @@
+{
+  "schemaVersion": 2,
+  "generatedAt": "2026-10-10T00:00:00-05:00",
+  "title": "Design System: LeaguePilot",
+  "extensions": {
+    "colorMeta": {
+      "sky-paper": {
+        "role": "neutral",
+        "displayName": "Sky Paper",
+        "canonical": "#f7fbff",
+        "tonalRamp": ["#071b2f", "#173955", "#345b78", "#5f809d", "#91aac0", "#bed0df", "#e2edf5", "#f7fbff"]
+      },
+      "dugout-navy": {
+        "role": "neutral",
+        "displayName": "Dugout Navy",
+        "canonical": "#071b44",
+        "tonalRamp": ["#030a1a", "#071b44", "#17375f", "#315474", "#5d7592", "#8fa3ba", "#c4d1df", "#edf3f9"]
+      },
+      "league-blue": {
+        "role": "primary",
+        "displayName": "League Blue",
+        "canonical": "#1248b3",
+        "tonalRamp": ["#06183e", "#0a2b6b", "#1248b3", "#3769cb", "#6d91dd", "#a2b9eb", "#cfddf7", "#f1f6ff"]
+      },
+      "action-orange": {
+        "role": "tertiary",
+        "displayName": "Action Orange",
+        "canonical": "#c43a00",
+        "tonalRamp": ["#3f1100", "#702000", "#9d2f00", "#c43a00", "#e6632c", "#f69b74", "#ffd0ba", "#fff0e8"]
+      },
+      "success-green": {
+        "role": "secondary",
+        "displayName": "Success Green",
+        "canonical": "#057a55",
+        "tonalRamp": ["#02261b", "#034c36", "#057a55", "#229a73", "#55b995", "#8bd5bb", "#bcead8", "#e8faf2"]
+      }
+    },
+    "typographyMeta": {
+      "display": {
+        "displayName": "Clubhouse Display",
+        "purpose": "Welcoming page promises and major wayfinding."
+      },
+      "body": {
+        "displayName": "Operational Body",
+        "purpose": "Instructions, data, forms, and workflow context."
+      },
+      "label": {
+        "displayName": "Field Label",
+        "purpose": "Status categories, metadata, and navigation groups."
+      }
+    },
+    "shadows": [
+      {
+        "name": "quiet-lift",
+        "value": "0 2px 7px rgba(27, 81, 145, 0.06)",
+        "purpose": "Compact controls and disclosures."
+      },
+      {
+        "name": "clubhouse-surface",
+        "value": "0 10px 28px rgba(27, 81, 145, 0.08)",
+        "purpose": "Standard cards and work areas."
+      },
+      {
+        "name": "game-day-lift",
+        "value": "0 18px 44px rgba(27, 81, 145, 0.12)",
+        "purpose": "Raised, interactive, and public hero surfaces."
+      }
+    ],
+    "motion": [
+      {
+        "name": "state-standard",
+        "value": "180ms cubic-bezier(0.4, 0, 0.2, 1)",
+        "purpose": "Default control and surface state transition."
+      },
+      {
+        "name": "state-exit",
+        "value": "180ms cubic-bezier(0, 0, 0.2, 1)",
+        "purpose": "Brief exits and completion feedback."
+      }
+    ],
+    "breakpoints": [
+      { "name": "compact", "value": "430px" },
+      { "name": "mobile", "value": "640px" },
+      { "name": "public-stack", "value": "760px" },
+      { "name": "shell-collapse", "value": "900px" }
+    ]
+  },
+  "components": [
+    {
+      "name": "Primary Button",
+      "kind": "button",
+      "refersTo": "button-primary",
+      "description": "The single strongest permitted action on a surface.",
+      "html": "<button class=\"ds-btn-primary\">Continue</button>",
+      "css": ".ds-btn-primary{display:inline-flex;align-items:center;justify-content:center;min-height:44px;padding:10px 16px;border:0;border-radius:12px;background:var(--action,#c43a00);color:#fff;font:700 .875rem/1.35 var(--font-parent-sans,Geist,sans-serif);transition:background .18s cubic-bezier(.4,0,.2,1),box-shadow .18s cubic-bezier(.4,0,.2,1),transform .18s cubic-bezier(.4,0,.2,1)}.ds-btn-primary:hover{background:var(--action-strong,#9d2f00);box-shadow:0 2px 7px rgba(27,81,145,.06)}.ds-btn-primary:active{transform:translateY(1px)}.ds-btn-primary:focus-visible{outline:2px solid var(--accent,#1248b3);outline-offset:3px}"
+    },
+    {
+      "name": "Secondary Button",
+      "kind": "button",
+      "refersTo": "button-secondary",
+      "description": "A supporting action with clear but subordinate weight.",
+      "html": "<button class=\"ds-btn-secondary\">Review details</button>",
+      "css": ".ds-btn-secondary{display:inline-flex;align-items:center;justify-content:center;min-height:44px;padding:10px 16px;border:1px solid var(--line,#c9dcf2);border-radius:12px;background:var(--surface-strong,#e2efff);color:var(--text,#071b44);font:700 .875rem/1.35 var(--font-parent-sans,Geist,sans-serif);transition:background .18s cubic-bezier(.4,0,.2,1)}.ds-btn-secondary:hover{background:var(--line,#c9dcf2)}.ds-btn-secondary:focus-visible{outline:2px solid var(--accent,#1248b3);outline-offset:3px}"
+    },
+    {
+      "name": "Text Field",
+      "kind": "input",
+      "refersTo": "input",
+      "description": "A readable, full-width operational field.",
+      "html": "<label class=\"ds-field\"><span>Team name</span><input value=\"Riverside Rockets\" /></label>",
+      "css": ".ds-field{display:grid;gap:4px;color:var(--muted,#4a5f7f);font:700 .875rem/1.35 var(--font-parent-sans,Geist,sans-serif)}.ds-field input{width:100%;min-height:44px;padding:10px 12px;border:1px solid var(--line,#c9dcf2);border-radius:12px;background:var(--surface,#fff);color:var(--text,#071b44);font:400 1rem/1.55 var(--font-parent-sans,Geist,sans-serif)}.ds-field input:focus-visible{outline:none;border-color:var(--accent,#1248b3);box-shadow:0 0 0 3px rgba(21,112,239,.22)}"
+    },
+    {
+      "name": "Clubhouse Card",
+      "kind": "card",
+      "refersTo": "card",
+      "description": "The standard grouped surface for status and action.",
+      "html": "<article class=\"ds-card\"><span class=\"ds-card-label\">Game day</span><strong>Roster ready</strong><p>All required family responses are in.</p></article>",
+      "css": ".ds-card{display:grid;gap:8px;padding:20px;border:1px solid var(--line,#c9dcf2);border-radius:16px;background:var(--surface,#fff);box-shadow:0 10px 28px rgba(27,81,145,.08);color:var(--text,#071b44);font-family:var(--font-parent-sans,Geist,sans-serif)}.ds-card-label{color:var(--accent-strong,#0a347f);font-size:.75rem;font-weight:700;letter-spacing:.08em;text-transform:uppercase}.ds-card strong{font:700 1.2rem/1.25 var(--font-parent-display,Fredoka,sans-serif)}.ds-card p{margin:0;color:var(--muted,#4a5f7f);font-size:.875rem;line-height:1.55}"
+    },
+    {
+      "name": "Status Badge",
+      "kind": "chip",
+      "description": "A semantic state label that never relies on color alone.",
+      "html": "<span class=\"ds-status-badge\"><i></i>Pending review</span>",
+      "css": ".ds-status-badge{display:inline-flex;align-items:center;gap:5px;padding:3px 10px;border-radius:999px;background:var(--warning-soft,#fff4bf);color:var(--warning,#8a5900);font:700 .75rem/1.35 var(--font-parent-sans,Geist,sans-serif)}.ds-status-badge i{width:6px;height:6px;border-radius:50%;background:currentColor}.ds-status-badge:focus-visible{outline:2px solid var(--accent,#1248b3);outline-offset:3px}"
+    },
+    {
+      "name": "Selection Chip",
+      "kind": "chip",
+      "description": "A compact category or filter token.",
+      "html": "<span class=\"ds-chip\">Saturday games</span>",
+      "css": ".ds-chip{display:inline-flex;align-items:center;min-height:28px;padding:4px 8px;border:1px solid var(--line,#c9dcf2);border-radius:999px;background:var(--surface-strong,#e2efff);color:var(--text,#071b44);font:600 .75rem/1.35 var(--font-parent-sans,Geist,sans-serif)}"
+    },
+    {
+      "name": "Navigation Item",
+      "kind": "nav",
+      "description": "A role-aware destination with a strong active state.",
+      "html": "<a class=\"ds-nav-item\" href=\"#\" aria-current=\"page\">Schedule</a>",
+      "css": ".ds-nav-item{display:flex;align-items:center;min-height:44px;padding:8px 10px;border:1px solid transparent;border-radius:9px;color:var(--muted,#4a5f7f);font:650 .875rem/1.35 var(--font-parent-sans,Geist,sans-serif);text-decoration:none}.ds-nav-item:hover{background:var(--surface-soft,#eff6ff);color:var(--text,#071b44)}.ds-nav-item[aria-current=page]{border-color:var(--line,#c9dcf2);background:var(--accent-soft,#e7f0ff);color:var(--accent-strong,#0a347f);box-shadow:inset 3px 0 0 var(--action,#c43a00)}.ds-nav-item:focus-visible{outline:2px solid var(--accent,#1248b3);outline-offset:3px}"
+    }
+  ],
+  "narrative": {
+    "northStar": "The Organized Clubhouse",
+    "overview": "LeaguePilot should feel like the best-run clubhouse at the field: immediately welcoming to families, dependable under game-day pressure, and orderly enough that volunteer coaches and league administrators can find the next action without decoding the interface. Its warmth comes from rounded silhouettes, sky-and-field color cues, friendly display type, and real community imagery. Its authority comes from disciplined hierarchy, explicit state language, and role-aware navigation.\n\nThe system is tactile and friendly rather than decorative. Surfaces feel like labeled boards, cards, and trays that can be scanned and acted on. Public and family experiences may be more expressive; staff workspaces become denser and quieter while retaining the same colors, type voice, spacing rhythm, and action hierarchy.",
+    "keyCharacteristics": [
+      "Sky blue, clubhouse white, and dugout navy establish calm and trust.",
+      "Orange is a scarce action signal, not ambient decoration.",
+      "Fredoka gives headings a youth-sports warmth; Geist keeps operational text precise.",
+      "Rounded, lightly lifted surfaces provide structure without looking corporate or clinical.",
+      "Status, authority, and proof boundaries are stated in words as well as color.",
+      "Motion is brief and purposeful, with reduced-motion behavior treated as a first-class state."
+    ],
+    "rules": [
+      {
+        "name": "The One Action Color Rule",
+        "body": "Orange identifies the strongest available action or a true operational alert. Do not spread it across passive decoration.",
+        "section": "colors"
+      },
+      {
+        "name": "The State Has Language Rule",
+        "body": "Success, warning, danger, and informational color must be paired with a readable label, icon, or explanatory text.",
+        "section": "colors"
+      },
+      {
+        "name": "The Warm Head, Clear Body Rule",
+        "body": "Use Fredoka to orient and welcome; use Geist for every sentence the user must understand or act on.",
+        "section": "typography"
+      },
+      {
+        "name": "The Useful Lift Rule",
+        "body": "Elevation signals grouping, interactivity, or priority. A shadow without one of those jobs is noise.",
+        "section": "elevation"
+      }
+    ],
+    "dos": [
+      "Do lead each workflow with current state, why it matters, and the next permitted action.",
+      "Do preserve the blue-and-orange hierarchy across public, family, coach, and administrative surfaces.",
+      "Do use real labels alongside semantic color and maintain visible keyboard focus.",
+      "Do let family-facing screens breathe while making staff density intentional and scannable.",
+      "Do provide reduced-motion behavior for nonessential animation."
+    ],
+    "donts": [
+      "Don't use Action Orange as general decoration or allow multiple competing primary actions.",
+      "Don't imply persistence, delivery, approval, or live provider state through visual polish alone.",
+      "Don't hide role, team, or authority context when it changes what the user may do.",
+      "Don't add playful motion that delays a task, loops without purpose, or obscures recovery.",
+      "Don't replace the incumbent identity with generic SaaS gradients, glass panels, or anonymous dashboard chrome."
+    ]
+  }
+}

@@ -1,0 +1,108 @@
+{
+  "generatedAt": "2026-10-11T04:17:20.903Z",
+  "baseUrl": "http://localhost:3011",
+  "proof": [
+    {
+      "name": "desktop-light",
+      "viewport": {
+        "width": 1440,
+        "height": 1100
+      },
+      "colorScheme": "light",
+      "reducedMotion": "no-preference",
+      "metrics": {
+        "documentOverflow": false,
+        "cloudDisplay": "block",
+        "cloudChildCount": 2,
+        "cloudsBeforeFooter": true,
+        "actionsInsideCloudZone": true,
+        "cloudContentInsideZone": true,
+        "gameDayInsideCloudContent": true,
+        "actionsInsideCloudContent": true,
+        "visualWidth": 819,
+        "copyWidth": 481,
+        "assuranceBottomGap": 0,
+        "actionDisplay": "grid",
+        "cloudBottom": 890,
+        "footerTop": 1008,
+        "actionHeights": [
+          114,
+          114,
+          114
+        ],
+        "titleCount": 1,
+        "impeccablePreviewMarkers": 0
+      },
+      "pageErrors": [],
+      "screenshot": "/home/administrator/projects/youth-sports-platform-mvp-v3/output/playwright/lp-ux-026-ready-board/desktop-light.png"
+    },
+    {
+      "name": "mobile-dark",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "colorScheme": "dark",
+      "reducedMotion": "no-preference",
+      "metrics": {
+        "documentOverflow": false,
+        "cloudDisplay": "block",
+        "cloudChildCount": 2,
+        "cloudsBeforeFooter": true,
+        "actionsInsideCloudZone": true,
+        "cloudContentInsideZone": true,
+        "gameDayInsideCloudContent": true,
+        "actionsInsideCloudContent": true,
+        "visualWidth": 362,
+        "copyWidth": 362,
+        "assuranceBottomGap": 0,
+        "actionDisplay": "grid",
+        "cloudBottom": 1652,
+        "footerTop": 1652,
+        "actionHeights": [
+          84,
+          84,
+          84
+        ],
+        "titleCount": 1,
+        "impeccablePreviewMarkers": 0
+      },
+      "pageErrors": [],
+      "screenshot": "/home/administrator/projects/youth-sports-platform-mvp-v3/output/playwright/lp-ux-026-ready-board/mobile-dark.png"
+    },
+    {
+      "name": "mobile-reduced",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "colorScheme": "light",
+      "reducedMotion": "reduce",
+      "metrics": {
+        "documentOverflow": false,
+        "cloudDisplay": "none",
+        "cloudChildCount": 2,
+        "cloudsBeforeFooter": true,
+        "actionsInsideCloudZone": true,
+        "cloudContentInsideZone": true,
+        "gameDayInsideCloudContent": true,
+        "actionsInsideCloudContent": true,
+        "visualWidth": 362,
+        "copyWidth": 362,
+        "assuranceBottomGap": 0,
+        "actionDisplay": "grid",
+        "cloudBottom": 0,
+        "footerTop": 1652,
+        "actionHeights": [
+          84,
+          84,
+          84
+        ],
+        "titleCount": 1,
+        "impeccablePreviewMarkers": 0
+      },
+      "pageErrors": [],
+      "screenshot": "/home/administrator/projects/youth-sports-platform-mvp-v3/output/playwright/lp-ux-026-ready-board/mobile-reduced.png"
+    }
+  ]
+}
