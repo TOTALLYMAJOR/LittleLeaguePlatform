@@ -4,7 +4,8 @@ const localHostnames = new Set([
   "localhost",
   "127.0.0.1",
   "0.0.0.0",
-  "::1"
+  "::1",
+  "[::1]"
 ]);
 
 const uuidPattern = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
@@ -35,8 +36,21 @@ export function parsePublicFamilyTarget(value, blockers = []) {
     const mode = localHostnames.has(hostname) || hostname.endsWith(".localhost") || hostname.endsWith(".local")
       ? "local"
       : "hosted";
+
+    if (url.protocol !== "http:" && url.protocol !== "https:") {
+      blockers.push("PUBLIC_FAMILY_BASE_URL must use the HTTP or HTTPS protocol.");
+    }
+
+    if (url.username || url.password) {
+      blockers.push("PUBLIC_FAMILY_BASE_URL must not include embedded username or password credentials.");
+    }
+
+    if (mode === "hosted" && url.protocol !== "https:") {
+      blockers.push("Hosted PUBLIC_FAMILY_BASE_URL must use HTTPS.");
+    }
+
     return {
-      ok: true,
+      ok: blockers.length === 0,
       mode,
       baseUrl: url.origin + url.pathname.replace(/\/$/, ""),
       url

@@ -201,8 +201,12 @@ export async function AdminReportsArchiveSurface() {
 export async function AdminOperationsSurface() {
   const pageAccess = await requireAdminPageAccess();
   if (!pageAccess.ok) return <AdminAccessDeniedSurface message={pageAccess.message} />;
+  const organizationId = [...pageAccess.access.adminOrganizationIds].sort()[0];
+  if (!organizationId) {
+    return <AdminAccessDeniedSurface message="An active organization context is required for admin operations." />;
+  }
   const [data, scheduleData] = await Promise.all([
-    listAdminOperationsData(),
+    listAdminOperationsData({ organizationId }),
     listScheduleOperationsData()
   ]);
   const scopedScheduleData = scopeScheduleOperationsData(
@@ -274,6 +278,7 @@ export function AdminOperationsView({ data }: { data: AdminOperationsData }) {
               <span className="muted">{item.boundary}</span>
             </p>
           ))}
+          {!data.providerInventory.length ? <p className="muted">Provider inventory is unavailable for this organization.</p> : null}
         </article>
 
         <article className="card stack">
@@ -285,6 +290,7 @@ export function AdminOperationsView({ data }: { data: AdminOperationsData }) {
               <span className="muted">{item.boundary}</span>
             </p>
           ))}
+          {!data.approvalQueues.length ? <p className="muted">Approval queue counts are unavailable for this organization.</p> : null}
         </article>
       </section>
 
@@ -296,7 +302,13 @@ export function AdminOperationsView({ data }: { data: AdminOperationsData }) {
             {item.summary}
           </p>
         ))}
-        {!data.auditLogs.length ? <p className="muted">No audit events available yet.</p> : null}
+        {!data.auditLogs.length ? (
+          <p className="muted">
+            {data.settings.activeSeasonStatus === "unavailable"
+              ? "Audit history is unavailable for this organization."
+              : "No audit events available yet."}
+          </p>
+        ) : null}
       </section>
     </div>
   );
