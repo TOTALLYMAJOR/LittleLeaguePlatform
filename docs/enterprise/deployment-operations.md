@@ -37,9 +37,10 @@ npm test
 npm run build
 npm audit --omit=dev
 npm audit
+npm audit signatures
 ```
 
-The integrated review reports production dependencies clean. The supported Next 16.2.9 ESLint graph retains a development-only `minimatch`/`brace-expansion` advisory path that is not safely removable through supported peers without weakening lint rules. Rerun both audits with registry access for every release.
+The 2026-10-15 dependency review on PR #14 reports production dependencies clean and verified registry signatures for all 457 installed packages. The PR remediates the nine default-branch Dependabot findings present when the branch was created, but closure requires merge and a GitHub rescan. The full audit still reports five high-severity development-only dependency findings flowing from one `braces <=3.0.3` advisory through `eslint-config-next`; npm offers only a forced downgrade to Next 14 lint tooling. Do not force that downgrade into the Next 16.3.8 application. Rerun production-only and full audits plus signature verification against every exact release commit.
 
 ## Docker Deployment Smoke
 

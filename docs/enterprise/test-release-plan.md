@@ -16,7 +16,7 @@ Status: reconciled planning artifact. Current state and gate ownership are in `d
 | Type generation and TypeScript | `npm run typecheck` | Validate App Router types and TypeScript contracts. |
 | Unit/domain tests | `npm test` | Validate domain rules, policies, route handlers, provider boundaries, UI contracts. |
 | Build | `npm run build` | Prove production bundle and static/dynamic route generation. |
-| Dependency audit | `npm audit --omit=dev`; `npm audit` | Keep production exposure separate from the retained development-only Next ESLint graph advisory. |
+| Dependency audit | `npm audit --omit=dev`; `npm audit`; `npm audit signatures` | Keep production exposure separate from development-tool findings, verify package signatures, and record explicit triage for advisories without a supported upgrade path. The 2026-10-15 baseline is zero production vulnerabilities with one unpatched `braces` advisory flowing through the ESLint-only graph. |
 | RLS proof | `npm run qa:rls-proof` | Prove Supabase parent/coach/anonymous isolation. |
 | Session/browser proof | `npm run qa:session-proof` on a guarded isolated QA target only | Prove signed-out gates, signed-in routes, and live action writes without touching production. |
 | Production acceptance | Separately named read-only harness (required by `EXT-PRODUCTION-READONLY`) | Prove production role/session reachability and scoped reads without seed, write, acknowledgment, publish, provider, or cleanup actions. |
