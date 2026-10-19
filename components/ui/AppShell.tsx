@@ -304,9 +304,9 @@ export function AppShell({ access = signedOutShellAccess, children }: { access?:
               </span>
             </Link>
             <nav className="public-nav" aria-label="Public navigation">
-              <Link href="/schedule">Schedule</Link>
+              <Link className="public-nav-schedule" href="/schedule">Schedule</Link>
               {usesPublicGateway ? <Link href="/sponsors">Sponsors</Link> : <Link className="button" href="/registration">Request Team Access</Link>}
-              <Link className="button secondary" href="/auth">Sign in</Link>
+              <Link className="public-nav-sign-in button secondary" href="/auth">Sign in</Link>
               <ThemeToggle />
             </nav>
           </header>
