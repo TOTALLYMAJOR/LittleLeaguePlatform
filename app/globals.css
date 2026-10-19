@@ -14929,6 +14929,28 @@ button.theme-toggle:hover:not(:disabled) {
   will-change: transform;
 }
 
+.landing-footer-clouds {
+  position: relative;
+  z-index: 0;
+  height: clamp(112px, 13vw, 176px);
+  overflow: hidden;
+  margin-top: clamp(-22px, -2vw, -10px);
+  color: var(--text);
+  opacity: 0.08;
+  pointer-events: none;
+}
+
+.landing-footer-cloud {
+  position: absolute;
+  left: 0;
+  transform-origin: left center;
+  will-change: transform;
+}
+
+:root[data-theme="dark"] .landing-footer-clouds {
+  opacity: 0.12;
+}
+
 :root[data-theme="dark"] .landing-gateway-sky {
   color: var(--text);
   opacity: 0.13;
@@ -16632,4 +16654,1017 @@ html[data-intro="playing"] .landing-weather-card {
 :root[data-theme="dark"] .mobile-tabbar a[data-active="true"] {
   background: #132b4b;
   color: #cfe2ff;
+}
+
+/* =============================================================================
+   LP-UX-022 HOMEPAGE COMPOSITION
+   Keeps the existing public routes and truth boundaries while replacing the
+   overlapping image, weather, and intro layers with one calm game-day panel.
+   ============================================================================= */
+
+.landing-gateway {
+  padding-top: clamp(28px, 4vw, 56px);
+}
+
+.public-header-gateway .public-nav a,
+.public-header-gateway .public-nav .button,
+.public-header-gateway .theme-toggle {
+  min-height: 44px;
+}
+
+.landing-gateway-hero {
+  grid-template-columns: minmax(0, 1.02fr) minmax(410px, 0.98fr);
+  grid-template-rows: auto auto;
+  column-gap: clamp(36px, 5vw, 72px);
+  row-gap: clamp(22px, 3vw, 34px);
+  align-items: start;
+  width: min(100%, 1320px);
+  min-height: auto;
+}
+
+.landing-gateway-copy {
+  align-content: start;
+  padding-top: clamp(18px, 4vh, 44px);
+}
+
+.landing-gateway-copy h1 {
+  max-width: 10ch;
+  font-size: clamp(3.7rem, 6vw, 6.15rem);
+}
+
+.landing-gateway-summary {
+  max-width: 46ch;
+}
+
+.landing-gateway-visual {
+  position: relative;
+  z-index: 2;
+  display: grid;
+  grid-column: 2;
+  grid-row: 1;
+  align-self: stretch;
+  overflow: hidden;
+  border: 1px solid var(--gateway-line);
+  border-radius: 26px;
+  background: rgb(255 255 255 / 94%);
+  box-shadow: 0 24px 60px rgb(27 81 145 / 16%);
+}
+
+.landing-gateway-visual .landing-gateway-media {
+  position: relative;
+  inset: auto;
+  grid-column: auto;
+  grid-row: auto;
+  min-height: clamp(300px, 30vw, 390px);
+  border: 0;
+  border-radius: 0;
+  box-shadow: none;
+}
+
+.landing-gateway-visual .landing-gateway-media::before,
+.landing-gateway-visual .landing-gateway-media::after,
+.landing-gateway-visual .landing-gateway-media img {
+  border-radius: 0;
+}
+
+.landing-gateway-visual .landing-gateway-media img {
+  object-position: 56% center;
+}
+
+.landing-gateway-visual .landing-weather-card {
+  position: static;
+  inset: auto;
+  z-index: auto;
+  gap: 12px;
+  width: auto;
+  margin: 0;
+  padding: 16px 18px 18px;
+  border: 0;
+  border-top: 1px solid var(--gateway-line);
+  border-radius: 0;
+  background: rgb(255 255 255 / 96%);
+  box-shadow: none;
+  backdrop-filter: none;
+  opacity: 1;
+  animation: none;
+}
+
+.landing-weather-card header {
+  gap: 9px;
+}
+
+.landing-weather-card-icon {
+  background: var(--gateway-ink);
+  color: var(--gateway-paper);
+}
+
+.landing-weather-card-app,
+.landing-weather-card-time {
+  color: var(--gateway-muted);
+}
+
+.landing-weather-conditions {
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  gap: 12px;
+  margin-top: 0;
+}
+
+.landing-weather-glyph {
+  width: 44px;
+  height: 44px;
+}
+
+.landing-weather-readout {
+  gap: 3px;
+}
+
+.landing-weather-readout span {
+  color: var(--gateway-muted);
+  font-size: 0.68rem;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+.landing-weather-readout strong {
+  color: var(--gateway-ink);
+  font-size: 1rem;
+  line-height: 1.25;
+  letter-spacing: -0.015em;
+}
+
+.landing-weather-flow {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr) auto minmax(0, 1fr);
+  gap: 7px;
+  align-items: center;
+  margin: 0;
+  padding: 11px 0;
+  border-top: 1px solid color-mix(in srgb, var(--gateway-line) 75%, transparent);
+  border-bottom: 1px solid color-mix(in srgb, var(--gateway-line) 75%, transparent);
+  color: var(--gateway-muted);
+  list-style: none;
+}
+
+.landing-weather-flow li {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+  min-width: 0;
+  font-size: 0.68rem;
+  font-weight: 750;
+  line-height: 1.2;
+}
+
+.landing-weather-flow li > span {
+  display: grid;
+  flex: 0 0 auto;
+  place-items: center;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: color-mix(in srgb, var(--gateway-action) 12%, white);
+  color: var(--gateway-action);
+  font-size: 0.62rem;
+}
+
+.landing-weather-flow > svg {
+  color: color-mix(in srgb, var(--gateway-muted) 62%, transparent);
+}
+
+.landing-weather-card-detail {
+  color: var(--gateway-muted);
+}
+
+.landing-weather-card-detail strong {
+  color: var(--gateway-ink);
+}
+
+.landing-gateway-actions {
+  align-self: stretch;
+  border: 0;
+  background: transparent;
+  box-shadow: none;
+  backdrop-filter: none;
+}
+
+:root[data-theme="dark"] .landing-gateway-visual {
+  border-color: var(--gateway-line);
+  background: rgb(12 29 53 / 96%);
+  box-shadow: 0 24px 60px rgb(0 0 0 / 26%);
+}
+
+:root[data-theme="dark"] .landing-gateway-visual .landing-weather-card {
+  border-top-color: var(--gateway-line);
+  background: rgb(12 29 53 / 98%);
+  box-shadow: none;
+}
+
+:root[data-theme="dark"] .public-header-gateway .public-brand-mark {
+  color: var(--text);
+}
+
+:root[data-theme="dark"] .landing-gateway-actions {
+  border-color: transparent;
+  background: transparent;
+  box-shadow: none;
+}
+
+:root[data-theme="dark"] .landing-weather-readout strong,
+:root[data-theme="dark"] .landing-weather-card-detail strong {
+  color: var(--text);
+}
+
+:root[data-theme="dark"] .landing-weather-flow li > span {
+  background: rgb(255 212 90 / 14%);
+  color: #f3d98e;
+}
+
+@media (max-width: 1040px) {
+  .landing-gateway-hero {
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-rows: auto auto auto;
+    width: min(100%, 880px);
+  }
+
+  .landing-gateway-copy {
+    grid-column: 1;
+    grid-row: 1;
+    max-width: 760px;
+    padding-top: 10px;
+  }
+
+  .landing-gateway-copy h1 {
+    font-size: clamp(3.7rem, 9vw, 5.8rem);
+  }
+
+  .landing-gateway-visual {
+    grid-template-columns: minmax(0, 1fr);
+    grid-column: 1;
+    grid-row: 2;
+  }
+
+  .landing-gateway-visual .landing-gateway-media {
+    min-height: 390px;
+  }
+
+  .landing-gateway-visual .landing-weather-card {
+    border-top: 1px solid var(--gateway-line);
+    border-left: 0;
+  }
+
+  .landing-weather-flow {
+    grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr) auto minmax(0, 1fr);
+  }
+
+  .landing-gateway-actions {
+    grid-column: 1;
+    grid-row: 3;
+  }
+}
+
+@media (max-width: 760px) {
+  .public-header-gateway {
+    align-items: center !important;
+    flex-direction: row !important;
+    flex-wrap: nowrap;
+  }
+
+  .public-header-gateway .theme-toggle {
+    width: 44px;
+  }
+
+  .landing-gateway {
+    padding: 22px 14px 58px;
+  }
+
+  .landing-gateway-hero {
+    grid-template-rows: auto auto auto;
+    gap: 18px;
+  }
+
+  .landing-gateway-copy {
+    padding: 8px 4px 2px;
+  }
+
+  .landing-gateway-copy h1 {
+    max-width: 10ch;
+    font-size: clamp(3.05rem, 14vw, 4.5rem);
+  }
+
+  .landing-gateway-assurances {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .landing-gateway-assurances li {
+    min-width: 0;
+  }
+
+  .landing-gateway-assurances li:last-child {
+    grid-column: 1 / -1;
+  }
+
+  .landing-gateway-visual {
+    grid-template-columns: 1fr;
+    border-radius: 22px;
+  }
+
+  .landing-gateway-visual .landing-gateway-media {
+    min-height: clamp(260px, 72vw, 360px);
+    border-width: 0;
+  }
+
+  .landing-gateway-visual .landing-weather-card {
+    grid-column: auto;
+    grid-row: auto;
+    padding: 15px 16px 17px;
+    border-top: 1px solid var(--gateway-line);
+    border-left: 0;
+  }
+
+  .landing-weather-flow {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 7px;
+  }
+
+  .landing-weather-flow > svg {
+    display: none;
+  }
+
+  .landing-weather-flow li {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .landing-gateway-actions {
+    grid-row: 3;
+    margin-top: 0;
+  }
+
+  .landing-gateway-action {
+    min-height: 96px;
+  }
+}
+
+@media (max-width: 430px) {
+  .landing-weather-conditions {
+    grid-template-columns: auto minmax(0, 1fr);
+  }
+
+  .landing-weather-card-severity {
+    grid-column: 2;
+  }
+}
+
+@media (forced-colors: active) {
+  .landing-gateway-visual {
+    border: 1px solid ButtonText;
+    forced-color-adjust: auto;
+  }
+}
+
+/* =============================================================================
+   LP-UX-026 READY BOARD LANDING
+   Accepted Impeccable Live composition: operationally clear, family-friendly,
+   and intentionally denser without changing routes, copy, or proof boundaries.
+   ============================================================================= */
+
+.landing-ready-board {
+  padding-top: clamp(22px, 3vw, 42px);
+  padding-bottom: clamp(14px, 1.8vw, 24px);
+}
+
+.landing-ready-board-hero {
+  grid-template-columns: minmax(0, 0.74fr) minmax(520px, 1.26fr);
+  grid-template-areas:
+    "copy visual"
+    "assurances assurances";
+  column-gap: 28px;
+  row-gap: 18px;
+  width: min(100%, 1480px);
+}
+
+.landing-ready-board-copy {
+  grid-area: copy;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 12px 24px;
+  align-items: start;
+  padding: 0;
+}
+
+.landing-ready-board-copy h1 {
+  grid-column: 1;
+  grid-row: 2;
+  max-width: 11ch;
+  font-size: clamp(3.25rem, 5vw, 5.4rem);
+}
+
+.landing-ready-board-dedication {
+  grid-column: 1;
+  grid-row: 1;
+}
+
+.landing-ready-board-summary {
+  grid-column: 1;
+  grid-row: 3;
+}
+
+.landing-ready-board-visual {
+  grid-area: visual;
+  grid-template-columns: 1.22fr 0.78fr;
+}
+
+.landing-ready-board-visual .landing-gateway-media {
+  min-height: clamp(350px, 31vw, 440px);
+}
+
+.landing-ready-board-assurances {
+  grid-area: assurances;
+  align-self: end;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.landing-footer-zone {
+  position: relative;
+  isolation: isolate;
+  display: grid;
+  min-height: clamp(190px, 19vw, 248px);
+  place-items: center;
+  overflow: hidden;
+  padding: 28px clamp(14px, 4vw, 60px) 34px;
+}
+
+.landing-footer-zone .landing-footer-clouds {
+  position: absolute;
+  z-index: 0;
+  inset: 0;
+  height: 100%;
+  margin: 0;
+}
+
+.landing-cloud-content {
+  position: relative;
+  z-index: 1;
+  display: grid;
+  grid-template-columns: minmax(230px, 0.7fr) minmax(0, 2.3fr);
+  gap: 12px;
+  align-items: stretch;
+  width: min(100%, 1480px);
+  padding: 12px;
+  border: 1px solid var(--gateway-line);
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--gateway-paper) 82%, transparent);
+  box-shadow: 0 18px 42px color-mix(in srgb, var(--gateway-ink) 10%, transparent);
+  backdrop-filter: blur(16px);
+}
+
+.landing-cloud-gameday {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  grid-template-rows: auto auto;
+  align-content: center;
+  justify-self: stretch;
+  min-height: 110px;
+  padding: 18px 20px;
+  border-color: transparent;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--gateway-action) 5%, transparent);
+  box-shadow: none;
+  backdrop-filter: none;
+}
+
+.landing-cloud-gameday > span:not(.landing-gateway-gameday-dot) {
+  align-self: end;
+  font-size: 0.9rem;
+}
+
+.landing-cloud-gameday em {
+  grid-column: 1;
+  display: inline-flex;
+  gap: 5px;
+  align-items: center;
+}
+
+.landing-cloud-actions {
+  grid-column: auto;
+  grid-row: auto;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+  margin: 0;
+  width: 100%;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+  backdrop-filter: none;
+}
+
+.landing-cloud-actions .landing-gateway-action {
+  min-height: 84px;
+  border-radius: 999px;
+}
+
+.landing-cloud-actions .landing-gateway-action small {
+  display: none;
+}
+
+:root[data-theme="dark"] .landing-cloud-content {
+  background: color-mix(in srgb, var(--surface) 88%, transparent);
+}
+
+:root[data-theme="dark"] .landing-cloud-gameday {
+  background: color-mix(in srgb, var(--gateway-action) 8%, transparent);
+}
+
+@media (max-width: 1040px) {
+  .landing-ready-board-hero {
+    grid-template-columns: 1fr;
+    grid-template-areas: none;
+  }
+
+  .landing-ready-board :is(
+    .landing-ready-board-copy,
+    .landing-ready-board-visual,
+    .landing-ready-board-assurances
+  ) {
+    grid-area: auto;
+  }
+
+  .landing-ready-board-copy {
+    grid-template-columns: 1fr;
+  }
+
+  .landing-ready-board-visual {
+    grid-template-columns: 1fr;
+  }
+
+  .landing-ready-board :is(
+    .landing-ready-board-dedication,
+    .landing-ready-board-copy h1,
+    .landing-ready-board-summary
+  ) {
+    grid-row: auto;
+  }
+
+  .landing-ready-board-visual .landing-gateway-media {
+    min-height: 390px;
+  }
+}
+
+@media (max-width: 760px) {
+  .landing-ready-board-assurances {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .landing-ready-board-copy h1 {
+    font-size: clamp(3.15rem, 15vw, 4.7rem);
+  }
+
+  .landing-footer-zone {
+    min-height: 540px;
+    padding-block: 34px 40px;
+  }
+
+  .landing-cloud-content {
+    grid-template-columns: 1fr;
+    width: min(100%, 520px);
+    border-radius: 28px;
+  }
+
+  .landing-cloud-gameday {
+    min-height: 92px;
+    border-radius: 22px;
+  }
+
+  .landing-cloud-actions {
+    grid-template-columns: 1fr;
+    border-radius: 24px;
+  }
+
+  .landing-cloud-actions .landing-gateway-action {
+    border-radius: 18px;
+  }
+}
+
+/* =============================================================================
+   LP-UX-025 GAME-DAY CELEBRATION
+   A quick, one-shot baseball-to-crowd flourish over the landing page.
+   It adds no replay control, route, or product-state claim.
+   ============================================================================= */
+
+.landing-celebration {
+  position: fixed;
+  z-index: calc(var(--z-modal) + 1);
+  inset: 0;
+  display: grid;
+  place-items: center;
+  overflow: hidden;
+  isolation: isolate;
+  background: transparent;
+  color: #082957;
+  pointer-events: none;
+  animation: landing-celebration-curtain 2.85s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+.landing-celebration-scene {
+  display: block;
+  width: min(92vw, 900px);
+  height: auto;
+  aspect-ratio: 640 / 300;
+  filter: drop-shadow(0 2px 1px rgb(255 255 255 / 88%)) drop-shadow(0 5px 8px rgb(5 27 58 / 22%));
+}
+
+:root[data-theme="dark"] .landing-celebration {
+  background: transparent;
+  color: #cfe2ff;
+}
+
+.landing-celebration-batter,
+.landing-celebration-person,
+.landing-celebration-cheer-line {
+  fill: currentColor;
+  stroke: currentColor;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.landing-celebration-batter {
+  fill: currentColor;
+  stroke-width: 9;
+  transform-box: fill-box;
+  transform-origin: 62% 62%;
+  animation: landing-celebration-batter 2.45s cubic-bezier(0.22, 0.78, 0.22, 1) both;
+}
+
+.landing-celebration-batter circle,
+.landing-celebration-person circle {
+  stroke: none;
+}
+
+.landing-celebration-batter path,
+.landing-celebration-arms,
+.landing-celebration-cheer-line {
+  fill: none;
+}
+
+.landing-celebration-body {
+  fill: currentColor;
+  stroke: none;
+}
+
+.landing-celebration-bat {
+  stroke: #d94708;
+  stroke-width: 11;
+}
+
+.landing-celebration-flight-line {
+  fill: none;
+  stroke: rgb(255 255 255 / 88%);
+  stroke-width: 4;
+  stroke-linecap: round;
+  stroke-dasharray: 1;
+  stroke-dashoffset: 1;
+  animation: landing-celebration-trail 2.45s ease-out both;
+}
+
+.landing-celebration-ball {
+  fill: #d94708;
+  stroke: rgb(255 255 255 / 94%);
+  stroke-width: 3;
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: landing-celebration-ball 2.45s cubic-bezier(0.2, 0.72, 0.28, 1) both;
+}
+
+.landing-celebration-crowd {
+  opacity: 0;
+  transform-box: fill-box;
+  transform-origin: 50% 100%;
+  animation: landing-celebration-crowd 2.45s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+.landing-celebration-person {
+  stroke-width: 8;
+}
+
+.landing-celebration-cheer-line {
+  stroke-width: 5;
+}
+
+@keyframes landing-celebration-batter {
+  0%, 10% {
+    opacity: 0;
+    transform: translate3d(-18px, 8px, 0) rotate(-14deg);
+  }
+  18% {
+    opacity: 0.94;
+    transform: translate3d(0, 0, 0) rotate(-14deg);
+  }
+  34% {
+    opacity: 1;
+    transform: translate3d(0, 0, 0) rotate(18deg);
+  }
+  62% {
+    opacity: 0.92;
+    transform: translate3d(0, 0, 0) rotate(18deg);
+  }
+  78%, 100% {
+    opacity: 0;
+    transform: translate3d(-8px, 4px, 0) rotate(18deg);
+  }
+}
+
+@keyframes landing-celebration-ball {
+  0%, 27% {
+    opacity: 0;
+    transform: translate3d(0, 0, 0) scale(0.7);
+  }
+  32% {
+    opacity: 1;
+    transform: translate3d(0, 0, 0) scale(1);
+  }
+  48% {
+    opacity: 1;
+    transform: translate3d(116px, -76px, 0) scale(0.92);
+  }
+  64% {
+    opacity: 1;
+    transform: translate3d(252px, -91px, 0) scale(0.78);
+  }
+  74% {
+    opacity: 0.9;
+    transform: translate3d(374px, -55px, 0) scale(0.64);
+  }
+  79%, 100% {
+    opacity: 0;
+    transform: translate3d(388px, -49px, 0) scale(0.2);
+  }
+}
+
+@keyframes landing-celebration-trail {
+  0%, 30% {
+    opacity: 0;
+    stroke-dashoffset: 1;
+  }
+  38% {
+    opacity: 0.84;
+  }
+  70% {
+    opacity: 0.78;
+    stroke-dashoffset: 0;
+  }
+  82%, 100% {
+    opacity: 0;
+    stroke-dashoffset: 0;
+  }
+}
+
+@keyframes landing-celebration-crowd {
+  0%, 71% {
+    opacity: 0;
+    transform: translate3d(0, 16px, 0) scale(0.44);
+  }
+  81% {
+    opacity: 0.9;
+    transform: translate3d(0, -3px, 0) scale(1.06);
+  }
+  91% {
+    opacity: 0.82;
+    transform: translate3d(0, 0, 0) scale(1);
+  }
+  100% {
+    opacity: 0;
+    transform: translate3d(0, -2px, 0) scale(1.02);
+  }
+}
+
+@keyframes landing-celebration-curtain {
+  0%, 84% {
+    opacity: 1;
+    visibility: visible;
+  }
+  99.9% {
+    visibility: visible;
+  }
+  100% {
+    opacity: 0;
+    visibility: hidden;
+  }
+}
+
+@media (max-width: 760px) {
+  .landing-celebration-scene {
+    width: min(108vw, 720px);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .landing-celebration {
+    display: none;
+    animation: none;
+  }
+}
+
+@media (forced-colors: active) {
+  .landing-celebration {
+    background: transparent;
+    color: CanvasText;
+    forced-color-adjust: auto;
+  }
+
+  .landing-celebration-ball,
+  .landing-celebration-bat {
+    fill: Highlight;
+    stroke: Highlight;
+  }
+}
+
+/* LP-UX-027: owner-selected mobile quick access hierarchy. */
+.landing-mobile-actions {
+  display: none;
+}
+
+@media (max-width: 760px) {
+  .landing-mobile-actions {
+    display: grid;
+    grid-template-columns: minmax(0, 1.15fr) minmax(0, 0.85fr);
+    gap: 9px;
+    margin-top: 4px;
+  }
+
+  .landing-mobile-action {
+    display: inline-flex;
+    gap: 8px;
+    align-items: center;
+    justify-content: space-between;
+    min-height: 48px;
+    padding: 11px 14px;
+    border: 1px solid var(--gateway-line);
+    border-radius: 14px;
+    background: color-mix(in srgb, var(--gateway-paper) 92%, transparent);
+    color: var(--gateway-ink);
+    font-size: 0.84rem;
+    font-weight: 820;
+    line-height: 1;
+    text-decoration: none;
+  }
+
+  .landing-mobile-action:hover,
+  .landing-mobile-action:focus-visible {
+    border-color: var(--gateway-action);
+  }
+
+  .landing-mobile-action.is-primary,
+  .landing-mobile-action.is-primary:hover,
+  .landing-mobile-action.is-primary:focus-visible {
+    border-color: var(--gateway-action);
+    background: var(--gateway-action);
+    color: #ffffff;
+  }
+
+  .public-header-gateway .public-nav > a.public-nav-schedule,
+  .public-header-gateway .public-nav > a.public-nav-sign-in {
+    display: none;
+  }
+}
+
+@media (forced-colors: active) {
+  .landing-mobile-action {
+    border-color: ButtonText;
+    forced-color-adjust: auto;
+  }
+}
+
+/* LP-UX-028: reference-informed motion candidate. Existing gateway tokens only. */
+.landing-motion-candidate .landing-ready-board-hero {
+  grid-template-columns: minmax(0, 0.82fr) minmax(0, 1.18fr);
+  column-gap: clamp(32px, 4vw, 64px);
+  row-gap: 24px;
+}
+.landing-motion-candidate .landing-ready-board-copy { gap: 22px; padding-top: 14px; }
+.landing-motion-candidate .landing-ready-board-copy h1 {
+  font-size: clamp(3.25rem, 5.3vw, 5.6rem);
+  line-height: 1.01;
+  letter-spacing: -0.055em;
+  max-width: none;
+}
+.landing-motion-candidate h1 > span { color: var(--gateway-action); }
+.landing-motion-candidate .landing-ready-board-summary { max-width: 36ch; font-size: 1.08rem; line-height: 1.65; }
+.landing-desktop-actions { display: flex; flex-wrap: wrap; gap: 12px; }
+.landing-hero-action {
+  display: inline-flex; align-items: center; justify-content: center; gap: 14px;
+  min-height: 50px; padding: 12px 22px; border: 1px solid var(--gateway-line);
+  border-radius: 14px; background: var(--gateway-paper); color: var(--gateway-ink);
+  font-size: 0.9rem; font-weight: 750; text-decoration: none;
+  transition: transform 180ms ease-out, border-color 180ms ease-out;
+}
+.landing-hero-action.is-primary { background: var(--gateway-action); border-color: var(--gateway-action); color: white; }
+.landing-hero-action:hover { transform: translateY(-2px); border-color: var(--gateway-action); }
+.landing-hero-action:focus-visible, .landing-review-story button:focus-visible {
+  outline: 3px solid var(--gateway-action); outline-offset: 4px;
+}
+.landing-hero-note { margin: 0; padding-left: 14px; border-left: 2px solid var(--gateway-line); color: var(--gateway-muted); font-size: 0.82rem; line-height: 1.65; }
+.landing-motion-candidate .landing-ready-board-visual { grid-template-columns: 1fr; align-self: start; border-radius: 24px; }
+.landing-motion-candidate .landing-ready-board-visual .landing-gateway-media { min-height: 250px; }
+.landing-motion-candidate .landing-gateway-media img { object-position: 50% 35%; }
+.landing-community-caption {
+  position: absolute; z-index: 1; inset: auto 0 0; display: grid; gap: 4px; padding: 38px 24px 20px;
+  background: linear-gradient(transparent, rgb(7 27 68 / 80%)); color: white;
+}
+.landing-community-caption > span { font-size: 0.65rem; font-weight: 650; text-transform: uppercase; letter-spacing: 0.1em; }
+.landing-community-caption > strong { font-size: 1.25rem; letter-spacing: -0.025em; }
+.landing-motion-candidate .landing-gateway-visual .landing-weather-card { display: grid; gap: 14px; padding: 18px 22px 20px; }
+.landing-motion-candidate .landing-weather-conditions { grid-template-columns: auto minmax(0, 1fr) auto; }
+.landing-motion-candidate .landing-weather-readout span { overflow: visible; white-space: normal; text-overflow: clip; }
+.landing-motion-candidate .landing-weather-readout strong { font-size: 1.05rem; }
+.landing-review-story { display: grid; gap: 12px; border-top: 1px solid var(--gateway-line); padding-top: 12px; }
+.landing-review-label { display: flex; justify-content: space-between; align-items: center; gap: 12px; color: var(--gateway-muted); font-size: 0.7rem; }
+.landing-review-play {
+  display: inline-flex; flex-shrink: 0; gap: 5px; align-items: center; justify-content: center;
+  min-height: 36px; padding: 6px 10px; border: 1px solid var(--gateway-line); border-radius: 8px;
+  background: transparent; color: var(--gateway-ink); font: inherit; font-weight: 700; cursor: pointer;
+}
+.landing-review-play:disabled { cursor: default; }
+.landing-motion-candidate .landing-review-play:hover {
+  background: var(--gateway-paper); color: var(--gateway-ink); border-color: var(--gateway-action);
+}
+.landing-review-steps { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px; }
+.landing-review-steps > button {
+  position: relative; display: flex; align-items: center; justify-content: flex-start; gap: 7px;
+  min-width: 0; min-height: 48px; padding: 8px; border: 1px solid transparent; border-radius: 10px;
+  background: color-mix(in srgb, var(--gateway-line) 24%, transparent); color: var(--gateway-muted);
+  font-family: inherit; font-size: 0.7rem; font-weight: 700; line-height: 1.3; cursor: pointer;
+  transition: border-color 200ms ease-out, background-color 200ms ease-out;
+}
+.landing-review-steps > button[aria-pressed="true"] { border-color: var(--gateway-action); color: var(--gateway-ink); background: color-mix(in srgb, var(--gateway-action) 8%, var(--gateway-paper)); }
+.landing-review-number { display: grid; place-items: center; flex: 0 0 22px; width: 22px; min-width: 22px; height: 22px; border: 1px solid var(--gateway-line); border-radius: 50%; font-size: 0.65rem; }
+.landing-review-steps > button[aria-pressed="true"] .landing-review-number { background: var(--gateway-action); border-color: var(--gateway-action); color: white; }
+.landing-review-arrow { margin-left: auto; flex-shrink: 0; }
+.landing-review-panels { min-height: 64px; }
+.landing-review-panel { display: grid; align-content: start; gap: 4px; margin: 0; font-size: 0.8rem; line-height: 1.5; color: var(--gateway-muted); }
+.landing-review-panel[hidden] { display: none; }
+.landing-review-panel > strong { color: var(--gateway-ink); font-size: 0.92rem; }
+.landing-review-boundary { color: var(--gateway-muted); font-size: 0.65rem; line-height: 1.5; }
+:root[data-theme="dark"] .landing-motion-candidate :is(.landing-hero-action.is-primary, .landing-mobile-action.is-primary, .landing-review-steps > button[aria-pressed="true"] .landing-review-number) { color: var(--gateway-paper); }
+
+@media (prefers-reduced-motion: no-preference) {
+  .landing-motion-candidate .landing-ready-board-copy { animation: landing-board-arrive 650ms cubic-bezier(0.22, 1, 0.36, 1) both; }
+  .landing-motion-candidate .landing-ready-board-visual { animation: landing-board-arrive 800ms cubic-bezier(0.22, 1, 0.36, 1) both; }
+  .landing-motion-candidate .landing-review-panel:not([hidden]) { animation: landing-review-arrive 280ms ease-out both; }
+  .landing-motion-candidate .landing-review-steps > button[aria-pressed="true"] .landing-review-number { animation: landing-review-settle 350ms ease-out both; }
+}
+@keyframes landing-board-arrive { from { transform: translateY(12px); opacity: 0.88; } to { transform: translateY(0); opacity: 1; } }
+@keyframes landing-review-arrive { from { transform: translateY(5px); opacity: 0.7; } to { transform: translateY(0); opacity: 1; } }
+@keyframes landing-review-settle { from { transform: scale(0.9); } to { transform: scale(1); } }
+
+@media (max-width: 1040px) {
+  .landing-motion-candidate .landing-ready-board-hero { grid-template-columns: minmax(0, 1fr); }
+  .landing-motion-candidate .landing-ready-board-copy { padding-top: 0; }
+  .landing-motion-candidate .landing-ready-board-visual .landing-gateway-media { min-height: 310px; }
+}
+@media (max-width: 760px) {
+  .landing-desktop-actions, .landing-hero-note { display: none; }
+  .landing-motion-candidate .landing-ready-board-copy { gap: 16px; }
+  .landing-motion-candidate .landing-ready-board-copy h1 { font-size: clamp(2.8rem, 13.5vw, 4.7rem); }
+  .landing-motion-candidate .landing-ready-board-summary { font-size: 1rem; line-height: 1.55; }
+  .landing-motion-candidate .landing-ready-board-visual .landing-gateway-media { min-height: 240px; }
+  .landing-motion-candidate .landing-gateway-visual .landing-weather-card { padding: 16px; }
+  .landing-review-label { flex-wrap: wrap; gap: 4px; }
+  .landing-review-play { min-height: 44px; }
+  .landing-review-steps > button { flex-direction: column; justify-content: center; gap: 5px; min-height: 72px; padding: 8px 4px; font-size: 0.65rem; }
+  .landing-review-arrow { display: none; }
+  .landing-review-panels { min-height: 80px; }
+  .landing-community-caption { padding: 34px 18px 16px; }
+  .landing-motion-candidate .landing-weather-card-severity { max-width: 74px; text-align: center; white-space: normal; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .landing-motion-candidate *, .landing-motion-candidate *::before, .landing-motion-candidate *::after { animation: none !important; transition: none !important; }
+  .landing-motion-candidate .landing-hero-action:hover { transform: none; }
+}
+
+/* Landing-only footer. Link only to published public destinations. */
+@media (prefers-reduced-motion: reduce) {
+  .landing-footer-clouds { display: none; }
+}
+.landing-public-footer {
+  border-top: 1px solid var(--line);
+  background: color-mix(in srgb, var(--surface) 94%, var(--accent-soft));
+  color: var(--muted);
+}
+.landing-public-footer-inner {
+  display: flex; justify-content: space-between; gap: var(--sp-6);
+  width: min(100% - 40px, 1240px); margin-inline: auto; padding: var(--sp-5) 0;
+  font-size: var(--text-sm);
+}
+.landing-public-footer-brand, .landing-public-footer nav {
+  display: flex; flex-wrap: wrap; gap: var(--sp-2) var(--sp-4); align-items: center;
+}
+.landing-public-footer-brand strong { color: var(--text); }
+.landing-public-footer a { color: var(--accent-strong); font-weight: 700; }
+@media (max-width: 640px) {
+  .landing-public-footer-inner, .landing-public-footer-brand, .landing-public-footer nav {
+    align-items: flex-start; flex-direction: column;
+  }
+  .landing-public-footer-inner { width: min(100% - 32px, 1240px); }
 }

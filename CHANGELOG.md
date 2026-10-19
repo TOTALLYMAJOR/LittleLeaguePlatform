@@ -1,5 +1,12 @@
 # Changelog
 
+## 2026-10-19 — Ready Board landing
+
+- Find Sign in and the public schedule directly beside the welcome message, with Sign in first on mobile.
+- See the community photo and an explicitly illustrative weather example that moves to coach review and stops before any family alert.
+- Use the page immediately during the opening celebration, with settled content when reduced motion is requested.
+- [Before, key moment, and result](docs/releases/2026-10-19-landing/README.md).
+
 ## Unreleased
 
 - Converted the repo root to a Next.js + TypeScript App Router scaffold.

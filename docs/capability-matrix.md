@@ -7,6 +7,12 @@ reviewed: 2026-08-22
 ---
 # Capability Matrix
 
+## 2026-10-19 Public landing — owner-accepted visual release
+
+| Capability | Implementation and local proof | Remaining proof boundary |
+| --- | --- | --- |
+| Ready Board / Organized Clubhouse landing | Owner accepted the desktop/mobile visual candidate and authorized publication. Landing presentation adds hero entry actions, the existing community image, nonblocking celebration, and an illustrative weather-review sequence that stops at coach review. Mobile Sign in → Schedule, server-confirmed signed-in redirects, child privacy, and provider-send boundaries remain intact. The release is isolated from unrelated branch work and retains current main dependencies. Local verification records 885 tests across 140 files, typecheck, ESLint, and responsive/motion checks. See [LP-UX-028](product-experience/leaguepilot/lp-ux-028-reference-motion-candidate.md) and the [release record](releases/2026-10-19-landing/README.md). | Hosted verification is recorded separately from owner visual acceptance. Family-first audience priority remains a hypothesis; participant comprehension, assistive-technology and conversion evidence are outstanding. This presentation release closes no private-role, provider, payment, or broader product acceptance gate. |
+
 ## 2026-08-25 Showcase slice
 
 | Capability | Local implementation | Required proof before production claim |
